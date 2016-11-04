@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'=='' and '$(TargetGroup)' == ''">
     </Configuration>
@@ -29,10 +29,8 @@
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageSecurityState.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageSecurityOptions.cs" />
     <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
   </ItemGroup>

@@ -13,9 +13,10 @@ namespace System.Resources
 {
     public class ResourceManager
     {
-        private readonly ResourceMap _resourceMap;
+        private readonly object _resourceMap;
         private readonly string _resourcesSubtree;
         private readonly string _neutralResourcesCultureName;
+        protected Assembly MainAssembly; 
 
         public ResourceManager(Type resourceSource)
         {
@@ -40,6 +41,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(assembly));
             }
 
+            MainAssembly = assembly;
             _resourcesSubtree = baseName;
             _resourceMap = GetResourceMap(_resourcesSubtree);
             _neutralResourcesCultureName = GetNeutralLanguageForAssembly(assembly);
@@ -54,6 +56,12 @@ namespace System.Resources
         public string GetString(string name)
         {
             return GetString(name, null);
+        }
+
+        protected static CultureInfo GetNeutralResourcesLanguage(Assembly a)
+        {
+            string lang = GetNeutralLanguageForAssembly(a);
+            return lang == null ? CultureInfo.InvariantCulture : new CultureInfo(lang);
         }
 
         // Looks up a resource value for a particular name.  Looks in the 
@@ -106,10 +114,10 @@ namespace System.Resources
         // WinRT Wrappers
         //
 
-        private ResourceMap GetResourceMap(string subtreeName)
+        private object GetResourceMap(string subtreeName)
         {
             if (WinRTInterop.Callbacks.IsAppxModel())
-                return Windows.ApplicationModel.Resources.Core.ResourceManager.Current.MainResourceMap.GetSubtree(subtreeName);
+                return WinRTInterop.Callbacks.GetResourceMap(subtreeName) ;
 
             return null;
         }
@@ -122,25 +130,7 @@ namespace System.Resources
                 return resourceName;
             }
 
-            if (_resourceMap == null)
-                return null;
-
-            ResourceContext context;
-            ResourceCandidate candidate;
-
-            if (languageName == null && _neutralResourcesCultureName == null)
-            {
-                candidate = _resourceMap.GetValue(resourceName);
-            }
-            else
-            {
-                context = new ResourceContext();
-                context.QualifierValues["language"] = (languageName != null ? languageName + ";" : "") + 
-                                                      (_neutralResourcesCultureName != null ? _neutralResourcesCultureName : ""); 
-                candidate = _resourceMap.GetValue(resourceName, context);
-            }
-
-            return candidate == null ? null : candidate.ValueAsString;
+            return WinRTInterop.Callbacks.GetResourceString(_resourceMap, resourceName, languageName, _neutralResourcesCultureName);
         }
     }
 }

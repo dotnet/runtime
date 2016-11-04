@@ -19,53 +19,53 @@ namespace System.Runtime.Serialization
     public sealed partial class CollectionDataContractAttribute : System.Attribute
     {
         public CollectionDataContractAttribute() { }
-        public bool IsItemNameSetExplicitly { get { return default(bool); } }
-        public bool IsKeyNameSetExplicitly { get { return default(bool); } }
-        public bool IsNameSetExplicitly { get { return default(bool); } }
-        public bool IsNamespaceSetExplicitly { get { return default(bool); } }
-        public bool IsReference { get { return default(bool); } set { } }
-        public bool IsReferenceSetExplicitly { get { return default(bool); } }
-        public bool IsValueNameSetExplicitly { get { return default(bool); } }
-        public string ItemName { get { return default(string); } set { } }
-        public string KeyName { get { return default(string); } set { } }
-        public string Name { get { return default(string); } set { } }
-        public string Namespace { get { return default(string); } set { } }
-        public string ValueName { get { return default(string); } set { } }
+        public bool IsItemNameSetExplicitly { get { throw null; } }
+        public bool IsKeyNameSetExplicitly { get { throw null; } }
+        public bool IsNameSetExplicitly { get { throw null; } }
+        public bool IsNamespaceSetExplicitly { get { throw null; } }
+        public bool IsReference { get { throw null; } set { } }
+        public bool IsReferenceSetExplicitly { get { throw null; } }
+        public bool IsValueNameSetExplicitly { get { throw null; } }
+        public string ItemName { get { throw null; } set { } }
+        public string KeyName { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public string Namespace { get { throw null; } set { } }
+        public string ValueName { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(3), Inherited = false, AllowMultiple = true)]
     public sealed partial class ContractNamespaceAttribute : System.Attribute
     {
         public ContractNamespaceAttribute(string contractNamespace) { }
-        public string ClrNamespace { get { return default(string); } set { } }
-        public string ContractNamespace { get { return default(string); } }
+        public string ClrNamespace { get { throw null; } set { } }
+        public string ContractNamespace { get { throw null; } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(28), Inherited = false, AllowMultiple = false)]
     public sealed partial class DataContractAttribute : System.Attribute
     {
         public DataContractAttribute() { }
-        public bool IsNameSetExplicitly { get { return default(bool); } }
-        public bool IsNamespaceSetExplicitly { get { return default(bool); } }
-        public bool IsReference { get { return default(bool); } set { } }
-        public bool IsReferenceSetExplicitly { get { return default(bool); } }
-        public string Name { get { return default(string); } set { } }
-        public string Namespace { get { return default(string); } set { } }
+        public bool IsNameSetExplicitly { get { throw null; } }
+        public bool IsNamespaceSetExplicitly { get { throw null; } }
+        public bool IsReference { get { throw null; } set { } }
+        public bool IsReferenceSetExplicitly { get { throw null; } }
+        public string Name { get { throw null; } set { } }
+        public string Namespace { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(384), Inherited = false, AllowMultiple = false)]
     public sealed partial class DataMemberAttribute : System.Attribute
     {
         public DataMemberAttribute() { }
-        public bool EmitDefaultValue { get { return default(bool); } set { } }
-        public bool IsNameSetExplicitly { get { return default(bool); } }
-        public bool IsRequired { get { return default(bool); } set { } }
-        public string Name { get { return default(string); } set { } }
-        public int Order { get { return default(int); } set { } }
+        public bool EmitDefaultValue { get { throw null; } set { } }
+        public bool IsNameSetExplicitly { get { throw null; } }
+        public bool IsRequired { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public int Order { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited = false, AllowMultiple = false)]
     public sealed partial class EnumMemberAttribute : System.Attribute
     {
         public EnumMemberAttribute() { }
-        public bool IsValueSetExplicitly { get { return default(bool); } }
-        public string Value { get { return default(string); } set { } }
+        public bool IsValueSetExplicitly { get { throw null; } }
+        public string Value { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(384), Inherited = false, AllowMultiple = false)]
     public sealed partial class IgnoreDataMemberAttribute : System.Attribute
@@ -91,7 +91,7 @@ namespace System.Runtime.Serialization
     {
         public KnownTypeAttribute(string methodName) { }
         public KnownTypeAttribute(System.Type type) { }
-        public string MethodName { get { return default(string); } }
-        public System.Type Type { get { return default(System.Type); } }
+        public string MethodName { get { throw null; } }
+        public System.Type Type { get { throw null; } }
     }
 }

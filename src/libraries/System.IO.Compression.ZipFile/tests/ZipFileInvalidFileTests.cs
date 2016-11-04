@@ -202,7 +202,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("NullCharFileName_FromWindows")]
         [InlineData("NullCharFileName_FromUnix")]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
         {
             Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
@@ -213,7 +213,7 @@ namespace System.IO.Compression.Tests
         [InlineData("backslashes_FromWindows", "aa\\bb\\cc\\dd")]
         [InlineData("WindowsInvalid_FromUnix", "aa<b>d")]
         [InlineData("WindowsInvalid_FromWindows", "aa<b>d")]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_ZipWithOSSpecificFileNames(string zipName, string fileName)
         {
             string tempDir = GetTestFilePath();
@@ -232,7 +232,7 @@ namespace System.IO.Compression.Tests
         [InlineData("WindowsInvalid_FromWindows")]
         [InlineData("NullCharFileName_FromWindows")]
         [InlineData("NullCharFileName_FromUnix")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
         {
             Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
@@ -241,7 +241,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("backslashes_FromUnix", "dd")]
         [InlineData("backslashes_FromWindows", "dd")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_ZipWithOSSpecificFileNames(string zipName, string fileName)
         {
             string tempDir = GetTestFilePath();

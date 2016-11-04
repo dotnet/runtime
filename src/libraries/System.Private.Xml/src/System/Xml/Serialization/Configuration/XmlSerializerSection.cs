@@ -12,18 +12,10 @@ namespace System.Xml.Serialization.Configuration
     using System.Reflection;
     using System.Resources;
 
-    internal sealed class XmlSerializerSection : ConfigurationSection
+    internal sealed class XmlSerializerSection
     {
         public XmlSerializerSection()
         {
-        }
-
-        protected override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return _properties;
-            }
         }
 
         public bool CheckDeserializeAdvances
@@ -42,38 +34,6 @@ namespace System.Xml.Serialization.Configuration
         {
             get { return false; }
             set { }
-        }
-
-        private ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
-    }
-
-
-    internal class RootedPathValidator : ConfigurationValidatorBase
-    {
-        public override bool CanValidate(Type type)
-        {
-            return (type == typeof(string));
-        }
-
-        public override void Validate(object value)
-        {
-            string tempDirectory = value as string;
-            if (string.IsNullOrEmpty(tempDirectory))
-                return;
-            tempDirectory = tempDirectory.Trim();
-            if (string.IsNullOrEmpty(tempDirectory))
-                return;
-            if (!Path.IsPathRooted(tempDirectory))
-            {
-                // Make sure the path is not relative (VSWhidbey 260075)
-                throw new ConfigurationErrorsException();
-            }
-            char firstChar = tempDirectory[0];
-            if (firstChar == Path.DirectorySeparatorChar || firstChar == Path.AltDirectorySeparatorChar)
-            {
-                // Make sure the path is explicitly rooted
-                throw new ConfigurationErrorsException();
-            }
         }
     }
 }

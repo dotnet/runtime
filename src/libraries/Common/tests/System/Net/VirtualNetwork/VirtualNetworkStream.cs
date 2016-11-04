@@ -68,7 +68,7 @@ namespace System.Net.Test.Common
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            // No-op.
         }
 
         public override void SetLength(long value)

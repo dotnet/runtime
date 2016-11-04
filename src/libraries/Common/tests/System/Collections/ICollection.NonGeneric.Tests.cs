@@ -79,6 +79,12 @@ namespace System.Collections.Tests
         protected virtual bool ICollection_NonGeneric_SupportsSyncRoot => true;
 
         /// <summary>
+        /// Used for ICollection_NonGeneric_SyncRoot tests. Some implementations (e.g. TempFileCollection)
+        /// return null for the SyncRoot property of an ICollection.
+        /// </summary>
+        protected virtual bool ICollection_NonGeneric_HasNullSyncRoot => false;
+
+        /// <summary>
         /// Used for the ICollection_NonGeneric_SyncRootType_MatchesExcepted test. Most SyncRoots are created
         /// using System.Threading.Interlocked.CompareExchange(ref _syncRoot, new Object(), null)
         /// so we should test that the SyncRoot is the type we expect.
@@ -135,25 +141,33 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_SyncRoot_NonNull(int count)
+        public void ICollection_NonGeneric_SyncRoot(int count)
         {
+            ICollection collection = NonGenericICollectionFactory(count);
             if (ICollection_NonGeneric_SupportsSyncRoot)
             {
-                ICollection collection = NonGenericICollectionFactory(count);
-                Assert.NotNull(collection.SyncRoot);
-            }
-        }
+                Assert.Equal(ICollection_NonGeneric_HasNullSyncRoot, collection.SyncRoot == null);
+                Assert.Same(collection.SyncRoot, collection.SyncRoot);
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_SyncRootConsistent(int count)
-        {
-            if (ICollection_NonGeneric_SupportsSyncRoot)
+                if (!ICollection_NonGeneric_HasNullSyncRoot)
+                {
+                    Assert.IsType(ICollection_NonGeneric_SyncRootType, collection.SyncRoot);
+
+                    if (ICollection_NonGeneric_SyncRootType == collection.GetType())
+                    {
+                        // If we expect the SyncRoot to be the same type as the collection, 
+                        // the SyncRoot should be the same as the collection (e.g. HybridDictionary)
+                        Assert.Same(collection, collection.SyncRoot);
+                    }
+                    else
+                    {
+                        Assert.NotSame(collection, collection.SyncRoot);
+                    }
+                }
+            }
+            else
             {
-                ICollection collection = NonGenericICollectionFactory(count);
-                object syncRoot1 = collection.SyncRoot;
-                object syncRoot2 = collection.SyncRoot;
-                Assert.Same(syncRoot1, syncRoot2);
+                Assert.Throws<NotSupportedException>(() => collection.SyncRoot);
             }
         }
 
@@ -161,45 +175,11 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_SyncRootUnique(int count)
         {
-            if (ICollection_NonGeneric_SupportsSyncRoot)
+            if (ICollection_NonGeneric_SupportsSyncRoot && !ICollection_NonGeneric_HasNullSyncRoot)
             {
                 ICollection collection1 = NonGenericICollectionFactory(count);
                 ICollection collection2 = NonGenericICollectionFactory(count);
                 Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_SyncRoot_MatchesExpectedType(int count)
-        {
-            if (ICollection_NonGeneric_SupportsSyncRoot)
-            {
-                ICollection collection = NonGenericICollectionFactory(count);
-
-                Assert.IsType(ICollection_NonGeneric_SyncRootType, collection.SyncRoot);
-
-                if (ICollection_NonGeneric_SyncRootType == collection.GetType())
-                {
-                    // If we expect the SyncRoot to be the same type as the collection, 
-                    // the SyncRoot should be the same as the collection (e.g. HybridDictionary)
-                    Assert.Same(collection, collection.SyncRoot);
-                }
-                else
-                {
-                    Assert.NotSame(collection, collection.SyncRoot);
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_SyncRoot_ThrowsNotSupportedException(int count)
-        {
-            if (!ICollection_NonGeneric_SupportsSyncRoot)
-            {
-                ICollection collection = NonGenericICollectionFactory(count);
-                Assert.Throws<NotSupportedException>(() => collection.SyncRoot);
             }
         }
 

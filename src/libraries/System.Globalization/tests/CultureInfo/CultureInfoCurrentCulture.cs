@@ -12,7 +12,6 @@ namespace System.Globalization.Tests
     public class CurrentCultureTests : RemoteExecutorTestBase
     {
         [Fact]
-        [ActiveIssue(11381, Xunit.PlatformID.AnyUnix)]
         public void CurrentCulture()
         {
             RemoteInvoke(() =>
@@ -39,7 +38,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11381, Xunit.PlatformID.AnyUnix)]
         public void CurrentUICulture()
         {
             RemoteInvoke(() =>
@@ -102,7 +100,7 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentUICulture = null);
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData("en-US.UTF-8", "en-US")]
         [InlineData("en-US", "en-US")]
@@ -130,7 +128,7 @@ namespace System.Globalization.Tests
             }, expectedCultureName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData("")]
         [InlineData(null)]

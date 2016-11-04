@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -64,7 +63,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileAttributes.ReadOnly)]
         [InlineData(FileAttributes.Normal)]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void UnixAttributeSetting(FileAttributes attr)
         {
             var test = new FileInfo(GetTestFilePath());
@@ -83,7 +82,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.Normal)]
         [InlineData(FileAttributes.Temporary)]
         [InlineData(FileAttributes.ReadOnly | FileAttributes.Hidden)]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAttributeSetting(FileAttributes attr)
         {
             var test = new FileInfo(GetTestFilePath());
@@ -100,7 +99,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.SparseFile)]
         [InlineData(FileAttributes.ReparsePoint)]
         [InlineData(FileAttributes.Compressed)]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void UnixInvalidAttributes(FileAttributes attr)
         {
             var path = GetTestFilePath();
@@ -115,7 +114,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.SparseFile)]
         [InlineData(FileAttributes.ReparsePoint)]
         [InlineData(FileAttributes.Compressed)]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsInvalidAttributes(FileAttributes attr)
         {
             var path = GetTestFilePath();

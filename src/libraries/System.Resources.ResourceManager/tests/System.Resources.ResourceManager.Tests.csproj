@@ -1,19 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Resources.ResourceManager.Tests</AssemblyName>
     <RootNamespace>System.Resources.Tests</RootNamespace>
     <ProjectGuid>{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
     <Compile Include="NeutralResourcesLanguageAttributeTests.cs" />
@@ -24,6 +21,27 @@
       <DependentUpon>TestResx.resx</DependentUpon>
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == '' ">
+    <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
+      <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="MissingManifestResourceExceptionTests.netstandard17.cs"/>
+    <Compile Include="MissingSatelliteAssemblyException.cs"/>
+    <Compile Include="ResourceManagerTests.netstandard17.cs" />
+    <Compile Include="ResourceSetTests.cs" />
+    <EmbeddedResource Include="Resources\TestResx.netstandard17.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>TestResx.netstandard17.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Compile Include="Resources\TestResx.netstandard17.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TestResx.netstandard17.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../pkg/System.Resources.ResourceManager.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">

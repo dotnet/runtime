@@ -237,59 +237,19 @@ namespace System.Reflection.PortableExecutable
             return _peDirectoriesBuilder;
         }
 
-        private IEnumerable<Blob> GetContentToSign(BlobBuilder peImage)
-        {
-            // Signed content includes 
-            // - PE header without its alignment padding
-            // - all sections including their alignment padding and excluding strong name signature blob
-
-            int remainingHeader = Header.ComputeSizeOfPeHeaders(GetSections().Length);
-            foreach (var blob in peImage.GetBlobs())
-            {
-                if (remainingHeader > 0)
-                {
-                    int length = Math.Min(remainingHeader, blob.Length);
-                    yield return new Blob(blob.Buffer, blob.Start, length);
-                    remainingHeader -= length;
-                }
-                else if (blob.Buffer == _lazyStrongNameSignature.Buffer)
-                {
-                    yield return new Blob(blob.Buffer, blob.Start, _lazyStrongNameSignature.Start - blob.Start);
-                    yield return new Blob(blob.Buffer, _lazyStrongNameSignature.Start + _lazyStrongNameSignature.Length, blob.Length - _lazyStrongNameSignature.Length);
-                }
-                else
-                {
-                    yield return new Blob(blob.Buffer, blob.Start, blob.Length);
-                }
-            }
-        }
-
         public void Sign(BlobBuilder peImage, Func<IEnumerable<Blob>, byte[]> signatureProvider)
         {
             if (peImage == null)
             {
-                throw new ArgumentNullException(nameof(peImage));
+                Throw.ArgumentNull(nameof(peImage));
             }
 
             if (signatureProvider == null)
             {
-                throw new ArgumentNullException(nameof(signatureProvider));
+                Throw.ArgumentNull(nameof(signatureProvider));
             }
 
-            var content = GetContentToSign(peImage);
-            byte[] signature = signatureProvider(content);
-
-            // signature may be shorter (the rest of the reserved space is padding):
-            if (signature == null || signature.Length > _lazyStrongNameSignature.Length)
-            {
-                throw new InvalidOperationException(SR.SignatureProviderReturnedInvalidSignature);
-            }
-
-            // TODO: Native csc also calculates and fills checksum in the PE header
-            // Using MapFileAndCheckSum() from imagehlp.dll.
-
-            var writer = new BlobWriter(_lazyStrongNameSignature);
-            writer.WriteBytes(signature);
+            Sign(peImage, _lazyStrongNameSignature, signatureProvider);
         }
     }
 }

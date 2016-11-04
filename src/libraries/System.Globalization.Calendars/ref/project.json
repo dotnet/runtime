@@ -1,13 +1,9 @@
 {
   "dependencies": {
-    "System.Globalization": "4.0.0",
-    "System.Runtime": "4.3.0-beta-24522-03"
+    "System.Globalization": "4.0.11",
+    "System.Runtime": "4.4.0-beta-24703-01"
   },
   "frameworks": {
-    "netstandard1.7": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal static readonly Type s_typeofUInt64 = typeof(ulong);
         internal static readonly Type s_typeofObject = typeof(object);
         internal static readonly Type s_typeofSystemVoid = typeof(void);
-        internal static readonly Assembly s_urtAssembly = s_typeofString.GetTypeInfo().Assembly;
+        internal static readonly Assembly s_urtAssembly = s_typeofString.Assembly;
         internal static readonly string s_urtAssemblyString = s_urtAssembly.FullName;
 
         // Arrays
@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static InternalPrimitiveTypeE ToCode(Type type) =>
                 type == null ? ToPrimitiveTypeEnum(TypeCode.Empty) :
-                type.GetTypeInfo().IsPrimitive ? ToPrimitiveTypeEnum(type.GetTypeCode()) :
+                type.IsPrimitive ? ToPrimitiveTypeEnum(Type.GetTypeCode(type)) :
                 ReferenceEquals(type, s_typeofDateTime) ? InternalPrimitiveTypeE.DateTime :
                 ReferenceEquals(type, s_typeofTimeSpan) ? InternalPrimitiveTypeE.TimeSpan :
                 ReferenceEquals(type, s_typeofDecimal) ? InternalPrimitiveTypeE.Decimal :
@@ -157,7 +157,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     if (objectInfo == null)
                     {
                         typeName = type.FullName;
-                        nameSpaceEnum = type.GetTypeInfo().Assembly == s_urtAssembly ? InternalNameSpaceE.UrtSystem : InternalNameSpaceE.UrtUser;
+                        nameSpaceEnum = type.Assembly == s_urtAssembly ? InternalNameSpaceE.UrtSystem : InternalNameSpaceE.UrtUser;
                     }
                     else
                     {

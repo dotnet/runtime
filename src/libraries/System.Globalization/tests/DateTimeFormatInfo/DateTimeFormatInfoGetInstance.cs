@@ -34,22 +34,16 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetInstance_NotNull_TestData))]
-        public void GetInstance(IFormatProvider provider)
+        public void GetInstance_NotNull(IFormatProvider provider)
         {
             Assert.NotNull(DateTimeFormatInfo.GetInstance(provider));
         }
 
-        public static IEnumerable<object[]> GetInstance_Specific_TestData()
+        [Fact]
+        public void GetInstance_ExpectedCurrent()
         {
-            yield return new object[] { null, DateTimeFormatInfo.CurrentInfo };
-            yield return new object[] { new TestIFormatProviderClass(), DateTimeFormatInfo.CurrentInfo };
-        }
-
-        [Theory]
-        [MemberData(nameof(GetInstance_Specific_TestData))]
-        public void GetInstance(IFormatProvider provider, DateTimeFormatInfo expected)
-        {
-            Assert.Equal(expected, DateTimeFormatInfo.GetInstance(provider));
+            Assert.Same(DateTimeFormatInfo.CurrentInfo, DateTimeFormatInfo.GetInstance(null));
+            Assert.Same(DateTimeFormatInfo.CurrentInfo, DateTimeFormatInfo.GetInstance(new TestIFormatProviderClass()));
         }
     }
 }

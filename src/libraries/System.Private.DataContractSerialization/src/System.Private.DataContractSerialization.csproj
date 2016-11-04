@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.DataContractSerialization</AssemblyName>
@@ -10,16 +10,16 @@
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
     <!-- We do not want to block reflection for this assembly -->
-    <BlockReflectionAttribute Condition="'$(TargetGroup)'=='netcore50aot'">false</BlockReflectionAttribute>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <BlockReflectionAttribute Condition="'$(TargetGroup)'=='uap101aot'">false</BlockReflectionAttribute>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>
@@ -47,8 +47,8 @@
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerSettings.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataMember.cs" />
     <Compile Include="$(RuntimeSerializationSources)\EnumDataContract.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\ExtensionDataObject.cs" Condition="$(NetNative)" />
-    <Compile Include="$(RuntimeSerializationSources)\ExtensionDataReader.cs" Condition="$(NetNative)" />
+    <Compile Include="$(RuntimeSerializationSources)\ExtensionDataObject.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ExtensionDataReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\Globals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\GenericParameterDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\HybridObjectCache.cs" />
@@ -73,7 +73,6 @@
     <Compile Include="$(RuntimeSerializationSources)\SerializationMode.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\TypeCode.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\ExceptionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />
@@ -105,10 +104,8 @@
     <Compile Include="$(XmlSources)\XmlDictionaryReaderQuotas.cs" />
     <Compile Include="$(XmlSources)\XmlDictionaryString.cs" />
     <Compile Include="$(XmlSources)\XmlExceptionHelper.cs" />
-    <Compile Include="$(XmlSources)\XmlNodeReader.cs" />
     <Compile Include="$(XmlSources)\XmlNodeWriter.cs" />
     <Compile Include="$(XmlSources)\XmlStreamNodeWriter.cs" />
-    <Compile Include="$(XmlSources)\XmlSchemaSet.cs" />
     <Compile Include="$(XmlSources)\XmlUTF8TextReader.cs" />
     <Compile Include="$(XmlSources)\XmlUTF8TextWriter.cs" />
     <Compile Include="$(XmlSources)\EncodingStreamWrapper.cs" />
@@ -146,15 +143,22 @@
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
     <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
+    <Compile Include="System\Runtime\Serialization\DataContractSet.cs" />
+    <Compile Include="System\Runtime\Serialization\ExportOptions.cs" />
+    <Compile Include="System\Runtime\Serialization\IExtensibleDataObject.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatWriter.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionReader.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionClassWriter.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\SchemaHelper.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationOption.cs" />
+    <Compile Include="System\Runtime\Serialization\XPathQueryGenerator.cs" />
+    <Compile Include="System\Runtime\Serialization\XsdDataContractExporter.cs" />
+    <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib.Augments" />
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>

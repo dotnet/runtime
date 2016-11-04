@@ -145,6 +145,8 @@ namespace System.Net.Security
             }
         }
 
+        public bool IsShutdown { get; internal set; }
+
         internal void CheckThrow(bool authSucessCheck)
         {
         }
@@ -170,6 +172,16 @@ namespace System.Net.Security
 
         internal void EndProcessAuthentication(IAsyncResult result)
         {
+        }
+
+        internal IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void EndShutdown(IAsyncResult asyncResult)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -245,22 +257,22 @@ namespace System.Net.Security
             throw new NotImplementedException();
         }
 
-        internal IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             throw new NotImplementedException();
         }
 
-        internal int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult)
         {
             throw new NotImplementedException();
         }
 
-        internal IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             throw new NotImplementedException();
         }
 
-        internal void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
             throw new NotImplementedException();
         }

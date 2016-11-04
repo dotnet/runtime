@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <AssemblyName>System.Net.Http.Unit.Tests</AssemblyName>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -41,23 +41,14 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>ProductionCode\Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
-      <Link>ProductionCode\Common\System\Net\HttpVersion.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
+      <Link>ProductionCode\Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\HttpEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\HttpEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Internal\ICloneable.cs">
-      <Link>ProductionCode\Internal\ICloneable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailAddress.cs</Link>
@@ -272,6 +263,9 @@
     <Compile Include="..\..\src\System\Net\Http\MultipartFormDataContent.cs">
       <Link>ProductionCode\System\Net\Http\MultipartFormDataContent.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\NetEventSource.Http.cs">
+      <Link>ProductionCode\System\Net\Http\NetEventSource.Http.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\StreamContent.cs">
       <Link>ProductionCode\System\Net\Http\StreamContent.cs</Link>
     </Compile>
@@ -342,6 +336,14 @@
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != ''">
+    <Compile Include="..\..\src\Internal\ICloneable.cs">
+      <Link>ProductionCode\Internal\ICloneable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

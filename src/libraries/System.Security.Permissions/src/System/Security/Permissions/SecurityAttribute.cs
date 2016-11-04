@@ -4,12 +4,13 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
-    public abstract partial class SecurityAttribute : System.Attribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
+    public abstract partial class SecurityAttribute : Attribute
     {
-        protected SecurityAttribute(System.Security.Permissions.SecurityAction action) { }
-        public System.Security.Permissions.SecurityAction Action { get; set; }
+        protected SecurityAttribute(SecurityAction action) { }
+        public SecurityAction Action { get; set; }
         public bool Unrestricted { get; set; }
-        public abstract System.Security.IPermission CreatePermission();
+        public abstract IPermission CreatePermission();
     }
 }

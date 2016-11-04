@@ -4,18 +4,19 @@
 
 namespace System.Security.Permissions
 {
-    public sealed partial class StrongNameIdentityPermission : System.Security.CodeAccessPermission
+    [Serializable]
+    public sealed partial class StrongNameIdentityPermission : CodeAccessPermission
     {
-        public StrongNameIdentityPermission(System.Security.Permissions.PermissionState state) { }
-        public StrongNameIdentityPermission(System.Security.Permissions.StrongNamePublicKeyBlob blob, string name, System.Version version) { }
+        public StrongNameIdentityPermission(PermissionState state) { }
+        public StrongNameIdentityPermission(StrongNamePublicKeyBlob blob, string name, Version version) { }
         public string Name { get; set; }
-        public System.Security.Permissions.StrongNamePublicKeyBlob PublicKey { get; set; }
-        public System.Version Version { get; set; }
-        public override System.Security.IPermission Copy() { return this; }
+        public StrongNamePublicKeyBlob PublicKey { get; set; }
+        public Version Version { get; set; }
+        public override IPermission Copy() { return this; }
         public override void FromXml(SecurityElement e) { }
-        public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return default(IPermission); }
+        public override bool IsSubsetOf(IPermission target) { return false; }
         public override SecurityElement ToXml() { return default(SecurityElement); }
-        public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
+        public override IPermission Union(IPermission target) { return default(IPermission); }
     }
 }

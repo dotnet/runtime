@@ -7,10 +7,10 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class MatchCollectionTests
+    public static partial class MatchCollectionTests
     {
         [Fact]
-        public void GetEnumerator()
+        public static void GetEnumerator()
         {
             Regex regex = new Regex("e");
             MatchCollection matches = regex.Matches("dotnet");
@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void GetEnumerator_Invalid()
+        public static void GetEnumerator_Invalid()
         {
             Regex regex = new Regex("e");
             MatchCollection matches = regex.Matches("dotnet");
@@ -48,7 +48,15 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        public static void Item_Get()
+        {
+            MatchCollection collection = CreateCollection();
+            Assert.Equal("t", collection[0].ToString());
+            Assert.Equal("t", collection[1].ToString());
+        }
+
+        [Fact]
+        public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             Regex regex = new Regex("e");
             MatchCollection matches = regex.Matches("dotnet");
@@ -57,20 +65,21 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ICollection_Properties()
+        public static void ICollection_Properties()
         {
             Regex regex = new Regex("e");
             MatchCollection matches = regex.Matches("dotnet");
             ICollection collection = matches;
 
             Assert.False(collection.IsSynchronized);
+            Assert.NotNull(collection.SyncRoot);
             Assert.Same(matches, collection.SyncRoot);
         }
 
         [Theory]
         [InlineData(0)]
         [InlineData(5)]
-        public void ICollection_CopyTo(int index)
+        public static void ICollection_CopyTo(int index)
         {
             Regex regex = new Regex("e");
             MatchCollection matches = regex.Matches("dotnet");
@@ -90,7 +99,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ICollection_CopyTo_Invalid()
+        public static void ICollection_CopyTo_Invalid()
         {
             Regex regex = new Regex("e");
             ICollection collection = regex.Matches("dotnet");
@@ -112,5 +121,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentException>("", () => collection.CopyTo(new object[collection.Count], 1));
             Assert.Throws<ArgumentException>("", () => collection.CopyTo(new object[collection.Count + 1], 2));
         }
+
+        private static MatchCollection CreateCollection() => new Regex("t").Matches("dotnet");
     }
 }

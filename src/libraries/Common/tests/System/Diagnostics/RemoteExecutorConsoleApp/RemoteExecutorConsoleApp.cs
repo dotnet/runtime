@@ -57,7 +57,7 @@ namespace RemoteExecutorConsoleApp
                 Console.Error.WriteLine("Type: {0}", t);
                 Console.Error.WriteLine("Method: {0}", mi);
                 Console.Error.WriteLine("Exception: {0}", exc);
-                return -2;
+                throw exc;
             }
             finally
             {

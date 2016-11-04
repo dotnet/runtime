@@ -162,6 +162,12 @@
   <data name="net_uri_BadFormat" xml:space="preserve">
     <value>Invalid URI: The format of the URI could not be determined.</value>
   </data>
+  <data name="net_uri_NeedFreshParser" xml:space="preserve">
+    <value>The URI parser instance passed into 'uriParser' parameter is already registered with the scheme name '{0}'.</value>
+  </data>
+  <data name="net_uri_AlreadyRegistered" xml:space="preserve">
+    <value>A URI scheme name '{0}' already has a registered custom parser.</value>
+  </data>
   <data name="net_uri_BadHostName" xml:space="preserve">
     <value>Invalid URI: The hostname could not be parsed.</value>
   </data>

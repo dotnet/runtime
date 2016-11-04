@@ -423,7 +423,7 @@ namespace System.Xml.Xsl.XPath
         {
             CheckString(lang);
             CheckNodeNotRtf(context);
-            return XsltInvokeEarlyBound(QName("lang"),
+            return XsltInvokeEarlyBound(QName(nameof(lang)),
                 XsltMethods.Lang, T.BooleanX, new QilNode[] { lang, context }
             );
         }

@@ -425,6 +425,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
+        [ActiveIssue(13064)]
         public static void ReturningANonPooledBufferOfDifferentSizeToThePoolThrows()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);

@@ -1328,7 +1328,7 @@ public class ChecksumWriter : TextWriter
         _nPosition++;
     }
 
-    public void Close()
+    override public void Close()
     {
         _nPosition = 0;
         _dResult = 0;
@@ -1418,7 +1418,7 @@ public class BufferWriter : TextWriter
         _rgchBuffer[_nBufferUsed++] = ch;
     }
 
-    public void Close()
+    override public void Close()
     {
         //Set nBufferUsed to 0, so we start writing from the beginning of the buffer.
         _nBufferUsed = 0;

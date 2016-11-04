@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(~PlatformID.OSX)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public void Socket_LingerState_Upper_Boundaries_CorrectBehavior()
         {
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -56,7 +56,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void Socket_LingerState_Upper_Boundaries_CorrectBehavior_OSX()
         {
             // The upper bound for linger time is drastically different on OS X.

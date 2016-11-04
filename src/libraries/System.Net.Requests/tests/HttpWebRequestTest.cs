@@ -23,11 +23,12 @@ namespace System.Net.Tests
         private WebHeaderCollection _savedResponseHeaders = null;
         private Exception _savedRequestStreamException = null;
         private Exception _savedResponseException = null;
+
         private int _requestStreamCallbackCallCount = 0;
         private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
+        public readonly static object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
 
         public HttpWebRequestTest(ITestOutputHelper output)
         {
@@ -110,6 +111,7 @@ namespace System.Net.Tests
             Assert.True(request.AllowReadStreamBuffering);
         }
 
+        [ActiveIssue(12637)]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(Uri remoteServer)
         {
@@ -333,7 +335,7 @@ namespace System.Net.Tests
             {
                 strContent = sr.ReadToEnd();
             }
-            Assert.True(strContent.Contains("\"Host\": \"" + Configuration.Http.Host + "\""));
+            Assert.True(strContent.Contains("\"Host\": \"" + System.Net.Test.Common.Configuration.Http.Host + "\""));
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -360,7 +362,7 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.UseDefaultCredentials = true;
-            WebResponse response = await request.GetResponseAsync();
+            await request.GetResponseAsync();
         }
 
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
@@ -375,10 +377,11 @@ namespace System.Net.Tests
         }
 
         public static object[][] StatusCodeServers = {
-            new object[] { Configuration.Http.StatusCodeUri(false, 404) },
-            new object[] { Configuration.Http.StatusCodeUri(true, 404) },
+            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(false, 404) },
+            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(true, 404) },
         };
 
+        [ActiveIssue(12236, TestPlatforms.Linux)]
         [Theory, MemberData(nameof(StatusCodeServers))]
         public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException(Uri remoteServer)
         {
@@ -456,7 +459,7 @@ namespace System.Net.Tests
         public async Task SimpleScenario_UseGETVerb_Success(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
             String responseBody;
             using (var sr = new StreamReader(responseStream))
@@ -478,7 +481,7 @@ namespace System.Net.Tests
                 requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
             }
 
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
 
             Stream responseStream = response.GetResponseStream();
             String responseBody;
@@ -495,8 +498,8 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
             request.ContentType = "application/json";
-            
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
             String responseBody;
             using (var sr = new StreamReader(responseStream))

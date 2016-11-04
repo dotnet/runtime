@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'=='' AND ('$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5')">Windows_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}</ProjectGuid>
     <AssemblyName>System.Runtime.Extensions</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5' Or '$(TargetGroup)'=='net462' Or '$(TargetGroup)'=='netcore50' Or '$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard15aot'">4.1.1.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net462'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.Extensions.depproj</ContractProject>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -15,39 +15,36 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <TargetsWindowsUap Condition="'$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='netcore50aot'">true</TargetsWindowsUap>
+    <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
+    <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.5_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.5_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.5_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.5_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard15aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard15aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard15aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard15aot_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.5'">
-    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
-  </ItemGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
-  <!-- Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\AppDomain.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <ContractProject Include="..\ref\System.Runtime.Extensions.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
+    <Compile Include="System\AppDomain.cs" />
+    <Compile Include="System\Context.cs" />
+    <Compile Include="System\AppDomainUnloadedException.cs" />
+    <Compile Include="System\ApplicationId.cs" />
+    <Compile Include="System\CannotUnloadAppDomainException.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Environment.cs" />
@@ -58,7 +55,14 @@
     <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
+    <Compile Include="System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
+    <Compile Include="System\Runtime\Versioning\ComponentGuaranteesOptions.cs" />
+    <Compile Include="System\Runtime\Versioning\ResourceExposureAttribute.cs" />
+    <Compile Include="System\Runtime\Versioning\ResourceScope.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelper.cs" />
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
@@ -83,10 +87,14 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
       <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\Environment.Windows.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
@@ -101,6 +109,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
@@ -155,7 +166,7 @@
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: Win32 -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetsWindowsUap)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463' and '$(TargetsWindowsUap)' != 'true'">
     <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
@@ -277,6 +288,7 @@
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelper.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
@@ -293,6 +305,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Access.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
@@ -360,42 +375,38 @@
     <Compile Include="System\Environment.Uap.cs" />
     <Compile Include="System\IO\Path.Uap.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
-    <Compile Include="System\Random.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetsWindowsUap)' == 'true'" />
-    <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetsWindowsUap)' != 'true'" />
+    <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
+      <Aliases>System_Security_Principal</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net462' Or '$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <TargetingPackReference Include="System.Private.Interop" />
-    <!-- can remove once we remove the Environment reflection workaround -->
-    <TargetingPackReference Include="System.Private.Reflection" />
-    <TargetingPackReference Include="System.Private.Threading" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" Condition="'$(TargetGroup)' == 'netcore50aot'" />
-    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
-      <TargetGroup>netcore50aot</TargetGroup>
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.depproj">
+      <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
-      <TargetGroup>netstandard13aot</TargetGroup>
-    </ProjectReference>
-    <ValidateIgnoreReference Include="@(TargetingPackReference)" Condition="'$(TargetGroup)' == 'netstandard15aot'" />
-    <ValidateIgnoreReference Include="System.Private.Uri" Condition="'$(TargetGroup)' == 'netstandard15aot'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

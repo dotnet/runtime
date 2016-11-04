@@ -13,7 +13,7 @@
     <CLSCompliant>false</CLSCompliant>
     <!-- rev'ed to 1.4.1 so that we can drop pre-release down to beta -->
     <DefineConstants>$(DefineConstants)</DefineConstants>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.1;portable-net45+win8</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
@@ -126,9 +126,8 @@
     <Compile Include="System\Reflection\Metadata\Signatures\ArrayShape.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ISZArrayTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ISignatureTypeProvider.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\ITypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ISimpleTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\SignatureTypeKind.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\IPrimitiveTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\IConstructedTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\SignatureDecoder.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\MethodSignature.cs" />
@@ -236,7 +235,6 @@
     <Compile Include="System\Reflection\PortableExecutable\DirectoryEntry.cs" />
     <Compile Include="System\Reflection\PortableExecutable\Machine.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBinaryReader.cs" />
-    <Compile Include="System\Reflection\PortableExecutable\PEFileConstants.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEFileFlags.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeader.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaders.cs" />

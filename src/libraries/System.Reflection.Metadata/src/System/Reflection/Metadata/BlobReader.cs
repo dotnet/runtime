@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
         /// <summary>An array containing the '\0' character.</summary>
         private static readonly char[] s_nullCharArray = new char[1] { '\0' };
 
-        internal const int InvalidCompressedInteger = Int32.MaxValue;
+        internal const int InvalidCompressedInteger = int.MaxValue;
 
         private readonly MemoryBlock _block;
 
@@ -90,9 +90,25 @@ namespace System.Reflection.Metadata
         public int Length => _block.Length;
 
         /// <summary>
-        /// Offset from start of underlying memory block to current position.
+        /// Gets or sets the offset from start of the blob to the current position.
         /// </summary>
-        public int Offset => (int)(_currentPointer - _block.Pointer);
+        /// <exception cref="BadImageFormatException">Offset is set outside the bounds of underlying reader.</exception>
+        public int Offset
+        {
+            get
+            {
+                return (int)(_currentPointer - _block.Pointer);
+            }
+            set
+            {
+                if (unchecked((uint)value) > (uint)_block.Length)
+                {
+                    Throw.OutOfBounds();
+                }
+
+                _currentPointer = _block.Pointer + value;
+            }
+        }
 
         /// <summary>
         /// Bytes remaining from current position to end of underlying memory block.
@@ -105,37 +121,6 @@ namespace System.Reflection.Metadata
         public void Reset()
         {
             _currentPointer = _block.Pointer;
-        }
-
-        /// <summary>
-        /// Repositions the reader to the given offset from the start of the underlying memory block.
-        /// </summary>
-        /// <exception cref="BadImageFormatException">Offset is outside the bounds of underlying reader.</exception>
-        public void SeekOffset(int offset)
-        {
-            if (!TrySeekOffset(offset))
-            {
-                Throw.OutOfBounds();
-            }
-        }
-
-        internal bool TrySeekOffset(int offset)
-        {
-            if (unchecked((uint)offset) >= (uint)_block.Length)
-            {
-                return false;
-            }
-
-            _currentPointer = _block.Pointer + offset;
-            return true;
-        }
-
-        /// <summary>
-        /// Repositions the reader forward by the given number of bytes.
-        /// </summary>
-        public void SkipBytes(int count)
-        {
-            GetCurrentPointerAndAdvance(count);
         }
 
         /// <summary>
@@ -343,6 +328,22 @@ namespace System.Reflection.Metadata
         public SignatureHeader ReadSignatureHeader()
         {
             return new SignatureHeader(ReadByte());
+        }
+
+        /// <summary>
+        /// Finds specified byte in the blob following the current position.
+        /// </summary>
+        /// <returns>
+        /// Index relative to the current position, or -1 if the byte is not found in the blob following the current position.
+        /// </returns>
+        /// <remarks>
+        /// Doesn't change the current position.
+        /// </remarks>
+        public int IndexOf(byte value)
+        {
+            int start = Offset;
+            int absoluteIndex = _block.IndexOfUnchecked(value, start);
+            return (absoluteIndex >= 0) ? absoluteIndex - start : -1;
         }
 
         /// <summary>

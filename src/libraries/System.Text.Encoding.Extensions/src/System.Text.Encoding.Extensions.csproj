@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Text.Encoding.Extensions</AssemblyName>
@@ -18,8 +18,8 @@
     <ProjectLockJson>netcore50aot/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net463'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net463'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

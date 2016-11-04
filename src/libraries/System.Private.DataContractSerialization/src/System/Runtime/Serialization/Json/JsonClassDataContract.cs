@@ -85,7 +85,7 @@ namespace System.Runtime.Serialization.Json
 #if NET_NATIVE
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract).ClassWriterDelegate;
+                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract)?.ClassWriterDelegate;
                                 tempDelegate = tempDelegate ?? new ReflectionJsonFormatWriter().ReflectionWriteClass;
 
                                 if (tempDelegate == null)

@@ -4,71 +4,71 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies that the designer for a class belongs to a certain category.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class DesignerCategoryAttribute : Attribute
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a component marked with this category uses a
         ///       component designer. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerCategoryAttribute Component = new DesignerCategoryAttribute("Component");
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a component marked with this category cannot use a visual
         ///       designer. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerCategoryAttribute Default = new DesignerCategoryAttribute();
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a component marked with this category uses a form designer.
         ///       This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerCategoryAttribute Form = new DesignerCategoryAttribute("Form");
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a component marked with this category uses a generic designer.
         ///       This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerCategoryAttribute Generic = new DesignerCategoryAttribute("Designer");
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignerCategoryAttribute'/> class with the
         ///       default category.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DesignerCategoryAttribute()
         {
             Category = string.Empty;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignerCategoryAttribute'/> class with
         ///       the given category name.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DesignerCategoryAttribute(string category)
         {
             Category = category;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of the category.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public string Category { get; }
 
         public override bool Equals(object obj)
@@ -85,6 +85,19 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return Category.GetHashCode();
+        }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Category.Equals(DesignerCategoryAttribute.Default.Category);
+        }
+
+        public override object TypeId
+        {
+            get
+            {
+                return base.GetType().FullName + Category;
+            }
         }
     }
 }

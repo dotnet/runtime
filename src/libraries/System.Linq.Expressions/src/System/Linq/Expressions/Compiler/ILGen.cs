@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
@@ -49,7 +48,7 @@ namespace System.Linq.Expressions.Compiler
                     il.Emit(OpCodes.Ldarg_3);
                     break;
                 default:
-                    if (index <= Byte.MaxValue)
+                    if (index <= byte.MaxValue)
                     {
                         il.Emit(OpCodes.Ldarg_S, (byte)index);
                     }
@@ -65,7 +64,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(index >= 0);
 
-            if (index <= Byte.MaxValue)
+            if (index <= byte.MaxValue)
             {
                 il.Emit(OpCodes.Ldarga_S, (byte)index);
             }
@@ -79,7 +78,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(index >= 0);
 
-            if (index <= Byte.MaxValue)
+            if (index <= byte.MaxValue)
             {
                 il.Emit(OpCodes.Starg_S, (byte)index);
             }
@@ -789,19 +788,19 @@ namespace System.Linq.Expressions.Compiler
         {
             bool isFromUnsigned = TypeUtils.IsUnsigned(typeFrom);
             bool isFromFloatingPoint = TypeUtils.IsFloatingPoint(typeFrom);
-            if (typeTo == typeof(Single))
+            if (typeTo == typeof(float))
             {
                 if (isFromUnsigned)
                     il.Emit(OpCodes.Conv_R_Un);
                 il.Emit(OpCodes.Conv_R4);
             }
-            else if (typeTo == typeof(Double))
+            else if (typeTo == typeof(double))
             {
                 if (isFromUnsigned)
                     il.Emit(OpCodes.Conv_R_Un);
                 il.Emit(OpCodes.Conv_R8);
             }
-            else if (typeTo == typeof(Decimal))
+            else if (typeTo == typeof(decimal))
             {
                 // NB: TypeUtils.IsImplicitNumericConversion makes the promise that implicit conversions
                 //     from various integral types and char to decimal are possible. Coalesce allows the
@@ -1148,17 +1147,17 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitDecimal(this ILGenerator il, decimal value)
         {
-            if (Decimal.Truncate(value) == value)
+            if (decimal.Truncate(value) == value)
             {
-                if (Int32.MinValue <= value && value <= Int32.MaxValue)
+                if (int.MinValue <= value && value <= int.MaxValue)
                 {
-                    int intValue = Decimal.ToInt32(value);
+                    int intValue = decimal.ToInt32(value);
                     il.EmitInt(intValue);
                     il.EmitNew(Decimal_Ctor_Int32);
                 }
-                else if (Int64.MinValue <= value && value <= Int64.MaxValue)
+                else if (long.MinValue <= value && value <= long.MaxValue)
                 {
-                    long longValue = Decimal.ToInt64(value);
+                    long longValue = decimal.ToInt64(value);
                     il.EmitLong(longValue);
                     il.EmitNew(Decimal_Ctor_Int64);
                 }
@@ -1175,7 +1174,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitDecimalBits(this ILGenerator il, decimal value)
         {
-            int[] bits = Decimal.GetBits(value);
+            int[] bits = decimal.GetBits(value);
             il.EmitInt(bits[0]);
             il.EmitInt(bits[1]);
             il.EmitInt(bits[2]);
@@ -1237,11 +1236,11 @@ namespace System.Linq.Expressions.Compiler
                     break;
 
                 case TypeCode.Single:
-                    il.Emit(OpCodes.Ldc_R4, default(Single));
+                    il.Emit(OpCodes.Ldc_R4, default(float));
                     break;
 
                 case TypeCode.Double:
-                    il.Emit(OpCodes.Ldc_R8, default(Double));
+                    il.Emit(OpCodes.Ldc_R8, default(double));
                     break;
 
                 case TypeCode.Decimal:

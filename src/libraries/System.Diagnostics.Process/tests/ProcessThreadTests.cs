@@ -31,9 +31,10 @@ namespace System.Diagnostics.Tests
                     Assert.True(thread.TotalProcessorTime.TotalSeconds >= 0);
                 }
             }
-            catch (Win32Exception)
+            catch (Exception e) when (e is Win32Exception || e is InvalidOperationException)
             {
-                // Win32Exception is thrown when getting threadinfo fails. 
+                // Win32Exception is thrown when getting threadinfo fails, or
+                // InvalidOperationException if it fails because the thread already exited.
             }
         }
 
@@ -61,7 +62,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void TestStartTimeProperty_OSX()
         {
             using (Process p = Process.GetCurrentProcess())
@@ -78,7 +79,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/974
-        [PlatformSpecific(~PlatformID.OSX)] // OSX throws PNSE from StartTime
+        [PlatformSpecific(~TestPlatforms.OSX)] // OSX throws PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
             TimeSpan allowedWindow = TimeSpan.FromSeconds(1);

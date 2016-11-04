@@ -150,17 +150,8 @@
   <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
     <value>Accessor methods for the {0} property are missing.</value>
   </data>
-  <data name="ErrorPropertyAccessorException" xml:space="preserve">
-    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
-  </data>
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
-  </data>
-  <data name="InvalidNullArgument" xml:space="preserve">
-   <value>Null is not a valid value for {0}.</value> 
-  </data>
-  <data name="MetaExtenderName" xml:space="preserve">
-   <value>{0} on {1}</value> 
   </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
@@ -224,5 +215,179 @@
   </data>
   <data name="TimerSynchronizingObject" xml:space="preserve">
     <value>The object used to marshal the event handler calls issued when an interval has elapsed.</value>
+  </data>
+  <data name="Async_AsyncEventArgs_Cancelled" xml:space="preserve">
+    <value>True if operation was cancelled.</value>
+  </data>
+  <data name="Async_AsyncEventArgs_Error" xml:space="preserve">
+    <value>Exception that occurred during operation.  Null if no error.</value>
+  </data>
+  <data name="Async_AsyncEventArgs_UserState" xml:space="preserve">
+    <value>User-supplied state to identify operation.</value>
+  </data>
+  <data name="Async_ExceptionOccurred" xml:space="preserve">
+    <value>An exception occurred during the operation, making the result invalid.  Check InnerException for exception details.</value>
+  </data> 
+  <data name="Async_OperationCancelled" xml:space="preserve">
+    <value>Operation has been cancelled.</value>
+  </data> 
+  <data name="Async_OperationAlreadyCompleted" xml:space="preserve">
+    <value>This operation has already had OperationCompleted called on it and further calls are illegal.</value>
+  </data> 
+  <data name="Async_ProgressChangedEventArgs_ProgressPercentage" xml:space="preserve">
+    <value>Percentage progress made in operation.</value>
+  </data> 
+  <data name="Async_ProgressChangedEventArgs_UserState" xml:space="preserve">
+    <value>User-supplied state to identify operation.</value>
+  </data> 
+  <data name="Async_NullDelegate" xml:space="preserve">
+    <value>A non-null SendOrPostCallback must be supplied.</value>
+  </data>
+  <data name="ISupportInitializeDescr" xml:space="preserve">
+    <value>Specifies support for transacted initialization.</value>
+  </data>
+  <data name="BackgroundWorker_Desc" xml:space="preserve">
+    <value>Executes an operation on a separate thread.</value>
+  </data>
+  <data name="BackgroundWorker_CancellationPending" xml:space="preserve">
+    <value>Has the user attempted to cancel the operation? To be accessed from DoWork event handler.</value>
+  </data>
+  <data name="BackgroundWorker_IsBusy" xml:space="preserve">
+    <value>Is the worker still currently working on a background operation?</value>
+  </data>
+  <data name="BackgroundWorker_ProgressChanged" xml:space="preserve">
+    <value>Raised when the worker thread indicates that some progress has been made.</value>
+  </data>
+  <data name="BackgroundWorker_WorkerDoesntReportProgress" xml:space="preserve">
+    <value>This BackgroundWorker states that it doesn't report progress. Modify WorkerReportsProgress to state that it does report progress.</value>
+  </data>
+  <data name="BackgroundWorker_RunWorkerCompleted" xml:space="preserve">
+    <value>Raised when the worker has completed (either through success, failure, or cancellation).</value>
+  </data>
+  <data name="BackgroundWorker_WorkerReportsProgress" xml:space="preserve">
+    <value>Whether the worker will report progress.</value>
+  </data>
+  <data name="BackgroundWorker_WorkerSupportsCancellation" xml:space="preserve">
+    <value>Whether the worker supports cancellation.</value>
+  </data>
+  <data name="PropertyCategoryAsynchronous" xml:space="preserve">
+    <value>Asynchronous</value>
+  </data>
+  <data name="BackgroundWorker_DoWorkEventArgs_Argument" xml:space="preserve">
+    <value>Argument passed into the worker handler from BackgroundWorker.RunWorkerAsync.</value>
+  </data>
+  <data name="BackgroundWorker_DoWorkEventArgs_Result" xml:space="preserve">
+    <value>Result from the worker function.</value>
+  </data>
+  <data name="ToolboxItemAttributeFailedGetType" xml:space="preserve">
+    <value>Failed to create ToolboxItem of type: {0}</value>
+  </data>
+  <data name="BackgroundWorker_WorkerDoesntSupportCancellation" xml:space="preserve">
+    <value>This BackgroundWorker states that it doesn't support cancellation. Modify WorkerSupportsCancellation to state that it does support cancellation.</value>
+  </data>
+  <data name="BackgroundWorker_WorkerAlreadyRunning" xml:space="preserve">
+    <value>This BackgroundWorker is currently busy and cannot run multiple tasks concurrently.</value>
+  </data>
+  <data name="PropertyTabAttributeBadPropertyTabScope" xml:space="preserve">
+    <value>Scope must be PropertyTabScope.Document or PropertyTabScope.Component</value>
+  </data>
+  <data name="PropertyTabAttributeTypeLoadException" xml:space="preserve">
+    <value>Couldn't find type {0}</value>
+  </data>
+  <data name="PropertyTabAttributeArrayLengthMismatch" xml:space="preserve">
+    <value>tabClasses must have the same number of items as tabScopes</value>
+  </data>
+  <data name="PropertyTabAttributeParamsBothNull" xml:space="preserve">
+    <value>An array of tab type names or tab types must be specified</value>
+  </data>
+  <data name="CultureInfoConverterDefaultCultureString" xml:space="preserve">
+    <value>(Default)</value>
+  </data>
+  <data name="CultureInfoConverterInvalidCulture" xml:space="preserve">
+    <value>The {0} culture cannot be converted to a CultureInfo object on this computer.</value>
+  </data> 
+  <data name="ErrorInvalidServiceInstance" xml:space="preserve">
+    <value>The service instance must derive from or implement {0}.</value>
+  </data>
+  <data name="ErrorServiceExists" xml:space="preserve">
+    <value>The service {0} already exists in the service container.</value>
+  </data>
+  <data name="ErrorBadExtenderType" xml:space="preserve">
+    <value>The {0} extender provider is not compatible with the {1} type.</value>
+  </data>
+  <data name="InvalidArgument" xml:space="preserve">
+    <value>'{1}' is not a valid value for '{0}'.</value>
+  </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for {0}.</value>
+  </data>
+  <data name="DuplicateComponentName" xml:space="preserve">
+    <value>Duplicate component name '{0}'.  Component names must be unique and case-insensitive.</value>
+  </data>
+  <data name="MaskedTextProviderPasswordAndPromptCharError" xml:space="preserve">
+    <value>The PasswordChar and PromptChar values cannot be the same.</value>
+  </data>
+  <data name="MaskedTextProviderInvalidCharError" xml:space="preserve">
+    <value>The specified character value is not allowed for this property.</value>
+  </data>
+  <data name="MaskedTextProviderMaskNullOrEmpty" xml:space="preserve">
+    <value>The Mask value cannot be null or empty.</value>
+  </data>
+  <data name="MaskedTextProviderMaskInvalidChar" xml:space="preserve">
+    <value>The specified mask contains invalid characters.</value>
+  </data>
+  <data name="InstanceDescriptorCannotBeStatic" xml:space="preserve">
+    <value>Parameter cannot be static.</value>
+  </data>
+  <data name="InstanceDescriptorMustBeStatic" xml:space="preserve">
+    <value>Parameter must be static.</value>
+  </data>
+  <data name="InstanceDescriptorMustBeReadable" xml:space="preserve">
+    <value>Parameter must be readable.</value>
+  </data>
+  <data name="InstanceDescriptorLengthMismatch" xml:space="preserve">
+    <value>Length mismatch.</value>
+  </data>
+  <data name="MetaExtenderName" xml:space="preserve">
+    <value>{0} on {1}</value>
+  </data>
+  <data name="CantModifyListSortDescriptionCollection" xml:space="preserve">
+    <value>Once a ListSortDescriptionCollection has been created it can't be modified.</value>
+  </data>
+  <data name="LicExceptionTypeOnly" xml:space="preserve">
+    <value>A valid license cannot be granted for the type {0}. Contact the manufacturer of the component for more information.</value>
+  </data>
+  <data name="LicExceptionTypeAndInstance" xml:space="preserve">
+    <value>An instance of type '{1}' was being created, and a valid license could not be granted for the type '{0}'. Please,  contact the manufacturer of the component for more information.</value>
+  </data>
+  <data name="LicMgrContextCannotBeChanged" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager is currently locked and cannot be changed.</value>
+  </data>
+  <data name="LicMgrAlreadyLocked" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager is already locked by another user.</value>
+  </data>
+  <data name="LicMgrDifferentUser" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager can only be unlocked with the same contextUser.</value>
+  </data>
+  <data name="CollectionConverterText" xml:space="preserve">
+    <value>(Collection)</value>
+  </data>
+  <data name="InstanceCreationEditorDefaultText" xml:space="preserve">
+    <value>(New...)</value>
+  </data>
+  <data name="InvalidEnumArgument" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data> 
+  <data name="ErrorPropertyAccessorException" xml:space="preserve">
+    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
+  </data>
+  <data name="CHECKOUTCanceled" xml:space="preserve">
+    <value>The checkout was canceled by the user.</value>
+  </data> 
+   <data name="toStringNone" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+   <data name="MemberRelationshipService_RelationshipNotSupported" xml:space="preserve">
+    <value>Relationships between {0}.{1} and {2}.{3} are not supported.</value>
   </data>
 </root>

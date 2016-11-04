@@ -32,7 +32,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
-                    SR.ArgumentIsNullOrWhitespace, "name"));
+                    SR.ArgumentIsNullOrWhitespace, nameof(name)));
             }
 
             _name = name;
@@ -74,7 +74,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
-                        SR.ArgumentIsNullOrWhitespace, "value"));
+                        SR.ArgumentIsNullOrWhitespace, nameof(value)));
                 }
 
                 _typeName = value;

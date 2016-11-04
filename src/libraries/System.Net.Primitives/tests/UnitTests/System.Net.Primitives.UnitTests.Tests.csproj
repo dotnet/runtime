@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -12,7 +12,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>169,649</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -28,9 +28,10 @@
     <Compile Include="CookieCollectionTest.cs" />
     <Compile Include="CookieContainerTest.cs" />
     <Compile Include="CookieInternalTest.cs" />
-    <Compile Include="Fakes\GlobalLog.cs" />
     <Compile Include="Fakes\HostInformation.cs" />
     <Compile Include="Fakes\IPAddressPal.cs" />
+    <Compile Include="Fakes\CookieException.cs" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != ''"/>
     <Compile Include="..\..\src\System\Net\Cookie.cs">
       <Link>ProductionCode\System\Net\Cookie.cs</Link>
     </Compile>
@@ -39,9 +40,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\CookieCollection.cs">
       <Link>ProductionCode\System\Net\CookieCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\CookieException.cs">
-      <Link>ProductionCode\System\Net\CookieException.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
@@ -92,11 +90,8 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>ProductionCode\Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>

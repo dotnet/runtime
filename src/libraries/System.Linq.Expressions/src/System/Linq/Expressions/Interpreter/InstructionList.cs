@@ -50,17 +50,16 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public InstructionList.DebugView.InstructionView[]/*!*/ A0
+            public InstructionList.DebugView.InstructionView[]/*!*/ A0 => GetInstructionViews(includeDebugCookies: true);
+
+            public InstructionList.DebugView.InstructionView[] GetInstructionViews(bool includeDebugCookies = false)
             {
-                get
-                {
-                    return InstructionList.DebugView.GetInstructionViews(
-                        _array.Instructions,
-                        _array.Objects,
-                        (index) => _array.Labels[index].Index,
-                        _array.DebugCookies
-                    );
-                }
+                return InstructionList.DebugView.GetInstructionViews(
+                    _array.Instructions,
+                    _array.Objects,
+                    (index) => _array.Labels[index].Index,
+                    includeDebugCookies ? _array.DebugCookies : null
+                );
             }
         }
         #endregion
@@ -95,29 +94,28 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public InstructionView[]/*!*/ A0
+            public InstructionView[]/*!*/ A0 => GetInstructionViews(includeDebugCookies: true);
+
+            public InstructionView[] GetInstructionViews(bool includeDebugCookies = false)
             {
-                get
-                {
-                    return GetInstructionViews(
+                return GetInstructionViews(
                         _list._instructions,
                         _list._objects,
                         (index) => _list._labels[index].TargetIndex,
-                        _list._debugCookies
+                        includeDebugCookies ? _list._debugCookies : null
                     );
-                }
             }
 
-            internal static InstructionView[] GetInstructionViews(IList<Instruction> instructions, IList<object> objects,
-                Func<int, int> labelIndexer, IList<KeyValuePair<int, object>> debugCookies)
+            internal static InstructionView[] GetInstructionViews(IReadOnlyList<Instruction> instructions, IReadOnlyList<object> objects,
+                Func<int, int> labelIndexer, IReadOnlyList<KeyValuePair<int, object>> debugCookies)
             {
                 var result = new List<InstructionView>();
                 int index = 0;
                 int stackDepth = 0;
                 int continuationsDepth = 0;
 
-                var cookieEnumerator = (debugCookies != null ? debugCookies : new KeyValuePair<int, object>[0]).GetEnumerator();
-                var hasCookie = cookieEnumerator.MoveNext();
+                IEnumerator<KeyValuePair<int, object>> cookieEnumerator = (debugCookies ?? Array.Empty<KeyValuePair<int, object>>()).GetEnumerator();
+                bool hasCookie = cookieEnumerator.MoveNext();
 
                 for (int i = 0, n = instructions.Count; i < n; i++)
                 {
@@ -243,30 +241,12 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
-        public int Count
-        {
-            get { return _instructions.Count; }
-        }
+        public int Count => _instructions.Count;
+        public int CurrentStackDepth => _currentStackDepth;
+        public int CurrentContinuationsDepth => _currentContinuationsDepth;
+        public int MaxStackDepth => _maxStackDepth;
 
-        public int CurrentStackDepth
-        {
-            get { return _currentStackDepth; }
-        }
-
-        public int CurrentContinuationsDepth
-        {
-            get { return _currentContinuationsDepth; }
-        }
-
-        public int MaxStackDepth
-        {
-            get { return _maxStackDepth; }
-        }
-
-        internal Instruction GetInstruction(int index)
-        {
-            return _instructions[index];
-        }
+        internal Instruction GetInstruction(int index) => _instructions[index];
 
 #if STATS
         private static Dictionary<string, int> _executedInstructions = new Dictionary<string, int>();
@@ -341,7 +321,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoad(object value)
         {
-            EmitLoad(value, null);
+            EmitLoad(value, type: null);
         }
 
         public void EmitLoad(bool value)
@@ -429,7 +409,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (instruction != null)
             {
-                var newInstruction = instruction.BoxIfIndexMatches(index);
+                Instruction newInstruction = instruction.BoxIfIndexMatches(index);
                 if (newInstruction != null)
                 {
                     _instructions[instructionIndex] = newInstruction;

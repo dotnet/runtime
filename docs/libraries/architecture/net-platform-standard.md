@@ -236,7 +236,7 @@ In order to support platforms that implement a subset of the reference assemblie
 }
 ```
 
-The above `project.json` will cause NuGet to do a compatibiltiy check, enforcing that an implementation assembly for `System.AppContext` can be found on **.NET Banana 1.0**. If this dependency check fails, you have 2 options:
+The above `project.json` will cause NuGet to do a compatibility check, enforcing that an implementation assembly for `System.AppContext` can be found on **.NET Banana 1.0**. If this dependency check fails, you have 2 options:
 
 1. Don't support **.NET Banana 1.0**
 2. Multi-target for **.NET Banana 1.0** by adding that framework **explicitly** (this is only supported in xproj today) and use the platform-specific alternative to the `System.AppContext` API (if one exists).

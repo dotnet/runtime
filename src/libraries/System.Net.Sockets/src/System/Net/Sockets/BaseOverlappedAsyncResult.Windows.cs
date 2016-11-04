@@ -27,12 +27,7 @@ namespace System.Net.Sockets
             : base(socket, asyncState, asyncCallback)
         {
             _cleanupCount = 1;
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print(
-                    "BaseOverlappedAsyncResult#" + LoggingHash.HashString(this) +
-                    "(Socket#" + LoggingHash.HashString(socket) + ")");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, socket);
         }
 
         internal SafeNativeOverlapped NativeOverlapped
@@ -70,22 +65,15 @@ namespace System.Net.Sockets
             {
                 NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped(s_ioCallback, this, objectsToPin);
                 _nativeOverlapped = new SafeNativeOverlapped(s.SafeHandle, overlapped);
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print(
-                        "BaseOverlappedAsyncResult#" + LoggingHash.HashString(this) +
-                        "::boundHandle#" + LoggingHash.HashString(boundHandle) +
-                        "::AllocateNativeOverlapped. Return=" +
-                        _nativeOverlapped.DangerousGetHandle().ToString("x"));
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{boundHandle}::AllocateNativeOverlapped. return={_nativeOverlapped}");
             }
         }
 
         private unsafe static void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
 #if DEBUG
-            GlobalLog.SetThreadSource(ThreadKinds.CompletionPort);
-            using (GlobalLog.SetThreadKind(ThreadKinds.System))
+            DebugThreadTracking.SetThreadSource(ThreadKinds.CompletionPort);
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.System))
             {
 #endif
                 BaseOverlappedAsyncResult asyncResult = (BaseOverlappedAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
@@ -94,20 +82,9 @@ namespace System.Net.Sockets
 
                 if (asyncResult.InternalPeekCompleted)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|asyncResult.IsCompleted", LoggingHash.HashString(asyncResult));
-                    }                
-                    Debug.Fail("BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback()|asyncResult.IsCompleted");
+                    NetEventSource.Fail(null, $"asyncResult.IsCompleted: {asyncResult}");
                 }
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print(
-                        "BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback" +
-                        " errorCode:" + errorCode.ToString() +
-                        " numBytes:" + numBytes.ToString() +
-                        " pOverlapped:" + ((int)nativeOverlapped).ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:{errorCode} numBytes:{numBytes} nativeOverlapped:{(IntPtr)nativeOverlapped}");
 
                 // Complete the IO and invoke the user's callback.
                 SocketError socketError = (SocketError)errorCode;
@@ -147,21 +124,12 @@ namespace System.Net.Sockets
                                 socketError = (SocketError)Marshal.GetLastWin32Error();
                                 if (socketError == 0)
                                 {
-                                    if (GlobalLog.IsEnabled)
-                                    {
-                                        GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|socketError:0 numBytes:{1}", LoggingHash.HashString(asyncResult), numBytes);
-                                    }
-                                    Debug.Fail("BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback()|socketError:0 numBytes:" + numBytes);
+                                    NetEventSource.Fail(asyncResult, $"socketError:0 numBytes:{numBytes}");
                                 }
                             }
-
                             if (success)
                             {
-                                if (GlobalLog.IsEnabled)
-                                {
-                                    GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|Unexpectedly succeeded. errorCode:{1} numBytes:{2}", LoggingHash.HashString(asyncResult), errorCode, numBytes);
-                                }
-                                Debug.Fail("BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback()|Unexpectedly succeeded. errorCode:" + errorCode + " numBytes: " + numBytes);
+                                NetEventSource.Fail(asyncResult, $"Unexpectedly succeeded. errorCode:{errorCode} numBytes:{numBytes}");
                             }
                         }
                         catch (ObjectDisposedException)
@@ -218,13 +186,7 @@ namespace System.Net.Sockets
         protected virtual void ForceReleaseUnmanagedStructures()
         {
             // Free the unmanaged memory if allocated.
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print(
-                    "BaseOverlappedAsyncResult#" + LoggingHash.HashString(this) +
-                    "::ForceReleaseUnmanagedStructures");
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _nativeOverlapped.Dispose();
             _nativeOverlapped = null;
             GC.SuppressFinalize(this);

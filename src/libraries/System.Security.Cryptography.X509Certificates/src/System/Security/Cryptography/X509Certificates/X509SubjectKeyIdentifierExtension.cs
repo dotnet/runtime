@@ -126,6 +126,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by RFC3280")]
         private static byte[] ComputeSha1(byte[] data)
         {
             using (SHA1 sha1 = SHA1.Create())

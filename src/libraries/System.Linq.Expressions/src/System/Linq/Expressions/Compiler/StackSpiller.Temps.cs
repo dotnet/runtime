@@ -7,12 +7,13 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
+using System.Reflection;
 
 namespace System.Linq.Expressions.Compiler
 {
     internal partial class StackSpiller
     {
-        private class TempMaker
+        private sealed class TempMaker
         {
             /// <summary>
             /// Current temporary variable
@@ -34,10 +35,7 @@ namespace System.Linq.Expressions.Compiler
             /// </summary>
             private List<ParameterExpression> _temps = new List<ParameterExpression>();
 
-            internal List<ParameterExpression> Temps
-            {
-                get { return _temps; }
-            }
+            internal List<ParameterExpression> Temps => _temps;
 
             internal ParameterExpression Temp(Type type)
             {
@@ -56,7 +54,7 @@ namespace System.Linq.Expressions.Compiler
                     }
                 }
                 // Not on the free-list, create a brand new one.
-                temp = Expression.Variable(type, "$temp$" + _temp++);
+                temp = ParameterExpression.Make(type, "$temp$" + _temp++, isByRef: false);
                 _temps.Add(temp);
                 return UseTemp(temp);
             }
@@ -127,11 +125,12 @@ namespace System.Linq.Expressions.Compiler
         /// the original expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.
         /// </summary>
-        private class ChildRewriter
+        private sealed class ChildRewriter
         {
             private readonly StackSpiller _self;
             private readonly Expression[] _expressions;
             private int _expressionsCount;
+            private int _lastSpillIndex;
             private List<Expression> _comma;
             private RewriteAction _action;
             private Stack _stack;
@@ -158,11 +157,16 @@ namespace System.Linq.Expressions.Compiler
                 _action |= exp.Action;
                 _stack = Stack.NonEmpty;
 
+                if (exp.Action == RewriteAction.SpillStack)
+                {
+                    _lastSpillIndex = _expressionsCount;
+                }
+
                 // track items in case we need to copy or spill stack
                 _expressions[_expressionsCount++] = exp.Node;
             }
 
-            internal void Add(IList<Expression> expressions)
+            internal void Add(ReadOnlyCollection<Expression> expressions)
             {
                 for (int i = 0, count = expressions.Count; i < count; i++)
                 {
@@ -188,14 +192,15 @@ namespace System.Linq.Expressions.Compiler
                     if (_action == RewriteAction.SpillStack)
                     {
                         Expression[] clone = _expressions;
-                        int count = clone.Length;
+                        int count = _lastSpillIndex + 1;
                         List<Expression> comma = new List<Expression>(count + 1);
                         for (int i = 0; i < count; i++)
                         {
-                            if (clone[i] != null)
+                            Expression current = clone[i];
+                            if (ShouldSaveToTemp(current))
                             {
                                 Expression temp;
-                                clone[i] = _self.ToTemp(clone[i], out temp);
+                                clone[i] = _self.ToTemp(current, out temp);
                                 comma.Add(temp);
                             }
                         }
@@ -205,15 +210,69 @@ namespace System.Linq.Expressions.Compiler
                 }
             }
 
-            internal bool Rewrite
+            private static bool ShouldSaveToTemp(Expression expression)
             {
-                get { return _action != RewriteAction.None; }
+                if (expression == null)
+                    return false;
+
+                // Some expressions have no side-effects and don't have to be
+                // stored into temporaries, e.g.
+                //
+                //     xs[0] = try { ... }
+                //           |
+                //           v
+                //        t0 = xs
+                //        t1 = 0            // <-- this is redundant
+                //        t2 = try { ... }
+                //    t0[t1] = t2
+                //           |
+                //           v
+                //        t0 = xs
+                //        t1 = try { ... }
+                //     t0[0] = t1
+
+                switch (expression.NodeType)
+                {
+                    // Emits ldnull, ldc, initobj, closure constant access, etc.
+                    case ExpressionType.Constant:
+                    case ExpressionType.Default:
+                        return false;
+
+                    // Emits calls to pure RuntimeOps methods with immutable arguments
+                    case ExpressionType.RuntimeVariables:
+                        return false;
+
+                    case ExpressionType.MemberAccess:
+                        var member = (MemberExpression)expression;
+                        var field = member.Member as FieldInfo;
+                        if (field != null)
+                        {
+                            // Emits ldc for the raw value of the field
+                            if (field.IsLiteral)
+                                return false;
+
+                            // For read-only fields we could save the receiver, but
+                            // that's more involved, so we'll just handle static fields
+                            if (field.IsInitOnly && field.IsStatic)
+                                return false;
+                        }
+                        break;
+                }
+
+                // NB: We omit Lambda because it may interfere with the Invoke/Lambda
+                //     inlining optimizations. Parameter is out too because we don't
+                //     have any sophisticated load/store analysis.
+
+                // NB: We omit Quote because the emitted call to RuntimeOps.Quote will
+                //     trigger reduction of extension nodes which can cause the timing
+                //     of exceptions thrown from Reduce methods to change.
+
+                return true;
             }
 
-            internal RewriteAction Action
-            {
-                get { return _action; }
-            }
+            internal bool Rewrite => _action != RewriteAction.None;
+
+            internal RewriteAction Action => _action;
 
             internal Result Finish(Expression expr)
             {
@@ -285,7 +344,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         [Conditional("DEBUG")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private void VerifyTemps()
         {
             _tm.VerifyTemps();
@@ -310,7 +369,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private static Expression MakeBlock(params Expression[] expressions)
         {
-            return MakeBlock((IList<Expression>)expressions);
+            return MakeBlock((IReadOnlyList<Expression>)expressions);
         }
 
         /// <summary>
@@ -318,7 +377,7 @@ namespace System.Linq.Expressions.Compiler
         /// This should not be used for rewriting BlockExpression itself, or
         /// anything else that supports jumping.
         /// </summary>
-        private static Expression MakeBlock(IList<Expression> expressions)
+        private static Expression MakeBlock(IReadOnlyList<Expression> expressions)
         {
             return new SpilledExpressionBlock(expressions);
         }
@@ -330,7 +389,7 @@ namespace System.Linq.Expressions.Compiler
     /// </summary>
     internal sealed class SpilledExpressionBlock : BlockN
     {
-        internal SpilledExpressionBlock(IList<Expression> expressions)
+        internal SpilledExpressionBlock(IReadOnlyList<Expression> expressions)
             : base(expressions)
         {
         }

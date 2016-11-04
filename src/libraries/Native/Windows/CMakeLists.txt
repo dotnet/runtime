@@ -5,7 +5,7 @@ SET (CMAKE_C_FLAGS_INIT                     "/W0 /FC")
 SET (CMAKE_C_FLAGS_DEBUG_INIT               "/Od /Zi")
 SET (CMAKE_C_FLAGS_RELEASE_INIT             "/Ox")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
-set(CMAKE_ASM_MASM_FLAGS                    "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
+SET (CMAKE_ASM_MASM_FLAGS                   "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
 
 # CXX Compiler flags
 SET (CMAKE_CXX_FLAGS                        "-std=c++11")
@@ -18,7 +18,8 @@ SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT    "/O2 /Zi")
 SET (CMAKE_INSTALL_PREFIX                   $ENV{__CMakeBinDir})
 SET (CMAKE_INCLUDE_CURRENT_DIR              ON)
 SET (CMAKE_SHARED_LIBRARY_PREFIX            "")
-  
+SET (__LinkArgs $ENV{__LinkArgs})
+
 # Force an out of source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
@@ -53,11 +54,18 @@ add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler 
 if ($ENV{__BuildArch} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
-if(NOT $ENV{__BuildArch} STREQUAL "arm64")
-    # enable control-flow-guard support for native components for non-Arm64 builds
-    add_compile_options(/guard:cf) 
-    set(__LinkArgs "${__LinkArgs} /guard:cf")
+
+if ($ENV{__BuildArch} STREQUAL "arm")
+    if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
+	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
+      else()
+	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+      endif()
 endif ()
+
+# enable control-flow-guard support for native components
+add_compile_options(/guard:cf) 
+set(__LinkArgs "${__LinkArgs} /guard:cf")
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
@@ -79,6 +87,18 @@ else()
     set(__LinkLibraries "${__LinkLibraries} libvcruntimed.lib")
     set(STATIC_UCRT_LIB "libucrtd.lib")
     set(DYNAMIC_UCRT_LIB "ucrtd.lib")
+endif()
+
+# App-Container builds require a more specific linking to ensure the APIs imported pass WACK
+if ($ENV{__appContainer} STREQUAL true AND UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
+    set(__LinkCustomCRT true)
+    set(__LinkArgs "${__LinkArgs} /LTCG")
+endif()
+
+if (__LinkCustomCRT STREQUAL "true" AND $ENV{__BuildArch} STREQUAL "arm" )
+    set(__LinkArgs "${__LinkArgs} /DEFAULTLIB:ole32.lib")
+elseif(__LinkCustomCRT STREQUAL "true" AND NOT $ENV{__BuildArch} STREQUAL "arm" )
+    set(__LinkArgs "${__LinkArgs} /NODEFAULTLIB")
 endif()
 
 # Linker flags

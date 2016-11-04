@@ -491,12 +491,15 @@ namespace System.IO.Compression
                 }
 
                 _mode = mode;
-                _archiveStream = stream;
+                if (mode == ZipArchiveMode.Create && !stream.CanSeek)
+                    _archiveStream = new PositionPreservingWriteOnlyStreamWrapper(stream);
+                else
+                    _archiveStream = stream;
                 _archiveStreamOwner = null;
                 if (mode == ZipArchiveMode.Create)
                     _archiveReader = null;
                 else
-                    _archiveReader = new BinaryReader(stream);
+                    _archiveReader = new BinaryReader(_archiveStream);
                 _entries = new List<ZipArchiveEntry>();
                 _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
                 _entriesDictionary = new Dictionary<String, ZipArchiveEntry>();

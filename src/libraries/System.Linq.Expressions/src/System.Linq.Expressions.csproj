@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- Enabling the interpreter for RC1 in all builds, see https://github.com/dotnet/corefx/issues/4033 -->
@@ -40,10 +40,13 @@
     <TargetingPackReference Include="System.Private.CoreLib.DynamicDelegate" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" Condition="'$(TargetGroup)'!=''">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
@@ -97,6 +100,9 @@
     <Compile Include="System\Dynamic\Utils\ExpressionVisitorUtils.cs" />
     <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
+    <Compile Include="System\Linq\Expressions\Common\ArrayBuilderExtensions.cs" />
+    <Compile Include="System\Linq\Expressions\Common\ConstantCheck.cs" />
+    <Compile Include="System\Linq\Expressions\Common\CachedReflectionInfo.cs" />
     <Compile Include="System\Linq\Expressions\BinaryExpression.cs" />
     <Compile Include="System\Linq\Expressions\BlockExpression.cs" />
     <Compile Include="System\Linq\Expressions\CatchBlock.cs" />
@@ -144,10 +150,55 @@
     <Compile Include="System\Linq\Expressions\StackGuard.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
-    <Compile Include="System\Linq\Expressions\Common\ConstantCheck.cs" />
-    <Compile Include="System\Linq\Expressions\Common\CachedReflectionInfo.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariables.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeOps.MergedRuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
+    <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
+    <Compile Include="System\Linq\Expressions\Expression.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\TypeInfoExtensions.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSite.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSiteBinder.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSiteOps.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSiteHelpers.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DynamicAttribute.cs" />
+    <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
+    <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
+    <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs" />
+    <Compile Include="System\Dynamic\DynamicMetaObjectBinder.cs" />
+    <Compile Include="System\Dynamic\DynamicMetaObject.cs" />
+    <Compile Include="System\Dynamic\IDynamicMetaObjectProvider.cs" />
+    <Compile Include="System\Dynamic\BindingRestrictions.cs" />
+    <Compile Include="System\Dynamic\BinaryOperationBinder.cs" />
+    <Compile Include="System\Dynamic\CallInfo.cs" />
+    <Compile Include="System\Dynamic\ExpandoObject.cs" />
+    <Compile Include="System\Dynamic\ExpandoClass.cs" />
+    <Compile Include="System\Dynamic\ConvertBinder.cs" />
+    <Compile Include="System\Dynamic\CreateInstanceBinder.cs" />
+    <Compile Include="System\Dynamic\DeleteIndexBinder.cs" />
+    <Compile Include="System\Dynamic\DeleteMemberBinder.cs" />
+    <Compile Include="System\Dynamic\DynamicObject.cs" />
+    <Compile Include="System\Dynamic\GetIndexBinder.cs" />
+    <Compile Include="System\Dynamic\GetMemberBinder.cs" />
+    <Compile Include="System\Dynamic\InvokeBinder.cs" />
+    <Compile Include="System\Dynamic\InvokeMemberBinder.cs" />
+    <Compile Include="System\Dynamic\SetIndexBinder.cs" />
+    <Compile Include="System\Dynamic\SetMemberBinder.cs" />
+    <Compile Include="System\Dynamic\UnaryOperationBinder.cs" />
+    <Compile Include="System\Dynamic\IInvokeOnGetBinder.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.6'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
+      <Link>Common\System\NonSerializedAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' And '$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\ReferenceEqualityComparer.cs">
@@ -195,20 +246,26 @@
       <Link>Common\System\Dynamic\Utils\DelegateHelpers.cs</Link>
     </Compile>
     <Compile Include="System\Linq\Expressions\Interpreter\AddInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\AndInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ArrayOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\BranchLabel.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\CallInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\CallInstruction.Generated.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ControlFlowInstructions.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\DecrementInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\DefaultValueInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\DivInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\EqualInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\ExclusiveOrInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\FieldOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\GreaterThanInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\IncrementInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Instruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\InstructionList.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\InterpretedFrame.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Interpreter.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LabelInfo.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\LeftShiftInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LessThanInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightCompiler.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightDelegateCreator.cs" />
@@ -217,8 +274,15 @@
     <Compile Include="System\Linq\Expressions\Interpreter\LocalAccess.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LocalVariables.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\MulInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\NegateInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\NewInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NotEqualInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\NotInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NumericConvertInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\NullCheckInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\OrInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\OnesComplementInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\RightShiftInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\RuntimeVariables.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\StackOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\SubInstruction.cs" />

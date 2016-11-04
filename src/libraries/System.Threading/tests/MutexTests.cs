@@ -58,7 +58,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void Ctor_NameUsedByOtherSynchronizationPrimitive_Windows()
         {
@@ -113,7 +113,7 @@ namespace System.Threading.Tests
             Assert.False(Mutex.TryOpenExisting(name, out ignored));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
         {

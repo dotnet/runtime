@@ -14,7 +14,6 @@ namespace System.Runtime.Serialization
     using System.Xml.Schema;
     using System.Security;
     using System.Linq;
-    using XmlSchemaType = System.Object;
 
 #if NET_NATIVE
     public delegate IXmlSerializable CreateXmlSerializableDelegate();
@@ -68,6 +67,13 @@ namespace System.Runtime.Serialization
             set
             { _helper.KnownDataContracts = value; }
         }
+
+        internal XmlSchemaType XsdType
+        {
+            get { return _helper.XsdType; }
+            set { _helper.XsdType = value; }
+        }
+
 
         internal bool IsAnonymous
         {
@@ -211,6 +217,7 @@ namespace System.Runtime.Serialization
             private XmlDictionaryString _topLevelElementNamespace;
             private bool _hasRoot;
             private CreateXmlSerializableDelegate _createXmlSerializable;
+            private XmlSchemaType _xsdType;
 
             internal XmlDataContractCriticalHelper()
             {
@@ -281,9 +288,15 @@ namespace System.Runtime.Serialization
                 { _knownDataContracts = value; }
             }
 
+            internal XmlSchemaType XsdType
+            {
+                get { return _xsdType; }
+                set { _xsdType = value; }
+            }
+
             internal bool IsAnonymous
             {
-                get { return false; }
+                get { return _xsdType != null; }
             }
 
             internal override bool HasRoot

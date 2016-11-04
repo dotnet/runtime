@@ -16,18 +16,12 @@ namespace System.Net
         {
             if (safeHandle.IsInvalid)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NegotiationInfoClass::.ctor() the handle is invalid:" + (safeHandle.DangerousGetHandle()).ToString("x"));
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Invalid handle:{safeHandle}");
                 return;
             }
 
             IntPtr packageInfo = safeHandle.DangerousGetHandle();
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8"));
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x}");
 
             if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE
                 || negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
@@ -39,10 +33,7 @@ namespace System.Net
                     name = Marshal.PtrToStringUni(unmanagedString);
                 }
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8") + " name:" + LoggingHash.ObjectToString(name));
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
 
                 // An optimization for future string comparisons.
                 if (string.Compare(name, Kerberos, StringComparison.OrdinalIgnoreCase) == 0)

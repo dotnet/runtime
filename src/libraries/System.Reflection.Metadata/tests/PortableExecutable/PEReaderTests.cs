@@ -204,7 +204,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetMethodBody_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Members, reader =>
@@ -228,7 +228,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetSectionData_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Members, ValidateSectionData);
@@ -389,27 +389,30 @@ namespace System.Reflection.PortableExecutable.Tests
             var peStream = new MemoryStream(PortablePdbs.DocumentsEmbeddedDll);
             using (var reader = new PEReader(peStream))
             {
-                var embeddedReader = reader.ReadEmbeddedPortablePdbDebugDirectoryData(reader.ReadDebugDirectory()[2]).GetMetadataReader();
-                var embeddedBytes = new BlobReader(embeddedReader.MetadataPointer, embeddedReader.MetadataLength).ReadBytes(embeddedReader.MetadataLength);
-                
-                string pathQueried = null;
-
-                Func<string, Stream> streamProvider = p =>
+                using (MetadataReaderProvider embeddedProvider = reader.ReadEmbeddedPortablePdbDebugDirectoryData(reader.ReadDebugDirectory()[2]))
                 {
-                    Assert.Null(pathQueried);
-                    pathQueried = p;
-                    return new MemoryStream(embeddedBytes);
-                };
+                    var embeddedReader = embeddedProvider.GetMetadataReader();
+                    var embeddedBytes = new BlobReader(embeddedReader.MetadataPointer, embeddedReader.MetadataLength).ReadBytes(embeddedReader.MetadataLength);
 
-                MetadataReaderProvider pdbProvider;
-                string pdbPath;
+                    string pathQueried = null;
 
-                Assert.True(reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), streamProvider, out pdbProvider, out pdbPath));
-                Assert.Equal(Path.Combine("pedir", "Documents.Embedded.pdb"), pathQueried);
+                    Func<string, Stream> streamProvider = p =>
+                    {
+                        Assert.Null(pathQueried);
+                        pathQueried = p;
+                        return new MemoryStream(embeddedBytes);
+                    };
 
-                Assert.Equal(Path.Combine("pedir", "Documents.Embedded.pdb"), pdbPath);
-                var pdbReader = pdbProvider.GetMetadataReader();
-                Assert.Equal(13, pdbReader.Documents.Count);
+                    MetadataReaderProvider pdbProvider;
+                    string pdbPath;
+
+                    Assert.True(reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), streamProvider, out pdbProvider, out pdbPath));
+                    Assert.Equal(Path.Combine("pedir", "Documents.Embedded.pdb"), pathQueried);
+
+                    Assert.Equal(Path.Combine("pedir", "Documents.Embedded.pdb"), pdbPath);
+                    var pdbReader = pdbProvider.GetMetadataReader();
+                    Assert.Equal(13, pdbReader.Documents.Count);
+                }
             }
         }
 
@@ -808,6 +811,8 @@ namespace System.Reflection.PortableExecutable.Tests
 
             pdbReader = embeddedPdbProvider.GetMetadataReader();
             Assert.Equal(13, pdbReader.Documents.Count);
+
+            embeddedPdbProvider.Dispose();
         }
     }
 }

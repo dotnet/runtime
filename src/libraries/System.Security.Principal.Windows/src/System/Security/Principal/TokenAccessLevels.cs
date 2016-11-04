@@ -4,6 +4,7 @@
 
 namespace System.Security.Principal
 {
+    [Serializable]
     [Flags]
     public enum TokenAccessLevels
     {

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System.Diagnostics
 {
     /// <devdoc>
@@ -11,7 +13,7 @@ namespace System.Diagnostics
     ///       returned from the System.Diagnostics.Process.ProcessThread property of the System.Diagnostics.Process component.
     ///    </para>
     /// </devdoc>
-    public partial class ProcessThread
+    public partial class ProcessThread : Component
     {
         private readonly bool _isRemoteMachine;
         private readonly int _processId;

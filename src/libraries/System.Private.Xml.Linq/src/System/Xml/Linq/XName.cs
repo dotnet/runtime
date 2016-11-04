@@ -3,14 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
+using System.Runtime.Serialization;
 
 namespace System.Xml.Linq
 {
     /// <summary>
     /// Represents a name of an XML element or attribute. This class cannot be inherited.
     /// </summary>
-    [SuppressMessage("Microsoft.Usage", "CA2229:ImplementSerializationConstructors", Justification = "Deserialization handled by NameSerializer.")]
-    public sealed class XName : IEquatable<XName>
+    [Serializable]
+    public sealed class XName : IEquatable<XName>, ISerializable
     {
         private XNamespace _ns;
         private string _localName;
@@ -180,6 +181,37 @@ namespace System.Xml.Linq
         bool IEquatable<XName>.Equals(XName other)
         {
             return (object)this == (object)other;
+        }
+
+        /// <summary>
+        /// Populates a <see cref="SerializationInfo"/> with the data needed to
+        /// serialize the <see cref="XName"/>
+        /// </summary>
+        /// <param name="info">The <see cref="SerializationInfo"/> to populate with data</param>
+        /// <param name="context">The destination for this serialization</param>
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
+            if (info == null) throw new ArgumentNullException(nameof(info));
+            info.AddValue("name", ToString());
+            info.SetType(typeof(NameSerializer));
+        }
+    }
+
+    [Serializable]
+    internal sealed class NameSerializer : IObjectReference, ISerializable
+    {
+        string _expandedName;
+
+        private NameSerializer(SerializationInfo info, StreamingContext context) {
+            if (info == null) throw new ArgumentNullException(nameof(info));
+            _expandedName = info.GetString("name");
+        }
+
+        object IObjectReference.GetRealObject(StreamingContext context) {
+            return XName.Get(_expandedName);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
+            throw new NotSupportedException(); // nop
         }
     }
 }

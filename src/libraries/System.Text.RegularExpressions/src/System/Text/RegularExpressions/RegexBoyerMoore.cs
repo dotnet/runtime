@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions
         private readonly int[] _positive;
         private readonly int[] _negativeASCII;
         private readonly int[][] _negativeUnicode;
-        private readonly String _pattern;
+        private readonly string _pattern;
         private readonly int _lowASCII;
         private readonly int _highASCII;
         private readonly bool _rightToLeft;
@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         /// Constructs a Boyer-Moore state machine for searching for the string
         /// pattern. The string must not be zero-length.
         /// </summary>
-        internal RegexBoyerMoore(String pattern, bool caseInsensitive, bool rightToLeft, CultureInfo culture)
+        internal RegexBoyerMoore(string pattern, bool caseInsensitive, bool rightToLeft, CultureInfo culture)
         {
             // Sorry, you just can't use Boyer-Moore to find an empty pattern.
             // We're doing this for your own protection. (Really, for speed.)
@@ -206,7 +206,7 @@ namespace System.Text.RegularExpressions
 
                         if (i == 0)
                         {
-                            System.Array.Copy(_negativeASCII, 0, newarray, 0, 128);
+                            Array.Copy(_negativeASCII, 0, newarray, 0, 128);
                             _negativeASCII = newarray;
                         }
 
@@ -241,14 +241,14 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                return (0 == String.CompareOrdinal(_pattern, 0, text, index, _pattern.Length));
+                return (0 == string.CompareOrdinal(_pattern, 0, text, index, _pattern.Length));
             }
         }
 
         /// <summary>
         /// When a regex is anchored, we can do a quick IsMatch test instead of a Scan
         /// </summary>
-        internal bool IsMatch(String text, int index, int beglimit, int endlimit)
+        internal bool IsMatch(string text, int index, int beglimit, int endlimit)
         {
             if (!_rightToLeft)
             {
@@ -274,7 +274,7 @@ namespace System.Text.RegularExpressions
         /// The direction and case-sensitivity of the match is determined
         /// by the arguments to the RegexBoyerMoore constructor.
         /// </summary>
-        internal int Scan(String text, int index, int beglimit, int endlimit)
+        internal int Scan(string text, int index, int beglimit, int endlimit)
         {
             int test;
             int test2;
@@ -373,13 +373,13 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Used when dumping for debugging.
         /// </summary>
-        public override String ToString()
+        public override string ToString()
         {
             return _pattern;
         }
 
 #if DEBUG
-        public String Dump(String indent)
+        public string Dump(string indent)
         {
             StringBuilder sb = new StringBuilder();
 

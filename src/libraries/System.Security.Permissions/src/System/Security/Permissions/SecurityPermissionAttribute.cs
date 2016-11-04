@@ -4,10 +4,11 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
-    public sealed partial class SecurityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
+    public sealed partial class SecurityPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public SecurityPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public bool Assertion { get; set; }
         public bool BindingRedirects { get; set; }
         public bool ControlAppDomain { get; set; }
@@ -17,12 +18,12 @@ namespace System.Security.Permissions
         public bool ControlPrincipal { get; set; }
         public bool ControlThread { get; set; }
         public bool Execution { get; set; }
-        public System.Security.Permissions.SecurityPermissionFlag Flags { get; set; }
+        public SecurityPermissionFlag Flags { get; set; }
         public bool Infrastructure { get; set; }
         public bool RemotingConfiguration { get; set; }
         public bool SerializationFormatter { get; set; }
         public bool SkipVerification { get; set; }
         public bool UnmanagedCode { get; set; }
-        public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
+        public override IPermission CreatePermission() { return default(IPermission); }
     }
 }

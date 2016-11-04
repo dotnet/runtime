@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -16,7 +14,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
     public static partial class TripleDesTests
     {
         [Fact]
-        public static void DesDefaultCtor()
+        public static void TripleDesDefaultCtor()
         {
             using (TripleDES tdes = new TripleDESMinimal())
             {
@@ -78,6 +76,25 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             Assert.Equal(inputBytes, decryptedBytes);
         }
 
+        [Fact]
+        public static void EnsureLegalSizesValuesIsolated()
+        {
+            new TripleDESLegalSizesBreaker().Dispose();
+
+            using (TripleDES tripleDes = TripleDES.Create())
+            {
+                Assert.Equal(3 * 64, tripleDes.LegalKeySizes[0].MaxSize);
+                Assert.Equal(64, tripleDes.LegalBlockSizes[0].MaxSize);
+
+                tripleDes.Key = new byte[]
+                {
+                    /* k1 */ 0, 1, 2, 3, 4, 5, 6, 7,
+                    /* k2 */ 0, 0, 0, 2, 4, 6, 0, 1,
+                    /* k3 */ 0, 1, 2, 3, 4, 5, 6, 7,
+                };
+            }
+        }
+
         private static IEnumerable<byte[]> BadKeys()
         {
             foreach (byte[] key in _weakKeys)
@@ -104,10 +121,103 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000".HexToByteArray(),
         };
 
-        private sealed class TripleDESMinimal : TripleDES
+        private class TripleDESLegalSizesBreaker : TripleDESMinimal
         {
+            public TripleDESLegalSizesBreaker()
+            {
+                LegalKeySizesValue[0] = new KeySizes(1, 1, 0);
+                LegalBlockSizesValue[0] = new KeySizes(1, 1, 0);
+            }
+        }
+
+        private class TripleDESMinimal : TripleDES
+        {
+            // If the constructor uses a virtual call to any of the property setters
+            // they will fail.
+            private readonly bool _ready;
+
             public TripleDESMinimal()
             {
+                // Don't set this as a field initializer, otherwise it runs before the base ctor.
+                _ready = true;
+            }
+
+            public override int KeySize
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.KeySize = value;
+                }
+            }
+
+            public override int BlockSize
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.BlockSize = value;
+                }
+            }
+
+            public override byte[] IV
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.IV = value;
+                }
+            }
+
+            public override byte[] Key
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.Key = value;
+                }
+            }
+
+            public override CipherMode Mode
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.Mode = value;
+                }
+            }
+
+            public override PaddingMode Padding
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.Padding = value;
+                }
             }
 
             public sealed override void GenerateIV()

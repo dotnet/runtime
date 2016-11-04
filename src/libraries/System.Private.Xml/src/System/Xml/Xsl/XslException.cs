@@ -12,9 +12,7 @@ using System.Text;
 namespace System.Xml.Xsl
 {
 
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     internal class XslTransformException : XsltException
     {
         public XslTransformException(Exception inner, string res, params string[] args)
@@ -94,9 +92,7 @@ namespace System.Xml.Xsl
         }
     }
 
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     internal class XslLoadException : XslTransformException
     {
         private ISourceLineInfo _lineInfo;

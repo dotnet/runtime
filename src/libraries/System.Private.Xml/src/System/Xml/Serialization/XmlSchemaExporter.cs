@@ -398,7 +398,7 @@ namespace System.Xml.Serialization
             else if (mapping is NullableMapping)
                 ExportMapping(((NullableMapping)mapping).BaseMapping, ns, isAny);
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private void ExportElementMapping(XmlSchemaElement element, Mapping mapping, string ns, bool isAny)
@@ -430,7 +430,7 @@ namespace System.Xml.Serialization
                 ExportElementMapping(element, ((NullableMapping)mapping).BaseMapping, ns, isAny);
             }
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private XmlQualifiedName ExportNonXsdPrimitiveMapping(PrimitiveMapping mapping, string ns)
@@ -572,7 +572,7 @@ namespace System.Xml.Serialization
                         }
                     }
                 default:
-                    throw new ArgumentException(SR.XmlInternalError, "mapping");
+                    throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
             }
         }
 

@@ -1,0 +1,1 @@
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.SerializationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.

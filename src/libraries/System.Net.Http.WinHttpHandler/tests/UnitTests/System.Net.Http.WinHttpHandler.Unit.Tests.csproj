@@ -59,8 +59,8 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
-      <Link>Common\System\Net\HttpVersion.cs</Link>
+	<Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
+      <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
@@ -141,8 +141,5 @@
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
   
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

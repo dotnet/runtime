@@ -1,19 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
+    <!-- replace with $(PackageVersion) once we have a new TFS build -->
+    <RuntimePackageVersion>4.3.0</RuntimePackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <Dependency Include="runtime.win7-x64.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(PackageVersion)-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(RuntimePackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
     <Dependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(PackageVersion)-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(RuntimePackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
     <Dependency Include="runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(PackageVersion)-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(RuntimePackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace System.IO
     ///    raises events when a directory or file within a directory changes.
     /// </devdoc>
 
-    public partial class FileSystemWatcher : IDisposable
+    public partial class FileSystemWatcher : Component
     {
         /// <devdoc>
         ///     Private instance variables
@@ -70,11 +71,6 @@ namespace System.IO
         }
 #endif
 
-        ~FileSystemWatcher()
-        {
-            this.Dispose(false);
-        }
-
         /// <devdoc>
         ///    Initializes a new instance of the <see cref='System.IO.FileSystemWatcher'/> class.
         /// </devdoc>
@@ -124,7 +120,7 @@ namespace System.IO
             set
             {
                 if (((int)value & ~c_notifyFiltersValidMask) != 0)
-                    throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, "value", (int)value, nameof(NotifyFilters)));
+                    throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(value), (int)value, nameof(NotifyFilters)));
 
                 if (_notifyFilters != value)
                 {
@@ -348,20 +344,9 @@ namespace System.IO
             }
         }
 
-
-
-        /// <devdoc>
-        ///    Disposes of the <see cref='System.IO.FileSystemWatcher'/>.
-        /// </devdoc>
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
         /// <devdoc>
         /// </devdoc>
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             try
             {

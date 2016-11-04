@@ -1,0 +1,4 @@
+Compat issues with assembly System.Net.Primitives:
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.SocketException' does not inherit from base type 'System.Runtime.InteropServices.ExternalException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Net.Sockets.SocketException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2

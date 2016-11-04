@@ -482,7 +482,7 @@ namespace System
         {
             /// <summary>A cached stack to use to avoid allocating a new stack object for every evaluation.</summary>
             [ThreadStatic]
-            private static LowLevelStack<FormatParam> t_cachedStack;
+            private static Stack<FormatParam> t_cachedStack;
 
             /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
             [ThreadStatic]
@@ -544,10 +544,10 @@ namespace System
                 }
 
                 // Initialize the stack to use for processing.
-                LowLevelStack<FormatParam> stack = t_cachedStack;
+                Stack<FormatParam> stack = t_cachedStack;
                 if (stack == null)
                 {
-                    t_cachedStack = stack = new LowLevelStack<FormatParam>();
+                    t_cachedStack = stack = new Stack<FormatParam>();
                 }
                 else
                 {
@@ -579,7 +579,7 @@ namespace System
             /// of recursion, and a 0 at the top if we're still inside of a conditional that requires more processing.
             /// </returns>
             private static string EvaluateInternal(
-                string format, ref int pos, FormatParam[] args, LowLevelStack<FormatParam> stack,
+                string format, ref int pos, FormatParam[] args, Stack<FormatParam> stack,
                 ref FormatParam[] dynamicVars, ref FormatParam[] staticVars)
             {
                 // Create a StringBuilder to store the output of this processing.  We use the format's length as an 
@@ -941,45 +941,6 @@ namespace System
 
                 /// <summary>Gets the string or the integer value as an object.</summary>
                 public object Object { get { return _string ?? (object)_int32; } }
-            }
-
-            /// <summary>Provides a basic stack data structure.</summary>
-            /// <typeparam name="T">Specifies the type of data in the stack.</typeparam>
-            private sealed class LowLevelStack<T> // System.Console.dll doesn't reference System.Collections.dll
-            {
-                private const int DefaultSize = 4;
-                private T[] _arr;
-                private int _count;
-
-                public LowLevelStack() { _arr = new T[DefaultSize]; }
-
-                public T Pop()
-                {
-                    if (_count == 0)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
-                    }
-                    T item = _arr[--_count];
-                    _arr[_count] = default(T);
-                    return item;
-                }
-
-                public void Push(T item)
-                {
-                    if (_arr.Length == _count)
-                    {
-                        T[] newArr = new T[_arr.Length * 2];
-                        Array.Copy(_arr, 0, newArr, 0, _arr.Length);
-                        _arr = newArr;
-                    }
-                    _arr[_count++] = item;
-                }
-
-                public void Clear()
-                {
-                    Array.Clear(_arr, 0, _count);
-                    _count = 0;
-                }
             }
         }
     }

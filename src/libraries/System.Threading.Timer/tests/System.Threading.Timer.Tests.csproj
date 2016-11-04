@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Timer.Tests</AssemblyName>
     <ProjectGuid>{ac20a28f-fda8-45e8-8728-058ead16e44c}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -17,8 +17,13 @@
     <Compile Include="TimerChangeTests.cs" />
     <Compile Include="TimerFiringTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="TimerConstructorTests.netstandard1.7.cs" />
+    <Compile Include="TimerChangeTests.netstandard1.7.cs" />
+    <Compile Include="TimerFiringTests.netstandard1.7.cs" />
+  </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\pkg\System.Threading.Timer.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -6,9 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security;
+using System.Runtime.Serialization;
 
 namespace System.IO
 {
+    [Serializable]
     public sealed partial class DirectoryInfo : FileSystemInfo
     {
         [System.Security.SecuritySafeCritical]
@@ -31,6 +33,11 @@ namespace System.IO
             // Fast path when we know a DirectoryInfo exists.
             OriginalPath = originalPath ?? Path.GetFileName(fullPath);
             FullPath = fullPath;
+            DisplayPath = GetDisplayName(OriginalPath);
+        }
+
+        private DirectoryInfo(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
             DisplayPath = GetDisplayName(OriginalPath);
         }
 

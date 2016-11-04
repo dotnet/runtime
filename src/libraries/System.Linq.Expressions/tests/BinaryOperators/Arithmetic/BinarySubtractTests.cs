@@ -474,6 +474,43 @@ namespace System.Linq.Expressions.Tests
 
         #endregion
 
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Subtract_MultipleOverloads_CorrectlyResolvesOperator1(bool useInterpreter)
+        {
+            BinaryExpression subtract = Expression.Subtract(Expression.Constant(new DateTime(100)), Expression.Constant(new DateTime(10)));
+            Func<TimeSpan> lambda = Expression.Lambda<Func<TimeSpan>>(subtract).Compile(useInterpreter);
+            Assert.Equal(new TimeSpan(90), lambda());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Subtract_MultipleOverloads_CorrectlyResolvesOperator2(bool useInterpreter)
+        {
+            BinaryExpression subtract = Expression.Subtract(Expression.Constant(new DateTime(100)), Expression.Constant(new TimeSpan(10)));
+            Func<DateTime> lambda = Expression.Lambda<Func<DateTime>>(subtract).Compile(useInterpreter);
+            Assert.Equal(new DateTime(90), lambda());
+        }
+
+        [Fact]
+        public static void Subtract_NoSuchOperatorDeclaredOnType_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => Expression.Add(Expression.Constant(new SubClass(0)), Expression.Constant(new SubClass(1))));
+        }
+
+        public class BaseClass
+        {
+            public BaseClass(int value) { Value = value; }
+            public int Value { get; }
+
+            public static BaseClass operator -(BaseClass i1, BaseClass i2) => new BaseClass(i1.Value - i2.Value);
+        }
+
+        public class SubClass : BaseClass
+        {
+            public SubClass(int value) : base(value) { }
+        }
+
         [Fact]
         public static void CannotReduce()
         {

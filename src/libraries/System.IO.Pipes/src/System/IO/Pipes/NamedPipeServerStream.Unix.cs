@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -203,5 +204,46 @@ namespace System.IO.Pipes
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        // This method calls a delegate while impersonating the client.
+        public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
+        {
+            CheckWriteOperations();
+            SafeHandle handle = InternalHandle?.NamedPipeSocketHandle;
+            if (handle == null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
+            }
+            // Get the current effective ID to fallback to after the impersonationWorker is run
+            uint currentEUID = Interop.Sys.GetEUid();
+
+            // Get the userid of the client process at the end of the pipe
+            uint peerID;
+            if (Interop.Sys.GetPeerID(handle, out peerID) == -1)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw error.Error == Interop.Error.ENOTSUP ?
+                    new PlatformNotSupportedException() :
+                    Interop.GetExceptionForIoErrno(error, _path);
+            }
+
+            // set the effective userid of the current (server) process to the clientid
+            if (Interop.Sys.SetEUid(peerID) == -1)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw error.Error == Interop.Error.ENOTSUP ?
+                    new PlatformNotSupportedException() :
+                    Interop.GetExceptionForIoErrno(error, _path);
+            }
+
+            try
+            {
+                impersonationWorker();
+            }
+            finally
+            {
+                // set the userid of the current (server) process back to its original value
+                Interop.Sys.SetEUid(currentEUID);
+            }
+        }
     }
 }

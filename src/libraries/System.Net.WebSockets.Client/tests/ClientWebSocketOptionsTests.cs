@@ -8,12 +8,15 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ClientWebSocketOptionsTests
+    public class ClientWebSocketOptionsTests : ClientWebSocketTestBase
     {
-        [Fact]
+        public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
         public static void UseDefaultCredentials_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -24,7 +27,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.False(cws.Options.UseDefaultCredentials);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(WebSocketsSupported))]
         public static void SetBuffer_InvalidArgs_Throws()
         {
             var cws = new ClientWebSocket();
@@ -38,7 +41,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Throws<ArgumentOutOfRangeException>("buffer", () => cws.Options.SetBuffer(1, 1, new ArraySegment<byte>(new byte[0])));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(WebSocketsSupported))]
         public static void KeepAliveInterval_Roundtrips()
         {
             var cws = new ClientWebSocket();

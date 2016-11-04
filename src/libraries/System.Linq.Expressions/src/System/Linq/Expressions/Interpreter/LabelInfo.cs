@@ -2,20 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Interpreter
 {
     /// <summary>
     /// Contains compiler state corresponding to a LabelTarget
-    /// See also LabelScopeInfo.
+    /// <seealso cref="LabelScopeInfo"/>
     /// </summary>
     internal sealed class LabelInfo
     {
@@ -78,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
             // Once defined, validate all jumps
             if (HasDefinitions && !HasMultipleDefinitions)
             {
-                foreach (var r in _references)
+                foreach (LabelScopeInfo r in _references)
                 {
                     ValidateJump(r);
                 }
@@ -188,13 +182,7 @@ namespace System.Linq.Expressions.Interpreter
             return false;
         }
 
-        private bool HasDefinitions
-        {
-            get
-            {
-                return _definitions != null;
-            }
-        }
+        private bool HasDefinitions => _definitions != null;
 
         private LabelScopeInfo FirstDefinition()
         {
@@ -227,17 +215,11 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private bool HasMultipleDefinitions
-        {
-            get
-            {
-                return _definitions is HashSet<LabelScopeInfo>;
-            }
-        }
+        private bool HasMultipleDefinitions => _definitions is HashSet<LabelScopeInfo>;
 
         internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
         {
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second))
             {
                 return first;
@@ -321,7 +303,6 @@ namespace System.Linq.Expressions.Interpreter
                 return false;
             }
         }
-
 
         internal bool ContainsTarget(LabelTarget target)
         {

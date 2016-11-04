@@ -5,6 +5,10 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Runtime.Serialization;
+
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.Component))]
+
 namespace System
 {
     public partial class UriTypeConverter : System.ComponentModel.TypeConverter
@@ -14,6 +18,7 @@ namespace System
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
         public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value) { throw null; }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
+        public override bool IsValid(System.ComponentModel.ITypeDescriptorContext context, object value) { throw null; }
     }
 }
 namespace System.ComponentModel
@@ -36,6 +41,7 @@ namespace System.ComponentModel
         public virtual System.Attribute this[System.Type attributeType] { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        int System.Collections.ICollection.Count { get { throw null; } }
         public bool Contains(System.Attribute attribute) { throw null; }
         public bool Contains(System.Attribute[] attributes) { throw null; }
         public void CopyTo(System.Array array, int index) { }
@@ -44,6 +50,7 @@ namespace System.ComponentModel
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public bool Matches(System.Attribute attribute) { throw null; }
         public bool Matches(System.Attribute[] attributes) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(128))]
     public partial class AttributeProviderAttribute : System.Attribute
@@ -102,18 +109,6 @@ namespace System.ComponentModel
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
-    }
-    public partial class Component : System.IDisposable
-    {
-        public Component() { }
-        protected virtual bool CanRaiseEvents { get { throw null; } }
-        protected bool DesignMode { get { throw null; } }
-        public virtual System.ComponentModel.ISite Site { get { throw null; } set { } }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-        ~Component() { }
-        protected virtual object GetService(System.Type service) { throw null; }
-        public override string ToString() { throw null; }
     }
     public abstract partial class CustomTypeDescriptor : System.ComponentModel.ICustomTypeDescriptor
     {
@@ -193,9 +188,9 @@ namespace System.ComponentModel
     }
     public abstract partial class EventDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
-        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base(default(string)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base(default(string)) { }
+        protected EventDescriptor(string name, System.Attribute[] attrs) : base(default(string)) { }
         public abstract System.Type ComponentType { get; }
         public abstract System.Type EventType { get; }
         public abstract bool IsMulticast { get; }
@@ -236,6 +231,10 @@ namespace System.ComponentModel
         int System.Collections.IList.IndexOf(object value) { throw null; }
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
+        int System.Collections.ICollection.Count { get { throw null; } }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        void System.Collections.IList.Clear() { throw null; }
+        void System.Collections.IList.RemoveAt(int index) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(32767))]
     public sealed partial class ExtenderProvidedPropertyAttribute : System.Attribute
@@ -246,6 +245,7 @@ namespace System.ComponentModel
         public System.Type ReceiverType { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }        
     }
     public partial class GuidConverter : System.ComponentModel.TypeConverter
     {
@@ -304,18 +304,12 @@ namespace System.ComponentModel
         public InvalidAsynchronousStateException() { }
         public InvalidAsynchronousStateException(string message) { }
         public InvalidAsynchronousStateException(string message, System.Exception innerException) { }
+        protected InvalidAsynchronousStateException(SerializationInfo info, StreamingContext context) { }
     }
     public partial interface ISupportInitialize
     {
         void BeginInit();
         void EndInit();
-    }
-    public partial interface ISynchronizeInvoke
-    {
-        bool InvokeRequired { get; }
-        System.IAsyncResult BeginInvoke(System.Delegate method, object[] args);
-        object EndInvoke(System.IAsyncResult result);
-        object Invoke(System.Delegate method, object[] args);
     }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {
@@ -353,6 +347,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { throw null; }
         protected static System.ComponentModel.ISite GetSite(object component) { throw null; }
+        protected static object GetInvokee(Type componentClass, object component) { throw null; }
     }
     public partial class MultilineStringConverter : System.ComponentModel.TypeConverter
     {
@@ -382,9 +377,9 @@ namespace System.ComponentModel
     }
     public abstract partial class PropertyDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
-        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base(default(string)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base(default(string)) { }
+        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base(default(string)) { }
         public abstract System.Type ComponentType { get; }
         public virtual System.ComponentModel.TypeConverter Converter { get { throw null; } }
         public virtual bool IsLocalizable { get { throw null; } }
@@ -456,8 +451,13 @@ namespace System.ComponentModel
         int System.Collections.IList.IndexOf(object value) { throw null; }
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
+        int System.Collections.ICollection.Count { get { throw null; } }
+        void System.Collections.IDictionary.Clear() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        void System.Collections.IList.Clear() { throw null; }
+        void System.Collections.IList.RemoveAt(int index) { throw null; }     
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple = true)]
     public sealed partial class ProvidePropertyAttribute : System.Attribute
     {
         public ProvidePropertyAttribute(string propertyName, string receiverTypeName) { }
@@ -466,6 +466,7 @@ namespace System.ComponentModel
         public string ReceiverTypeName { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public override object TypeId { get { throw null; } }
     }
     public partial class RefreshEventArgs : System.EventArgs
     {
@@ -540,8 +541,8 @@ namespace System.ComponentModel
         protected System.ComponentModel.PropertyDescriptorCollection SortProperties(System.ComponentModel.PropertyDescriptorCollection props, string[] names) { throw null; }
         protected abstract partial class SimplePropertyDescriptor : System.ComponentModel.PropertyDescriptor
         {
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(string), default(System.Attribute[])) { }
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(string), default(System.Attribute[])) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base(default(string), default(System.Attribute[])) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base(default(string), default(System.Attribute[])) { }
             public override System.Type ComponentType { get { throw null; } }
             public override bool IsReadOnly { get { throw null; } }
             public override System.Type PropertyType { get { throw null; } }
@@ -589,7 +590,7 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType, object instance) { throw null; }
         public virtual bool IsSupportedType(System.Type type) { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited = true)]
     public sealed partial class TypeDescriptionProviderAttribute : System.Attribute
     {
         public TypeDescriptionProviderAttribute(string typeName) { }
@@ -693,6 +694,11 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public static void RemoveProviderTransparent(System.ComponentModel.TypeDescriptionProvider provider, System.Type type) { }
         public static void SortDescriptorArray(System.Collections.IList infos) { }
+        public static Type ComObjectType { get { throw null; } }
+        public static System.ComponentModel.Design.IDesigner CreateDesigner(IComponent component, Type designerBaseType) { throw null; }
+#pragma warning disable 0618
+        public static IComNativeDescriptorHandler ComNativeDescriptorHandler { get; set; }        
+#pragma warning restore 0618
     }
     public abstract partial class TypeListConverter : System.ComponentModel.TypeConverter
     {

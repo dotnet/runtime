@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.ObjectModel;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions
 {
@@ -20,16 +18,16 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public LambdaExpression Conversion { get { return _node.Conversion; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Boolean IsLifted { get { return _node.IsLifted; } }
-            public Boolean IsLiftedToNull { get { return _node.IsLiftedToNull; } }
-            public Expression Left { get { return _node.Left; } }
-            public MethodInfo Method { get { return _node.Method; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression Right { get { return _node.Right; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public LambdaExpression Conversion => _node.Conversion;
+            public string DebugView => _node.DebugView;
+            public bool IsLifted => _node.IsLifted;
+            public bool IsLiftedToNull => _node.IsLiftedToNull;
+            public Expression Left => _node.Left;
+            public MethodInfo Method => _node.Method;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression Right => _node.Right;
+            public Type Type => _node.Type;
         }
 
         internal class BlockExpressionProxy
@@ -41,13 +39,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ReadOnlyCollection<Expression> Expressions { get { return _node.Expressions; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression Result { get { return _node.Result; } }
-            public Type Type { get { return _node.Type; } }
-            public ReadOnlyCollection<ParameterExpression> Variables { get { return _node.Variables; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public ReadOnlyCollection<Expression> Expressions => _node.Expressions;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression Result => _node.Result;
+            public Type Type => _node.Type;
+            public ReadOnlyCollection<ParameterExpression> Variables => _node.Variables;
         }
 
         internal class CatchBlockProxy
@@ -59,10 +57,10 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Expression Body { get { return _node.Body; } }
-            public Expression Filter { get { return _node.Filter; } }
-            public Type Test { get { return _node.Test; } }
-            public ParameterExpression Variable { get { return _node.Variable; } }
+            public Expression Body => _node.Body;
+            public Expression Filter => _node.Filter;
+            public Type Test => _node.Test;
+            public ParameterExpression Variable => _node.Variable;
         }
 
         internal class ConditionalExpressionProxy
@@ -74,13 +72,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression IfFalse { get { return _node.IfFalse; } }
-            public Expression IfTrue { get { return _node.IfTrue; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression Test { get { return _node.Test; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public Expression IfFalse => _node.IfFalse;
+            public Expression IfTrue => _node.IfTrue;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression Test => _node.Test;
+            public Type Type => _node.Type;
         }
 
         internal class ConstantExpressionProxy
@@ -92,11 +90,11 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
-            public Object Value { get { return _node.Value; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
+            public object Value => _node.Value;
         }
 
         internal class DebugInfoExpressionProxy
@@ -108,16 +106,16 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public SymbolDocumentInfo Document { get { return _node.Document; } }
-            public Int32 EndColumn { get { return _node.EndColumn; } }
-            public Int32 EndLine { get { return _node.EndLine; } }
-            public Boolean IsClear { get { return _node.IsClear; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Int32 StartColumn { get { return _node.StartColumn; } }
-            public Int32 StartLine { get { return _node.StartLine; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public SymbolDocumentInfo Document => _node.Document;
+            public int EndColumn => _node.EndColumn;
+            public int EndLine => _node.EndLine;
+            public bool IsClear => _node.IsClear;
+            public ExpressionType NodeType => _node.NodeType;
+            public int StartColumn => _node.StartColumn;
+            public int StartLine => _node.StartLine;
+            public Type Type => _node.Type;
         }
 
         internal class DefaultExpressionProxy
@@ -129,10 +127,10 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class GotoExpressionProxy
@@ -144,13 +142,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public GotoExpressionKind Kind { get { return _node.Kind; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public LabelTarget Target { get { return _node.Target; } }
-            public Type Type { get { return _node.Type; } }
-            public Expression Value { get { return _node.Value; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public GotoExpressionKind Kind => _node.Kind;
+            public ExpressionType NodeType => _node.NodeType;
+            public LabelTarget Target => _node.Target;
+            public Type Type => _node.Type;
+            public Expression Value => _node.Value;
         }
 
         internal class IndexExpressionProxy
@@ -162,13 +160,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public ReadOnlyCollection<Expression> Arguments { get { return _node.Arguments; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public PropertyInfo Indexer { get { return _node.Indexer; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression Object { get { return _node.Object; } }
-            public Type Type { get { return _node.Type; } }
+            public ReadOnlyCollection<Expression> Arguments => _node.Arguments;
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public PropertyInfo Indexer => _node.Indexer;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression Object => _node.Object;
+            public Type Type => _node.Type;
         }
 
         internal class InvocationExpressionProxy
@@ -180,12 +178,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public ReadOnlyCollection<Expression> Arguments { get { return _node.Arguments; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression Expression { get { return _node.Expression; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public ReadOnlyCollection<Expression> Arguments => _node.Arguments;
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public Expression Expression => _node.Expression;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class LabelExpressionProxy
@@ -197,12 +195,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression DefaultValue { get { return _node.DefaultValue; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public LabelTarget Target { get { return _node.Target; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public Expression DefaultValue => _node.DefaultValue;
+            public ExpressionType NodeType => _node.NodeType;
+            public LabelTarget Target => _node.Target;
+            public Type Type => _node.Type;
         }
 
         internal class LambdaExpressionProxy
@@ -214,15 +212,15 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Expression Body { get { return _node.Body; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public String Name { get { return _node.Name; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public ReadOnlyCollection<ParameterExpression> Parameters { get { return _node.Parameters; } }
-            public Type ReturnType { get { return _node.ReturnType; } }
-            public Boolean TailCall { get { return _node.TailCall; } }
-            public Type Type { get { return _node.Type; } }
+            public Expression Body => _node.Body;
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public string Name => _node.Name;
+            public ExpressionType NodeType => _node.NodeType;
+            public ReadOnlyCollection<ParameterExpression> Parameters => _node.Parameters;
+            public Type ReturnType => _node.ReturnType;
+            public bool TailCall => _node.TailCall;
+            public Type Type => _node.Type;
         }
 
         internal class ListInitExpressionProxy
@@ -234,12 +232,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ReadOnlyCollection<ElementInit> Initializers { get { return _node.Initializers; } }
-            public NewExpression NewExpression { get { return _node.NewExpression; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public ReadOnlyCollection<ElementInit> Initializers => _node.Initializers;
+            public NewExpression NewExpression => _node.NewExpression;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class LoopExpressionProxy
@@ -251,13 +249,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Expression Body { get { return _node.Body; } }
-            public LabelTarget BreakLabel { get { return _node.BreakLabel; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public LabelTarget ContinueLabel { get { return _node.ContinueLabel; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public Expression Body => _node.Body;
+            public LabelTarget BreakLabel => _node.BreakLabel;
+            public bool CanReduce => _node.CanReduce;
+            public LabelTarget ContinueLabel => _node.ContinueLabel;
+            public string DebugView => _node.DebugView;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class MemberExpressionProxy
@@ -269,12 +267,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression Expression { get { return _node.Expression; } }
-            public MemberInfo Member { get { return _node.Member; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public Expression Expression => _node.Expression;
+            public MemberInfo Member => _node.Member;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class MemberInitExpressionProxy
@@ -286,12 +284,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public ReadOnlyCollection<MemberBinding> Bindings { get { return _node.Bindings; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public NewExpression NewExpression { get { return _node.NewExpression; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public ReadOnlyCollection<MemberBinding> Bindings => _node.Bindings;
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public NewExpression NewExpression => _node.NewExpression;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class MethodCallExpressionProxy
@@ -303,13 +301,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public ReadOnlyCollection<Expression> Arguments { get { return _node.Arguments; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public MethodInfo Method { get { return _node.Method; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression Object { get { return _node.Object; } }
-            public Type Type { get { return _node.Type; } }
+            public ReadOnlyCollection<Expression> Arguments => _node.Arguments;
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public MethodInfo Method => _node.Method;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression Object => _node.Object;
+            public Type Type => _node.Type;
         }
 
         internal class NewArrayExpressionProxy
@@ -321,11 +319,11 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ReadOnlyCollection<Expression> Expressions { get { return _node.Expressions; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public ReadOnlyCollection<Expression> Expressions => _node.Expressions;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class NewExpressionProxy
@@ -337,13 +335,13 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public ReadOnlyCollection<Expression> Arguments { get { return _node.Arguments; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public ConstructorInfo Constructor { get { return _node.Constructor; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ReadOnlyCollection<MemberInfo> Members { get { return _node.Members; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public ReadOnlyCollection<Expression> Arguments => _node.Arguments;
+            public bool CanReduce => _node.CanReduce;
+            public ConstructorInfo Constructor => _node.Constructor;
+            public string DebugView => _node.DebugView;
+            public ReadOnlyCollection<MemberInfo> Members => _node.Members;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class ParameterExpressionProxy
@@ -355,12 +353,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Boolean IsByRef { get { return _node.IsByRef; } }
-            public String Name { get { return _node.Name; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public bool IsByRef => _node.IsByRef;
+            public string Name => _node.Name;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class RuntimeVariablesExpressionProxy
@@ -372,11 +370,11 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
-            public ReadOnlyCollection<ParameterExpression> Variables { get { return _node.Variables; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
+            public ReadOnlyCollection<ParameterExpression> Variables => _node.Variables;
         }
 
         internal class SwitchCaseProxy
@@ -388,8 +386,8 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Expression Body { get { return _node.Body; } }
-            public ReadOnlyCollection<Expression> TestValues { get { return _node.TestValues; } }
+            public Expression Body => _node.Body;
+            public ReadOnlyCollection<Expression> TestValues => _node.TestValues;
         }
 
         internal class SwitchExpressionProxy
@@ -401,14 +399,14 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public ReadOnlyCollection<SwitchCase> Cases { get { return _node.Cases; } }
-            public MethodInfo Comparison { get { return _node.Comparison; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression DefaultBody { get { return _node.DefaultBody; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression SwitchValue { get { return _node.SwitchValue; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public ReadOnlyCollection<SwitchCase> Cases => _node.Cases;
+            public MethodInfo Comparison => _node.Comparison;
+            public string DebugView => _node.DebugView;
+            public Expression DefaultBody => _node.DefaultBody;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression SwitchValue => _node.SwitchValue;
+            public Type Type => _node.Type;
         }
 
         internal class TryExpressionProxy
@@ -420,14 +418,14 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Expression Body { get { return _node.Body; } }
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression Fault { get { return _node.Fault; } }
-            public Expression Finally { get { return _node.Finally; } }
-            public ReadOnlyCollection<CatchBlock> Handlers { get { return _node.Handlers; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
+            public Expression Body => _node.Body;
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public Expression Fault => _node.Fault;
+            public Expression Finally => _node.Finally;
+            public ReadOnlyCollection<CatchBlock> Handlers => _node.Handlers;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
         }
 
         internal class TypeBinaryExpressionProxy
@@ -439,12 +437,12 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Expression Expression { get { return _node.Expression; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Type Type { get { return _node.Type; } }
-            public Type TypeOperand { get { return _node.TypeOperand; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public Expression Expression => _node.Expression;
+            public ExpressionType NodeType => _node.NodeType;
+            public Type Type => _node.Type;
+            public Type TypeOperand => _node.TypeOperand;
         }
 
         internal class UnaryExpressionProxy
@@ -456,14 +454,14 @@ namespace System.Linq.Expressions
                 _node = node;
             }
 
-            public Boolean CanReduce { get { return _node.CanReduce; } }
-            public String DebugView { get { return _node.DebugView; } }
-            public Boolean IsLifted { get { return _node.IsLifted; } }
-            public Boolean IsLiftedToNull { get { return _node.IsLiftedToNull; } }
-            public MethodInfo Method { get { return _node.Method; } }
-            public ExpressionType NodeType { get { return _node.NodeType; } }
-            public Expression Operand { get { return _node.Operand; } }
-            public Type Type { get { return _node.Type; } }
+            public bool CanReduce => _node.CanReduce;
+            public string DebugView => _node.DebugView;
+            public bool IsLifted => _node.IsLifted;
+            public bool IsLiftedToNull => _node.IsLiftedToNull;
+            public MethodInfo Method => _node.Method;
+            public ExpressionType NodeType => _node.NodeType;
+            public Expression Operand => _node.Operand;
+            public Type Type => _node.Type;
         }
     }
 }

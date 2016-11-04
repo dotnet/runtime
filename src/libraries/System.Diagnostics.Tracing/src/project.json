@@ -1,33 +1,29 @@
 {
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.7": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24522-04"
-      },
-      "imports": [
-        "dotnet5.6"
-      ]
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03"
+      }
     },
     "netcore50": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.10.0",
-        "System.Diagnostics.Contracts": "4.0.0.0",
-        "System.Diagnostics.Debug": "4.0.0.0",
-        "System.Diagnostics.Tools": "4.0.0.0",
-        "System.Globalization": "4.0.0.0",
-        "System.Reflection": "4.0.10.0",
-        "System.Reflection.Extensions": "4.0.0.0",
-        "System.Resources.ResourceManager": "4.0.0.0",
-        "System.Runtime": "4.0.20.0",
-        "System.Runtime.Extensions": "4.0.10.0",
-        "System.Runtime.InteropServices": "4.0.0.0",
-        "System.Text.Encoding": "4.0.0.0",
-        "System.Threading": "4.0.10.0"
+        "System.Collections": "4.0.11",
+        "System.Diagnostics.Contracts": "4.0.1",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.Diagnostics.Tools": "4.0.1",
+        "System.Globalization": "4.0.11",
+        "System.Reflection": "4.1.0",
+        "System.Reflection.Extensions": "4.0.1",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Runtime.Extensions": "4.1.0",
+        "System.Runtime.InteropServices": "4.1.0",
+        "System.Text.Encoding": "4.0.11",
+        "System.Threading": "4.0.11"
       }
     },
-    "net462": {
+    "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
       }

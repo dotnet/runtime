@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Security;
 using Xunit;
 
 [assembly: System.Reflection.CustomAttributesTests.Data.Attr(77, name = "AttrSimple")]
@@ -21,8 +23,29 @@ System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(Object), name = "Ty
 
 namespace System.Reflection.Tests
 {
-    public static class AssemblyTests
+    public class AssemblyTests : IDisposable
     {
+
+        string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
+        string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly", "TestAssembly.dll");
+
+        public AssemblyTests()
+        {
+            // Move TestAssembly.dll to subfolder TestAssembly
+            if(!File.Exists(destTestAssemblyPath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+                File.Move(sourceTestAssemblyPath, destTestAssemblyPath);
+            }
+        }
+
+        public void Dispose()
+        {
+            // Revert TestAssembly.dll back to its previous location
+            if(!File.Exists(sourceTestAssemblyPath))
+                File.Move(destTestAssemblyPath, sourceTestAssemblyPath);
+        }
+
         public static IEnumerable<object[]> Equality_TestData()
         {
             yield return new object[] { Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), true };
@@ -242,6 +265,86 @@ namespace System.Reflection.Tests
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetManifestResourceStream(typeof(AssemblyTests), "EmbeddedTextFile.txt"));
             Assert.Null(typeof(AssemblyTests).Assembly.GetManifestResourceStream(typeof(AssemblyTests), "IDontExist"));
         }
+
+        [Fact]
+        public static void Test_GlobalAssemblyCache()
+        {
+            Assert.False(typeof(AssemblyTests).Assembly.GlobalAssemblyCache);
+        }        
+
+        [Fact]
+        public static void Test_HostContext()
+        {
+            Assert.Equal(0, typeof(AssemblyTests).Assembly.HostContext);
+        }        
+
+        [Fact]
+        public static void Test_IsFullyTrusted()
+        {
+            Assert.True(typeof(AssemblyTests).Assembly.IsFullyTrusted);
+        }        
+
+        [Fact]
+        public static void Test_SecurityRuleSet()
+        {
+            Assert.Equal(SecurityRuleSet.None, typeof(AssemblyTests).Assembly.SecurityRuleSet);
+        }        
+
+        [Fact]
+        public static void Test_LoadFile()
+        {
+            var assem = typeof(AssemblyTests).Assembly;
+            string path = "System.Runtime.Tests.dll";
+            string fullpath = Path.GetFullPath(path);
+            Assert.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
+            Assert.Throws<ArgumentException>(() => Assembly.LoadFile(path));
+            var loadfile1 = Assembly.LoadFile(fullpath);
+            Assert.NotEqual(assem, loadfile1);
+            string dir = Path.GetDirectoryName(fullpath);
+            fullpath = Path.Combine(dir, ".", path);
+            var loadfile2 = Assembly.LoadFile(fullpath);
+            Assert.Equal(loadfile1,loadfile2);
+        }        
+
+        [Fact]
+        public static void Test_LoadFromUsingHashValue()
+        {
+            Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
+        }        
+
+        [Fact]
+        public static void Test_LoadModule()
+        {
+            var assem = typeof(AssemblyTests).Assembly;
+            Assert.Throws<NotImplementedException>(() => assem.LoadModule("abc", null));
+            Assert.Throws<NotImplementedException>(() => assem.LoadModule("abc", null, null));
+        }        
+
+#pragma warning disable 618
+        [Fact]
+        public static void Test_LoadWithPartialName()
+        {
+            string simplename = typeof(AssemblyTests).Assembly.GetName().Name;
+            var assem = Assembly.LoadWithPartialName(simplename);
+            Assert.Equal(typeof(AssemblyTests).Assembly, assem);
+        }        
+#pragma warning restore 618
+
+        [Fact]
+        public void Test_LoadFrom()
+        {
+            var assem = Assembly.LoadFrom(destTestAssemblyPath);
+            Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
+            var assem1 = Assembly.LoadFrom(destTestAssemblyPath);
+            Assert.Equal(assem, assem1);
+        }        
+
+        [Fact]
+        public void Test_UnsafeLoadFrom()
+        {
+            var assem = Assembly.UnsafeLoadFrom(destTestAssemblyPath);
+            Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.UnsafeLoadFrom(null));
+        }        
 
         // Helpers
         private static Assembly GetGetCallingAssembly()

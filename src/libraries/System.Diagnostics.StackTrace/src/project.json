@@ -1,24 +1,20 @@
 {
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.7": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24522-04",
-        "System.IO.FileSystem": "4.0.1",
-        "System.Reflection.Metadata": "1.4.1-beta-24522-03",
-        "System.Collections.Immutable": "1.2.0"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
-    },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24522-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03",
+        "System.IO.FileSystem": "4.4.0-beta-24703-01",
+        "System.Reflection.Metadata": "1.5.0-beta-24703-01"
       }
     },
-    "net46": {
+    "uap10.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24701-00"
+      }
+    },
+    "net463": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
       }
     }
   }

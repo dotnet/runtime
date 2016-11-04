@@ -1,12 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{4852A19F-C05C-478D-BFA0-59FD03DE0E3F}</ProjectGuid>
     <RootNamespace>System.Composition.Lightweight.UnitTests</RootNamespace>
     <AssemblyName>System.Composition.Tests</AssemblyName>
-    <!-- Don't allow project reference to package dependency conversion -->
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -17,6 +15,7 @@
     <Compile Include="CircularityTests.cs" />
     <Compile Include="CompositionContextExtensionsTests.cs" />
     <Compile Include="ConcurrencyTests.cs" />
+    <Compile Include="ConstraintTests.cs" />
     <Compile Include="ContainerTests.cs" />
     <Compile Include="ContractTests.cs" />
     <Compile Include="CustomerReportedMetadataBug.cs" />
@@ -46,34 +45,33 @@
     <ProjectReference Include="..\demos\Microsoft.Composition.Demos.ExtendedCollectionImports\Microsoft.Composition.Demos.ExtendedCollectionImports.csproj">
       <Project>{44c7e52c-3873-4c64-875c-8a23a8376d60}</Project>
       <Name>Microsoft.Composition.Demos.ExtendedCollectionImports</Name>
+      <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
+    <ProjectReference Include="..\..\System.Composition.AttributedModel\pkg\System.Composition.AttributedModel.pkgproj">
       <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
       <Name>System.Composition.AttributedModel</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Convention\src\System.Composition.Convention.csproj">
+    <ProjectReference Include="..\..\System.Composition.Convention\pkg\System.Composition.Convention.pkgproj">
       <Project>{e6592fad-10b5-4b56-9287-d72dd136992f}</Project>
       <Name>System.Composition.Convention</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Hosting\src\System.Composition.Hosting.csproj">
+    <ProjectReference Include="..\..\System.Composition.Hosting\pkg\System.Composition.Hosting.pkgproj">
       <Project>{2b8fecc6-34a1-48fe-ba75-99572d2d6db2}</Project>
       <Name>System.Composition.Hosting</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
+    <ProjectReference Include="..\..\System.Composition.Runtime\pkg\System.Composition.Runtime.pkgproj">
       <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
       <Name>System.Composition.Runtime</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.TypedParts\src\System.Composition.TypedParts.csproj">
+    <ProjectReference Include="..\..\System.Composition.TypedParts\pkg\System.Composition.TypedParts.pkgproj">
       <Project>{b4b5e15c-e6b9-48ea-94c2-f067484d4d3e}</Project>
       <Name>System.Composition.TypedParts</Name>
     </ProjectReference>
     <ProjectReference Include="..\scenarios\TestLibrary\TestLibrary.csproj">
       <Project>{da6841a5-0344-4cc7-98b0-89cbee18dee3}</Project>
       <Name>TestLibrary</Name>
+      <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

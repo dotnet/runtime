@@ -14,6 +14,7 @@ namespace System.IO
     ///   Note these values currently match the values for FILE_SHARE_READ,
     ///   FILE_SHARE_WRITE, and FILE_SHARE_DELETE in winnt.h
     /// </devdoc>
+    [Serializable]
     [Flags]
     public enum FileShare
     {

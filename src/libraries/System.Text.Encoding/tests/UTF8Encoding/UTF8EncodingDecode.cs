@@ -87,6 +87,14 @@ namespace System.Text.Tests
 
             yield return new object[] { new byte[] { 0xF3, 0xB0, 0x80, 0x80 }, 0, 4, "\uDB80\uDC00" };
 
+            // High BMP non-chars
+            yield return new object[] { new byte[] { 239, 191, 189 }, 0, 3, "\uFFFD" };
+            yield return new object[] { new byte[] { 239, 191, 190 }, 0, 3, "\uFFFE" };
+            yield return new object[] { new byte[] { 239, 191, 191 }, 0, 3, "\uFFFF" };
+            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xAE }, 0, 3, "\uFFEE" };
+
+            yield return new object[] { new byte[] { 0xEE, 0x80, 0x80, 0xEF, 0xBF, 0xBF, 0xEE, 0x80, 0x80, 0xEF, 0xBF, 0xBF, 0xEE, 0x80, 0x80, 0xEF, 0xBF, 0xBF }, 0, 18, "\uE000\uFFFF\uE000\uFFFF\uE000\uFFFF" };
+
             // Empty strings
             yield return new object[] { new byte[0], 0, 0, string.Empty };
             yield return new object[] { new byte[10], 10, 0, string.Empty };
@@ -108,6 +116,107 @@ namespace System.Text.Tests
         {
             yield return new object[] { new byte[] { 196, 84, 101, 115, 116, 196, 196, 196, 176, 176, 84, 101, 115, 116, 176 }, 0, 15, "\uFFFDTest\uFFFD\uFFFD\u0130\uFFFDTest\uFFFD" };
             yield return new object[] { new byte[] { 240, 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 240 }, 0, 12, "\uFFFD\uD803\uDD75\uD803\uDD75\uFFFD\uFFFD" };
+
+            // Invalid surrogate bytes
+            byte[] validSurrogateBytes = new byte[] { 240, 144, 128, 128 };
+            yield return new object[] { validSurrogateBytes, 0, 3, "\uFFFD" };
+            yield return new object[] { validSurrogateBytes, 1, 3, "\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { validSurrogateBytes, 0, 2, "\uFFFD" };
+            yield return new object[] { validSurrogateBytes, 1, 2, "\uFFFD\uFFFD" };
+            yield return new object[] { validSurrogateBytes, 2, 2, "\uFFFD\uFFFD" };
+            yield return new object[] { validSurrogateBytes, 2, 1, "\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80 }, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0xAF, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0xB0, 0x80 }, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0xBF, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+
+            // Invalid surrogate pair (low/low, high/high, low/high)
+            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xAF, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0xB0, 0x80, 0xED, 0xB0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xA0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+            // Too high scalar value in surrogates
+            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xEE, 0x80, 0x80 }, 0, 6, "\uFFFD\uFFFD\uE000" };
+            yield return new object[] { new byte[] { 0xF4, 0x90, 0x80, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+
+            // These are examples of overlong sequences. This can cause security
+            // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
+            yield return new object[] { new byte[] { 0xC0 }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xC0, 0xBF }, 0, 2, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xE0, 0x9C, 0x90 }, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF0, 0x8F, 0xA4, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xEF, 0x41 }, 0, 2, "\uFFFD\u0041" };
+            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xAE }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xEF, 0xBF, 0x41 }, 0, 3, "\uFFFD\u0041" };
+            yield return new object[] { new byte[] { 0xEF, 0xBF, 0x61 }, 0, 3, "\uFFFD\u0061" };
+            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xEF, 0xBF, 0xAE }, 0, 5, "\uFFFD\uFFEE" };
+            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xC0, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xF0, 0xC4, 0x80 }, 0, 3, "\uFFFD\u0100" };
+
+            yield return new object[] { new byte[] { 176 }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 196 }, 0, 1, "\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0x52, 0x7C, 0x7B, 0x41, 0x6E, 0x47, 0x65, 0xA3, 0xA4 }, 0, 12, "\uFFFD\uFFFD\u0061\u0052\u007C\u007B\u0041\u006E\u0047\u0065\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xA3 }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xA3, 0xA4 }, 0, 2, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0x65, 0xA3, 0xA4 }, 0, 3, "\u0065\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0x47, 0x65, 0xA3, 0xA4 }, 0, 4, "\u0047\u0065\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3, 0xA4 }, 0, 5, "\uFFFD\uFFFD\u0061\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3 }, 0, 4, "\uFFFD\uFFFD\u0061\uFFFD" };
+            yield return new object[] { new byte[] { 0xD0, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
+            yield return new object[] { new byte[] { 0xA4, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
+            yield return new object[] { new byte[] { 0xD0, 0x61, 0x52, 0xA3 }, 0, 4, "\uFFFD\u0061\u0052\uFFFD" };
+                        
+            yield return new object[] { new byte[] { 0xAA }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xAA, 0x41 }, 0, 2, "\uFFFD\u0041" };
+
+            yield return new object[] { new byte[] { 0xEF, 0xFF, 0xEE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xEF, 0xFF, 0xAE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 15, "\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F }, 0, 15, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F" };
+
+            yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 8, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xC2, 0xDF }, 0, 2, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0x80, 0x80, 0xC1, 0x80, 0xC1, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0x7F, 0x7F, 0x7F, 0x7F, 0xC3, 0xA1, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 14, "\uFFFD\u007F\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u00E1\uFFFD\u007F\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0xE0, 0xBF, 0x7F, 0xE0, 0xBF, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xE0, 0x9F, 0x80, 0xE0, 0xC0, 0x80, 0xE0, 0x9F, 0xBF, 0xE0, 0xC0, 0xBF }, 0, 12, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0x7F, 0xE0, 0xBF, 0x7F, 0xC3, 0xA1, 0xE0, 0xBF, 0xC0 }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\u007F\uFFFD\u007F\u00E1\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xE1, 0x80, 0x7F, 0xE1, 0x80, 0xC0, 0xE1, 0xBF, 0x7F, 0xE1, 0xBF, 0xC0, 0xEC, 0x80, 0x7F, 0xEC, 0x80, 0xC0, 0xEC, 0xBF, 0x7F, 0xEC, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xE1, 0x7F, 0x80, 0xE1, 0xC0, 0x80, 0xE1, 0x7F, 0xBF, 0xE1, 0xC0, 0xBF, 0xEC, 0x7F, 0x80, 0xEC, 0xC0, 0x80, 0xEC, 0x7F, 0xBF, 0xEC, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xED, 0x80, 0x7F, 0xED, 0x80, 0xC0, 0xED, 0x9F, 0x7F, 0xED, 0x9F, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xE8, 0x80, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u8000\uFFFD\u007F\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xEE, 0x80, 0x7F, 0xEE, 0x80, 0xC0, 0xEE, 0xBF, 0x7F, 0xEE, 0xBF, 0xC0, 0xEF, 0x80, 0x7F, 0xEF, 0x80, 0xC0, 0xEF, 0xBF, 0x7F, 0xEF, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xEE, 0x7F, 0x80, 0xEE, 0xC0, 0x80, 0xEE, 0x7F, 0xBF, 0xEE, 0xC0, 0xBF, 0xEF, 0x7F, 0x80, 0xEF, 0xC0, 0x80, 0xEF, 0x7F, 0xBF, 0xEF, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xF0, 0x90, 0x80, 0x7F, 0xF0, 0x90, 0x80, 0xC0, 0xF0, 0xBF, 0xBF, 0x7F, 0xF0, 0xBF, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF0, 0x90, 0x7F, 0x80, 0xF0, 0x90, 0xC0, 0x80, 0xF0, 0x90, 0x7F, 0xBF, 0xF0, 0x90, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF0, 0x8F, 0x80, 0x80, 0xF0, 0xC0, 0x80, 0x80, 0xF0, 0x8F, 0xBF, 0xBF, 0xF0, 0xC0, 0xBF, 0xBF }, 0, 16, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xF1, 0x80, 0x80, 0x7F, 0xF1, 0x80, 0x80, 0xC0, 0xF1, 0xBF, 0xBF, 0x7F, 0xF1, 0xBF, 0xBF, 0xC0, 0xF3, 0x80, 0x80, 0x7F, 0xF3, 0x80, 0x80, 0xC0, 0xF3, 0xBF, 0xBF, 0x7F, 0xF3, 0xBF, 0xBF, 0xC0 }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF1, 0x80, 0x7F, 0x80, 0xF1, 0x80, 0xC0, 0x80, 0xF1, 0x80, 0x7F, 0xBF, 0xF1, 0x80, 0xC0, 0xBF, 0xF3, 0x80, 0x7F, 0x80, 0xF3, 0x80, 0xC0, 0x80, 0xF3, 0x80, 0x7F, 0xBF, 0xF3, 0x80, 0xC0, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF1, 0x7F, 0x80, 0x80, 0xF1, 0xC0, 0x80, 0x80, 0xF1, 0x7F, 0xBF, 0xBF, 0xF1, 0xC0, 0xBF, 0xBF, 0xF3, 0x7F, 0x80, 0x80, 0xF3, 0xC0, 0x80, 0x80, 0xF3, 0x7F, 0xBF, 0xBF, 0xF3, 0xC0, 0xBF, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xF4, 0x80, 0x80, 0x7F, 0xF4, 0x80, 0x80, 0xC0, 0xF4, 0x8F, 0xBF, 0x7F, 0xF4, 0x8F, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF4, 0x80, 0x7F, 0x80, 0xF4, 0x80, 0xC0, 0x80, 0xF4, 0x80, 0x7F, 0xBF, 0xF4, 0x80, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xF4, 0x7F, 0x80, 0x80, 0xF4, 0x90, 0x80, 0x80, 0xF4, 0x7F, 0xBF, 0xBF, 0xF4, 0x90, 0xBF, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
         }
 
         [Theory]
@@ -119,120 +228,6 @@ namespace System.Text.Tests
 
             NegativeEncodingTests.Decode_Invalid(new UTF8Encoding(false, true), bytes, index, count);
             NegativeEncodingTests.Decode_Invalid(new UTF8Encoding(true, true), bytes, index, count);
-        }
-
-        [Fact]
-        public void Decode_InvalidBytes()
-        {
-            // TODO: add into Decode_TestData or Decode_InvalidBytes_TestData once #7166 is fixed
-            // High BMP non-chars
-            Decode(new byte[] { 239, 191, 189 }, 0, 3, "\uFFFD");
-            Decode(new byte[] { 239, 191, 190 }, 0, 3, "\uFFFE");
-            Decode(new byte[] { 239, 191, 191 }, 0, 3, "\uFFFF");
-            Decode(new byte[] { 0xEF, 0xBF, 0xAE }, 0, 3, "\uFFEE");
-
-            Decode(new byte[] { 0xEE, 0x80, 0x80, 0xEF, 0xBF, 0xBF, 0xEE, 0x80, 0x80, 0xEF, 0xBF, 0xBF, 0xEE, 0x80, 0x80, 0xEF, 0xBF, 0xBF }, 0, 18, "\uE000\uFFFF\uE000\uFFFF\uE000\uFFFF");
-
-            // Invalid surrogate bytes
-            byte[] validSurrogateBytes = new byte[] { 240, 144, 128, 128 };
-            Decode_InvalidBytes(validSurrogateBytes, 0, 3, "\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 1, 3, "\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 0, 2, "\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 1, 2, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 2, 2, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 2, 1, "\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xED, 0xA0, 0x80 }, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0xAF, 0xBF }, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0xB0, 0x80 }, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0xBF, 0xBF }, 0, 3, "\uFFFD\uFFFD");
-
-            // Invalid surrogate pair (low/low, high/high, low/high)
-            Decode_InvalidBytes(new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xAF, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0xB0, 0x80, 0xED, 0xB0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xA0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD");
-
-            // Too high scalar value in surrogates
-            Decode_InvalidBytes(new byte[] { 0xED, 0xA0, 0x80, 0xEE, 0x80, 0x80 }, 0, 6, "\uFFFD\uFFFD\uE000");
-            Decode_InvalidBytes(new byte[] { 0xF4, 0x90, 0x80, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD");
-
-            // These are examples of overlong sequences. This can cause security
-            // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
-            Decode_InvalidBytes(new byte[] { 0xC0 }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xC0, 0xBF }, 0, 2, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xE0, 0x9C, 0x90 }, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF0, 0x8F, 0xA4, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xEF, 0x41 }, 0, 2, "\uFFFD\u0041");
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xBF, 0xAE }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xBF, 0x41 }, 0, 3, "\uFFFD\u0041");
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xBF, 0x61 }, 0, 3, "\uFFFD\u0061");
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xBF, 0xEF, 0xBF, 0xAE }, 0, 5, "\uFFFD\uFFEE");
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xBF, 0xC0, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xF0, 0xC4, 0x80 }, 0, 3, "\uFFFD\u0100");
-
-            Decode_InvalidBytes(new byte[] { 176 }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 196 }, 0, 1, "\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xA4, 0xD0, 0x61, 0x52, 0x7C, 0x7B, 0x41, 0x6E, 0x47, 0x65, 0xA3, 0xA4 }, 0, 12, "\uFFFD\uFFFD\u0061\u0052\u007C\u007B\u0041\u006E\u0047\u0065\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xA3 }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xA3, 0xA4 }, 0, 2, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x65, 0xA3, 0xA4 }, 0, 3, "\u0065\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x47, 0x65, 0xA3, 0xA4 }, 0, 4, "\u0047\u0065\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xA4, 0xD0, 0x61, 0xA3, 0xA4 }, 0, 5, "\uFFFD\uFFFD\u0061\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xA4, 0xD0, 0x61, 0xA3 }, 0, 4, "\uFFFD\uFFFD\u0061\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xD0, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xA4, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xD0, 0x61, 0x52, 0xA3 }, 0, 4, "\uFFFD\u0061\u0052\uFFFD");
-            
-            Decode_InvalidBytes(new byte[] { 0xAA }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xAA, 0x41 }, 0, 2, "\uFFFD\u0041");
-
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xFF, 0xEE }, 0, 3, "\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xEF, 0xFF, 0xAE }, 0, 3, "\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 15, "\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F }, 0, 15, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F");
-
-            Decode_InvalidBytes(new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 8, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xC2, 0xDF }, 0, 2, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x80, 0x80, 0xC1, 0x80, 0xC1, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0x7F, 0x7F, 0x7F, 0x7F, 0xC3, 0xA1, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 14, "\uFFFD\u007F\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u00E1\uFFFD\u007F\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0xE0, 0xBF, 0x7F, 0xE0, 0xBF, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xE0, 0x9F, 0x80, 0xE0, 0xC0, 0x80, 0xE0, 0x9F, 0xBF, 0xE0, 0xC0, 0xBF }, 0, 12, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0x7F, 0xE0, 0xBF, 0x7F, 0xC3, 0xA1, 0xE0, 0xBF, 0xC0 }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\u007F\uFFFD\u007F\u00E1\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xE1, 0x80, 0x7F, 0xE1, 0x80, 0xC0, 0xE1, 0xBF, 0x7F, 0xE1, 0xBF, 0xC0, 0xEC, 0x80, 0x7F, 0xEC, 0x80, 0xC0, 0xEC, 0xBF, 0x7F, 0xEC, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xE1, 0x7F, 0x80, 0xE1, 0xC0, 0x80, 0xE1, 0x7F, 0xBF, 0xE1, 0xC0, 0xBF, 0xEC, 0x7F, 0x80, 0xEC, 0xC0, 0x80, 0xEC, 0x7F, 0xBF, 0xEC, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xED, 0x80, 0x7F, 0xED, 0x80, 0xC0, 0xED, 0x9F, 0x7F, 0xED, 0x9F, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xE8, 0x80, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u8000\uFFFD\u007F\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xEE, 0x80, 0x7F, 0xEE, 0x80, 0xC0, 0xEE, 0xBF, 0x7F, 0xEE, 0xBF, 0xC0, 0xEF, 0x80, 0x7F, 0xEF, 0x80, 0xC0, 0xEF, 0xBF, 0x7F, 0xEF, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xEE, 0x7F, 0x80, 0xEE, 0xC0, 0x80, 0xEE, 0x7F, 0xBF, 0xEE, 0xC0, 0xBF, 0xEF, 0x7F, 0x80, 0xEF, 0xC0, 0x80, 0xEF, 0x7F, 0xBF, 0xEF, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xF0, 0x90, 0x80, 0x7F, 0xF0, 0x90, 0x80, 0xC0, 0xF0, 0xBF, 0xBF, 0x7F, 0xF0, 0xBF, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF0, 0x90, 0x7F, 0x80, 0xF0, 0x90, 0xC0, 0x80, 0xF0, 0x90, 0x7F, 0xBF, 0xF0, 0x90, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF0, 0x8F, 0x80, 0x80, 0xF0, 0xC0, 0x80, 0x80, 0xF0, 0x8F, 0xBF, 0xBF, 0xF0, 0xC0, 0xBF, 0xBF }, 0, 16, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xF1, 0x80, 0x80, 0x7F, 0xF1, 0x80, 0x80, 0xC0, 0xF1, 0xBF, 0xBF, 0x7F, 0xF1, 0xBF, 0xBF, 0xC0, 0xF3, 0x80, 0x80, 0x7F, 0xF3, 0x80, 0x80, 0xC0, 0xF3, 0xBF, 0xBF, 0x7F, 0xF3, 0xBF, 0xBF, 0xC0 }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF1, 0x80, 0x7F, 0x80, 0xF1, 0x80, 0xC0, 0x80, 0xF1, 0x80, 0x7F, 0xBF, 0xF1, 0x80, 0xC0, 0xBF, 0xF3, 0x80, 0x7F, 0x80, 0xF3, 0x80, 0xC0, 0x80, 0xF3, 0x80, 0x7F, 0xBF, 0xF3, 0x80, 0xC0, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF1, 0x7F, 0x80, 0x80, 0xF1, 0xC0, 0x80, 0x80, 0xF1, 0x7F, 0xBF, 0xBF, 0xF1, 0xC0, 0xBF, 0xBF, 0xF3, 0x7F, 0x80, 0x80, 0xF3, 0xC0, 0x80, 0x80, 0xF3, 0x7F, 0xBF, 0xBF, 0xF3, 0xC0, 0xBF, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xF4, 0x80, 0x80, 0x7F, 0xF4, 0x80, 0x80, 0xC0, 0xF4, 0x8F, 0xBF, 0x7F, 0xF4, 0x8F, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF4, 0x80, 0x7F, 0x80, 0xF4, 0x80, 0xC0, 0x80, 0xF4, 0x80, 0x7F, 0xBF, 0xF4, 0x80, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xF4, 0x7F, 0x80, 0x80, 0xF4, 0x90, 0x80, 0x80, 0xF4, 0x7F, 0xBF, 0xBF, 0xF4, 0x90, 0xBF, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
         }
     }
 }

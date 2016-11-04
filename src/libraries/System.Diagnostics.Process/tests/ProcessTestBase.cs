@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 
 namespace System.Diagnostics.Tests
 {

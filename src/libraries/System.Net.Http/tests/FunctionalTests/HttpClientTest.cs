@@ -16,6 +16,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientTest
     {
         [Fact]
@@ -380,6 +382,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(12778)]
         public void Timeout_SetTo60AndGetResponseFromServerWhichTakes40_Success()
         {
             // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.

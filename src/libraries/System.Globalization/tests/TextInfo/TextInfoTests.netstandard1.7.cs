@@ -22,7 +22,6 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11616, Xunit.PlatformID.AnyUnix)]
         [MemberData(nameof(TextInfo_TestData))]
         public void MiscTest(string cultureName, int lcid, int ansiCodePage, int ebcdiCCodePage, int macCodePage, int oemCodePage, bool isRightToLeft)
         {
@@ -36,7 +35,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11616, Xunit.PlatformID.AnyUnix)]
         public void ReadOnlyTest()
         {
             TextInfo ti = CultureInfo.GetCultureInfo("en-US").TextInfo;
@@ -50,7 +48,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11616, Xunit.PlatformID.AnyUnix)]
         public void ToTitleCaseTest()
         {
             TextInfo ti = CultureInfo.GetCultureInfo("en-US").TextInfo;

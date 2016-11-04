@@ -26,7 +26,6 @@
 //
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -34,9 +33,10 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// Represents the results from a single regular expression match.
     /// </summary>
+    [Serializable]
     public class Match : Group
     {
-        internal static Match s_empty = new Match(null, 1, String.Empty, 0, 0, 0);
+        internal static readonly Match s_empty = new Match(null, 1, string.Empty, 0, 0, 0);
         internal GroupCollection _groupcoll;
 
         // input to the match
@@ -63,7 +63,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal Match(Regex regex, int capcount, String text, int begpos, int len, int startpos)
+        internal Match(Regex regex, int capcount, string text, int begpos, int len, int startpos)
             : base(text, new int[2], 0, "0")
         {
             _regex = regex;
@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions
         /*
          * Nonpublic set-text method
          */
-        internal virtual void Reset(Regex regex, String text, int textbeg, int textend, int textstart)
+        internal virtual void Reset(Regex regex, string text, int textbeg, int textend, int textstart)
         {
             _regex = regex;
             _text = text;
@@ -129,7 +129,7 @@ namespace System.Text.RegularExpressions
         /// example, if the replacement pattern is ?$1$2?, Result returns the concatenation
         /// of Group(1).ToString() and Group(2).ToString().
         /// </summary>
-        public virtual String Result(String replacement)
+        public virtual string Result(string replacement)
         {
             RegexReplacement repl;
 
@@ -153,11 +153,11 @@ namespace System.Text.RegularExpressions
         /*
          * Used by the replacement code
          */
-        internal virtual String GroupToStringImpl(int groupnum)
+        internal virtual string GroupToStringImpl(int groupnum)
         {
             int c = _matchcount[groupnum];
             if (c == 0)
-                return String.Empty;
+                return string.Empty;
 
             int[] matches = _matches[groupnum];
 
@@ -167,7 +167,7 @@ namespace System.Text.RegularExpressions
         /*
          * Used by the replacement code
          */
-        internal String LastGroupToStringImpl()
+        internal string LastGroupToStringImpl()
         {
             return GroupToStringImpl(_matchcount.Length - 1);
         }
@@ -195,7 +195,7 @@ namespace System.Text.RegularExpressions
 
                 // Depends on the fact that Group.Synchronized just
                 // operates on and returns the same instance
-                System.Text.RegularExpressions.Group.Synchronized(group);
+                Group.Synchronized(group);
             }
 
             return inner;
@@ -384,7 +384,7 @@ namespace System.Text.RegularExpressions
 
                 for (j = 0; j < _matchcount[i]; j++)
                 {
-                    String text = "";
+                    string text = "";
 
                     if (_matches[i][j * 2] >= 0)
                         text = _text.Substring(_matches[i][j * 2], _matches[i][j * 2 + 1]);
@@ -410,7 +410,7 @@ namespace System.Text.RegularExpressions
          * Nonpublic constructor
          */
         internal MatchSparse(Regex regex, Hashtable caps, int capcount,
-                             String text, int begpos, int len, int startpos)
+                             string text, int begpos, int len, int startpos)
 
         : base(regex, capcount, text, begpos, len, startpos)
         {

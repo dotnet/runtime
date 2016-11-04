@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 namespace System.Security.Cryptography.X509Certificates
 {
     // DefaultKeySet, UserKeySet and MachineKeySet are mutually exclusive
+    // PersistKeySet and EphemeralKeySet are mutually exclusive
+    [Serializable]
     [Flags]
     public enum X509KeyStorageFlags
     {
@@ -17,6 +16,7 @@ namespace System.Security.Cryptography.X509Certificates
         Exportable = 0x04,
         UserProtected = 0x08,
         PersistKeySet = 0x10,
+        EphemeralKeySet = 0x20,
     }
 }
 

@@ -129,8 +129,8 @@ namespace System.Resources.ResourceWriterTests
         [Fact]
         public static void GenerateResources()
         {
-            byte[] buffer = new byte[_RefBuffer.Length];
-            using (var ms2 = new MemoryStream(buffer, true))
+            byte[] buffer;
+            using (var ms2 = new MemoryStream())
             {
                 using (var rw = new ResourceWriter(ms2))
                 {
@@ -144,10 +144,9 @@ namespace System.Resources.ResourceWriterTests
 
                     rw.Generate();
                 }
+                buffer = ms2.ToArray();
             }
-
-            bool hError = buffer.SequenceEqual(_RefBuffer);
-            Assert.True(hError, "The generated Resource does not match the reference");
+            Assert.Equal(_RefBuffer, buffer);
         }
     }
 

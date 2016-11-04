@@ -4,17 +4,18 @@
 
 namespace System.Security.Permissions
 {
-    public sealed partial class SecurityPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    [Serializable]
+    public sealed partial class SecurityPermission : CodeAccessPermission, IUnrestrictedPermission
     {
-        public SecurityPermission(System.Security.Permissions.PermissionState state) { }
-        public SecurityPermission(System.Security.Permissions.SecurityPermissionFlag flag) { }
-        public System.Security.Permissions.SecurityPermissionFlag Flags { get; set; }
-        public override System.Security.IPermission Copy() { return this; }
+        public SecurityPermission(PermissionState state) { }
+        public SecurityPermission(SecurityPermissionFlag flag) { }
+        public SecurityPermissionFlag Flags { get; set; }
+        public override IPermission Copy() { return this; }
         public override void FromXml(SecurityElement esd) { }
-        public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return default(IPermission); }
+        public override bool IsSubsetOf(IPermission target) { return false; }
         public bool IsUnrestricted() { return false; }
         public override SecurityElement ToXml() { return default(SecurityElement); }
-        public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
+        public override IPermission Union(IPermission target) { return default(IPermission); }
     }
 }

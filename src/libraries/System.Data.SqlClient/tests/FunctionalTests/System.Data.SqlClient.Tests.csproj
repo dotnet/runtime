@@ -6,16 +6,12 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Data.SqlClient.Tests</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Tests</AssemblyName>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(EnableManualTests)' == 'true' ">
     <Compile Include="DiagnosticTest.cs" />
   </ItemGroup>
@@ -25,14 +21,10 @@
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
-    <Compile Include="SqlStringTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj"> 
-      <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference> 
+    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

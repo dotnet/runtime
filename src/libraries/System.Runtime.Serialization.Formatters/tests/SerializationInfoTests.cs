@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             Assert.Equal(typeof(Serializable), si.ObjectType);
             Assert.Equal(typeof(Serializable).FullName, si.FullTypeName);
-            Assert.Equal(typeof(Serializable).GetTypeInfo().Assembly.FullName, si.AssemblyName);
+            Assert.Equal(typeof(Serializable).Assembly.FullName, si.AssemblyName);
 
             Assert.Equal(15, si.MemberCount);
 

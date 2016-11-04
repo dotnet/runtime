@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -17,10 +14,9 @@ namespace System.Security.Cryptography
 
     public abstract class SHA1 : HashAlgorithm
     {
-        protected SHA1()
-        {
-        }
+        protected SHA1() { }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static SHA1 Create()
         {
             return new Implementation();
@@ -28,6 +24,8 @@ namespace System.Security.Cryptography
 
         private sealed class Implementation : SHA1
         {
+            private readonly HashProvider _hashProvider;
+
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.SHA1);
@@ -63,8 +61,6 @@ namespace System.Security.Cryptography
                 _hashProvider.Dispose(disposing);
                 base.Dispose(disposing);
             }
-
-            private readonly HashProvider _hashProvider;
         }
     }
 }

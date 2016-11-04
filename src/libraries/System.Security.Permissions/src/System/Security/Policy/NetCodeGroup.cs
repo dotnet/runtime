@@ -4,23 +4,24 @@
 
 namespace System.Security.Policy
 {
-    public sealed partial class NetCodeGroup : System.Security.Policy.CodeGroup
+    [Serializable]
+    public sealed partial class NetCodeGroup : CodeGroup
     {
         public static readonly string AbsentOriginScheme;
         public static readonly string AnyOtherOriginScheme;
-        public NetCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition) : base(default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }
+        public NetCodeGroup(IMembershipCondition membershipCondition) : base(default(IMembershipCondition), default(PolicyStatement)) { }
         public override string AttributeString { get { return null; } }
         public override string MergeLogic { get { return null; } }
         public override string PermissionSetName { get { return null; } }
-        public void AddConnectAccess(string originScheme, System.Security.Policy.CodeConnectAccess connectAccess) { }
-        public override System.Security.Policy.CodeGroup Copy() { return default(System.Security.Policy.CodeGroup); }
-        protected override void CreateXml(SecurityElement element, System.Security.Policy.PolicyLevel level) { }
+        public void AddConnectAccess(string originScheme, CodeConnectAccess connectAccess) { }
+        public override CodeGroup Copy() { return default(CodeGroup); }
+        protected override void CreateXml(SecurityElement element, PolicyLevel level) { }
         public override bool Equals(object o) => base.Equals(o);
         public System.Collections.DictionaryEntry[] GetConnectAccessRules() { return default(System.Collections.DictionaryEntry[]); }
         public override int GetHashCode() => base.GetHashCode();
-        protected override void ParseXml(SecurityElement e, System.Security.Policy.PolicyLevel level) { }
+        protected override void ParseXml(SecurityElement e, PolicyLevel level) { }
         public void ResetConnectAccess() { }
-        public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
-        public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
+        public override PolicyStatement Resolve(Evidence evidence) { return default(PolicyStatement); }
+        public override CodeGroup ResolveMatchingCodeGroups(Evidence evidence) { return default(CodeGroup); }
     }
 }

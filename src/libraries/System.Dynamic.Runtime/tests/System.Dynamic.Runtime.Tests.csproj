@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -10,16 +10,13 @@
     <RootNamespace>System.Dynamic.Runtime.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>67,168,219,414,162,184,458,464,78,169,114,693,108,1981,649,109,1066,3021,3026,3002,3014,3022,660,661,429</NoWarn>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="CallInfoTests.cs" />
     <Compile Include="Dynamic.Context\Common.cs" />
@@ -162,6 +159,7 @@
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.decl.cs" />
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.expr.cs" />
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.implem.cs" />
+    <Compile Include="Common.cs" />
     <Compile Include="ErrorVerifier.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
@@ -172,6 +170,8 @@
       <Project>{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}</Project>
       <Name>System.Dynamic.Runtime</Name>
     </ProjectReference>
+    <!-- Do not remove this P2P reference. System.Dynamic.Runtime is now a facade that type-forwards to System.Linq.Expressions. -->
+    <ProjectReference Include="..\..\System.Linq.Expressions\pkg\System.Linq.Expressions.pkgproj" Condition="'$(TargetGroup)'==''" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

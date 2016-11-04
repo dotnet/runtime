@@ -1,51 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.5;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Requires.cs" />
+    <Compile Include="System\Reflection\TypeExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
-    <Compile Include="System\Reflection\TypeExtensions.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <Compile Include="System\Reflection\AssemblyExtensions.cs" />
-    <Compile Include="System\Reflection\BindingFlags.cs" />
-    <Compile Include="System\Reflection\EventInfoExtensions.cs" />
-    <Compile Include="System\Reflection\Helpers.cs" />
-    <Compile Include="System\Reflection\MemberInfoExtensions.cs" />
-    <Compile Include="System\Reflection\ModuleExtensions.cs" />
-    <Compile Include="System\Reflection\MethodInfoExtensions.cs" />
-    <Compile Include="System\Reflection\PropertyInfoExtensions.cs" />
-    <Compile Include="System\Reflection\TypeExtensions.CoreRT.cs" />
-    <Compile Include="Internal\Reflection\Extensions\NonPortable\InheritedPropertyInfo.cs" />
-    <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberEnumerator.cs" />
-    <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberPolicies.cs" />
-    <Compile Include="$(CommonPath)\Internal\Reflection\Execution\Binder\DefaultBinder.cs">
-      <Link>Common\Internal\Reflection\Execution\Binder\DefaultBinder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
-    <TargetingPackReference Include="System.Private.Reflection.Extensibility" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
-    <TargetingPackReference Include="mscorlib" />
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net462'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net462'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -1,8 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
@@ -10,23 +7,19 @@
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />  
-  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebRequestTest.cs" />
     <Compile Include="HttpWebResponseTest.cs" />
-    <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="RequestStreamTest.cs" />
     <Compile Include="WebRequestTest.cs" />
-
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>
     </Compile>
@@ -38,17 +31,34 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
-    </Compile>  </ItemGroup>
-
+    </Compile> 
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs"> 
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="AuthorizationTest.cs" />
+    <Compile Include="AuthenticationManagerTest.cs" />
+    <Compile Include="GlobalProxySelectionTest.cs" />
+    <Compile Include="FileWebRequestTest.cs" />
+    <Compile Include="FtpWebRequestTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="HttpRequestCachePolicyTest.cs" />
+    <Compile Include="HttpWebRequestHeaderTest.cs" />
+    <Compile Include="HttpWebResponseHeaderTest.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Net.Requests.pkgproj">
       <Name>System.Net.Requests</Name>
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
     </ProjectReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

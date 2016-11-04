@@ -109,13 +109,13 @@ namespace System.Reflection.Emit.Tests
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             ModuleBuilder module = assembly.DefineDynamicModule(name);
 
-            Assert.Same(assembly, module.Assembly);
+            Assert.Equal(assembly, module.Assembly);
             Assert.Empty(module.CustomAttributes);
 
             Assert.Equal("<In Memory Module>", module.Name);
             Assert.Equal("RefEmit_InMemoryManifestModule", module.FullyQualifiedName);
 
-            Assert.Same(module, assembly.GetDynamicModule(module.FullyQualifiedName));
+            Assert.Equal(module, assembly.GetDynamicModule(module.FullyQualifiedName));
         }
 
         [Theory]

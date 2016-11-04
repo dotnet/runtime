@@ -83,16 +83,16 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public TType DecodeFieldSignature<TType>(ISignatureTypeProvider<TType> provider)
+        public TType DecodeFieldSignature<TType, TGenericContext>(ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader);
+            var decoder = new SignatureDecoder<TType, TGenericContext>(provider, _reader, genericContext);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeFieldSignature(ref blobReader);
         }
 
-        public MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider)
+        public MethodSignature<TType> DecodeMethodSignature<TType, TGenericContext>(ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader);
+            var decoder = new SignatureDecoder<TType, TGenericContext>(provider, _reader, genericContext);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeMethodSignature(ref blobReader);
         }

@@ -4,18 +4,19 @@
 
 namespace System.Security.Policy
 {
-    public sealed partial class SiteMembershipCondition : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable, System.Security.Policy.IMembershipCondition
+    [Serializable]
+    public sealed partial class SiteMembershipCondition : ISecurityEncodable, ISecurityPolicyEncodable, IMembershipCondition
     {
         public SiteMembershipCondition(string site) { }
         public string Site { get; set; }
-        public bool Check(System.Security.Policy.Evidence evidence) { return false; }
-        public System.Security.Policy.IMembershipCondition Copy() { return default(System.Security.Policy.IMembershipCondition); }
+        public bool Check(Evidence evidence) { return false; }
+        public IMembershipCondition Copy() { return default(IMembershipCondition); }
         public override bool Equals(object o) => base.Equals(o);
         public void FromXml(SecurityElement e) { }
-        public void FromXml(SecurityElement e, System.Security.Policy.PolicyLevel level) { }
+        public void FromXml(SecurityElement e, PolicyLevel level) { }
         public override int GetHashCode() => base.GetHashCode();
         public override string ToString() => base.ToString();
         public SecurityElement ToXml() { return default(SecurityElement); }
-        public SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(SecurityElement); }
+        public SecurityElement ToXml(PolicyLevel level) { return default(SecurityElement); }
     }
 }

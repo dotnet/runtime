@@ -1,18 +1,14 @@
 {
   "dependencies": {
-    "System.IO": "4.0.0",
-    "System.Net.Primitives": "4.0.10",
-    "System.Runtime": "4.0.0",
-    "System.Runtime.Handles": "4.0.0",
-    "System.Security.Cryptography.X509Certificates": "4.1.0",
-    "System.Security.Principal": "4.0.0",
-    "System.Threading.Tasks": "4.0.0"
+    "System.IO": "4.4.0-beta-24703-01",
+    "System.Net.Primitives": "4.4.0-beta-24703-01",
+    "System.Runtime": "4.4.0-beta-24703-01",
+    "System.Runtime.Handles": "4.4.0-beta-24703-01",
+    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24703-01",
+    "System.Security.Principal": "4.4.0-beta-24703-01",
+    "System.Threading.Tasks": "4.4.0-beta-24703-01"
   },
   "frameworks": {
-    "netstandard1.3": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

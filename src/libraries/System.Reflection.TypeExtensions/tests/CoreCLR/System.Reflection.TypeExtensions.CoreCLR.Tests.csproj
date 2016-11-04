@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -21,29 +21,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\pkg\System.Reflection.TypeExtensions.pkgproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ref\System.Reflection.TypeExtensions.csproj">
-      <Project>{da96367e-04d1-4057-997e-aed4a2773f0d}</Project>
-      <Name>System.Reflection.TypeExtensions</Name>
-      <!-- Don't deploy reference assembly -->
-      <Private>false</Private>
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Reflection.TypeExtensions.csproj">
-      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
-      <Name>System.Reflection.TypeExtensions</Name>
-      <!-- Don't reference implementation assembly, but do deploy it. -->
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="MemberInfo\MetadataToken.CoreCLR.cs" />
-    <Compile Include="Module\ModuleVersionId.CoreCLR.cs" />
+    <Compile Include="MemberInfoTests.CoreCLR.cs" />
+    <Compile Include="ModuleTests.CoreCLR.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

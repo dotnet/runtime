@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
@@ -79,10 +78,10 @@ namespace System.Linq.Expressions.Compiler
                 LocalBuilder loc = GetLocal(node.Operand.Type);
                 _ilg.Emit(OpCodes.Stloc, loc);
                 _ilg.EmitInt(0);
-                _ilg.EmitConvertToType(typeof(int), node.Operand.Type, false);
+                _ilg.EmitConvertToType(typeof(int), node.Operand.Type, isChecked: false);
                 _ilg.Emit(OpCodes.Ldloc, loc);
                 FreeLocal(loc);
-                EmitBinaryOperator(ExpressionType.SubtractChecked, node.Operand.Type, node.Operand.Type, node.Type, false);
+                EmitBinaryOperator(ExpressionType.SubtractChecked, node.Operand.Type, node.Operand.Type, node.Type, liftedToNull: false);
             }
             else
             {
@@ -367,12 +366,12 @@ namespace System.Linq.Expressions.Compiler
         {
             if (node.IsLifted)
             {
-                ParameterExpression v = Expression.Variable(TypeUtils.GetNonNullableType(node.Operand.Type), null);
+                ParameterExpression v = Expression.Variable(TypeUtils.GetNonNullableType(node.Operand.Type), name: null);
                 MethodCallExpression mc = Expression.Call(node.Method, v);
 
                 Type resultType = TypeUtils.GetNullableType(mc.Type);
                 EmitLift(node.NodeType, resultType, mc, new ParameterExpression[] { v }, new Expression[] { node.Operand });
-                _ilg.EmitConvertToType(resultType, node.Type, false);
+                _ilg.EmitConvertToType(resultType, node.Type, isChecked: false);
             }
             else
             {

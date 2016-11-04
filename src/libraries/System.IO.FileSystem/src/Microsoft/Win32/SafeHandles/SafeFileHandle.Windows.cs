@@ -11,16 +11,16 @@ using Microsoft.Win32;
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCritical]  // auto-generated_required
-    public sealed class SafeFileHandle : SafeHandle
+    public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private bool? _isAsync;
 
-        private SafeFileHandle() : base(IntPtr.Zero, true)
+        private SafeFileHandle() : base(true)
         {
             _isAsync = null;
         }
 
-        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
+        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
 
@@ -46,15 +46,6 @@ namespace Microsoft.Win32.SafeHandles
         override protected bool ReleaseHandle()
         {
             return Interop.mincore.CloseHandle(handle);
-        }
-
-        public override bool IsInvalid
-        {
-            [System.Security.SecurityCritical]
-            get
-            {
-                return handle == IntPtr.Zero || handle == new IntPtr(-1);
-            }
         }
     }
 }

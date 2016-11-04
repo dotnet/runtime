@@ -75,7 +75,10 @@ namespace System.Runtime.InteropServices
             const int ToAdd = 10; // int.MaxValue
             {
                 // Jump HandleCollector instance forward until it almost overflows
-                FieldInfo handleCount = typeof(HandleCollector).GetTypeInfo().GetDeclaredField("_handleCount");
+                TypeInfo type = typeof(HandleCollector).GetTypeInfo();
+                FieldInfo handleCount =
+                    type.GetDeclaredField("_handleCount") ?? // corefx
+                    type.GetDeclaredField("handleCount");    // desktop
                 Assert.NotNull(handleCount);
                 handleCount.SetValue(collector, int.MaxValue - ToAdd);
             }

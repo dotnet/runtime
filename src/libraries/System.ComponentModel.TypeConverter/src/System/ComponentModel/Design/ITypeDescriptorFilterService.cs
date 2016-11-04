@@ -2,13 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System;
 using System.Collections;
+using System.ComponentModel;
 
 namespace System.ComponentModel.Design
 {
     /// <summary>
     ///    <para>
-    ///       Modifies the set of type descriptors that a component provides.
+    ///       Modifies the set of type descriptors that a component
+    ///       provides.
     ///    </para>
     /// </summary>
     public interface ITypeDescriptorFilterService
@@ -35,3 +40,4 @@ namespace System.ComponentModel.Design
         bool FilterProperties(IComponent component, IDictionary properties);
     }
 }
+

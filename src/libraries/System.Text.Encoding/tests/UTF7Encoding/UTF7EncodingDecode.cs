@@ -80,6 +80,20 @@ namespace System.Text.Tests
             // Surrogate pairs
             yield return new object[] { new byte[] { 0x2B, 0x32, 0x41, 0x44, 0x66, 0x2F, 0x77, 0x2D }, 0, 8, "\uD800\uDFFF" };
 
+            // Invalid Unicode
+            yield return new object[] { new byte[] { 43, 50, 65, 65, 45 }, 0, 5, "\uD800" }; // Lone high surrogate
+            yield return new object[] { new byte[] { 43, 51, 65, 65, 45 }, 0, 5, "\uDC00" }; // Lone low surrogate
+            yield return new object[] { new byte[] { 0x2B, 0x33, 0x2F, 0x38, 0x2D }, 0, 5, "\uDFFF" }; // Lone low surrogate
+
+            yield return new object[] { new byte[] { 43, 50, 65, 68, 89, 65, 65, 45 }, 0, 8, "\uD800\uD800" }; // High, high
+            yield return new object[] { new byte[] { 43, 51, 65, 68, 89, 65, 65, 45 }, 0, 8, "\uDC00\uD800" }; // Low, high
+            yield return new object[] { new byte[] { 43, 51, 65, 68, 99, 65, 65, 45 }, 0, 8, "\uDC00\uDC00" }; // Low, low
+
+            // High BMP non-chars
+            yield return new object[] { new byte[] { 43, 47, 47, 48, 45 }, 0, 5, "\uFFFD" };
+            yield return new object[] { new byte[] { 43, 47, 47, 52, 45 }, 0, 5, "\uFFFE" };
+            yield return new object[] { new byte[] { 43, 47, 47, 56, 45 }, 0, 5, "\uFFFF" };
+
             // Empty strings
             yield return new object[] { new byte[0], 0, 0, string.Empty };
             yield return new object[] { new byte[10], 0, 0, string.Empty };
@@ -92,24 +106,6 @@ namespace System.Text.Tests
         {
             EncodingHelpers.Decode(new UTF7Encoding(true), bytes, index, count, expected);
             EncodingHelpers.Decode(new UTF7Encoding(false), bytes, index, count, expected);
-        }
-
-        [Fact]
-        public void Decode_InvalidUnicode()
-        {
-            // TODO: add into Decode_TestData once #7166 is fixed
-            Decode(new byte[] { 43, 50, 65, 65, 45 }, 0, 5, "\uD800"); // Lone high surrogate
-            Decode(new byte[] { 43, 51, 65, 65, 45 }, 0, 5, "\uDC00"); // Lone low surrogate
-            Decode(new byte[] { 0x2B, 0x33, 0x2F, 0x38, 0x2D }, 0, 5, "\uDFFF"); // Lone low surrogate
-
-            Decode(new byte[] { 43, 50, 65, 68, 89, 65, 65, 45 }, 0, 8, "\uD800\uD800"); // High, high
-            Decode(new byte[] { 43, 51, 65, 68, 89, 65, 65, 45 }, 0, 8, "\uDC00\uD800"); // Low, high
-            Decode(new byte[] { 43, 51, 65, 68, 99, 65, 65, 45 }, 0, 8, "\uDC00\uDC00"); // Low, low
-
-            // High BMP non-chars
-            Decode(new byte[] { 43, 47, 47, 48, 45 }, 0, 5, "\uFFFD");
-            Decode(new byte[] { 43, 47, 47, 52, 45 }, 0, 5, "\uFFFE");
-            Decode(new byte[] { 43, 47, 47, 56, 45 }, 0, 5, "\uFFFF");
         }
     }
 }

@@ -52,7 +52,7 @@ namespace System.Data.SqlClient
 
             IsReadOnly = (0 == _metadata.updatability);
 
-            UdtAssemblyQualifiedName = null;
+            UdtAssemblyQualifiedName = _metadata.udtAssemblyQualifiedName;
 
         }
 

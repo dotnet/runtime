@@ -21,6 +21,7 @@ internal static partial class Interop
             CERT_ARCHIVED_PROP_ID = 19,
             CERT_KEY_IDENTIFIER_PROP_ID = 20,
             CERT_PUBKEY_ALG_PARA_PROP_ID = 22,
+            CERT_NCRYPT_KEY_HANDLE_PROP_ID = 78,
             CERT_DELETE_KEYSET_PROP_ID = 101,
         }
     }

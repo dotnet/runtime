@@ -17,7 +17,6 @@ namespace System.Transactions.Tests
         public static Guid PromoterType1 = new Guid("D9A34FDF-D02A-4EED-98C3-5AD092355E17");
 
         private static bool s_traceEnabled = true;
-        private static int s_testFailures = 0;
 
         private static MethodInfo s_enlistPromotableSinglePhaseMethodInfo;
         private static MethodInfo s_setDistributedTransactionIdentifierMethodInfo;
@@ -28,7 +27,6 @@ namespace System.Transactions.Tests
         public NonMsdtcPromoterTests()
         {
             // reset the testFailures count back to 0 for each test case.
-            s_testFailures = 0;
             VerifySoftDependencies();
         }
 
@@ -88,18 +86,10 @@ namespace System.Transactions.Tests
                 /*spcResponse=*/TransactionStatus.Committed,
                 /*expectRejection = */ true);
 
-            if (shouldBeNull != null)
-            {
-                TestFailed(testCaseDescription, "The second non-MSDTC PSPE was successful");
-                return;
-            }
+            Assert.Null(shouldBeNull);
 
-            //byte[] promotedToken = txToPromote.GetPromotedToken();
             byte[] promotedToken = TxPromotedToken(txToPromote);
-            if (!PromotedTokensMatch(promotedToken, NonMsdtcPromoterTests.PromotedToken1))
-            {
-                TestFailed(testCaseDescription, "The promoted token does not match");
-            }
+            Assert.True(PromotedTokensMatch(promotedToken, NonMsdtcPromoterTests.PromotedToken1));
         }
 
         public static void Trace(string stringToTrace)
@@ -135,14 +125,6 @@ namespace System.Transactions.Tests
             {
                 NoStressTrace("Pass");
             }
-        }
-
-        private static void TestFailed(string description, string detail)
-        {
-            Debug.WriteLine(description);
-            Debug.WriteLine(detail);
-            Debug.WriteLine("**** Fail ****");
-            NonMsdtcPromoterTests.s_testFailures++;
         }
 
         private static MyEnlistment CreateVolatileEnlistment(
@@ -206,7 +188,7 @@ namespace System.Transactions.Tests
             }
             else
             {
-                throw new Exception("normal PSPE not implemented yet.");
+                throw new ApplicationException("normal PSPE not implemented yet.");
             }
 
             return enlistment;
@@ -234,14 +216,14 @@ namespace System.Transactions.Tests
             {
                 Trace("Attempting TransactionInterop.GetDtcTransaction");
                 TransactionInterop.GetDtcTransaction(tx);
-                throw new Exception("TransactionInterop.GetDtcTransaction unexpectedly succeeded.");
+                throw new ApplicationException("TransactionInterop.GetDtcTransaction unexpectedly succeeded.");
             }
             catch (TransactionPromotionException ex)
             {
                 if (TxPromoterType(tx) != expectedPromoterType)
                 {
                     Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-                    throw new Exception(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
+                    throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
                 }
             }
 
@@ -250,14 +232,14 @@ namespace System.Transactions.Tests
                 Trace("Attempting TransactionInterop.GetExportCookie");
                 byte[] dummyWhereabouts = new byte[1];
                 TransactionInterop.GetExportCookie(tx, dummyWhereabouts);
-                throw new Exception("TransactionInterop.GetExportCookie unexpectedly succeeded.");
+                throw new ApplicationException("TransactionInterop.GetExportCookie unexpectedly succeeded.");
             }
             catch (TransactionPromotionException ex)
             {
                 if (TxPromoterType(tx) != expectedPromoterType)
                 {
                     Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-                    throw new Exception(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
+                    throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
                 }
             }
 
@@ -266,14 +248,14 @@ namespace System.Transactions.Tests
                 Trace("Attempting TransactionInterop.GetTransmitterPropagationToken");
                 byte[] dummyWhereabouts = new byte[1];
                 TransactionInterop.GetTransmitterPropagationToken(tx);
-                throw new Exception("TransactionInterop.GetTransmitterPropagationToken unexpectedly succeeded.");
+                throw new ApplicationException("TransactionInterop.GetTransmitterPropagationToken unexpectedly succeeded.");
             }
             catch (TransactionPromotionException ex)
             {
                 if (TxPromoterType(tx) != expectedPromoterType)
                 {
                     Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-                    throw new Exception(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
+                    throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
                 }
             }
 
@@ -282,14 +264,14 @@ namespace System.Transactions.Tests
                 Trace("Attempting EnlistDurable");
                 DummyDurableEnlistment enlistment = new DummyDurableEnlistment();
                 tx.EnlistDurable(new Guid("611653C3-8536-4158-A990-00A8EE08B195"), enlistment, EnlistmentOptions.None);
-                throw new Exception("EnlistDurable unexpectedly succeeded.");
+                throw new ApplicationException("EnlistDurable unexpectedly succeeded.");
             }
             catch (TransactionPromotionException ex)
             {
                 if (TxPromoterType(tx) != expectedPromoterType)
                 {
                     Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-                    throw new Exception(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
+                    throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
                 }
             }
 
@@ -298,14 +280,14 @@ namespace System.Transactions.Tests
                 Trace("Attempting EnlistDurableSPC");
                 DummyDurableEnlistmentSPC enlistment = new DummyDurableEnlistmentSPC();
                 tx.EnlistDurable(new Guid("611653C3-8536-4158-A990-00A8EE08B195"), enlistment, EnlistmentOptions.None);
-                throw new Exception("EnlistDurableSPC unexpectedly succeeded.");
+                throw new ApplicationException("EnlistDurableSPC unexpectedly succeeded.");
             }
             catch (TransactionPromotionException ex)
             {
                 if (TxPromoterType(tx) != expectedPromoterType)
                 {
                     Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-                    throw new Exception(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
+                    throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
                 }
             }
 
@@ -315,14 +297,14 @@ namespace System.Transactions.Tests
             //    MemoryStream txStream = new MemoryStream();
             //    IFormatter formatter = new BinaryFormatter();
             //    formatter.Serialize(txStream, tx);
-            //    throw new Exception("Serialize of transaction unexpectedly succeeded.");
+            //    throw new ApplicationException("Serialize of transaction unexpectedly succeeded.");
             //}
             //catch (TransactionPromotionException ex)
             //{
             //    if (TxPromoterType(tx) != expectedPromoterType)
             //    {
             //        Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-            //        throw new Exception(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
+            //        throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
             //    }
             //}
         }
@@ -435,7 +417,7 @@ namespace System.Transactions.Tests
                 if (_failInitialize)
                 {
                     Trace("NonMSDTCPromoterEnlistment.Initialize - Failing based on configuration");
-                    throw new Exception("Failing Initialize based on configuration");
+                    throw new ApplicationException("Failing Initialize based on configuration");
                 }
                 return;
             }
@@ -457,19 +439,19 @@ namespace System.Transactions.Tests
                         {
                             if (TxPromotedToken(txToEnlist) != _promotedToken)
                             {
-                                throw new Exception("The PromotedToken does not match");
+                                throw new ApplicationException("The PromotedToken does not match");
                             }
                         }
                         return false;
                     }
                     else
                     {
-                        throw new Exception("EnlistPromotableSinglePhase failed when expected to succeed");
+                        throw new ApplicationException("EnlistPromotableSinglePhase failed when expected to succeed");
                     }
                 }
                 else if (expectRejection)
                 {
-                    throw new Exception("EnlistPromotableSinglePhase succeeded when expected to fail");
+                    throw new ApplicationException("EnlistPromotableSinglePhase succeeded when expected to fail");
                 }
 
                 _enlistedTransaction = txToEnlist;
@@ -492,7 +474,7 @@ namespace System.Transactions.Tests
                 if (_failSPC)
                 {
                     Trace("NonMSDTCPromoterEnlistment.SinglePhaseCommit - Failing based on configuration");
-                    throw new Exception("Failing SinglePhaseCommit based on configuration");
+                    throw new ApplicationException("Failing SinglePhaseCommit based on configuration");
                 }
 
                 switch (_spcResponse)
@@ -505,18 +487,18 @@ namespace System.Transactions.Tests
 
                     case TransactionStatus.Aborted:
                         {
-                            singlePhaseEnlistment.Aborted(new Exception("Aborted by NonMSDTCPromoterEnlistment.SinglePhaseCommit"));
+                            singlePhaseEnlistment.Aborted(new ApplicationException("Aborted by NonMSDTCPromoterEnlistment.SinglePhaseCommit"));
                             break;
                         }
 
                     case TransactionStatus.InDoubt:
                         {
-                            singlePhaseEnlistment.InDoubt(new Exception("InDoubt by NonMSDTCPromoterEnlistment.SinglePhaseCommit"));
+                            singlePhaseEnlistment.InDoubt(new ApplicationException("InDoubt by NonMSDTCPromoterEnlistment.SinglePhaseCommit"));
                             break;
                         }
                     default:
                         {
-                            throw new Exception("InDoubt by NonMSDTCPromoterEnlistment.SinglePhaseCommit because of invalid TransactionStatus outcome value.");
+                            throw new ApplicationException("InDoubt by NonMSDTCPromoterEnlistment.SinglePhaseCommit because of invalid TransactionStatus outcome value.");
                         }
                 }
             }
@@ -529,7 +511,7 @@ namespace System.Transactions.Tests
                 if (_failPromote)
                 {
                     Trace("NonMSDTCPromoterEnlistment.Promote - Failing based on configuration");
-                    throw new Exception("Failing promotion based on configuration");
+                    throw new ApplicationException("Failing promotion based on configuration");
                 }
 
                 // invoke this.enlistedTransaction.SetDistributedTransactionIdentifier(this, this.promoterType); via reflection
@@ -539,13 +521,13 @@ namespace System.Transactions.Tests
                     try
                     {
                         SetDistributedTransactionId(incorrectNotificationObject, _enlistedTransaction, _distributedTxId);
-                        throw new Exception("SetDistributedTransactionIdentifier did not throw the expected InvalidOperationException");
+                        throw new ApplicationException("SetDistributedTransactionIdentifier did not throw the expected InvalidOperationException");
                     }
                     catch (TargetInvocationException ex)
                     {
                         if (!(ex.InnerException is InvalidOperationException))
                         {
-                            throw new Exception("SetDistributedTransactionIdentifier did not throw the expected InvalidOperationException");
+                            throw new ApplicationException("SetDistributedTransactionIdentifier did not throw the expected InvalidOperationException");
                         }
                     }
                 }
@@ -655,7 +637,7 @@ namespace System.Transactions.Tests
                             Trace("MyEnlistment.Prepare - Force Rollback because second enlistment succeeded unexpectedly");
                             _aborted = true;
                             _outcomeReceived.Set();
-                            preparingEnlistment.ForceRollback(new Exception("MyEnlistment voted ForceRollback"));
+                            preparingEnlistment.ForceRollback(new ApplicationException("MyEnlistment voted ForceRollback"));
                             return;
                         }
                     }
@@ -667,7 +649,7 @@ namespace System.Transactions.Tests
                             // Force rollback of the transaction because the second enlistment was unsuccessful.
                             _aborted = true;
                             _outcomeReceived.Set();
-                            preparingEnlistment.ForceRollback(new Exception("MyEnlistment voted ForceRollback"));
+                            preparingEnlistment.ForceRollback(new ApplicationException("MyEnlistment voted ForceRollback"));
                             return;
                         }
                     }
@@ -683,7 +665,7 @@ namespace System.Transactions.Tests
                     Trace("MyEnlistment.Prepare - Force Rollback");
                     _aborted = true;
                     _outcomeReceived.Set();
-                    preparingEnlistment.ForceRollback(new Exception("MyEnlistment voted ForceRollback"));
+                    preparingEnlistment.ForceRollback(new ApplicationException("MyEnlistment voted ForceRollback"));
                 }
             }
 
@@ -893,20 +875,12 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                if (ex.GetType() != expectedExceptionType)
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.Equal(expectedExceptionType, ex.GetType());
             }
 
             for (int i = 0; i < count; i++)
             {
-                if (!enlistmentDoneEvts[i].WaitOne(TimeSpan.FromSeconds(5)))
-                {
-                    TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-                    return;
-                }
+                Assert.True(enlistmentDoneEvts[i].WaitOne(TimeSpan.FromSeconds(5)));
             }
 
             int passCount = 0;
@@ -920,14 +894,9 @@ namespace System.Transactions.Tests
                     passCount++;
                 }
             }
-            if (passCount == count)
-            {
-                TestPassed();
-            }
-            else
-            {
-                TestFailed(testCaseDescription, string.Format("{0} enlistments received an outcome of {1}", passCount, expectedOutcome.ToString()));
-            }
+            Assert.Equal(count, passCount);
+
+            TestPassed();
         }
 
         private static void TestCase_PSPENonMsdtc(bool commit,
@@ -1068,15 +1037,13 @@ namespace System.Transactions.Tests
                 TransactionAbortedException abortedEx = ex as TransactionAbortedException;
                 if ((abortedEx != null) && (spcResponse != TransactionStatus.Aborted))
                 {
-                    TestFailed(testCaseDescription, "The transaction aborted unexpectedly");
-                    return;
+                    Assert.Equal(spcResponse, TransactionStatus.Aborted);
                 }
 
                 TransactionInDoubtException indoubtEx = ex as TransactionInDoubtException;
                 if ((indoubtEx != null) && (spcResponse != TransactionStatus.InDoubt))
                 {
-                    TestFailed(testCaseDescription, "The transaction was indoubt unexpectedly");
-                    return;
+                    Assert.Equal(spcResponse, TransactionStatus.InDoubt);
                 }
 
                 if (spcResponse == TransactionStatus.Committed)
@@ -1087,25 +1054,14 @@ namespace System.Transactions.Tests
             }
 
             NonMSDTCPromoterEnlistment nonDtcEnlistment = enlistment as NonMSDTCPromoterEnlistment;
-            if (nonDtcEnlistment == null)
-            {
-                TestFailed(testCaseDescription, "The enlistment was not a NonMSDTCPromoterEnlistment");
-                return;
-            }
+            Assert.NotNull(nonDtcEnlistment);
 
             if (numVolatiles > 0)
             {
                 for (int i = 0; i < numVolatiles; i++)
                 {
-                    if (!enlistmentDoneEvts[i].WaitOne(TimeSpan.FromSeconds(5)))
-                    {
-                        TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-                        return;
-                    }
+                    Assert.True(enlistmentDoneEvts[i].WaitOne(TimeSpan.FromSeconds(5)));
                 }
-
-                //if (WaitHandle.WaitAll(enlistmentDoneEvts, TimeSpan.FromSeconds(5)))
-                //{
 
                 int passCount = 0;
                 for (int i = 0; i < numVolatiles; i++)
@@ -1128,68 +1084,27 @@ namespace System.Transactions.Tests
                         }
                     }
                 }
-                if (passCount != numVolatiles)
-                {
-                    TestFailed(testCaseDescription, string.Format("{0} enlistments received an outcome of {1}", passCount, spcResponse.ToString()));
-                }
-                //}
-                //else
-                //{
-                //    TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-                //}
+                Assert.Equal(numVolatiles, passCount);
             }
 
-            if (completedEvent.WaitOne(TimeSpan.FromSeconds(5)))
+            Assert.True(completedEvent.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.False(!promote && nonDtcEnlistment.Promoted);
+
+            Assert.False(promote && !nonDtcEnlistment.Promoted);
+
+            if (commit)
             {
-                if (!promote && nonDtcEnlistment.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment promoted");
-                    return;
-                }
-
-                if (promote && !nonDtcEnlistment.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-
-                if (commit)
-                {
-                    if ((spcResponse == TransactionStatus.Committed) && (nonDtcEnlistment.Aborted))
-                    {
-                        TestFailed(testCaseDescription, "The enlistment aborted");
-                        return;
-                    }
-                }
-                else
-                {
-                    if (!nonDtcEnlistment.Aborted)
-                    {
-                        TestFailed(testCaseDescription, "The enlistment committed");
-                        return;
-                    }
-                }
-
-                if (commit)
-                {
-                    if (savedTransaction.TransactionInformation.Status != spcResponse)
-                    {
-                        TestFailed(testCaseDescription, string.Format("Unexpected final transaction status of {0}", savedTransaction.TransactionInformation.Status));
-                        return;
-                    }
-                }
-                else if (!commit & savedTransaction.TransactionInformation.Status != TransactionStatus.Aborted)
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected final transaction status of {0}", savedTransaction.TransactionInformation.Status));
-                    return;
-                }
-
-                TestPassed();
+                Assert.False((spcResponse == TransactionStatus.Committed) && (nonDtcEnlistment.Aborted));
+                Assert.Equal(spcResponse, savedTransaction.TransactionInformation.Status);
             }
             else
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcome");
+                Assert.True(nonDtcEnlistment.Aborted);
+                Assert.Equal(TransactionStatus.Aborted, savedTransaction.TransactionInformation.Status);
             }
+
+            TestPassed();
         }
 
         private static void TestCase_PSPENonMsdtcWithClones(
@@ -1320,22 +1235,16 @@ namespace System.Transactions.Tests
                 TransactionAbortedException abortedEx = ex as TransactionAbortedException;
                 if ((abortedEx != null) && (spcResponse != TransactionStatus.Aborted))
                 {
-                    TestFailed(testCaseDescription, "The transaction aborted unexpectedly");
-                    return;
+                    Assert.Equal(spcResponse, TransactionStatus.Aborted);
                 }
 
                 TransactionInDoubtException indoubtEx = ex as TransactionInDoubtException;
                 if ((indoubtEx != null) && (spcResponse != TransactionStatus.InDoubt))
                 {
-                    TestFailed(testCaseDescription, "The transaction was indoubt unexpectedly");
-                    return;
+                    Assert.Equal(spcResponse, TransactionStatus.InDoubt);
                 }
 
-                if (spcResponse == TransactionStatus.Committed)
-                {
-                    Trace(string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.NotEqual(spcResponse, TransactionStatus.Committed);
             }
 
             TestPassed();
@@ -1356,7 +1265,7 @@ namespace System.Transactions.Tests
             MyEnlistment vol = null;
             NonMSDTCPromoterEnlistment pspe = null;
 
-            try
+            Assert.Throws<TransactionAbortedException>(() =>
             {
                 using (TransactionScope ts = new TransactionScope())
                 {
@@ -1378,53 +1287,24 @@ namespace System.Transactions.Tests
 
                     ts.Complete();
                 }
-            }
-            catch (Exception ex)
+            });
+
+            Assert.True(volCompleted.WaitOne(TimeSpan.FromSeconds(5)) && pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.True(vol.AbortedOutcome);
+
+            if (promote)
             {
-                if (ex.GetType() != typeof(TransactionAbortedException))
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.True(pspe.Promoted);
+            }
+            else
+            {
+                Assert.False(pspe.Promoted);
             }
 
-            if (!volCompleted.WaitOne(TimeSpan.FromSeconds(5)) || !pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-                return;
-            }
-
-            //if (WaitHandle.WaitAll(new WaitHandle[2] { volCompleted, pspeCompleted }, TimeSpan.FromSeconds(5)))
-            //{
-            if (!vol.AbortedOutcome)
-            {
-                TestFailed(testCaseDescription, "The volatile enlistment did not abort");
-            }
-
-            if (!promote && pspe.Promoted)
-            {
-                TestFailed(testCaseDescription, "The enlistment promoted");
-                return;
-            }
-
-            if (promote && !pspe.Promoted)
-            {
-                TestFailed(testCaseDescription, "The enlistment was not promoted");
-                return;
-            }
-
-            if (!(pspe.Aborted))
-            {
-                TestFailed(testCaseDescription, "The enlistment did not abort");
-                return;
-            }
+            Assert.True(pspe.Aborted);
 
             TestPassed();
-            //}
-            //else
-            //{
-            //    TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            //}
         }
 
         public static void TestCase_AbortingCloneNotCompleted(bool promote)
@@ -1463,39 +1343,23 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                if (ex.GetType() != typeof(TransactionAbortedException))
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.IsType<TransactionAbortedException>(ex);
             }
 
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            if (promote)
             {
-                if (!promote && pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment promoted");
-                    return;
-                }
-
-                if (promote && !pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-
-                if (!(pspe.Aborted))
-                {
-                    TestFailed(testCaseDescription, "The enlistment did not abort");
-                    return;
-                }
-
-                TestPassed();
+                Assert.True(pspe.Promoted);
             }
             else
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
+                Assert.False(pspe.Promoted);
             }
+
+            Assert.True(pspe.Aborted);
+
+            TestPassed();
         }
 
         public static void TestCase_BlockingCloneCompletedAfterCommit(bool promote)
@@ -1539,36 +1403,23 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                Assert.Null(ex);
             }
 
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(2)))
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(2)));
+
+            if (promote)
             {
-                if (!promote && pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment promoted");
-                    return;
-                }
-
-                if (promote && !pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-
-                if ((pspe.Aborted))
-                {
-                    TestFailed(testCaseDescription, "The enlistment aborted");
-                    return;
-                }
-
-                TestPassed(true);
+                Assert.True(pspe.Promoted);
             }
             else
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcome");
+                Assert.False(pspe.Promoted);
             }
+
+            Assert.False(pspe.Aborted);
+
+            TestPassed(true);
         }
 
         public static void TestCase_TransactionTimeout(bool promote)
@@ -1583,9 +1434,9 @@ namespace System.Transactions.Tests
             AutoResetEvent pspeCompleted = new AutoResetEvent(false);
             NonMSDTCPromoterEnlistment pspe = null;
 
-            try
+            Assert.Throws<TransactionAbortedException>(() =>
             {
-                CommittableTransaction tx = new CommittableTransaction(TimeSpan.FromSeconds(3));
+                CommittableTransaction tx = new CommittableTransaction(TimeSpan.FromSeconds(1));
 
                 pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
                     NonMsdtcPromoterTests.PromotedToken1,
@@ -1601,49 +1452,29 @@ namespace System.Transactions.Tests
                     Promote(testCaseDescription, NonMsdtcPromoterTests.PromotedToken1, tx);
                 }
 
-                NoStressTrace(string.Format("There will be a 7 second delay here - {0}", DateTime.Now.ToString()));
+                NoStressTrace(string.Format("There will be a 3 second delay here - {0}", DateTime.Now.ToString()));
 
-                Task.Delay(TimeSpan.FromSeconds(7)).Wait();
+                Task.Delay(TimeSpan.FromSeconds(3)).Wait();
 
                 NoStressTrace(string.Format("Woke up from sleep. Attempting Commit - {0}", DateTime.Now.ToString()));
 
                 tx.Commit();
-            }
-            catch (Exception ex)
+            });
+
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            if (promote)
             {
-                if (ex.GetType() != typeof(TransactionAbortedException))
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
-            }
-
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!promote && pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment promoted");
-                    return;
-                }
-
-                if (promote && !pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-
-                if (!(pspe.Aborted))
-                {
-                    TestFailed(testCaseDescription, "The enlistment did not abort");
-                    return;
-                }
-
-                TestPassed(true);
+                Assert.True(pspe.Promoted);
             }
             else
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
+                Assert.False(pspe.Promoted);
             }
+
+            Assert.True(pspe.Aborted);
+
+            TestPassed(true);
         }
 
         public static void TestCase_EnlistDuringPrepare(bool promote,
@@ -1719,8 +1550,7 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                Assert.Null(ex);
             }
 
             if (!expectSecondEnlistSuccess)
@@ -1728,46 +1558,23 @@ namespace System.Transactions.Tests
                 vol2Completed.Set();
             }
 
-            if (!volCompleted.WaitOne(TimeSpan.FromSeconds(5)) || !vol2Completed.WaitOne(TimeSpan.FromSeconds(5)) ||
-                !pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
+            Assert.True(volCompleted.WaitOne(TimeSpan.FromSeconds(5)) && vol2Completed.WaitOne(TimeSpan.FromSeconds(5)) &&
+                pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.False(vol.AbortedOutcome);
+
+            if (promote)
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-                return;
+                Assert.True(pspe.Promoted);
+            }
+            else
+            {
+                Assert.False(pspe.Promoted);
             }
 
-            //if (WaitHandle.WaitAll(new WaitHandle[3] { volCompleted, vol2Completed, pspeCompleted }, TimeSpan.FromSeconds(5)))
-            //{
-            if (vol.AbortedOutcome)
-            {
-                TestFailed(testCaseDescription, "The volatile enlistment aborted unexpectedly");
-            }
-
-            if (!promote && pspe.Promoted)
-            {
-                TestFailed(testCaseDescription, "The enlistment promoted");
-                return;
-            }
-
-            if (promote && !pspe.Promoted)
-            {
-                TestFailed(testCaseDescription, "The enlistment was not promoted");
-                return;
-            }
-
-            if (pspe.Aborted)
-            {
-                TestFailed(testCaseDescription, "The pspe aborted unexpectedly");
-                return;
-            }
+            Assert.False(pspe.Aborted);
 
             TestPassed();
-            //}
-            //else
-            //{
-            //    TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            //}
-
-
         }
 
         public static void TestCase_GetStatusAndDistributedId()
@@ -1784,18 +1591,10 @@ namespace System.Transactions.Tests
                 using (TransactionScope ts = new TransactionScope())
                 {
                     TransactionStatus txStatus = Transaction.Current.TransactionInformation.Status;
-                    if (txStatus != TransactionStatus.Active)
-                    {
-                        TestFailed(testCaseDescription, "Status is not Active BEFORE PSPE enlistment");
-                        return;
-                    }
+                    Assert.Equal(TransactionStatus.Active, txStatus);
 
                     Guid distId = Transaction.Current.TransactionInformation.DistributedIdentifier;
-                    if (distId != Guid.Empty)
-                    {
-                        TestFailed(testCaseDescription, "DistributedId is not Guid.Empty BEFORE PSPE enlistment");
-                        return;
-                    }
+                    Assert.Equal(Guid.Empty, distId);
 
                     pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
                         NonMsdtcPromoterTests.PromotedToken1,
@@ -1807,34 +1606,18 @@ namespace System.Transactions.Tests
                         );
 
                     txStatus = Transaction.Current.TransactionInformation.Status;
-                    if (txStatus != TransactionStatus.Active)
-                    {
-                        TestFailed(testCaseDescription, "Status is not Active AFTER PSPE enlistment, but BEFORE promote");
-                        return;
-                    }
+                    Assert.Equal(TransactionStatus.Active, txStatus);
 
                     distId = Transaction.Current.TransactionInformation.DistributedIdentifier;
-                    if (distId != Guid.Empty)
-                    {
-                        TestFailed(testCaseDescription, "DistributedId is not Guid.Empty AFTER PSPE enlistment, but BEFORE promote");
-                        return;
-                    }
+                    Assert.Equal(Guid.Empty, distId);
 
                     Promote(testCaseDescription, NonMsdtcPromoterTests.PromotedToken1);
 
                     txStatus = Transaction.Current.TransactionInformation.Status;
-                    if (txStatus != TransactionStatus.Active)
-                    {
-                        TestFailed(testCaseDescription, "Status is not Active AFTER PSPE enlistment and promote");
-                        return;
-                    }
+                    Assert.Equal(TransactionStatus.Active, txStatus);
 
                     distId = Transaction.Current.TransactionInformation.DistributedIdentifier;
-                    if (distId == Guid.Empty)
-                    {
-                        TestFailed(testCaseDescription, "DistributedId IS Guid.Empty AFTER PSPE enlistment and promote");
-                        return;
-                    }
+                    Assert.NotEqual(distId, Guid.Empty);
                     ts.Complete();
                 }
 
@@ -1842,8 +1625,7 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                Trace(string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                Assert.Null(ex);
             }
         }
 
@@ -1885,45 +1667,25 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                if (ex.GetType() != typeof(ObjectDisposedException))
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.IsType<ObjectDisposedException>(ex);
             }
 
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            if (promote)
             {
-                if (!promote && pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment promoted");
-                    return;
-                }
-
-                if (promote && !pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-
-                if (!(pspe.Aborted))
-                {
-                    TestFailed(testCaseDescription, "The enlistment did not abort");
-                    return;
-                }
-
-                if (savedTransaction.TransactionInformation.Status != TransactionStatus.Aborted)
-                {
-                    TestFailed(testCaseDescription, "The transaction did not abort");
-                    return;
-                }
-
-                TestPassed();
+                Assert.True(pspe.Promoted);
             }
             else
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
+                Assert.False(pspe.Promoted);
             }
+
+            Assert.True(pspe.Aborted);
+
+            Assert.Equal(TransactionStatus.Aborted, savedTransaction.TransactionInformation.Status);
+
+            TestPassed();
         }
 
         public static void TestCase_OutcomeRegistration(bool promote)
@@ -1948,11 +1710,7 @@ namespace System.Transactions.Tests
                 {
                     Trace("Completed event registered before PSPE");
                     numberOfCompletions++;
-                    if (completedArgs.Transaction.TransactionInformation.Status != TransactionStatus.Committed)
-                    {
-                        TestFailed(testCaseDescription, "Completed event registered before PSPE did not receive committed");
-                        return;
-                    }
+                    Assert.Equal(TransactionStatus.Committed, completedArgs.Transaction.TransactionInformation.Status);
                 };
 
                 pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
@@ -1968,11 +1726,7 @@ namespace System.Transactions.Tests
                 {
                     Trace("Completed event registered after PSPE");
                     numberOfCompletions++;
-                    if (completedArgs.Transaction.TransactionInformation.Status != TransactionStatus.Committed)
-                    {
-                        TestFailed(testCaseDescription, "Completed event registered after PSPE did not receive committed");
-                        return;
-                    }
+                    Assert.Equal(TransactionStatus.Committed, completedArgs.Transaction.TransactionInformation.Status);
                 };
 
                 if (promote)
@@ -1983,11 +1737,7 @@ namespace System.Transactions.Tests
                     {
                         Trace("Completed event registered after promote");
                         numberOfCompletions++;
-                        if (completedArgs.Transaction.TransactionInformation.Status != TransactionStatus.Committed)
-                        {
-                            TestFailed(testCaseDescription, "Completed event registered after promote did not receive committed");
-                            return;
-                        }
+                        Assert.Equal(TransactionStatus.Committed, completedArgs.Transaction.TransactionInformation.Status);
                     };
                 }
 
@@ -1995,46 +1745,30 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                TestFailed(testCaseDescription, string.Format("Unexpected exception {0}: {1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                Assert.Null(ex);
             }
 
             tx.TransactionCompleted += delegate (object sender, TransactionEventArgs completedArgs)
             {
                 Trace("Completed event registered after commit");
                 numberOfCompletions++;
-                if (completedArgs.Transaction.TransactionInformation.Status != TransactionStatus.Committed)
-                {
-                    TestFailed(testCaseDescription, "Completed event registered after commit did not receive committed");
-                    return;
-                }
+                Assert.Equal(TransactionStatus.Committed, completedArgs.Transaction.TransactionInformation.Status);
             };
 
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            if (promote)
             {
-                if (!promote && pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment promoted");
-                    return;
-                }
-
-                if (promote && !pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-
-                if (numberOfCompletions != (promote ? 4 : 3))
-                {
-                    TestFailed(testCaseDescription, string.Format("Unexpected number of completion event firings - {0}", numberOfCompletions));
-                    return;
-                }
-                TestPassed();
+                Assert.True(pspe.Promoted);
             }
             else
             {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
+                Assert.False(pspe.Promoted);
             }
+
+            Assert.Equal((promote ? 4 : 3), numberOfCompletions);
+
+            TestPassed();
         }
 
         public static void TestCase_PromoterType()
@@ -2050,12 +1784,7 @@ namespace System.Transactions.Tests
             {
                 using (TransactionScope ts = new TransactionScope())
                 {
-                    //if (Transaction.Current.PromoterType != Guid.Empty)
-                    if (TxPromoterType(Transaction.Current) != Guid.Empty)
-                    {
-                        TestFailed(testCaseDescription, "PromoterType BEFORE PSPE enlistment is not Guid.Empty");
-                        return;
-                    }
+                    Assert.Equal(Guid.Empty, TxPromoterType(Transaction.Current));
 
                     pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
                         NonMsdtcPromoterTests.PromotedToken1,
@@ -2066,45 +1795,25 @@ namespace System.Transactions.Tests
                         /*expectRejection=*/ false
                         );
 
-                    //if (Transaction.Current.PromoterType != NonMsdtcPromoterTests.PromoterType1)
-                    if (TxPromoterType(Transaction.Current) != NonMsdtcPromoterTests.PromoterType1)
-                    {
-                        TestFailed(testCaseDescription, "PromoterType AFTER PSPE enlistment is not the expected PromoterType");
-                        return;
-                    }
+                    Assert.Equal(NonMsdtcPromoterTests.PromoterType1, TxPromoterType(Transaction.Current));
 
                     Promote(testCaseDescription, NonMsdtcPromoterTests.PromotedToken1);
 
-                    //if (Transaction.Current.PromoterType != NonMsdtcPromoterTests.PromoterType1)
-                    if (TxPromoterType(Transaction.Current) != NonMsdtcPromoterTests.PromoterType1)
-                    {
-                        TestFailed(testCaseDescription, "PromoterType AFTER promotion is not the expected PromoterType");
-                        return;
-                    }
+                    Assert.Equal(NonMsdtcPromoterTests.PromoterType1, TxPromoterType(Transaction.Current));
 
                     ts.Complete();
                 }
             }
             catch (Exception ex)
             {
-                TestFailed(testCaseDescription, string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                Assert.Null(ex);
             }
 
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
 
-                TestPassed();
-            }
-            else
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            }
+            Assert.True(pspe.Promoted);
+
+            TestPassed();
         }
 
         public static void TestCase_PromoterTypeMSDTC()
@@ -2120,11 +1829,7 @@ namespace System.Transactions.Tests
             {
                 using (TransactionScope ts = new TransactionScope())
                 {
-                    if (TxPromoterType(Transaction.Current) != Guid.Empty)
-                    {
-                        TestFailed(testCaseDescription, "PromoterType BEFORE promote is not Guid.Empty");
-                        return;
-                    }
+                    Assert.Equal(Guid.Empty, TxPromoterType(Transaction.Current));
 
                     vol = CreateVolatileEnlistment(volCompleted);
 
@@ -2132,11 +1837,7 @@ namespace System.Transactions.Tests
                     TransactionInterop.GetDtcTransaction(Transaction.Current);
 
                     // TransactionInterop.PromoterTypeDtc
-                    if (TxPromoterType(Transaction.Current) != PromoterTypeDtc)
-                    {
-                        TestFailed(testCaseDescription, "PromoterType AFTER DTC promotion is not TransactionInterop.PromoterTypeDtc");
-                        return;
-                    }
+                    Assert.Equal(PromoterTypeDtc, TxPromoterType(Transaction.Current));
 
                     ts.Complete();
                 }
@@ -2147,20 +1848,11 @@ namespace System.Transactions.Tests
                 return;
             }
 
-            if (volCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!vol.CommittedOutcome)
-                {
-                    TestFailed(testCaseDescription, "The volatile enlistment was not committed");
-                    return;
-                }
+            Assert.True(volCompleted.WaitOne(TimeSpan.FromSeconds(5)));
 
-                TestPassed();
-            }
-            else
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcome");
-            }
+            Assert.True(vol.CommittedOutcome);
+
+            TestPassed();
         }
 
         public static void TestCase_FailPromotableSinglePhaseNotificationCalls()
@@ -2191,22 +1883,13 @@ namespace System.Transactions.Tests
                         /*failGetPromoterType=*/ false,
                         /*failGetId=*/ false
                         );
-
-                    TestFailed(testCaseDescription, "The non-MSDTC enlistment was successful even when Initialize threw an exception");
-                    return;
+                    bool shouldNotBeExecuted = true;
+                    Assert.False(shouldNotBeExecuted);
                 }
             }
             catch (Exception ex)
             {
-                if (ex is Exception)
-                {
-                    Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                }
-                else
-                {
-                    TestFailed(testCaseDescription, string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.True(ex is ApplicationException || (ex is TargetInvocationException && ex.InnerException is ApplicationException));
             }
 
             Trace("Fail Promote");
@@ -2235,31 +1918,14 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                if (ex is Exception)
-                {
-                    Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                }
-                else
-                {
-                    TestFailed(testCaseDescription, string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.True(ex is ApplicationException || (ex is TargetInvocationException && ex.InnerException is ApplicationException));
             }
 
             // The NonMSDTCPromoterEnlistment is coded to set "Promoted" at the beginning of Promote, before
             // throwing.
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-            }
-            else
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            }
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.True(pspe.Promoted);
 
             Trace("Fail SinglePhaseCommit");
             try
@@ -2287,31 +1953,14 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                if (ex is Exception)
-                {
-                    Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                }
-                else
-                {
-                    TestFailed(testCaseDescription, string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    return;
-                }
+                Assert.True(ex is ApplicationException || (ex is TargetInvocationException && ex.InnerException is ApplicationException));
             }
 
             // The NonMSDTCPromoterEnlistment is coded to set "Promoted" at the beginning of Promote, before
             // throwing.
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-            }
-            else
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            }
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.True(pspe.Promoted);
 
             TestPassed();
         }
@@ -2319,7 +1968,6 @@ namespace System.Transactions.Tests
         public static void TestCase_SetDistributedIdAtWrongTime()
         {
             string testCaseDescription = "TestCase_SetDistributedIdAtWrongTime";
-            string failureDetail = "Was able to call SetDistributedTransacitonIdentifier outside of ITransactionPromoter.Promote call.";
 
             Trace("**** " + testCaseDescription + " ****");
 
@@ -2329,116 +1977,45 @@ namespace System.Transactions.Tests
 
             Guid guidToSet = new Guid("236BC646-FE3B-41F9-99F7-08BF448D8420");
 
-            try
+            using (TransactionScope ts = new TransactionScope())
             {
-                using (TransactionScope ts = new TransactionScope())
-                {
-                    Trace("Before EnlistPromotable");
-                    try
-                    {
-                        SetDistributedTransactionId(dummyPSPE, Transaction.Current, guidToSet);
-                        TestFailed(testCaseDescription, failureDetail);
-                    }
-                    catch (TransactionException ex)
-                    {
-                        Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        if (ex.InnerException is TransactionException)
-                        {
-                            Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                        }
-                        else
-                        {
-                            TestFailed(testCaseDescription, string.Format("Unexpected TargetInvocationException InnerException {0}:{1}", ex.InnerException.GetType().ToString(), ex.InnerException.Message));
-                        }
-                    }
+                Trace("Before EnlistPromotable");
+                Exception ex = Assert.ThrowsAny<Exception>(() => SetDistributedTransactionId(dummyPSPE, Transaction.Current, guidToSet));
+                Assert.True(ex is TransactionException || (ex is TargetInvocationException && ex.InnerException is TransactionException));
 
-                    pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
-                        NonMsdtcPromoterTests.PromotedToken1,
-                        pspeCompleted,
-                        /*nonMSDTC = */ true,
-                        /*tx = */ null,
-                        /*spcResponse=*/ TransactionStatus.Committed,
-                        /*expectRejection=*/ false,
-                        /*comparePromotedToken=*/ false,
-                        /*failInitialize=*/ false,
-                        /*failPromote=*/ false,
-                        /*failSPC=*/ false,
-                        /*failGetPromoterType=*/ false,
-                        /*failGetId=*/ false
-                        );
+                pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
+                    NonMsdtcPromoterTests.PromotedToken1,
+                    pspeCompleted,
+                    /*nonMSDTC = */ true,
+                    /*tx = */ null,
+                    /*spcResponse=*/ TransactionStatus.Committed,
+                    /*expectRejection=*/ false,
+                    /*comparePromotedToken=*/ false,
+                    /*failInitialize=*/ false,
+                    /*failPromote=*/ false,
+                    /*failSPC=*/ false,
+                    /*failGetPromoterType=*/ false,
+                    /*failGetId=*/ false
+                    );
 
-                    Trace("After EnlistPromotable");
-                    try
-                    {
-                        SetDistributedTransactionId(dummyPSPE, Transaction.Current, guidToSet);
-                        TestFailed(testCaseDescription, failureDetail);
-                    }
-                    catch (TransactionException ex)
-                    {
-                        Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        if (ex.InnerException is TransactionException)
-                        {
-                            Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                        }
-                        else
-                        {
-                            TestFailed(testCaseDescription, string.Format("Unexpected TargetInvocationException InnerException {0}:{1}", ex.InnerException.GetType().ToString(), ex.InnerException.Message));
-                        }
-                    }
+                Trace("After EnlistPromotable");
+                ex = Assert.ThrowsAny<Exception>(() => SetDistributedTransactionId(dummyPSPE, Transaction.Current, guidToSet));
+                Assert.True(ex is TransactionException || (ex is TargetInvocationException && ex.InnerException is TransactionException));
 
-                    Promote(testCaseDescription, NonMsdtcPromoterTests.PromotedToken1);
+                Promote(testCaseDescription, NonMsdtcPromoterTests.PromotedToken1);
 
-                    Trace("After Promotion");
-                    try
-                    {
-                        SetDistributedTransactionId(dummyPSPE, Transaction.Current, guidToSet);
-                        TestFailed(testCaseDescription, failureDetail);
-                    }
-                    catch (TransactionException ex)
-                    {
-                        Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        if (ex.InnerException is TransactionException)
-                        {
-                            Trace(string.Format("Caught expected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                        }
-                        else
-                        {
-                            TestFailed(testCaseDescription, string.Format("Unexpected TargetInvocationException InnerException {0}:{1}", ex.InnerException.GetType().ToString(), ex.InnerException.Message));
-                        }
-                    }
+                Trace("After Promotion");
+                ex = Assert.ThrowsAny<Exception>(() => SetDistributedTransactionId(dummyPSPE, Transaction.Current, guidToSet));
+                Assert.True(ex is TransactionException || (ex is TargetInvocationException && ex.InnerException is TransactionException));
 
-                    ts.Complete();
-                }
-            }
-            catch (Exception ex)
-            {
-                TestFailed(testCaseDescription, string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                ts.Complete();
             }
 
             // The NonMSDTCPromoterEnlistment is coded to set "Promoted" at the beginning of Promote, before
             // throwing.
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-            }
-            else
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            }
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.True(pspe.Promoted);
 
             TestPassed();
         }
@@ -2481,24 +2058,14 @@ namespace System.Transactions.Tests
             }
             catch (Exception ex)
             {
-                TestFailed(testCaseDescription, string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                return;
+                Assert.Null(ex);
             }
 
             // The NonMSDTCPromoterEnlistment is coded to set "Promoted" at the beginning of Promote, before
             // throwing.
-            if (pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                if (!pspe.Promoted)
-                {
-                    TestFailed(testCaseDescription, "The enlistment was not promoted");
-                    return;
-                }
-            }
-            else
-            {
-                TestFailed(testCaseDescription, "Timeout waiting for enlistment outcomes");
-            }
+            Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
+
+            Assert.True(pspe.Promoted);
 
             TestPassed();
         }
@@ -2517,7 +2084,6 @@ namespace System.Transactions.Tests
             TestCase_VolatileEnlistments(1, TransactionStatus.Aborted, EnlistmentOptions.None, false);
             TestCase_VolatileEnlistments(5, TransactionStatus.Aborted, EnlistmentOptions.None, false);
             TestCase_VolatileEnlistments(1, TransactionStatus.Aborted, EnlistmentOptions.None, true, false, typeof(TransactionAbortedException));
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2539,8 +2105,6 @@ namespace System.Transactions.Tests
             TestCase_PSPENonMsdtc(commit, promote, spcResponse, 1, 1);
             TestCase_PSPENonMsdtc(commit, promote, spcResponse, 1, 1, 1);
             TestCase_PSPENonMsdtc(commit, promote, spcResponse, 1, 1, 1, 1);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2562,8 +2126,6 @@ namespace System.Transactions.Tests
             TestCase_PSPENonMsdtcWithClones(commit, promote, spcResponse, 1, 1);
             TestCase_PSPENonMsdtcWithClones(commit, promote, spcResponse, 1, 1, 1);
             TestCase_PSPENonMsdtcWithClones(commit, promote, spcResponse, 1, 1, 1, 1);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2578,8 +2140,6 @@ namespace System.Transactions.Tests
         {
             // Abort from p0 and p1 volatile, not promoted and promoted.
             TestCase_AbortFromVolatile(promote, options);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2592,8 +2152,6 @@ namespace System.Transactions.Tests
         {
             // Aborting clone that isn't completed
             TestCase_AbortingCloneNotCompleted(promote);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2607,14 +2165,11 @@ namespace System.Transactions.Tests
         {
             // Blocking clone that isn't completed before commit
             TestCase_BlockingCloneCompletedAfterCommit(promote);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
         /// PSPE Non-MSDTC Timeout.
         /// </summary>
-        [ActiveIssue(11737)]
         [OuterLoop] // long timeout
         [Theory]
         [InlineData(false)]
@@ -2623,8 +2178,6 @@ namespace System.Transactions.Tests
         {
             // tx timeout
             TestCase_TransactionTimeout(promote);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2647,8 +2200,6 @@ namespace System.Transactions.Tests
             bool promote, bool beforePromote, EnlistmentOptions options, EnlistmentOptions secondOptions, bool expectSecondEnlistSuccess)
         {
             TestCase_EnlistDuringPrepare(promote, beforePromote, options, secondOptions, expectSecondEnlistSuccess);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2659,8 +2210,6 @@ namespace System.Transactions.Tests
         {
             // Retrieve the DistributedId before PSPE, before Promote, and after Promote
             TestCase_GetStatusAndDistributedId();
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2673,8 +2222,6 @@ namespace System.Transactions.Tests
         {
             // Dispose a committable transaction early.
             TestCase_DisposeCommittableTransaction(promote);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2687,8 +2234,6 @@ namespace System.Transactions.Tests
         {
             // Registration for completed event
             TestCase_OutcomeRegistration(promote);
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2699,8 +2244,6 @@ namespace System.Transactions.Tests
         {
             // get_PromoterType
             TestCase_PromoterType();
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2711,8 +2254,6 @@ namespace System.Transactions.Tests
         {
             // get_PromoterType
             TestCase_PromoterTypeMSDTC();
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2723,8 +2264,6 @@ namespace System.Transactions.Tests
         {
             // Fail calls to the non-MSDTC Promotable Enlistment
             TestCase_FailPromotableSinglePhaseNotificationCalls();
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2735,8 +2274,6 @@ namespace System.Transactions.Tests
         {
             // Call SetDistributedTransactionIdentifier at the wrong time.
             TestCase_SetDistributedIdAtWrongTime();
-
-            Assert.Equal(0, s_testFailures);
         }
 
         /// <summary>
@@ -2747,8 +2284,6 @@ namespace System.Transactions.Tests
         {
             // Call SetDistributedTransactionIdentifier at the wrong time.
             TestCase_SetDistributedIdWithWrongNotificationObject();
-
-            Assert.Equal(0, s_testFailures);
         }
 
         [Fact]
@@ -2773,8 +2308,6 @@ namespace System.Transactions.Tests
             {
                 subTx.EnlistDurable(Guid.NewGuid(), durable, EnlistmentOptions.None);
             });
-
-            Assert.Equal(0, s_testFailures);
         }
     }
 }

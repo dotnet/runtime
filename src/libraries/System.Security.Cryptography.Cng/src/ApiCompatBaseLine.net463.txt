@@ -8,3 +8,5 @@ MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ExportExplicitP
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.

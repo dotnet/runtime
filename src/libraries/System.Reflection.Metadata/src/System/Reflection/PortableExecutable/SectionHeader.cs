@@ -73,9 +73,23 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public SectionCharacteristics SectionCharacteristics { get; }
 
+        internal const int NameSize = 8;
+
+        internal const int Size =
+            NameSize +
+            sizeof(int) +   // VirtualSize
+            sizeof(int) +   // VirtualAddress
+            sizeof(int) +   // SizeOfRawData
+            sizeof(int) +   // PointerToRawData
+            sizeof(int) +   // PointerToRelocations
+            sizeof(int) +   // PointerToLineNumbers
+            sizeof(short) + // NumberOfRelocations
+            sizeof(short) + // NumberOfLineNumbers 
+            sizeof(int);    // SectionCharacteristics
+
         internal SectionHeader(ref PEBinaryReader reader)
         {
-            Name = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
+            Name = reader.ReadNullPaddedUTF8(NameSize);
             VirtualSize = reader.ReadInt32();
             VirtualAddress = reader.ReadInt32();
             SizeOfRawData = reader.ReadInt32();

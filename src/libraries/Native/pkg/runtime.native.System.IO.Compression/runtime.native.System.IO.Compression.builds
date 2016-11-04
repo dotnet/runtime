@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="runtime.native.System.IO.Compression.pkgproj"/>
@@ -43,6 +43,10 @@
       <OSGroup>opensuse.42.1</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="alpine\3.4.3\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>alpine.3.4.3</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="win\runtime.native.System.IO.Compression.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>x86</Platform>
@@ -56,6 +60,22 @@
       <Platform>arm</Platform>
     </Project>
     <Project Include="win\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>arm64</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>x86</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>arm</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>arm64</Platform>
     </Project>

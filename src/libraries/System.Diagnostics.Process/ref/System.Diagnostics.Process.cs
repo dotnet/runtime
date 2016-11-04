@@ -8,10 +8,11 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafeProcessHandle : System.Runtime.InteropServices.SafeHandle
+    public sealed partial class SafeProcessHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
-        protected override bool ReleaseHandle() { return default(bool); }
+        public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base(default(bool)) { }
+        public override bool IsInvalid { [System.Security.SecurityCritical] get { throw null; } }
+        protected override bool ReleaseHandle() { throw null; }
     }
 }
 namespace System.Diagnostics
@@ -19,48 +20,70 @@ namespace System.Diagnostics
     public partial class DataReceivedEventArgs : System.EventArgs
     {
         internal DataReceivedEventArgs() { }
-        public string Data { get { return default(string); } }
+        public string Data { get { throw null; } }
     }
     public delegate void DataReceivedEventHandler(object sender, System.Diagnostics.DataReceivedEventArgs e);
-    public partial class Process
+    public partial class Process : System.ComponentModel.Component
     {
+        public IntPtr Handle { get { throw null; } }
+        public int HandleCount { get { throw null; } }
+        public IntPtr MainWindowHandle { get { throw null; } }
+        public string MainWindowTitle { get { throw null; } }
+        public int NonpagedSystemMemorySize { get { throw null; } }
+        public int PagedMemorySize { get { throw null; } }
+        public int PagedSystemMemorySize { get { throw null; } }
+        public int PeakPagedMemorySize { get { throw null; } }
+        public int PeakVirtualMemorySize { get { throw null; } }
+        public int PeakWorkingSet { get { throw null; } }
+        public int PrivateMemorySize { get { throw null; } }
+        public bool Responding { get { throw null; } }
+        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { throw null; } set { } }
+        public int VirtualMemorySize { get { throw null; } }
+        public int WorkingSet { get { throw null; } }
+        public void Close() { }
+        public bool CloseMainWindow() { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public bool WaitForInputIdle() { throw null; }
+        public bool WaitForInputIdle(int milliseconds) { throw null; }
+        public override string ToString() { throw null; }
+
         public Process() { }
-        public int BasePriority { get { return default(int); } }
+        public int BasePriority { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        public bool EnableRaisingEvents { get { return default(bool); } set { } }
-        public int ExitCode { get { return default(int); } }
-        public System.DateTime ExitTime { get { return default(System.DateTime); } }
-        public bool HasExited { get { return default(bool); } }
-        public int Id { get { return default(int); } }
-        public string MachineName { get { return default(string); } }
-        public System.Diagnostics.ProcessModule MainModule { get { return default(System.Diagnostics.ProcessModule); } }
-        public System.IntPtr MaxWorkingSet { get { return default(System.IntPtr); } set { } }
-        public System.IntPtr MinWorkingSet { get { return default(System.IntPtr); } set { } }
-        public System.Diagnostics.ProcessModuleCollection Modules { get { return default(System.Diagnostics.ProcessModuleCollection); } }
-        public long NonpagedSystemMemorySize64 { get { return default(long); } }
-        public long PagedMemorySize64 { get { return default(long); } }
-        public long PagedSystemMemorySize64 { get { return default(long); } }
-        public long PeakPagedMemorySize64 { get { return default(long); } }
-        public long PeakVirtualMemorySize64 { get { return default(long); } }
-        public long PeakWorkingSet64 { get { return default(long); } }
-        public bool PriorityBoostEnabled { get { return default(bool); } set { } }
-        public System.Diagnostics.ProcessPriorityClass PriorityClass { get { return default(System.Diagnostics.ProcessPriorityClass); } set { } }
-        public long PrivateMemorySize64 { get { return default(long); } }
-        public System.TimeSpan PrivilegedProcessorTime { get { return default(System.TimeSpan); } }
-        public string ProcessName { get { return default(string); } }
-        public System.IntPtr ProcessorAffinity { get { return default(System.IntPtr); } set { } }
-        public Microsoft.Win32.SafeHandles.SafeProcessHandle SafeHandle { get { return default(Microsoft.Win32.SafeHandles.SafeProcessHandle); } }
-        public int SessionId { get { return default(int); } }
-        public System.IO.StreamReader StandardError { get { return default(System.IO.StreamReader); } }
-        public System.IO.StreamWriter StandardInput { get { return default(System.IO.StreamWriter); } }
-        public System.IO.StreamReader StandardOutput { get { return default(System.IO.StreamReader); } }
-        public System.Diagnostics.ProcessStartInfo StartInfo { get { return default(System.Diagnostics.ProcessStartInfo); } set { } }
-        public System.DateTime StartTime { get { return default(System.DateTime); } }
-        public System.Diagnostics.ProcessThreadCollection Threads { get { return default(System.Diagnostics.ProcessThreadCollection); } }
-        public System.TimeSpan TotalProcessorTime { get { return default(System.TimeSpan); } }
-        public System.TimeSpan UserProcessorTime { get { return default(System.TimeSpan); } }
-        public long VirtualMemorySize64 { get { return default(long); } }
-        public long WorkingSet64 { get { return default(long); } }
+        public bool EnableRaisingEvents { get { throw null; } set { } }
+        public int ExitCode { get { throw null; } }
+        public System.DateTime ExitTime { get { throw null; } }
+        public bool HasExited { get { throw null; } }
+        public int Id { get { throw null; } }
+        public string MachineName { get { throw null; } }
+        public System.Diagnostics.ProcessModule MainModule { get { throw null; } }
+        public System.IntPtr MaxWorkingSet { get { throw null; } set { } }
+        public System.IntPtr MinWorkingSet { get { throw null; } set { } }
+        public System.Diagnostics.ProcessModuleCollection Modules { get { throw null; } }
+        public long NonpagedSystemMemorySize64 { get { throw null; } }
+        public long PagedMemorySize64 { get { throw null; } }
+        public long PagedSystemMemorySize64 { get { throw null; } }
+        public long PeakPagedMemorySize64 { get { throw null; } }
+        public long PeakVirtualMemorySize64 { get { throw null; } }
+        public long PeakWorkingSet64 { get { throw null; } }
+        public bool PriorityBoostEnabled { get { throw null; } set { } }
+        public System.Diagnostics.ProcessPriorityClass PriorityClass { get { throw null; } set { } }
+        public long PrivateMemorySize64 { get { throw null; } }
+        public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
+        public string ProcessName { get { throw null; } }
+        public System.IntPtr ProcessorAffinity { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeProcessHandle SafeHandle { get { throw null; } }
+        public int SessionId { get { throw null; } }
+        public System.IO.StreamReader StandardError { get { throw null; } }
+        public System.IO.StreamWriter StandardInput { get { throw null; } }
+        public System.IO.StreamReader StandardOutput { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo StartInfo { get { throw null; } set { } }
+        public System.DateTime StartTime { get { throw null; } }
+        public System.Diagnostics.ProcessThreadCollection Threads { get { throw null; } }
+        public System.TimeSpan TotalProcessorTime { get { throw null; } }
+        public System.TimeSpan UserProcessorTime { get { throw null; } }
+        public long VirtualMemorySize64 { get { throw null; } }
+        public long WorkingSet64 { get { throw null; } }
         public event System.Diagnostics.DataReceivedEventHandler ErrorDataReceived { add { } remove { } }
         public event System.EventHandler Exited { add { } remove { } }
         public event System.Diagnostics.DataReceivedEventHandler OutputDataReceived { add { } remove { } }
@@ -69,42 +92,43 @@ namespace System.Diagnostics
         public void CancelErrorRead() { }
         public void CancelOutputRead() { }
         public static void EnterDebugMode() { }
-        public static System.Diagnostics.Process GetCurrentProcess() { return default(System.Diagnostics.Process); }
-        public static System.Diagnostics.Process GetProcessById(int processId) { return default(System.Diagnostics.Process); }
-        public static System.Diagnostics.Process GetProcessById(int processId, string machineName) { return default(System.Diagnostics.Process); }
-        public static System.Diagnostics.Process[] GetProcesses() { return default(System.Diagnostics.Process[]); }
-        public static System.Diagnostics.Process[] GetProcesses(string machineName) { return default(System.Diagnostics.Process[]); }
-        public static System.Diagnostics.Process[] GetProcessesByName(string processName) { return default(System.Diagnostics.Process[]); }
-        public static System.Diagnostics.Process[] GetProcessesByName(string processName, string machineName) { return default(System.Diagnostics.Process[]); }
+        public static System.Diagnostics.Process GetCurrentProcess() { throw null; }
+        public static System.Diagnostics.Process GetProcessById(int processId) { throw null; }
+        public static System.Diagnostics.Process GetProcessById(int processId, string machineName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcesses() { throw null; }
+        public static System.Diagnostics.Process[] GetProcesses(string machineName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcessesByName(string processName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcessesByName(string processName, string machineName) { throw null; }
         public void Kill() { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
-        public bool Start() { return default(bool); }
-        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo) { return default(System.Diagnostics.Process); }
-        public static System.Diagnostics.Process Start(string fileName) { return default(System.Diagnostics.Process); }
-        public static System.Diagnostics.Process Start(string fileName, string arguments) { return default(System.Diagnostics.Process); }
+        public bool Start() { throw null; }
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
+        public static System.Diagnostics.Process Start(string fileName) { throw null; }
+        public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
         public void WaitForExit() { }
-        public bool WaitForExit(int milliseconds) { return default(bool); }
+        public bool WaitForExit(int milliseconds) { throw null; }
     }
-    public partial class ProcessModule
+    public partial class ProcessModule : System.ComponentModel.Component
     {
         internal ProcessModule() { }
-        public System.IntPtr BaseAddress { get { return default(System.IntPtr); } }
-        public System.IntPtr EntryPointAddress { get { return default(System.IntPtr); } }
-        public string FileName { get { return default(string); } }
-        public int ModuleMemorySize { get { return default(int); } }
-        public string ModuleName { get { return default(string); } }
-        public override string ToString() { return default(string); }
+        public System.IntPtr BaseAddress { get { throw null; } }
+        public System.IntPtr EntryPointAddress { get { throw null; } }
+        public string FileName { get { throw null; } }
+        public int ModuleMemorySize { get { throw null; } }
+        public string ModuleName { get { throw null; } }
+        public FileVersionInfo FileVersionInfo { get { throw null; } }
+        public override string ToString() { throw null; }
     }
-    public partial class ProcessModuleCollection
+    public partial class ProcessModuleCollection : System.Collections.ReadOnlyCollectionBase
     {
         protected ProcessModuleCollection() { }
         public ProcessModuleCollection(System.Diagnostics.ProcessModule[] processModules) { }
-        public System.Diagnostics.ProcessModule this[int index] { get { return default(System.Diagnostics.ProcessModule); } }
-        public bool Contains(System.Diagnostics.ProcessModule module) { return default(bool); }
+        public System.Diagnostics.ProcessModule this[int index] { get { throw null; } }
+        public bool Contains(System.Diagnostics.ProcessModule module) { throw null; }
         public void CopyTo(System.Diagnostics.ProcessModule[] array, int index) { }
-        public int IndexOf(System.Diagnostics.ProcessModule module) { return default(int); }
+        public int IndexOf(System.Diagnostics.ProcessModule module) { throw null; }
     }
     public enum ProcessPriorityClass
     {
@@ -120,50 +144,50 @@ namespace System.Diagnostics
         public ProcessStartInfo() { }
         public ProcessStartInfo(string fileName) { }
         public ProcessStartInfo(string fileName, string arguments) { }
-        public string Arguments { get { return default(string); } set { } }
-        public bool CreateNoWindow { get { return default(bool); } set { } }
-        public string Domain { get { return default(string); } set { } }
+        public string Arguments { get { throw null; } set { } }
+        public bool CreateNoWindow { get { throw null; } set { } }
+        public string Domain { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public System.Collections.Generic.IDictionary<string, string> Environment { get { return default(System.Collections.Generic.IDictionary<string, string>); } }
-        public string FileName { get { return default(string); } set { } }
-        public bool LoadUserProfile { get { return default(bool); } set { } }
-        public bool RedirectStandardError { get { return default(bool); } set { } }
-        public bool RedirectStandardInput { get { return default(bool); } set { } }
-        public bool RedirectStandardOutput { get { return default(bool); } set { } }
-        public System.Text.Encoding StandardErrorEncoding { get { return default(System.Text.Encoding); } set { } }
-        public System.Text.Encoding StandardOutputEncoding { get { return default(System.Text.Encoding); } set { } }
-        public string UserName { get { return default(string); } set { } }
-        public bool UseShellExecute { get { return default(bool); } set { } }
-        public string WorkingDirectory { get { return default(string); } set { } }
+        public System.Collections.Generic.IDictionary<string, string> Environment { get { throw null; } }
+        public string FileName { get { throw null; } set { } }
+        public bool LoadUserProfile { get { throw null; } set { } }
+        public bool RedirectStandardError { get { throw null; } set { } }
+        public bool RedirectStandardInput { get { throw null; } set { } }
+        public bool RedirectStandardOutput { get { throw null; } set { } }
+        public System.Text.Encoding StandardErrorEncoding { get { throw null; } set { } }
+        public System.Text.Encoding StandardOutputEncoding { get { throw null; } set { } }
+        public string UserName { get { throw null; } set { } }
+        public bool UseShellExecute { get { throw null; } set { } }
+        public string WorkingDirectory { get { throw null; } set { } }
     }
-    public partial class ProcessThread
+    public partial class ProcessThread : System.ComponentModel.Component
     {
         internal ProcessThread() { }
-        public int BasePriority { get { return default(int); } }
-        public int CurrentPriority { get { return default(int); } }
-        public int Id { get { return default(int); } }
+        public int BasePriority { get { throw null; } }
+        public int CurrentPriority { get { throw null; } }
+        public int Id { get { throw null; } }
         public int IdealProcessor { set { } }
-        public bool PriorityBoostEnabled { get { return default(bool); } set { } }
-        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { return default(System.Diagnostics.ThreadPriorityLevel); } set { } }
-        public System.TimeSpan PrivilegedProcessorTime { get { return default(System.TimeSpan); } }
+        public bool PriorityBoostEnabled { get { throw null; } set { } }
+        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } set { } }
+        public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public System.IntPtr ProcessorAffinity { set { } }
-        public System.IntPtr StartAddress { get { return default(System.IntPtr); } }
-        public System.DateTime StartTime { get { return default(System.DateTime); } }
-        public System.Diagnostics.ThreadState ThreadState { get { return default(System.Diagnostics.ThreadState); } }
-        public System.TimeSpan TotalProcessorTime { get { return default(System.TimeSpan); } }
-        public System.TimeSpan UserProcessorTime { get { return default(System.TimeSpan); } }
-        public System.Diagnostics.ThreadWaitReason WaitReason { get { return default(System.Diagnostics.ThreadWaitReason); } }
+        public System.IntPtr StartAddress { get { throw null; } }
+        public System.DateTime StartTime { get { throw null; } }
+        public System.Diagnostics.ThreadState ThreadState { get { throw null; } }
+        public System.TimeSpan TotalProcessorTime { get { throw null; } }
+        public System.TimeSpan UserProcessorTime { get { throw null; } }
+        public System.Diagnostics.ThreadWaitReason WaitReason { get { throw null; } }
         public void ResetIdealProcessor() { }
     }
-    public partial class ProcessThreadCollection
+    public partial class ProcessThreadCollection : System.Collections.ReadOnlyCollectionBase
     {
         protected ProcessThreadCollection() { }
         public ProcessThreadCollection(System.Diagnostics.ProcessThread[] processThreads) { }
-        public System.Diagnostics.ProcessThread this[int index] { get { return default(System.Diagnostics.ProcessThread); } }
-        public int Add(System.Diagnostics.ProcessThread thread) { return default(int); }
-        public bool Contains(System.Diagnostics.ProcessThread thread) { return default(bool); }
+        public System.Diagnostics.ProcessThread this[int index] { get { throw null; } }
+        public int Add(System.Diagnostics.ProcessThread thread) { throw null; }
+        public bool Contains(System.Diagnostics.ProcessThread thread) { throw null; }
         public void CopyTo(System.Diagnostics.ProcessThread[] array, int index) { }
-        public int IndexOf(System.Diagnostics.ProcessThread thread) { return default(int); }
+        public int IndexOf(System.Diagnostics.ProcessThread thread) { throw null; }
         public void Insert(int index, System.Diagnostics.ProcessThread thread) { }
         public void Remove(System.Diagnostics.ProcessThread thread) { }
     }
@@ -204,5 +228,19 @@ namespace System.Diagnostics
         Unknown = 13,
         UserRequest = 6,
         VirtualMemory = 11,
+    }
+
+    public enum ProcessWindowStyle 
+    {
+        Hidden = 1,
+        Maximized = 3,
+        Minimized = 2,
+        Normal = 0,
+    }
+
+    public class MonitoringDescriptionAttribute : System.ComponentModel.DescriptionAttribute 
+    {
+        public MonitoringDescriptionAttribute(string description) { throw null; }
+        public override string Description { get { throw null; } }
     }
 }

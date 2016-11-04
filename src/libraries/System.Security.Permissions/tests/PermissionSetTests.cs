@@ -30,6 +30,7 @@ namespace System.Security.Permissions.Tests
             ps.FromXml(se);
             se = ps.ToXml();
         }
+
         [Fact]
         public static void PermissionSetAttributeCallMethods()
         {
@@ -37,6 +38,7 @@ namespace System.Security.Permissions.Tests
             IPermission ip = psa.CreatePermission();
             PermissionSet ps = psa.CreatePermissionSet();
         }
+
         [Fact]
         public static void NamedPermissionSetCallMethods()
         {

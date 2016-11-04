@@ -2,45 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Tests
 {
-    // TODO: Remove these extension methods when the actual methods are available on String in System.Runtime.dll
-    internal static class TemporaryStringSplitExtensions
-    {
-        public static string[] Split(this string value, char separator)
-        {
-            return value.Split(new[] { separator });
-        }
-
-        public static string[] Split(this string value, char separator, StringSplitOptions options)
-        {
-            return value.Split(new[] { separator }, options);
-        }
-
-        public static string[] Split(this string value, char separator, int count, StringSplitOptions options)
-        {
-            return value.Split(new[] { separator }, count, options);
-        }
-
-        public static string[] Split(this string value, string separator)
-        {
-            return value.Split(new[] { separator }, StringSplitOptions.None);
-        }
-
-        public static string[] Split(this string value, string separator, StringSplitOptions options)
-        {
-            return value.Split(new[] { separator }, options);
-        }
-
-        public static string[] Split(this string value, string separator, int count, StringSplitOptions options)
-        {
-            return value.Split(new[] { separator }, count, options);
-        }
-    }
-
     public static class StringSplitTests
     {
         [Fact]
@@ -50,11 +15,13 @@ namespace System.Tests
             const int count = -1;
             const StringSplitOptions options = StringSplitOptions.None;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => value.Split(',', count, options));
-            Assert.Throws<ArgumentOutOfRangeException>(() => value.Split(new[] { ',' }, count));
-            Assert.Throws<ArgumentOutOfRangeException>(() => value.Split(new[] { ',' }, count, options));
-            Assert.Throws<ArgumentOutOfRangeException>(() => value.Split(",", count, options));
-            Assert.Throws<ArgumentOutOfRangeException>(() => value.Split(new[] { "," }, count, options));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(',', count));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(',', count, options));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { ',' }, count));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { ',' }, count, options));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(",", count));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(",", count, options));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { "," }, count, options));
         }
 
         [Fact]
@@ -92,9 +59,11 @@ namespace System.Tests
 
             string[] expected = new string[0];
 
+            Assert.Equal(expected, value.Split(',', count));
             Assert.Equal(expected, value.Split(',', count, options));
             Assert.Equal(expected, value.Split(new[] { ',' }, count));
             Assert.Equal(expected, value.Split(new[] { ',' }, count, options));
+            Assert.Equal(expected, value.Split(",", count));
             Assert.Equal(expected, value.Split(",", count, options));
             Assert.Equal(expected, value.Split(new[] { "," }, count, options));
         }
@@ -127,9 +96,11 @@ namespace System.Tests
 
             string[] expected = new[] { value };
 
+            Assert.Equal(expected, value.Split(',', count));
             Assert.Equal(expected, value.Split(',', count, options));
             Assert.Equal(expected, value.Split(new[] { ',' }, count));
             Assert.Equal(expected, value.Split(new[] { ',' }, count, options));
+            Assert.Equal(expected, value.Split(",", count));
             Assert.Equal(expected, value.Split(",", count, options));
             Assert.Equal(expected, value.Split(new[] { "," }, count, options));
         }
@@ -470,6 +441,15 @@ namespace System.Tests
         {
             Assert.Equal(expected, value.Split(separator, count, options));
             Assert.Equal(expected, value.Split(new[] { separator }, count, options));
+        }
+
+        [Fact]
+        public static void SplitNullCharArraySeparator_BindsToCharArrayOverload()
+        {
+            string value = "a b c";
+            string[] expected = new[] { "a", "b", "c" };
+            // Ensure Split(null) compiles successfully as a call to Split(char[])
+            Assert.Equal(expected, value.Split(null));
         }
 
         [Theory]

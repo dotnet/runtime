@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -46,7 +46,6 @@
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
     <Compile Include="System\Timers\ElapsedEventArgs.cs" />
     <Compile Include="System\Timers\ElapsedEventHandler.cs" />
-    <Compile Include="System\Timers\System.ComponentModel.cs" />
     <Compile Include="System\Timers\Timer.cs" />
     <Compile Include="System\Timers\TimersDescriptionAttribute.cs" />
     <Compile Include="System\ComponentModel\AttributeCollection.cs" />
@@ -55,7 +54,6 @@
     <Compile Include="System\ComponentModel\CollectionChangeAction.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventArgs.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />
-    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
     <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
@@ -69,6 +67,7 @@
     <Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <Compile Include="System\ComponentModel\IListSource.cs" />
+    <Compile Include="System\ComponentModel\InterlockedBitVector32.cs" />
     <Compile Include="System\ComponentModel\InvalidAsynchronousStateException.cs" />
     <Compile Include="System\InvariantComparer.cs" />
     <Compile Include="System\ComponentModel\ITypedList.cs" />
@@ -96,6 +95,158 @@
     <Compile Include="System\Drawing\RectangleConverter.cs" />
     <Compile Include="System\Drawing\SizeConverter.cs" />
     <Compile Include="System\Drawing\SizeFConverter.cs" />
+
+    <!-- New code introduced for netstandard 2.0 -->
+    <Compile Include="System\ComponentModel\AddingNewEventArgs.cs" />
+    <Compile Include="System\ComponentModel\AddingNewEventHandler.cs" />
+    <Compile Include="System\ComponentModel\AmbientValueAttribute.cs" />
+    <Compile Include="System\ComponentModel\BindableAttribute.cs" />
+    <Compile Include="System\ComponentModel\BindableSupport.cs" />
+    <Compile Include="System\ComponentModel\BindingDirection.cs" />  
+    <Compile Include="System\ComponentModel\BindingList.cs" />  
+    <Compile Include="System\ComponentModel\IBindingList.cs" />  
+    <Compile Include="System\ComponentModel\ICancelAddNew.cs" />  
+    <Compile Include="System\ComponentModel\IRaiseItemChangedEvents.cs" />  
+    <Compile Include="System\ComponentModel\ListChangedEventArgs.cs" />
+    <Compile Include="System\ComponentModel\ListChangedEventHandler.cs" />
+    <Compile Include="System\ComponentModel\ListSortDirection.cs" />
+    <Compile Include="System\ComponentModel\ListChangedType.cs" />
+    <Compile Include="System\ComponentModel\ComplexBindingPropertiesAttribute.cs" />
+    <Compile Include="System\ComponentModel\ComponentConverter.cs" />
+    <Compile Include="System\ComponentModel\ReferenceConverter.cs" />
+    <Compile Include="System\ComponentModel\Design\IReferenceService.cs" />
+    <Compile Include="System\ComponentModel\BaseComponentEditor.cs" />
+    <Compile Include="System\ComponentModel\Container.cs" />
+    <Compile Include="System\ComponentModel\ContainerFilterService.cs" />
+    <Compile Include="System\ComponentModel\Design\InheritanceAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\InheritanceLevel.cs" />
+    <Compile Include="System\ComponentModel\CultureInfoConverter.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\InstanceDescriptor.cs" />
+    <Compile Include="System\ComponentModel\DataObjectAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataObjectFieldAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataObjectMethodAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataObjectMethodType.cs" />    
+    <Compile Include="System\ComponentModel\DefaultBindingPropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignTimeVisibleAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\IDesigner.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerVerbCollection.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerVerb.cs" />
+    <Compile Include="System\ComponentModel\Design\MenuCommand.cs" />
+    <Compile Include="System\ComponentModel\Design\CommandID.cs" />
+    <Compile Include="System\ComponentModel\Design\CheckoutException.cs" />
+    <Compile Include="System\ComponentModel\Design\StandardCommands.cs" />
+    <Compile Include="System\ComponentModel\EditorAttribute.cs" />
+    <Compile Include="System\ComponentModel\ExpandableObjectConverter.cs" />
+    <Compile Include="System\ComponentModel\IBindingListView.cs" />
+    <Compile Include="System\ComponentModel\ListSortDescriptionCollection.cs" />
+    <Compile Include="System\ComponentModel\ListSortDescription.cs" />
+    <Compile Include="System\ComponentModel\IComNativeDescriptorHandler.cs" />
+    <Compile Include="System\ComponentModel\IDataErrorInfo.cs" />
+    <Compile Include="System\ComponentModel\INestedContainer.cs" />
+    <Compile Include="System\ComponentModel\IIntellisenseBuilder.cs" />
+    <Compile Include="System\ComponentModel\INestedSite.cs" />
+    <Compile Include="System\ComponentModel\InstallerTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\InstanceCreationEditor.cs" />
+    <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
+    <Compile Include="System\ComponentModel\ISupportInitialize.cs" />
+    <Compile Include="System\ComponentModel\ISupportInitializeNotification.cs" />
+    <Compile Include="System\ComponentModel\License.cs" />
+    <Compile Include="System\ComponentModel\LicenseContext.cs" />
+    <Compile Include="System\ComponentModel\LicenseUsageMode.cs" />
+    <Compile Include="System\ComponentModel\LicenseException.cs" />
+    <Compile Include="System\ComponentModel\LicenseManager.cs" />
+    <Compile Include="System\ComponentModel\LicenseProvider.cs" />
+    <Compile Include="System\ComponentModel\Design\DesigntimeLicenseContext.cs" />
+    <Compile Include="System\ComponentModel\LicenseProviderAttribute.cs" />    
+    <Compile Include="System\ComponentModel\Design\DesigntimeLicenseContextSerializer.cs" />
+    <Compile Include="System\ComponentModel\LicFileLicenseProvider.cs" />
+    <Compile Include="System\ComponentModel\Design\ITypeResolutionService.cs" />
+    <Compile Include="System\ComponentModel\ListBindableAttribute.cs" />
+    <Compile Include="System\ComponentModel\LookupBindingPropertiesAttribute.cs" />
+    <Compile Include="System\ComponentModel\MarshalByValueComponent.cs" />
+    <Compile Include="System\ComponentModel\MaskedTextProvider.cs" />
+    <Compile Include="System\ComponentModel\MaskedTextResultHint.cs" />
+    <Compile Include="System\ComponentModel\NestedContainer.cs" />
+    <Compile Include="System\ComponentModel\PasswordPropertyTextAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\PropertyTabAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\PropertyTabScope.cs" />
+    <Compile Include="System\ComponentModel\RecommendedAsConfigurableAttribute.cs" />
+    <Compile Include="System\ComponentModel\RunInstallerAttribute.cs" />
+    <Compile Include="System\ComponentModel\SettingsBindableAttribute.cs" />
+    <Compile Include="System\ComponentModel\SyntaxCheck.cs" />
+    <Compile Include="System\ComponentModel\Design\ToolboxItemAttribute.cs" />
+    <Compile Include="System\ComponentModel\ToolboxItemFilterAttribute.cs" />
+    <Compile Include="System\ComponentModel\ToolboxItemFilterType.cs" />
+    <Compile Include="System\ComponentModel\WarningException.cs" />
+    <Compile Include="System\ComponentModel\Design\ActiveDocumentEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ActiveDocumentEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\IDesignerHost.cs" />
+    <Compile Include="System\ComponentModel\Design\IServiceObjectContainer.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerTransaction.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerTransactionCloseEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerTransactionCloseEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\ServiceCreatorCallback.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentChangedEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentChangedEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentChangingEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentChangingEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentRenameEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentRenameEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\DocumentCollection.cs" />
+    <Compile Include="System\ComponentModel\Design\DocumentEventArgs.cs" />
+    <Compile Include="System\ComponentModel\Design\DocumentEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerOptionService.cs" />
+    <Compile Include="System\ComponentModel\Design\HelpKeywordAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\HelpKeywordType.cs" />
+    <Compile Include="System\ComponentModel\Design\HelpContextType.cs" />
+    <Compile Include="System\ComponentModel\Design\IDesignerOptionService.cs" />
+    <Compile Include="System\ComponentModel\Design\IComponentChangeService.cs" />
+    <Compile Include="System\ComponentModel\Design\IComponentDiscoveryService.cs" />
+    <Compile Include="System\ComponentModel\Design\IComponentInitializer.cs" />
+    <Compile Include="System\ComponentModel\Design\IDesignerEventService.cs" />
+    <Compile Include="System\ComponentModel\Design\IDesignerFilter.cs" />
+    <Compile Include="System\ComponentModel\Design\IDesignerHostTransactionState.cs" />
+    <Compile Include="System\ComponentModel\Design\IEventPropertyService.cs" />
+    <Compile Include="System\ComponentModel\Design\IExtenderProviderService.cs" />
+    <Compile Include="System\ComponentModel\Design\IHelpService.cs" />
+    <Compile Include="System\ComponentModel\Design\IMenuCommandService.cs" />
+    <Compile Include="System\ComponentModel\Design\IResourceService.cs" />
+    <Compile Include="System\ComponentModel\Design\IRootDesigner.cs" />
+    <Compile Include="System\ComponentModel\Design\ISelectionService.cs" />
+    <Compile Include="System\ComponentModel\Design\ITreeDesigner.cs" />
+    <Compile Include="System\ComponentModel\Design\ITypeDiscoveryService.cs" />
+    <Compile Include="System\ComponentModel\Design\ViewTechnology.cs" />
+    <Compile Include="System\ComponentModel\Design\SelectionTypes.cs" />
+    <Compile Include="System\ComponentModel\Design\IInheritanceService.cs" />
+    <Compile Include="System\ComponentModel\Design\ServiceObjectContainer.cs" />
+    <Compile Include="System\ComponentModel\Design\StandardToolWindows.cs" />
+    <Compile Include="System\ComponentModel\TypeDescriptionProviderService.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\ComponentSerializationService.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\ContextStack.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\DefaultSerializationProviderAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\DesignerLoader.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\DesignerSerializerAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\SerializationStore.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\IDesignerLoaderHost.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\IDesignerLoaderService.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\IDesignerSerializationManager.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\IDesignerSerializationProvider.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\IDesignerSerializationService.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\INameCreationService.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\MemberRelationshipService.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\ResolveNameEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\ResolveNameEventArgs.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
+    <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
+
+    <!-- Random pieces of code required to build  -->
+    <Compile Include="System\misc.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net463'">
@@ -105,10 +256,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
-  </ItemGroup>
-  <!-- TODO: Replace this with a package reference. -->
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

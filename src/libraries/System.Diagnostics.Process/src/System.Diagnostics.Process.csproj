@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -10,11 +10,9 @@
     <ProjectGuid>{63634289-90D7-4947-8BF3-DBBE98D76C85}</ProjectGuid>
     <RootNamespace>System.Diagnostics.Process</RootNamespace>
     <AssemblyName>System.Diagnostics.Process</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Diagnostics.Process.depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
@@ -35,7 +33,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
-    <Compile Include="System\Diagnostics\ModuleInfo.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
@@ -49,10 +46,41 @@
     <Compile Include="System\Diagnostics\ThreadPriorityLevel.cs" />
     <Compile Include="System\Diagnostics\ThreadState.cs" />
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
+    <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)'!='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.EnumWindows.cs">
+      <Link>Common\Interop\Windows\Interop.EnumWindows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowTextLength.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowTextLength.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SendMessageTimeout.cs">
+      <Link>Common\Interop\Windows\Interop.SendMessageTimeout.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowText.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowText.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindow.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindow.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.PostMessage.cs">
+      <Link>Common\Interop\Windows\Interop.PostMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowLong.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowLong.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.WaitForInputIdle.cs">
+      <Link>Common\Interop\Windows\Interop.WaitForInputIdle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.IsWindowVisible.cs">
+      <Link>Common\Interop\Windows\Interop.IsWindowVisible.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowThreadProcessId.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowThreadProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
@@ -293,6 +321,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs">
       <Link>Common\Interop\Linux\Interop.SchedGetSetAffinity.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>

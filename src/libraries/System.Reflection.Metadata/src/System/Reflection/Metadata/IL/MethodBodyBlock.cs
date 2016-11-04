@@ -153,7 +153,7 @@ namespace System.Reflection.Metadata
             }
 
             var ilBlock = reader.GetMemoryBlockAt(0, ilSize);
-            reader.SkipBytes(ilSize);
+            reader.Offset += ilSize;
 
             ImmutableArray<ExceptionRegion> exceptionHandlers;
             if (hasExceptionHandlers)
@@ -174,7 +174,7 @@ namespace System.Reflection.Metadata
                 }
                 else
                 {
-                    reader.SkipBytes(2); // skip over reserved field
+                    reader.Offset += 2; // skip over reserved field
                     exceptionHandlers = ReadSmallExceptionHandlers(ref reader, dataSize / 12);
                 }
             }

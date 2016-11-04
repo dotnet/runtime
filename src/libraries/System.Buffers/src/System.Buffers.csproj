@@ -1,22 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == ''">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != ''">
     <Compile Include="System\Buffers\ArrayPool.cs" />
     <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
     <Compile Include="System\Buffers\DefaultArrayPool.cs" />
     <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
     <Compile Include="System\Buffers\Utilities.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

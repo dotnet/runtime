@@ -50,7 +50,7 @@ namespace Tests.System.Runtime.InteropServices
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void NullSafePointerInTest()
         {
             using (var buffer = new NativeBuffer(0))

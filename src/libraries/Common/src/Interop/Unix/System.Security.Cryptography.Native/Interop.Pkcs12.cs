@@ -22,7 +22,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs12Create", CharSet = CharSet.Ansi)]
         internal static extern SafePkcs12Handle Pkcs12Create(
-            string pass,
+            SafePasswordHandle pass,
             SafeEvpPKeyHandle pkey,
             SafeX509Handle cert,
             SafeX509StackHandle ca);
@@ -33,11 +33,11 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodePkcs12")]
         internal static extern int EncodePkcs12(SafePkcs12Handle p12, byte[] buf);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs12Parse", CharSet = CharSet.Ansi)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs12Parse")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool Pkcs12Parse(
             SafePkcs12Handle p12,
-            string pass,
+            SafePasswordHandle pass,
             out SafeEvpPKeyHandle pkey,
             out SafeX509Handle cert,
             out SafeX509StackHandle ca);

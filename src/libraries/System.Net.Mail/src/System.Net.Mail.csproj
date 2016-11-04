@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Net\Base64Stream.cs" />
+    <Compile Include="System\Net\Mime\MimePart.cs" />
+    <Compile Include="System\Net\Mime\Base64WriteStateInfo.cs" />
+    <Compile Include="System\Net\Mime\QuotedPrintableStream.cs" />
+    <Compile Include="System\Net\CloseableStream.cs" />
+    <Compile Include="System\Net\Mime\EightBitStream.cs" />
+    <Compile Include="System\Net\Mime\EncodedStreamFactory.cs" />
+    <Compile Include="System\Net\Mime\IEncodableStream.cs" />
+    <Compile Include="System\Net\Mime\QEncodedStream.cs" />
+    <Compile Include="System\Net\Mime\WriteStateInfoBase.cs" />
+    <Compile Include="System\Net\Mime\BaseWriter.cs" />
+    <Compile Include="System\Net\Mime\TransferEncoding.cs" />
+    <Compile Include="System\Net\Mime\ContentDisposition.cs" />
+    <Compile Include="System\Net\Mime\ContentType.cs" />
+    <Compile Include="System\Net\Mime\DispositionTypeNames.cs" />
+    <Compile Include="System\Net\Mime\HeaderCollection.cs" />
+    <Compile Include="System\Net\Mime\MediaTypeNames.cs" />
+    <Compile Include="System\Net\Mime\MimeBasePart.cs" />
+    <Compile Include="System\Net\Mime\SmtpDateTime.cs" />
+    <Compile Include="System\Net\Mime\MultiAsyncResult.cs" />
+    <Compile Include="System\Net\TrackingStringDictionary.cs" />
+    <Compile Include="System\Net\TrackingValidationObjectDictionary.cs" />
+    <Compile Include="System\Net\Mail\MailHeaderID.cs" />
+    <Compile Include="System\Net\Mail\MailHeaderInfo.cs" />
+    <Compile Include="System\Net\BufferBuilder.cs" />
+    <Compile Include="System\Net\Mail\AlternateView.cs" />
+    <Compile Include="System\Net\Mail\AlternateViewCollection.cs" />
+    <Compile Include="System\Net\Mail\Attachment.cs" />
+    <Compile Include="System\Net\Mail\AttachmentCollection.cs" />
+    <Compile Include="System\Net\BufferedReadStream.cs" />
+    <Compile Include="System\Net\Mail\ISmtpAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\LinkedResource.cs" />
+    <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
+    <Compile Include="System\Net\Mail\MailAddress.cs" />
+    <Compile Include="System\Net\Mail\MailAddressCollection.cs" />
+    <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
+    <Compile Include="System\Net\Mail\MailMessage.cs" />
+    <Compile Include="System\Net\Mail\MailPriority.cs" />
+    <Compile Include="System\Net\Mail\MailWriter.cs" />
+    <Compile Include="System\Net\Mime\MimeMultiPart.cs" />
+    <Compile Include="System\Net\Mime\MimeMultiPartType.cs" />
+    <Compile Include="System\Net\Mime\MimeWriter.cs" />
+    <Compile Include="System\Net\Mail\SmtpAuthenticationManager.cs" />
+    <Compile Include="System\Net\Mail\SmtpClient.cs" />
+    <Compile Include="System\Net\Mail\SmtpCommands.cs" />
+    <Compile Include="System\Net\Mail\SmtpConnection.cs" />
+    <Compile Include="System\Net\Mail\SmtpConnection.Auth.cs" />
+    <Compile Include="System\Net\Mail\SmtpException.cs" />
+    <Compile Include="System\Net\Mail\SmtpFailedRecipientException.cs" />
+    <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
+    <Compile Include="System\Net\Mail\SmtpAccess.cs" />
+    <Compile Include="System\Net\Mail\SmtpReplyReader.cs" />
+    <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
+    <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
+    <Compile Include="System\Net\Mail\SmtpTransport.cs" />
+    <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
+    <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)\System\Net\TlsStream.cs">
+      <Link>Common\System\Net\TlsStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
+      <Link>Common\System\Net\ContextAwareResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+      <Link>Common\System\Net\Mail\MailBnfHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+      <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
+      <Link>Common\System\Net\Mail\MailAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
+      <Link>Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
+      <Link>Common\System\Net\Mail\WhitespaceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedPairReader.cs">
+      <Link>Common\System\Net\Mail\QuotedPairReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
+      <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true' And '$(TargetGroup)' != 'net463'">
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
+      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(TargetGroup)' != 'net463'">
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <TargetingPackReference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

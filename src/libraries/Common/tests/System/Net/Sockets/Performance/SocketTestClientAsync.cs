@@ -32,7 +32,9 @@ namespace System.Net.Sockets.Performance.Tests
             connectEventArgs.UserToken = onConnectCallback;
             connectEventArgs.Completed += OnConnect;
 
-            bool willRaiseEvent = _s.ConnectAsync(connectEventArgs);
+            bool willRaiseEvent = _s != null ?
+                _s.ConnectAsync(connectEventArgs) :
+                Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, connectEventArgs);
             if (!willRaiseEvent)
             {
                 ProcessConnect(connectEventArgs);
@@ -46,6 +48,10 @@ namespace System.Net.Sockets.Performance.Tests
 
         private void ProcessConnect(SocketAsyncEventArgs e)
         {
+            if (_s == null)
+            {
+                _s = e.ConnectSocket;
+            }
             Action<SocketError> callback = (Action<SocketError>)e.UserToken;
             callback(e.SocketError);
         }
@@ -82,7 +88,7 @@ namespace System.Net.Sockets.Performance.Tests
 
         public override void Close(Action onCloseCallback)
         {
-            _s.Dispose();
+            _s?.Dispose();
             onCloseCallback();
         }
 

@@ -214,7 +214,7 @@ namespace System.Data.SqlClient
                 }
                 if (StorageType.DateTime == _type)
                 {
-                    return SqlDateTime.ToDateTime(_value._dateTimeInfo.daypart, _value._dateTimeInfo.timepart);
+                    return SqlTypeWorkarounds.SqlDateTimeToDateTime(_value._dateTimeInfo.daypart, _value._dateTimeInfo.timepart);
                 }
                 return (DateTime)this.Value; // anything else we haven't thought of goes through boxing.
             }
@@ -730,7 +730,7 @@ namespace System.Data.SqlClient
                     {
                         return SqlMoney.Null;
                     }
-                    return new SqlMoney(_value._int64, 1/*ignored*/);
+                    return SqlTypeWorkarounds.SqlMoneyCtor(_value._int64, 1/*ignored*/);
                 }
                 return (SqlMoney)this.SqlValue; // anything else we haven't thought of goes through boxing.
             }

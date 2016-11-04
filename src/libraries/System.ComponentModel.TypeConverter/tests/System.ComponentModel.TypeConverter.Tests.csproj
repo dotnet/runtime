@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,7 +8,7 @@
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter.Tests</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter.Tests</AssemblyName>
-    <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.7</NugetTargetMoniker>
     <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
@@ -71,27 +71,24 @@
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition=" '$(TargetGroup)' == ''">
     <Compile Include="Drawing\ColorConverterTests.cs" />
     <Compile Include="Drawing\PointConverterTests.cs" />
     <Compile Include="Drawing\RectangleConverterTests.cs" />
     <Compile Include="Drawing\SizeConverterTests.cs" />
     <Compile Include="Drawing\SizeFConverterTests.cs" />
     <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <Compile Include="TimerTests.cs" />
+    <Compile Include="BindingListTests.cs" />
+    <Compile Include="ContainerTests.cs" />
+    <Compile Include="CultureInfoConverterTests.cs" />
+    <Compile Include="LicenseManagerTests.cs" />
+    <Compile Include="ReferenceConverterTests.cs" />
+    <Compile Include="ContextStackTests.cs" />
+    <Compile Include="InstanceDescriptorTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
-    </ProjectReference>
-  </ItemGroup>
-  <!-- TODO: Replace this with a package reference. -->
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
-    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

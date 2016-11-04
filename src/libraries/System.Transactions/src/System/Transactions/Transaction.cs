@@ -53,6 +53,7 @@ namespace System.Transactions
 
     // When we serialize a Transaction, we specify the type DistributedTransaction, so a Transaction never
     // actually gets deserialized.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Serialization not yet supported and will be done using DistributedTransaction")]
     [Serializable]
     public class Transaction : IDisposable, ISerializable
     {

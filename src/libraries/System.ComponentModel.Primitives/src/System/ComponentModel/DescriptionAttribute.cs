@@ -59,5 +59,10 @@ namespace System.ComponentModel
         {
             return Description.GetHashCode();
         }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Equals(DescriptionAttribute.Default);
+        }
     }
 }

@@ -90,6 +90,24 @@
             <param name="elementOffset">The offset to add.</param>
             <returns>A new reference that reflects the addition of offset to pointer.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Add``1(``0@,System.IntPtr)">
+            <summary>
+            Adds an element offset to the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to add the offset to.</param>
+            <param name="elementOffset">The offset to add.</param>
+            <returns>A new reference that reflects the addition of offset to pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.AddByteOffset``1(``0@,System.IntPtr)">
+            <summary>
+            Adds a byte offset to the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to add the offset to.</param>
+            <param name="byteOffset">The offset to add.</param>
+            <returns>A new reference that reflects the addition of byte offset to pointer.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Subtract``1(``0@,System.Int32)">
             <summary>
             Subtracts an element offset from the given reference.
@@ -98,6 +116,33 @@
             <param name="source">The reference to subtract the offset from.</param>
             <param name="elementOffset">The offset to subtract.</param>
             <returns>A new reference that reflects the subraction of offset from pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Subtract``1(``0@,System.IntPtr)">
+            <summary>
+            Subtracts an element offset from the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to subtract the offset from.</param>
+            <param name="elementOffset">The offset to subtract.</param>
+            <returns>A new reference that reflects the subraction of offset from pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.SubtractByteOffset``1(``0@,System.IntPtr)">
+            <summary>
+            Subtracts a byte offset from the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to subtract the offset from.</param>
+            <param name="bytesOffset">The offset to subtract.</param>
+            <returns>A new reference that reflects the subraction of byte offset from pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.ByteOffset``1(``0@,``0@)">
+            <summary>
+            Determines the byte offset from origin to target from the given references.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="origin">The reference to origin.</param>
+            <param name="target">The reference to target.</param>
+            <returns>Byte offset from origin to target i.e. <paramref name="target"/> - <paramref name="origin"/>.</returns>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.AreSame``1(``0@,``0@)">
             <summary>
@@ -115,9 +160,61 @@
             <param name="source">The source address to copy from.</param>
             <param name="byteCount">The number of bytes to copy.</param>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UIntPtr)">
+            <summary>
+            Copies bytes from the source address to the destination address.
+            </summary>
+            <param name="destination">The destination address to copy to.</param>
+            <param name="source">The source address to copy from.</param>
+            <param name="byteCount">The number of bytes to copy.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlockUnaligned(System.Void*,System.Void*,System.UInt32)">
+            <summary>
+            Copies bytes from the source address to the destination address 
+            without assuming architecture dependent alignment of the addresses.
+            </summary>
+            <param name="destination">The destination address to copy to.</param>
+            <param name="source">The source address to copy from.</param>
+            <param name="byteCount">The number of bytes to copy.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlockUnaligned(System.Void*,System.Void*,System.UIntPtr)">
+            <summary>
+            Copies bytes from the source address to the destination address 
+            without assuming architecture dependent alignment of the addresses.
+            </summary>
+            <param name="destination">The destination address to copy to.</param>
+            <param name="source">The source address to copy from.</param>
+            <param name="byteCount">The number of bytes to copy.</param>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlock(System.Void*,System.Byte,System.UInt32)">
             <summary>
             Initializes a block of memory at the given location with a given initial value.
+            </summary>
+            <param name="startAddress">The address of the start of the memory block to initialize.</param>
+            <param name="value">The value to initialize the block to.</param>
+            <param name="byteCount">The number of bytes to initialize.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlock(System.Void*,System.Byte,System.UIntPtr)">
+            <summary>
+            Initializes a block of memory at the given location with a given initial value.
+            </summary>
+            <param name="startAddress">The address of the start of the memory block to initialize.</param>
+            <param name="value">The value to initialize the block to.</param>
+            <param name="byteCount">The number of bytes to initialize.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlockUnaligned(System.Void*,System.Byte,System.UInt32)">
+            <summary>
+            Initializes a block of memory at the given location with a given initial value 
+            without assuming architecture dependent alignment of the address.
+            </summary>
+            <param name="startAddress">The address of the start of the memory block to initialize.</param>
+            <param name="value">The value to initialize the block to.</param>
+            <param name="byteCount">The number of bytes to initialize.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlockUnaligned(System.Void*,System.Byte,System.UIntPtr)">
+            <summary>
+            Initializes a block of memory at the given location with a given initial value 
+            without assuming architecture dependent alignment of the address.
             </summary>
             <param name="startAddress">The address of the start of the memory block to initialize.</param>
             <param name="value">The value to initialize the block to.</param>

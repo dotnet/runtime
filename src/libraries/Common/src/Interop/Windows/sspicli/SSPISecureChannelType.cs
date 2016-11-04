@@ -26,14 +26,11 @@ namespace System.Net
 
         public int EnumerateSecurityPackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SSPISecureChannelType::EnumerateSecurityPackages()");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             return SafeFreeContextBuffer.EnumeratePackages(out pkgnum, out pkgArray);
         }
 
-        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.AuthIdentity authdata, out SafeFreeCredentials outCredential)
+        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata, out SafeFreeCredentials outCredential)
         {
             return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, usage, ref authdata, out outCredential);
         }
@@ -48,7 +45,7 @@ namespace System.Net
             return SafeFreeCredentials.AcquireDefaultCredential(moduleName, usage, out outCredential);
         }
 
-        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.SecureCredential authdata, out SafeFreeCredentials outCredential)
+        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.SCHANNEL_CRED authdata, out SafeFreeCredentials outCredential)
         {
             return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, usage, ref authdata, out outCredential);
         }
@@ -73,13 +70,13 @@ namespace System.Net
             return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, null, inputBuffers, outputBuffer, ref outFlags);
         }
 
-        public int EncryptMessage(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
                 bool ignore = false;
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, inputOutput, sequenceNumber);
+                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, ref inputOutput, sequenceNumber);
             }
             finally
             {
@@ -87,14 +84,14 @@ namespace System.Net
             }
         }
 
-        public unsafe int DecryptMessage(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput,
+        public unsafe int DecryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput,
             uint sequenceNumber)
         {
             try
             {
                 bool ignore = false;
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.DecryptMessage(ref context._handle, inputOutput, sequenceNumber, null);
+                return Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, sequenceNumber, null);
             }
             finally
             {
@@ -102,12 +99,12 @@ namespace System.Net
             }
         }
 
-        public int MakeSignature(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public int MakeSignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public int VerifySignature(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public int VerifySignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
@@ -117,7 +114,7 @@ namespace System.Net
             refHandle = SafeFreeContextBufferChannelBinding.CreateEmptyHandle();
 
             // Bindings is on the stack, so there's no need for a fixed block.
-            Bindings bindings = new Bindings();
+            SecPkgContext_Bindings bindings = new SecPkgContext_Bindings();
             return SafeFreeContextBufferChannelBinding.QueryContextChannelBinding(phContext, attribute, &bindings, refHandle);
         }
 
@@ -158,6 +155,11 @@ namespace System.Net
         public int CompleteAuthToken(ref SafeDeleteContext refContext, SecurityBuffer[] inputBuffers)
         {
             throw new NotSupportedException();
+        }
+
+        public int ApplyControlToken(ref SafeDeleteContext refContext, SecurityBuffer[] inputBuffers)
+        {
+            return SafeDeleteContext.ApplyControlToken(ref refContext, inputBuffers);
         }
     }
 }

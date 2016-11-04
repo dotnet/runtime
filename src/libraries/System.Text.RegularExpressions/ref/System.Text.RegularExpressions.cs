@@ -31,7 +31,6 @@ namespace System.Text.RegularExpressions
     {
         internal Group() { }
         public System.Text.RegularExpressions.CaptureCollection Captures { get { throw null; } }
-        public string Name { get { throw null; } }
         public bool Success { get { throw null; } }
         public static System.Text.RegularExpressions.Group Synchronized(System.Text.RegularExpressions.Group inner) { throw null; }
     }
@@ -77,10 +76,6 @@ namespace System.Text.RegularExpressions
         protected internal System.Text.RegularExpressions.RegexRunnerFactory factory;
         public static readonly System.TimeSpan InfiniteMatchTimeout;
         protected internal System.TimeSpan internalMatchTimeout;
-        [System.CLSCompliant(false)]
-        protected System.Collections.IDictionary Caps { get { throw null; } set { } }
-        [System.CLSCompliant(false)]
-        protected System.Collections.IDictionary CapNames { get { throw null; } set { } }
         protected internal string pattern;
         protected internal System.Text.RegularExpressions.RegexOptions roptions;
         protected Regex() { }

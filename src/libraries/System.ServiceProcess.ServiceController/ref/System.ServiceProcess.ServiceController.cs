@@ -12,25 +12,25 @@ namespace System.ServiceProcess
     {
         public ServiceController(string name) { }
         public ServiceController(string name, string machineName) { }
-        public bool CanPauseAndContinue { get { return default(bool); } }
-        public bool CanShutdown { get { return default(bool); } }
-        public bool CanStop { get { return default(bool); } }
-        public System.ServiceProcess.ServiceController[] DependentServices { get { return default(System.ServiceProcess.ServiceController[]); } }
-        public string DisplayName { get { return default(string); } }
-        public string MachineName { get { return default(string); } }
-        public System.Runtime.InteropServices.SafeHandle ServiceHandle { get { return default(System.Runtime.InteropServices.SafeHandle); } }
-        public string ServiceName { get { return default(string); } }
-        public System.ServiceProcess.ServiceController[] ServicesDependedOn { get { return default(System.ServiceProcess.ServiceController[]); } }
-        public System.ServiceProcess.ServiceType ServiceType { get { return default(System.ServiceProcess.ServiceType); } }
-        public System.ServiceProcess.ServiceStartMode StartType { get { return default(System.ServiceProcess.ServiceStartMode); } }
-        public System.ServiceProcess.ServiceControllerStatus Status { get { return default(System.ServiceProcess.ServiceControllerStatus); } }
+        public bool CanPauseAndContinue { get { throw null; } }
+        public bool CanShutdown { get { throw null; } }
+        public bool CanStop { get { throw null; } }
+        public System.ServiceProcess.ServiceController[] DependentServices { get { throw null; } }
+        public string DisplayName { get { throw null; } }
+        public string MachineName { get { throw null; } }
+        public System.Runtime.InteropServices.SafeHandle ServiceHandle { get { throw null; } }
+        public string ServiceName { get { throw null; } }
+        public System.ServiceProcess.ServiceController[] ServicesDependedOn { get { throw null; } }
+        public System.ServiceProcess.ServiceType ServiceType { get { throw null; } }
+        public System.ServiceProcess.ServiceStartMode StartType { get { throw null; } }
+        public System.ServiceProcess.ServiceControllerStatus Status { get { throw null; } }
         public void Continue() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public static System.ServiceProcess.ServiceController[] GetDevices() { return default(System.ServiceProcess.ServiceController[]); }
-        public static System.ServiceProcess.ServiceController[] GetDevices(string machineName) { return default(System.ServiceProcess.ServiceController[]); }
-        public static System.ServiceProcess.ServiceController[] GetServices() { return default(System.ServiceProcess.ServiceController[]); }
-        public static System.ServiceProcess.ServiceController[] GetServices(string machineName) { return default(System.ServiceProcess.ServiceController[]); }
+        public static System.ServiceProcess.ServiceController[] GetDevices() { throw null; }
+        public static System.ServiceProcess.ServiceController[] GetDevices(string machineName) { throw null; }
+        public static System.ServiceProcess.ServiceController[] GetServices() { throw null; }
+        public static System.ServiceProcess.ServiceController[] GetServices(string machineName) { throw null; }
         public void Pause() { }
         public void Refresh() { }
         public void Start() { }
@@ -73,5 +73,6 @@ namespace System.ServiceProcess
         public TimeoutException() { }
         public TimeoutException(string message) { }
         public TimeoutException(string message, System.Exception innerException) { }
+        protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

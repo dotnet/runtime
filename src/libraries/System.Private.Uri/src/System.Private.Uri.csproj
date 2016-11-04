@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -11,7 +11,8 @@
     <DefineConstants>$(DefineConstants);INTERNAL_GLOBALIZATION_EXTENSIONS</DefineConstants>
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot' Or '$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard10</DefineConstants>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.0;uap10.1</PackageTargetFramework>
   </PropertyGroup>
@@ -20,21 +21,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot' And '$(TargetGroup)'!='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs">
       <Link>Common\System\StringNormalizationExtensions.cs</Link>
@@ -48,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\DomainNameHelper.cs" />
+    <Compile Include="System\GenericUriParser.cs" />
     <Compile Include="System\IPv4AddressHelper.cs" />
     <Compile Include="System\IPv6AddressHelper.cs" />
     <Compile Include="System\IriHelper.cs" />
@@ -59,6 +57,7 @@
     <Compile Include="System\UriFormatException.cs" />
     <Compile Include="System\UriHelper.cs" />
     <Compile Include="System\UriHostNameType.cs" />
+    <Compile Include="System\UriParserTemplates.cs" />
     <Compile Include="System\UriPartial.cs" />
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
@@ -76,7 +75,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
       <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot' And '$(TargetGroup)'!='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
@@ -96,7 +95,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
       <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot' And '$(TargetGroup)'!='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -145,14 +144,10 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot' Or '$(TargetGroup)'=='uap101aot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\System\SR.Core.cs">
       <Link>Common\System\SR.Core.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)'=='netstandard13aot'">
-      <Link>Common\System\SR.CoreRT.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Resources\NeutralResourcesLanguageAttribute.cs">
       <Link>Common\System\Resources\NeutralResourcesLanguageAttribute.cs</Link>
@@ -163,12 +158,12 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs" Condition="'$(TargetsUnix)'=='true'">
       <Link>Common\System\Runtime\InteropServices\Marshal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\OperationCanceledException.cs" Condition="'$(TargetsUnix)'=='true'">
-      <Link>Common\System\System\OperationCanceledException.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
       <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

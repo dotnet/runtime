@@ -136,7 +136,7 @@ namespace System.Data.SqlClient
             internal void SetActiveConnectionAndResult(TaskCompletionSource<object> completion, string endMethod, SqlConnection activeConnection)
             {
                 Debug.Assert(activeConnection != null, "Unexpected null connection argument on SetActiveConnectionAndResult!");
-                TdsParser parser = activeConnection.Parser;
+                TdsParser parser = activeConnection?.Parser;
                 if ((parser == null) || (parser.State == TdsParserState.Closed) || (parser.State == TdsParserState.Broken))
                 {
                     throw ADP.ClosedConnectionError();
@@ -144,7 +144,7 @@ namespace System.Data.SqlClient
 
                 _cachedAsyncCloseCount = activeConnection.CloseCount;
                 _cachedAsyncResult = completion;
-                if (null != activeConnection && !parser.MARSOn)
+                if (!parser.MARSOn)
                 {
                     if (activeConnection.AsyncCommandInProgress)
                         throw SQL.MARSUnspportedOnConnection();

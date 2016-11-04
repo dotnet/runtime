@@ -436,7 +436,7 @@ namespace System.Xml.Schema
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static IXmlSchemaInfo GetSchemaInfo(this XElement source)
         {
-            if (source == null) throw new ArgumentNullException("source");
+            if (source == null) throw new ArgumentNullException(nameof(source));
             return source.Annotation<IXmlSchemaInfo>();
         }
 
@@ -447,7 +447,7 @@ namespace System.Xml.Schema
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static IXmlSchemaInfo GetSchemaInfo(this XAttribute source)
         {
-            if (source == null) throw new ArgumentNullException("source");
+            if (source == null) throw new ArgumentNullException(nameof(source));
             return source.Annotation<IXmlSchemaInfo>();
         }
 
@@ -478,8 +478,8 @@ namespace System.Xml.Schema
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XDocument source, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
         {
-            if (source == null) throw new ArgumentNullException("source");
-            if (schemas == null) throw new ArgumentNullException("schemas");
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (schemas == null) throw new ArgumentNullException(nameof(schemas));
             new XNodeValidator(schemas, validationEventHandler).Validate(source, null, addSchemaInfo);
         }
 
@@ -516,9 +516,9 @@ namespace System.Xml.Schema
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
         {
-            if (source == null) throw new ArgumentNullException("source");
-            if (partialValidationType == null) throw new ArgumentNullException("partialValidationType");
-            if (schemas == null) throw new ArgumentNullException("schemas");
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (partialValidationType == null) throw new ArgumentNullException(nameof(partialValidationType));
+            if (schemas == null) throw new ArgumentNullException(nameof(schemas));
             new XNodeValidator(schemas, validationEventHandler).Validate(source, partialValidationType, addSchemaInfo);
         }
 
@@ -555,9 +555,9 @@ namespace System.Xml.Schema
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
         {
-            if (source == null) throw new ArgumentNullException("source");
-            if (partialValidationType == null) throw new ArgumentNullException("partialValidationType");
-            if (schemas == null) throw new ArgumentNullException("schemas");
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (partialValidationType == null) throw new ArgumentNullException(nameof(partialValidationType));
+            if (schemas == null) throw new ArgumentNullException(nameof(schemas));
             new XNodeValidator(schemas, validationEventHandler).Validate(source, partialValidationType, addSchemaInfo);
         }
     }

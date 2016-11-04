@@ -10,7 +10,7 @@ namespace System.IO
     // This abstract base class represents a writer that can write
     // primitives to an arbitrary stream. A subclass can override methods to
     // give unique encodings.
-    //
+    [Serializable]
     public class BinaryWriter : IDisposable
     {
         public static readonly BinaryWriter Null = new BinaryWriter();
@@ -178,7 +178,7 @@ namespace System.IO
         // advanced by two.
         // Note this method cannot handle surrogates properly in UTF-8.
         // 
-        public unsafe virtual void Write(char ch)
+        public virtual void Write(char ch)
         {
             if (char.IsSurrogate(ch))
             {
@@ -367,7 +367,7 @@ namespace System.IO
         // a four-byte unsigned integer, and then writes that many characters 
         // to the stream.
         // 
-        public unsafe virtual void Write(string value)
+        public virtual void Write(string value)
         {
             if (value == null)
             {

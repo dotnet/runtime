@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -9,21 +9,28 @@
     <RootNamespace>System.Net.Requests</RootNamespace>
     <AssemblyName>System.Net.Requests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Net\AuthenticationManager.cs" />
+    <Compile Include="System\Net\Authorization.cs" />
+    <Compile Include="System\Net\FileWebRequest.cs" />
+    <Compile Include="System\Net\FileWebResponse.cs" />
+    <Compile Include="System\Net\GlobalProxySelection.cs" />
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HttpWebRequest.cs" />
     <Compile Include="System\Net\HttpWebResponse.cs" />
+    <Compile Include="System\Net\IAuthenticationModule.cs" />
+    <Compile Include="System\Net\ICredentialPolicy.cs" />
     <Compile Include="System\Net\IWebRequestCreate.cs" />
     <Compile Include="System\Net\ProtocolViolationException.cs" />
     <Compile Include="System\Net\RequestStream.cs" />
@@ -33,31 +40,71 @@
     <Compile Include="System\Net\WebExceptionStatus.cs" />
     <Compile Include="System\Net\WebHeaderCollection.cs" />
     <Compile Include="System\Net\WebRequest.cs" />
+    <Compile Include="System\Net\WebRequestMethods.cs" />
     <Compile Include="System\Net\WebResponse.cs" />
+    <Compile Include="System\Net\ExceptionHelper.cs" />
+    <Compile Include="System\Net\FtpStatusCode.cs" />
+    <Compile Include="System\Net\FtpWebRequest.cs" />
+    <Compile Include="System\Net\FtpWebResponse.cs" />
+    <Compile Include="System\Net\TriState.cs" />
+    <Compile Include="System\Net\CommandStream.cs" />
+    <Compile Include="System\Net\FtpControlStream.cs" />
+    <Compile Include="System\Net\FtpDataStream.cs" />
+    <Compile Include="System\Net\ICloseEx.cs" />
+    <Compile Include="System\Net\NetRes.cs" />
+    <Compile Include="System\Net\NetworkStreamWrapper.cs" />
+    <Compile Include="System\Net\TimerThread.cs" />
     <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
-    <Compile Include="System\Net\Cache\RequestCacheLevel.cs" />
-    <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
+    <Compile Include="System\Net\HttpDateParse.cs" />
+    <Compile Include="System\Net\NetEventSource.Requests.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
+      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
+      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpValidationHelpers.cs">
       <Link>Common\System\Net\HttpValidationHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
+      <Link>Common\System\Net\ContextAwareResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
+      <Link>Common\System\Net\ExceptionCheck.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\TlsStream.cs">
+      <Link>Common\System\Net\TlsStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+      <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net463' ">
     <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
       <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
@@ -65,9 +112,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
+      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
+    </Compile>
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

@@ -1,26 +1,22 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24522-03",
-    "System.Collections": "4.0.10",
-    "System.Diagnostics.Contracts": "4.0.0",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.ObjectModel": "4.0.10",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.0.20",
-    "System.Runtime.Handles": "4.0.0",
-    "System.Runtime.InteropServices": "4.0.20",
-    "System.Runtime.WindowsRuntime": "4.0.10",
+    "Microsoft.NETCore.Platforms": "1.2.0-beta-24703-01",
+    "System.Collections": "4.0.11",
+    "System.Diagnostics.Contracts": "4.0.1",
+    "System.Diagnostics.Debug": "4.0.11",
+    "System.ObjectModel": "4.0.12",
+    "System.Resources.ResourceManager": "4.0.1",
+    "System.Runtime": "4.1.0",
+    "System.Runtime.Handles": "4.0.1",
+    "System.Runtime.InteropServices": "4.1.0",
+    "System.Runtime.WindowsRuntime": "4.0.11",
     "System.Security.Cryptography.Encoding": "4.0.0",
     "System.Security.Cryptography.Primitives": "4.0.0",
     "System.Security.Cryptography.X509Certificates": "4.1.0",
-    "System.Text.Encoding": "4.0.10",
-    "System.Threading": "4.0.10"
+    "System.Text.Encoding": "4.0.11",
+    "System.Threading": "4.0.11"
   },
   "frameworks": {
     "netcore50": {}
-  },
-  "runtimes": {
-    "win8-x86": {},
-    "win8-x64": {}
   }
 }

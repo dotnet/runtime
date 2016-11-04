@@ -17,7 +17,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void Guid_TypeNotCreated_ThrowsInvalidOperationException()
+        public void Guid_TypeNotCreated_ThrowsNotSupportedException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             Assert.Throws<NotSupportedException>(() => type.GUID);

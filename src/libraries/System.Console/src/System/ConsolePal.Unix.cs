@@ -348,41 +348,63 @@ namespace System
                     // Write out the cursor position report request.
                     WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport);
 
-                    // Read the response.  There's a race condition here if the user is typing,
-                    // or if other threads are accessing the console; there's relatively little
-                    // we can do about that, but we try not to lose any data.
+                    // Read the cursor position report reponse, of the form \ESC[row;colR. There's a race
+                    // condition here if the user is typing, or if other threads are accessing the console;
+                    // to try to avoid losing such data, we push unexpected inputs into the stdin buffer, but
+                    // even with that, there's a a potential that we could misinterpret data from the user as
+                    // being part of the cursor position response.  This is inherent to the nature of the protocol.
                     StdInReader r = StdInReader.Inner;
-                    const int BufferSize = 1024;
-                    byte* bytes = stackalloc byte[BufferSize];
+                    byte b;
 
-                    int bytesRead = 0, i = 0;
+                    while (true) // \ESC
+                    {
+                        if (r.ReadStdin(&b, 1) != 1) return;
+                        if (b == 0x1B) break;
+                        r.AppendExtraBuffer(&b, 1);
+                    }
 
-                    // Response expected in the form "\ESC[row;colR".  However, user typing concurrently
-                    // with the request/response sequence can result in other characters, and potentially
-                    // other escape sequences (e.g. for an arrow key) being entered concurrently with
-                    // the response.  To avoid garbage showing up in the user's input, we are very liberal
-                    // with regards to eating all input from this point until all aspects of the sequence
-                    // have been consumed.  
+                    while (true) // [
+                    {
+                        if (r.ReadStdin(&b, 1) != 1) return;
+                        if (b == '[') break;
+                        r.AppendExtraBuffer(&b, 1);
+                    }
 
-                    // Find the ESC as the start of the sequence.
-                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 0x1B)) return;
-                    i++; // move past the ESC
+                    try
+                    {
+                        int row = 0;
+                        while (true) // row until ';'
+                        {
+                            if (r.ReadStdin(&b, 1) != 1) return;
+                            if (b == ';') break;
+                            if (IsDigit((char)b))
+                            {
+                                row = checked((row * 10) + (b - '0'));
+                            }
+                            else
+                            {
+                                r.AppendExtraBuffer(&b, 1);
+                            }
+                        }
+                        if (row >= 1) top = row - 1;
 
-                    // Find the '['
-                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == '[')) return;
-
-                    // Find the first Int32 and parse it.
-                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b))) return;
-                    int row = ParseInt32(bytes, bytesRead, ref i);
-                    if (row >= 1) top = row - 1;
-
-                    // Find the second Int32 and parse it.
-                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b))) return;
-                    int col = ParseInt32(bytes, bytesRead, ref i);
-                    if (col >= 1) left = col - 1;
-
-                    // Find the ending 'R'
-                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R')) return;
+                        int col = 0;
+                        while (true) // col until 'R'
+                        {
+                            if (r.ReadStdin(&b, 1) == 0) return;
+                            if (b == 'R') break;
+                            if (IsDigit((char)b))
+                            {
+                                col = checked((col * 10) + (b - '0'));
+                            }
+                            else
+                            {
+                                r.AppendExtraBuffer(&b, 1);
+                            }
+                        }
+                        if (col >= 1) left = col - 1;
+                    }
+                    catch (OverflowException) { return; }
                 }
                 finally
                 {
@@ -399,42 +421,6 @@ namespace System
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
         {
             throw new PlatformNotSupportedException();
-        }
-
-        /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
-        /// <returns>true if the condition was met; otherwise, false.</returns>
-        private static unsafe bool ReadStdinUntil(
-            StdInReader reader, 
-            byte* buffer, int bufferSize, 
-            ref int bytesRead, ref int pos, 
-            Func<byte, bool> condition)
-        {
-            while (true)
-            {
-                for (; pos < bytesRead && !condition(buffer[pos]); pos++) ;
-                if (pos < bytesRead) return true;
-
-                bytesRead = reader.ReadStdin(buffer, bufferSize);
-                if (bytesRead == 0) return false;
-                pos = 0;
-            }
-        }
-
-        /// <summary>Parses the Int32 at the specified position in the buffer.</summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <param name="bufferSize">The length of the buffer.</param>
-        /// <param name="pos">The current position in the buffer.</param>
-        /// <returns>The parsed result, or 0 if nothing could be parsed.</returns>
-        private static unsafe int ParseInt32(byte* buffer, int bufferSize, ref int pos)
-        {
-            int result = 0;
-            for (; pos < bufferSize; pos++)
-            {
-                char c = (char)buffer[pos];
-                if (!IsDigit(c)) break;
-                result = (result * 10) + (c - '0');
-            }
-            return result;
         }
 
         /// <summary>Gets whether the specified character is a digit 0-9.</summary>

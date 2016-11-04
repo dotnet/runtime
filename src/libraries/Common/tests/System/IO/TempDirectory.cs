@@ -13,6 +13,14 @@ namespace System.IO
         /// <summary>Gets the created directory's path.</summary>
         public string Path { get; private set; }
 
+        /// <summary>
+        /// Construct a random temp directory in the temp folder.
+        /// </summary>
+        public TempDirectory()
+            : this (IO.Path.Combine(IO.Path.GetTempPath(), IO.Path.GetRandomFileName()))
+        {
+        }
+
         public TempDirectory(string path)
         {
             Path = path;

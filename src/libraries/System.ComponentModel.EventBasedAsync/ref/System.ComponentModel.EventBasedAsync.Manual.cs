@@ -7,14 +7,8 @@
 
 namespace System.ComponentModel
 {
-    public partial class BackgroundWorker : IDisposable
-    {
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-    }
-
     public partial class DoWorkEventArgs : System.EventArgs
     {
-        public bool Cancel { get { return false; } set { } }
+        public bool Cancel { get { throw null; } set { } }
     }
 }

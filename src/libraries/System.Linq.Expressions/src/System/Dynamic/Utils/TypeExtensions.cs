@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace System.Dynamic.Utils
 {
@@ -17,9 +17,14 @@ namespace System.Dynamic.Utils
             string name,
             Type[] types)
         {
-            var method = type.GetAnyStaticMethod(name);
-
-            return method.MatchesArgumentTypes(types) ? method : null;
+            foreach (MethodInfo method in type.GetTypeInfo().DeclaredMethods)
+            {
+                if (method.IsStatic && method.Name == name && method.MatchesArgumentTypes(types))
+                {
+                    return method;
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -38,7 +43,7 @@ namespace System.Dynamic.Utils
             {
                 return false;
             }
-            var ps = mi.GetParameters();
+            ParameterInfo[] ps = mi.GetParameters();
 
             if (ps.Length != argTypes.Length)
             {
@@ -53,6 +58,11 @@ namespace System.Dynamic.Utils
                 }
             }
             return true;
+        }
+
+        public static Type GetReturnType(this MethodBase mi)
+        {
+            return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
         }
 
         public static TypeCode GetTypeCode(this Type type)
@@ -85,37 +95,25 @@ namespace System.Dynamic.Utils
                 return TypeCode.Double;
             else if (type == typeof(decimal))
                 return TypeCode.Decimal;
-            else if (type == typeof(System.DateTime))
+            else if (type == typeof(DateTime))
                 return TypeCode.DateTime;
             else if (type == typeof(string))
                 return TypeCode.String;
             else if (type.GetTypeInfo().IsEnum)
-                return GetTypeCode(Enum.GetUnderlyingType(type));
+                return Enum.GetUnderlyingType(type).GetTypeCode();
             else
                 return TypeCode.Object;
         }
 
         public static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
         {
-            foreach (var method in type.GetRuntimeMethods())
+            foreach (MethodInfo method in type.GetRuntimeMethods())
             {
                 if (method.IsStatic)
                 {
                     yield return method;
                 }
             }
-        }
-
-        public static MethodInfo GetAnyStaticMethod(this Type type, string name)
-        {
-            foreach (var method in type.GetRuntimeMethods())
-            {
-                if (method.IsStatic && method.Name == name)
-                {
-                    return method;
-                }
-            }
-            return null;
         }
     }
 }

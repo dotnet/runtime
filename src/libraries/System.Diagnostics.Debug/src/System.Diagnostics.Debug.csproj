@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -8,11 +8,8 @@
     <ProjectGuid>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</ProjectGuid>
     <AssemblyName>System.Diagnostics.Debug</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
-    <NoWarn>0436</NoWarn>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != ''">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == '' AND '$(TargetsWindows)' == 'true'">netstandard1.3;netcore50</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -22,13 +19,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\Debug.Public.cs" />
+    <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs">
       <Link>System\Diagnostics\Debug.cs</Link>
     </Compile>
@@ -88,11 +85,11 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>

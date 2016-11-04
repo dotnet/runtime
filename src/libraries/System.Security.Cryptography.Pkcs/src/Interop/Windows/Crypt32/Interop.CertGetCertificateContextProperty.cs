@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -15,6 +13,9 @@ internal static partial class Interop
     {
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] byte[] pvData, [In, Out] ref int pcbData);
+
+        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, out IntPtr pvData, [In, Out] ref int pcbData);
     }
 }
 

@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal interface IXmlJsonReaderInitializer
+    public interface IXmlJsonReaderInitializer
     {
         void SetInput(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose onClose);

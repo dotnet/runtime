@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
@@ -11,21 +11,10 @@
     <AssemblyName>System.Xml.XmlSerializer.Tests</AssemblyName>
     <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcore50' OR '$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
-    <!--
-        Until we get first class support for NS1.7 and Netcoreapp1.1
-        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
-        in the project file.
-      -->
-      <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
-      <TestTFM>netcoreapp1.1</TestTFM>
-      <KeepAllProjectReferences>true</KeepAllProjectReferences>
-    </PropertyGroup>
-  <ItemGroup>
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'">
     <ProjectJson>Performance/project.json</ProjectJson>
     <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
   </PropertyGroup>
@@ -38,17 +27,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50' AND '$(TargetGroup)' != 'netcore50aot'">
     <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
-    <ProjectReference Include="..\..\src\System.Private.Xml.csproj" />
-    <!-- ToDo: Remove this P2P references once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50' OR '$(TargetGroup)' == 'netcore50aot'">
-    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -154,8 +154,7 @@ namespace System.Diagnostics
                 // the process hasn't finished loading the main module (most likely).
                 // On NT, the first module is the main module.
                 EnsureState(State.HaveId | State.IsLocal);
-                ModuleInfo module = NtProcessManager.GetFirstModuleInfo(_processId);
-                return (module != null ? new ProcessModule(module) : null);
+                return NtProcessManager.GetFirstModule(_processId);
             }
         }
 
@@ -409,6 +408,89 @@ namespace System.Diagnostics
                 ReleaseProcessHandle(handle);
             }
         }
+
+        private string GetMainWindowTitle()
+        {
+            IntPtr handle = MainWindowHandle;
+            if (handle == (IntPtr)0)
+            {
+                return string.Empty;
+            }
+
+            int length = Interop.User32.GetWindowTextLength(handle) * 2;
+
+            if (length == 0)
+                return string.Empty;
+
+            StringBuilder builder = new StringBuilder(length);
+            Interop.User32.GetWindowText(handle, builder, builder.Capacity);
+            return builder.ToString();
+        }
+
+        private bool IsRespondingCore()
+        {
+            const int WM_NULL = 0x0000;
+            const int SMTO_ABORTIFHUNG = 0x0002;
+
+            IntPtr mainWindow = MainWindowHandle;
+            if (mainWindow == (IntPtr)0)
+            {
+                return true;
+            }
+
+            IntPtr result;
+            return Interop.User32.SendMessageTimeout(mainWindow, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result) != (IntPtr)0;
+        }
+
+        private bool WaitForInputIdleCore(int milliseconds)
+        {
+            const int WAIT_OBJECT_0 = 0x00000000;
+            const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
+            const int WAIT_TIMEOUT = 0x00000102;
+
+            
+            bool idle;
+            using (SafeProcessHandle handle = GetProcessHandle(Interop.mincore.ProcessOptions.SYNCHRONIZE | Interop.mincore.ProcessOptions.PROCESS_QUERY_INFORMATION))
+            {
+                int ret = Interop.User32.WaitForInputIdle(handle, milliseconds);
+                switch (ret)
+                {
+                    case WAIT_OBJECT_0:
+                        idle = true;
+                        break;
+                    case WAIT_TIMEOUT:
+                        idle = false;
+                        break;
+                    case WAIT_FAILED:
+                    default:
+                        throw new InvalidOperationException(SR.InputIdleUnkownError);
+                }
+            }
+            return idle;
+        }
+
+        private bool CloseMainWindowCore()
+        {
+            const int GWL_STYLE = -16; // Retrieves the window styles.
+            const int WS_DISABLED = 0x08000000; // WindowStyle disabled. A disabled window cannot receive input from the user.
+            const int WM_CLOSE = 0x0010; // WindowMessage close.
+
+            IntPtr mainWindowHandle = MainWindowHandle;
+            if (mainWindowHandle == (IntPtr)0)
+            {
+                return false;
+            }
+
+            int style = Interop.User32.GetWindowLong(mainWindowHandle, GWL_STYLE);
+            if ((style & WS_DISABLED) != 0)
+            {
+                return false;
+            }
+
+            Interop.User32.PostMessage(mainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            return true;
+        }
+
 
         /// <summary>Sets one or both of the minimum and maximum working set limits.</summary>
         /// <param name="newMin">The new minimum working set limit, or null not to change it.</param>
@@ -722,8 +804,8 @@ namespace System.Diagnostics
                 }
 
                 ProcessThreadTimes processTimes = new ProcessThreadTimes();
-                if (!Interop.mincore.GetProcessTimes(handle, 
-                    out processTimes._create, out processTimes._exit, 
+                if (!Interop.mincore.GetProcessTimes(handle,
+                    out processTimes._create, out processTimes._exit,
                     out processTimes._kernel, out processTimes._user))
                 {
                     throw new Win32Exception();

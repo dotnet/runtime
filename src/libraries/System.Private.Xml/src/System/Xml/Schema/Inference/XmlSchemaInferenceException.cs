@@ -12,15 +12,19 @@ namespace System.Xml.Schema
     using System.Diagnostics;
     using System.Globalization;
 
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     public class XmlSchemaInferenceException : XmlSchemaException
     {
+        protected XmlSchemaInferenceException(SerializationInfo info, StreamingContext context) : base(info, context){}
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+        }
+
         public XmlSchemaInferenceException() : base(null)
         {
         }
-
 
         public XmlSchemaInferenceException(String message) : base(message, ((Exception)null), 0, 0)
         {

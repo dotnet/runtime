@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -66,10 +62,7 @@ namespace System.Linq.Expressions.Interpreter
             return DebugInfo.GetMatchingDebugInfo(Interpreter._debugInfos, instructionIndex);
         }
 
-        public string Name
-        {
-            get { return Interpreter._name; }
-        }
+        public string Name => Interpreter.Name;
 
         #region Data Stack Operations
 
@@ -80,7 +73,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void Push(bool value)
         {
-            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.Boolean_True : ScriptingRuntimeHelpers.Boolean_False;
         }
 
         public void Push(int value)
@@ -98,12 +91,12 @@ namespace System.Linq.Expressions.Interpreter
             Data[StackIndex++] = value;
         }
 
-        public void Push(Int16 value)
+        public void Push(short value)
         {
             Data[StackIndex++] = value;
         }
 
-        public void Push(UInt16 value)
+        public void Push(ushort value)
         {
             Data[StackIndex++] = value;
         }
@@ -134,10 +127,7 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Stack Trace
 
-        public InterpretedFrame Parent
-        {
-            get { return _parent; }
-        }
+        public InterpretedFrame Parent => _parent;
 
         public static bool IsInterpretedFrame(MethodBase method)
         {
@@ -147,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo()
         {
-            var frame = this;
+            InterpretedFrame frame = this;
             do
             {
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
@@ -174,7 +164,7 @@ namespace System.Linq.Expressions.Interpreter
             get
             {
                 var trace = new List<string>();
-                var frame = this;
+                InterpretedFrame frame = this;
                 do
                 {
                     trace.Add(frame.Name);
@@ -187,7 +177,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal InterpretedFrame Enter()
         {
-            var currentFrame = CurrentFrame;
+            InterpretedFrame currentFrame = CurrentFrame;
             CurrentFrame = this;
             return _parent = currentFrame;
         }
@@ -218,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public int YieldToCurrentContinuation()
         {
-            var target = Interpreter._labels[_continuations[_continuationIndex - 1]];
+            RuntimeLabel target = Interpreter._labels[_continuations[_continuationIndex - 1]];
             SetStackDepth(target.StackDepth);
             return target.Index - InstructionIndex;
         }
@@ -288,7 +278,7 @@ namespace System.Linq.Expressions.Interpreter
             _pendingValue = value;
             return YieldToCurrentContinuation();
         }
-        #endregion
 
+        #endregion
     }
 }

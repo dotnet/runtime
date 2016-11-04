@@ -11,28 +11,28 @@ namespace System.Net.WebSockets
     public sealed partial class ClientWebSocket : System.Net.WebSockets.WebSocket
     {
         public ClientWebSocket() { }
-        public override System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> CloseStatus { get { return default(System.Nullable<System.Net.WebSockets.WebSocketCloseStatus>); } }
-        public override string CloseStatusDescription { get { return default(string); } }
-        public System.Net.WebSockets.ClientWebSocketOptions Options { get { return default(System.Net.WebSockets.ClientWebSocketOptions); } }
-        public override System.Net.WebSockets.WebSocketState State { get { return default(System.Net.WebSockets.WebSocketState); } }
-        public override string SubProtocol { get { return default(string); } }
+        public override System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> CloseStatus { get { throw null; } }
+        public override string CloseStatusDescription { get { throw null; } }
+        public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
+        public override System.Net.WebSockets.WebSocketState State { get { throw null; } }
+        public override string SubProtocol { get { throw null; } }
         public override void Abort() { }
-        public override System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Dispose() { }
-        public override System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult>); }
-        public override System.Threading.Tasks.Task SendAsync(System.ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.Task SendAsync(System.ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public sealed partial class ClientWebSocketOptions
     {
         internal ClientWebSocketOptions() { }
-        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { return default(System.Security.Cryptography.X509Certificates.X509CertificateCollection); } set { } }
-        public System.Net.CookieContainer Cookies { get { return default(System.Net.CookieContainer); } set { } }
-        public System.Net.ICredentials Credentials { get { return default(System.Net.ICredentials); } set { } }
-        public System.TimeSpan KeepAliveInterval { get { return default(System.TimeSpan); } set { } }
-        public System.Net.IWebProxy Proxy { get { return default(System.Net.IWebProxy); } set { } }
-        public bool UseDefaultCredentials { get { return default(bool); } set { } }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
+        public System.Net.CookieContainer Cookies { get { throw null; } set { } }
+        public System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
+        public System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public bool UseDefaultCredentials { get { throw null; } set { } }
         public void AddSubProtocol(string subProtocol) { }
         public void SetBuffer(int receiveBufferSize, int sendBufferSize) { }
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, System.ArraySegment<byte> buffer) { }

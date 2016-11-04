@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void IsGenericTypeDefinition_NonGenericType_ReturnsTrue()
+        public void IsGenericTypeDefinition_NonGenericType_ReturnsFalse()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             MethodBuilder method = type.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, null, null);

@@ -492,6 +492,11 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
+        public static void SetIPProtectionLevel(Socket socket, SocketOptionLevel optionLevel, int protectionLevel)
+        {
+            socket.SetSocketOption(optionLevel, SocketOptionName.IPProtectionLevel, protectionLevel);
+        }
+
         public static SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
             int optionLength = 4; // sizeof(int)
@@ -682,10 +687,7 @@ namespace System.Net.Sockets
                         IntPtr.Zero);
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Socket::Select() Interop.Winsock.select returns socketCount:" + socketCount);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Interop.Winsock.select returns socketCount:{socketCount}");
 
             if ((SocketError)socketCount == SocketError.SocketError)
             {

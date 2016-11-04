@@ -120,6 +120,9 @@
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
+  <data name="Argument_EmptyApplicationName" xml:space="preserve">
+    <value>ApplicationId cannot have an empty string for the name.</value>
+  </data>
   <data name="Argument_FrameworkNameMissingVersion" xml:space="preserve">
     <value>FrameworkName version component is missing.</value>
   </data>
@@ -291,9 +294,6 @@
   <data name="Arg_DllInitFailure" xml:space="preserve">
     <value>One machine may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
   </data>
-  <data name="Arg_EnumIllegalVal" xml:space="preserve">
-    <value>Illegal enum value: {0}.</value>
-  </data>
   <data name="Arg_RegSubKeyValueAbsent" xml:space="preserve">
     <value>No value exists with that name.</value>
   </data>
@@ -321,10 +321,52 @@
   <data name="UnauthorizedAccess_RegistryNoWrite" xml:space="preserve">
     <value>Cannot write to the registry key.</value>
   </data>
-  <data name="UnknownError_Num" xml:space="preserve">
-    <value>Unknown error '{0}'.</value>
-  </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
+  </data>
+  <data name="Argument_BadResourceScopeTypeBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource type bits may be set.</value>
+  </data>
+  <data name="Argument_BadResourceScopeVisibilityBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.</value>
+  </data>
+  <data name="ArgumentNull_TypeRequiredByResourceScope" xml:space="preserve">
+    <value>The type parameter cannot be null when scoping the resource's visibility to Private or Assembly.</value>
+  </data>
+  <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
+    <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
+  </data>
+  <data name="AppDomain_Name" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="AppDomain_NoContextPolicies" xml:space="preserve">
+    <value>There are no context policies.</value>
+  </data>
+  <data name="Arg_MustBeTrue" xml:space="preserve">
+    <value>Argument must be true.</value>
+  </data>
+  <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
+    <value>Attempt to unload the AppDomain failed.</value>
+  </data>
+  <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
+    <value>Attempted to access an unloaded AppDomain.</value>
+  </data>
+  <data name="ZeroLengthString" xml:space="preserve">
+    <value>String cannot have zero length.</value>
+  </data>
+  <data name="EntryPointNotFound" xml:space="preserve">
+    <value>Entry point not found in assembly</value>
+  </data>
+  <data name="NotSupported" xml:space="preserve">
+    <value>Not supported on this platform.</value>
+  </data>
+  <data name="AppDomain_ResMonNotAvail" xml:space="preserve">
+    <value>This API is not available when AppDomain Resource Monitoring is not turned on.</value>
+  </data>
+  <data name="Arg_ContextMarshalException" xml:space="preserve">
+    <value>Attempted to marshal an object across a context boundary.</value>
+  </data>
+  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
+    <value>Default principal object cannot be set twice.</value>
   </data>
 </root>

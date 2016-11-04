@@ -71,7 +71,7 @@ namespace System.Net
         public byte[] Result { get { throw null; } }
     }
     public delegate void UploadValuesCompletedEventHandler(object sender, System.Net.UploadValuesCompletedEventArgs e);
-    public class WebClient
+    public class WebClient : System.ComponentModel.Component
     {
         public WebClient() { }
         [System.Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
@@ -81,7 +81,7 @@ namespace System.Net
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool AllowWriteStreamBuffering { get { throw null; } set { } }
         public string BaseAddress { get { throw null; } set { } }
-        //public System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } } // TODO: Add back when System.Net.Cache types are available
+        public System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } }
         public System.Net.ICredentials Credentials { get { throw null; } set { } }
         public System.Text.Encoding Encoding { get { throw null; } set { } }
         public System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
@@ -128,11 +128,13 @@ namespace System.Net
         protected virtual System.Net.WebResponse GetWebResponse(System.Net.WebRequest request, System.IAsyncResult result) { throw null; }
         protected virtual void OnDownloadDataCompleted(System.Net.DownloadDataCompletedEventArgs e) { }
         protected virtual void OnDownloadFileCompleted(System.ComponentModel.AsyncCompletedEventArgs e) { }
+        protected virtual void OnDownloadProgressChanged(System.Net.DownloadProgressChangedEventArgs e) { }
         protected virtual void OnDownloadStringCompleted(System.Net.DownloadStringCompletedEventArgs e) { }
         protected virtual void OnOpenReadCompleted(System.Net.OpenReadCompletedEventArgs e) { }
         protected virtual void OnOpenWriteCompleted(System.Net.OpenWriteCompletedEventArgs e) { }
         protected virtual void OnUploadDataCompleted(System.Net.UploadDataCompletedEventArgs e) { }
         protected virtual void OnUploadFileCompleted(System.Net.UploadFileCompletedEventArgs e) { }
+        protected virtual void OnUploadProgressChanged(System.Net.UploadProgressChangedEventArgs e) { }
         protected virtual void OnUploadStringCompleted(System.Net.UploadStringCompletedEventArgs e) { }
         protected virtual void OnUploadValuesCompleted(System.Net.UploadValuesCompletedEventArgs e) { }
         [System.Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
@@ -208,7 +210,7 @@ namespace System.Net
         public WriteStreamClosedEventArgs() { }
         [System.Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public System.Exception Error { get { return null; } }
+        public System.Exception Error { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void WriteStreamClosedEventHandler(object sender, System.Net.WriteStreamClosedEventArgs e);

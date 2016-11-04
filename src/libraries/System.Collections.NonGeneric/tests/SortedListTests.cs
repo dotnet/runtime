@@ -1226,50 +1226,50 @@ namespace System.Collections.Tests
         {
             var sortList = new SortedList();
 
-            CultureInfo currentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo currentCulture = CultureInfo.CurrentCulture;
             try
             {
-                CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
-                var cultureNames = new string[]
-                {
-                    "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                    "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                    "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                    "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                    "zh-CN","zh-HK","zh-TW"
-                };
+                    CultureInfo.CurrentCulture = new CultureInfo("en-US");
+                    var cultureNames = new string[]
+                    {
+                        "cs-CZ","da-DK","de-DE","el-GR","en-US",
+                        "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
+                        "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
+                        "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
+                        "zh-CN","zh-HK","zh-TW"
+                    };
 
-                var installedCultures = new CultureInfo[cultureNames.Length];
-                var cultureDisplayNames = new string[installedCultures.Length];
-                int uniqueDisplayNameCount = 0;
+                    var installedCultures = new CultureInfo[cultureNames.Length];
+                    var cultureDisplayNames = new string[installedCultures.Length];
+                    int uniqueDisplayNameCount = 0;
 
-                foreach (string cultureName in cultureNames)
-                {
-                    var culture = new CultureInfo(cultureName);
-                    installedCultures[uniqueDisplayNameCount] = culture;
-                    cultureDisplayNames[uniqueDisplayNameCount] = culture.DisplayName;
-                    sortList.Add(cultureDisplayNames[uniqueDisplayNameCount], culture);
+                    foreach (string cultureName in cultureNames)
+                    {
+                        var culture = new CultureInfo(cultureName);
+                        installedCultures[uniqueDisplayNameCount] = culture;
+                        cultureDisplayNames[uniqueDisplayNameCount] = culture.DisplayName;
+                        sortList.Add(cultureDisplayNames[uniqueDisplayNameCount], culture);
 
-                    uniqueDisplayNameCount++;
+                        uniqueDisplayNameCount++;
+                    }
+
+                    // In Czech ch comes after h if the comparer changes based on the current culture of the thread
+                    // we will not be able to find some items
+                    CultureInfo.CurrentCulture = new CultureInfo("cs-CZ");
+
+                    for (int i = 0; i < uniqueDisplayNameCount; i++)
+                    {
+                        Assert.Equal(installedCultures[i], sortList[installedCultures[i].DisplayName]);
+                    }
                 }
-
-                // In Czech ch comes after h if the comparer changes based on the current culture of the thread
-                // we will not be able to find some items
-                CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("cs-CZ");
-
-                for (int i = 0; i < uniqueDisplayNameCount; i++)
+                catch (CultureNotFoundException)
                 {
-                    Assert.Equal(installedCultures[i], sortList[installedCultures[i].DisplayName]);
+                }
+                finally
+                {
+                    CultureInfo.CurrentCulture = currentCulture;
                 }
             }
-            catch (CultureNotFoundException)
-            {
-            }
-            finally
-            {
-                CultureInfo.DefaultThreadCurrentCulture = currentCulture;
-            }
-        }
 
         [Fact]
         public static void Item_Set()

@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal static class JsonReaderWriterFactory
+    public static class JsonReaderWriterFactory
     {
         private const string DefaultIndentChars = "  ";
 

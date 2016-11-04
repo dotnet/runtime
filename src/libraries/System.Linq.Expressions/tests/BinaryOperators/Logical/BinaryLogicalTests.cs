@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -123,8 +126,130 @@ namespace System.Linq.Expressions.Tests
 
         #endregion
 
+        public static IEnumerable<object[]> AndAlso_TestData()
+        {
+            yield return new object[] { 5, 3, 1, true };
+            yield return new object[] { 0, 3, 0, false };
+            yield return new object[] { 5, 0, 0, true };
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(AndAlso_TestData))]
+        public static void AndAlso_UserDefinedOperator(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.AndAlso(Expression.Constant(left), Expression.Constant(right));
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // AndAlso only evaluates the false operator of left
+            Assert.Equal(0, left.TrueCallCount);
+            Assert.Equal(1, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // AndAlso only evaluates the operator if left is not false
+            Assert.Equal(calledMethod ? 1 : 0, left.OperatorCallCount);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AndAlso_UserDefinedOperator_HasMethodNotOperator(bool useInterpreter)
+        {
+            BinaryExpression expression = Expression.AndAlso(Expression.Constant(new NamedMethods(5)), Expression.Constant(new NamedMethods(3)));
+            Func<NamedMethods> lambda = Expression.Lambda<Func<NamedMethods>>(expression).Compile(useInterpreter);
+            Assert.Equal(1, lambda().Value);
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(AndAlso_TestData))]
+        public static void AndAlso_Method(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            MethodInfo method = typeof(TrueFalseClass).GetMethod(nameof(TrueFalseClass.AndMethod));
+
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.AndAlso(Expression.Constant(left), Expression.Constant(right), method);
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // AndAlso only evaluates the false operator of left
+            Assert.Equal(0, left.TrueCallCount);
+            Assert.Equal(1, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // AndAlso only evaluates the method if left is not false
+            Assert.Equal(0, left.OperatorCallCount);
+            Assert.Equal(calledMethod ? 1 : 0, left.MethodCallCount);
+        }
+
+        public static IEnumerable<object[]> OrElse_TestData()
+        {
+            yield return new object[] { 5, 3, 5, false };
+            yield return new object[] { 0, 3, 3, true };
+            yield return new object[] { 5, 0, 5, false };
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(OrElse_TestData))]
+        public static void OrElse_UserDefinedOperator(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.OrElse(Expression.Constant(left), Expression.Constant(right));
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // OrElse only evaluates the true operator of left
+            Assert.Equal(1, left.TrueCallCount);
+            Assert.Equal(0, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // OrElse only evaluates the operator if left is not true
+            Assert.Equal(calledMethod ? 1 : 0, left.OperatorCallCount);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void OrElse_UserDefinedOperator_HasMethodNotOperator(bool useInterpreter)
+        {
+            BinaryExpression expression = Expression.OrElse(Expression.Constant(new NamedMethods(0)), Expression.Constant(new NamedMethods(3)));
+            Func<NamedMethods> lambda = Expression.Lambda<Func<NamedMethods>>(expression).Compile(useInterpreter);
+            Assert.Equal(3, lambda().Value);
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(OrElse_TestData))]
+        public static void OrElse_Method(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            MethodInfo method = typeof(TrueFalseClass).GetMethod(nameof(TrueFalseClass.OrMethod));
+
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.OrElse(Expression.Constant(left), Expression.Constant(right), method);
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // OrElse only evaluates the true operator of left
+            Assert.Equal(1, left.TrueCallCount);
+            Assert.Equal(0, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // OrElse only evaluates the method if left is not true
+            Assert.Equal(0, left.OperatorCallCount);
+            Assert.Equal(calledMethod ? 1 : 0, left.MethodCallCount);
+        }
+
         [Fact]
-        public static void CannotReduceAndAlso()
+        public static void AndAlso_CannotReduce()
         {
             Expression exp = Expression.AndAlso(Expression.Constant(true), Expression.Constant(false));
             Assert.False(exp.CanReduce);
@@ -133,7 +258,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void CannotReduceOrElse()
+        public static void OrElse_CannotReduce()
         {
             Expression exp = Expression.OrElse(Expression.Constant(true), Expression.Constant(false));
             Assert.False(exp.CanReduce);
@@ -142,63 +267,501 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void AndAlsoThrowsOnLeftNull()
+        public static void AndAlso_LeftNull_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("left", () => Expression.AndAlso(null, Expression.Constant(true)));
+            Assert.Throws<ArgumentNullException>("left", () => Expression.AndAlso(null, Expression.Constant(true), null));
         }
 
         [Fact]
-        public static void AndAlsoThrowsOnRightNull()
-        {
-            Assert.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null));
-        }
-
-        [Fact]
-        public static void OrElseThrowsOnLeftNull()
+        public static void OrElse_LeftNull_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("left", () => Expression.OrElse(null, Expression.Constant(true)));
+            Assert.Throws<ArgumentNullException>("left", () => Expression.OrElse(null, Expression.Constant(true), null));
         }
 
         [Fact]
-        public static void OrElseThrowsOnRightNull()
+        public static void AndAlso_RightNull_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null));
+            Assert.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null, null));
+        }
+
+        [Fact]
+        public static void OrElse_RightNull_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("right", () => Expression.OrElse(Expression.Constant(true), null));
-        }
-
-        private static class Unreadable<T>
-        {
-            public static T WriteOnly
-            {
-                set { }
-            }
+            Assert.Throws<ArgumentNullException>("right", () => Expression.OrElse(Expression.Constant(true), null, null));
         }
 
         [Fact]
-        public static void AndAlsoThrowsOnLeftUnreadable()
+        public static void AndAlso_BinaryOperatorNotDefined_ThrowsInvalidOperationException()
         {
-            Expression value = Expression.Property(null, typeof(Unreadable<bool>), "WriteOnly");
-            Assert.Throws<ArgumentException>("left", () => Expression.AndAlso(value, Expression.Constant(true)));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("hello")));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("hello"), null));
         }
 
         [Fact]
-        public static void AndAlsoThrowsOnRightUnreadable()
+        public static void OrElse_BinaryOperatorNotDefined_ThrowsInvalidOperationException()
         {
-            Expression value = Expression.Property(null, typeof(Unreadable<bool>), "WriteOnly");
-            Assert.Throws<ArgumentException>("right", () => Expression.AndAlso(Expression.Constant(true), value));
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant("hello")));
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant("hello"), null));
+        }
+
+        public static IEnumerable<object[]> InvalidMethod_TestData()
+        {
+            yield return new object[] { typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.InstanceMethod)) };
+            yield return new object[] { typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticVoidMethod)) };
+        }
+
+        [Theory]
+        [ClassData(typeof(OpenGenericMethodsData))]
+        [MemberData(nameof(InvalidMethod_TestData))]
+        public static void InvalidMethod_ThrowsArgumentException(MethodInfo method)
+        {
+            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
         [Fact]
-        public static void OrElseThrowsOnLeftUnreadable()
+        public static void AndAlso_NoMethod_NotStatic_ThrowsInvalidOperationException()
         {
-            Expression value = Expression.Property(null, typeof(Unreadable<bool>), "WriteOnly");
-            Assert.Throws<ArgumentException>("left", () => Expression.OrElse(value, Expression.Constant(true)));
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseAnd", MethodAttributes.Public, type.AsType(), new Type[] { type.AsType(), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Fact]
-        public static void OrElseThrowsOnRightUnreadable()
+        public static void OrElse_NoMethod_NotStatic_ThrowsInvalidOperationException()
         {
-            Expression value = Expression.Property(null, typeof(Unreadable<bool>), "WriteOnly");
-            Assert.Throws<ArgumentException>("right", () => Expression.OrElse(Expression.Constant(false), value));
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseOr", MethodAttributes.Public, type.AsType(), new Type[] { type.AsType(), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void AndAlso_NoMethod_VoidReturnType_ThrowsArgumentException()
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[] { type.AsType(), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void OrElse_NoMethod_VoidReturnType_ThrowsArgumentException()
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[] { type.AsType(), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Theory]
+        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod0))]
+        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod1))]
+        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod3))]
+        public static void Method_DoesntHaveTwoParameters_ThrowsArgumentException(Type type, string methodName)
+        {
+            MethodInfo method = type.GetMethod(methodName);
+            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public static void AndAlso_NoMethod_DoesntHaveTwoParameters_ThrowsInvalidOperationException(int parameterCount)
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, type.AsType(), Enumerable.Repeat(type.AsType(), parameterCount).ToArray());
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public static void OrElse_NoMethod_DoesntHaveTwoParameters_ThrowsInvalidOperationException(int parameterCount)
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, type.AsType(), Enumerable.Repeat(type.AsType(), parameterCount).ToArray());
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void AndAlso_Method_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant("abc"), Expression.Constant(5), method));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+        }
+
+        [Fact]
+        public static void AndAlso_NoMethod_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, type.AsType(), new Type[] { typeof(int), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void OrElse_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant("abc"), Expression.Constant(5), method));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+        }
+
+        [Fact]
+        public static void OrElse_NoMethod_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, type.AsType(), new Type[] { typeof(int), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+
+        [Fact]
+        public static void MethodParametersNotEqual_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid1));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant("abc"), method));
+        }
+
+        [Fact]
+        public static void Method_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid2));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+        }
+
+        [Fact]
+        public static void AndAlso_NoMethod_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { type.AsType(), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void OrElse_NoMethod_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
+        {
+            TypeBuilder type = GetTypeBuilder();
+            MethodBuilder andOperator = type.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { type.AsType(), type.AsType() });
+            andOperator.GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            object obj = Activator.CreateInstance(createdType);
+
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void MethodDeclaringTypeHasNoTrueFalseOperator_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+        }
+
+        public static IEnumerable<object[]> Operator_IncorrectMethod_TestData()
+        {
+            // Does not return bool
+            TypeBuilder typeBuilder1 = GetTypeBuilder();
+            yield return new object[] { typeBuilder1, typeof(void), new Type[] { typeBuilder1.AsType() } };
+            
+            // Parameter is not assignable from left
+            yield return new object[] { GetTypeBuilder(), typeof(bool), new Type[] { typeof(int) } };
+
+            // Has two parameters
+            TypeBuilder typeBuilder2 = GetTypeBuilder();
+            yield return new object[] { typeBuilder2, typeof(bool), new Type[] { typeBuilder2.AsType(), typeBuilder2.AsType() } };
+
+            // Has no parameters
+            yield return new object[] { GetTypeBuilder(), typeof(bool), new Type[0] };
+        }
+
+        [Theory]
+        [MemberData(nameof(Operator_IncorrectMethod_TestData))]
+        public static void Method_TrueOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[] parameterTypes)
+        {
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, returnType, parameterTypes);
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+            MethodInfo createdMethod = createdType.GetMethod("Method");
+
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+        }
+
+        [Theory]
+        [MemberData(nameof(Operator_IncorrectMethod_TestData))]
+        public static void Method_FalseOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[]parameterTypes)
+        {
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, returnType, parameterTypes);
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+            MethodInfo createdMethod = createdType.GetMethod("Method");
+
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+        }
+
+        [Theory]
+        [MemberData(nameof(Operator_IncorrectMethod_TestData))]
+        public static void AndAlso_NoMethod_TrueOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[] parameterTypes)
+        {
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, returnType, parameterTypes);
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Theory]
+        [MemberData(nameof(Operator_IncorrectMethod_TestData))]
+        public static void OrElse_NoMethod_TrueOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[] parameterTypes)
+        {
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, returnType, parameterTypes);
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Theory]
+        [InlineData("op_True")]
+        [InlineData("op_False")]
+        public static void Method_NoTrueFalseOperator_ThrowsArgumentException(string name)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            TypeBuilder builder = module.DefineType("Type");
+
+            MethodBuilder opTrue = builder.DefineMethod(name, MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+            MethodInfo createdMethod = createdType.GetMethod("Method");
+
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+        }
+
+        [Theory]
+        [InlineData("op_True")]
+        [InlineData("op_False")]
+        public static void AndAlso_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            TypeBuilder builder = module.DefineType("Type");
+
+            MethodBuilder opTrue = builder.DefineMethod(name, MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Theory]
+        [InlineData("op_True")]
+        [InlineData("op_False")]
+        public static void OrElse_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            TypeBuilder builder = module.DefineType("Type");
+
+            MethodBuilder opTrue = builder.DefineMethod(name, MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, builder.AsType(), new Type[] { builder.AsType(), builder.AsType() });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            object obj = Activator.CreateInstance(createdType.AsType());
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+        }
+
+        [Fact]
+        public static void Method_ParamsDontMatchOperator_ThrowsInvalidOperationException()
+        {
+            TypeBuilder builder = GetTypeBuilder();
+
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int), typeof(int) });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            MethodInfo createdMethod = createdType.GetMethod("Method");
+
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), createdMethod));
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), createdMethod));
+        }
+
+        [Fact]
+        public static void AndAlso_NoMethod_ParamsDontMatchOperator_ThrowsInvalidOperationException()
+        {
+            TypeBuilder builder = GetTypeBuilder();
+
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("op_BitwiseAnd", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int), typeof(int) });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
+        }
+
+        [Fact]
+        public static void OrElse_NoMethod_ParamsDontMatchOperator_ThrowsInvalidOperationException()
+        {
+            TypeBuilder builder = GetTypeBuilder();
+
+            MethodBuilder opTrue = builder.DefineMethod("op_True", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opTrue.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder opFalse = builder.DefineMethod("op_False", MethodAttributes.SpecialName | MethodAttributes.Static, typeof(bool), new Type[] { builder.AsType() });
+            opFalse.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder method = builder.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int), typeof(int) });
+            method.GetILGenerator().Emit(OpCodes.Ret);
+
+            TypeInfo createdType = builder.CreateTypeInfo();            
+            Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
+        }
+
+        [Fact]
+        public static void ImplicitConversionToBool_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(ClassWithImplicitBoolOperator).GetMethod(nameof(ClassWithImplicitBoolOperator.ConversionMethod));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(new ClassWithImplicitBoolOperator()), Expression.Constant(new ClassWithImplicitBoolOperator()), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(new ClassWithImplicitBoolOperator()), Expression.Constant(new ClassWithImplicitBoolOperator()), method));
+        }
+
+        [Theory]
+        [ClassData(typeof(UnreadableExpressionsData))]
+        public static void AndAlso_LeftIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
+        {
+            Assert.Throws<ArgumentException>("left", () => Expression.AndAlso(unreadableExpression, Expression.Constant(true)));
+        }
+
+        [Theory]
+        [ClassData(typeof(UnreadableExpressionsData))]
+        public static void AndAlso_RightIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
+        {
+            Assert.Throws<ArgumentException>("right", () => Expression.AndAlso(Expression.Constant(true), unreadableExpression));
+        }
+
+        [Theory]
+        [ClassData(typeof(UnreadableExpressionsData))]
+        public static void OrElse_LeftIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
+        {
+            Assert.Throws<ArgumentException>("left", () => Expression.OrElse(unreadableExpression, Expression.Constant(true)));
+        }
+
+        [Theory]
+        [ClassData(typeof(UnreadableExpressionsData))]
+        public static void OrElse_RightIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
+        {
+            Assert.Throws<ArgumentException>("right", () => Expression.OrElse(Expression.Constant(false), unreadableExpression));
         }
 
         [Fact]
@@ -211,6 +774,97 @@ namespace System.Linq.Expressions.Tests
 
             var e2 = Expression.OrElse(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a OrElse b)", e2.ToString());
+        }
+        
+        private static TypeBuilder GetTypeBuilder()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            return module.DefineType("Type");
+        }
+
+        public class NonGenericClass
+        {
+            public void InstanceMethod() { }
+            public static void StaticVoidMethod() { }
+
+            public static int StaticIntMethod0() => 0;
+            public static int StaticIntMethod1(int i) => 0;
+            public static int StaticIntMethod3(int i1, int i2, int i3) => 0;
+
+            public static int StaticIntMethod2Valid(int i1, int i2) => 0;
+
+            public static int StaticIntMethod2Invalid1(int i1, string i2) => 0;
+            public static string StaticIntMethod2Invalid2(int i1, int i2) => "abc";
+        }
+
+        public class TrueFalseClass
+        {
+            public int TrueCallCount { get; set; }
+            public int FalseCallCount { get; set; }
+            public int OperatorCallCount { get; set; }
+            public int MethodCallCount { get; set; }
+
+            public TrueFalseClass(int value) { Value = value; }
+            public int Value { get; }
+
+            public static bool operator true(TrueFalseClass c)
+            {
+                c.TrueCallCount++;
+                return c.Value != 0;
+            }
+
+            public static bool operator false(TrueFalseClass c)
+            {
+                c.FalseCallCount++;
+                return c.Value == 0;
+            }
+
+            public static TrueFalseClass operator &(TrueFalseClass c1, TrueFalseClass c2)
+            {
+                c1.OperatorCallCount++;
+                return new TrueFalseClass(c1.Value & c2.Value);
+            }
+
+            public static TrueFalseClass AndMethod(TrueFalseClass c1, TrueFalseClass c2)
+            {
+                c1.MethodCallCount++;
+                return new TrueFalseClass(c1.Value & c2.Value);
+            }
+
+            public static TrueFalseClass operator |(TrueFalseClass c1, TrueFalseClass c2)
+            {
+                c1.OperatorCallCount++;
+                return new TrueFalseClass(c1.Value | c2.Value);
+            }
+
+            public static TrueFalseClass OrMethod(TrueFalseClass c1, TrueFalseClass c2)
+            {
+                c1.MethodCallCount++;
+                return new TrueFalseClass(c1.Value | c2.Value);
+            }
+        }
+
+        public class NamedMethods
+        {
+            public NamedMethods(int value) { Value = value; }
+            public int Value { get; }
+
+            public static bool operator true(NamedMethods c) => c.Value != 0;
+            public static bool operator false(NamedMethods c) => c.Value == 0;
+
+            public static NamedMethods op_BitwiseAnd(NamedMethods c1, NamedMethods c2) => new NamedMethods(c1.Value & c2.Value);
+            public static NamedMethods op_BitwiseOr(NamedMethods c1, NamedMethods c2) => new NamedMethods(c1.Value | c2.Value);
+        }
+
+        public class ClassWithImplicitBoolOperator
+        {
+            public static ClassWithImplicitBoolOperator ConversionMethod(ClassWithImplicitBoolOperator bool1, ClassWithImplicitBoolOperator bool2)
+            {
+                return bool1;
+            }
+
+            public static implicit operator bool(ClassWithImplicitBoolOperator boolClass) => true;
         }
     }
 }

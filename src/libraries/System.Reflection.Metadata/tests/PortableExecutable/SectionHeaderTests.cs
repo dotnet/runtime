@@ -63,9 +63,9 @@ namespace System.Reflection.PortableExecutable.Tests
         private static byte[] PadSectionName(string name)
         {
             var nameBytes = Encoding.UTF8.GetBytes(name);
-            Assert.True(name.Length <= PEFileConstants.SizeofSectionName);
+            Assert.True(name.Length <= SectionHeader.NameSize);
 
-            var bytes = new byte[PEFileConstants.SizeofSectionName];
+            var bytes = new byte[SectionHeader.NameSize];
             Buffer.BlockCopy(nameBytes, 0, bytes, 0, nameBytes.Length);
             return bytes;
         }

@@ -39,6 +39,23 @@ namespace Internal.Cryptography.Pal
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
         }
 
+        /// <summary>
+        /// Returns the SafeCertContextHandle. Use this instead of FromHandle property when
+        /// creating another X509Certificate object based on this one to ensure the underlying
+        /// cert context is not released at the wrong time.
+        /// </summary>
+        /// <param name="cert"></param>
+        /// <returns></returns>
+        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        {
+            CertificatePal newCert = (CertificatePal)FromHandle(cert.Handle);
+            newCert._certContextCloned = true;
+
+            ((CertificatePal)cert.Pal)._certContextCloned = true;
+
+            return newCert;
+        }
+
         public IntPtr Handle
         {
             get { return _certContext.DangerousGetHandle(); }
@@ -392,7 +409,6 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
-#if NETNATIVE
             if (HasPrivateKey)
             {
                 // Similar to the Unix implementation, in UWP merely acknowledge that there -is- a private key.
@@ -400,23 +416,26 @@ namespace Internal.Cryptography.Pal
                 sb.AppendLine();
                 sb.AppendLine("[Private Key]");
             }
+
+#if NETNATIVE
+            // Similar to the Unix implementation, in UWP merely acknowledge that there -is- a private key.
 #else
             CspKeyContainerInfo cspKeyContainerInfo = null;
             try
             {
                 if (HasPrivateKey)
                 {
-                    CspParameters parameters = GetPrivateKey();
+                    CspParameters parameters = GetPrivateKeyCsp();
                     cspKeyContainerInfo = new CspKeyContainerInfo(parameters);
                 }
             }
             // We could not access the key container. Just return.
             catch (CryptographicException) { }
 
+            // Ephemeral keys will not have container information.
             if (cspKeyContainerInfo == null)
                 return;
 
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Private Key]");
             sb.Append(Environment.NewLine + "  Key Store: ");
             sb.Append(cspKeyContainerInfo.MachineKeyStore ? "Machine" : "User");
             sb.Append(Environment.NewLine + "  Provider Name: ");
@@ -471,7 +490,10 @@ namespace Internal.Cryptography.Pal
             _certContext = null;
             if (certContext != null && !certContext.IsInvalid)
             {
-                certContext.Dispose();
+                if (!_certContextCloned)
+                {
+                    certContext.Dispose();
+                }
             }
         }
 
@@ -541,5 +563,6 @@ namespace Internal.Cryptography.Pal
         }
 
         private SafeCertContextHandle _certContext;
+        private bool _certContextCloned;
     }
 }

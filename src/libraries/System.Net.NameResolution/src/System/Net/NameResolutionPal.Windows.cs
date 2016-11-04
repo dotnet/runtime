@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using ProtocolFamily = System.Net.Internals.ProtocolFamily;
 
 namespace System.Net
 {
@@ -51,10 +52,7 @@ namespace System.Net
             if (Host.h_name != IntPtr.Zero)
             {
                 HostEntry.HostName = Marshal.PtrToStringAnsi(Host.h_name);
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("HostEntry.HostName: " + HostEntry.HostName);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"HostEntry.HostName: {HostEntry.HostName}");
             }
 
             // decode h_addr_list to ArrayList of IP addresses.
@@ -91,10 +89,7 @@ namespace System.Net
                                         ((uint)IPAddressToAdd >> 24));
 #endif
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("currentArrayElement: " + currentArrayElement.ToString() + " nativePointer: " + nativePointer.ToString() + " IPAddressToAdd:" + IPAddressToAdd.ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"currentArrayElement:{currentArrayElement} nativePointer:{nativePointer} IPAddressToAdd:{IPAddressToAdd}");
 
                 //
                 // ...and add it to the list
@@ -121,10 +116,7 @@ namespace System.Net
 
             while (nativePointer != IntPtr.Zero)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("currentArrayElement: " + ((long)currentArrayElement).ToString() + "nativePointer: " + ((long)nativePointer).ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"currentArrayElement:{currentArrayElement} nativePointer:{nativePointer}");
 
                 //
                 // if it's not null it points to an Alias,
@@ -167,7 +159,7 @@ namespace System.Net
                 if (IPAddress.TryParse(hostName, out address))
                 {
                     IPHostEntry ipHostEntry = NameResolutionUtilities.GetUnresolvedAnswer(address);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", ipHostEntry);
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
                     return ipHostEntry;
                 }
 

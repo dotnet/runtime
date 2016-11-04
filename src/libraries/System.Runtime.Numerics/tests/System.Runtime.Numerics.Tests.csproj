@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
@@ -10,7 +10,7 @@
     <RootNamespace>System.Numerics.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Numerics.Tests</AssemblyName>
     <ProjectGuid>{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -25,12 +25,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="BigInteger\absolutevalue.cs" />
-    <Compile Include="BigInteger\add.cs" />
     <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
+    <Compile Include="BigInteger\BigInteger.AddTests.cs" />
+    <Compile Include="BigInteger\BigInteger.SubtractTests.cs" />
     <Compile Include="BigInteger\BigIntTools.cs" />
     <Compile Include="BigInteger\cast_from.cs" />
     <Compile Include="BigInteger\cast_to.cs" />
@@ -52,21 +50,16 @@
     <Compile Include="BigInteger\modpow.cs" />
     <Compile Include="BigInteger\multiply.cs" />
     <Compile Include="BigInteger\MyBigInt.cs" />
-    <Compile Include="BigInteger\negate.cs" />
-    <Compile Include="BigInteger\op_add.cs" />
     <Compile Include="BigInteger\op_and.cs" />
     <Compile Include="BigInteger\op_decrement.cs" />
     <Compile Include="BigInteger\op_divide.cs" />
     <Compile Include="BigInteger\op_increment.cs" />
     <Compile Include="BigInteger\op_leftshift.cs" />
-    <Compile Include="BigInteger\op_minus.cs" />
     <Compile Include="BigInteger\op_modulus.cs" />
     <Compile Include="BigInteger\op_multiply.cs" />
     <Compile Include="BigInteger\op_not.cs" />
     <Compile Include="BigInteger\op_or.cs" />
-    <Compile Include="BigInteger\op_plus.cs" />
     <Compile Include="BigInteger\op_rightshift.cs" />
-    <Compile Include="BigInteger\op_subtract.cs" />
     <Compile Include="BigInteger\op_xor.cs" />
     <Compile Include="BigInteger\parse.cs" />
     <Compile Include="BigInteger\PerformanceTests.cs" />
@@ -75,7 +68,6 @@
     <Compile Include="BigInteger\remainder.cs" />
     <Compile Include="BigInteger\sign.cs" />
     <Compile Include="BigInteger\stackcalculator.cs" />
-    <Compile Include="BigInteger\subtract.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="ComplexTests.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">

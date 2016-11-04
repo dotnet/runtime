@@ -453,6 +453,18 @@ namespace System
             return *((double*)&value);
         }
 
+        [SecuritySafeCritical]
+        public static unsafe int SingleToInt32Bits(float value)
+        {
+            return *((int*)&value);
+        }
+
+        [SecuritySafeCritical]
+        public static unsafe float Int32BitsToSingle(int value)
+        {
+            return *((float*)&value);
+        }
+
         private static void ThrowValueArgumentNull()
         {
             throw new ArgumentNullException("value");

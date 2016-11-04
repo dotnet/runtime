@@ -249,6 +249,39 @@ namespace System.Reflection.PortableExecutable
 
         #endregion
 
+        internal const int OffsetOfChecksum =
+            sizeof(short) +                              // Magic
+            sizeof(byte) +                               // MajorLinkerVersion
+            sizeof(byte) +                               // MinorLinkerVersion
+            sizeof(int) +                                // SizeOfCode
+            sizeof(int) +                                // SizeOfInitializedData
+            sizeof(int) +                                // SizeOfUninitializedData
+            sizeof(int) +                                // AddressOfEntryPoint
+            sizeof(int) +                                // BaseOfCode
+            sizeof(long) +                               // PE32:  BaseOfData (int), ImageBase (int) 
+                                                         // PE32+: ImageBase (long)
+            sizeof(int) +                                // SectionAlignment
+            sizeof(int) +                                // FileAlignment
+            sizeof(short) +                              // MajorOperatingSystemVersion
+            sizeof(short) +                              // MinorOperatingSystemVersion
+            sizeof(short) +                              // MajorImageVersion
+            sizeof(short) +                              // MinorImageVersion
+            sizeof(short) +                              // MajorSubsystemVersion
+            sizeof(short) +                              // MinorSubsystemVersion
+            sizeof(int) +                                // Win32VersionValue
+            sizeof(int) +                                // SizeOfImage
+            sizeof(int);                                 // SizeOfHeaders
+
+        internal static int Size(bool is32Bit) =>
+            OffsetOfChecksum +
+            sizeof(int) +                                // Checksum
+            sizeof(short) +                              // Subsystem
+            sizeof(short) +                              // DllCharacteristics
+            4 * (is32Bit ? sizeof(int) : sizeof(long)) + // SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit
+            sizeof(int) +                                // LoaderFlags
+            sizeof(int) +                                // NumberOfRvaAndSizes
+            16 * sizeof(long);                           // directory entries
+
         internal PEHeader(ref PEBinaryReader reader)
         {
             PEMagic magic = (PEMagic)reader.ReadUInt16();

@@ -4,6 +4,8 @@
 
 using System.Collections;
 using System.Globalization;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
@@ -215,6 +217,48 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     VerifyConnectionFailure<InvalidOperationException>(() => command.ExecuteReader(), execReaderFailedMessage);
                 }
             }
+        }
+
+        [CheckConnStrSetupFact]
+        public static async Task UnobservedTaskExceptionTest()
+        {
+            List<Exception> exceptionsSeen = new List<Exception>();
+            Action<object, UnobservedTaskExceptionEventArgs> unobservedTaskCallback =
+                (object sender, UnobservedTaskExceptionEventArgs e) =>
+                {
+                    Assert.False(exceptionsSeen.Contains(e.Exception.InnerException), "FAILED: This exception was already observed by awaiting: " + e.Exception.InnerException);
+                };
+            EventHandler<UnobservedTaskExceptionEventArgs> handler = new EventHandler<UnobservedTaskExceptionEventArgs>(unobservedTaskCallback);
+
+            TaskScheduler.UnobservedTaskException += handler;
+
+            using(var connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("select null; select * from dbo.NonexistentTable;", connection))
+                {
+                    try
+                    {
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            do
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                }
+                            } while (await reader.NextResultAsync());
+                        }
+                    }
+                    catch (SqlException ex)
+                    {
+                        exceptionsSeen.Add(ex);
+                    }
+                }
+            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            TaskScheduler.UnobservedTaskException -= handler;
         }
 
         private static void GenerateConnectionException(string connectionString)

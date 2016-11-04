@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -318,6 +319,50 @@ namespace System.Linq.Tests
         {
             var source = NumberRangeGuaranteedNotCollectionType(0, 100).OrderBy(i => i).Select(i => i.ToString()).Skip(1000);
             Assert.Empty(source.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(JustBelowPowersOfTwoLengths))]
+        [MemberData(nameof(PowersOfTwoLengths))]
+        [MemberData(nameof(JustAbovePowersOfTwoLengths))]
+        public void ToArrayShouldWorkWithSpecialLengthLazyEnumerables(int length)
+        {
+            Debug.Assert(length >= 0);
+
+            var range = Enumerable.Range(0, length);
+            var lazyEnumerable = ForceNotCollection(range); // We won't go down the IIListProvider path
+            Assert.Equal(range, lazyEnumerable.ToArray());
+        }
+
+        public static IEnumerable<object[]> JustBelowPowersOfTwoLengths()
+        {
+            return SmallPowersOfTwo.Select(p => new object[] { p - 1 });
+        }
+
+        public static IEnumerable<object[]> PowersOfTwoLengths()
+        {
+            return SmallPowersOfTwo.Select(p => new object[] { p });
+        }
+
+        public static IEnumerable<object[]> JustAbovePowersOfTwoLengths()
+        {
+            return SmallPowersOfTwo.Select(p => new object[] { p + 1 });
+        }
+        
+        private static IEnumerable<int> SmallPowersOfTwo
+        {
+            get
+            {
+                // By N being "small" we mean that allocating an array of
+                // size N doesn't come close to the risk of causing an OOME
+                
+                const int MaxPower = 18;
+
+                for (int i = 0; i <= MaxPower; i++)
+                {
+                    yield return 1 << i; // equivalent to pow(2, i)
+                }
+            }
         }
     }
 }

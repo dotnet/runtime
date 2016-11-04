@@ -9,16 +9,11 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed class SafeX509ChainHandle : SafeHandle
+    public sealed class SafeX509ChainHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private SafeX509ChainHandle()
-            : base(IntPtr.Zero, true)
+            : base(true)
         {
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
         }
 
         internal static SafeX509ChainHandle InvalidHandle

@@ -33,25 +33,23 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("H")); // Value not a char
         }
 
-        [Fact]
-        public static void ConvertFromUtf32_InvalidChar()
+        public static IEnumerable<object[]> ConvertFromUtf32_TestData()
         {
-            // TODO: add this as [InlineData] when #7166 is fixed
-            ConvertFromUtf32(0xFFFF, "\uFFFF");
+            yield return new object[] { 0x10000, "\uD800\uDC00" };
+            yield return new object[] { 0x103FF, "\uD800\uDFFF" };
+            yield return new object[] { 0xFFFFF, "\uDBBF\uDFFF" };
+            yield return new object[] { 0x10FC00, "\uDBFF\uDC00" };
+            yield return new object[] { 0x10FFFF, "\uDBFF\uDFFF" };
+            yield return new object[] { 0, "\0" };
+            yield return new object[] { 0x3FF, "\u03FF" };
+            yield return new object[] { 0xE000, "\uE000" };
+            yield return new object[] { 0xFFFF, "\uFFFF" };
         }
 
         [Theory]
-        [InlineData(0x10000, "\uD800\uDC00")]
-        [InlineData(0x103FF, "\uD800\uDFFF")]
-        [InlineData(0xFFFFF, "\uDBBF\uDFFF")]
-        [InlineData(0x10FC00, "\uDBFF\uDC00")]
-        [InlineData(0x10FFFF, "\uDBFF\uDFFF")]
-        [InlineData(0, "\0")]
-        [InlineData(0x3FF, "\u03FF")]
-        [InlineData(0xE000, "\uE000")]
+        [MemberData(nameof(ConvertFromUtf32_TestData))]
         public static void ConvertFromUtf32(int utf32, string expected)
         {
-            // TODO: add this as [InlineData] when #7166 is fixed
             Assert.Equal(expected, char.ConvertFromUtf32(utf32));
         }
 
@@ -68,28 +66,29 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("utf32", () => char.ConvertFromUtf32(utf32));
         }
 
-        [Fact]
-        public static void ConvertToUtf32_String_Int()
+        public static IEnumerable<object[]> ConvertToUtf32_String_Int_TestData()
         {
-            // TODO: add this as [InlineData] when #7166 is fixed
-            ConvertToUtf32_String_Int("\uD800\uD800\uDFFF", 1, 0x103FF);
-            ConvertToUtf32_String_Int("\uD800\uD7FF", 1, 0xD7FF);  // High, non-surrogate
-            ConvertToUtf32_String_Int("\uD800\u0000", 1, 0);  // High, non-surrogate
-            ConvertToUtf32_String_Int("\uDF01\u0000", 1, 0);  // Low, non-surrogate
+            yield return new object[] { "\uD800\uDC00", 0, 0x10000 };
+            yield return new object[] { "\uDBBF\uDFFF", 0, 0xFFFFF };
+            yield return new object[] { "\uDBBF\uDFFF", 0, 0xFFFFF };
+            yield return new object[] { "\uDBFF\uDC00", 0, 0x10FC00 };
+            yield return new object[] { "\uDBFF\uDFFF", 0, 0x10FFFF };
+            yield return new object[] { "\u0000\u0001", 0, 0 };
+            yield return new object[] { "\u0000\u0001", 1, 1 };
+            yield return new object[] { "\u0000", 0, 0 };
+            yield return new object[] { "\u0020\uD7FF", 0, 32 };
+            yield return new object[] { "\u0020\uD7FF", 1, 0xD7FF };
+            yield return new object[] { "abcde", 4, 'e' };
+
+            // Invalid unicode
+            yield return new object[] { "\uD800\uD800\uDFFF", 1, 0x103FF };
+            yield return new object[] { "\uD800\uD7FF", 1, 0xD7FF }; // High, non-surrogate
+            yield return new object[] { "\uD800\u0000", 1, 0 }; // High, non-surrogate
+            yield return new object[] { "\uDF01\u0000", 1, 0 }; // Low, non-surrogate
         }
 
         [Theory]
-        [InlineData("\uD800\uDC00", 0, 0x10000)]
-        [InlineData("\uDBBF\uDFFF", 0, 0xFFFFF)]
-        [InlineData("\uDBBF\uDFFF", 0, 0xFFFFF)]
-        [InlineData("\uDBFF\uDC00", 0, 0x10FC00)]
-        [InlineData("\uDBFF\uDFFF", 0, 0x10FFFF)]
-        [InlineData("\u0000\u0001", 0, 0)]
-        [InlineData("\u0000\u0001", 1, 1)]
-        [InlineData("\u0000", 0, 0)]
-        [InlineData("\u0020\uD7FF", 0, 32)]
-        [InlineData("\u0020\uD7FF", 1, 0xD7FF)]
-        [InlineData("abcde", 4, 'e')]
+        [MemberData(nameof(ConvertToUtf32_String_Int_TestData))]
         public static void ConvertToUtf32_String_Int(string s, int index, int expected)
         {
             Assert.Equal(expected, char.ConvertToUtf32(s, index));
@@ -116,19 +115,19 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.ConvertToUtf32("", 0)); // Index >= string.Length
         }
 
-        [Fact]
-        public static void ConvertToUtf32_Char_Char()
+        public static IEnumerable<object[]> ConvertToUtf32_Char_Char_TestData()
         {
-            // TODO: add this as [InlineData] when #7166 is fixed
-            TestConvertToUtf32_Char_Char('\uD800', '\uDC00', 0x10000);
-            TestConvertToUtf32_Char_Char('\uD800', '\uDC00', 0x10000);
-            TestConvertToUtf32_Char_Char('\uD800', '\uDFFF', 0x103FF);
-            TestConvertToUtf32_Char_Char('\uDBBF', '\uDFFF', 0xFFFFF);
-            TestConvertToUtf32_Char_Char('\uDBFF', '\uDC00', 0x10FC00);
-            TestConvertToUtf32_Char_Char('\uDBFF', '\uDFFF', 0x10FFFF);
+            yield return new object[] { '\uD800', '\uDC00', 0x10000 };
+            yield return new object[] { '\uD800', '\uDC00', 0x10000 };
+            yield return new object[] { '\uD800', '\uDFFF', 0x103FF };
+            yield return new object[] { '\uDBBF', '\uDFFF', 0xFFFFF };
+            yield return new object[] { '\uDBFF', '\uDC00', 0x10FC00 };
+            yield return new object[] { '\uDBFF', '\uDFFF', 0x10FFFF };
         }
 
-        private static void TestConvertToUtf32_Char_Char(char highSurrogate, char lowSurrogate, int expected)
+        [Theory]
+        [MemberData(nameof(ConvertToUtf32_Char_Char_TestData))]
+        public static void ConvertToUtf32_Char_Char(char highSurrogate, char lowSurrogate, int expected)
         {
             Assert.Equal(expected, char.ConvertToUtf32(highSurrogate, lowSurrogate));
         }
@@ -868,16 +867,24 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_TestData()
+        {
+            yield return new object[] { "a", 'a' };
+            yield return new object[] { "4", '4' };
+            yield return new object[] { " ", ' ' };
+            yield return new object[] { "\n", '\n' };
+            yield return new object[] { "\0", '\0' };
+            yield return new object[] { "\u0135", '\u0135' };
+            yield return new object[] { "\u05d9", '\u05d9' };
+            yield return new object[] { "\ue001", '\ue001' }; // Private use codepoint
+
+            // Lone surrogate
+            yield return new object[] { "\ud801", '\ud801' }; // High surrogate
+            yield return new object[] { "\udc01", '\udc01' }; // Low surrogate
+        }
 
         [Theory]
-        [InlineData("a", 'a')]
-        [InlineData("4", '4')]
-        [InlineData(" ", ' ')]
-        [InlineData("\n", '\n')]
-        [InlineData("\0", '\0')]
-        [InlineData("\u0135", '\u0135')]
-        [InlineData("\u05d9", '\u05d9')]
-        [InlineData("\ue001", '\ue001')] // Private use codepoint
+        [MemberData(nameof(Parse_TestData))]
         public static void Parse(string s, char expected)
         {
             char c;
@@ -885,14 +892,6 @@ namespace System.Tests
             Assert.Equal(expected, c);
 
             Assert.Equal(expected, char.Parse(s));
-        }
-
-        [Fact]
-        public static void Parse_Surrogate()
-        {
-            // TODO: add this as [InlineData] when #7166 is fixed
-            Parse("\ud801", '\ud801'); // High surrogate
-            Parse("\udc01", '\udc01'); // Low surrogate
         }
 
         [Theory]

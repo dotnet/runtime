@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -7,7 +7,7 @@
     <ProjectGuid>{2CA30CA9-FADA-4AB6-81E3-EAE61EF44463}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.NameTable.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <RootNamespace>NameTableTest</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -30,12 +30,8 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

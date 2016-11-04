@@ -21,23 +21,6 @@ namespace System.Drawing
         private const int Win32GreenShift = 8;
         private const int Win32BlueShift = 16;
 
-        public static Color ArgbToKnownColor(int targetARGB)
-        {
-            EnsureColorTable();
-            for (int index = 0; index < s_colorTable.Length; ++index)
-            {
-                int argb = s_colorTable[index];
-                if (argb == targetARGB)
-                {
-                    Color color = Color.FromKnownColor((KnownColor)index);
-                    if (!color.IsSystemColor)
-                        return color;
-                }
-            }
-
-            return Color.FromArgb(targetARGB);
-        }
-
         private static void EnsureColorTable()
         {
             // no need to lock... worse case is a double create of the table...

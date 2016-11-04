@@ -12,6 +12,7 @@ using System.Xml;
 using System.Data.SqlTypes;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Data.Common;
 
 namespace System.Data.SqlClient
 {
@@ -136,7 +137,7 @@ namespace System.Data.SqlClient
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal XmlReader ToXmlReader()
         {
-            return SqlXml.CreateSqlXmlReader(ToStream(), closeInput: false);
+            return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(ToStream(), closeInput: false);
         }
 
         public bool IsNull
@@ -146,5 +147,7 @@ namespace System.Data.SqlClient
                 return (_cachedBytes == null) ? true : false;
             }
         }
+
+
     }
 }

@@ -19,7 +19,7 @@ namespace System.Diagnostics
         protected static readonly string HostRunner = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "CoreRun.exe" : "corerun";
 
         /// <summary>A timeout (milliseconds) after which a wait on a remote operation should be considered a failure.</summary>
-        internal const int FailWaitTimeoutMilliseconds = 30 * 1000;
+        public const int FailWaitTimeoutMilliseconds = 30 * 1000;
         /// <summary>The exit code returned when the test process exits successfully.</summary>
         internal const int SuccessExitCode = 42;
 
@@ -144,18 +144,20 @@ namespace System.Diagnostics
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?
                 Process.Start(psi) :
-                new Process() { StartInfo = psi });
+                new Process() { StartInfo = psi }, options);
         }
 
         /// <summary>A cleanup handle to the Process created for the remote invocation.</summary>
         internal sealed class RemoteInvokeHandle : IDisposable
         {
-            public RemoteInvokeHandle(Process process)
+            public RemoteInvokeHandle(Process process, RemoteInvokeOptions options)
             {
                 Process = process;
+                Options = options;
             }
 
             public Process Process { get; private set; }
+            public RemoteInvokeOptions Options { get; private set; }
 
             public void Dispose()
             {
@@ -165,8 +167,9 @@ namespace System.Diagnostics
                     // needing to do this in every derived test and keep each test much simpler.
                     try
                     {
-                        Assert.True(Process.WaitForExit(FailWaitTimeoutMilliseconds));
-                        Assert.Equal(SuccessExitCode, Process.ExitCode);
+                        Assert.True(Process.WaitForExit(Options.TimeOut));
+                        if (Options.CheckExitCode)
+                            Assert.Equal(SuccessExitCode, Process.ExitCode);
                     }
                     finally
                     {
@@ -188,5 +191,8 @@ namespace System.Diagnostics
         public bool Start { get; set; } = true;
         public ProcessStartInfo StartInfo { get; set; } = new ProcessStartInfo();
         public bool EnableProfiling { get; set; } = true;
+        public bool CheckExitCode {get; set; } = true;
+
+        public int TimeOut {get; set; } = RemoteExecutorTestBase.FailWaitTimeoutMilliseconds;
     }
 }

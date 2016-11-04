@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Threading.Timer.csproj">
-      <SupportedFramework>net451;netcore451;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Threading.Timer.csproj">
+      <TargetGroup>net463</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.Threading.Timer.pkgproj" />
     <ProjectReference Include="aot\System.Threading.Timer.pkgproj" />

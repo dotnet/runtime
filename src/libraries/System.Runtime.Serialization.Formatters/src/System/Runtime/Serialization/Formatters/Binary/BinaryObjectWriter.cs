@@ -450,7 +450,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // Get type of array element 
             Type arrayElemType = arrayType.GetElementType();
             WriteObjectInfo arrayElemObjectInfo = null;
-            if (!arrayElemType.GetTypeInfo().IsPrimitive)
+            if (!arrayElemType.IsPrimitive)
             {
                 arrayElemObjectInfo = WriteObjectInfo.Serialize(arrayElemType, _surrogates, _context, _serObjectInfoInit, _formatterConverter, _binder);
                 arrayElemObjectInfo._assemId = GetAssemblyId(arrayElemObjectInfo);
@@ -526,7 +526,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if (!(Converter.IsWriteAsByteArray(arrayElemTypeNameInfo._primitiveTypeEnum) && (lowerBoundA[0] == 0)))
                 {
                     object[] objectA = null;
-                    if (!arrayElemType.GetTypeInfo().IsValueType)
+                    if (!arrayElemType.IsValueType)
                     {
                         // Non-primitive type array                 
                         objectA = (object[])array;
@@ -781,7 +781,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return _previousId;
             }
             _idGenerator._currentCount = _currentId;
-            if (type != null && type.GetTypeInfo().IsValueType)
+            if (type != null && type.IsValueType)
             {
                 if (!assignUniqueIdToValueType)
                 {

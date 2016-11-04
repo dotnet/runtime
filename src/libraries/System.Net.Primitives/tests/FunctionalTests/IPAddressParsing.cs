@@ -98,7 +98,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~PlatformID.OSX)] // There doesn't appear to be an OSX API that will fail for these
+        [PlatformSpecific(~TestPlatforms.OSX)] // There doesn't appear to be an OSX API that will fail for these
         [InlineData("0x.1.1.1")] // Empty leading hex segment
         public void ParseIPv4_InvalidHex_Failure_NonOSX(string address)
         {
@@ -106,7 +106,6 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue(8362, PlatformID.OSX)]
         [InlineData("0.0.0.089")] // Octal (leading zero) but with 8 or 9
         public void ParseIPv4_InvalidOctal_Failure(string address)
         {
@@ -124,7 +123,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~PlatformID.OSX)] // There does't appear to be an OSX API that will fail for these
+        [PlatformSpecific(~TestPlatforms.OSX)] // There does't appear to be an OSX API that will fail for these
         [InlineData("4294967296")] // Decimal overflow by 1
         [InlineData("040000000000")] // Octal overflow by 1
         [InlineData("01011101001110110001100100011011")] // Binary? Read as octal, overflows
@@ -249,7 +248,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~PlatformID.AnyUnix)]
+        [PlatformSpecific(~TestPlatforms.AnyUnix)]
         // Linux/OSX don't do the IPv6->IPv4 formatting for these addresses
         [InlineData("::FFFF:0:192.168.0.1", "::ffff:0:192.168.0.1")] // SIIT
         [InlineData("::5EFE:192.168.0.1", "::5efe:192.168.0.1")] // ISATAP
@@ -260,7 +259,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         // Linux/OSX don't do the IPv6->IPv4 formatting for these addresses
         [InlineData("::FFFF:0:192.168.0.1", "::ffff:0:c0a8:1")] // SIIT
         [InlineData("::5EFE:192.168.0.1", "::5efe:c0a8:1")] // ISATAP
@@ -271,7 +270,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~PlatformID.Linux)] // Linux does not appear to recognize this as a valid address
+        [PlatformSpecific(~TestPlatforms.Linux)] // Linux does not appear to recognize this as a valid address
         [InlineData("::192.168.0.010", "::192.168.0.10")] // Embedded IPv4 octal, read as decimal
         public void ParseIPv6_v4_Success_NonLinux(string address, string expected)
         {
@@ -363,7 +362,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.OSX)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public void ParseIPv6_AlphaNumericScope_Failure()
         {
             Assert.Throws<FormatException>(() => { IPAddress.Parse("::%1a"); });

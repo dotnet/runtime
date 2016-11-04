@@ -1,16 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Primitives.Tests", "tests\Microsoft.Win32.Primitives.Tests.csproj", "{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Primitives", "src\Microsoft.Win32.Primitives.csproj", "{8FFE99C0-22F8-4462-B839-970EAC1B3472}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{6DF80DBD-B979-4B4D-89F1-5C35273809A6}"
-	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,14 +15,14 @@ Global
 		Windows_Release|Any CPU = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Unix_Release|Any CPU.Build.0 = Release|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
 		{8FFE99C0-22F8-4462-B839-970EAC1B3472}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
 		{8FFE99C0-22F8-4462-B839-970EAC1B3472}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
 		{8FFE99C0-22F8-4462-B839-970EAC1B3472}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU

@@ -615,61 +615,62 @@ namespace System.Reflection.Emit.Tests
 
         public static IEnumerable<object[]> InvalidAttributeTypes_TestData()
         {
-            yield return new object[] { typeof(Guid) };
-            yield return new object[] { typeof(int[,]) };
-            yield return new object[] { CreateEnum(typeof(char), 'a') };
-            yield return new object[] { CreateEnum(typeof(bool), false) };
-            yield return new object[] { CreateEnum(typeof(float), 1.0f) };
-            yield return new object[] { CreateEnum(typeof(double), 1.0) };
-            yield return new object[] { CreateEnum(typeof(IntPtr)) };
-            yield return new object[] { CreateEnum(typeof(UIntPtr)) };
+            yield return new object[] { typeof(IntPtr), (IntPtr)1 };
+            yield return new object[] { typeof(UIntPtr), (UIntPtr)1 };
+            yield return new object[] { typeof(Guid), new Guid() };
+            yield return new object[] { typeof(int[,]), new int[5, 5] };
+            yield return new object[] { CreateEnum(typeof(char), 'a'), 'a' };
+            yield return new object[] { CreateEnum(typeof(bool), false), true };
+            yield return new object[] { CreateEnum(typeof(float), 1.0f), 1.0f };
+            yield return new object[] { CreateEnum(typeof(double), 1.0), 1.0 };
+            yield return new object[] { CreateEnum(typeof(IntPtr)), (IntPtr)1 };
+            yield return new object[] { CreateEnum(typeof(UIntPtr)), (UIntPtr)1 };
         }
 
         [Theory]
         [MemberData(nameof(InvalidAttributeTypes_TestData))]
-        public void ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(Type type)
+        public void ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(Type type, object value)
         {
             TypeBuilder typeBuilder = Helpers.DynamicType(TypeAttributes.Public);
             ConstructorInfo con = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { type });
+            object[] constructorArgs = new object[] { value };
 
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[1]));
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[1], new FieldInfo[0], new object[0]));
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[1], new PropertyInfo[0], new object[0]));
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[1], new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, constructorArgs));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, constructorArgs, new FieldInfo[0], new object[0]));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0]));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
         }
 
         [Fact]
-        public void NullValueForPrimitiveTypeInConstructorArgs_ThrowsNullReferenceException()
+        public void NullValueForPrimitiveTypeInConstructorArgs_ThrowsArgumentNullException()
         {
+        	// Used to throw a NullReferenceException, see issue #11702
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[] { typeof(int) });
             object[] constructorArgs = new object[] { null };
 
-            Assert.Throws<NullReferenceException>(() => new CustomAttributeBuilder(con, constructorArgs));
-            Assert.Throws<NullReferenceException>(() => new CustomAttributeBuilder(con, constructorArgs, new FieldInfo[0], new object[0]));
-            Assert.Throws<NullReferenceException>(() => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0]));
-            Assert.Throws<NullReferenceException>(() => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
+            Assert.Throws<ArgumentNullException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs));
+            Assert.Throws<ArgumentNullException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs, new FieldInfo[0], new object[0]));
+            Assert.Throws<ArgumentNullException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0]));
+            Assert.Throws<ArgumentNullException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
         }
 
-        public static IEnumerable<object[]> NotSupportedPrimitives_CustomAttributeFormatException_TestData()
+        public static IEnumerable<object[]> NotSupportedPrimitives_TestData()
         {
             yield return new object[] { (IntPtr)1 };
             yield return new object[] { (UIntPtr)1 };
         }
 
         [Theory]
-        [MemberData(nameof(NotSupportedPrimitives_CustomAttributeFormatException_TestData))]
-        public static void NotSupportedPrimitiveInConstructorArgs_ThrowsCustomAttributeFormatExceptionOnCreation(object value)
+        [MemberData(nameof(NotSupportedPrimitives_TestData))]
+        public static void NotSupportedPrimitiveInConstructorArgs_ThrowsArgumentException(object value)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[] { typeof(object) });
             object[] constructorArgs = new object[] { value };
 
-            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, constructorArgs);
-            AssemblyBuilder assembly = Helpers.DynamicAssembly();
-            assembly.SetCustomAttribute(attribute);
-
-            // CustomAttributeFormatException is not exposed on .NET Core
-            Exception ex = Assert.ThrowsAny<Exception>(() => assembly.GetCustomAttributes());
-            Assert.Equal("System.Reflection.CustomAttributeFormatException", ex.GetType().ToString());
+            Assert.Throws<ArgumentException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs));
+            Assert.Throws<ArgumentException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs, new FieldInfo[0], new object[0]));
+            Assert.Throws<ArgumentException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0]));
+            Assert.Throws<ArgumentException>("constructorArgs[0]", () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
         }
 
         [Fact]
@@ -697,15 +698,16 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(InvalidAttributeTypes_TestData))]
-        public void NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(Type type)
+        public void NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(Type type, object value)
         {
             TypeBuilder typeBuilder = Helpers.DynamicType(TypeAttributes.Public);
             FieldInfo field = typeBuilder.DefineField("Field", type, FieldAttributes.Public);
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = new FieldInfo[] { field };
+            object[] fieldValues = new object[] { value };
             
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedFields, new object[1]));
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], new PropertyInfo[0], new object[0], namedFields, new object[1]));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedFields, fieldValues));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], new PropertyInfo[0], new object[0], namedFields, fieldValues));
         }
 
         public static IEnumerable<object[]> FieldDoesntBelongToConstructorDeclaringType_TestData()
@@ -728,7 +730,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NamedFields_ContainsConstField_ThrowsCustomAttributeFormatExceptionOnCreation()
+        public void NamedFields_ContainsConstField_ThrowsArgumentException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = new FieldInfo[] { typeof(TestAttribute).GetField(nameof(TestAttribute.ConstField)) };
@@ -803,20 +805,18 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [MemberData(nameof(NotSupportedPrimitives_CustomAttributeFormatException_TestData))]
-        public static void NotSupportedPrimitiveInFieldValues_ThrowsCustomAttributeFormatExceptionOnCreation(object value)
+        [MemberData(nameof(NotSupportedPrimitives_TestData))]
+        public static void NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(object value)
         {
+        	// Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
+        	// This created a blob that (probably) generates a CustomAttributeFormatException. In theory, this
+        	// could have been something more uncontrolled, so was fixed. See issue #11703.
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = Helpers.GetFields(typeof(TestAttribute), nameof(TestAttribute.ObjectField));
             object[] fieldValues = new object[] { value };
 
-            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[0], namedFields, fieldValues);
-            AssemblyBuilder assembly = Helpers.DynamicAssembly();
-            assembly.SetCustomAttribute(attribute);
-
-            // CustomAttributeFormatException is not exposed on .NET Core
-            Exception ex = Assert.ThrowsAny<Exception>(() => assembly.GetCustomAttributes());
-            Assert.Equal("System.Reflection.CustomAttributeFormatException", ex.GetType().ToString());
+            Assert.Throws<ArgumentException>("fieldValues[0]", () => new CustomAttributeBuilder(con, new object[0], namedFields, fieldValues));
+            Assert.Throws<ArgumentException>("fieldValues[0]", () => new CustomAttributeBuilder(con, new object[0], new PropertyInfo[0], new FieldInfo[0], namedFields, fieldValues));
         }
 
         [Fact]
@@ -876,17 +876,33 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentNullException>("namedProperties[0]", () => new CustomAttributeBuilder(con, new object[0], namedProperties, new object[1], new FieldInfo[0], new object[0]));
         }
 
+        [Fact]
+        public static void IndexerInNamedProperties_ThrowsCustomAttributeFormatExceptionOnCreation()
+        {
+            ConstructorInfo con = typeof(IndexerAttribute).GetConstructor(new Type[0]);
+            PropertyInfo[] namedProperties = new PropertyInfo[] { typeof(IndexerAttribute).GetProperty("Item") };
+            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[0], namedProperties, new object[] { "abc" });
+
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            assembly.SetCustomAttribute(attribute);
+
+            // CustomAttributeFormatException is not exposed on .NET Core
+            Exception ex = Assert.ThrowsAny<Exception>(() => assembly.GetCustomAttributes());
+            Assert.Equal("System.Reflection.CustomAttributeFormatException", ex.GetType().ToString());
+        }
+
         [Theory]
         [MemberData(nameof(InvalidAttributeTypes_TestData))]
-        public void NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(Type type)
+        public void NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(Type type, object value)
         {
             TypeBuilder typeBuilder = Helpers.DynamicType(TypeAttributes.Public);
             PropertyBuilder property = typeBuilder.DefineProperty("Property", PropertyAttributes.None, type, new Type[0]);
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             PropertyInfo[] namedProperties = new PropertyInfo[] { property };
+            object[] propertyValues = new object[] { value };
 
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedProperties, new object[] { 5 }));
-            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedProperties, new object[] { 5 }, new FieldInfo[0], new object[0]));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues));
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues, new FieldInfo[0], new object[0]));
         }
 
         public static IEnumerable<object[]> PropertyDoesntBelongToConstructorDeclaringType_TestData()
@@ -949,20 +965,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [MemberData(nameof(NotSupportedPrimitives_CustomAttributeFormatException_TestData))]
-        public static void NotSupportedPrimitiveInPropertyValues_ThrowsCustomAttributeFormatExceptionOnCreation(object value)
+        [MemberData(nameof(NotSupportedPrimitives_TestData))]
+        public static void NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(object value)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             PropertyInfo[] namedProperties = Helpers.GetProperties(typeof(TestAttribute), nameof(TestAttribute.ObjectProperty));
             object[] propertyValues = new object[] { value };
 
-            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues);
-            AssemblyBuilder assembly = Helpers.DynamicAssembly();
-            assembly.SetCustomAttribute(attribute);
-
-            // CustomAttributeFormatException is not exposed on .NET Core
-            Exception ex = Assert.ThrowsAny<Exception>(() => assembly.GetCustomAttributes());
-            Assert.Equal("System.Reflection.CustomAttributeFormatException", ex.GetType().ToString());
+            Assert.Throws<ArgumentException>("propertyValues[0]", () => new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues));
+            Assert.Throws<ArgumentException>("propertyValues[0]", () => new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues, new FieldInfo[0], new object[0]));
         }
 
         [Fact]
@@ -1108,7 +1119,7 @@ namespace System.Reflection.Emit.Tests
         public Type TypeProperty { get; set; }
         public int[] ArrayProperty { get; set; }
         public object ObjectProperty { get; set; }
-        
+
         public sbyte SByteField;
         public byte ByteField;
         public short ShortField;
@@ -1138,8 +1149,19 @@ namespace System.Reflection.Emit.Tests
         public object ObjectField;
     }
 
+    public class IndexerAttribute : Attribute
+    {
+        public IndexerAttribute() { }
+
+        public string this[string s]
+        {
+            get { return s; }
+            set { }
+        }
+    }
+
     public enum SByteEnum : sbyte { }
-    public enum ByteEnum : sbyte { }
+    public enum ByteEnum : byte { }
     public enum ShortEnum : short { }
     public enum UShortEnum : ushort { }
     public enum IntEnum : int { }

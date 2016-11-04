@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
@@ -46,9 +46,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\Compression\ZipTestHelper.cs">
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)System.IO.Compression.TestData\1.0.4-prerelease\content\**\*.*">

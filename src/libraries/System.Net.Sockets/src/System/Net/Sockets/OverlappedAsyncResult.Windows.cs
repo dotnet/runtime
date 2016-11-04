@@ -104,23 +104,19 @@ namespace System.Net.Sockets
         // 3) failed.
         internal override object PostCompletion(int numBytes)
         {
-            if (ErrorCode == 0 && SocketsEventSource.Log.IsEnabled())
+            if (ErrorCode == 0 && NetEventSource.IsEnabled)
             {
                 LogBuffer(numBytes);
             }
 
-            return (int)numBytes;
+            return numBytes;
         }
 
         private void LogBuffer(int size)
         {
-            if (!SocketsEventSource.Log.IsEnabled())
+            if (!NetEventSource.IsEnabled)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("OverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
-                }
-                Debug.Fail("OverlappedAsyncResult#" + LoggingHash.HashString(this) + "::LogBuffer()|Logging is off!");
+                return;
             }
 
             if (size > -1)
@@ -129,7 +125,7 @@ namespace System.Net.Sockets
                 {
                     foreach (WSABuffer wsaBuffer in _wsaBuffers)
                     {
-                        SocketsEventSource.Dump(wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -138,7 +134,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    SocketsEventSource.Dump(_singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
+                    if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
                 }
             }
         }

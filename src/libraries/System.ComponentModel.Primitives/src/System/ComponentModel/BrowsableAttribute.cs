@@ -71,5 +71,10 @@ namespace System.ComponentModel
         {
             return _browsable.GetHashCode();
         }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Equals(BrowsableAttribute.Default);
+        }
     }
 }

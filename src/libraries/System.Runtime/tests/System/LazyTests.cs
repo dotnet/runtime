@@ -7,16 +7,16 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class LazyTests
+    public static partial class LazyTests
     {
         [Fact]
         public static void Ctor()
         {
             var lazyString = new Lazy<string>();
-            VerifyLazy(lazyString, "", false);
+            VerifyLazy(lazyString, "", hasValue: false, isValueCreated: false);
 
             var lazyObject = new Lazy<int>();
-            VerifyLazy(lazyObject, 0, true);
+            VerifyLazy(lazyObject, 0, hasValue: true, isValueCreated: false);
         }
 
         [Theory]
@@ -25,17 +25,17 @@ namespace System.Tests
         public static void Ctor_Bool(bool isThreadSafe)
         {
             var lazyString = new Lazy<string>(isThreadSafe);
-            VerifyLazy(lazyString, "", false);
+            VerifyLazy(lazyString, "", hasValue: false, isValueCreated: false);
         }
 
         [Fact]
         public static void Ctor_ValueFactory()
         {
             var lazyString = new Lazy<string>(() => "foo");
-            VerifyLazy(lazyString, "foo", true);
+            VerifyLazy(lazyString, "foo", hasValue: true, isValueCreated: false);
 
             var lazyInt = new Lazy<int>(() => 1);
-            VerifyLazy(lazyInt, 1, true);
+            VerifyLazy(lazyInt, 1, hasValue: true, isValueCreated: false);
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace System.Tests
         public static void Ctor_LazyThreadSafetyMode()
         {
             var lazyString = new Lazy<string>(LazyThreadSafetyMode.PublicationOnly);
-            VerifyLazy(lazyString, "", false);
+            VerifyLazy(lazyString, "", hasValue: false, isValueCreated: false);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace System.Tests
         public static void Ctor_ValueFactor_Bool(bool isThreadSafe)
         {
             var lazyString = new Lazy<string>(() => "foo", isThreadSafe);
-            VerifyLazy(lazyString, "foo", true);
+            VerifyLazy(lazyString, "foo", hasValue: true, isValueCreated: false);
         }
 
         [Fact]
@@ -77,10 +77,10 @@ namespace System.Tests
         public static void Ctor_ValueFactor_LazyThreadSafetyMode()
         {
             var lazyString = new Lazy<string>(() => "foo", LazyThreadSafetyMode.PublicationOnly);
-            VerifyLazy(lazyString, "foo", true);
+            VerifyLazy(lazyString, "foo", hasValue: true, isValueCreated: false);
 
             var lazyInt = new Lazy<int>(() => 1, LazyThreadSafetyMode.PublicationOnly);
-            VerifyLazy(lazyInt, 1, true);
+            VerifyLazy(lazyInt, 1, hasValue: true, isValueCreated: false);
         }
 
         [Fact]
@@ -281,9 +281,9 @@ namespace System.Tests
             Assert.Equal(template, d);
         }
 
-        private static void VerifyLazy<T>(Lazy<T> lazy, T expectedValue, bool hasValue)
+        private static void VerifyLazy<T>(Lazy<T> lazy, T expectedValue, bool hasValue, bool isValueCreated)
         {
-            Assert.False(lazy.IsValueCreated);
+            Assert.Equal(isValueCreated, lazy.IsValueCreated);
             if (hasValue)
             {
                 Assert.Equal(expectedValue, lazy.Value);

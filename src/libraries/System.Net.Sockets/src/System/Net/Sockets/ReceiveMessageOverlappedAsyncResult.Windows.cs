@@ -152,7 +152,7 @@ namespace System.Net.Sockets
         internal override object PostCompletion(int numBytes)
         {
             InitIPPacketInformation();
-            if (ErrorCode == 0 && SocketsEventSource.Log.IsEnabled())
+            if (ErrorCode == 0 && NetEventSource.IsEnabled)
             {
                 LogBuffer(numBytes);
             }
@@ -162,15 +162,7 @@ namespace System.Net.Sockets
 
         private void LogBuffer(int size)
         {
-            if (!SocketsEventSource.Log.IsEnabled())
-            {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("ReceiveMessageOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
-                }
-                Debug.Fail("ReceiveMessageOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::LogBuffer()|Logging is off!");
-            }
-            SocketsEventSource.Dump(_wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
+            if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, _wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
         }
     }
 }

@@ -9,8 +9,6 @@ using System.IO;
 using System.Text;
 using XmlCoreTest.Common;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "Invalid State Combinations", Pri = 1)]

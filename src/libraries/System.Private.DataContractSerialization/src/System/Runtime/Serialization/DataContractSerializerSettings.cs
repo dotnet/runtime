@@ -39,6 +39,10 @@ namespace System.Runtime.Serialization
             set { _maxItemsInObjectGraph = value; }
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether Dummy documentation
+        /// </summary>
+        public bool IgnoreExtensionDataObject { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether Dummy documentation

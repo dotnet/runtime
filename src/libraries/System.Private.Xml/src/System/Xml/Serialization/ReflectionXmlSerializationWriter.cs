@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -27,7 +27,7 @@ namespace System.Xml.Serialization
 
             if (!xmlMapping.IsWriteable || !xmlMapping.GenerateSerializer)
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
             }
 
             if (xmlMapping is XmlTypeMapping || xmlMapping is XmlMembersMapping)
@@ -36,7 +36,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
             }
         }
 

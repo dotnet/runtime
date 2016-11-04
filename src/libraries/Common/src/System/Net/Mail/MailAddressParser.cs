@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Collections.Generic;
 
 namespace System.Net.Mail
 {
@@ -30,6 +31,24 @@ namespace System.Net.Mail
             return parsedAddress;
         }
 
+        // Parse a comma separated list of MailAddress's
+        //
+        // Throws a FormatException if any MailAddress is invalid.
+        internal static List<MailAddress> ParseMultipleAddresses(string data)
+        {
+            List<MailAddress> results = new List<MailAddress>();
+            int index = data.Length - 1;
+            while (index >= 0)
+            {
+                // Because we're parsing in reverse, we must make an effort to preserve the order of the addresses.
+                results.Insert(0, MailAddressParser.ParseAddress(data, true, ref index));
+                Debug.Assert(index == -1 || data[index] == MailBnfHelper.Comma,
+                    "separator not found while parsing multiple addresses");
+                index--;
+            }
+            return results;
+        }
+
         //
         // Parse a single MailAddress, potentially from a list.
         //
@@ -45,7 +64,7 @@ namespace System.Net.Mail
         // Throws a FormatException if any part of the MailAddress is invalid.
         private static MailAddress ParseAddress(string data, bool expectMultipleAddresses, ref int index)
         {
-            Debug.Assert(!String.IsNullOrEmpty(data));
+            Debug.Assert(!string.IsNullOrEmpty(data));
             Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
             // Parsed components to be assembled as a MailAddress later
@@ -103,7 +122,7 @@ namespace System.Net.Mail
             }
             else
             {
-                displayName = String.Empty;
+                displayName = string.Empty;
             }
 
             return new MailAddress(displayName, localPart, domain);
@@ -290,7 +309,14 @@ namespace System.Net.Mail
 
         internal static string NormalizeOrThrow(string input)
         {
-            return input;
+            try
+            {
+                return input.Normalize(Text.NormalizationForm.FormC);
+            }
+            catch (ArgumentException e)
+            {
+                throw new FormatException(SR.MailAddressInvalidFormat, e);
+            }
         }
     }
 }

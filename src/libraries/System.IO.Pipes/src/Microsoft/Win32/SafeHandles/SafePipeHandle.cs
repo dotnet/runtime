@@ -9,15 +9,15 @@ using System.Security;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    public sealed partial class SafePipeHandle : SafeHandle
+    public sealed partial class SafePipeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafePipeHandle()
-            : base(new IntPtr(DefaultInvalidHandle), true) 
+            : this(new IntPtr(DefaultInvalidHandle), true) 
         {
         }
 
         public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
-            : base(new IntPtr(DefaultInvalidHandle), ownsHandle)
+            : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
         }

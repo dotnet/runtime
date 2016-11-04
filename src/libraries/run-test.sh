@@ -32,6 +32,9 @@ usage()
     echo "                                      default: <repo_root>/bin/<OS>.x64.<ConfigurationGroup>"
     echo "    --corefx-packages <location>      Location of the packages restored from NuGet."
     echo "                                      default: <repo_root>/packages"
+    echo "    --testRelPath <path>              Relative path to test script"
+    echo "                                      Path is relative from the directory specified by project name"
+    echo "                                      default: default.netcoreapp1.1"
     echo
     echo "Flavor/OS options:"
     echo "    --configurationGroup <config>     ConfigurationGroup to run (Debug/Release)"
@@ -102,6 +105,9 @@ esac
 # Misc defaults
 TestSelection=".*"
 TestsFailed=0
+
+# TestRelPath default
+TestRelPath="default.netcoreapp1.1"
 
 ensure_binaries_are_present()
 {
@@ -214,7 +220,7 @@ run_test()
     exit 0
   fi
 
-  dirName="$1/netcoreapp1.0"
+  dirName="$1/$TestRelPath"
   copy_test_overlay $dirName
 
   pushd $dirName > /dev/null
@@ -345,6 +351,9 @@ do
         ;;
         --test-dir-file)
         TestDirFile=$2
+        ;;
+        --testRelPath)
+        TestRelPath=$2
         ;;
         --outerloop)
         OuterLoop=""

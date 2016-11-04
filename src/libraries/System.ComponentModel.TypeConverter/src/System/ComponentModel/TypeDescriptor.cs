@@ -344,7 +344,7 @@ namespace System.ComponentModel
                     return;
                 }
 
-                // Immediately clear this.  If we find a default provider
+                // Immediately clear this. If we find a default provider
                 // and it starts messing around with type information, 
                 // this could infinitely recurse.
                 //
@@ -1867,7 +1867,7 @@ namespace System.ComponentModel
                 case PIPELINE_ATTRIBUTES:
                     foreach (Attribute attr in members)
                     {
-                        filterTable[attr.GetTypeId()] = attr;
+                        filterTable[attr.TypeId] = attr;
                     }
                     cacheResults = componentFilter.FilterAttributes(component, filterTable);
                     break;
@@ -2435,6 +2435,93 @@ namespace System.ComponentModel
             }
         }
 
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public static Type ComObjectType
+        {
+            get
+            {
+                return typeof(TypeDescriptor.TypeDescriptorComObject);
+            }
+        }
+
+        public static IDesigner CreateDesigner(IComponent component, Type designerBaseType)
+        {
+            Type type = null;
+            IDesigner result = null;
+            AttributeCollection attributes = TypeDescriptor.GetAttributes(component);
+            for (int i = 0; i < attributes.Count; i++)
+            {
+                DesignerAttribute designerAttribute = attributes[i] as DesignerAttribute;
+                if (designerAttribute != null)
+                {
+                    Type type2 = Type.GetType(designerAttribute.DesignerBaseTypeName);
+                    if (type2 != null && type2 == designerBaseType)
+                    {
+                        ISite site = component.Site;
+                        bool flag = false;
+                        if (site != null)
+                        {
+                            ITypeResolutionService typeResolutionService = (ITypeResolutionService)site.GetService(typeof(ITypeResolutionService));
+                            if (typeResolutionService != null)
+                            {
+                                flag = true;
+                                type = typeResolutionService.GetType(designerAttribute.DesignerTypeName);
+                            }
+                        }
+                        if (!flag)
+                        {
+                            type = Type.GetType(designerAttribute.DesignerTypeName);
+                        }
+                        if (type != null)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+            if (type != null)
+            {
+                result = (IDesigner)SecurityUtils.SecureCreateInstance(type);
+            }
+            return result;
+        }
+
+        [Obsolete("This property has been deprecated.  Use a type description provider to supply type information for COM types instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IComNativeDescriptorHandler ComNativeDescriptorHandler
+        {
+            get
+            {
+                TypeDescriptor.TypeDescriptionNode typeDescriptionNode = TypeDescriptor.NodeFor(TypeDescriptor.ComObjectType);
+                TypeDescriptor.ComNativeDescriptionProvider comNativeDescriptionProvider;
+                do
+                {
+                    comNativeDescriptionProvider = (typeDescriptionNode.Provider as TypeDescriptor.ComNativeDescriptionProvider);
+                    typeDescriptionNode = typeDescriptionNode.Next;
+                }
+                while (typeDescriptionNode != null && comNativeDescriptionProvider == null);
+                if (comNativeDescriptionProvider != null)
+                {
+                    return comNativeDescriptionProvider.Handler;
+                }
+                return null;
+            }
+            set
+            {
+                TypeDescriptor.TypeDescriptionNode typeDescriptionNode = TypeDescriptor.NodeFor(TypeDescriptor.ComObjectType);
+                while (typeDescriptionNode != null && !(typeDescriptionNode.Provider is TypeDescriptor.ComNativeDescriptionProvider))
+                {
+                    typeDescriptionNode = typeDescriptionNode.Next;
+                }
+                if (typeDescriptionNode == null)
+                {
+                    TypeDescriptor.AddProvider(new TypeDescriptor.ComNativeDescriptionProvider(value), TypeDescriptor.ComObjectType);
+                    return;
+                }
+                ((TypeDescriptor.ComNativeDescriptionProvider)typeDescriptionNode.Provider).Handler = value;
+            }
+        }
+
+
         /// <summary>
         ///     The RemoveAssociation method removes an association with an object.  
         /// </summary>
@@ -2637,6 +2724,132 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        ///     This class is a type description provider that works with the IComNativeDescriptorHandler
+        ///     interface.
+        //// </summary>
+        private sealed class ComNativeDescriptionProvider : TypeDescriptionProvider
+        {
+#pragma warning disable 618
+            internal ComNativeDescriptionProvider(IComNativeDescriptorHandler handler)
+            {
+                Handler = handler;
+            }
+
+            /// <summary>
+            ///     Returns the COM handler object.
+            //// </summary>
+            internal IComNativeDescriptorHandler Handler { get; set; }
+#pragma warning restore 618
+            
+            /// <summary>
+            ///     Implements GetTypeDescriptor.  This creates a custom type
+            ///     descriptor that walks the linked list for each of its calls.
+            //// </summary>
+            
+            [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                if (objectType == null)
+                {
+                    throw new ArgumentNullException(nameof(objectType));
+                }
+
+                if (instance == null)
+                {
+                    return null;
+                }
+
+                if (!objectType.IsInstanceOfType(instance))
+                {
+                    throw new ArgumentException(SR.Format(SR.ConvertToException, nameof(objectType), instance.GetType()) , nameof(instance));
+                }
+
+                return new ComNativeTypeDescriptor(Handler, instance);
+            }
+
+            /// <summary>
+            ///     This type descriptor sits on top of a native
+            ///     descriptor handler.
+            //// </summary>
+            private sealed class ComNativeTypeDescriptor : ICustomTypeDescriptor
+            {
+#pragma warning disable 618
+                private readonly IComNativeDescriptorHandler _handler;
+                private readonly object _instance;
+
+                /// <summary>
+                ///     Creates a new ComNativeTypeDescriptor.
+                //// </summary>
+                internal ComNativeTypeDescriptor(IComNativeDescriptorHandler handler, object instance)
+                {
+                    _handler = handler;
+                    _instance = instance;
+                }
+#pragma warning restore 618
+
+                AttributeCollection ICustomTypeDescriptor.GetAttributes()
+                {
+                    return _handler.GetAttributes(_instance);
+                }
+
+                string ICustomTypeDescriptor.GetClassName()
+                {
+                    return _handler.GetClassName(_instance);
+                }
+
+                string ICustomTypeDescriptor.GetComponentName()
+                {
+                    return null;
+                }
+
+                TypeConverter ICustomTypeDescriptor.GetConverter()
+                {
+                    return _handler.GetConverter(_instance);
+                }
+
+                EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+                {
+                    return _handler.GetDefaultEvent(_instance);
+                }
+
+                PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+                {
+                    return _handler.GetDefaultProperty(_instance);
+                }
+
+                object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+                {
+                    return _handler.GetEditor(_instance, editorBaseType);
+                }
+
+                EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
+                {
+                    return _handler.GetEvents(_instance);
+                }
+
+                EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+                {
+                    return _handler.GetEvents(_instance, attributes);
+                }
+
+                PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
+                {
+                    return _handler.GetProperties(_instance, null);
+                }
+
+                PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+                {
+                    return _handler.GetProperties(_instance, attributes);
+                }
+
+                object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+                {
+                    return _instance;
+                }
+            }
+        }
+
+        /// <summary>
         ///     This is a type description provider that adds the given
         ///     array of attributes to a class or instance, preserving the rest
         ///     of the metadata in the process.
@@ -2701,7 +2914,7 @@ namespace System.ComponentModel
                         bool match = false;
                         for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                         {
-                            if (newArray[existingIdx].GetTypeId().Equals(newAttrs[idx].GetTypeId()))
+                            if (newArray[existingIdx].TypeId.Equals(newAttrs[idx].TypeId))
                             {
                                 match = true;
                                 newArray[existingIdx] = newAttrs[idx];
@@ -2815,6 +3028,10 @@ namespace System.ComponentModel
             {
                 return CultureInfo.InvariantCulture.CompareInfo.Compare(((MemberDescriptor)left).Name, ((MemberDescriptor)right).Name);
             }
+        }
+
+        private sealed class TypeDescriptorComObject
+        {
         }
 
         /// <summary>
@@ -3352,9 +3569,7 @@ namespace System.ComponentModel
 
                     if (rp != null)
                     {
-#if FEATURE_EDITOR
                         return rp.GetExtendedEditor(_instance, editorBaseType);
-#endif
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3697,11 +3912,7 @@ namespace System.ComponentModel
 
                     if (rp != null)
                     {
-#if FEATURE_EDITOR
                         editor = rp.GetEditor(_objectType, _instance, editorBaseType);
-#else
-                        editor = null;
-#endif
                     }
                     else
                     {

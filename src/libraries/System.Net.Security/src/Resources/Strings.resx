@@ -192,6 +192,9 @@
   <data name="net_ssl_io_no_server_cert" xml:space="preserve">
     <value>The server mode SSL must use a certificate with the associated private key.</value>
   </data>
+  <data name="net_ssl_io_already_shutdown" xml:space="preserve">
+    <value>Write operations are not allowed after the channel was shutdown.</value>
+  </data>
   <data name="net_auth_bad_client_creds" xml:space="preserve">
     <value>The server has rejected the client credentials.</value>
   </data>

@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Compiler
         private static CompilationFlags UpdateEmitAsTailCallFlag(CompilationFlags flags, CompilationFlags newValue)
         {
             Debug.Assert(newValue == CompilationFlags.EmitAsTail || newValue == CompilationFlags.EmitAsMiddle || newValue == CompilationFlags.EmitAsNoTail);
-            var oldValue = flags & CompilationFlags.EmitAsTailCallMask;
+            CompilationFlags oldValue = flags & CompilationFlags.EmitAsTailCallMask;
             return flags ^ oldValue | newValue;
         }
 
@@ -45,7 +45,7 @@ namespace System.Linq.Expressions.Compiler
         private static CompilationFlags UpdateEmitExpressionStartFlag(CompilationFlags flags, CompilationFlags newValue)
         {
             Debug.Assert(newValue == CompilationFlags.EmitExpressionStart || newValue == CompilationFlags.EmitNoExpressionStart);
-            var oldValue = flags & CompilationFlags.EmitExpressionStartMask;
+            CompilationFlags oldValue = flags & CompilationFlags.EmitExpressionStartMask;
             return flags ^ oldValue | newValue;
         }
 
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Compiler
         private static CompilationFlags UpdateEmitAsTypeFlag(CompilationFlags flags, CompilationFlags newValue)
         {
             Debug.Assert(newValue == CompilationFlags.EmitAsDefaultType || newValue == CompilationFlags.EmitAsVoidType);
-            var oldValue = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags oldValue = flags & CompilationFlags.EmitAsTypeMask;
             return flags ^ oldValue | newValue;
         }
 
@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitInlinedInvoke(InvocationExpression invoke, CompilationFlags flags)
         {
-            var lambda = invoke.LambdaOperand;
+            LambdaExpression lambda = invoke.LambdaOperand;
 
             // This is tricky: we need to emit the arguments outside of the
             // scope, but set them inside the scope. Fortunately, using the IL
@@ -230,14 +230,14 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (node.Object != null)
             {
-                EmitInstance(node.Object, objectType = node.Object.Type);
+                EmitInstance(node.Object, out objectType);
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
             for (int i = 0, n = node.ArgumentCount; i < n; i++)
             {
-                var arg = node.GetArgument(i);
+                Expression arg = node.GetArgument(i);
                 EmitExpression(arg);
             }
 
@@ -248,20 +248,20 @@ namespace System.Linq.Expressions.Compiler
         {
             var index = (IndexExpression)node.Left;
 
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
 
             // Emit instance, if calling an instance method
             Type objectType = null;
             if (index.Object != null)
             {
-                EmitInstance(index.Object, objectType = index.Object.Type);
+                EmitInstance(index.Object, out objectType);
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
             for (int i = 0, n = index.ArgumentCount; i < n; i++)
             {
-                var arg = index.GetArgument(i);
+                Expression arg = index.GetArgument(i);
                 EmitExpression(arg);
             }
 
@@ -291,7 +291,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Indexer != null)
             {
                 // For indexed properties, just call the getter
-                var method = node.Indexer.GetGetMethod(true);
+                MethodInfo method = node.Indexer.GetGetMethod(nonPublic: true);
                 EmitCall(objectType, method);
             }
             else
@@ -319,7 +319,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Indexer != null)
             {
                 // For indexed properties, just call the setter
-                var method = node.Indexer.GetSetMethod(true);
+                MethodInfo method = node.Indexer.GetSetMethod(nonPublic: true);
                 EmitCall(objectType, method);
             }
             else
@@ -369,7 +369,8 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (!method.IsStatic)
             {
-                EmitInstance(obj, objectType = obj.Type);
+                Debug.Assert(obj != null);
+                EmitInstance(obj, out objectType);
             }
             // if the obj has a value type, its address is passed to the method call so we cannot destroy the 
             // stack by emitting a tail call
@@ -433,7 +434,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static bool MethodHasByRefParameter(MethodInfo mi)
         {
-            foreach (var pi in mi.GetParametersCached())
+            foreach (ParameterInfo pi in mi.GetParametersCached())
             {
                 if (pi.IsByRefParameter())
                 {
@@ -585,17 +586,17 @@ namespace System.Linq.Expressions.Compiler
 
             var node = (IDynamicExpression)expr;
 
-            var site = node.CreateCallSite();
+            object site = node.CreateCallSite();
             Type siteType = site.GetType();
 
-            var invoke = node.DelegateType.GetMethod("Invoke");
+            MethodInfo invoke = node.DelegateType.GetMethod("Invoke");
 
             // site.Target.Invoke(site, args)
             EmitConstant(site, siteType);
 
             // Emit the temp as type CallSite so we get more reuse
             _ilg.Emit(OpCodes.Dup);
-            var siteTemp = GetLocal(siteType);
+            LocalBuilder siteTemp = GetLocal(siteType);
             _ilg.Emit(OpCodes.Stloc, siteTemp);
             _ilg.Emit(OpCodes.Ldfld, siteType.GetField("Target"));
             _ilg.Emit(OpCodes.Ldloc, siteTemp);
@@ -692,7 +693,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitVariableAssignment(BinaryExpression node, CompilationFlags flags)
         {
             var variable = (ParameterExpression)node.Left;
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
 
             EmitExpression(node.Right);
             if (emitAs != CompilationFlags.EmitAsVoidType)
@@ -774,14 +775,14 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (lvalue.Expression != null)
             {
-                EmitInstance(lvalue.Expression, objectType = lvalue.Expression.Type);
+                EmitInstance(lvalue.Expression, out objectType);
             }
 
             // emit value
             EmitExpression(node.Right);
 
             LocalBuilder temp = null;
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
             if (emitAs != CompilationFlags.EmitAsVoidType)
             {
                 // save the value so we can return it
@@ -796,15 +797,10 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var prop = member as PropertyInfo;
-                if ((object)prop != null)
-                {
-                    EmitCall(objectType, prop.GetSetMethod(true));
-                }
-                else
-                {
-                    throw Error.InvalidMemberType(member);
-                }
+                // MemberExpression.Member can only be a FieldInfo or a PropertyInfo
+                Debug.Assert(member is PropertyInfo);
+                var prop = (PropertyInfo)member;
+                EmitCall(objectType, prop.GetSetMethod(nonPublic: true));
             }
 
             if (emitAs != CompilationFlags.EmitAsVoidType)
@@ -822,7 +818,7 @@ namespace System.Linq.Expressions.Compiler
             Type instanceType = null;
             if (node.Expression != null)
             {
-                EmitInstance(node.Expression, instanceType = node.Expression.Type);
+                EmitInstance(node.Expression, out instanceType);
             }
 
             EmitMemberGet(node.Member, instanceType);
@@ -847,15 +843,10 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var prop = member as PropertyInfo;
-                if ((object)prop != null)
-                {
-                    EmitCall(objectType, prop.GetGetMethod(true));
-                }
-                else
-                {
-                    throw ContractUtils.Unreachable;
-                }
+                // MemberExpression.Member or MemberBinding.Member can only be a FieldInfo or a PropertyInfo
+                Debug.Assert(member is PropertyInfo);
+                var prop = (PropertyInfo)member;
+                EmitCall(objectType, prop.GetGetMethod(nonPublic: true));
             }
         }
 
@@ -867,7 +858,7 @@ namespace System.Linq.Expressions.Compiler
 
             try
             {
-                value = fi.GetValue(null);
+                value = fi.GetValue(obj: null);
                 return true;
             }
             catch
@@ -876,18 +867,17 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
         }
-        private void EmitInstance(Expression instance, Type type)
+        private void EmitInstance(Expression instance, out Type type)
         {
-            if (instance != null)
+            type = instance.Type;
+
+            if (type.GetTypeInfo().IsValueType)
             {
-                if (type.GetTypeInfo().IsValueType)
-                {
-                    EmitAddress(instance, type);
-                }
-                else
-                {
-                    EmitExpression(instance);
-                }
+                EmitAddress(instance, type);
+            }
+            else
+            {
+                EmitExpression(instance);
             }
         }
 
@@ -918,7 +908,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     Expression x = expressions[i];
                     EmitExpression(x);
-                    _ilg.EmitConvertToType(x.Type, typeof(int), true);
+                    _ilg.EmitConvertToType(x.Type, typeof(int), isChecked: true);
                 }
                 _ilg.EmitArray(node.Type);
             }
@@ -935,7 +925,7 @@ namespace System.Linq.Expressions.Compiler
             throw Error.ExtensionNotReduced();
         }
 
-#region ListInit, MemberInit
+        #region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)
         {
@@ -978,7 +968,7 @@ namespace System.Linq.Expressions.Compiler
                 PropertyInfo pi = binding.Member as PropertyInfo;
                 if (pi != null)
                 {
-                    EmitCall(objectType, pi.GetSetMethod(true));
+                    EmitCall(objectType, pi.GetSetMethod(nonPublic: true));
                 }
                 else
                 {
@@ -1125,14 +1115,14 @@ namespace System.Linq.Expressions.Compiler
             throw Error.MemberNotFieldOrProperty(member, nameof(member));
         }
 
-#endregion
+        #endregion
 
-#region Expression helpers
+        #region Expression helpers
 
-        internal static void ValidateLift(IList<ParameterExpression> variables, IList<Expression> arguments)
+        internal static void ValidateLift(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> arguments)
         {
-            System.Diagnostics.Debug.Assert(variables != null);
-            System.Diagnostics.Debug.Assert(arguments != null);
+            Debug.Assert(variables != null);
+            Debug.Assert(arguments != null);
 
             if (variables.Count != arguments.Count)
             {
@@ -1324,6 +1314,6 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-#endregion
+        #endregion
     }
 }

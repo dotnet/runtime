@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -12,11 +10,20 @@ namespace System.ComponentModel
     public sealed class EventHandlerList : IDisposable
     {
         private ListEntry _head;
+        private Component _parent;
+
+        /// <summary>
+        ///     Creates a new event handler list.  The parent component is used to check the component's
+        ///     CanRaiseEvents property.
+        /// </summary>
+        internal EventHandlerList(Component parent)
+        {
+            _parent = parent;
+        }
 
         /// <summary>
         ///    Creates a new event handler list.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public EventHandlerList()
         {
         }
@@ -26,13 +33,17 @@ namespace System.ComponentModel
         /// </summary>
         public Delegate this[object key]
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
             get
             {
-                ListEntry e = Find(key);
+                ListEntry e = null;
+                if (_parent == null || _parent.CanRaiseEventsInternal)
+                {
+                    e = Find(key);
+                }
+
                 if (e != null)
                 {
-                    return e.handler;
+                    return e.Handler;
                 }
                 else
                 {
@@ -44,7 +55,7 @@ namespace System.ComponentModel
                 ListEntry e = Find(key);
                 if (e != null)
                 {
-                    e.handler = value;
+                    e.Handler = value;
                 }
                 else
                 {
@@ -56,13 +67,12 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public void AddHandler(object key, Delegate value)
         {
             ListEntry e = Find(key);
             if (e != null)
             {
-                e.handler = Delegate.Combine(e.handler, value);
+                e.Handler = Delegate.Combine(e.Handler, value);
             }
             else
             {
@@ -76,8 +86,8 @@ namespace System.ComponentModel
             ListEntry currentListEntry = listToAddFrom._head;
             while (currentListEntry != null)
             {
-                AddHandler(currentListEntry.key, currentListEntry.handler);
-                currentListEntry = currentListEntry.next;
+                AddHandler(currentListEntry.Key, currentListEntry.Handler);
+                currentListEntry = currentListEntry.Next;
             }
         }
 
@@ -94,11 +104,11 @@ namespace System.ComponentModel
             ListEntry found = _head;
             while (found != null)
             {
-                if (found.key == key)
+                if (found.Key == key)
                 {
                     break;
                 }
-                found = found.next;
+                found = found.Next;
             }
             return found;
         }
@@ -106,13 +116,12 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public void RemoveHandler(object key, Delegate value)
         {
             ListEntry e = Find(key);
             if (e != null)
             {
-                e.handler = Delegate.Remove(e.handler, value);
+                e.Handler = Delegate.Remove(e.Handler, value);
             }
             // else... no error for removal of non-existant delegate
             //
@@ -120,15 +129,15 @@ namespace System.ComponentModel
 
         private sealed class ListEntry
         {
-            internal ListEntry next;
-            internal object key;
-            internal Delegate handler;
+            internal ListEntry Next;
+            internal object Key;
+            internal Delegate Handler;
 
             public ListEntry(object key, Delegate handler, ListEntry next)
             {
-                this.next = next;
-                this.key = key;
-                this.handler = handler;
+                Next = next;
+                Key = key;
+                Handler = handler;
             }
         }
     }

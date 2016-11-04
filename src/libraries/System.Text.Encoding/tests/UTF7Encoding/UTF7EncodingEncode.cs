@@ -40,6 +40,23 @@ namespace System.Text.Tests
             yield return new object[] { string.Empty, 0, 0, new byte[0] };
             yield return new object[] { "abc", 3, 0, new byte[0] };
             yield return new object[] { "abc", 0, 0, new byte[0] };
+
+            // Invalid Unicode
+            yield return new object[] { "\uD800", 0, 1, new byte[] { 43, 50, 65, 65, 45 } }; // Lone high surrogate
+            yield return new object[] { "\uDC00", 0, 1, new byte[] { 43, 51, 65, 65, 45 } }; // Lone low surrogate
+            yield return new object[] { "\uDFFF", 0, 1, new byte[] { 0x2B, 0x33, 0x2F, 0x38, 0x2D } }; // Lone low surrogate
+            yield return new object[] { "\uD800\uDC00", 0, 1, new byte[] { 43, 50, 65, 65, 45 } }; // Surrogate pair out of range
+            yield return new object[] { "\uD800\uDC00", 1, 1, new byte[] { 43, 51, 65, 65, 45 } }; // Surrogate pair out of range
+
+            yield return new object[] { "\uD800\uD800", 0, 2, new byte[] { 43, 50, 65, 68, 89, 65, 65, 45 } }; // High, high
+            yield return new object[] { "\uDC00\uD800", 0, 2, new byte[] { 43, 51, 65, 68, 89, 65, 65, 45 } }; // Low, high
+            yield return new object[] { "\uDC00\uDC00", 0, 2, new byte[] { 43, 51, 65, 68, 99, 65, 65, 45 } }; // Low, low
+
+            // High BMP non-chars
+            yield return new object[] { "\uFFFD", 0, 1, new byte[] { 43, 47, 47, 48, 45 } };
+            yield return new object[] { "\uFFFE", 0, 1, new byte[] { 43, 47, 47, 52, 45 } };
+            yield return new object[] { "\uFFFF", 0, 1, new byte[] { 43, 47, 47, 56, 45 } };
+
         }
 
         [Theory]
@@ -94,26 +111,6 @@ namespace System.Text.Tests
         public void Encode(bool allowOptionals, string source, int index, int count, byte[] expected)
         {
             EncodingHelpers.Encode(new UTF7Encoding(allowOptionals), source, index, count, expected);
-        }
-
-        [Fact]
-        public void Encode_InvalidUnicode()
-        {
-            // TODO: add into Encode_Basic_TestData once #7166 is fixed
-            Encode("\uD800", 0, 1, new byte[] { 43, 50, 65, 65, 45 }); // Lone high surrogate
-            Encode("\uDC00", 0, 1, new byte[] { 43, 51, 65, 65, 45 }); // Lone low surrogate
-            Encode("\uDFFF", 0, 1, new byte[] { 0x2B, 0x33, 0x2F, 0x38, 0x2D }); // Lone low surrogate
-            Encode("\uD800\uDC00", 0, 1, new byte[] { 43, 50, 65, 65, 45 }); // Surrogate pair out of range
-            Encode("\uD800\uDC00", 1, 1, new byte[] { 43, 51, 65, 65, 45 }); // Surrogate pair out of range
-
-            Encode("\uD800\uD800", 0, 2, new byte[] { 43, 50, 65, 68, 89, 65, 65, 45 }); // High, high
-            Encode("\uDC00\uD800", 0, 2, new byte[] { 43, 51, 65, 68, 89, 65, 65, 45 }); // Low, high
-            Encode("\uDC00\uDC00", 0, 2, new byte[] { 43, 51, 65, 68, 99, 65, 65, 45 }); // Low, low
-
-            // High BMP non-chars
-            Encode("\uFFFD", 0, 1, new byte[] { 43, 47, 47, 48, 45 });
-            Encode("\uFFFE", 0, 1, new byte[] { 43, 47, 47, 52, 45 });
-            Encode("\uFFFF", 0, 1, new byte[] { 43, 47, 47, 56, 45 });
         }
     }
 }

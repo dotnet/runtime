@@ -8,6 +8,13 @@
 
 namespace System.ComponentModel
 {
+    public partial interface ISynchronizeInvoke
+    {
+        bool InvokeRequired { get; }
+        System.IAsyncResult BeginInvoke(System.Delegate method, object[] args);
+        object EndInvoke(System.IAsyncResult result);
+        object Invoke(System.Delegate method, object[] args);
+    }
     public sealed partial class BrowsableAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.BrowsableAttribute Default;
@@ -15,8 +22,9 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.BrowsableAttribute Yes;
         public BrowsableAttribute(bool browsable) { }
         public bool Browsable { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public partial class CategoryAttribute : System.Attribute
     {
@@ -37,13 +45,42 @@ namespace System.ComponentModel
         public static System.ComponentModel.CategoryAttribute Layout { get; }
         public static System.ComponentModel.CategoryAttribute Mouse { get; }
         public static System.ComponentModel.CategoryAttribute WindowStyle { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        protected virtual string GetLocalizedString(string value) { return default(string); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        protected virtual string GetLocalizedString(string value) { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }        
     }
-    public partial class ComponentCollection
+    [System.ComponentModel.DesignerCategoryAttribute("Component")]
+    public partial class Component : System.MarshalByRefObject, System.ComponentModel.IComponent, System.IDisposable
+    {
+        public Component() { }
+        protected virtual bool CanRaiseEvents { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        public System.ComponentModel.IContainer Container { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        protected bool DesignMode { get { throw null; } }
+        protected System.ComponentModel.EventHandlerList Events { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        public virtual System.ComponentModel.ISite Site { get { throw null; } set { } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public event System.EventHandler Disposed { add { } remove { } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        ~Component() { }
+        protected virtual object GetService(System.Type service) { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public partial class ComponentCollection : System.Collections.ReadOnlyCollectionBase
     {
         internal ComponentCollection() { }
+        public ComponentCollection(System.ComponentModel.IComponent[] components) { }
+        public virtual System.ComponentModel.IComponent this[int index] { get { throw null; } }
+        public virtual System.ComponentModel.IComponent this[string name] { get { throw null; } }
+        public void CopyTo(System.ComponentModel.IComponent[] array, int index) { }
     }
     public partial class DescriptionAttribute : System.Attribute
     {
@@ -52,8 +89,9 @@ namespace System.ComponentModel
         public DescriptionAttribute(string description) { }
         public virtual string Description { get; }
         protected string DescriptionValue { get; set; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public sealed partial class DesignerCategoryAttribute : Attribute
     {
@@ -64,8 +102,10 @@ namespace System.ComponentModel
         public DesignerCategoryAttribute() { }
         public DesignerCategoryAttribute(string category) { }
         public string Category { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
+        public override object TypeId { get { throw null; } }
     }
     public enum DesignerSerializationVisibility
     {
@@ -80,9 +120,10 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.DesignerSerializationVisibilityAttribute Hidden;
         public static readonly System.ComponentModel.DesignerSerializationVisibilityAttribute Visible;
         public DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility visibility) { }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
         public System.ComponentModel.DesignerSerializationVisibility Visibility { get; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public sealed partial class DesignOnlyAttribute : System.Attribute
     {
@@ -91,8 +132,9 @@ namespace System.ComponentModel
         public static readonly DesignOnlyAttribute Yes;
         public DesignOnlyAttribute(bool isDesignOnly) { }
         public bool IsDesignOnly { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }        
     }
     public partial class DisplayNameAttribute : System.Attribute
     {
@@ -101,13 +143,14 @@ namespace System.ComponentModel
         public DisplayNameAttribute(string displayName) { }
         public virtual string DisplayName { get; }
         protected string DisplayNameValue { get; set; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }        
     }
     public sealed partial class EventHandlerList : System.IDisposable
     {
         public EventHandlerList() { }
-        public System.Delegate this[object key] { get { return default(System.Delegate); } set { } }
+        public System.Delegate this[object key] { get { throw null; } set { } }
         public void AddHandler(object key, System.Delegate value) { }
         public void AddHandlers(System.ComponentModel.EventHandlerList listToAddFrom) { }
         public void Dispose() { }
@@ -132,8 +175,9 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.ImmutableObjectAttribute Yes;
         public ImmutableObjectAttribute(bool immutable) { }
         public bool Immutable { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }        
     }
     public sealed partial class InitializationEventAttribute : System.Attribute
     {
@@ -154,8 +198,9 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.LocalizableAttribute Yes;
         public LocalizableAttribute(bool isLocalizable) { }
         public bool IsLocalizable { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public sealed partial class MergablePropertyAttribute : System.Attribute
     {
@@ -164,9 +209,11 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.MergablePropertyAttribute Yes;
         public MergablePropertyAttribute(bool allowMerge) { }
         public bool AllowMerge { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
+
     public sealed partial class NotifyParentPropertyAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.NotifyParentPropertyAttribute Default;
@@ -174,8 +221,9 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.NotifyParentPropertyAttribute Yes;
         public NotifyParentPropertyAttribute(bool notifyParent) { }
         public bool NotifyParent { get; }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public sealed partial class ParenthesizePropertyNameAttribute : System.Attribute
     {
@@ -183,8 +231,9 @@ namespace System.ComponentModel
         public ParenthesizePropertyNameAttribute() { }
         public ParenthesizePropertyNameAttribute(bool needParenthesis) { }
         public bool NeedParenthesis { get; }
-        public override bool Equals(object o) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public sealed partial class ReadOnlyAttribute : System.Attribute
     {
@@ -193,8 +242,9 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.ReadOnlyAttribute Yes;
         public ReadOnlyAttribute(bool isReadOnly) { }
         public bool IsReadOnly { get; }
-        public override bool Equals(object value) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public enum RefreshProperties
     {
@@ -209,7 +259,9 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.RefreshPropertiesAttribute Repaint;
         public RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties refresh) { }
         public System.ComponentModel.RefreshProperties RefreshProperties { get; }
-        public override bool Equals(object value) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public override bool Equals(object value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
 }
+

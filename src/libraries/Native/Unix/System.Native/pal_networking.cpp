@@ -4,7 +4,9 @@
 
 #include "pal_config.h"
 #include "pal_networking.h"
+#include "pal_io.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 
 #include <stdlib.h>
 #include <pthread.h>
@@ -158,13 +160,13 @@ static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int
 {
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8), buffer, UnsignedCast(bufferLength));
 #elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8), buffer, UnsignedCast(bufferLength));
 #else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(addr.s6_addr, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.s6_addr, ARRAY_SIZE(addr.s6_addr), buffer, UnsignedCast(bufferLength));
 #endif
 }
 
@@ -172,13 +174,13 @@ static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, con
 {
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(buffer, addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8));
 #elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
 #else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(buffer, addr.s6_addr, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.s6_addr, ARRAY_SIZE(addr.s6_addr));
 #endif
 }
 
@@ -1285,8 +1287,12 @@ cmsghdr* GET_CMSG_NXTHDR(msghdr* mhdr, cmsghdr* cmsg)
 // In musl-libc, CMSG_NXTHDR typecasts char* to cmsghdr* which causes
 // clang to throw cast-align warning. This is to suppress the warning
 // inline.
+// There is also a problem in the CMSG_NXTHDR macro in musl-libc.
+// It compares signed and unsigned value and clang warns about that.
+// So we suppress the warning inline too.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wsign-compare"
 #endif
     return CMSG_NXTHDR(mhdr, cmsg);
 #ifndef __GLIBC__
@@ -1641,13 +1647,14 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
     ssize_t res;
     while (CheckInterrupted(res = recvmsg(fd, &header, socketFlags)));
 
+    assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
+    assert(header.msg_control == messageHeader->ControlBuffer);
+
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
-    memcpy(messageHeader->SocketAddress, header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
-
+    
     assert(header.msg_controllen <= static_cast<size_t>(messageHeader->ControlBufferLen));
     messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
-    memcpy(messageHeader->ControlBuffer, header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
 
@@ -2071,6 +2078,51 @@ extern "C" Error SystemNative_GetSockOpt(
 
     int fd = ToFileDescriptor(socket);
 
+    //
+    // Handle some special cases for compatibility with Windows
+    //
+    if (socketOptionLevel == PAL_SOL_SOCKET)
+    {
+        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+        {
+            //
+            // SO_EXCLUSIVEADDRUSE makes Windows behave like Unix platforms do WRT the SO_REUSEADDR option.
+            // So, for non-Windows platforms, we act as if SO_EXCLUSIVEADDRUSE is always enabled.
+            //
+            if (*optionLen != sizeof(int32_t))
+            {
+                return PAL_EINVAL;
+            }
+
+            *reinterpret_cast<int32_t*>(optionValue) = 1;
+            return PAL_SUCCESS;
+        }
+        else if (socketOptionName == PAL_SO_REUSEADDR)
+        {
+            //
+            // On Windows, SO_REUSEADDR allows the address *and* port to be reused.  It's equivalent to 
+            // SO_REUSEADDR + SO_REUSEPORT other systems.  Se we only return "true" if both of those options are true.
+            //
+            auto optLen = static_cast<socklen_t>(*optionLen);
+
+            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, &optLen);
+
+            if (err == 0 && *reinterpret_cast<uint32_t*>(optionValue) != 0)
+            {
+                err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
+            }
+
+            if (err != 0)
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+
+            assert(optLen <= static_cast<socklen_t>(*optionLen));
+            *optionLen = static_cast<int32_t>(optLen);
+            return PAL_SUCCESS;
+        }
+    }
+
     int optLevel, optName;
     if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, optLevel, optName))
     {
@@ -2098,6 +2150,47 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     }
 
     int fd = ToFileDescriptor(socket);
+
+    //
+    // Handle some special cases for compatibility with Windows
+    //
+    if (socketOptionLevel == PAL_SOL_SOCKET)
+    {
+        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+        {
+            //
+            // SO_EXCLUSIVEADDRUSE makes Windows behave like Unix platforms do WRT the SO_REUSEADDR option.
+            // So, on Unix platforms, we consider SO_EXCLUSIVEADDRUSE to always be set.  We allow manually setting this
+            // to "true", but not "false."
+            //
+            if (optionLen != sizeof(int32_t))
+            {
+                return PAL_EINVAL;
+            }
+
+            if (*reinterpret_cast<int32_t*>(optionValue) == 0)
+            {
+                return PAL_ENOTSUP;
+            }
+            else
+            {
+                return PAL_SUCCESS;
+            }
+        }
+        else if (socketOptionName == PAL_SO_REUSEADDR)
+        {
+            //
+            // On Windows, SO_REUSEADDR allows the address *and* port to be reused.  It's equivalent to 
+            // SO_REUSEADDR + SO_REUSEPORT other systems. 
+            //
+            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, static_cast<socklen_t>(optionLen));
+            if (err == 0)
+            {
+                err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, static_cast<socklen_t>(optionLen));
+            }
+            return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+        }
+    }
 
     int optLevel, optName;
     if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, optLevel, optName))
@@ -2325,7 +2418,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     if (sizeof(epoll_event) < sizeof(SocketEvent))
     {
@@ -2484,7 +2577,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     for (int i = 0; i < numEvents; i++)
     {
@@ -2627,23 +2720,10 @@ static char* GetNameFromUid(uid_t uid)
 
 extern "C" char* SystemNative_GetPeerUserName(intptr_t socket)
 {
-    int fd = ToFileDescriptor(socket);
-#ifdef SO_PEERCRED
-    struct ucred creds;
-    socklen_t len = sizeof(creds);
-    return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0 ?
-        GetNameFromUid(creds.uid) :
-        nullptr;
-#elif HAVE_GETPEEREID
-    uid_t euid, egid;
-    return getpeereid(fd, &euid, &egid) == 0 ?
+    uid_t euid;
+    return SystemNative_GetPeerID(socket, &euid) == 0 ?
         GetNameFromUid(euid) :
         nullptr;
-#else
-    (void)fd;
-    errno = ENOTSUP;
-    return nullptr;
-#endif
 }
 
 extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)

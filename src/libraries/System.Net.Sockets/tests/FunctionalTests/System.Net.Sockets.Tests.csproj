@@ -1,12 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <RuntimeTargetMonikers>.NETCoreApp,Version=v1.1</RuntimeTargetMonikers>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -38,6 +39,7 @@
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAPMExtensions.cs" />
+    <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="UdpClientTest.cs" />
@@ -86,21 +88,35 @@
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketAPMExtensions.cs">
-      <Link>Common\System\Net\Sockets\SocketAPMExtensions.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(NugetTargetMoniker)' == '.NETStandard,Version=v1.7'">
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\System.Security.Principal.Windows\pkg\System.Security.Principal.Windows.pkgproj" />
     <ProjectReference Include="..\..\pkg\System.Net.Sockets.pkgproj">
       <Project>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</Project>
       <Name>System.Net.Sockets</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+	<ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

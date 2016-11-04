@@ -15,6 +15,12 @@ namespace System.Security.Cryptography.Encoding.Tests
             Oid oid = new Oid("");
             Assert.Equal("", oid.Value);
             Assert.Null(oid.FriendlyName);
+
+#if netstandard17
+            oid = new Oid();
+            Assert.Null(oid.Value);
+            Assert.Null(oid.FriendlyName);
+#endif            
         }
 
         [Theory]
@@ -175,7 +181,7 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Theory]
         [MemberData(nameof(ValidOidFriendlyNameHashAlgorithmPairs))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void LookupOidByValue_Method_WrongGroup(string oidValue, string friendlyName)
         {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
@@ -231,7 +237,7 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Theory]
         [MemberData(nameof(ValidOidFriendlyNameHashAlgorithmPairs))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void LookupOidByFriendlyName_Method_WrongGroup(string oidValue, string friendlyName)
         {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
@@ -253,7 +259,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void LookupOidByValue_Method_UnixOnly()
         {
             // This needs to be an OID not in the static lookup table.  The purpose is to verify the
@@ -267,7 +273,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void LookupOidByFriendlyName_Method_UnixOnly()
         {
             // This needs to be a name not in the static lookup table.  The purpose is to verify the

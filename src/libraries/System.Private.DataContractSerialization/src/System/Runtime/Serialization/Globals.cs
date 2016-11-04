@@ -264,6 +264,16 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfISerializable;
+        internal static Type TypeOfISerializable
+        {
+            get
+            {
+                if (s_typeOfISerializable == null)
+                    s_typeOfISerializable = typeof(ISerializable);
+                return s_typeOfISerializable;
+            }
+        }
 
         [SecurityCritical]
         private static Type s_typeOfXmlFormatClassWriterDelegate;
@@ -534,7 +544,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if NET_NATIVE
         [SecurityCritical]
         private static Type s_typeOfISerializableDataNode;
         internal static Type TypeOfISerializableDataNode
@@ -574,6 +583,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+#if NET_NATIVE
         [SecurityCritical]
         private static Type s_typeOfSafeSerializationManager;
         private static bool s_typeOfSafeSerializationManagerSet;

@@ -1,23 +1,32 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
+
+  <!-- There are situations where the live .Net Native targeting pack wouldn't be suitable to pick up.
+       These are usually temporary, but requires 'freezing' the .net native targeting pack on CoreFX.
+       Use the property below to control this behavior
+  -->
   <PropertyGroup>
-    <CoreFxCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</CoreFxCurrentRef>
-    <CoreClrCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</CoreClrCurrentRef>
-    <ExternalCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</ProjectNTfsCurrentRef>
+    <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">false</DisableProjectNTfsAutoUpgrade>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CoreFxCurrentRef>89b9717752e9dcd09d85279f9be54f6ac160d229</CoreFxCurrentRef>
+    <CoreClrCurrentRef>38d1c7fcb04d14a4d5935c1eadc3157e259e8bb6</CoreClrCurrentRef>
+    <ExternalCurrentRef>8b682a386109c5934bcc6d21b40fb86f6782521b</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>0e12effd3cb1b542b73855cc9b58b68a3bc3ac76</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24522-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24522-04</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24522-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24522-01</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24703-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24628-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24628-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24701-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00808-02</AppXRunnerVersion>
+    <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
   </PropertyGroup>
 
@@ -41,7 +50,7 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="ProjectNTfs">
+    <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
@@ -65,7 +74,7 @@
       <ElementName>ExternalExpectedPrerelease</ElementName>
       <BuildInfoName>External</BuildInfoName>
     </XmlUpdateStep>
-    <XmlUpdateStep Include="ProjectNTfs">
+    <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
       <BuildInfoName>ProjectNTfs</BuildInfoName>
@@ -80,20 +89,23 @@
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6" />
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.1" />
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.2" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.Private.WinRT" />
     <StaticDependency Include="@(TargetingPackDependency)">
       <Version>1.0.1</Version>
+    </StaticDependency>
+
+    <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
+      <Version>1.0.2</Version>
     </StaticDependency>
 
     <XUnitDependency Include="xunit"/>
     <XUnitDependency Include="xunit.runner.utility"/>
     <XUnitDependency Include="xunit.runner.console"/>
     <StaticDependency Include="@(XUnitDependency)">
-      <Version>2.1.0</Version>
+      <Version>2.2.0-beta2-build3300</Version>
     </StaticDependency>
-
+   
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00807-03</Version>
+      <Version>1.0.1-prerelease-01001-04</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />

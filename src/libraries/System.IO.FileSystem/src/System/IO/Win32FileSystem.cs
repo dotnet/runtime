@@ -28,7 +28,7 @@ namespace System.IO
                     // For a number of error codes (sharing violation, path 
                     // not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using (SafeFileHandle handle = Interop.mincore.UnsafeCreateFile(sourceFullPath, Win32FileStream.GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
+                    using (SafeFileHandle handle = Interop.mincore.UnsafeCreateFile(sourceFullPath, FileStream.GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
                     {
                         if (handle.IsInvalid)
                             fileName = sourceFullPath;
@@ -443,9 +443,9 @@ namespace System.IO
             }
         }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
+        public override FileStream Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
-            return new Win32FileStream(fullPath, mode, access, share, bufferSize, options, parent);
+            return new FileStream(fullPath, mode, access, share, bufferSize, options);
         }
 
         [System.Security.SecurityCritical]

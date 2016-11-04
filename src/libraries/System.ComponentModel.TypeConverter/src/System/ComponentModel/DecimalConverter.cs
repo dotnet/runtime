@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -45,12 +46,10 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-#if FEATURE_INSTANCEDESCRIPTOR
             if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-#endif
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -67,7 +66,7 @@ namespace System.ComponentModel
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
-#if FEATURE_INSTANCEDESCRIPTOR
+
             if (destinationType == typeof(InstanceDescriptor) && value is Decimal)
             {
 
@@ -84,7 +83,7 @@ namespace System.ComponentModel
                     return null;
                 }
             }
-#endif
+            
             return base.ConvertTo(context, culture, value, destinationType);
         }
 

@@ -168,7 +168,4 @@
   <data name="NotImplemented_GetFormattedString" xml:space="preserve">
     <value>GetFormattedString from value type {0}.</value>
   </data>
-  <data name="NotSupported_UnexpectedParserType" xml:space="preserve">
-    <value>Unexpected parser return type: {0}.</value>
-  </data>
 </root>

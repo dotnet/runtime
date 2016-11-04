@@ -123,6 +123,9 @@
   <data name="AlternationCantHaveComment" xml:space="preserve">
     <value>Alternation conditions cannot be comments.</value>
   </data>
+  <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+  </data>
   <data name="BadClassInCharRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
@@ -185,6 +188,9 @@
   </data>
   <data name="NotEnoughParens" xml:space="preserve">
     <value>Not enough )'s.</value>
+  </data>
+  <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
+    <value>Collection is read-only.</value>
   </data>
   <data name="OnlyAllowedOnce" xml:space="preserve">
     <value>This operation is only allowed once per object.</value>

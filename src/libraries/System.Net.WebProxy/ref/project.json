@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "System.Collections.NonGeneric": "4.4.0-beta-24703-01",
+    "System.Net.Primitives": "4.4.0-beta-24703-01",
+    "System.Runtime": "4.4.0-beta-24703-01"
+  },
+  "frameworks": {
+    "netstandard1.7": {}
+  }
+}

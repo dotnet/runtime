@@ -11,10 +11,11 @@ namespace System.IO
     // We didn't expose a number of these values because we didn't believe 
     // a number of them made sense in managed code, at least not yet.
 
-    [Flags]
     /// <devdoc>
     ///   Additional options to how to create a FileStream.
     /// </devdoc>
+    [Serializable]
+    [Flags]
     public enum FileOptions
     {
         // NOTE: any change to FileOptions enum needs to be 

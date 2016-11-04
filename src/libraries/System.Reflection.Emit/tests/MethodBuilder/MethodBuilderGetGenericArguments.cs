@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,16 +13,15 @@ namespace System.Reflection.Emit.Tests
         public void GetGenericArguments_NonGenericMethod_ReturnsNull()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
-            MethodBuilder method = type.DefineMethod("TestMethod1", MethodAttributes.Public);
-
-            VerifyGenericArguments(method, null);
+            MethodBuilder method = type.DefineMethod("Name", MethodAttributes.Public);
+            Assert.Null(method.GetGenericArguments());
         }
 
         [Fact]
         public void GetGenericArguments_GenericMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
-            MethodBuilder method = type.DefineMethod("TestMethod2", MethodAttributes.Public);
+            MethodBuilder method = type.DefineMethod("Name", MethodAttributes.Public);
             GenericTypeParameterBuilder[] genericParams = method.DefineGenericParameters("T", "U");
 
             VerifyGenericArguments(method, genericParams);
@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         public void GetGenericArguments_GenericMethod_GenericParameters()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
-            MethodBuilder method = type.DefineMethod("TestMethod4", MethodAttributes.Public);
+            MethodBuilder method = type.DefineMethod("Name", MethodAttributes.Public);
             GenericTypeParameterBuilder[] genericParams = method.DefineGenericParameters("T", "U");
             method.SetReturnType(genericParams[0].AsType());
 
@@ -42,27 +42,16 @@ namespace System.Reflection.Emit.Tests
         public void GetGenericArguments_SingleParameters()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
-            MethodBuilder method = type.DefineMethod("TestMethod3", MethodAttributes.Public, typeof(void), new Type[] { typeof(int) });
+            MethodBuilder method = type.DefineMethod("Name", MethodAttributes.Public, typeof(void), new Type[] { typeof(int) });
             GenericTypeParameterBuilder[] genericParams = method.DefineGenericParameters("T");
-            method.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam");
+            method.DefineParameter(1, ParameterAttributes.HasDefault, "Parameter");
             VerifyGenericArguments(method, genericParams);
         }
 
         private static void VerifyGenericArguments(MethodBuilder method, GenericTypeParameterBuilder[] expected)
         {
             Type[] genericArguments = method.GetGenericArguments();
-            if (expected == null)
-            {
-                Assert.Null(genericArguments);
-            }
-            else
-            {
-                Assert.Equal(expected.Length, genericArguments.Length);
-                for (int i = 0; i < genericArguments.Length; ++i)
-                {
-                    Assert.True(expected[i].Equals(genericArguments[i]));
-                }
-            }
+            Assert.Equal(expected.Select(p => p.AsType()), genericArguments);
         }
     }
 }

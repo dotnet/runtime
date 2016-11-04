@@ -4,6 +4,7 @@
 
 namespace System.Security
 {
+    [Serializable]
     public enum PolicyLevelType
     {
         AppDomain = 3,

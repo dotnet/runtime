@@ -198,7 +198,7 @@ internal static partial class Interop
             return b;
         }
 
-        private static bool TryParseStatFile(string statFilePath, out ParsedStat result, ReusableTextReader reusableReader)
+        internal static bool TryParseStatFile(string statFilePath, out ParsedStat result, ReusableTextReader reusableReader)
         {
             string statFileContents;
             try
@@ -220,20 +220,7 @@ internal static partial class Interop
             var results = default(ParsedStat);
 
             results.pid = parser.ParseNextInt32();
-            results.comm = parser.ParseRaw(delegate (string str, ref int startIndex, ref int endIndex)
-            {
-                if (str[startIndex] == '(')
-                {
-                    int i;
-                    for (i = endIndex; i < str.Length && str[i - 1] != ')'; i++) ;
-                    if (str[i - 1] == ')')
-                    {
-                        endIndex = i;
-                        return str.Substring(startIndex + 1, i - startIndex - 2);
-                    }
-                }
-                throw new InvalidDataException();
-            });
+            results.comm = parser.MoveAndExtractNextInOuterParens();
             results.state = parser.ParseNextChar();
             parser.MoveNextOrFail(); // ppid
             parser.MoveNextOrFail(); // pgrp

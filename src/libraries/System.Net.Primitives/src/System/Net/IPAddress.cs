@@ -12,6 +12,7 @@ namespace System.Net
     ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
+    [Serializable]
     public class IPAddress
     {
         public static readonly IPAddress Any = new IPAddress(0x0000000000000000);
@@ -40,6 +41,7 @@ namespace System.Net
         /// <summary>
         /// A lazily initialized cache of the result of calling <see cref="ToString"/>.
         /// </summary>
+        [NonSerialized]
         private string _toString;
 
         /// <summary>
@@ -251,14 +253,6 @@ namespace System.Net
             }
         }
 
-        // When IPv6 support was added to the .NET Framework, the public Address property was marked as Obsolete.
-        // The public obsolete Address property has not been carried forward in .NET Core, but remains here as
-        // internal to allow internal types that understand IPv4 to still access it without obsolete warnings.
-        internal long Address
-        {
-            get { return PrivateAddress; }
-        }
-
         /// <devdoc>
         ///   <para>
         ///     IPv6 Scope identifier. This is really a uint32, but that isn't CLS compliant
@@ -441,6 +435,43 @@ namespace System.Net
                     }
                 }
                 return (_numbers[5] == 0xFFFF);
+            }
+        }
+
+        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons.http://go.microsoft.com/fwlink/?linkid=14202")]
+        public long Address
+        {
+            get
+            {
+                //
+                // IPv6 Changes: Can't do this for IPv6, so throw an exception.
+                //
+                //
+                if (AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    throw new SocketException(SocketError.OperationNotSupported);
+                }
+                else
+                {
+                    return PrivateAddress;
+                }
+            }
+            set
+            {
+                //
+                // IPv6 Changes: Can't do this for IPv6 addresses
+                if (AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    throw new SocketException(SocketError.OperationNotSupported);
+                }
+                else
+                {
+                    if (PrivateAddress != value)
+                    {
+                        _toString = null;
+                        PrivateAddress = (uint)value;
+                    }
+                }
             }
         }
 

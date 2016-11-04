@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Extensions", "src\System.Runtime.Extensions.csproj", "{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}"
 EndProject
@@ -33,8 +33,7 @@ Global
 		Windows_Release|Any CPU = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Debug|Any CPU.ActiveCfg = Unix_netstandard15aot_Debug|Any CPU
-		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Debug|Any CPU.Build.0 = Unix_netstandard15aot_Debug|Any CPU
+		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.net46_Debug|Any CPU.ActiveCfg = net462_Release|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.net46_Debug|Any CPU.Build.0 = net462_Release|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.net46_Release|Any CPU.ActiveCfg = net462_Release|Any CPU
@@ -43,8 +42,7 @@ Global
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.netstandard1.7_Debug|Any CPU.Build.0 = net463_Release|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.netstandard1.7_Release|Any CPU.ActiveCfg = net463_Debug|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.netstandard1.7_Release|Any CPU.Build.0 = net463_Debug|Any CPU
-		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Release|Any CPU.ActiveCfg = Unix_netstandard15aot_Release|Any CPU
-		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Release|Any CPU.Build.0 = Unix_netstandard15aot_Release|Any CPU
+		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU

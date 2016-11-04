@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Diagnostics.Tracing.Tests.csproj"/>
+    <Project Include="System.Diagnostics.Tracing.Tests.csproj" />
     <Project Include="System.Diagnostics.Tracing.Tests.csproj">
-      <TestTFMs>net462;net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
+    </Project>
+    <Project Include="System.Diagnostics.Tracing.Tests.csproj">
+      <TargetGroup>netstandard1.5</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
+    <Project Include="System.Diagnostics.Tracing.Tests.csproj">
+      <TargetGroup>netstandard1.5</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

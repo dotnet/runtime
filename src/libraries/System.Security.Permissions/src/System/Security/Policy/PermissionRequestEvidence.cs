@@ -4,13 +4,14 @@
 
 namespace System.Security.Policy
 {
-    public sealed partial class PermissionRequestEvidence : System.Security.Policy.EvidenceBase
+    [Serializable]
+    public sealed partial class PermissionRequestEvidence : EvidenceBase
     {
-        public PermissionRequestEvidence(System.Security.PermissionSet request, System.Security.PermissionSet optional, System.Security.PermissionSet denied) { }
-        public System.Security.PermissionSet DeniedPermissions { get { return default(System.Security.PermissionSet); } }
-        public System.Security.PermissionSet OptionalPermissions { get { return default(System.Security.PermissionSet); } }
-        public System.Security.PermissionSet RequestedPermissions { get { return default(System.Security.PermissionSet); } }
-        public System.Security.Policy.PermissionRequestEvidence Copy() { return default(System.Security.Policy.PermissionRequestEvidence); }
+        public PermissionRequestEvidence(PermissionSet request, PermissionSet optional, PermissionSet denied) { }
+        public PermissionSet DeniedPermissions { get { return default(PermissionSet); } }
+        public PermissionSet OptionalPermissions { get { return default(PermissionSet); } }
+        public PermissionSet RequestedPermissions { get { return default(PermissionSet); } }
+        public PermissionRequestEvidence Copy() { return default(PermissionRequestEvidence); }
         public override string ToString() => base.ToString();
     }
 }

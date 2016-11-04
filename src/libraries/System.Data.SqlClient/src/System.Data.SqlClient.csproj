@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -7,11 +7,9 @@
   <PropertyGroup>
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'net451'">4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Data.SqlClient.depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net451' OR '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
@@ -20,9 +18,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net451_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net451_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedSetters.cs" />
@@ -45,10 +44,7 @@
     <Compile Include="Microsoft\SqlServer\Server\ValueUtilsSmi.cs" />
     <Compile Include="System\Data\DataException.cs" />
     <Compile Include="System\Data\OperationAbortedException.cs" />
-    <Compile Include="System\Data\RecordsAffectedEventArgs.cs" />
-    <Compile Include="System\Data\RecordsAffectedEventHandler.cs" />
     <Compile Include="System\Data\SqlClient\SqlDbColumn.cs" />
-    <Compile Include="System\Data\SqlDbType.cs" />
     <Compile Include="System\Data\Common\ActivityCorrelator.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.cs" />
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
@@ -128,26 +124,8 @@
     <Compile Include="System\Data\SqlClient\TdsParserStaticMethods.cs" />
     <Compile Include="System\Data\SqlClient\TdsRecordBufferSetter.cs" />
     <Compile Include="System\Data\SqlClient\TdsValueSetter.cs" />
-    <Compile Include="System\Data\SqlTypes\INullable.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLBinary.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLBoolean.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLByte.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLBytes.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLChars.cs" />
-    <Compile Include="System\Data\SqlTypes\SqlCharStream.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLDateTime.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLDecimal.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLDouble.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLGuid.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLInt16.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLInt32.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLInt64.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLMoney.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlTypeWorkarounds.cs" />
     <Compile Include="System\Data\SqlTypes\SQLResource.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLSingle.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLString.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLUtility.cs" />
-    <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
       <Link>System\Data\Locale\Locale.cs</Link>

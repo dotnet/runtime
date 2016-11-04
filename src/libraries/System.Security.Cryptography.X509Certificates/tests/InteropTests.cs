@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class InteropTests
     {
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void TestHandle()
         {
             //
@@ -42,13 +42,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void TestHandleCtor()
         {
             IntPtr pCertContext = IntPtr.Zero;
+            byte[] rawData = TestData.MsCertificate;
             unsafe
             {
-                byte[] rawData = TestData.MsCertificate;
                 fixed (byte* pRawData = rawData)
                 {
                     CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB() { cbData = rawData.Length, pbData = pRawData };
@@ -84,6 +84,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IntPtr h = c.Handle;
                 Assert.Equal(pCertContext, h);
                 pCertContext = IntPtr.Zero;
+
+#if netstandard17
+                Assert.Equal(rawData, c.GetRawCertData());
+                Assert.Equal(rawData, c.GetRawCertDataString().HexToByteArray());
+#endif
 
                 string issuer = c.Issuer;
                 Assert.Equal(

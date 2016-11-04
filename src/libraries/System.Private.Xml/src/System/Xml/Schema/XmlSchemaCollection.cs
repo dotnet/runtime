@@ -54,7 +54,7 @@ namespace System.Xml.Schema
             }
             _nameTable = nametable;
             _collection = Hashtable.Synchronized(new Hashtable());
-            _xmlResolver = System.Xml.XmlConfiguration.XmlReaderSection.CreateDefaultResolver();
+            _xmlResolver = null;
             _isThreadSafe = true;
             if (_isThreadSafe)
             {

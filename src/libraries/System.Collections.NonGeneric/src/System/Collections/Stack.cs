@@ -23,7 +23,7 @@ namespace System.Collections
     [DebuggerTypeProxy(typeof(System.Collections.Stack.StackDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public class Stack : ICollection
+    public class Stack : ICollection, ICloneable
     {
         private Object[] _array;     // Storage for stack elements
         [ContractPublicPropertyName("Count")]
@@ -353,7 +353,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private class StackEnumerator : IEnumerator
+        private class StackEnumerator : IEnumerator, ICloneable
         {
             private Stack _stack;
             private int _index;
@@ -367,6 +367,8 @@ namespace System.Collections
                 _index = -2;
                 _currentElement = null;
             }
+
+            public object Clone() => MemberwiseClone();
 
             public virtual bool MoveNext()
             {

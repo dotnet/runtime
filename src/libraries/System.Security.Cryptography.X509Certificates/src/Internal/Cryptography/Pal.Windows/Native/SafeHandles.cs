@@ -63,19 +63,36 @@ namespace Internal.Cryptography.Pal.Native
             return pCertContext;
         }
 
+        public bool HasPersistedPrivateKey
+        {
+            get { return CertHasProperty(CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID); }
+        }
+
+        public bool HasEphemeralPrivateKey
+        {
+            get { return CertHasProperty(CertContextPropId.CERT_KEY_CONTEXT_PROP_ID); }
+        }
+
         public bool ContainsPrivateKey
         {
-            get
-            {
-                int cb = 0;
-                bool containsPrivateKey = Interop.crypt32.CertGetCertificateContextProperty(this, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cb);
-                return containsPrivateKey;
-            }
+            get { return HasPersistedPrivateKey || HasEphemeralPrivateKey; }
         }
 
         public SafeCertContextHandle Duplicate()
         {
             return Interop.crypt32.CertDuplicateCertificateContext(handle);
+        }
+
+        private bool CertHasProperty(CertContextPropId propertyId)
+        {
+            int cb = 0;
+            bool hasProperty = Interop.crypt32.CertGetCertificateContextProperty(
+                this,
+                propertyId,
+                null,
+                ref cb);
+
+            return hasProperty;
         }
     }
 

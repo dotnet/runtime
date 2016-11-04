@@ -41,7 +41,7 @@
     01 00 00 00 00
   ) // false
   .hash algorithm 0x00008004
-  .ver 4:0:2:0
+  .ver 4:0:3:0
 }
 .module System.Runtime.CompilerServices.Unsafe.dll
 // MVID: {1E97D84A-565B-49C5-B60A-F31A1A4ACE13}
@@ -130,6 +130,41 @@
         ret
   } // end of method Unsafe::CopyBlock
 
+  .method public hidebysig static void CopyBlock(void* destination, void* source, native unsigned int byteCount) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        cpblk
+        ret
+  } // end of method Unsafe::CopyBlock
+
+  .method public hidebysig static void CopyBlockUnaligned(void* destination, void* source, uint32 byteCount) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        unaligned. 0x1
+        cpblk
+        ret
+  } // end of method Unsafe::CopyBlockUnaligned
+
+  .method public hidebysig static void CopyBlockUnaligned(void* destination, void* source, native unsigned int byteCount) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        unaligned. 0x1
+        cpblk
+        ret
+  } // end of method Unsafe::CopyBlockUnaligned
+
   .method public hidebysig static void InitBlock(void* startAddress, uint8 'value', uint32 byteCount) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
@@ -140,6 +175,41 @@
         initblk
         ret
   } // end of method Unsafe::InitBlock
+
+  .method public hidebysig static void InitBlock(void* startAddress, uint8 'value', native unsigned int byteCount) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        initblk
+        ret
+  } // end of method Unsafe::InitBlock
+
+  .method public hidebysig static void InitBlockUnaligned(void* startAddress, uint8 'value', uint32 byteCount) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        unaligned. 0x1
+        initblk
+        ret
+  } // end of method Unsafe::InitBlockUnaligned
+
+  .method public hidebysig static void InitBlockUnaligned(void* startAddress, uint8 'value', native unsigned int byteCount) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        unaligned. 0x1
+        initblk
+        ret
+  } // end of method Unsafe::InitBlockUnaligned
 
   .method public hidebysig static !!T As<class T>(object o) cil managed aggressiveinlining
   {
@@ -178,6 +248,28 @@
         ret
   } // end of method Unsafe::Add
 
+  .method public hidebysig static !!T& Add<T>(!!T& source, native int elementOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        mul
+        add
+        ret
+  } // end of method Unsafe::Add
+
+  .method public hidebysig static !!T& AddByteOffset<T>(!!T& source, native int byteOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        add
+        ret
+  } // end of method Unsafe::AddByteOffset
+
   .method public hidebysig static !!T& Subtract<T>(!!T& source, int32 elementOffset) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
@@ -190,6 +282,38 @@
         sub
         ret
   } // end of method Unsafe::Subtract
+
+  .method public hidebysig static !!T& Subtract<T>(!!T& source, native int elementOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        mul
+        sub
+        ret
+  } // end of method Unsafe::Subtract
+
+  .method public hidebysig static !!T& SubtractByteOffset<T>(!!T& source, native int byteOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        sub
+        ret
+  } // end of method Unsafe::SubtractByteOffset
+
+  .method public hidebysig static native int ByteOffset<T>(!!T& origin, !!T& target) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.1
+        ldarg.0
+        sub
+        ret
+  } // end of method Unsafe::ByteOffset
 
   .method public hidebysig static bool AreSame<T>(!!T& left, !!T& right) cil managed aggressiveinlining
   {

@@ -15,6 +15,7 @@ namespace System.IO
     ///   to the end of the file).  To truncate a file or create it if it doesn't
     ///   exist, use Create.
     /// </devdoc>
+    [Serializable]
     public enum FileMode
     {
         /// <devdoc>

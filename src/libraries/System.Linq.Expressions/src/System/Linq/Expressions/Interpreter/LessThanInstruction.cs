@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -18,18 +15,16 @@ namespace System.Linq.Expressions.Interpreter
         private static Instruction s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "LessThan"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LessThan";
+
         private LessThanInstruction(object nullValue)
         {
             _nullValue = nullValue;
         }
 
-        internal sealed class LessThanSByte : LessThanInstruction
+        private sealed class LessThanSByte : LessThanInstruction
         {
             public LessThanSByte(object nullValue)
                 : base(nullValue)
@@ -38,21 +33,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((SByte)left) < (SByte)right);
+                    frame.Push(((sbyte)left) < (sbyte)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanInt16 : LessThanInstruction
+        private sealed class LessThanInt16 : LessThanInstruction
         {
             public LessThanInt16(object nullValue)
                 : base(nullValue)
@@ -61,21 +56,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Int16)left) < (Int16)right);
+                    frame.Push(((short)left) < (short)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanChar : LessThanInstruction
+        private sealed class LessThanChar : LessThanInstruction
         {
             public LessThanChar(object nullValue)
                 : base(nullValue)
@@ -84,21 +79,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Char)left) < (Char)right);
+                    frame.Push(((char)left) < (char)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanInt32 : LessThanInstruction
+        private sealed class LessThanInt32 : LessThanInstruction
         {
             public LessThanInt32(object nullValue)
                 : base(nullValue)
@@ -107,21 +102,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Int32)left) < (Int32)right);
+                    frame.Push(((int)left) < (int)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanInt64 : LessThanInstruction
+        private sealed class LessThanInt64 : LessThanInstruction
         {
             public LessThanInt64(object nullValue)
                 : base(nullValue)
@@ -130,21 +125,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Int64)left) < (Int64)right);
+                    frame.Push(((long)left) < (long)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanByte : LessThanInstruction
+        private sealed class LessThanByte : LessThanInstruction
         {
             public LessThanByte(object nullValue)
                 : base(nullValue)
@@ -153,21 +148,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Byte)left) < (Byte)right);
+                    frame.Push(((byte)left) < (byte)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanUInt16 : LessThanInstruction
+        private sealed class LessThanUInt16 : LessThanInstruction
         {
             public LessThanUInt16(object nullValue)
                 : base(nullValue)
@@ -176,21 +171,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((UInt16)left) < (UInt16)right);
+                    frame.Push(((ushort)left) < (ushort)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanUInt32 : LessThanInstruction
+        private sealed class LessThanUInt32 : LessThanInstruction
         {
             public LessThanUInt32(object nullValue)
                 : base(nullValue)
@@ -199,21 +194,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((UInt32)left) < (UInt32)right);
+                    frame.Push(((uint)left) < (uint)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanUInt64 : LessThanInstruction
+        private sealed class LessThanUInt64 : LessThanInstruction
         {
             public LessThanUInt64(object nullValue)
                 : base(nullValue)
@@ -222,21 +217,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((UInt64)left) < (UInt64)right);
+                    frame.Push(((ulong)left) < (ulong)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanSingle : LessThanInstruction
+        private sealed class LessThanSingle : LessThanInstruction
         {
             public LessThanSingle(object nullValue)
                 : base(nullValue)
@@ -245,21 +240,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Single)left) < (Single)right);
+                    frame.Push(((float)left) < (float)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanDouble : LessThanInstruction
+        private sealed class LessThanDouble : LessThanInstruction
         {
             public LessThanDouble(object nullValue)
                 : base(nullValue)
@@ -268,15 +263,15 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Double)left) < (Double)right);
+                    frame.Push(((double)left) < (double)right);
                 }
                 return +1;
             }
@@ -286,7 +281,7 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             if (liftedToNull)
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanSByte(null));
                     case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanByte(null));
@@ -306,19 +301,19 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
                 {
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanSByte(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanByte(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Char: return s_char ?? (s_char = new LessThanChar(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new LessThanInt16(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new LessThanInt32(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new LessThanInt64(ScriptingRuntimeHelpers.False));
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanUInt16(ScriptingRuntimeHelpers.False));
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanUInt32(ScriptingRuntimeHelpers.False));
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanUInt64(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Single: return s_single ?? (s_single = new LessThanSingle(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Double: return s_double ?? (s_double = new LessThanDouble(ScriptingRuntimeHelpers.False));
+                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanSByte(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanByte(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Char: return s_char ?? (s_char = new LessThanChar(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new LessThanInt16(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new LessThanInt32(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new LessThanInt64(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanUInt16(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanUInt32(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanUInt64(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Single: return s_single ?? (s_single = new LessThanSingle(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Double: return s_double ?? (s_double = new LessThanDouble(ScriptingRuntimeHelpers.Boolean_False));
 
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThan", type);
@@ -333,18 +328,16 @@ namespace System.Linq.Expressions.Interpreter
         private static Instruction s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "LessThanOrEqual"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LessThanOrEqual";
+        
         private LessThanOrEqualInstruction(object nullValue)
         {
             _nullValue = nullValue;
         }
 
-        internal sealed class LessThanOrEqualSByte : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualSByte : LessThanOrEqualInstruction
         {
             public LessThanOrEqualSByte(object nullValue)
                 : base(nullValue)
@@ -353,21 +346,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((SByte)left) <= (SByte)right);
+                    frame.Push(((sbyte)left) <= (sbyte)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualInt16 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualInt16 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualInt16(object nullValue)
                 : base(nullValue)
@@ -376,21 +369,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Int16)left) <= (Int16)right);
+                    frame.Push(((short)left) <= (short)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualChar : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualChar : LessThanOrEqualInstruction
         {
             public LessThanOrEqualChar(object nullValue)
                 : base(nullValue)
@@ -399,21 +392,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Char)left) <= (Char)right);
+                    frame.Push(((char)left) <= (char)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualInt32 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualInt32 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualInt32(object nullValue)
                 : base(nullValue)
@@ -422,21 +415,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Int32)left) <= (Int32)right);
+                    frame.Push(((int)left) <= (int)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualInt64 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualInt64 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualInt64(object nullValue)
                 : base(nullValue)
@@ -445,21 +438,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Int64)left) <= (Int64)right);
+                    frame.Push(((long)left) <= (long)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualByte : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualByte : LessThanOrEqualInstruction
         {
             public LessThanOrEqualByte(object nullValue)
                 : base(nullValue)
@@ -468,21 +461,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Byte)left) <= (Byte)right);
+                    frame.Push(((byte)left) <= (byte)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualUInt16 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualUInt16 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualUInt16(object nullValue)
                 : base(nullValue)
@@ -491,21 +484,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((UInt16)left) <= (UInt16)right);
+                    frame.Push(((ushort)left) <= (ushort)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualUInt32 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualUInt32 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualUInt32(object nullValue)
                 : base(nullValue)
@@ -514,21 +507,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((UInt32)left) <= (UInt32)right);
+                    frame.Push(((uint)left) <= (uint)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualUInt64 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualUInt64 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualUInt64(object nullValue)
                 : base(nullValue)
@@ -537,21 +530,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((UInt64)left) <= (UInt64)right);
+                    frame.Push(((ulong)left) <= (ulong)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualSingle : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualSingle : LessThanOrEqualInstruction
         {
             public LessThanOrEqualSingle(object nullValue)
                 : base(nullValue)
@@ -560,21 +553,21 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Single)left) <= (Single)right);
+                    frame.Push(((float)left) <= (float)right);
                 }
                 return +1;
             }
         }
 
-        internal sealed class LessThanOrEqualDouble : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualDouble : LessThanOrEqualInstruction
         {
             public LessThanOrEqualDouble(object nullValue)
                 : base(nullValue)
@@ -583,15 +576,15 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var right = frame.Pop();
-                var left = frame.Pop();
+                object right = frame.Pop();
+                object left = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(_nullValue);
                 }
                 else
                 {
-                    frame.Push(((Double)left) <= (Double)right);
+                    frame.Push(((double)left) <= (double)right);
                 }
                 return +1;
             }
@@ -602,7 +595,7 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             if (liftedToNull)
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanOrEqualSByte(null));
                     case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanOrEqualByte(null));
@@ -622,19 +615,19 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
                 {
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanOrEqualSByte(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanOrEqualByte(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Char: return s_char ?? (s_char = new LessThanOrEqualChar(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new LessThanOrEqualInt16(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new LessThanOrEqualInt32(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new LessThanOrEqualInt64(ScriptingRuntimeHelpers.False));
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanOrEqualUInt16(ScriptingRuntimeHelpers.False));
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanOrEqualUInt32(ScriptingRuntimeHelpers.False));
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanOrEqualUInt64(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Single: return s_single ?? (s_single = new LessThanOrEqualSingle(ScriptingRuntimeHelpers.False));
-                    case TypeCode.Double: return s_double ?? (s_double = new LessThanOrEqualDouble(ScriptingRuntimeHelpers.False));
+                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanOrEqualSByte(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanOrEqualByte(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Char: return s_char ?? (s_char = new LessThanOrEqualChar(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new LessThanOrEqualInt16(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new LessThanOrEqualInt32(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new LessThanOrEqualInt64(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanOrEqualUInt16(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanOrEqualUInt32(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanOrEqualUInt64(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Single: return s_single ?? (s_single = new LessThanOrEqualSingle(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.Double: return s_double ?? (s_double = new LessThanOrEqualDouble(ScriptingRuntimeHelpers.Boolean_False));
 
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThanOrEqual", type);

@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -11,14 +8,13 @@
     <RootNamespace>System.Globalization.Extensions.Tests</RootNamespace>
     <AssemblyName>System.Globalization.Extensions.Tests</AssemblyName>
     <ProjectGuid>{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}</ProjectGuid>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  
   <ItemGroup>
     <Compile Include="GetStringComparerTests.cs" />
     <Compile Include="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
@@ -39,23 +35,18 @@
   <ItemGroup>
     <EmbeddedResource Include="IdnMapping\Data\Unicode_6_0\IdnaTest_6.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_Win7\IdnaTest_Win7.txt" />
-    <EmbeddedResource Include="Normalization\Data\win8.txt" >
+    <EmbeddedResource Include="Normalization\Data\win8.txt">
       <LogicalName>NormalizationDataWin8</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Normalization\Data\win7.txt">
       <LogicalName>NormalizationDataWin7</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Runtime" />
     <TargetingPackReference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Globalization.Extensions.pkgproj">

@@ -1054,7 +1054,7 @@ namespace System.Runtime.Serialization
                 _typeLoad = (TypeLoadExceptionHolder)obj;
             }
 
-            if (idOfContainingObj != 0 && ((field != null && field.FieldType.GetTypeInfo().IsValueType) || arrayIndex != null))
+            if (idOfContainingObj != 0 && ((field != null && field.FieldType.IsValueType) || arrayIndex != null))
             {
                 if (idOfContainingObj == objID)
                 {
@@ -1204,7 +1204,7 @@ namespace System.Runtime.Serialization
             _serInfo = info;
             _surrogate = surrogate;
 
-            if (idOfContainer != 0 && ((field != null && field.FieldType.GetTypeInfo().IsValueType) || arrayIndex != null))
+            if (idOfContainer != 0 && ((field != null && field.FieldType.IsValueType) || arrayIndex != null))
             {
                 if (idOfContainer == _id)
                 {

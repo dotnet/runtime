@@ -1,13 +1,9 @@
 {
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.1",
-    "System.Runtime": "4.0.0"
+    "System.Runtime": "4.1.0"
   },
   "frameworks": {
-    "netcoreapp1.0": {
-      "imports": [
-        "dnxcore50"
-      ]
-    }
+    "netcoreapp1.0": {}
   }
 }

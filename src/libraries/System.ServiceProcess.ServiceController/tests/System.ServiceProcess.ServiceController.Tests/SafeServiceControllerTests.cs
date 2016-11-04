@@ -68,6 +68,20 @@ namespace System.ServiceProcess.Tests
         }
 
         [Fact]
+        public static void EnumerateDeviceService()
+        {
+            ServiceController[] devices = ServiceController.GetDevices();
+            Assert.True(devices.Length != 0);
+
+            ServiceController actual = new ServiceController(devices[0].ServiceName, ".");
+            Assert.Equal(devices[0].Status, actual.Status);
+            Assert.Equal(devices[0].ServiceName, actual.ServiceName);
+            Assert.Equal(devices[0].DisplayName, actual.DisplayName);
+            Assert.Equal(devices[0].ServiceType, actual.ServiceType);
+            Assert.Equal(devices[0].MachineName, actual.MachineName);
+        }
+
+        [Fact]
         public static void WaitForStatusTimeout()
         {
             var controller = new ServiceController(KeyIsoSvcName);

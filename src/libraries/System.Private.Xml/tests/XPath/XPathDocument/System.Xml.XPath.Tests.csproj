@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
@@ -10,7 +10,7 @@
     <AssemblyName>System.Xml.XPath.Tests</AssemblyName>
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.Tests</RootNamespace>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -206,16 +206,11 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
     <ProjectReference Include="..\..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

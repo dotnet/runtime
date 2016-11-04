@@ -2,34 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderDefineGenericParameters
     {
-        [Fact]
-        public void DefineGenericParameters_SingleTypeParameter()
+        public static IEnumerable<object[]> DefineGenericParameters_TestData()
         {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
-            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
-            string[] typeParamNames = new string[] { "T" };
-            GenericTypeParameterBuilder[] parameters = method.DefineGenericParameters(typeParamNames);
-
-            Assert.True(method.IsGenericMethod);
-            Assert.True(method.IsGenericMethodDefinition);
+            yield return new object[] { new string[] { "T" } };
+            yield return new object[] { new string[] { "T", "U" } };
+            yield return new object[] { new string[] { "T1", "T2", "T3" } };
         }
 
-        [Fact]
-        public void DefineGenericParameters_TwoTypeParameters()
+        [Theory]
+        [MemberData(nameof(DefineGenericParameters_TestData))]
+        public void DefineGenericParameters_TwoTypeParameters(string[] names)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
-            string[] typeParamNames = new string[] { "T", "U" };
-            GenericTypeParameterBuilder[] parameters = method.DefineGenericParameters(typeParamNames);
 
+            GenericTypeParameterBuilder[] parameters = method.DefineGenericParameters(names);
             Assert.True(method.IsGenericMethod);
             Assert.True(method.IsGenericMethodDefinition);
+            Assert.Equal(names.Length, parameters.Length);
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                GenericTypeParameterBuilder parameter = parameters[i];
+                Assert.Equal(method, parameter.DeclaringMethod);
+                Assert.Equal(names[i], parameters[i].Name);
+                Assert.Equal(i, parameters[i].GenericParameterPosition);
+            }
         }
 
         [Fact]
@@ -66,7 +71,7 @@ namespace System.Reflection.Emit.Tests
 
             method.SetImplementationFlags(MethodImplAttributes.IL | MethodImplAttributes.Managed | MethodImplAttributes.Synchronized | MethodImplAttributes.NoInlining);
 
-            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters(new string[] { "T", "U" }));
+            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters("T", "U"));
         }
 
         [Fact]
@@ -74,11 +79,10 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
-            string[] typeParamNames = new string[] { "T" };
-            GenericTypeParameterBuilder[] parameters = method.DefineGenericParameters(typeParamNames);
-            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters(typeParamNames));
-        }
 
+            method.DefineGenericParameters("T");
+            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters("T"));
+        }
 
         [Fact]
         public void DefineGenericParameters_TwoTypeParameters_AlreadyDefined_ThrowsInvalidOperationException()
@@ -86,8 +90,8 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static);
 
-            method.DefineGenericParameters(new string[] { "T", "U" });
-            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters(new string[] { "M", "K" }));
+            method.DefineGenericParameters("T", "U");
+            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters("M", "K"));
         }
 
         [Theory]
@@ -118,8 +122,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder builder = type.DefineMethod("TestMethod", methodAttributes);
-            string[] typeParamNames = new string[0];
-            Assert.Throws<ArgumentException>("names", () => builder.DefineGenericParameters(typeParamNames));
+            Assert.Throws<ArgumentException>("names", () => builder.DefineGenericParameters());
         }
 
         [Fact]
@@ -127,12 +130,10 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static);
-
-            ILGenerator ilGenerator = method.GetILGenerator();
-            ilGenerator.Emit(OpCodes.Ret);
+            method.GetILGenerator().Emit(OpCodes.Ret);
 
             Type resultType = type.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters(new string[] { "T", "U" }));
+            Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters("T", "U"));
         }
     }
 }

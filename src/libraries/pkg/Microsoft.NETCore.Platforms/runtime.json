@@ -188,28 +188,28 @@
             "#import": [ "rhel" ]
         },
         "rhel.7-x64": {
-            "#import": [ "rhel", "rhel-x64" ]
+            "#import": [ "rhel.7", "rhel-x64" ]
         },
 
         "rhel.7.0": {
             "#import": [ "rhel.7" ]
         },
         "rhel.7.0-x64": {
-            "#import": [ "rhel.7", "rhel.7-x64" ]
+            "#import": [ "rhel.7.0", "rhel.7-x64" ]
         },
 
         "rhel.7.1": {
             "#import": [ "rhel.7.0" ]
         },
         "rhel.7.1-x64": {
-            "#import": [ "rhel.7.0", "rhel.7.0-x64" ]
+            "#import": [ "rhel.7.1", "rhel.7.0-x64" ]
         },
 
         "rhel.7.2": {
             "#import": [ "rhel.7.1" ]
         },
         "rhel.7.2-x64": {
-            "#import": [ "rhel.7.1", "rhel.7.1-x64" ]
+            "#import": [ "rhel.7.2", "rhel.7.1-x64" ]
         },
 
         "ol": {
@@ -230,21 +230,21 @@
             "#import": [ "ol.7", "rhel.7.0" ]
         },
         "ol.7.0-x64": {
-            "#import": [ "ol.7", "ol.7-x64", "rhel.7.0-x64" ]
+            "#import": [ "ol.7.0", "ol.7-x64", "rhel.7.0-x64" ]
         },
 
         "ol.7.1": {
             "#import": [ "ol.7.0", "rhel.7.1" ]
         },
         "ol.7.1-x64": {
-            "#import": [ "ol.7.0", "ol.7.0-x64", "rhel.7.1-x64" ]
+            "#import": [ "ol.7.1", "ol.7.0-x64", "rhel.7.1-x64" ]
         },
 
         "ol.7.2": {
             "#import": [ "ol.7.1", "rhel.7.2" ]
         },
         "ol.7.2-x64": {
-            "#import": [ "ol.7.1", "ol.7.1-x64", "rhel.7.2-x64" ]
+            "#import": [ "ol.7.2", "ol.7.1-x64", "rhel.7.2-x64" ]
         },
 
         "centos": {
@@ -400,7 +400,28 @@
         },
         "opensuse.42.1-x64": {
             "#import": [ "opensuse.42.1", "opensuse-x64" ]
-        }
+        },
+
+        "alpine": {
+            "#import": [ "linux" ]
+        },
+        "alpine-x64": {
+            "#import": [ "alpine", "linux-x64" ]
+        },
+
+        "alpine.3": {
+            "#import": [ "alpine" ]
+        },
+        "alpine.3-x64": {
+            "#import": [ "alpine.3", "alpine-x64" ]
+        },
+
+        "alpine.3.4.3": {
+            "#import": [ "alpine.3" ]
+        },
+        "alpine.3.4.3-x64": {
+            "#import": [ "alpine.3.4.3", "alpine.3-x64" ]
+        },
     }
  }
 

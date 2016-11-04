@@ -7,8 +7,8 @@
     <RootNamespace>System.Drawing.Primitives.Tests</RootNamespace>
     <AssemblyName>System.Drawing.Primitives.Tests</AssemblyName>
     <ProjectGuid>{297A9116-1005-499D-A895-2063D03E4C94}</ProjectGuid>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' ">
   </PropertyGroup>
@@ -18,10 +18,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU' ">
   </PropertyGroup>
-  
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Drawing.Primitives.pkgproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
@@ -36,8 +32,15 @@
     <Compile Include="SizeFTests.cs" />
     <Compile Include="SizeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="ColorTests.cs" />
+    <Compile Include="SerializationTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

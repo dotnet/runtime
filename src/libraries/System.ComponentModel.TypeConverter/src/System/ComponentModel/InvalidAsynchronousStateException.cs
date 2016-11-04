@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+
 namespace System.ComponentModel
 {
     /// <summary>
     ///    <para>The exception that is thrown when a thread that an operation should execute on no longer exists or is not pumping messages</para>
     /// </summary>
+    [Serializable]
     public class InvalidAsynchronousStateException : ArgumentException
     {
         /// <summary>
@@ -31,6 +34,10 @@ namespace System.ComponentModel
         /// </summary>
         public InvalidAsynchronousStateException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        protected InvalidAsynchronousStateException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }

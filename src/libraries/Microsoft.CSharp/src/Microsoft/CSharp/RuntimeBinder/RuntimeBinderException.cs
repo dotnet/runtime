@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.Serialization;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -11,6 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// <see cref="RuntimeBinderException"/> represents a failure to bind in the sense of a usual compiler error, whereas <see cref="RuntimeBinderInternalCompilerException"/>
     /// represents a malfunctioning of the runtime binder itself.
     /// </summary>
+    [Serializable]
     public class RuntimeBinderException : Exception
     {
         /// <summary>
@@ -38,6 +40,16 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="innerException">The exception that is the cause of the current exception, or a null reference if no inner exception is specified.</param>
         public RuntimeBinderException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RuntimeBinderException"/> class with serialized data.
+        /// </summary>
+        /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="StreamingContext"/>  that contains contextual information about the source or destination.</param>
+        protected RuntimeBinderException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

@@ -11,6 +11,7 @@ namespace System.Numerics
     /// A complex number z is a number of the form z = x + yi, where x and y 
     /// are real numbers, and i is the imaginary unit, with the property i2= -1.
     /// </summary>
+    [Serializable]
     public struct Complex : IEquatable<Complex>, IFormattable
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);

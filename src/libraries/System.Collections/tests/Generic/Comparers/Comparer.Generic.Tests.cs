@@ -14,7 +14,7 @@ namespace System.Collections.Generic.Tests
     public abstract partial class ComparersGenericTests<T>
     {
         [Fact]
-        public void ComparerDefault()
+        public void Comparer_ComparerDefault()
         {
             var firstResult = Comparer<T>.Default;
             Assert.NotNull(firstResult);
@@ -22,7 +22,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        public void EqualsShouldBeOverriddenAndWorkForDifferentInstances()
+        public void Comparer_EqualsShouldBeOverriddenAndWorkForDifferentInstances()
         {
             var comparer = Comparer<T>.Default;
 
@@ -53,7 +53,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        public void GetHashCodeShouldBeOverriddenAndBeTheSameAsLongAsTheTypeIsTheSame()
+        public void Comparer_GetHashCodeShouldBeOverriddenAndBeTheSameAsLongAsTheTypeIsTheSame()
         {
             var comparer = Comparer<T>.Default;
 
@@ -76,7 +76,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        public void IComparerCompareWithObjectsNotOfMatchingTypeShouldThrow()
+        public void Comparer_IComparerCompareWithObjectsNotOfMatchingTypeShouldThrow()
         {
             // Comparer<T> implements IComparer for back-compat reasons.
             // The explicit implementation of IComparer.Compare(object, object) should
@@ -96,7 +96,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        public void ComparerCreate()
+        public void Comparer_ComparerCreate()
         {
             const int ExpectedValue = 0x77777777;
 
@@ -129,7 +129,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        public void ComparerCreateWithNullComparisonThrows()
+        public void Comparer_ComparerCreateWithNullComparisonThrows()
         {
             Assert.Throws<ArgumentNullException>("comparison", () => Comparer<T>.Create(comparison: null));
         }

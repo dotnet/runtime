@@ -34,6 +34,16 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
+        public void MD5_Rfc1321_MultiBlock()
+        {
+            VerifyMultiBlock(
+                "a",
+                "bc",
+                "900150983cd24fb0d6963f7d28e17f72",
+                "d41d8cd98f00b204e9800998ecf8427e");
+        }
+
+        [Fact]
         public void MD5_Rfc1321_4()
         {
             Verify("message digest", "f96b697d7cb7938d525a2f31aaf161d0");

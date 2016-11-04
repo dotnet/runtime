@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -116,12 +115,12 @@ namespace System.Linq.Expressions
             return esb.ToString();
         }
 
-        private void VisitExpressions<T>(char open, IList<T> expressions, char close) where T : Expression
+        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions, char close) where T : Expression
         {
             VisitExpressions(open, expressions, close, ", ");
         }
 
-        private void VisitExpressions<T>(char open, IList<T> expressions, char close, string seperator) where T : Expression
+        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions, char close, string seperator) where T : Expression
         {
             Out(open);
             if (expressions != null)
@@ -221,7 +220,7 @@ namespace System.Linq.Expressions
                 Out("ref ");
             }
             string name = node.Name;
-            if (String.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
             {
                 Out("Param_" + GetParamId(node));
             }
@@ -308,7 +307,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            string s = String.Format(
+            string s = string.Format(
                 CultureInfo.CurrentCulture,
                 "<DebugInfo({0}: {1}, {2}, {3}, {4})>",
                 node.Document.FileName,
@@ -499,7 +498,7 @@ namespace System.Linq.Expressions
             Out("new ");
             Out(node.Type.Name);
             Out('(');
-            var members = node.Members;
+            Collections.ObjectModel.ReadOnlyCollection<MemberInfo> members = node.Members;
             for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
@@ -594,7 +593,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitBlock(BlockExpression node)
         {
             Out('{');
-            foreach (var v in node.Variables)
+            foreach (ParameterExpression v in node.Variables)
             {
                 Out("var ");
                 Visit(v);
@@ -718,7 +717,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.
-            var toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
+            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
             if (toString.DeclaringType != typeof(Expression) && !toString.IsStatic)
             {
                 Out(node.ToString());
@@ -742,7 +741,7 @@ namespace System.Linq.Expressions
 
         private void DumpLabel(LabelTarget target)
         {
-            if (!String.IsNullOrEmpty(target.Name))
+            if (!string.IsNullOrEmpty(target.Name))
             {
                 Out(target.Name);
             }

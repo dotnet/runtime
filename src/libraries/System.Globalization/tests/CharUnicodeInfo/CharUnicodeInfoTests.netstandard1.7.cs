@@ -71,7 +71,6 @@ namespace System.Globalization.Tests
         };
 
         [Fact]
-        [ActiveIssue(11606, Xunit.PlatformID.AnyUnix)]
         public static void DigitsDecimalTest()
         {
             Assert.Equal(s_numericsCodepoints.Length % 10, 0);
@@ -86,7 +85,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11606, Xunit.PlatformID.AnyUnix)]
         public static void NegativeDigitsTest()
         {
             for (int i=0; i < s_nonNumericsCodepoints.Length; i++)
@@ -97,7 +95,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11606, Xunit.PlatformID.AnyUnix)]
         public static void DigitsTest()
         {
             Assert.Equal(s_numericNonDecimalCodepoints.Length, s_numericNonDecimalValues.Length);

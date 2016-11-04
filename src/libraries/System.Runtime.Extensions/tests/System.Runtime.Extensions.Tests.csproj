@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Folder logic needs moved into common targets: https://github.com/dotnet/corefx/issues/11468 -->
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
@@ -34,17 +34,28 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Release|AnyCPU' " />
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7' or '$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="System\ApplicationIdTests.cs" />
     <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
     <Compile Include="System\Convert.netstandard1.7.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
     <Compile Include="System\Math.netstandard1.7.cs" />
+    <Compile Include="System\OperatingSystemTests.cs" />
     <Compile Include="System\StringComparer.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
+    <Compile Include="System\AppDomainTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
+    <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="System\BitConverter.netcoreapp1.1.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
+    <Compile Include="System\MathTests.netcoreapp1.1.cs" />
+    <Compile Include="System\MathF.netcoreapp1.1.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\AppDomainTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Environment.MachineName.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
@@ -91,9 +102,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
-      <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
@@ -108,10 +116,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
     <ProjectReference Include="..\pkg\System.Runtime.Extensions.pkgproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime.Extensions.CoreCLR</Name>
@@ -124,6 +130,10 @@
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj">
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>VoidMainWithExitCodeApp</Name>
+    </ProjectReference>
+    <ProjectReference Include="TestApp\TestApp.csproj">
+      <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
+      <Name>TestApp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

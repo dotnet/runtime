@@ -137,7 +137,7 @@ namespace System.Xml
             }
             if (_coreReaderImpl == null)
             {
-                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, "reader");
+                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, nameof(reader));
             }
             _coreReaderImpl.EntityHandling = EntityHandling.ExpandEntities;
             _coreReaderImpl.XmlValidatingReaderCompatibilityMode = true;
@@ -215,7 +215,7 @@ namespace System.Xml
             }
             if (_coreReaderImpl == null)
             {
-                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, "reader");
+                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, nameof(reader));
             }
             _coreReaderImpl.XmlValidatingReaderCompatibilityMode = true;
             _coreReaderNSResolver = reader as IXmlNamespaceResolver;

@@ -141,7 +141,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ContainsInvalidCharWithoutRootedAfterArgumentNull_Windows()
         {
             //any path contains invalid character without rooted after (AE)
@@ -159,7 +159,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ContainsInvalidCharWithRootedAfterArgumentNull_Windows()
         {
             //any path contains invalid character with rooted after (AE)

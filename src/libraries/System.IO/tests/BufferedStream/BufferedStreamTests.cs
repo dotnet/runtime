@@ -53,6 +53,29 @@ namespace System.IO.Tests
             stream.WriteByte(1);
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
         }
+
+        [Fact]
+        public async Task CopyToAsyncTest_RequiresAsyncFlushingOfWrites()
+        {
+            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
+
+            var manualReleaseStream = new ManuallyReleaseAsyncOperationsStream();
+            var src = new BufferedStream(manualReleaseStream);
+            src.Write(data, 0, data.Length);
+            src.Position = 0;
+
+            var dst = new MemoryStream();
+
+            data[0] = 42;
+            src.WriteByte(42);
+            dst.WriteByte(42);
+
+            Task copyTask = src.CopyToAsync(dst);
+            manualReleaseStream.Release();
+            await copyTask;
+
+            Assert.Equal(data, dst.ToArray());
+        }
     }
 
     public class BufferedStream_StreamMethods : StreamMethods
