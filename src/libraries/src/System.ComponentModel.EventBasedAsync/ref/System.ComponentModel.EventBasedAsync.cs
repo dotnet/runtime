@@ -54,7 +54,7 @@ namespace System.ComponentModel
         public void RunWorkerAsync() { }
         public void RunWorkerAsync(object argument) { }
     }
-    public partial class DoWorkEventArgs : System.EventArgs
+    public partial class DoWorkEventArgs : System.ComponentModel.CancelEventArgs
     {
         public DoWorkEventArgs(object argument) { }
         public object Argument { get { throw null; } }
