@@ -111,6 +111,15 @@ namespace System.Net.WebHeaderCollectionTests
         }
 
         [Fact]
+        public void WebHeaderCollection_Keys_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Add(HttpRequestHeader.ContentLength, "10");
+            w.Add(HttpRequestHeader.ContentType, "text/html");
+            Assert.Equal(2, w.Keys.Count);
+        }
+
+        [Fact]
         public void HttpRequestHeader_AddHeader_Failure()
         {
             WebHeaderCollection w = new WebHeaderCollection();
