@@ -424,7 +424,7 @@ namespace System.Net.Security
                     {
                         // If it's an empty message and the PAL doesn't support that,
                         // we're done.
-                        return;
+                        break;
                     }
 
                     // Request a write IO slot.
