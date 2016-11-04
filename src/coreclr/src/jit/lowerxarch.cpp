@@ -665,12 +665,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitBlockStore(tree->AsBlk());
             break;
 
-        case GT_INIT_VAL:
-            // Always a passthrough of its child's value.
-            info->srcCount = 0;
-            info->dstCount = 0;
-            break;
-
         case GT_LCLHEAP:
             TreeNodeInfoInitLclHeap(tree);
             break;
@@ -1673,7 +1667,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             }
             m_lsra->clearOperandCounts(source);
         }
-        else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
+        else if (!source->OperIsSIMD())
         {
             assert(source->IsLocal());
             MakeSrcContained(blkNode, source);
@@ -1683,11 +1677,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     if (isInitBlk)
     {
         GenTree* initVal = source;
-        if (initVal->OperIsInitVal())
-        {
-            initVal = initVal->gtGetOp1();
-        }
-        srcAddrOrFill = initVal;
+        srcAddrOrFill    = source;
         // If we have an InitBlk with constant block size we can optimize several ways:
         // a) If the size is smaller than a small memory page but larger than INITBLK_UNROLL_LIMIT bytes
         //    we use rep stosb since this reduces the register pressure in LSRA and we have
@@ -1739,10 +1729,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     // a pack of 16 init value constants.
                     blkNode->gtLsraInfo.internalFloatCount = 1;
                     blkNode->gtLsraInfo.setInternalCandidates(l, l->internalFloatRegCandidates());
-                    if ((fill == 0) && ((size & 0xf) == 0))
-                    {
-                        MakeSrcContained(blkNode, source);
-                    }
                 }
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
