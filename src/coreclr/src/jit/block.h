@@ -1088,9 +1088,11 @@ public:
         return AllSuccs(comp, this);
     }
 
-    // Clone block state and statements from 'from' block to 'to' block.
-    // Assumes that "to" is an empty block.
-    static void CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from);
+    // Try to clone block state and statements from `from` block to `to` block (which must be new/empty),
+    // optionally replacing uses of local `varNum` with IntCns `varVal`.  Return true if all statements
+    // in the block are cloned successfully, false (with partially-populated `to` block) if one fails.
+    static bool CloneBlockState(
+        Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
 
     void MakeLIR(GenTree* firstNode, GenTree* lastNode);
     bool IsLIR();
