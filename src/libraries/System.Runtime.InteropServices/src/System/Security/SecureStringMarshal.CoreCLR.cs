@@ -4,7 +4,7 @@
 
 namespace System.Security
 {
-	[System.CLSCompliant(false)]
+    [System.CLSCompliant(false)]
     public static class SecureStringMarshal
     {
         public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s) => IntPtr.Zero;

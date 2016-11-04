@@ -19,17 +19,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
 
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
-    <Compile Include="System\Security\SecureStringMarshal.net46.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <Compile Include="System\Security\SecureStringMarshal.CoreCLR.cs" />
-  </ItemGroup>
-
   <ItemGroup >
     <!-- TODO: Remove this when the package reference is ready -->
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\pkg\System.Runtime.InteropServices.pkgproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
