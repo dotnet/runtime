@@ -1200,7 +1200,6 @@
 
   <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true'" >
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.cs" />
-    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureStringMarshal.CoreCLR.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true' and '$(FeatureCoreFxWindowsInterop)'=='true'">
