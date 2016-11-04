@@ -1085,9 +1085,24 @@ bool Compiler::optExtractInitTestIncr(
     // If it is a duplicated loop condition, skip it.
     if (init->gtFlags & GTF_STMT_CMPADD)
     {
-        // Must be a duplicated loop condition.
-        noway_assert(init->gtStmt.gtStmtExpr->gtOper == GT_JTRUE);
-        init = init->gtPrev;
+        bool doGetPrev = true;
+#ifdef DEBUG
+        if (opts.optRepeat)
+        {
+            // Previous optimization passes may have inserted compiler-generated
+            // statements other than duplicated loop conditions.
+            doGetPrev = (init->gtPrev != nullptr);
+        }
+        else
+        {
+            // Must be a duplicated loop condition.
+            noway_assert(init->gtStmt.gtStmtExpr->gtOper == GT_JTRUE);
+        }
+#endif // DEBUG
+        if (doGetPrev)
+        {
+            init = init->gtPrev;
+        }
         noway_assert(init != nullptr);
     }
 
