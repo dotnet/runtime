@@ -112,14 +112,14 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void Close()
         {
-            if (writer != null)
+            if (_writer != null)
             {
                 try 
                 {
-                    writer.Close();
+                    _writer.Close();
                 }
                 catch (ObjectDisposedException) { }
-                writer = null;
+                _writer = null;
             }
         }
 
@@ -130,9 +130,9 @@ namespace System.Diagnostics
         {
             try
             {
-                if (disposing && writer != null)
+                if (disposing && _writer != null)
                 {
-                    writer.Dispose();
+                    _writer.Dispose();
                 }
             }
             finally
@@ -148,8 +148,8 @@ namespace System.Diagnostics
         {
             try
             {
-                if (writer != null)
-                    writer.Flush();
+                if (_writer != null)
+                    _writer.Flush();
             }
             catch (ObjectDisposedException) { }
         }
@@ -160,12 +160,12 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void Write(string message)
         {
-            if (writer != null)
+            if (_writer != null)
             {
                 if (NeedIndent) WriteIndent();
                 try
                 {
-                    writer.Write(message);
+                    _writer.Write(message);
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -178,12 +178,12 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void WriteLine(string message)
         {
-            if (writer != null)
+            if (_writer != null)
             {
                 if (NeedIndent) WriteIndent();
                 try
                 {
-                    writer.WriteLine(message);
+                    _writer.WriteLine(message);
                     NeedIndent = true;
                 }
                 catch (ObjectDisposedException) { }
