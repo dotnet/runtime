@@ -103,6 +103,8 @@ void Compiler::fgResetForSsa()
     {
         lvaTable[i].lvPerSsaData.Reset();
     }
+    lvHeapPerSsaData.Reset();
+    m_heapSsaMap = nullptr;
     for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
     {
         // Eliminate phis.
@@ -114,6 +116,32 @@ void Compiler::fgResetForSsa()
             if (blk->bbTreeList != nullptr)
             {
                 blk->bbTreeList->gtPrev = last;
+            }
+        }
+
+        // Clear post-order numbers and SSA numbers; SSA construction will overwrite these,
+        // but only for reachable code, so clear them to avoid analysis getting confused
+        // by stale annotations in unreachable code.
+        blk->bbPostOrderNum = 0;
+        for (GenTreeStmt* stmt = blk->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
+        {
+            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
+            {
+                if (tree->IsLocal())
+                {
+                    tree->gtLclVarCommon.SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    continue;
+                }
+
+                Compiler::IndirectAssignmentAnnotation* pIndirAssign = nullptr;
+                if ((tree->OperGet() != GT_ASG) || !GetIndirAssignMap()->Lookup(tree, &pIndirAssign) ||
+                    (pIndirAssign == nullptr))
+                {
+                    continue;
+                }
+
+                pIndirAssign->m_defSsaNum = SsaConfig::RESERVED_SSA_NUM;
+                pIndirAssign->m_useSsaNum = SsaConfig::RESERVED_SSA_NUM;
             }
         }
     }

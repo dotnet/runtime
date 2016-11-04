@@ -16250,6 +16250,17 @@ void GenTree::ParseArrayAddress(
             // TODO-Review: A NotAField here indicates a failure to properly maintain the field sequence
             // See test case self_host_tests_x86\jit\regression\CLR-x86-JIT\v1-m12-beta2\ b70992\ b70992.exe
             // Safest thing to do here is to drop back to MinOpts
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+            if (comp->opts.optRepeat)
+            {
+                // We don't guarantee preserving these annotations through the entire optimizer, so
+                // just conservatively return null if under optRepeat.
+                *pArr = nullptr;
+                return;
+            }
+#endif // DEBUG
             noway_assert(!"fldSeqIter is NotAField() in ParseArrayAddress");
         }
 
