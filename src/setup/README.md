@@ -206,8 +206,8 @@ Daily Builds
 [fedora-24-build-badge-master]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4339/badge
 [fedora-24-build-master]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4339
 [fedora-24-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Fedora_24_x64_Release_version_badge.svg
-[fedora-24-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.fedora.x64.version
-[fedora-24-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-fedora-x64.latest.tar.gz
+[fedora-24-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.fedora.24.x64.version
+[fedora-24-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-fedora.24-x64.latest.tar.gz
 
 
 [opensuse-13.2-build-badge-master]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/3587/badge
