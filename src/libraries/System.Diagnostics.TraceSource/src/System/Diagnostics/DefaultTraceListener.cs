@@ -115,16 +115,16 @@ namespace System.Diagnostics
 
             // really huge messages mess up both VS and dbmon, so we chop it up into 
             // reasonable chunks if it's too big
-            if (message == null || message.Length <= internalWriteSize)
+            if (message == null || message.Length <= InternalWriteSize)
             {
                 Debug.Write(message);
             }
             else
             {
                 int offset;
-                for (offset = 0; offset < message.Length - internalWriteSize; offset += internalWriteSize)
+                for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
                 {
-                    Debug.Write(message.Substring(offset, internalWriteSize));
+                    Debug.Write(message.Substring(offset, InternalWriteSize));
                 }
                 Debug.Write(message.Substring(offset));
             }
