@@ -80,10 +80,10 @@ mono_os_event_set (MonoOSEvent *event)
 	mono_os_mutex_lock (&event->mutex);
 
 	if (event->manual) {
-		mono_os_event_signal (event, FALSE);
+		mono_os_event_signal (event, TRUE);
 	} else {
 		event->set_count = 1;
-		mono_os_event_signal (event, TRUE);
+		mono_os_event_signal (event, FALSE);
 	}
 
 	mono_os_mutex_unlock (&event->mutex);
