@@ -27,8 +27,20 @@ mono_pagesize (void)
 	if (saved_pagesize)
 		return saved_pagesize;
 	GetSystemInfo (&info);
-	saved_pagesize = info.dwAllocationGranularity;
+	saved_pagesize = info.dwPageSize;
 	return saved_pagesize;
+}
+
+int
+mono_valloc_granule (void)
+{
+	SYSTEM_INFO info;
+	static int saved_valloc_granule = 0;
+	if (saved_valloc_granule)
+		return saved_valloc_granule;
+	GetSystemInfo (&info);
+	saved_valloc_granule = info.dwAllocationGranularity;
+	return saved_valloc_granule;
 }
 
 int

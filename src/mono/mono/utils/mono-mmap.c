@@ -155,6 +155,12 @@ mono_pagesize (void)
 	return saved_pagesize;
 }
 
+int
+mono_valloc_granule (void)
+{
+	return mono_pagesize ();
+}
+
 static int
 prot_from_flags (int flags)
 {
@@ -362,6 +368,12 @@ int
 mono_pagesize (void)
 {
 	return 4096;
+}
+
+int
+mono_valloc_granule (void)
+{
+	return mono_pagesize ();
 }
 
 void*
