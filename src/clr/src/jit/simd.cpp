@@ -2389,14 +2389,14 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicDotProduct:
         {
-#if defined(_TARGET_XARCH_) && defined(DEBUG)
+#if defined(_TARGET_XARCH_)
             // Right now dot product is supported only for float/double vectors and
             // int vectors on AVX.
             if (!varTypeIsFloating(baseType) && !(baseType == TYP_INT && canUseAVX()))
             {
                 return nullptr;
             }
-#endif // _TARGET_XARCH_ && DEBUG
+#endif // _TARGET_XARCH_
 
             // op1 is a SIMD variable that is the first source and also "this" arg.
             // op2 is a SIMD variable which is the second source.
