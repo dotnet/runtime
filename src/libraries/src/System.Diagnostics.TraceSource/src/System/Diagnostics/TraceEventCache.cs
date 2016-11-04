@@ -61,10 +61,6 @@ namespace System.Diagnostics
                 {
                     _stackTrace = Environment.StackTrace;
                 }
-                else
-                {
-                    new EnvironmentPermission(PermissionState.Unrestricted).Demand();
-                }
 
                 return _stackTrace;
             }

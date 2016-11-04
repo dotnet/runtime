@@ -426,7 +426,7 @@ namespace System.Diagnostics
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i=0; i<_listeners.Count; i++)
+                        for (int i = 0; i < _listeners.Count; i++)
                         {
                             TraceListener listener = _listeners[i];
                             listener.TraceTransfer(manager, Name, id, message, relatedActivityId);
@@ -440,7 +440,7 @@ namespace System.Diagnostics
                 }
                 else 
                 {
-                    for (int i=0; i<_listeners.Count; i++)
+                    for (int i = 0; i < _listeners.Count; i++)
                     {
                         TraceListener listener = _listeners[i];
                         

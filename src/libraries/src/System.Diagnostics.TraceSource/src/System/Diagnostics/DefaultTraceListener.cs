@@ -19,7 +19,7 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private const int internalWriteSize = 16384;
+        private const int InternalWriteSize = 16384;
         private bool _assertUIEnabled; 
         private bool _settingsInitialized;
         private string _logFileName;
@@ -33,9 +33,6 @@ namespace System.Diagnostics
         {
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool AssertUiEnabled {
             get { 
                 if (!_settingsInitialized) InitializeSettings();
@@ -47,9 +44,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public string LogFileName 
         {
             get 
