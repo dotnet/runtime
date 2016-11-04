@@ -10684,6 +10684,7 @@
       <Member Name="#ctor(System.String)"/>
       <Member Name="#ctor(System.String,System.Exception)"/>
       <Member Name="#ctor(System.String,System.String)"/>
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
  
     <Type Status="ImplRoot" Name="System.Security.Permissions.PermissionState" />
