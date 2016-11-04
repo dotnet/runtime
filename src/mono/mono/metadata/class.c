@@ -6744,7 +6744,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	if (mono_class_is_ginst (eclass))
 		mono_class_init (eclass);
-	mono_class_init_sizes (eclass);
+	if (!eclass->size_inited)
+		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
 	/*FIXME we fail the array type, but we have to let other fields be set.*/
 
@@ -6850,7 +6851,7 @@ gint32
 mono_class_instance_size (MonoClass *klass)
 {	
 	if (!klass->size_inited)
-		mono_class_init_sizes (klass);
+		mono_class_init (klass);
 
 	return klass->instance_size;
 }
@@ -6867,7 +6868,7 @@ gint32
 mono_class_min_align (MonoClass *klass)
 {	
 	if (!klass->size_inited)
-		mono_class_init_sizes (klass);
+		mono_class_init (klass);
 
 	return klass->min_align;
 }
@@ -6911,8 +6912,8 @@ mono_class_data_size (MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 	/* This can happen with dynamically created types */
-	if (!klass->size_inited)
-		mono_class_init_sizes (klass);
+	if (!klass->fields_inited)
+		mono_class_setup_fields (klass);
 
 	/* in arrays, sizes.class_size is unioned with element_size
 	 * and arrays have no static fields
