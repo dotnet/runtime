@@ -23,6 +23,7 @@
     <ClCompile Include="..\mono\metadata\assembly.c" />
     <ClCompile Include="..\mono\metadata\attach.c" />
     <ClCompile Include="..\mono\metadata\boehm-gc.c" />
+    <ClCompile Include="..\mono\metadata\class-accessors.c" />
     <ClCompile Include="..\mono\metadata\class.c" />
     <ClCompile Include="..\mono\metadata\cominterop.c" />
     <ClCompile Include="..\mono\metadata\console-win32.c" />
