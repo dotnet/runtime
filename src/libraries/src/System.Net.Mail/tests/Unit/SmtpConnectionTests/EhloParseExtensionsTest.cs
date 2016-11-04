@@ -10,12 +10,18 @@ namespace System.Net.Mail.Tests
     {
         private SmtpConnection _smtpConnection;
         private const string authEqualsLogin = "AUTH=LOGIN";
-        private const string authAllTypes = "AUTH LOGIN NTLM WDIGEST GSSAPI";
+        private const string authEqualsGssapi = "AUTH=GSSAPI";
+        private const string authEqualsNtlm = "AUTH=NTLM";
+        private const string authAllTypes = "AUTH LOGIN NTLM XOAUTH2 GSSAPI";
         private const string authLoginOnly = "AUTH LOGIN";
+        private const string authNtlmOnly = "AUTH NTLM";
+        private const string authGssapiOnly = "AUTH GSSAPI";
         private string[] _extensions;
 
         private static readonly ISmtpAuthenticationModule s_loginModule = new SmtpLoginAuthenticationModule();
-        private static readonly ISmtpAuthenticationModule[] s_authenticationModules = { s_loginModule };
+        private static readonly ISmtpAuthenticationModule s_gssapiModule = new SmtpNegotiateAuthenticationModule();
+        private static readonly ISmtpAuthenticationModule s_ntlmModule = new SmtpNtlmAuthenticationModule();
+        private static readonly ISmtpAuthenticationModule[] s_authenticationModules = { s_loginModule, s_gssapiModule, s_ntlmModule };
 
         public EhloParseExtensionsTest()
         {
@@ -30,6 +36,8 @@ namespace System.Net.Mail.Tests
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.False(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.False(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.False(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
@@ -40,26 +48,32 @@ namespace System.Net.Mail.Tests
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.True(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.True(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
         public void ParseExtensions_WithOnlyAuthEqualsLogin_ShouldSupportAuthLogin()
         {
-            _extensions = new string[] { authEqualsLogin };
+            _extensions = new string[] { authEqualsLogin, authEqualsNtlm, authEqualsGssapi };
             _smtpConnection.ParseExtensions(_extensions);
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.True(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.True(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
         public void ParseExtensions_WithBothAuthAndAuthEqualsLogin_ShouldTakeSettingsFromAuth()
         {
-            _extensions = new string[] { authAllTypes, authEqualsLogin };
+            _extensions = new string[] { authAllTypes, authEqualsLogin, authEqualsGssapi, authEqualsNtlm };
             _smtpConnection.ParseExtensions(_extensions);
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.True(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.True(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
@@ -67,22 +81,26 @@ namespace System.Net.Mail.Tests
         {
             // reverse the order that the strings occur in from the other test since we don't
             // know for sure which string will come first, although typically it's AUTH followed by AUTH=
-            _extensions = new string[] { authEqualsLogin, authAllTypes };
+            _extensions = new string[] { authEqualsLogin, authEqualsNtlm, authEqualsGssapi, authAllTypes };
             _smtpConnection.ParseExtensions(_extensions);
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.True(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.True(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
         public void ParseExtensions_WithBothAuthTypes_AndExtraExtensions_AuthTypesShouldBeCorrect()
         {
             // add extra valid EHLO responses as noise- it should ignore them
-            _extensions = new string[] { authEqualsLogin, authAllTypes, "8BITMIME", "EXPN", "HELP" };
+            _extensions = new string[] { authEqualsLogin, authEqualsGssapi, authEqualsNtlm, authAllTypes, "8BITMIME", "EXPN", "HELP" };
             _smtpConnection.ParseExtensions(_extensions);
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.True(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.True(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
@@ -97,6 +115,8 @@ namespace System.Net.Mail.Tests
             Assert.True(_smtpConnection.ServerSupportsEai);
             Assert.True(_smtpConnection.ServerSupportsStartTls);
             Assert.False(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.False(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.False(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
@@ -110,6 +130,8 @@ namespace System.Net.Mail.Tests
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.False(_smtpConnection.AuthSupported(s_loginModule));
+            Assert.False(_smtpConnection.AuthSupported(s_ntlmModule));
+            Assert.False(_smtpConnection.AuthSupported(s_gssapiModule));
         }
 
         [Fact]
@@ -120,6 +142,26 @@ namespace System.Net.Mail.Tests
 
             Assert.False(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.AuthSupported(s_loginModule));
+        }
+
+        [Fact]
+        public void ParseExtensions_WithOnlyAuthNtlm_AuthTypesShouldBeCorrect()
+        {
+            _extensions = new string[] { authNtlmOnly };
+            _smtpConnection.ParseExtensions(_extensions);
+
+            Assert.False(_smtpConnection.DSNEnabled);
+            Assert.True(_smtpConnection.AuthSupported(s_ntlmModule));
+        }
+
+        [Fact]
+        public void ParseExtensions_WithOnlyAuthGssapi_AuthTypesShouldBeCorrect()
+        {
+            _extensions = new string[] { authGssapiOnly };
+            _smtpConnection.ParseExtensions(_extensions);
+
+            Assert.False(_smtpConnection.DSNEnabled);
+            Assert.True(_smtpConnection.AuthSupported(s_gssapiModule));
         }
     }
 }
