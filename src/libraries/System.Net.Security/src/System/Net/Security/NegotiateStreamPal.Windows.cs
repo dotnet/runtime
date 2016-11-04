@@ -206,6 +206,88 @@ namespace System.Net.Security
             return new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(statusCode));
         }
 
+        internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
+        {
+            // validate offset within length
+            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            {
+                NetEventSource.Info("Argument 'offset' out of range.");
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            // validate count within offset and end of buffer
+            if (count < 0 ||
+                count > (buffer == null ? 0 : buffer.Length - offset))
+            {
+                NetEventSource.Info("Argument 'count' out of range.");
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            // setup security buffers for ssp call
+            // one points at signed data
+            // two will receive payload if signature is valid
+            SecurityBuffer[] securityBuffer = new SecurityBuffer[2];
+            securityBuffer[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_STREAM);
+            securityBuffer[1] = new SecurityBuffer(0, SecurityBufferType.SECBUFFER_DATA);
+
+            // call SSP function
+            int errorCode = SSPIWrapper.VerifySignature(
+                                GlobalSSPI.SSPIAuth,
+                                securityContext,
+                                securityBuffer,
+                                0);
+            // throw if error
+            if (errorCode != 0)
+            {
+                NetEventSource.Info($"VerifySignature threw error: {errorCode.ToString("x",NumberFormatInfo.InvariantInfo)}");
+                throw new Win32Exception(errorCode);
+            }
+
+            // not sure why this is here - retained from Encrypt code above
+            if (securityBuffer[1].type != SecurityBufferType.SECBUFFER_DATA)
+                throw new InternalException();
+
+            // return validated payload size 
+            return securityBuffer[1].size;
+        }
+
+        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, ref byte[] output)
+        {
+            SecPkgContext_Sizes sizes = SSPIWrapper.QueryContextAttributes(
+                GlobalSSPI.SSPIAuth,
+                securityContext,
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES
+                ) as SecPkgContext_Sizes;
+
+            // alloc new output buffer if not supplied or too small
+            int resultSize = count + sizes.cbMaxSignature;
+            if (output == null || output.Length < resultSize)
+            {
+                output = new byte[resultSize];
+            }
+
+            // make a copy of user data for in-place encryption
+            Buffer.BlockCopy(buffer, offset, output, sizes.cbMaxSignature, count);
+
+            // setup security buffers for ssp call
+            SecurityBuffer[] securityBuffer = new SecurityBuffer[2];
+            securityBuffer[0] = new SecurityBuffer(output, 0, sizes.cbMaxSignature, SecurityBufferType.SECBUFFER_TOKEN);
+            securityBuffer[1] = new SecurityBuffer(output, sizes.cbMaxSignature, count, SecurityBufferType.SECBUFFER_DATA);
+
+            // call SSP Function
+            int errorCode = SSPIWrapper.MakeSignature(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, 0);
+
+            // throw if error
+            if (errorCode != 0)
+            {
+                NetEventSource.Info($"MakeSignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
+                throw new Win32Exception(errorCode);
+            }
+
+            // return signed size
+            return securityBuffer[0].size + securityBuffer[1].size;
+        }
+
         internal static int Encrypt(
             SafeDeleteContext securityContext,
             byte[] buffer,
