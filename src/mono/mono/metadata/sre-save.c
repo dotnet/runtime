@@ -1274,7 +1274,7 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 		MonoClass *klass = mono_class_get_checked (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, i + 1), &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
-		if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_PUBLIC)
+		if (mono_class_is_public (klass))
 			mono_image_fill_export_table_from_class (domain, klass, module_index, 0, assembly);
 	}
 }

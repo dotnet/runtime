@@ -1970,7 +1970,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 	}
 
 	if (klass != mono_class_try_get_safehandle_class ()) {
-		if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		if (mono_class_is_auto_layout (klass)) {
 			char *msg = g_strdup_printf ("Type %s which is passed to unmanaged code must have a StructLayout attribute.",
 										 mono_type_full_name (&klass->byval_arg));
 			mono_mb_emit_exception_marshal_directive (mb, msg);
@@ -2005,7 +2005,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 			 * the layout to the managed structure as well.
 			 */
 			
-			if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) && (usize == 0)) {
+			if (mono_class_is_explicit_layout (klass) && (usize == 0)) {
 				if (MONO_TYPE_IS_REFERENCE (info->fields [i].field->type) ||
 				    ((!last_field && MONO_TYPE_IS_REFERENCE (info->fields [i + 1].field->type))))
 					g_error ("Type %s which has an [ExplicitLayout] attribute cannot have a "
@@ -4944,8 +4944,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype)
+		if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype)
 			break;
 
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -4991,8 +4990,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* Have to change the signature since the vtype is passed byref */
 			m->csig->params [argnum - m->csig->hasthis] = &mono_defaults.int_class->byval_arg;
 
-			if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-				klass->blittable || klass->enumtype)
+			if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype)
 				mono_mb_emit_ldarg_addr (mb, argnum);
 			else
 				mono_mb_emit_ldloc (mb, conv_arg);
@@ -5007,8 +5005,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype) {
+		if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype) {
 			mono_mb_emit_ldarg (mb, argnum);
 			break;
 		}			
@@ -5040,8 +5037,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype)
+		if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype)
 			break;
 
 		if (t->byref) {
@@ -5069,8 +5065,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT:
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable) {
+		if (mono_class_is_explicit_layout (klass) || klass->blittable) {
 			mono_mb_emit_stloc (mb, 3);
 			break;
 		}
@@ -5089,8 +5084,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype) {
+		if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype) {
 			conv_arg = 0;
 			break;
 		}
@@ -5122,11 +5116,8 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype) {
+		if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype)
 			break;
-		}
-
 		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))
 			break;
 
@@ -5149,8 +5140,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-		if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype) {
+		if (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype) {
 			mono_mb_emit_stloc (mb, 3);
 			m->retobj_var = 0;
 			break;
@@ -5941,7 +5931,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		/* The class can not have an automatic layout */
-		if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		if (mono_class_is_auto_layout (klass)) {
 			mono_mb_emit_auto_layout_exception (mb, klass);
 			break;
 		}
@@ -6061,7 +6051,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		/* The class can not have an automatic layout */
-		if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		if (mono_class_is_auto_layout (klass)) {
 			mono_mb_emit_auto_layout_exception (mb, klass);
 			break;
 		}
@@ -7522,7 +7512,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoClass *klass = mono_class_from_mono_type (sig->ret);
 		mono_class_init (klass);
-		if (!(((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable)) {
+		if (!(mono_class_is_explicit_layout (klass) || klass->blittable)) {
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -8261,7 +8251,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoClass *klass = mono_class_from_mono_type (sig->ret);
 		mono_class_init (klass);
-		if (!(((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable)) {
+		if (!(mono_class_is_explicit_layout (klass) || klass->blittable)) {
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -9567,7 +9557,7 @@ is_monomorphic_array (MonoClass *klass)
 		return FALSE;
 
 	element_class = klass->element_class;
-	return (mono_class_get_flags (element_class) & TYPE_ATTRIBUTE_SEALED) || element_class->valuetype;
+	return mono_class_is_sealed (element_class) || element_class->valuetype;
 }
 
 static int
@@ -9587,7 +9577,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
 	if (mono_class_is_marshalbyref (element_class) || element_class->rank || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
-	if (mono_class_get_flags (element_class) & TYPE_ATTRIBUTE_SEALED)
+	if (mono_class_is_sealed (element_class))
 		return STELEMREF_SEALED_CLASS;
 	return STELEMREF_CLASS;
 }
@@ -11651,11 +11641,10 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 
 		klass = t->data.klass;
 
-		if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+		if (mono_class_is_auto_layout (klass))
 			break;
 
-		if (klass->valuetype && (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype))
+		if (klass->valuetype && (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype))
 			return mono_object_unbox (o);
 
 		res = mono_marshal_alloc (mono_class_native_size (klass, NULL), &error);
@@ -11716,8 +11705,7 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 	case MONO_TYPE_VALUETYPE: {
 		klass = t->data.klass;
 
-		if (klass->valuetype && (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-								 klass->blittable || klass->enumtype))
+		if (klass->valuetype && (mono_class_is_explicit_layout (klass) || klass->blittable || klass->enumtype))
 			break;
 
 		if (param_attrs & PARAM_ATTRIBUTE_OUT) {

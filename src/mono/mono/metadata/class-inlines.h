@@ -9,51 +9,81 @@
 #include <mono/metadata/tabledefs.h>
 
 static inline gboolean
-mono_class_is_def (MonoClass *class)
+mono_class_is_def (MonoClass *klass)
 {
-	return class->class_kind == MONO_CLASS_DEF;
+	return klass->class_kind == MONO_CLASS_DEF;
 }
 
 static inline gboolean
-mono_class_is_gtd (MonoClass *class)
+mono_class_is_gtd (MonoClass *klass)
 {
-	return class->class_kind == MONO_CLASS_GTD;
+	return klass->class_kind == MONO_CLASS_GTD;
 }
 
 static inline gboolean
-mono_class_is_ginst (MonoClass *class)
+mono_class_is_ginst (MonoClass *klass)
 {
-	return class->class_kind == MONO_CLASS_GINST;
+	return klass->class_kind == MONO_CLASS_GINST;
 }
 
 static inline gboolean
-mono_class_is_gparam (MonoClass *class)
+mono_class_is_gparam (MonoClass *klass)
 {
-	return class->class_kind == MONO_CLASS_GPARAM;
+	return klass->class_kind == MONO_CLASS_GPARAM;
 }
 
 static inline gboolean
-mono_class_is_array (MonoClass *class)
+mono_class_is_array (MonoClass *klass)
 {
-	return class->class_kind == MONO_CLASS_ARRAY;
+	return klass->class_kind == MONO_CLASS_ARRAY;
 }
 
 static inline gboolean
-mono_class_is_pointer (MonoClass *class)
+mono_class_is_pointer (MonoClass *klass)
 {
-	return class->class_kind == MONO_CLASS_POINTER;
+	return klass->class_kind == MONO_CLASS_POINTER;
 }
 
 static inline gboolean
-mono_class_is_abstract (MonoClass *class)
+mono_class_is_abstract (MonoClass *klass)
 {
-	return mono_class_get_flags (class) & TYPE_ATTRIBUTE_ABSTRACT;
+	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT;
 }
 
 static inline gboolean
-mono_class_is_interface (MonoClass *class)
+mono_class_is_interface (MonoClass *klass)
 {
-	return mono_class_get_flags (class) & TYPE_ATTRIBUTE_INTERFACE;
+	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE;
+}
+
+static inline gboolean
+mono_class_is_sealed (MonoClass *klass)
+{
+	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED;
+}
+
+static inline gboolean
+mono_class_is_before_field_init (MonoClass *klass)
+{
+	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT;
+}
+
+static inline gboolean
+mono_class_is_auto_layout (MonoClass *klass)
+{
+	return (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT;
+}
+
+static inline gboolean
+mono_class_is_explicit_layout (MonoClass *klass)
+{
+	return (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT;
+}
+
+static inline gboolean
+mono_class_is_public (MonoClass *klass)
+{
+	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_PUBLIC;
 }
 
 #endif

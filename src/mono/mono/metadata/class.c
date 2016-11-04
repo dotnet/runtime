@@ -10519,7 +10519,9 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
  * FIXME: enum types are not allowed to have a cctor, but mono_reflection_create_runtime_class sets has_cctor to 1 for all types
  * FIXME: TypeBuilder enums can have any kind of static fields, but the spec is very explicit about that (P II 14.3)
  */
-gboolean mono_class_is_valid_enum (MonoClass *klass) {
+gboolean
+mono_class_is_valid_enum (MonoClass *klass)
+{
 	MonoClassField * field;
 	gpointer iter = NULL;
 	gboolean found_base_field = FALSE;
@@ -10530,7 +10532,7 @@ gboolean mono_class_is_valid_enum (MonoClass *klass) {
 		return FALSE;
 	}
 
-	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)
+	if (!mono_class_is_auto_layout (klass))
 		return FALSE;
 
 	while ((field = mono_class_get_fields (klass, &iter))) {

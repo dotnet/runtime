@@ -1188,7 +1188,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			 * If the call doesn't return a valuetype, then the vcall uses the same calling
 			 * convention as a normal call.
 			 */
-			if (((mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_SEALED) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
+			if ((mono_class_is_sealed (method->klass) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
 				callvirt = FALSE;
 				enable_caching = FALSE;
 			}

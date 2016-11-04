@@ -4495,7 +4495,7 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 	return FALSE;
 }
 
-#define is_complex_isinst(klass) (mono_class_is_interface (klass) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (mono_class_is_interface (klass) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || mono_class_is_sealed (klass) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 static MonoInst*
 emit_isinst_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args)
@@ -4613,7 +4613,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
-		if (!klass->rank && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED)) {
+		if (!klass->rank && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
 			/* the remoting code is broken, access the class for now */
 			if (0) { /*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
 				MonoVTable *vt = mono_class_vtable (cfg->domain, klass);
@@ -4736,7 +4736,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			/* the is_null_bb target simply copies the input register to the output */
 			mini_emit_isninst_cast (cfg, klass_reg, klass->cast_class, false_bb, is_null_bb);
 		} else {
-			if (!cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED)) {
+			if (!cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
 				g_assert (!context_used);
 				/* the remoting code is broken, access the class for now */
 				if (0) {/*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
@@ -5359,7 +5359,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 					return FALSE;
 				}
 			}
-		} else if (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+		} else if (mono_class_is_before_field_init (method->klass)) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
 				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
 				if (!method->klass->runtime_info)
@@ -5395,7 +5395,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		 * the cctor will need to be run at aot method load time, for example,
 		 * or at the end of the compilation of the inlining method.
 		 */
-		if (mono_class_needs_cctor_run (method->klass, NULL) && !((mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+		if (mono_class_needs_cctor_run (method->klass, NULL) && !mono_class_is_before_field_init (method->klass))
 			return FALSE;
 	}
 
@@ -5425,7 +5425,7 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoCla
 			return FALSE;
 	}
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+	if (mono_class_is_before_field_init (klass)) {
 		if (cfg->method == method)
 			return FALSE;
 	}

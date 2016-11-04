@@ -732,7 +732,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 		} else {
 			/* the C# code will check and throw the exception */
 			/* FIXME: missing !klass->blittable test, see bug #61134 */
-			if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+			if (mono_class_is_auto_layout (klass))
 				return (gpointer)-1;
 			return (char*)obj + sizeof (MonoObject);
 		}
