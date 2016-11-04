@@ -39,6 +39,12 @@ namespace System.Runtime.InteropServices
         }
         
         [System.Security.SecurityCriticalAttribute]
+        public static void CleanupUnusedObjectsInCurrentContext()
+        {
+           return;
+        }
+
+        [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o)
         {
             throw new PlatformNotSupportedException();
@@ -89,6 +95,10 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m)
         {
+            if (m == null)
+            {
+                throw new ArgumentNullException(nameof(m));
+            }
             return (System.IntPtr) (-1);
         }           
 
