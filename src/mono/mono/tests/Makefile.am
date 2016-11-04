@@ -85,63 +85,63 @@ STRESS_TESTS_SRC=	\
 	assembly-load-stress.cs
 
 BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
-	remoting4.cs		# Needs remoting support \
-	remoting1.cs		# Needs remoting support \
-	remoting2.cs		# Needs remoting support \
-	remoting3.cs		# Needs remoting support \
-	remoting5.cs		# Needs remoting support \
-	appdomain.cs        # Needs appdomain support \
-	appdomain-client.cs	# Needs appdomain support \
-	appdomain-unload.cs # Needs appdomain support \
-	appdomain-async-invoke.cs	# Needs appdomain support \
-	appdomain-thread-abort.cs	# Needs appdomain support \
-	appdomain1.cs		# Needs appdomain support \
-	appdomain2.cs		# Needs appdomain support \
-	appdomain-exit.cs	# Needs appdomain support \
-	assemblyresolve_event2.2.cs	# Needs appdomain support \
-	appdomain-unload-callback.cs	# Needs appdomain support \
-	appdomain-unload-doesnot-raise-pending-events.cs	# Needs appdomain support \
-	unload-appdomain-on-shutdown.cs # Needs appdomain support \
-	bug-47295.cs # Needs SRE \
-	loader.cs # Needs SRE \
-	pinvoke2.cs # Needs SRE \
-	generic-type-builder.2.cs	# Needs SRE \
-	dynamic-generic-size.cs	# Needs SRE \
-	cominterop.cs	# Needs COM \
-	dynamic-method-access.2.cs	# Need SRE \
-	dynamic-method-finalize.2.cs	# Need SRE \
-	dynamic-method-stack-traces.cs # Need SRE\
-	generic_type_definition.2.cs	# Need SRE \
-	bug-333798-tb.2.cs	# Need SRE \
-	bug-335131.2.cs	# Need SRE \
-	bug-322722_patch_bx.2.cs	# Need SRE\
-	bug-322722_dyn_method_throw.2.cs	# Need SRE \
-	bug-389886-2.cs	# Need SRE \
-	bug-349190.2.cs	# Need SRE \
-	bug-389886-sre-generic-interface-instances.cs	# Need SRE \
-	bug-462592.cs	# Need SRE \
-	bug-575941.cs	# Need SRE \
-	bug-389886-3.cs	# Need SRE \
-	constant-division.cs	# Need SRE \
-	dynamic-method-resurrection.cs	# Need SRE \
-	bug-80307.cs	# Need System.Web \
-	assembly_append_ordering.cs # Need SRE \
-	bug-544446.cs	# Needs AppDomains / TranparentProxy \
-	bug-36848.cs   # Needs AppDomains / TranparentProxy \
-	generic-marshalbyref.2.cs # Needs AppDomains \
-	stackframes-async.2.cs # Needs AppDomains \
-	transparentproxy.cs # Needs AppDomains / TranparentProxy \
-	bug-48015.cs # Needs AppDomains / TranparentProxy \
-	delegate9.cs # Needs AppDomains \
-	marshal-valuetypes.cs	# Needs AppDomains \
-	xdomain-threads.cs	# Needs AppDomains \
-	monitor.cs # Needs AppDomains \
-	generic-xdomain.2.cs # Needs AppDomains \
-	threadpool-exceptions7.cs # Needs AppDomains \
-	cross-domain.cs # Needs AppDomains \
-	generic-unloading.2.cs # Needs AppDomains \
-	namedmutex-destroy-race.cs # needs named Mutex \
-	thread6.cs # On MOBILE, ThreadAbortException doesn't have necessary field for this test
+	remoting4.cs	\
+	remoting1.cs	\
+	remoting2.cs	\
+	remoting3.cs	\
+	remoting5.cs	\
+	appdomain.cs	\
+	appdomain-client.cs	\
+	appdomain-unload.cs	\
+	appdomain-async-invoke.cs	\
+	appdomain-thread-abort.cs	\
+	appdomain1.cs	\
+	appdomain2.cs	\
+	appdomain-exit.cs	\
+	assemblyresolve_event2.2.cs	\
+	appdomain-unload-callback.cs	\
+	appdomain-unload-doesnot-raise-pending-events.cs	\
+	unload-appdomain-on-shutdown.cs	\
+	bug-47295.cs	\
+	loader.cs	\
+	pinvoke2.cs	\
+	generic-type-builder.2.cs	\
+	dynamic-generic-size.cs	\
+	cominterop.cs	\
+	dynamic-method-access.2.cs	\
+	dynamic-method-finalize.2.cs	\
+	dynamic-method-stack-traces.cs	\
+	generic_type_definition.2.cs	\
+	bug-333798-tb.2.cs	\
+	bug-335131.2.cs	\
+	bug-322722_patch_bx.2.cs	\
+	bug-322722_dyn_method_throw.2.cs	\
+	bug-389886-2.cs	\
+	bug-349190.2.cs	\
+	bug-389886-sre-generic-interface-instances.cs	\
+	bug-462592.cs	\
+	bug-575941.cs	\
+	bug-389886-3.cs	\
+	constant-division.cs	\
+	dynamic-method-resurrection.cs	\
+	bug-80307.cs	\
+	assembly_append_ordering.cs	\
+	bug-544446.cs	\
+	bug-36848.cs	\
+	generic-marshalbyref.2.cs	\
+	stackframes-async.2.cs	\
+	transparentproxy.cs	\
+	bug-48015.cs	\
+	delegate9.cs	\
+	marshal-valuetypes.cs	\
+	xdomain-threads.cs	\
+	monitor.cs	\
+	generic-xdomain.2.cs	\
+	threadpool-exceptions7.cs	\
+	cross-domain.cs	\
+	generic-unloading.2.cs	\
+	namedmutex-destroy-race.cs	\
+	thread6.cs
 
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
