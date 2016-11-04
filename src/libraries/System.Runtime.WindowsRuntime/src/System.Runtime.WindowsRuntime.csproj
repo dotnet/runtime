@@ -11,7 +11,8 @@
     <ClsCompliant>true</ClsCompliant>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uap101aot'">true</IsPartialFacadeAssembly>
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
-    <NoWarn>$(NoWarn)1698</NoWarn>
+    <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
+    <NoWarn>$(NoWarn);1698;0436</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uap101aot'">win8-aot</PackageTargetRuntime>

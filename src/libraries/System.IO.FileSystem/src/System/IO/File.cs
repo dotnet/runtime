@@ -21,13 +21,15 @@ namespace System.IO
     // routines such as Delete, etc.
     public static class File
     {
+        internal const int DefaultBufferSize = 4096;
+
         public static StreamReader OpenText(String path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalOpen(path);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             return new StreamReader(stream);
         }
 
@@ -37,7 +39,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path);
+            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             return new StreamWriter(stream);
         }
 
@@ -47,7 +49,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path);
+            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
             return new StreamWriter(stream);
         }
 
@@ -128,9 +130,9 @@ namespace System.IO
         // Your application must have Create, Read, and Write permissions to
         // the file.
         // 
-        public static FileStream Create(String path)
+        public static FileStream Create(string path)
         {
-            return Create(path, FileStream.DefaultBufferSize);
+            return Create(path, DefaultBufferSize);
         }
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
@@ -383,7 +385,7 @@ namespace System.IO
             Debug.Assert(encoding != null);
             Debug.Assert(path.Length > 0);
 
-            Stream stream = FileStream.InternalOpen(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
             using (StreamReader sr = new StreamReader(stream, encoding, true))
                 return sr.ReadToEnd();
@@ -422,7 +424,7 @@ namespace System.IO
             Debug.Assert(encoding != null);
             Debug.Assert(path.Length > 0);
 
-            Stream stream = FileStream.InternalCreate(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
 
             using (StreamWriter sw = new StreamWriter(stream, encoding))
                 sw.Write(contents);
@@ -438,7 +440,7 @@ namespace System.IO
         private static byte[] InternalReadAllBytes(String path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = FileStream.InternalOpen(path, bufferSize: 1, useAsync: false))
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
             {
                 long fileLength = fs.Length;
                 if (fileLength > Int32.MaxValue)
@@ -480,7 +482,7 @@ namespace System.IO
             Debug.Assert(path.Length != 0);
             Debug.Assert(bytes != null);
 
-            using (FileStream fs = FileStream.InternalCreate(path, useAsync: false))
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
                 fs.Write(bytes, 0, bytes.Length);
             }
@@ -518,7 +520,7 @@ namespace System.IO
             String line;
             List<String> lines = new List<String>();
 
-            Stream stream = FileStream.InternalOpen(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
             using (StreamReader sr = new StreamReader(stream, encoding))
                 while ((line = sr.ReadLine()) != null)
@@ -566,7 +568,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
 
             InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
         }
@@ -588,7 +590,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
 
             InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
         }
@@ -606,7 +608,6 @@ namespace System.IO
                 }
             }
         }
-
 
         public static void AppendAllText(String path, String contents)
         {
@@ -638,7 +639,7 @@ namespace System.IO
             Debug.Assert(encoding != null);
             Debug.Assert(path.Length > 0);
 
-            Stream stream = FileStream.InternalAppend(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             using (StreamWriter sw = new StreamWriter(stream, encoding))
                 sw.Write(contents);
@@ -654,7 +655,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
         }
@@ -671,7 +672,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path, useAsync: false);
+            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
         }
