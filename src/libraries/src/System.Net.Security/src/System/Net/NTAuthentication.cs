@@ -284,6 +284,58 @@ namespace System.Net
             }
         }
 
+        internal int VerifySignature(byte[] buffer, int offset, int count)
+        {
+            return NegotiateStreamPal.VerifySignature(_securityContext, buffer, offset, count);
+        }
+
+        internal int MakeSignature(byte[] buffer, int offset, int count, ref byte[] output)
+        {
+            return NegotiateStreamPal.MakeSignature(_securityContext, buffer, offset, count, ref output);
+        }
+
+        internal string GetOutgoingBlob(string incomingBlob)
+        {
+            byte[] decodedIncomingBlob = null;
+            if (incomingBlob != null && incomingBlob.Length > 0)
+            {
+                decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
+            }
+            byte[] decodedOutgoingBlob = null;
+
+            if ((IsValidContext || IsCompleted) && decodedIncomingBlob == null)
+            {
+                // we tried auth previously, now we got a null blob, we're done. this happens
+                // with Kerberos & valid credentials on the domain but no ACLs on the resource
+                _isCompleted = true;
+            }
+            else
+            {
+                SecurityStatusPal statusCode;
+                decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, true, out statusCode);
+            }
+
+            string outgoingBlob = null;
+            if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+            {
+                outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
+            }
+
+            if (IsCompleted)
+            {
+                string name = ProtocolName; // cache the only info needed from a completed context before closing it
+                CloseContext();
+            }
+
+            return outgoingBlob;
+        }
+
+        internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool thrownOnError)
+        {
+            SecurityStatusPal statusCode;
+            return GetOutgoingBlob(incomingBlob, thrownOnError, out statusCode);
+        }
+
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
@@ -295,7 +347,7 @@ namespace System.Net
             {
                 list.Add(new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
-            
+
             if (_channelBinding != null)
             {
                 list.Add(new SecurityBuffer(_channelBinding));
@@ -334,7 +386,7 @@ namespace System.Net
                         statusCode = NegotiateStreamPal.CompleteAuthToken(ref _securityContext, inSecurityBuffers);
 
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SSPIWrapper.CompleteAuthToken() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
-                        
+
                         outSecurityBuffer.token = null;
                     }
                 }
