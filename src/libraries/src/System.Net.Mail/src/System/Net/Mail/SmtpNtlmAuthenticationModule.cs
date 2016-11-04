@@ -49,6 +49,11 @@ namespace System.Net.Mail
                     }
                 }
             }
+            // From reflected type NTAuthentication in System.Net.Security.
+            catch (NullReferenceException)
+            {
+                return null;
+            }
             finally
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Authenticate");
