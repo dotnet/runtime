@@ -367,9 +367,6 @@ struct _MonoClass {
 		int generic_param_token; /* for generic param types, both var and mvar */
 	} sizes;
 
-	/* A GC handle pointing to the corresponding type builder/generic param builder */
-	guint32 ref_info_handle;
-
 	/*
 	 * Field information: Type and location from object base
 	 */
@@ -1507,6 +1504,12 @@ mono_class_get_ext (MonoClass *class);
 
 void
 mono_class_set_ext (MonoClass *class, MonoClassExt *ext);
+
+guint32
+mono_class_get_ref_info_handle (MonoClass *class);
+
+guint32
+mono_class_set_ref_info_handle (MonoClass *class, guint32 value);
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
