@@ -16,8 +16,8 @@ namespace System.Diagnostics
     /// </devdoc>
     public class TextWriterTraceListener : TraceListener
     {
-        internal TextWriter writer;
-        private string fileName;
+        internal TextWriter _writer;
+        private string _fileName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with
@@ -45,7 +45,7 @@ namespace System.Diagnostics
             : base(name)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
-            this.writer = new StreamWriter(stream);
+            _writer = new StreamWriter(stream);
         }
 
         /// <devdoc>
@@ -67,7 +67,7 @@ namespace System.Diagnostics
             : base(name)
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
-            this.writer = writer;
+            _writer = writer;
         }
 
         /// <devdoc>
@@ -76,7 +76,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public TextWriterTraceListener(string fileName)
         {
-            this.fileName = fileName;
+            _fileName = fileName;
         }
 
         /// <devdoc>
@@ -86,7 +86,7 @@ namespace System.Diagnostics
         public TextWriterTraceListener(string fileName, string name)
             : base(name)
         {
-            this.fileName = fileName;
+            _fileName = fileName;
         }
 
         /// <devdoc>
@@ -97,12 +97,12 @@ namespace System.Diagnostics
         {
             get
             {
-                return writer;
+                return _writer;
             }
 
             set
             {
-                writer = value;
+                _writer = value;
             }
         }
 
@@ -119,9 +119,8 @@ namespace System.Diagnostics
                     writer.Close();
                 }
                 catch (ObjectDisposedException) { }
+                writer = null;
             }
-
-            writer = null;
         }
 
         /// <internalonly/>
