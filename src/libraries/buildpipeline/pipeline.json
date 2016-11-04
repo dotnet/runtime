@@ -748,56 +748,6 @@
       "DependsOn": [
         "Trusted-All-Debug"
       ]
-    },
-    {
-      "Name": "Publish Packages to Feeds - Release",
-      "Parameters": {
-        "TreatWarningsAsErrors": "false"
-      },
-      "BuildParameters": {
-        "ConfigurationGroup": "Release"
-      },
-      "Definitions": [
-        {
-          "Name": "DotNet-Trusted-Publish",
-          "Parameters": {
-            "VstsRepositoryName": "DotNet-CoreFX-Trusted",
-            "GitHubRepositoryName": "corefx"
-          },
-          "ReportingParameters": {
-            "TargetQueue": null,
-            "Type": "build/tests/"
-          }
-        }
-      ],
-      "DependsOn": [
-        "Trusted-All-Release"
-      ]
-    },
-    {
-      "Name": "Publish Packages to Drop - Debug",
-      "Parameters": {
-        "TreatWarningsAsErrors": "false"
-      },
-      "BuildParameters": {
-        "ConfigurationGroup": "Debug"
-      },
-      "Definitions": [
-        {
-          "Name": "DotNet-Trusted-Publish",
-          "Parameters": {
-            "VstsRepositoryName": "DotNet-CoreFX-Trusted",
-            "GitHubRepositoryName": "corefx"
-          },
-          "ReportingParameters": {
-            "TargetQueue": null,
-            "Type": "build/tests/"
-          }
-        }
-      ],
-      "DependsOn": [
-        "Trusted-All-Debug"
-      ]
     }
   ]
 }
