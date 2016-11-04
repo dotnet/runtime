@@ -83,7 +83,7 @@ namespace System
     {
         public EntryPointNotFoundException() { }
         public EntryPointNotFoundException(string message) { }
-        public EntryPointNotFoundException(string message, Exception innerException) { }
+        public EntryPointNotFoundException(string message, Exception inner) { }
         protected EntryPointNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
