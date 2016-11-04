@@ -18,6 +18,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
     <ProjectReference Include="..\..\pkg\System.Console.pkgproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Console</Name>

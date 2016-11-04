@@ -13,6 +13,8 @@ namespace System.IO
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
     internal sealed partial class UnixFileSystem : FileSystem
     {
+        internal const int DefaultBufferSize = 4096;
+
         public override int MaxPath { get { return Interop.Sys.MaxPath; } }
 
         public override int MaxDirectoryPath { get { return Interop.Sys.MaxPath; } }
@@ -32,8 +34,8 @@ namespace System.IO
             }
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
-            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, FileOptions.None))
-            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileStream.DefaultBufferSize, FileOptions.None))
+            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.None))
+            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, DefaultBufferSize, FileOptions.None))
             {
                 Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }

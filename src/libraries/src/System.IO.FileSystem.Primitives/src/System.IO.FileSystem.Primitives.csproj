@@ -13,8 +13,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\FileAttributes.cs" />
-    <Compile Include="System\IO\FileMode.cs" />
-    <Compile Include="System\IO\FileShare.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <TargetingPackReference Include="System.Private.CoreLib" />
