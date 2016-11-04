@@ -245,7 +245,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\socket-io-windows.c">
-	  <Filter>Source Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\file-io-windows.c">
       <Filter>Source Files</Filter>
@@ -257,6 +257,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\mono-security-windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\class-accessors.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
