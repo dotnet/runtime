@@ -29,7 +29,7 @@ namespace System.Net.Mail
         private const string AuthExtension = "auth";
         private const string AuthLogin = "login";
         private const string AuthNtlm = "ntlm";
-        private const string AuthGssapi = " gssapi";
+        private const string AuthGssapi = "gssapi";
 
         internal SmtpConnection(ISmtpAuthenticationModule[] authenticationModules)
         {
