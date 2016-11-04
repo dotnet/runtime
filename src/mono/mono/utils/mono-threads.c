@@ -729,6 +729,8 @@ To finish suspending, call mono_suspend_check.
 void
 mono_thread_info_begin_self_suspend (void)
 {
+	g_assert (!mono_threads_is_coop_enabled ());
+
 	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
 	if (!info)
 		return;
@@ -741,6 +743,8 @@ void
 mono_thread_info_end_self_suspend (void)
 {
 	MonoThreadInfo *info;
+
+	g_assert (!mono_threads_is_coop_enabled ());
 
 	info = mono_thread_info_current ();
 	if (!info)
@@ -1001,6 +1005,7 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 		mono_threads_wait_pending_operations ();
 		break;
 	case KeepSuspended:
+		g_assert (!mono_threads_is_coop_enabled ());
 		break;
 	default:
 		g_error ("Invalid suspend_and_run callback return value %d", result);
