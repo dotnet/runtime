@@ -169,41 +169,56 @@ function mount_with_checking {
 #Mount emulator to the target mount path
 function mount_emulator {
     #Check if the mount path exists and create if neccessary
+    set +x
+    
     if [ ! -d "$__ARMRootfsMountPath" ]; then
         sudo mkdir "$__ARMRootfsMountPath"
     fi
 
-    set +x
-    mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
-    mount_with_checking "-t proc" "/proc"    "$__ARMRootfsMountPath/proc"
-    mount_with_checking "-o bind" "/dev/"    "$__ARMRootfsMountPath/dev"
-    mount_with_checking "-o bind" "/dev/pts" "$__ARMRootfsMountPath/dev/pts"
-    mount_with_checking "-t tmpfs" "shm"     "$__ARMRootfsMountPath/run/shm"
-    mount_with_checking "-o bind" "/sys"     "$__ARMRootfsMountPath/sys"
-    if [ ! -d "$__ARMRootfsMountPath/bindings/tmp" ]; then
-        sudo mkdir -p "$__ARMRootfsMountPath/bindings/tmp"
+    if [ ! -d "$__ARMEmulRootfs" ]; then
+		sudo mkdir "$__ARMEmulRootfs"
+	fi
+
+	if [ ! -f "$__ARMEmulRootfs/arm-emulator-rootfs.tar" ]; then
+		if ! mountpoint -q -- "$__ARMRootfsMountPath"; then
+			mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
+		fi
+		cd $__ARMRootfsMountPath
+		sudo tar -cf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" *
+		cd -
+	fi
+
+	sudo tar -xf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" -C "$__ARMEmulRootfs"
+
+    mount_with_checking "-t proc" "/proc"    "$__ARMEmulRootfs/proc"
+    mount_with_checking "-o bind" "/dev/"    "$__ARMEmulRootfs/dev"
+    mount_with_checking "-o bind" "/dev/pts" "$__ARMEmulRootfs/dev/pts"
+    mount_with_checking "-t tmpfs" "shm"     "$__ARMEmulRootfs/run/shm"
+    mount_with_checking "-o bind" "/sys"     "$__ARMEmulRootfs/sys"
+    if [ ! -d "$__ARMEmulRootfs/bindings/tmp" ]; then
+        sudo mkdir -p "$__ARMEmulRootfs/bindings/tmp"
     fi
-    mount_with_checking "-o bind" "/mnt"     "$__ARMRootfsMountPath/bindings/tmp"
+    mount_with_checking "-o bind" "/mnt"     "$__ARMEmulRootfs/bindings/tmp"
 }
 
 #Cross builds coreclr
 function cross_build_coreclr {
 #Export the needed environment variables
     (set +x; echo 'Exporting LINUX_ARM_* environment variable')
-    source "$__ARMRootfsMountPath"/dotnet/setenv/setenv_incpath.sh "$__ARMRootfsMountPath"
+    source "$__ARMEmulRootfs"/dotnet/setenv/setenv_incpath.sh "$__ARMEmulRootfs"
 
     #Apply the changes needed to build for the emulator rootfs
     (set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
-    git am < "$__ARMRootfsMountPath"/dotnet/setenv/coreclr_cross.patch
+    git am < "$__ARMEmulRootfs"/dotnet/setenv/coreclr_cross.patch
 
     #Apply release optimization patch if needed
     if [[ "$__buildConfig" == "Release" ]]; then
         (set +x; echo 'Applying release optimization patch to build in Release mode')
-        git am < "$__ARMRootfsMountPath"/dotnet/setenv/coreclr_release.patch
+        git am < "$__ARMEmulRootfs"/dotnet/setenv/coreclr_release.patch
     fi
 
     #Cross building for emulator rootfs
-    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib clang3.5 $__buildConfig -rebuild
+    ROOTFS_DIR="$__ARMEmulRootfs" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib clang3.5 $__buildConfig -rebuild
 
     #Reset the code to the upstream version
     (set +x; echo 'Rewinding HEAD to master code')
@@ -268,9 +283,10 @@ function copy_to_emulator {
 
 #Runs tests in an emulated mode
 function run_tests {
-    sudo chroot $__ARMRootfsMountPath /bin/bash -x <<EOF
+    sudo chroot $__ARMEmulRootfs /bin/bash -x <<EOF
         cd "$__ARMEmulCoreclr"
-        ./tests/runtest.sh --testRootDir=$__testRootDirBase \
+        ./tests/runtest.sh --sequential\
+		           --testRootDir=$__testRootDirBase \
                            --mscorlibDir=$__mscorlibDirBase \
                            --coreFxNativeBinDir=$__coreFxNativeBinDirBase \
                            --coreFxBinDir="$__coreFxBinDirBase" \
@@ -281,6 +297,7 @@ EOF
 }
 
 #Define script variables
+__ARMEmulRootfs=/opt/arm-emulator-rootfs
 __ARMEmulPath=
 __ARMRootfsMountPath=
 __buildConfig=
@@ -402,8 +419,8 @@ if [ ! -d "$__TempFolder" ]; then
     mkdir "$__TempFolder"
 fi
 
-__ARMRootfsCoreclrPath="$__ARMRootfsMountPath/$__TempFolder/coreclr"
-__ARMRootfsCorefxPath="$__ARMRootfsMountPath/$__TempFolder/corefx"
+__ARMRootfsCoreclrPath="$__ARMEmulRootfs/$__TempFolder/coreclr"
+__ARMRootfsCorefxPath="$__ARMEmulRootfs/$__TempFolder/corefx"
 __ARMEmulCoreclr="/$__TempFolder/coreclr"
 __ARMEmulCorefx="/$__TempFolder/corefx"
 __testRootDirBase=
