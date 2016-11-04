@@ -1035,6 +1035,11 @@ namespace System.Net
             return Task.FromResult((Stream)_requestStream);
         }
 
+        public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext context)
+        {
+            context = null;
+            return EndGetRequestStream(asyncResult);
+        }
 
         public Stream GetRequestStream(out TransportContext context)
         {

@@ -135,7 +135,8 @@ namespace System.Net
         public override void Abort() { }
         public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
         public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
-        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }       
+        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
+        public System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult, out System.Net.TransportContext context) { throw null; }
         public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
         public override System.Net.WebResponse GetResponse() { throw null; }
         public virtual bool AllowWriteStreamBuffering { get { throw null; } set { } }        
