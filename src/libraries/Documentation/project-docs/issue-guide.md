@@ -46,11 +46,11 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      |  |  |  |
 | [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)              | [@shmao](https://github.com/shmao), [@zhenlan](https://github.com/zhenlan) | System.Runtime.Serialization.Xml, System.Runtime.Serialization.Json, System.Private.DataContractSerialization, System.Xml.XmlSerialization |  |
 | **System contract assemblies** | | | |
-| [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           |  |  |  |
-| [System.Buffers](https://github.com/dotnet/corefx/labels/area-System.Buffers)                 |  |  |  |
+| [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           | [@AlexGhiondea](https://github.com/AlexGhiondea) |  |  |
+| [System.Buffers](https://github.com/dotnet/corefx/labels/area-System.Buffers)                 | [@alexperovich](https://github.com/alexperovich),  [@safern](https://github.com/safern) |  |  |
 | [System.CodeDom](https://github.com/dotnet/corefx/labels/area-System.CodeDom)                 | [@Priya91](https://github.com/Priya91) |  |  |
 | [System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)         | [@Priya91](https://github.com/Priya91), [@ianhays](https://github.com/ianhays) |  | Triaged |
-| [System.ComponentModel](https://github.com/dotnet/corefx/labels/area-System.ComponentModel)   |  |  |  |
+| [System.ComponentModel](https://github.com/dotnet/corefx/labels/area-System.ComponentModel)   |  [@safern](https://github.com/safern), [@AlexGhiondea](https://github.com/AlexGhiondea) |  |  |
 | [System.ComponentModel.DataAnnotations](https://github.com/dotnet/corefx/labels/area-System.ComponentModel.DataAnnotations) |  |  |  |
 | [System.Composition](https://github.com/dotnet/corefx/labels/area-System.Composition)         |  |  |  |
 | [System.Console](https://github.com/dotnet/corefx/labels/area-System.Console)                 | [@ianhays](https://github.com/ianhays) |  |  |
