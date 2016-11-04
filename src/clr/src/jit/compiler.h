@@ -2021,7 +2021,18 @@ public:
 
     GenTreePtr gtClone(GenTree* tree, bool complexOK = false);
 
-    GenTreePtr gtCloneExpr(GenTree* tree, unsigned addFlags = 0, unsigned varNum = (unsigned)-1, int varVal = 0);
+    // If `tree` is a lclVar with lclNum `varNum`, return an IntCns with value `varVal`; otherwise,
+    // create a copy of `tree`, adding specified flags, replacing uses of lclVar `deepVarNum` with
+    // IntCnses with value `deepVarVal`.
+    GenTreePtr gtCloneExpr(
+        GenTree* tree, unsigned addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal);
+
+    // Create a copy of `tree`, optionally adding specifed flags, and optionally mapping uses of local
+    // `varNum` to int constants with value `varVal`.
+    GenTreePtr gtCloneExpr(GenTree* tree, unsigned addFlags = 0, unsigned varNum = (unsigned)-1, int varVal = 0)
+    {
+        return gtCloneExpr(tree, addFlags, varNum, varVal, varNum, varVal);
+    }
 
     GenTreePtr gtReplaceTree(GenTreePtr stmt, GenTreePtr tree, GenTreePtr replacementTree);
 

@@ -7698,17 +7698,30 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
     return copy;
 }
 
-/*****************************************************************************
- *
- *  Clones the given tree value and returns a copy of the given tree. Any
- *  references to local variable varNum will be replaced with the integer
- *  constant varVal.
- */
+//------------------------------------------------------------------------
+// gtCloneExpr: Create a copy of `tree`, adding flags `addFlags`, mapping
+//              local `varNum` to int constant `varVal` if it appears at
+//              the root, and mapping uses of local `deepVarNum` to constant
+//              `deepVarVal` if they occur beyond the root.
+//
+// Arguments:
+//    tree - GenTree to create a copy of
+//    addFlags - GTF_* flags to add to the copied tree nodes
+//    varNum - lclNum to replace at the root, or ~0 for no root replacement
+//    varVal - If replacing at root, replace local `varNum` with IntCns `varVal`
+//    deepVarNum - lclNum to replace uses of beyond the root, or ~0 for no replacement
+//    deepVarVal - If replacing beyond root, replace `deepVarNum` with IntCns `deepVarVal`
+//
+// Return Value:
+//    A copy of the given tree with the replacements and added flags specified.
+//
+// Notes:
+//    Top-level callers should generally call the overload that doesn't have
+//    the explicit `deepVarNum` and `deepVarVal` parameters; those are used in
+//    recursive invocations to avoid replacing defs.
 
-GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
-                                 unsigned addFlags,
-                                 unsigned varNum, // = (unsigned)-1
-                                 int      varVal)
+GenTreePtr Compiler::gtCloneExpr(
+    GenTree* tree, unsigned addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal)
 {
     if (tree == nullptr)
     {
@@ -7764,6 +7777,10 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
                 if (tree->gtLclVarCommon.gtLclNum == varNum)
                 {
                     copy = gtNewIconNode(varVal, tree->gtType);
+                    if (tree->gtFlags & GTF_VAR_ARR_INDEX)
+                    {
+                        copy->LabelIndex(this);
+                    }
                 }
                 else
                 {
@@ -7930,8 +7947,9 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
 
             case GT_ARR_INDEX:
                 copy = new (this, GT_ARR_INDEX)
-                    GenTreeArrIndex(tree->TypeGet(), gtCloneExpr(tree->gtArrIndex.ArrObj(), addFlags, varNum, varVal),
-                                    gtCloneExpr(tree->gtArrIndex.IndexExpr(), addFlags, varNum, varVal),
+                    GenTreeArrIndex(tree->TypeGet(),
+                                    gtCloneExpr(tree->gtArrIndex.ArrObj(), addFlags, deepVarNum, deepVarVal),
+                                    gtCloneExpr(tree->gtArrIndex.IndexExpr(), addFlags, deepVarNum, deepVarVal),
                                     tree->gtArrIndex.gtCurrDim, tree->gtArrIndex.gtArrRank,
                                     tree->gtArrIndex.gtArrElemType);
                 break;
@@ -8030,12 +8048,20 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
 
         if (tree->gtOp.gtOp1)
         {
-            copy->gtOp.gtOp1 = gtCloneExpr(tree->gtOp.gtOp1, addFlags, varNum, varVal);
+            if (tree->gtOper == GT_ASG)
+            {
+                // Don't replace varNum if it appears as the LHS of an assign.
+                copy->gtOp.gtOp1 = gtCloneExpr(tree->gtOp.gtOp1, addFlags, -1, 0, deepVarNum, deepVarVal);
+            }
+            else
+            {
+                copy->gtOp.gtOp1 = gtCloneExpr(tree->gtOp.gtOp1, addFlags, deepVarNum, deepVarVal);
+            }
         }
 
         if (tree->gtGetOp2())
         {
-            copy->gtOp.gtOp2 = gtCloneExpr(tree->gtOp.gtOp2, addFlags, varNum, varVal);
+            copy->gtOp.gtOp2 = gtCloneExpr(tree->gtOp.gtOp2, addFlags, deepVarNum, deepVarVal);
         }
 
         /* Flags */
@@ -8097,18 +8123,6 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
             copy->CopyReg(tree);
         }
 
-        // We can call gtCloneExpr() before we have called fgMorph when we expand a GT_INDEX node in fgMorphArrayIndex()
-        // The method gtFoldExpr() expects to be run after fgMorph so it will set the GTF_DEBUG_NODE_MORPHED
-        // flag on nodes that it adds/modifies.  Then when we call fgMorph we will assert.
-        // We really only will need to fold when this method is used to replace references to
-        // local variable with an integer.
-        //
-        if (varNum != (unsigned)-1)
-        {
-            /* Try to do some folding */
-            copy = gtFoldExpr(copy);
-        }
-
         goto DONE;
     }
 
@@ -8117,7 +8131,7 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
     switch (oper)
     {
         case GT_STMT:
-            copy = gtCloneExpr(tree->gtStmt.gtStmtExpr, addFlags, varNum, varVal);
+            copy = gtCloneExpr(tree->gtStmt.gtStmtExpr, addFlags, deepVarNum, deepVarVal);
             copy = gtNewStmt(copy, tree->gtStmt.gtStmtILoffsx);
             goto DONE;
 
@@ -8125,15 +8139,17 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
 
             copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
 
-            copy->gtCall.gtCallObjp =
-                tree->gtCall.gtCallObjp ? gtCloneExpr(tree->gtCall.gtCallObjp, addFlags, varNum, varVal) : nullptr;
-            copy->gtCall.gtCallArgs = tree->gtCall.gtCallArgs
-                                          ? gtCloneExpr(tree->gtCall.gtCallArgs, addFlags, varNum, varVal)->AsArgList()
+            copy->gtCall.gtCallObjp = tree->gtCall.gtCallObjp
+                                          ? gtCloneExpr(tree->gtCall.gtCallObjp, addFlags, deepVarNum, deepVarVal)
                                           : nullptr;
+            copy->gtCall.gtCallArgs =
+                tree->gtCall.gtCallArgs
+                    ? gtCloneExpr(tree->gtCall.gtCallArgs, addFlags, deepVarNum, deepVarVal)->AsArgList()
+                    : nullptr;
             copy->gtCall.gtCallMoreFlags = tree->gtCall.gtCallMoreFlags;
             copy->gtCall.gtCallLateArgs =
                 tree->gtCall.gtCallLateArgs
-                    ? gtCloneExpr(tree->gtCall.gtCallLateArgs, addFlags, varNum, varVal)->AsArgList()
+                    ? gtCloneExpr(tree->gtCall.gtCallLateArgs, addFlags, deepVarNum, deepVarVal)->AsArgList()
                     : nullptr;
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -8154,11 +8170,12 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
             /* Copy the union */
             if (tree->gtCall.gtCallType == CT_INDIRECT)
             {
-                copy->gtCall.gtCallCookie = tree->gtCall.gtCallCookie
-                                                ? gtCloneExpr(tree->gtCall.gtCallCookie, addFlags, varNum, varVal)
-                                                : nullptr;
-                copy->gtCall.gtCallAddr =
-                    tree->gtCall.gtCallAddr ? gtCloneExpr(tree->gtCall.gtCallAddr, addFlags, varNum, varVal) : nullptr;
+                copy->gtCall.gtCallCookie =
+                    tree->gtCall.gtCallCookie ? gtCloneExpr(tree->gtCall.gtCallCookie, addFlags, deepVarNum, deepVarVal)
+                                              : nullptr;
+                copy->gtCall.gtCallAddr = tree->gtCall.gtCallAddr
+                                              ? gtCloneExpr(tree->gtCall.gtCallAddr, addFlags, deepVarNum, deepVarVal)
+                                              : nullptr;
             }
             else if (tree->gtFlags & GTF_CALL_VIRT_STUB)
             {
@@ -8205,8 +8222,9 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
 
             copy = gtNewFieldRef(tree->TypeGet(), tree->gtField.gtFldHnd, nullptr, tree->gtField.gtFldOffset);
 
-            copy->gtField.gtFldObj =
-                tree->gtField.gtFldObj ? gtCloneExpr(tree->gtField.gtFldObj, addFlags, varNum, varVal) : nullptr;
+            copy->gtField.gtFldObj = tree->gtField.gtFldObj
+                                         ? gtCloneExpr(tree->gtField.gtFldObj, addFlags, deepVarNum, deepVarVal)
+                                         : nullptr;
             copy->gtField.gtFldMayOverlap = tree->gtField.gtFldMayOverlap;
 #ifdef FEATURE_READYTORUN_COMPILER
             copy->gtField.gtFieldLookup = tree->gtField.gtFieldLookup;
@@ -8219,10 +8237,10 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
             GenTreePtr inds[GT_ARR_MAX_RANK];
             for (unsigned dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
             {
-                inds[dim] = gtCloneExpr(tree->gtArrElem.gtArrInds[dim], addFlags, varNum, varVal);
+                inds[dim] = gtCloneExpr(tree->gtArrElem.gtArrInds[dim], addFlags, deepVarNum, deepVarVal);
             }
             copy = new (this, GT_ARR_ELEM)
-                GenTreeArrElem(tree->TypeGet(), gtCloneExpr(tree->gtArrElem.gtArrObj, addFlags, varNum, varVal),
+                GenTreeArrElem(tree->TypeGet(), gtCloneExpr(tree->gtArrElem.gtArrObj, addFlags, deepVarNum, deepVarVal),
                                tree->gtArrElem.gtArrRank, tree->gtArrElem.gtArrElemSize, tree->gtArrElem.gtArrElemType,
                                &inds[0]);
         }
@@ -8231,34 +8249,37 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
         case GT_ARR_OFFSET:
         {
             copy = new (this, GT_ARR_OFFSET)
-                GenTreeArrOffs(tree->TypeGet(), gtCloneExpr(tree->gtArrOffs.gtOffset, addFlags, varNum, varVal),
-                               gtCloneExpr(tree->gtArrOffs.gtIndex, addFlags, varNum, varVal),
-                               gtCloneExpr(tree->gtArrOffs.gtArrObj, addFlags, varNum, varVal),
+                GenTreeArrOffs(tree->TypeGet(), gtCloneExpr(tree->gtArrOffs.gtOffset, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(tree->gtArrOffs.gtIndex, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(tree->gtArrOffs.gtArrObj, addFlags, deepVarNum, deepVarVal),
                                tree->gtArrOffs.gtCurrDim, tree->gtArrOffs.gtArrRank, tree->gtArrOffs.gtArrElemType);
         }
         break;
 
         case GT_CMPXCHG:
             copy = new (this, GT_CMPXCHG)
-                GenTreeCmpXchg(tree->TypeGet(), gtCloneExpr(tree->gtCmpXchg.gtOpLocation, addFlags, varNum, varVal),
-                               gtCloneExpr(tree->gtCmpXchg.gtOpValue, addFlags, varNum, varVal),
-                               gtCloneExpr(tree->gtCmpXchg.gtOpComparand, addFlags, varNum, varVal));
+                GenTreeCmpXchg(tree->TypeGet(),
+                               gtCloneExpr(tree->gtCmpXchg.gtOpLocation, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(tree->gtCmpXchg.gtOpValue, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(tree->gtCmpXchg.gtOpComparand, addFlags, deepVarNum, deepVarVal));
             break;
 
         case GT_ARR_BOUNDS_CHECK:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            copy = new (this, oper) GenTreeBoundsChk(oper, tree->TypeGet(),
-                                                     gtCloneExpr(tree->gtBoundsChk.gtArrLen, addFlags, varNum, varVal),
-                                                     gtCloneExpr(tree->gtBoundsChk.gtIndex, addFlags, varNum, varVal),
-                                                     tree->gtBoundsChk.gtThrowKind);
+            copy = new (this, oper)
+                GenTreeBoundsChk(oper, tree->TypeGet(),
+                                 gtCloneExpr(tree->gtBoundsChk.gtArrLen, addFlags, deepVarNum, deepVarVal),
+                                 gtCloneExpr(tree->gtBoundsChk.gtIndex, addFlags, deepVarNum, deepVarVal),
+                                 tree->gtBoundsChk.gtThrowKind);
             break;
 
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
-            copy = new (this, oper) GenTreeDynBlk(gtCloneExpr(tree->gtDynBlk.Addr(), addFlags, varNum, varVal),
-                                                  gtCloneExpr(tree->gtDynBlk.gtDynamicSize, addFlags, varNum, varVal));
+            copy = new (this, oper)
+                GenTreeDynBlk(gtCloneExpr(tree->gtDynBlk.Addr(), addFlags, deepVarNum, deepVarVal),
+                              gtCloneExpr(tree->gtDynBlk.gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
 
         default:
