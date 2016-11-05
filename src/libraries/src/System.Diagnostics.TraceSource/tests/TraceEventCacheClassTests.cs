@@ -47,5 +47,12 @@ namespace System.Diagnostics.TraceSourceTests
             var dt2 = cache.Timestamp;
             Assert.Equal(dt1, dt2);
         }
+
+        [Fact]
+        public void CallstackTest(){
+            var cache = new TraceEventCache();
+            Assert.Contains("at System.Environment.GetStackTrace(Exception e, Boolean needFileInfo)", cache.Callstack);
+            Assert.Contains("at System.Diagnostics.TraceEventCache.get_Callstack()", cache.Callstack);
+        }
     }
 }
