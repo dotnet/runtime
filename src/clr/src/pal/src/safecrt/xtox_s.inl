@@ -21,11 +21,9 @@
 #define _i64tox_s  _i64tow_s
 #define _ui64tox_s _ui64tow_s
 #define xtox       xtow
-#define _itox      _itow
 #define _ltox      _ltow
 #define _ultox     _ultow
 #define x64tox     x64tow
-#define _i64tox    _i64tow
 #else  /* _UNICODE */
 #define xtox_s     xtoa_s
 #define _itox_s    _itoa_s
@@ -35,11 +33,9 @@
 #define _i64tox_s  _i64toa_s
 #define _ui64tox_s _ui64toa_s
 #define xtox       xtoa
-#define _itox      _itoa
 #define _ltox      _ltoa
 #define _ultox     _ultoa
 #define x64tox     x64toa
-#define _i64tox    _i64toa
 #endif  /* _UNICODE */
 
 /***
@@ -221,19 +217,6 @@ errno_t __cdecl _ultox_s (
 
 /* Actual functions just call conversion helper with neg flag set correctly,
    and return pointer to buffer. */
-
-TCHAR * __cdecl _itox (
-        int val,
-        TCHAR *buf,
-        int radix
-        )
-{
-        if (radix == 10 && val < 0)
-            xtox((unsigned long)val, buf, radix, 1);
-        else
-            xtox((unsigned long)(unsigned int)val, buf, radix, 0);
-        return buf;
-}
 
 TCHAR * __cdecl _ltox (
         long val,
@@ -422,16 +405,6 @@ errno_t __cdecl _ui64tox_s (
 
 /* Actual functions just call conversion helper with neg flag set correctly,
    and return pointer to buffer. */
-
-TCHAR * __cdecl _i64tox (
-        __int64 val,
-        TCHAR *buf,
-        int radix
-        )
-{
-        x64tox((unsigned __int64)val, buf, radix, (radix == 10 && val < 0));
-        return buf;
-}
 
 TCHAR * __cdecl _ui64tox (
         unsigned __int64 val,

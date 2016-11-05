@@ -277,63 +277,6 @@ PAL_vprintf(
 
 /*++
 Function:
-  wsprintfA
-
-See MSDN doc.
---*/
-int
-PALAPIV
-wsprintfA(
-      OUT LPSTR buffer,
-      IN LPCSTR format,
-      ...)
-{
-    LONG Length;
-    va_list ap;
-
-    PERF_ENTRY(wsprintfA);
-    ENTRY("wsprintfA (buffer=%p, format=%p (%s))\n", buffer, format, format);
-
-    va_start(ap, format);
-    Length = InternalVsnprintf(CorUnix::InternalGetCurrentThread(), buffer, 1024, format, ap);
-    va_end(ap);
-
-    LOGEXIT("wsprintfA returns int %d\n", Length);
-    PERF_EXIT(wsprintfA);
-    return Length;
-}
-
-/*++
-Function:
-  wsprintfW
-
-See MSDN doc.
---*/
-int
-PALAPIV
-wsprintfW(
-      OUT LPWSTR buffer,
-      IN LPCWSTR format,
-      ...)
-{
-    LONG Length;
-    va_list ap;
-
-    PERF_ENTRY(wsprintfW);
-    ENTRY("wsprintfW (buffer=%p, format=%p (%S))\n", buffer, format, format);
-	
-    va_start(ap, format);
-    Length = PAL__wvsnprintf(buffer, 1024, format, ap);
-    va_end(ap);
-
-    LOGEXIT("wsprintfW returns int %d\n", Length);
-    PERF_EXIT(wsprintfW);
-    return Length;
-}
-
-
-/*++
-Function:
   _snprintf
 
 See MSDN doc.

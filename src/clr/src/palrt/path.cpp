@@ -11,7 +11,7 @@
 // ===========================================================================
 
 #include "common.h"
-
+#include "strsafe.h"
 
 
 #define CH_SLASH W('/')
@@ -355,7 +355,8 @@ STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc)
         else                                                                        // Everything else
         {
             // Just copy it.
-            lstrcpynW(lpchDst, lpchSrc, cchPC);
+            int cchRemainingBuffer = MAX_PATH - (lpszDst - lpchDst);
+            StringCchCopyNW(lpchDst, cchRemainingBuffer, lpchSrc, cchPC);
             lpchDst += cchPC - 1;
             lpchSrc += cchPC - 1;
         }
@@ -429,11 +430,12 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
         {
             if (!lpszFile || *lpszFile==W('\0'))
             {
-                lstrcpynW(szTemp, lpszDir, ARRAYSIZE(szTemp));       // lpszFile is empty
+                // lpszFile is empty
+                StringCchCopyNW(szTemp, ARRAYSIZE(szTemp), lpszDir, ARRAYSIZE(szTemp));
             }
             else if (PathIsRelativeW(lpszFile))
             {
-                lstrcpynW(szTemp, lpszDir, ARRAYSIZE(szTemp));
+                StringCchCopyNW(szTemp, ARRAYSIZE(szTemp), lpszDir, ARRAYSIZE(szTemp));
                 pszT = PathAddBackslashW(szTemp);
                 if (pszT)
                 {
@@ -441,7 +443,7 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
 
                     if (lstrlenW(lpszFile) < iRemaining)
                     {
-                        lstrcpynW(pszT, lpszFile, iRemaining);
+                        StringCchCopyNW(pszT, iRemaining, lpszFile, iRemaining);
                     }
                     else
                     {
@@ -455,7 +457,7 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
             }
             else if (IsPathSeparator(*lpszFile) && !PathIsUNCW(lpszFile))
             {
-                lstrcpynW(szTemp, lpszDir, ARRAYSIZE(szTemp));
+                StringCchCopyNW(szTemp, ARRAYSIZE(szTemp), lpszDir, ARRAYSIZE(szTemp));
                 // FEATURE: Note that we do not check that an actual root is returned;
                 // it is assumed that we are given valid parameters
                 PathStripToRootW(szTemp);
@@ -466,7 +468,8 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
                     // Skip the backslash when copying
                     // Note: We don't support strings longer than 4GB, but that's
                     // okay because we already barf at MAX_PATH
-                    lstrcpynW(pszT, lpszFile+1, (int)(ARRAYSIZE(szTemp) - (pszT - szTemp)));
+                    int iRemaining = (int)(ARRAYSIZE(szTemp) - (pszT - szTemp));
+                    StringCchCopyNW(pszT, iRemaining, lpszFile+1, iRemaining);
                 }
                 else
                 {
@@ -475,12 +478,14 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
             }
             else
             {
-                lstrcpynW(szTemp, lpszFile, ARRAYSIZE(szTemp));     // already fully qualified file part
+                // already fully qualified file part
+                StringCchCopyNW(szTemp, ARRAYSIZE(szTemp), lpszFile, ARRAYSIZE(szTemp));
             }
         }
         else if (lpszFile && *lpszFile)
         {
-            lstrcpynW(szTemp, lpszFile, ARRAYSIZE(szTemp));     // no dir just use file.
+            // no dir just use file.
+            StringCchCopyNW(szTemp, ARRAYSIZE(szTemp), lpszFile, ARRAYSIZE(szTemp));
         }
 
         //
