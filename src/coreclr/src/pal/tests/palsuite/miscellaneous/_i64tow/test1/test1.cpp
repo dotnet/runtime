@@ -6,7 +6,7 @@
 **
 ** Source:  test1.c
 **
-** Purpose: Tests _i64tow with normal values and different radices, negative 
+** Purpose: Tests _i64tow_s with normal values and different radices, negative 
 **          values, as well as the highest and lowest values.
 **
 **
@@ -54,17 +54,17 @@ int __cdecl main(int argc, char *argv[])
 
     for (i=0; i<sizeof(testCases) / sizeof(testCase); i++)
     {
-        ret = _i64tow(testCases[i].value, buffer, testCases[i].radix);
-        if (ret != buffer)
+        errno_t err = _i64tow_s(testCases[i].value, buffer, sizeof(buffer) / sizeof(buffer[0]), testCases[i].radix);
+
+        if(err != 0)
         {
-            Fail("_i64tow did not return a pointer to the string.\n"
-                "Expected %p, got %p\n", buffer, ret);
+            Fail("ERROR: _i64tow_s didn't return success, error code %d.\n", err);
         }
 
         testStr = convert(testCases[i].result);
         if (wcscmp(testStr, buffer) != 0)
         {
-            Fail("_i64tow did not give the correct string.\n"
+            Fail("_i64tow_s did not give the correct string.\n"
                 "Expected %S, got %S\n", testStr, buffer);
         }
         free(testStr);

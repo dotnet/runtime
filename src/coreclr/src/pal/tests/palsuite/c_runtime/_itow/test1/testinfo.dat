@@ -4,12 +4,12 @@
 
 Version = 1.0
 Section = C Runtime
-Function = _itow
-Name = Positive Test for _itow
+Function = _itow_s
+Name = Positive Test for _itow_s
 TYPE = DEFAULT
 EXE1 = test1
 Description
-= Tests the PAL implementation of the _itow function.
+= Tests the PAL implementation of the _itow_s function.
 = Test a number of ints with different radix on each, to ensure that the
 = string returned is correct.
 
