@@ -9,7 +9,7 @@
     "System.Threading.Thread": "4.4.0-beta-24631-01"
   },
   "frameworks": {
-    "netcoreapp1.0": {}
+    "netcoreapp1.1": {}
   },
   "runtimes": {
     "win7-x86": {},
