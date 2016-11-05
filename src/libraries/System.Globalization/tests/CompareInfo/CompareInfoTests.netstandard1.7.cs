@@ -329,5 +329,15 @@ namespace System.Globalization.Tests
             foreach (char c in source)
                 Assert.Equal(charExpectedResults, CompareInfo.IsSortable(c));
         }
+        
+        [Fact]
+        public void VersionTest()
+        {
+            SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;
+            SortVersion sv2 = CultureInfo.GetCultureInfo("ja-JP").CompareInfo.Version;
+            
+            Assert.Equal(sv1.FullVersion, sv2.FullVersion);
+            Assert.NotEqual(sv1.SortId, sv2.SortId);
+        } 
     }
 }
