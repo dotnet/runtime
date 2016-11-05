@@ -49,10 +49,25 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void CallstackTest(){
+        public void CallstackTest()
+        {
             var cache = new TraceEventCache();
             Assert.Contains("at System.Environment.GetStackTrace(Exception e, Boolean needFileInfo)", cache.Callstack);
             Assert.Contains("at System.Diagnostics.TraceEventCache.get_Callstack()", cache.Callstack);
+        }
+
+        [Fact]
+        public void LogicalOperationStack()
+        {
+            var cache = new TraceEventCache();
+            var logicalOperationStack = cache.LogicalOperationStack; 
+            Assert.Equal(0, logicalOperationStack.Count);
+            Trace.CorrelationManager.StartLogicalOperation("SecondaryThread");
+            Trace.CorrelationManager.StartLogicalOperation("MainThread");
+            Assert.NotNull(logicalOperationStack);
+            Assert.Equal(2, logicalOperationStack.Count);
+            Assert.Equal("MainThread", logicalOperationStack.Pop().ToString());
+            Assert.Equal("SecondaryThread", logicalOperationStack.Pop().ToString());
         }
     }
 }
