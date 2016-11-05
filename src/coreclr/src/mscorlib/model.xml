@@ -6935,6 +6935,11 @@
       <Member Name="ZeroFreeGlobalAllocAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocUnicode(System.IntPtr)" />
       <Member Name="ZeroFreeCoTaskMemUTF8(System.IntPtr)" />
+      <Member Name="SecureStringToCoTaskMemAnsi(System.Security.SecureString)" />
+      <Member Name="SecureStringToCoTaskMemUnicode(System.Security.SecureString)" />
+      <Member Name="SecureStringToGlobalAllocAnsi(System.Security.SecureString)" />
+      <Member Name="SecureStringToGlobalAllocUnicode(System.Security.SecureString)" />
+      <Member Name="SecureStringToBSTR(System.Security.SecureString)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.MarshalAsAttribute">
       <Member MemberType="Field" Name="ArraySubType" />

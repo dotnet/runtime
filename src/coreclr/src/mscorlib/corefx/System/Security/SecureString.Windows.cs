@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Microsoft.Win32;
 
 namespace System.Security
 {
@@ -141,6 +142,47 @@ namespace System.Security
             {
                 ProtectMemory();
             }
+        }
+
+        internal unsafe IntPtr MarshalToBSTR()
+        {
+            int length = _decryptedLength;
+            IntPtr ptr = IntPtr.Zero;
+            IntPtr result = IntPtr.Zero;
+            byte* bufferPtr = null;
+
+            UnprotectMemory();
+            try
+            {
+                _buffer.AcquirePointer(ref bufferPtr);
+                int resultByteLength = (length + 1) * sizeof(char);
+
+                ptr = Win32Native.SysAllocStringLen(null, length);
+                if (ptr == IntPtr.Zero) {
+                    throw new OutOfMemoryException();
+                }
+
+                Buffer.MemoryCopy(bufferPtr, (byte*)ptr, resultByteLength, length * sizeof(char));
+
+                result = ptr;
+            }
+            finally
+            {
+                ProtectMemory();
+
+                // If we failed for any reason, free the new buffer
+                if (result == IntPtr.Zero && ptr != IntPtr.Zero)
+                {
+                    Interop.NtDll.ZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
+                    Win32Native.SysFreeString(ptr);
+                }
+
+                if (bufferPtr != null)
+                {
+                    _buffer.ReleasePointer();
+                }
+            }
+            return result;
         }
 
         internal unsafe IntPtr MarshalToStringCore(bool globalAlloc, bool unicode)

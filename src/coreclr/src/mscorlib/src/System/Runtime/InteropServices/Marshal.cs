@@ -2691,9 +2691,6 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
 
-#if FEATURE_LEGACYSURFACE
-
-#if FEATURE_COMINTEROP
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToBSTR(SecureString s) {
             if( s == null) {
@@ -2701,9 +2698,12 @@ namespace System.Runtime.InteropServices
             }
             Contract.EndContractBlock();
             
-            return s.ToBSTR();
-        }
+#if FEATURE_COMINTEROP
+            return s.MarshalToBSTR();
+#else
+            throw new PlatformNotSupportedException();
 #endif
+        }
 
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s) {
@@ -2712,23 +2712,19 @@ namespace System.Runtime.InteropServices
             }
             Contract.EndContractBlock();
 
-            return s.ToAnsiStr(false);
+            return s.MarshalToString(globalAlloc: false, unicode: false);
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
         {
-            if (s == null)
-            {
+            if( s == null) {
                 throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 
-            return s.ToUniStr(false);
+            return  s.MarshalToString(globalAlloc: false, unicode: true);
         }
-
-#endif // FEATURE_LEGACYSURFACE
-
 
 #if FEATURE_COMINTEROP
         [System.Security.SecurityCritical]  // auto-generated_required
@@ -2760,7 +2756,6 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-#if FEATURE_LEGACYSURFACE
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s) {
             if( s == null) {
@@ -2768,7 +2763,7 @@ namespace System.Runtime.InteropServices
             }
             Contract.EndContractBlock();
 
-            return s.ToAnsiStr(true);
+            return s.MarshalToString(globalAlloc: true, unicode: false);
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
@@ -2778,9 +2773,8 @@ namespace System.Runtime.InteropServices
             }
             Contract.EndContractBlock();
 
-            return s.ToUniStr(true);
+            return s.MarshalToString(globalAlloc: true, unicode: true);;
         }
-#endif // FEATURE_LEGACYSURFACE
 
         [System.Security.SecurityCritical]  // auto-generated_required
         public static void ZeroFreeGlobalAllocAnsi(IntPtr s) {
