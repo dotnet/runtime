@@ -11,6 +11,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include "strsafe.h"
 
 #define SLASH       W('/')
 #define WHACK       W('\\')
@@ -293,14 +294,13 @@ ParseURLW(
 
         // (+ 1) for null terminator.
 
-        StrCpyNW(rgchDebugProtocol, ppu->pszProtocol,
+        StringCchCopyNW(rgchDebugProtocol, ARRAYSIZE(rgchDebugProtocol), ppu->pszProtocol,
             min(ppu->cchProtocol + 1, SIZECHARS(rgchDebugProtocol)));
 
         // (+ 1) for null terminator.
 
-        StrCpyNW(rgchDebugSuffix, ppu->pszSuffix,
+        StringCchCopyNW(rgchDebugSuffix, ARRAYSIZE(rgchDebugSuffix), ppu->pszSuffix,
             min(ppu->cchSuffix + 1, SIZECHARS(rgchDebugSuffix)));
-
     }
 #endif
 
