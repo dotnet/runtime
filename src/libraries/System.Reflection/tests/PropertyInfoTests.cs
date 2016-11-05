@@ -40,8 +40,8 @@ namespace System.Reflection.Tests
         public void GetMethod_SetMethod(Type type, string name, bool hasGetter, bool hasSetter)
         {
             PropertyInfo propertyInfo = GetProperty(type, name);
-            Assert.True(hasGetter == (propertyInfo.GetMethod != null), string.Format("{0}.GetMethod expected existence: '{1}', but got '{2}'", propertyInfo, hasGetter, !hasGetter));
-            Assert.True(hasSetter == (propertyInfo.SetMethod != null), string.Format("{0}.SetMethod expected existence: '{1}', but got '{2}'", propertyInfo, hasSetter, !hasSetter));
+            Assert.Equal(hasGetter, propertyInfo.GetMethod != null);
+            Assert.Equal(hasSetter, propertyInfo.SetMethod != null);
         }
 
         public static IEnumerable<object[]> GetValue_TestData()
@@ -200,17 +200,45 @@ namespace System.Reflection.Tests
         public static void GetGetMethod_GetSetMethod(string name, bool publicGet, bool nonPublicGet, bool publicSet, bool nonPublicSet)
         {
             PropertyInfo pi = typeof(PropertyInfoMembers).GetTypeInfo().GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.True(publicGet ? pi.GetGetMethod().Name.Equals("get_" + name) : pi.GetGetMethod() == null);
-            Assert.True(publicGet ? pi.GetGetMethod(false).Name.Equals("get_" + name) : pi.GetGetMethod() == null);
-            Assert.True(publicGet ? pi.GetGetMethod(true).Name.Equals("get_" + name) : pi.GetGetMethod() == null);
-            Assert.True(nonPublicGet ? pi.GetGetMethod(true).Name.Equals("get_" + name) : pi.GetGetMethod() == null);
-            Assert.True(nonPublicGet ? pi.GetGetMethod(true).Name.Equals("get_" + name) : pi.GetGetMethod(false) == null);
+            if (publicGet)
+            {
+                Assert.Equal("get_" + name, pi.GetGetMethod().Name);
+                Assert.Equal("get_" + name, pi.GetGetMethod(true).Name);
+                Assert.Equal("get_" + name, pi.GetGetMethod(false).Name);
+            }
+            else
+            {
+                Assert.Null(pi.GetGetMethod());
+            }
+            if (nonPublicGet)
+            {
+                Assert.Equal("get_" + name, pi.GetGetMethod(true).Name);
+            }
+            else
+            {
+                Assert.Null(pi.GetGetMethod());
+                Assert.Null(pi.GetGetMethod(false));
+            }
 
-            Assert.True(publicSet ? pi.GetSetMethod().Name.Equals("set_" + name) : pi.GetSetMethod() == null);
-            Assert.True(publicSet ? pi.GetSetMethod(false).Name.Equals("set_" + name) : pi.GetSetMethod() == null);
-            Assert.True(publicSet ? pi.GetSetMethod(true).Name.Equals("set_" + name) : pi.GetSetMethod() == null);
-            Assert.True(nonPublicSet ? pi.GetSetMethod(true).Name.Equals("set_" + name) : pi.GetSetMethod() == null);
-            Assert.True(nonPublicSet ? pi.GetSetMethod(true).Name.Equals("set_" + name) : pi.GetSetMethod(false) == null);
+            if (publicSet)
+            {
+                Assert.Equal("set_" + name, pi.GetSetMethod().Name);
+                Assert.Equal("set_" + name, pi.GetSetMethod(true).Name);
+                Assert.Equal("set_" + name, pi.GetSetMethod(false).Name);
+            }
+            else
+            {
+                Assert.Null(pi.GetSetMethod());
+            }
+            if (nonPublicSet)
+            {
+                Assert.Equal("set_" + name, pi.GetSetMethod(true).Name);
+            }
+            else
+            {
+                Assert.Null(pi.GetSetMethod());
+                Assert.Null(pi.GetSetMethod(false));
+            }
         }
 
         [Theory]
@@ -238,11 +266,7 @@ namespace System.Reflection.Tests
             PropertyInfo propertyInfo = GetProperty(type, name);
             ParameterInfo[] indexParameters = propertyInfo.GetIndexParameters();
 
-            Assert.Equal(expectedNames.Length, indexParameters.Length);
-            for (int i = 0; i < indexParameters.Length; i++)
-            {
-                Assert.Equal(expectedNames[i], indexParameters[i].Name);
-            }
+            Assert.Equal(expectedNames, indexParameters.Select(p => p.Name));
         }
 
         [Theory]

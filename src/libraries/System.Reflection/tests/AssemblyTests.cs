@@ -11,14 +11,13 @@ using System.Reflection.Tests;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-[assembly: 
+[assembly:
 Attr(77, name = "AttrSimple"),
 Int32Attr(77, name = "Int32AttrSimple"),
 Int64Attr(77, name = "Int64AttrSimple"),
 StringAttr("hello", name = "StringAttrSimple"),
 EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
 TypeAttr(typeof(object), name = "TypeAttrSimple")]
-
 [assembly: CompilationRelaxations(8)]
 [assembly: Debuggable((DebuggableAttribute.DebuggingModes)263)]
 [assembly: CLSCompliant(false)]
@@ -43,17 +42,15 @@ namespace System.Reflection.Tests
         public void CustomAttributes(Type type)
         {
             Assembly assembly = Helpers.ExecutingAssembly;
-            IEnumerable<CustomAttributeData> attributesData = assembly.CustomAttributes;
-            bool result = attributesData.Any(customAttribute => customAttribute.AttributeType.Equals(type));
-            Assert.True(result, $"Did not find custom attribute of type {type}.");
+            IEnumerable<Type> attributesData = assembly.CustomAttributes.Select(customAttribute => customAttribute.AttributeType);
+            Assert.Contains(type, attributesData);
 
             ICustomAttributeProvider attributeProvider = assembly;
-            Assert.Equal(1, attributeProvider.GetCustomAttributes(type, false).Length);
+            Assert.Single(attributeProvider.GetCustomAttributes(type, false));
             Assert.True(attributeProvider.IsDefined(type, false));
-            
-            object[] customAttributes = attributeProvider.GetCustomAttributes(false);
-            result = customAttributes.Any(attribute => attribute.GetType().Equals(type));
-            Assert.True(result, $"Did not find custom attribute of type {type}.");
+
+            IEnumerable<Type> customAttributes = attributeProvider.GetCustomAttributes(false).Select(attribute => attribute.GetType());
+            Assert.Contains(type, customAttributes);
         }
 
         [Theory]
@@ -68,9 +65,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(NullAttr), true)]
         public void DefinedTypes(Type type, bool expected)
         {
-            IEnumerable<TypeInfo> customAttrs = Helpers.ExecutingAssembly.DefinedTypes;
-            bool result = customAttrs.Any(typeInfo => typeInfo.AsType().Equals(type));
-            Assert.Equal(expected, result);
+            IEnumerable<Type> customAttrs = Helpers.ExecutingAssembly.DefinedTypes.Select(typeInfo => typeInfo.AsType());
+
+            Assert.Equal(expected, customAttrs.Contains(type));
         }
 
         [Theory]
@@ -79,10 +76,10 @@ namespace System.Reflection.Tests
         public void EmbeddedFiles(string resource, bool exists)
         {
             string[] resources = Helpers.ExecutingAssembly.GetManifestResourceNames();
-            Assert.True(exists == resources.Contains(resource), $"{resource} resource expected existence: '{exists}', but got '{!exists}'");
-
             Stream resourceStream = Helpers.ExecutingAssembly.GetManifestResourceStream(resource);
-            Assert.True(exists == (resourceStream != null), $"{resource} resource expected existence: '{exists}', but got '{!exists}'");
+
+            Assert.Equal(exists, resources.Contains(resource));
+            Assert.Equal(exists, resourceStream != null);
         }
 
         [Fact]
@@ -124,7 +121,7 @@ namespace System.Reflection.Tests
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
-            Assert.True(Assembly.GetEntryAssembly().ToString().StartsWith("xunit.console.netcore", StringComparison.OrdinalIgnoreCase));
+            Assert.StartsWith("xunit.console.netcore", Assembly.GetEntryAssembly().ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
@@ -140,7 +137,8 @@ namespace System.Reflection.Tests
         public void GetHashCode(Assembly assembly)
         {
             int hashCode = assembly.GetHashCode();
-            Assert.False((hashCode == -1) || (hashCode == 0));
+            Assert.NotEqual(-1, hashCode);
+            Assert.NotEqual(0, hashCode);
         }
 
         [Theory]
@@ -295,7 +293,7 @@ namespace System.Reflection.Tests
         [Theory]
         public void ToString(Assembly assembly, string expected)
         {
-            Assert.True(assembly.ToString().Contains(expected));
+            Assert.Contains(expected, assembly.ToString());
             Assert.Equal(assembly.ToString(), assembly.FullName);
         }
 
