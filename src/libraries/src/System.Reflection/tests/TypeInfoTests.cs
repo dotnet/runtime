@@ -71,18 +71,17 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_BaseClass), nameof(TI_SubClass.s_arrayField), true)]
         public void DeclaredFields(Type type, string name, bool exists)
         {
-            IEnumerable<FieldInfo> fields = type.GetTypeInfo().DeclaredFields;
-            bool result = fields.Any(fieldInfo => fieldInfo.Name.Equals(name));
-            Assert.True(exists == result, string.Format("Expected existence of field {0} in type {1} was '{2}' but got '{3}'", name, type, exists, result));
-
+            IEnumerable<string> fields = type.GetTypeInfo().DeclaredFields.Select(fieldInfo => fieldInfo.Name);
             FieldInfo declaredFieldInfo = type.GetTypeInfo().GetDeclaredField(name);
             if (exists)
             {
                 Assert.Equal(name, declaredFieldInfo.Name);
+                Assert.Contains(name, fields);
             }
             else
             {
                 Assert.Null(declaredFieldInfo);
+                Assert.DoesNotContain(name, fields);
             }
         }
 
@@ -91,11 +90,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), new string[] { "_field2", "_readonlyField", "_volatileField", "s_field", "s_readonlyField", "s_volatileField", "s_arrayField" })]
         public void DeclaredMembers(Type type, string[] expected)
         {
-            IEnumerable<MemberInfo> members = type.GetTypeInfo().DeclaredMembers;
-            foreach (string memberName in expected)
-            {
-                Assert.True(members.Any(memberInfo => memberInfo.Name.Equals(memberName)), string.Format("Did not find member {0} in type {1}", memberName, type));
-            }
+            HashSet<string> members = new HashSet<string>(type.GetTypeInfo().DeclaredMembers.Select(memberInfo => memberInfo.Name));
+            Assert.Superset(new HashSet<string>(expected), members);
         }
 
         [Theory]
@@ -113,18 +109,17 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.StaticVoidMethodReturningVoid), true)]
         public void DeclaredMethods(Type type, string name, bool exists)
         {
-            IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods;
-            bool result = methods.Any(methodInfo => methodInfo.Name.Equals(name));
-            Assert.True(exists == result, string.Format("Expected existence of method {0} in type {1} was '{2}' but got '{3}'", name, type, exists, result));
-
+            IEnumerable<string> methods = type.GetTypeInfo().DeclaredMethods.Select(methodInfo => methodInfo.Name);
             MethodInfo declaredMethodInfo = type.GetTypeInfo().GetDeclaredMethod(name);
             if (exists)
             {
                 Assert.Equal(name, declaredMethodInfo.Name);
+                Assert.Contains(name, methods);
             }
             else
             {
                 Assert.Null(declaredMethodInfo);
+                Assert.DoesNotContain(name, methods);
             }
         }
 
@@ -145,17 +140,18 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MultipleNestedClass.Nest1.Nest2), nameof(MultipleNestedClass.Nest1.Nest2.Nest3), true)]
         private void DeclaredNestedTypes(Type type, string name, bool exists)
         {
-            IEnumerable<TypeInfo> nestedTypes = type.GetTypeInfo().DeclaredNestedTypes;
-            Assert.True(exists == nestedTypes.Any(nestedType => nestedType.Name.Equals(name)));
+            IEnumerable<string> nestedTypes = type.GetTypeInfo().DeclaredNestedTypes.Select(nestedType => nestedType.Name);
 
             TypeInfo typeInfo = type.GetTypeInfo().GetDeclaredNestedType(name);
             if (exists)
             {
                 Assert.Equal(name, typeInfo.Name);
+                Assert.Contains(name, nestedTypes);
             }
             else
             {
                 Assert.Null(typeInfo);
+                Assert.DoesNotContain(name, nestedTypes);
             }
         }
 
@@ -169,8 +165,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.StaticStringProperty))]
         public void DeclaredProperties(Type type, string name)
         {
-            IEnumerable<PropertyInfo> properties = type.GetTypeInfo().DeclaredProperties;
-            Assert.True(properties.Any(property => property.Name.Equals(name)), string.Format("Did not find property {0} in type {1}", name, type));
+            IEnumerable<string> properties = type.GetTypeInfo().DeclaredProperties.Select(property => property.Name);
+            Assert.Contains(name, properties);
         }
 
         [Fact]
@@ -189,11 +185,11 @@ namespace System.Reflection.Tests
 
             interfaces = typeof(ClassWithInterface2Interface3).GetTypeInfo().FindInterfaces((Type t, object c) => true, "notused");
             Assert.Equal(2, interfaces.Length);
-            Assert.True(interfaces.All(m => m.Name.Contains("TI_NonGenericInterface")));
+            Assert.All(interfaces, m => Assert.Contains("TI_NonGenericInterface", m.Name));
 
             interfaces = typeof(ClassWithInterface2Interface3).GetTypeInfo().FindInterfaces((Type t, object c) => t.Name.Contains(c.ToString()), "TI_NonGenericInterface");
             Assert.Equal(2, interfaces.Length);
-            Assert.True(interfaces.All(m => m.Name.Contains("TI_NonGenericInterface")));
+            Assert.All(interfaces, m => Assert.Contains("TI_NonGenericInterface", m.Name));
 
             interfaces = typeof(SubClassWithInterface1).GetTypeInfo().FindInterfaces((Type t, object c) => true, "notused");
             Assert.Equal(1, interfaces.Length);
@@ -205,11 +201,11 @@ namespace System.Reflection.Tests
 
             interfaces = typeof(SubClassWithInterface1Interface2Interface3).GetTypeInfo().FindInterfaces((Type t, object c) => true, "notused");
             Assert.Equal(3, interfaces.Length);
-            Assert.True(interfaces.All(m => m.Name.Contains("TI_NonGenericInterface")));
+            Assert.All(interfaces, m => Assert.Contains("TI_NonGenericInterface", m.Name));
 
             interfaces = typeof(SubClassWithInterface1Interface2Interface3).GetTypeInfo().FindInterfaces((Type t, object c) => t.Name.Contains(c.ToString()), "TI_NonGenericInterface");
             Assert.Equal(3, interfaces.Length);
-            Assert.True(interfaces.All(m => m.Name.Contains("TI_NonGenericInterface")));
+            Assert.All(interfaces, m => Assert.Contains("TI_NonGenericInterface", m.Name));
 
             interfaces = typeof(SubClassWithInterface1Interface2Interface3).GetTypeInfo().FindInterfaces((Type t, object c) => t.Name.Contains(c.ToString()), nameof(TI_NonGenericInterface1));
             Assert.Equal(1, interfaces.Length);
@@ -477,12 +473,8 @@ namespace System.Reflection.Tests
             Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
             Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
 
-            Assert.Equal(expected.Length, implementedInterfaces.Length);
-            for (int i = 0; i < implementedInterfaces.Length; i++)
-            {
-                Assert.Equal(expected[i], implementedInterfaces[i]);
-                Assert.True(expected[i].GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()));
-            }
+            Assert.Equal(expected, implementedInterfaces);
+            Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
         }
 
         public static IEnumerable<object[]> IsInstanceOfType_TestData()
@@ -615,7 +607,7 @@ namespace System.Reflection.Tests
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Constructor, BindingFlags.Public | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
             Assert.Equal(2, members.Length);
-            Assert.True(members.All(m => m.Name.Equals(".ctor")));
+            Assert.All(members, m => Assert.Equal(".ctor", m.Name));
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Constructor, BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
             Assert.Equal(1, members.Length);
@@ -630,7 +622,7 @@ namespace System.Reflection.Tests
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Event, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => memberInfo.Name.Contains(c.ToString()), "Event");
             Assert.Equal(2, members.Length);
-            Assert.True(members.All(m => m.Name.Contains("Event")));
+            Assert.All(members, m => Assert.Contains("Event", m.Name));
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Property, BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
             Assert.Equal(1, members.Length);
@@ -638,19 +630,19 @@ namespace System.Reflection.Tests
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Property, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => memberInfo.Name.Contains(c.ToString()), "Prop");
             Assert.Equal(2, members.Length);
-            Assert.True(members.All(m => m.Name.Contains("Prop")));
+            Assert.All(members, m => Assert.Contains("Prop", m.Name));
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Method, BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
             Assert.Equal(7, members.Length);
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.Method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => memberInfo.Name.Contains(c.ToString()), "get");
             Assert.Equal(2, members.Length);
-            Assert.True(members.All(m => m.Name.Contains("Prop")));
-            Assert.True(members.All(m => m.Name.Contains("get_")));
+            Assert.All(members, m => Assert.Contains("Prop", m.Name));
+            Assert.All(members, m => Assert.Contains("get_", m.Name));
 
             members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.NestedType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
             Assert.Equal(1, members.Length);
-            Assert.True(members[0].Name.Contains("EventHandler"));
+            Assert.Contains("EventHandler", members[0].Name);
         }
 
         [Theory]
