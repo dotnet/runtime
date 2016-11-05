@@ -314,21 +314,16 @@ namespace System.Globalization
                 {
                     return null;
                 }
-                for (; (*str != '\0'); p++, str++)
+                // We only hurt the failure case
+                // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 as a
+                // space character we use 0x20 space character instead to mean the same.
+                while (*p == *str || (*str == '\u00a0' && *p == '\u0020'))
                 {
-                    if (*p != *str)
-                    { 
-                        //We only hurt the failure case
-                        if ((*str == '\u00A0') && (*p == '\u0020'))
-                        {
-                            // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 as a 
-                            // space character we use 0x20 space character instead to mean the same.
-                            continue;
-                        }
-                        return null;
-                    }
+                    p++;
+                    str++;
+                    if (*str == '\0') return p;
                 }
-                return p;
+                return null;
             }
 
             [System.Security.SecurityCritical]  // auto-generated
@@ -347,17 +342,12 @@ namespace System.Globalization
                 string groupSep;                // Group separator from NumberFormatInfo.
                 string currSymbol = null;       // Currency symbol from NumberFormatInfo.
 
-                string altdecSep = null;        // Decimal separator from NumberFormatInfo as a decimal
-                string altgroupSep = null;      // Group separator from NumberFormatInfo as a decimal
-
                 bool parsingCurrency = false;
                 if ((options & NumberStyles.AllowCurrencySymbol) != 0)
                 {
                     currSymbol = numfmt.CurrencySymbol;
                     // The idea here is to match the currency separators and on failure match the number separators to keep the perf of VB's IsNumeric fast.
                     // The values of decSep are setup to use the correct relevant separator (currency in the if part and decimal in the else part).
-                    altdecSep = numfmt.NumberDecimalSeparator;
-                    altgroupSep = numfmt.NumberGroupSeparator;
                     decSep = numfmt.CurrencyDecimalSeparator;
                     groupSep = numfmt.CurrencyGroupSeparator;
                     parsingCurrency = true;
@@ -369,9 +359,7 @@ namespace System.Globalization
                 }
 
                 int state = 0;
-                bool signflag = false; // Cache the results of "options & PARSE_LEADINGSIGN && !(state & STATE_SIGN)" to avoid doing this twice
                 bool bigNumber = (sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
-                bool bigNumberHex = (bigNumber && ((options & NumberStyles.AllowHexSpecifier) != 0));
                 int maxParseDigits = bigNumber ? int.MaxValue : NumberMaxDigits;
 
                 char* p = str;
@@ -382,37 +370,30 @@ namespace System.Globalization
                 {
                     // Eat whitespace unless we've found a sign which isn't followed by a currency symbol.
                     // "-Kr 1231.47" is legal but "- 1231.47" is not.
-                    if (IsWhite(ch) && ((options & NumberStyles.AllowLeadingWhite) != 0) && (((state & StateSign) == 0) || (((state & StateSign) != 0) && (((state & StateCurrency) != 0) || numfmt.NumberNegativePattern == 2))))
+                    if (!IsWhite(ch) || (options & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && numfmt.NumberNegativePattern != 2)))
                     {
-                        // Do nothing here. We will increase p at the end of the loop.
-                    }
-                    else if ((signflag = (((options & NumberStyles.AllowLeadingSign) != 0) && ((state & StateSign) == 0))) && ((next = MatchChars(p, numfmt.PositiveSign)) != null))
-                    {
-                        state |= StateSign;
-                        p = next - 1;
-                    }
-                    else if (signflag && (next = MatchChars(p, numfmt.NegativeSign)) != null)
-                    {
-                        state |= StateSign;
-                        number.sign = true;
-                        p = next - 1;
-                    }
-                    else if (ch == '(' && ((options & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
-                    {
-                        state |= StateSign | StateParens;
-                        number.sign = true;
-                    }
-                    else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null)
-                    {
-                        state |= StateCurrency;
-                        currSymbol = null;
-                        // We already found the currency symbol. There should not be more currency symbols. Set
-                        // currSymbol to NULL so that we won't search it again in the later code path.
-                        p = next - 1;
-                    }
-                    else
-                    {
-                        break;
+                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, numfmt.PositiveSign)) != null || ((next = MatchChars(p, numfmt.NegativeSign)) != null && (number.sign = true))))
+                        {
+                            state |= StateSign;
+                            p = next - 1;
+                        }
+                        else if (ch == '(' && ((options & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
+                        {
+                            state |= StateSign | StateParens;
+                            number.sign = true;
+                        }
+                        else if ((currSymbol != null && (next = MatchChars(p, currSymbol)) != null))
+                        {
+                            state |= StateCurrency;
+                            currSymbol = null;
+                            // We already found the currency symbol. There should not be more currency symbols. Set
+                            // currSymbol to NULL so that we won't search it again in the later code path.
+                            p = next - 1;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                     ch = *++p;
                 }
@@ -424,7 +405,7 @@ namespace System.Globalization
                     {
                         state |= StateDigits;
 
-                        if (ch != '0' || (state & StateNonZero) != 0 || bigNumberHex)
+                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && ((options & NumberStyles.AllowHexSpecifier) != 0)))
                         {
                             if (digCount < maxParseDigits)
                             {
@@ -448,12 +429,12 @@ namespace System.Globalization
                             number.scale--;
                         }
                     }
-                    else if (((options & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, decSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, altdecSep)) != null))
+                    else if (((options & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, decSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, numfmt.NumberDecimalSeparator)) != null))
                     {
                         state |= StateDecimal;
                         p = next - 1;
                     }
-                    else if (((options & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, groupSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, altgroupSep)) != null))
+                    else if (((options & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, groupSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, numfmt.NumberGroupSeparator)) != null))
                     {
                         p = next - 1;
                     }
@@ -515,32 +496,26 @@ namespace System.Globalization
                     }
                     while (true)
                     {
-                        if (IsWhite(ch) && ((options & NumberStyles.AllowTrailingWhite) != 0))
+                        if (!IsWhite(ch) || (options & NumberStyles.AllowTrailingWhite) == 0)
                         {
-                        }
-                        else if ((signflag = (((options & NumberStyles.AllowTrailingSign) != 0) && ((state & StateSign) == 0))) && (next = MatchChars(p, numfmt.PositiveSign)) != null)
-                        {
-                            state |= StateSign;
-                            p = next - 1;
-                        }
-                        else if (signflag && (next = MatchChars(p, numfmt.NegativeSign)) != null)
-                        {
-                            state |= StateSign;
-                            number.sign = true;
-                            p = next - 1;
-                        }
-                        else if (ch == ')' && ((state & StateParens) != 0))
-                        {
-                            state &= ~StateParens;
-                        }
-                        else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null)
-                        {
-                            currSymbol = null;
-                            p = next - 1;
-                        }
-                        else
-                        {
-                            break;
+                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, numfmt.PositiveSign)) != null || (((next = MatchChars(p, numfmt.NegativeSign)) != null) && (number.sign = true))))
+                            {
+                                state |= StateSign;
+                                p = next - 1;
+                            }
+                            else if (ch == ')' && ((state & StateParens) != 0))
+                            {
+                                state &= ~StateParens;
+                            }
+                            else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null)
+                            {
+                                currSymbol = null;
+                                p = next - 1;
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
                         ch = *++p;
                     }
