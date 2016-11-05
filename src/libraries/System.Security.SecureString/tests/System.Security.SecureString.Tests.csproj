@@ -27,5 +27,11 @@
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
+
+  <ItemGroup >
+    <!-- TODO: Remove this when the package reference is ready -->
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\pkg\System.Runtime.InteropServices.pkgproj" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

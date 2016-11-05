@@ -1759,3 +1759,30 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
     }
 }
+
+namespace System.Security
+{
+    [System.CLSCompliant(false)]
+    public sealed class SecureString : IDisposable {
+        public SecureString() { }
+        public unsafe SecureString(char* value, int length) { }
+        public int Length { get { throw null; } }
+        public void AppendChar(char c) { }
+        public void Clear() { }
+        public SecureString Copy() { throw null; }
+        public void Dispose() { }
+        public void InsertAt(int index, char c) { }
+        public bool IsReadOnly() { throw null; }
+        public void MakeReadOnly() { }
+        public void RemoveAt(int index) { }
+        public void SetAt(int index, char c) { }
+    }
+
+    [System.CLSCompliant(false)]
+    public static class SecureStringMarshal {
+        public static IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
+    }
+}

@@ -5,6 +5,7 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CryptographicException))]
 
 namespace System.Security.Cryptography
 {
@@ -27,15 +28,6 @@ namespace System.Security.Cryptography
         ECB = 2,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         OFB = 3,
-    }
-    public partial class CryptographicException : System.SystemException
-    {
-        public CryptographicException() { }
-        public CryptographicException(int hr) { }
-        protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public CryptographicException(string message) { }
-        public CryptographicException(string message, System.Exception inner) { }
-        public CryptographicException(string format, string insert) { }
     }
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
