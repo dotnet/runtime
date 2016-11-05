@@ -386,6 +386,11 @@ typedef struct {
 	mgreg_t regs [32];
 	double fregs [32];
 	mgreg_t pc;
+	/*
+	 * fregs might not be initialized if this context was created from a
+	 * ucontext.
+	 */
+	mgreg_t has_fregs;
 } MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (mgreg_t)ip; } while (0)
