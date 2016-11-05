@@ -1112,17 +1112,36 @@ namespace System.IO
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-            
-            Task flushTask = FlushAsync(cancellationToken);
-            return flushTask.Status == TaskStatus.RanToCompletion ?
-                _stream.CopyToAsync(destination, bufferSize, cancellationToken) :
-                CopyToAsyncCore(flushTask, destination, bufferSize, cancellationToken);
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled<int>(cancellationToken) :
+                CopyToAsyncCore(destination, bufferSize, cancellationToken);
         }
 
-        private async Task CopyToAsyncCore(Task flushTask, Stream destination, int bufferSize, CancellationToken cancellationToken)
+        private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            await flushTask.ConfigureAwait(false);
-            await _stream.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
+            // Synchronize async operations as does Read/WriteAsync.
+            await LazyEnsureAsyncActiveSemaphoreInitialized().WaitAsync().ConfigureAwait(false);
+            try
+            {
+                int readBytes = _readLen - _readPos;
+                Debug.Assert(readBytes >= 0, $"Expected a non-negative number of bytes in buffer, got {readBytes}");
+                if (readBytes > 0)
+                {
+                    // If there's any read data in the buffer, write it all to the destination stream.
+                    Debug.Assert(_writePos == 0, "Write buffer must be empty if there's data in the read buffer");
+                    await destination.WriteAsync(_buffer, _readPos, readBytes, cancellationToken).ConfigureAwait(false);
+                    _readPos = _readLen = 0;
+                }
+                else if (_writePos > 0)
+                {
+                    // If there's write data in the buffer, flush it back to the underlying stream, as does ReadAsync.
+                    await FlushWriteAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                // Our buffer is now clear. Copy data directly from the source stream to the destination stream.
+                await _stream.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
+            }
+            finally { _asyncActiveSemaphore.Release(); }
         }
     }  // class BufferedStream
 }  // namespace
