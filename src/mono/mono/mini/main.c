@@ -151,7 +151,7 @@ bundle_save_library_initialize ()
 	bundle_save_library_initialized = 1;
 	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", NULL);
 	bundled_dylibrary_directory = g_mkdtemp (path);
-	g_free (path);
+	/* don't free path - mkdtemp modifies it in place, and bundled_dylibrary_directory is an alias of it */
 	if (bundled_dylibrary_directory == NULL)
 		return;
 	atexit (delete_bundled_libraries);
