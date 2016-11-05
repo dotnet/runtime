@@ -95,7 +95,7 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public void SslStream_StreamToStream_Successive_ClientWrite_Sync_WithZeroBytes_Success()
+        public void SslStream_StreamToStream_Successive_ClientWrite_WithZeroBytes_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
@@ -110,6 +110,7 @@ namespace System.Net.Security.Tests
                 Assert.True(result, "Handshake completed.");
 
                 clientSslStream.Write(Array.Empty<byte>());
+                clientSslStream.WriteAsync(Array.Empty<byte>(), 0, 0).Wait();
                 clientSslStream.Write(_sampleMsg);
 
                 serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
@@ -117,6 +118,7 @@ namespace System.Net.Security.Tests
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
                 clientSslStream.Write(_sampleMsg);
+                clientSslStream.WriteAsync(Array.Empty<byte>(), 0, 0).Wait();
                 clientSslStream.Write(Array.Empty<byte>());
 
                 serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
