@@ -6,7 +6,7 @@
     "xunit.runner.msbuild": "2.2.0-beta2-build3300"
   },
   "frameworks": {
-    "netcoreapp1.0": {
+    "netcoreapp1.1": {
       "imports": [
         "dnxcore50",  
         "portable-net45+win8"
