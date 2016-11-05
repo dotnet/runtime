@@ -632,3 +632,8 @@ TypesMustExist : Type 'System.IO.FileStream' does not exist in the implementatio
 MembersMustExist : Member 'System.BadImageFormatException.FusionLog.get()' does not exist in the implementation but it does exist in the contract. 
 TypesMustExist : Type 'System.DuplicateWaitObjectException' does not exist in the implementation but it does exist in the contract. 
 TypesMustExist : Type 'System.TypeUnloadedException' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.Globalization.CompareInfo.Version.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.CultureTypes.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.GetConsoleFallbackUICulture()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.IetfLanguageTag.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.KeyboardLayoutId.get()' does not exist in the implementation but it does exist in the contract.
