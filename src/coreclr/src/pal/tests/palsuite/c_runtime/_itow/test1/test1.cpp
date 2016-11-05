@@ -6,7 +6,7 @@
 **
 ** Source:  test1.c
 **
-** Purpose: Tests the PAL implementation of the _itow function.
+** Purpose: Tests the PAL implementation of the _itow_s function.
 **          Test a number of ints with different radix on each,
 **          to ensure that the string returned is correct.
 **
@@ -65,19 +65,18 @@ int __cdecl main(int argc, char **argv)
 
     for(i = 0; i < sizeof(testCases) / sizeof(struct testCase); i++)
     {
-        pResult = _itow(testCases[i].value,result,testCases[i].radix);
+        errno_t err = _itow_s(testCases[i].value, result, sizeof(result) / sizeof(result[0]), testCases[i].radix);
 
-        if(pResult != &result[0])
+        if(err != 0)
         {
-            Fail("ERROR: _itow didn't return a correct pointer to the "
-                   "newly formed string.\n");
+            Fail("ERROR: _itow_s didn't return success, error code %d.\n", err);
         }
 
-        if (0 != wcscmp(testCases[i].CorrectResult,pResult))
+        if (0 != wcscmp(testCases[i].CorrectResult, result))
         {
             PrintResult = convertC(pResult);
             PrintCorrectResult = convertC(testCases[i].CorrectResult);
-            Fail("ERROR: _itow was called on %i, returning the string %s "
+            Fail("ERROR: _itow_s was called on %i, returning the string %s "
                    "when it should have returned the string %s.\n"
                    , testCases[i].value, PrintResult, PrintCorrectResult);
         }

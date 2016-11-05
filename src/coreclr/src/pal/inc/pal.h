@@ -671,28 +671,6 @@ CharNextExA(
 #endif
 
 
-PALIMPORT
-int
-PALAPIV
-wsprintfA(
-      OUT LPSTR,
-      IN LPCSTR,
-      ...);
-
-PALIMPORT
-int
-PALAPIV
-wsprintfW(
-      OUT LPWSTR,
-      IN LPCWSTR,
-      ...);
-
-#ifdef UNICODE
-#define wsprintf wsprintfW
-#else
-#define wsprintf wsprintfA
-#endif
-
 #define MB_OK                   0x00000000L
 #define MB_OKCANCEL             0x00000001L
 #define MB_ABORTRETRYIGNORE     0x00000002L
@@ -4801,28 +4779,6 @@ DebugBreak(
        VOID);
 
 PALIMPORT
-LPWSTR
-PALAPI
-lstrcatW(
-     IN OUT LPWSTR lpString1,
-     IN LPCWSTR lpString2);
-
-#ifdef UNICODE
-#define lstrcat lstrcatW
-#endif
-
-PALIMPORT
-LPWSTR
-PALAPI
-lstrcpyW(
-     OUT LPWSTR lpString1,
-     IN LPCWSTR lpString2);
-
-#ifdef UNICODE
-#define lstrcpy lstrcpyW
-#endif
-
-PALIMPORT
 int
 PALAPI
 lstrlenA(
@@ -4839,19 +4795,6 @@ lstrlenW(
 #else
 #define lstrlen lstrlenA
 #endif
-
-PALIMPORT
-LPWSTR
-PALAPI
-lstrcpynW(
-      OUT LPWSTR lpString1,
-      IN LPCWSTR lpString2,
-      IN int iMaxLength);
-
-#ifdef UNICODE
-#define lstrcpyn lstrcpynW
-#endif
-
 
 PALIMPORT
 DWORD
@@ -5922,7 +5865,7 @@ PALIMPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT int __cdecl _vsnwprintf(WCHAR *, size_t, const WCHAR *, va_list);
-PALIMPORT WCHAR * __cdecl _itow(int, WCHAR *, int);
+PALIMPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
 
 PALIMPORT size_t __cdecl PAL_wcslen(const WCHAR *);
 PALIMPORT int __cdecl PAL_wcscmp(const WCHAR*, const WCHAR*);
@@ -5957,7 +5900,7 @@ PALIMPORT WCHAR __cdecl PAL_towupper(WCHAR);
 
 PALIMPORT WCHAR * __cdecl _wcslwr(WCHAR *);
 PALIMPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
-PALIMPORT WCHAR * __cdecl _i64tow(__int64, WCHAR *, int);
+PALIMPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
 #ifdef __cplusplus
