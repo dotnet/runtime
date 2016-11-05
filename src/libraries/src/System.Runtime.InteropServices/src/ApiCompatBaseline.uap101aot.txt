@@ -34,4 +34,6 @@ MembersMustExist : Member 'System.Runtime.InteropServices.SafeHandle.Close()' do
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SEHException' does not inherit from base type 'System.Runtime.InteropServices.ExternalException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.SEHException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedType System.Runtime.InteropServices.UnmanagedType.LPUTF8Str' does not exist in the implementation but it does exist in the contract.
-Total Issues: 35
+TypesMustExist : Type 'System.Security.SecureString' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecureStringMarshal' does not exist in the implementation but it does exist in the contract.
+Total Issues: 37
