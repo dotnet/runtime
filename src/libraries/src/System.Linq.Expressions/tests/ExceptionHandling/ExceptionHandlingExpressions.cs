@@ -119,22 +119,22 @@ namespace System.Linq.Expressions.Tests
             CannotRethrowWithinFaultWithinCatch(false);
         }
 
-        [Theory]
-        [InlineData(false)]
-        public void CanCatchAndThrowNonExceptions(bool useInterpreter)
+        [Fact]
+        public void CompilerCanCatchAndThrowNonExceptions()
         {
             TryExpression throwCatchString = Expression.TryCatch(
                 Expression.Throw(Expression.Constant("Hello")),
                 Expression.Catch(typeof(string), Expression.Empty())
                 );
-            Expression.Lambda<Action>(throwCatchString).Compile(useInterpreter)();
+            Expression.Lambda<Action>(throwCatchString).Compile(false)();
         }
 
         [Fact]
-        [ActiveIssue(5898)]
-        public void CanCatchAndThrowNonExceptionsInterpreted()
+        public void InterpreterCannotThrowNonExceptions()
         {
-            CanCatchAndThrowNonExceptions(true);
+            UnaryExpression throwString = Expression.Throw(Expression.Constant("Hello"));
+            var act = Expression.Lambda<Action>(throwString).Compile(true);
+            Assert.Throws<InvalidOperationException>(act);
         }
 
         [Theory]

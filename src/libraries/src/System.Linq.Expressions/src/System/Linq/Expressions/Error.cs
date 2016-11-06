@@ -1322,6 +1322,11 @@ namespace System.Linq.Expressions
             return new InvalidProgramException();
         }
 
+        internal static InvalidOperationException InterpreterCannotThrowNonExceptions()
+        {
+            return new InvalidOperationException(Strings.InterpreterCannotThrowNonExceptions);
+        }
+
         private static string GetParamName(string paramName, int index)
         {
             if (index >= 0)
