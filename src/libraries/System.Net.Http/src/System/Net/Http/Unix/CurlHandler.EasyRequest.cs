@@ -673,6 +673,7 @@ namespace System.Net.Http
                     receiveHeadersCallback,
                     easyGCHandle,
                     ref _callbackHandle);
+                ThrowOOMIfInvalid(_callbackHandle);
 
                 // If we're sending data as part of the request, add callbacks for sending request data
                 if (_requestMessage.Content != null)
@@ -683,12 +684,14 @@ namespace System.Net.Http
                         sendCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
 
                     Interop.Http.RegisterSeekCallback(
                         _easyHandle,
                         seekCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
                 }
 
                 // If we're expecting any data in response, add a callback for receiving body data
@@ -700,6 +703,7 @@ namespace System.Net.Http
                         receiveBodyCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
                 }
 
                 if (NetEventSource.IsEnabled)
@@ -710,6 +714,7 @@ namespace System.Net.Http
                         debugCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
                     if (curlResult != CURLcode.CURLE_OK)
                     {
                         EventSourceTrace("Failed to register debug callback.");
@@ -724,8 +729,7 @@ namespace System.Net.Http
                     _callbackHandle = new SafeCallbackHandle();
                 }
 
-                CURLcode result = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, userPointer, ref _callbackHandle);
-                return result;
+                return Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, userPointer, ref _callbackHandle);
             }
 
             private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSListHandle handle)
@@ -769,7 +773,22 @@ namespace System.Net.Http
             private static void ThrowOOMIfFalse(bool appendResult)
             {
                 if (!appendResult)
-                    throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
+                {
+                    ThrowOOM();
+                }
+            }
+
+            private static void ThrowOOMIfInvalid(SafeHandle handle)
+            {
+                if (handle.IsInvalid)
+                {
+                    ThrowOOM();
+                }
+            }
+
+            private static void ThrowOOM()
+            {
+                throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
             }
 
             internal sealed class SendTransferState
