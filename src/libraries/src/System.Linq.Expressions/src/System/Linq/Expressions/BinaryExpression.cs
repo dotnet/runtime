@@ -604,7 +604,7 @@ namespace System.Linq.Expressions
         private static BinaryExpression GetMethodBasedBinaryOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, bool liftToNull)
         {
             System.Diagnostics.Debug.Assert(method != null);
-            ValidateOperator(method, nameof(method));
+            ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 2)
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
@@ -729,9 +729,9 @@ namespace System.Linq.Expressions
             }
         }
         
-        private static void ValidateOperator(MethodInfo method, string paramName)
+        private static void ValidateOperator(MethodInfo method)
         {
-            System.Diagnostics.Debug.Assert(method != null);
+            Debug.Assert(method != null);
             ValidateMethodInfo(method, nameof(method));
             if (!method.IsStatic)
                 throw Error.UserDefinedOperatorMustBeStatic(method, nameof(method));
@@ -775,7 +775,7 @@ namespace System.Linq.Expressions
         
         private static void ValidateUserDefinedConditionalLogicOperator(ExpressionType nodeType, Type left, Type right, MethodInfo method)
         {
-            ValidateOperator(method, nameof(method));
+            ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 2)
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
