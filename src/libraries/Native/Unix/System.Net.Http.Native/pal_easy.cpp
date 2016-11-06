@@ -6,6 +6,7 @@
 #include "pal_easy.h"
 
 #include <assert.h>
+#include <memory>
 
 static_assert(PAL_CURLOPT_INFILESIZE == CURLOPT_INFILESIZE, "");
 static_assert(PAL_CURLOPT_SSLVERSION == CURLOPT_SSLVERSION, "");
@@ -195,14 +196,16 @@ struct CallbackHandle
     void* debugUserPointer;
 };
 
-static inline void EnsureCallbackHandle(CallbackHandle** callbackHandle)
+static inline bool EnsureCallbackHandle(CallbackHandle** callbackHandle)
 {
     assert(callbackHandle != nullptr);
 
     if (*callbackHandle == nullptr)
     {
-        *callbackHandle = new CallbackHandle();
+        *callbackHandle = new (std::nothrow) CallbackHandle();
     }
+
+    return *callbackHandle != nullptr;
 }
 
 static int seek_callback(void* userp, curl_off_t offset, int origin)
@@ -214,14 +217,15 @@ static int seek_callback(void* userp, curl_off_t offset, int origin)
 extern "C" void
 HttpNative_RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle)
 {
-    EnsureCallbackHandle(callbackHandle);
+    if (EnsureCallbackHandle(callbackHandle))
+    {
+        CallbackHandle* handle = *callbackHandle;
+        handle->seekCallback = callback;
+        handle->seekUserPointer = userPointer;
 
-    CallbackHandle* handle = *callbackHandle;
-    handle->seekCallback = callback;
-    handle->seekUserPointer = userPointer;
-
-    curl_easy_setopt(curl, CURLOPT_SEEKDATA, handle);
-    curl_easy_setopt(curl, CURLOPT_SEEKFUNCTION, &seek_callback);
+        curl_easy_setopt(curl, CURLOPT_SEEKDATA, handle);
+        curl_easy_setopt(curl, CURLOPT_SEEKFUNCTION, &seek_callback);
+    }
 }
 
 static size_t write_callback(char* buffer, size_t size, size_t nitems, void* instream)
@@ -251,12 +255,12 @@ extern "C" void HttpNative_RegisterReadWriteCallback(CURL* curl,
                                                      void* userPointer,
                                                      CallbackHandle** callbackHandle)
 {
-    EnsureCallbackHandle(callbackHandle);
-
-    CallbackHandle* handle = *callbackHandle;
-
-    switch (functionType)
+    if (EnsureCallbackHandle(callbackHandle))
     {
+        CallbackHandle* handle = *callbackHandle;
+
+        switch (functionType)
+        {
         case ReadWriteFunction::Write:
             handle->writeCallback = callback;
             handle->writeUserPointer = userPointer;
@@ -277,6 +281,7 @@ extern "C" void HttpNative_RegisterReadWriteCallback(CURL* curl,
             curl_easy_setopt(curl, CURLOPT_HEADERDATA, handle);
             curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &header_callback);
             break;
+        }
     }
 }
 
@@ -293,7 +298,10 @@ extern "C" int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
                                                      void* userPointer,
                                                      CallbackHandle** callbackHandle)
 {
-    EnsureCallbackHandle(callbackHandle);
+    if (!EnsureCallbackHandle(callbackHandle))
+    {
+        return CURLE_OUT_OF_MEMORY;
+    }
 
     CallbackHandle* handle = *callbackHandle;
     handle->sslCtxCallback = callback;
@@ -316,7 +324,10 @@ extern "C" int32_t HttpNative_RegisterDebugCallback(CURL* curl,
                                                     void* userPointer, 
                                                     CallbackHandle** callbackHandle)
 {
-    EnsureCallbackHandle(callbackHandle);
+    if (!EnsureCallbackHandle(callbackHandle))
+    {
+        return CURLE_OUT_OF_MEMORY;
+    }
 
     CallbackHandle* handle = *callbackHandle;
     handle->debugCallback = callback;
@@ -330,5 +341,9 @@ extern "C" int32_t HttpNative_RegisterDebugCallback(CURL* curl,
 
 extern "C" void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle)
 {
-    delete callbackHandle;
+    assert(callbackHandle != nullptr);
+    if (callbackHandle != nullptr)
+    {
+        delete callbackHandle;
+    }
 }
