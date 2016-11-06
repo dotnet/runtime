@@ -396,7 +396,7 @@ def osShortName = ['Windows 10': 'win10',
             // Set up triggers
             if (isPR) {
                 // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
-                if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' ) {
+                if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || /*osName == 'CentOS7.1' ||*/ osName == 'OSX' ) {
                     Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
                 }
                 else {
