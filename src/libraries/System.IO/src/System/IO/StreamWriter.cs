@@ -27,7 +27,7 @@ namespace System.IO
         private const int DontCopyOnWriteLineThreshold = 512;
 
         // Bit bucket - Null has no backing store. Non closable.
-        public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, new UTF8Encoding(false, true), MinBufferSize, true);
+        public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, true);
 
         private Stream _stream;
         private Encoding _encoding;
@@ -66,22 +66,7 @@ namespace System.IO
         // Even Close() will hit the exception as it would try to flush the unwritten data. 
         // Maybe we can add a DiscardBufferedData() method to get out of such situation (like 
         // StreamReader though for different reason). Either way, the buffered data will be lost!
-        private static volatile Encoding s_utf8NoBOM;
-
-        internal static Encoding UTF8NoBOM
-        {
-            //[FriendAccessAllowed]
-            get
-            {
-                if (s_utf8NoBOM == null)
-                {
-                    // No need for double lock - we just want to avoid extra
-                    // allocations in the common case.
-                    s_utf8NoBOM = new UTF8Encoding(false, true);
-                }
-                return s_utf8NoBOM;
-            }
-        }
+        private static Encoding UTF8NoBOM => EncodingCache.UTF8NoBOM;
 
 
         internal StreamWriter() : base(null)

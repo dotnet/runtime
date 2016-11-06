@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
+    <Compile Include="System\IO\EncodingCache.cs" />
     <Compile Include="System\IO\StreamReader.cs" />
     <Compile Include="System\IO\StreamWriter.cs" />
     <Compile Include="System\IO\StringReader.cs" />

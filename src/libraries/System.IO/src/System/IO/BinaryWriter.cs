@@ -34,11 +34,11 @@ namespace System.IO
         {
             OutStream = Stream.Null;
             _buffer = new byte[16];
-            _encoding = new UTF8Encoding(false, true);
+            _encoding = EncodingCache.UTF8NoBOM;
             _encoder = _encoding.GetEncoder();
         }
 
-        public BinaryWriter(Stream output) : this(output, new UTF8Encoding(false, true), false)
+        public BinaryWriter(Stream output) : this(output, EncodingCache.UTF8NoBOM, false)
         {
         }
 
