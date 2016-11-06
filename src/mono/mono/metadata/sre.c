@@ -3199,7 +3199,6 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	}
 
 	klass->field.count = tb->num_fields;
-	klass->field.first = 0;
 
 	mono_error_init (error);
 

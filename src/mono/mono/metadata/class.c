@@ -1281,7 +1281,7 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	MonoGenericContainer *container = NULL;
 	MonoImage *m = klass->image;
 	const int top = klass->field.count;
-	int i;
+	int i, first_field_idx;
 
 	g_assert (klass->enumtype);
 
@@ -1298,13 +1298,14 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	/*
 	 * Fetch all the field information.
 	 */
+	first_field_idx = mono_class_get_first_field_idx (klass);
 	for (i = 0; i < top; i++){
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
-		int idx = klass->field.first + i;
+		int idx = first_field_idx + i;
 		MonoType *ftype;
 
-		/* klass->field.first and idx points into the fieldptr table */
+		/* first_field_idx and idx points into the fieldptr table */
 		mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
@@ -1408,7 +1409,7 @@ mono_class_alloc0 (MonoClass *klass, int size)
  * Initializes the following fields in MonoClass:
  * * klass->fields (only field->parent and field->name)
  * * klass->field.count
- * * klass->field.first
+ * * klass->first_field_idx
  * LOCKING: Acquires the loader lock
  */
 static void
@@ -1443,7 +1444,6 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 		mono_class_setup_basic_field_info (gtd);
 
 		mono_loader_lock ();
-		klass->field.first = gtd->field.first;
 		klass->field.count = gtd->field.count;
 		mono_loader_unlock ();
 	}
@@ -1455,15 +1455,16 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 	/*
 	 * Fetch all the field information.
 	 */
-	for (i = 0; i < top; i++){
+	int first_field_idx = mono_class_has_static_metadata (klass) ? mono_class_get_first_field_idx (klass) : 0;
+	for (i = 0; i < top; i++) {
 		field = &fields [i];
 		field->parent = klass;
 
 		if (gtd) {
 			field->name = mono_field_get_name (&gtd->fields [i]);
 		} else {
-			int idx = klass->field.first + i;
-			/* klass->field.first and idx points into the fieldptr table */
+			int idx = first_field_idx + i;
+			/* first_field_idx and idx points into the fieldptr table */
 			guint32 name_idx = mono_metadata_decode_table_row_col (image, MONO_TABLE_FIELD, idx, MONO_FIELD_NAME);
 			/* The name is needed for fieldrefs */
 			field->name = mono_metadata_string_heap (image, name_idx);
@@ -1587,8 +1588,9 @@ mono_class_setup_fields (MonoClass *klass)
 	/*
 	 * Fetch all the field information.
 	 */
+	int first_field_idx = mono_class_has_static_metadata (klass) ? mono_class_get_first_field_idx (klass) : 0;
 	for (i = 0; i < top; i++) {
-		int idx = klass->field.first + i;
+		int idx = first_field_idx + i;
 		field = &klass->fields [i];
 
 		if (!field->type) {
@@ -1891,6 +1893,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	 * Compute field layout and total size (not considering static fields)
 	 */
 	field_offsets = g_new0 (int, top);
+	int first_field_idx = mono_class_has_static_metadata (klass) ? mono_class_get_first_field_idx (klass) : 0;
 	switch (layout) {
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
@@ -1999,7 +2002,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				/* Already set by typebuilder_setup_fields () */
 				field_offsets [i] = field->offset + sizeof (MonoObject);
 			} else {
-				int idx = klass->field.first + i;
+				int idx = first_field_idx + i;
 				guint32 offset;
 				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
 				field_offsets [i] = offset + sizeof (MonoObject);
@@ -2336,19 +2339,23 @@ mono_class_setup_methods (MonoClass *klass)
 
 		for (i = 0; i < klass->interface_count; i++)
 			setup_generic_array_ifaces (klass, klass->interfaces [i], methods, first_generic + i * count_generic);
-	} else {
+	} else if (mono_class_has_static_metadata (klass)) {
 		MonoError error;
+		int first_idx = mono_class_get_first_method_idx (klass);
 
 		count = klass->method.count;
 		methods = (MonoMethod **)mono_class_alloc (klass, sizeof (MonoMethod*) * count);
 		for (i = 0; i < count; ++i) {
-			int idx = mono_metadata_translate_token_index (klass->image, MONO_TABLE_METHOD, klass->method.first + i + 1);
+			int idx = mono_metadata_translate_token_index (klass->image, MONO_TABLE_METHOD, first_idx + i + 1);
 			methods [i] = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | idx, klass, NULL, &error);
 			if (!methods [i]) {
 				mono_class_set_type_load_failure (klass, "Could not load method %d due to %s", i, mono_error_get_message (&error));
 				mono_error_cleanup (&error);
 			}
 		}
+	} else {
+		methods = (MonoMethod **)mono_class_alloc (klass, sizeof (MonoMethod*) * 1);
+		count = 0;
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
@@ -2565,6 +2572,7 @@ mono_class_setup_properties (MonoClass *klass)
 			properties [i - first].name = mono_metadata_string_heap (klass->image, cols [MONO_PROPERTY_NAME]);
 
 			startm = mono_metadata_methods_from_property (klass->image, i, &endm);
+			int first_idx = mono_class_get_first_method_idx (klass);
 			for (j = startm; j < endm; ++j) {
 				MonoMethod *method;
 
@@ -2576,7 +2584,7 @@ mono_class_setup_properties (MonoClass *klass)
 					method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], klass, NULL, &error);
 					mono_error_cleanup (&error); /* FIXME don't swallow this error */
 				} else {
-					method = klass->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - klass->method.first];
+					method = klass->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - first_idx];
 				}
 
 				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
@@ -2707,6 +2715,7 @@ mono_class_setup_events (MonoClass *klass)
 			event->name = mono_metadata_string_heap (klass->image, cols [MONO_EVENT_NAME]);
 
 			startm = mono_metadata_methods_from_event (klass->image, i, &endm);
+			int first_idx = mono_class_get_first_method_idx (klass);
 			for (j = startm; j < endm; ++j) {
 				MonoMethod *method;
 
@@ -2718,7 +2727,7 @@ mono_class_setup_events (MonoClass *klass)
 					method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], klass, NULL, &error);
 					mono_error_cleanup (&error); /* FIXME don't swallow this error */
 				} else {
-					method = klass->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - klass->method.first];
+					method = klass->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - first_idx];
 				}
 
 				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
@@ -3335,8 +3344,9 @@ count_virtual_methods (MonoClass *klass)
 				++count;
 		}
 	} else {
+		int first_idx = mono_class_get_first_method_idx (klass);
 		for (i = 0; i < klass->method.count; ++i) {
-			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, klass->method.first + i, MONO_METHOD_FLAGS);
+			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS);
 
 			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
 				++count;
@@ -5213,7 +5223,13 @@ mono_class_init (MonoClass *klass)
 		if (!MONO_CLASS_IS_INTERFACE (klass) || klass->image != mono_defaults.corlib) {
 			MonoMethod *cmethod = NULL;
 
-			if (klass->type_token && !image_is_dynamic(klass->image)) {
+			if (mono_class_is_ginst (klass)) {
+				MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+
+				/* Generic instance case */
+				ghcimpl = gklass->ghcimpl;
+				has_cctor = gklass->has_cctor;
+			} else if (klass->type_token && !image_is_dynamic(klass->image)) {
 				cmethod = find_method_in_metadata (klass, ".cctor", 0, METHOD_ATTRIBUTE_SPECIAL_NAME);
 				/* The find_method function ignores the 'flags' argument */
 				if (cmethod && (cmethod->flags & METHOD_ATTRIBUTE_SPECIAL_NAME))
@@ -5867,8 +5883,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/*
 	 * Compute the field and method lists
 	 */
-	klass->field.first  = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
-	klass->method.first = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
+	int first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
+	mono_class_set_first_field_idx (klass, first_field_idx);
+	int first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
+	mono_class_set_first_method_idx (klass, first_method_idx);
 
 	if (tt->rows > tidx){		
 		mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
@@ -5881,12 +5899,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
 	    cols [MONO_TYPEDEF_FIELD_LIST] <= image->tables [MONO_TABLE_FIELD].rows)
-		klass->field.count = field_last - klass->field.first;
+		klass->field.count = field_last - first_field_idx;
 	else
 		klass->field.count = 0;
 
 	if (cols [MONO_TYPEDEF_METHOD_LIST] <= image->tables [MONO_TABLE_METHOD].rows)
-		klass->method.count = method_last - klass->method.first;
+		klass->method.count = method_last - first_method_idx;
 	else
 		klass->method.count = 0;
 
@@ -6936,9 +6954,10 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
 		return NULL;
 
 	while (klass) {
+		int first_field_idx = mono_class_get_first_field_idx (klass);
 		if (klass->image->uncompressed_metadata) {
 			/* 
-			 * klass->field.first points to the FieldPtr table, while idx points into the
+			 * first_field_idx points to the FieldPtr table, while idx points into the
 			 * Field table, so we have to do a search.
 			 */
 			/*FIXME this is broken for types with multiple fields with the same name.*/
@@ -6951,8 +6970,8 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
 			g_assert_not_reached ();
 		} else {			
 			if (klass->field.count) {
-				if ((idx >= klass->field.first) && (idx < klass->field.first + klass->field.count)){
-					return &klass->fields [idx - klass->field.first];
+				if ((idx >= first_field_idx) && (idx < first_field_idx + klass->field.count)){
+					return &klass->fields [idx - first_field_idx];
 				}
 			}
 		}
@@ -7056,9 +7075,10 @@ mono_class_get_field_token (MonoClassField *field)
 	while (klass) {
 		if (!klass->fields)
 			return 0;
+		int first_field_idx = mono_class_get_first_field_idx (klass);
 		for (i = 0; i < klass->field.count; ++i) {
 			if (&klass->fields [i] == field) {
-				int idx = klass->field.first + i + 1;
+				int idx = first_field_idx + i + 1;
 
 				if (klass->image->uncompressed_metadata)
 					idx = mono_metadata_translate_token_index (klass->image, MONO_TABLE_FIELD, idx);
@@ -9231,11 +9251,12 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 			start_index = GPOINTER_TO_UINT (*iter);
 		}
 
+		int first_idx = mono_class_get_first_method_idx (klass);
 		for (i = start_index; i < klass->method.count; ++i) {
 			guint32 flags;
 
-			/* klass->method.first points into the methodptr table */
-			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, klass->method.first + i, MONO_METHOD_FLAGS);
+			/* first_idx points into the methodptr table */
+			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS);
 
 			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
 				break;
@@ -9243,7 +9264,7 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 
 		if (i < klass->method.count) {
 			MonoError error;
-			res = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass, NULL, &error);
+			res = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, &error);
 			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 			/* Add 1 here so the if (*iter) check fails */
@@ -9610,7 +9631,8 @@ mono_field_get_rva (MonoClassField *field)
 	field_index = mono_field_get_index (field);
 		
 	if (!klass->ext->field_def_values [field_index].data && !image_is_dynamic (klass->image)) {
-		mono_metadata_field_info (field->parent->image, klass->field.first + field_index, NULL, &rva, NULL);
+		int first_field_idx = mono_class_get_first_field_idx (klass);
+		mono_metadata_field_info (field->parent->image, first_field_idx + field_index, NULL, &rva, NULL);
 		if (!rva)
 			g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), field->parent->name);
 		klass->ext->field_def_values [field_index].data = mono_image_rva_map (field->parent->image, rva);
@@ -9800,17 +9822,18 @@ find_method_in_metadata (MonoClass *klass, const char *name, int param_count, in
 	int i;
 
 	/* Search directly in the metadata to avoid calling setup_methods () */
+	int first_idx = mono_class_get_first_method_idx (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoError error;
 		guint32 cols [MONO_METHOD_SIZE];
 		MonoMethod *method;
 		MonoMethodSignature *sig;
 
-		/* klass->method.first points into the methodptr table */
-		mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
+		/* first_idx points into the methodptr table */
+		mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, first_idx + i, cols, MONO_METHOD_SIZE);
 
 		if (!strcmp (mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]), name)) {
-			method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass, NULL, &error);
+			method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, &error);
 			if (!method) {
 				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 				continue;
@@ -10696,7 +10719,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
 		MonoGenericContainer *container = NULL;
-		int idx = klass->field.first + field_idx;
+		int idx = mono_class_get_first_field_idx (klass) + field_idx;
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
 		g_assert (!image_is_dynamic (image));
@@ -10708,7 +10731,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 			g_assert (container);
 		}
 
-		/* klass->field.first and idx points into the fieldptr table */
+		/* first_field_idx and idx points into the fieldptr table */
 		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 
 		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], NULL)) {
@@ -10747,7 +10770,7 @@ mono_field_resolve_flags (MonoClassField *field)
 		MonoClassField *gfield = &gtd->fields [field_idx];
 		return mono_field_get_flags (gfield);
 	} else {
-		int idx = klass->field.first + field_idx;
+		int idx = mono_class_get_first_field_idx (klass) + field_idx;
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
 		g_assert (!image_is_dynamic (image));

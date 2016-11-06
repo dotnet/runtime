@@ -86,4 +86,10 @@ mono_class_is_public (MonoClass *klass)
 	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_PUBLIC;
 }
 
+static inline gboolean
+mono_class_has_static_metadata (MonoClass *klass)
+{
+	return klass->type_token && !klass->image->dynamic && !mono_class_is_ginst (klass);
+}
+
 #endif

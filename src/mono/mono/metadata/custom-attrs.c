@@ -122,7 +122,7 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 
 	for (i = 0; i < klass->field.count; ++i) {
 		if (field == &klass->fields [i])
-			return klass->field.first + 1 + i;
+			return mono_class_get_first_field_idx (klass) + 1 + i;
 	}
 	return 0;
 }

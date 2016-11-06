@@ -367,11 +367,18 @@ struct _MonoClass {
 	 */
 	struct {
 #if MONO_SMALL_CONFIG
-		guint16 first, count;
+		guint16 count;
 #else
-		guint32 first, count;
+		guint32 count;
 #endif
-	} field, method;
+	} field;
+	struct {
+#if MONO_SMALL_CONFIG
+		guint16 count;
+#else
+		guint32 count;
+#endif
+	} method;
 
 	/* A GC handle pointing to the corresponding type builder/generic param builder */
 	guint32 ref_info_handle;
@@ -404,6 +411,11 @@ struct _MonoClass {
 typedef struct {
 	MonoClass class;
 	guint32	flags;
+	/*
+	 * From the TypeDef table
+	 */
+	guint32 first_method_idx;
+	guint32 first_field_idx;
 	/* next element in the class_cache hash list (in MonoImage) */
 	MonoClass *next_class_cache;
 } MonoClassDef;
@@ -1473,6 +1485,18 @@ mono_class_try_get_generic_container (MonoClass *klass);
 
 void
 mono_class_set_generic_container (MonoClass *klass, MonoGenericContainer *container);
+
+guint32
+mono_class_get_first_method_idx (MonoClass *klass);
+
+void
+mono_class_set_first_method_idx (MonoClass *klass, guint32 idx);
+
+guint32
+mono_class_get_first_field_idx (MonoClass *klass);
+
+void
+mono_class_set_first_field_idx (MonoClass *klass, guint32 idx);
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>

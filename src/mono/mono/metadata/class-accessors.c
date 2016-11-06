@@ -98,3 +98,43 @@ mono_class_set_generic_container (MonoClass *klass, MonoGenericContainer *contai
 
 	((MonoClassGtd*)klass)->generic_container = container;
 }
+
+/*
+ * mono_class_get_first_method_idx:
+ *
+ *   Return the table index of the first method for metadata classes.
+ */
+guint32
+mono_class_get_first_method_idx (MonoClass *klass)
+{
+	g_assert (mono_class_has_static_metadata (klass));
+
+	return ((MonoClassDef*)klass)->first_method_idx;
+}
+
+void
+mono_class_set_first_method_idx (MonoClass *klass, guint32 idx)
+{
+	g_assert (mono_class_has_static_metadata (klass));
+
+	((MonoClassDef*)klass)->first_method_idx = idx;
+}
+
+guint32
+mono_class_get_first_field_idx (MonoClass *klass)
+{
+	if (mono_class_is_ginst (klass))
+		return mono_class_get_first_field_idx (mono_class_get_generic_class (klass)->container_class);
+
+	g_assert (mono_class_has_static_metadata (klass));
+
+	return ((MonoClassDef*)klass)->first_field_idx;
+}
+
+void
+mono_class_set_first_field_idx (MonoClass *klass, guint32 idx)
+{
+	g_assert (mono_class_has_static_metadata (klass));
+
+	((MonoClassDef*)klass)->first_field_idx = idx;
+}

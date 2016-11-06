@@ -2490,7 +2490,7 @@ mono_get_field_token (MonoClassField *field)
 
 	for (i = 0; i < klass->field.count; ++i) {
 		if (field == &klass->fields [i])
-			return MONO_TOKEN_FIELD_DEF | (klass->field.first + 1 + i);
+			return MONO_TOKEN_FIELD_DEF | (mono_class_get_first_field_idx (klass) + 1 + i);
 	}
 
 	g_assert_not_reached ();
