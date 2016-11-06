@@ -742,19 +742,9 @@ namespace System {
             string groupSep;                // group separator from NumberFormatInfo.
             string currSymbol = null;       // currency symbol from NumberFormatInfo.
 
-            // The alternative currency symbol used in ANSI codepage, that can not roundtrip between ANSI and Unicode.
-            // Currently, only ja-JP and ko-KR has non-null values (which is U+005c, backslash)
-            string ansicurrSymbol = null;   // currency symbol from NumberFormatInfo.
-
             Boolean parsingCurrency = false; 
             if ((options & NumberStyles.AllowCurrencySymbol) != 0) {
                 currSymbol = numfmt.CurrencySymbol;
-
-#if !FEATURE_COREFX_GLOBALIZATION
-                if (numfmt.ansiCurrencySymbol != null) {
-                    ansicurrSymbol = numfmt.ansiCurrencySymbol;
-                }
-#endif
 
                 // The idea here is to match the currency separators and on failure match the number separators to keep the perf of VB's IsNumeric fast.
                 // The values of decSep are setup to use the correct relevant separator (currency in the if part and decimal in the else part).
@@ -787,10 +777,9 @@ namespace System {
 						state |= StateSign | StateParens;
 						number.sign = true;
 					}
-					else if ((currSymbol != null && (next = MatchChars(p, currSymbol)) != null) || (ansicurrSymbol != null && (next = MatchChars(p, ansicurrSymbol)) != null)) {
+					else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null) {
 						state |= StateCurrency;
 						currSymbol = null;  
-						ansicurrSymbol = null;  
 						// We already found the currency symbol. There should not be more currency symbols. Set
 						// currSymbol to NULL so that we won't search it again in the later code path.
 						p = next - 1;
@@ -887,9 +876,8 @@ namespace System {
 						else if (ch == ')' && ((state & StateParens) != 0)) {
 							state &= ~StateParens;
 						}
-						else if ((currSymbol != null && (next = MatchChars(p, currSymbol)) != null) || (ansicurrSymbol != null && (next = MatchChars(p, ansicurrSymbol)) != null)) {
+						else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null) {
 							currSymbol = null;
-							ansicurrSymbol = null;
 							p = next - 1;
 						}
 						else {
