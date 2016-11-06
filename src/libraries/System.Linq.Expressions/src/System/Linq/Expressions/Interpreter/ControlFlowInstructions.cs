@@ -767,12 +767,14 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var ex = (Exception)frame.Pop();
+            object ex = frame.Pop();
             if (_rethrow)
             {
                 throw new RethrowException();
             }
-            throw ex;
+
+            // If ex is null then throwing it will result in an appropriate NullReferenceException.
+            throw ex == null ? null : ex as Exception ?? Error.InterpreterCannotThrowNonExceptions();
         }
     }
 

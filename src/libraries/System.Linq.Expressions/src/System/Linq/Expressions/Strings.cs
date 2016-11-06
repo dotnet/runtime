@@ -1071,5 +1071,10 @@ namespace System.Linq.Expressions
         /// A string like "The constructor should not be declared on an abstract class"
         /// </summary>
         internal static string NonAbstractConstructorRequired => SR.NonAbstractConstructorRequired;
+
+        /// <summary>
+        /// A string like "Interpreted expressions cannot throw an object of a type that is not derived from System.Exception.".
+        /// </summary>
+        internal static string InterpreterCannotThrowNonExceptions => SR.InterpreterCannotThrowNonExceptions;
     }
 }

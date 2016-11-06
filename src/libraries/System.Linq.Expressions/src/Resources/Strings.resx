@@ -654,4 +654,7 @@
   <data name="SameKeyExistsInExpando" xml:space="preserve">
     <value>An element with the same key '{0}' already exists in the ExpandoObject.</value>
   </data>
+  <data name="InterpreterCannotThrowNonExceptions" xml:space="preserve">
+    <value>Interpreted expressions cannot throw an object of a type that is not derived from System.Exception.</value>
+  </data>
 </root>
