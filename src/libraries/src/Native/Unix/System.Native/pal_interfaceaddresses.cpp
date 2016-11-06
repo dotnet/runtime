@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <ifaddrs.h>
+#include <memory>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -151,12 +152,22 @@ extern "C" int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t i
         return -1;
     }
 
-    uint8_t* buffer = new uint8_t[byteCount];
+    uint8_t* buffer = new (std::nothrow) uint8_t[byteCount];
+    if (buffer == nullptr)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
 
     while (sysctl(routeDumpName, 6, buffer, &byteCount, nullptr, 0) != 0)
     {
         delete[] buffer;
-        buffer = new uint8_t[byteCount];
+        buffer = new (std::nothrow) uint8_t[byteCount];
+        if (buffer == nullptr)
+        {
+            errno = ENOMEM;
+            return -1;
+        }
     }
 
     rt_msghdr* hdr;
