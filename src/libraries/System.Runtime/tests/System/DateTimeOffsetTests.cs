@@ -40,7 +40,7 @@ namespace System.Tests
             VerifyDateTimeOffset(dateTimeOffset, 1986, 8, 15, 10, 20, 5, 4, null);
 
             DateTimeOffset today = new DateTimeOffset(DateTime.Today);
-            DateTimeOffset now = DateTimeOffset.Now;
+            DateTimeOffset now = DateTimeOffset.Now.Date;
             VerifyDateTimeOffset(today, now.Year, now.Month, now.Day, 0, 0, 0, 0, now.Offset);
 
             today = new DateTimeOffset(new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc));
