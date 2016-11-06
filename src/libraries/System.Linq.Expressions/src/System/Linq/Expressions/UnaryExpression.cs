@@ -401,8 +401,8 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetMethodBasedUnaryOperator(ExpressionType unaryType, Expression operand, MethodInfo method)
         {
-            System.Diagnostics.Debug.Assert(method != null);
-            ValidateOperator(method, nameof(method));
+            Debug.Assert(method != null);
+            ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
@@ -447,8 +447,8 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetMethodBasedCoercionOperator(ExpressionType unaryType, Expression operand, Type convertToType, MethodInfo method)
         {
-            System.Diagnostics.Debug.Assert(method != null);
-            ValidateOperator(method, nameof(method));
+            Debug.Assert(method != null);
+            ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
             {
