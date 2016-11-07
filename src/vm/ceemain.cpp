@@ -4644,7 +4644,6 @@ VOID STDMETHODCALLTYPE LogHelp_LogAssert( LPCSTR szFile, int iLine, LPCSTR expr)
 
 }
 
-extern BOOL NoGuiOnAssert();
 extern "C"
 //__declspec(dllexport)
 BOOL STDMETHODCALLTYPE LogHelp_NoGuiOnAssert()
@@ -4657,7 +4656,6 @@ BOOL STDMETHODCALLTYPE LogHelp_NoGuiOnAssert()
     return fRet;
 }
 
-extern VOID TerminateOnAssert();
 extern "C"
 //__declspec(dllexport)
 VOID STDMETHODCALLTYPE LogHelp_TerminateOnAssert()
