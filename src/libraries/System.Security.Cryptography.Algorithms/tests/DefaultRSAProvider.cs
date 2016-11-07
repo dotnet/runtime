@@ -42,6 +42,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 return _supports384PrivateKey.Value;
             }
         }
+
+        public bool SupportsSha2Oaep
+        {
+            // Currently only RSACng does, which is the default provider on Windows.
+            get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows); }
+        }
     }
 
     public partial class RSAFactory

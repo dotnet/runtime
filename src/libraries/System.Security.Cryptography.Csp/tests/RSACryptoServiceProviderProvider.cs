@@ -20,6 +20,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get { return true; }
         }
+
+        public bool SupportsSha2Oaep
+        {
+            get { return false; }
+        }
     }
 
     public partial class RSAFactory
