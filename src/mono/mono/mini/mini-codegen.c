@@ -5,7 +5,6 @@
  */
 
 #include "config.h"
-#ifndef DISABLE_JIT
 
 #include <string.h>
 #include <math.h>
@@ -23,6 +22,8 @@
 #include "mini.h"
 #include "trace.h"
 #include "mini-arch.h"
+
+#ifndef DISABLE_JIT
 
 #ifndef MONO_MAX_XREGS
 
