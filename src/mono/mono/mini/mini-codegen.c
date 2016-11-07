@@ -2503,47 +2503,6 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 	}
 }
 
-#endif /* DISABLE_JIT */
-
-gboolean
-mono_is_regsize_var (MonoType *t)
-{
-	t = mini_get_underlying_type (t);
-	switch (t->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-#if SIZEOF_REGISTER == 8
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-#endif
-		return TRUE;
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:
-		return TRUE;
-	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (t))
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return FALSE;
-	default:
-		return FALSE;
-	}
-}
-
-#ifndef DISABLE_JIT
-
 /*
  * mono_peephole_ins:
  *
@@ -2794,3 +2753,39 @@ mono_regstate_free (MonoRegState *rs) {
 
 #endif /* DISABLE_JIT */
 
+gboolean
+mono_is_regsize_var (MonoType *t)
+{
+	t = mini_get_underlying_type (t);
+	switch (t->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+#if SIZEOF_REGISTER == 8
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+#endif
+		return TRUE;
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		return TRUE;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			return TRUE;
+		return FALSE;
+	case MONO_TYPE_VALUETYPE:
+		return FALSE;
+	default:
+		return FALSE;
+	}
+}
