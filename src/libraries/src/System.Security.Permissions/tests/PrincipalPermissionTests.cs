@@ -1,10 +1,10 @@
-﻿// Author:
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// See the LICENSE file in the project root for more information.
+//
+// Author:
 //	Sebastien Pouliot (spouliot@motus.com)
 //
 // (C) 2003 Motus Technologies Inc. (http://www.motus.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -16,8 +16,7 @@ namespace System.Security.Permissions.Tests
         public void PermissionStateNone()
         {
             PrincipalPermission p = new PrincipalPermission(PermissionState.None);
-            string className = "System.Security.Permissions.PrincipalPermission, ";
-            Assert.NotNull(p);
+            const string className = "System.Security.Permissions.PrincipalPermission, ";
             Assert.True(!p.IsUnrestricted());
             PrincipalPermission copy = (PrincipalPermission)p.Copy();
             Assert.Equal(p.IsUnrestricted(), copy.IsUnrestricted());
@@ -30,7 +29,6 @@ namespace System.Security.Permissions.Tests
         public void PermissionStateUnrestricted()
         {
             PrincipalPermission p = new PrincipalPermission(PermissionState.Unrestricted);
-            Assert.NotNull(p);
             Assert.True(p.IsUnrestricted());
             PrincipalPermission copy = (PrincipalPermission)p.Copy();
             Assert.Equal(p.IsUnrestricted(), copy.IsUnrestricted());
@@ -40,43 +38,65 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public void Name()
         {
-            PrincipalPermission p = new PrincipalPermission("user", null);
+            const string userName = "UniqueUserName1";
+            PrincipalPermission p = new PrincipalPermission(userName, null);
             Assert.True(!p.IsUnrestricted());
+            SecurityElement pele = (SecurityElement)(p.ToXml().Children[0]);
+            Assert.Contains(userName, pele.ToString());
         }
 
         [Fact]
         public void UnauthenticatedName()
         {
-            PrincipalPermission p = new PrincipalPermission("user", null, false);
+            const string userName = "UniqueUserName1";
+            PrincipalPermission p = new PrincipalPermission(userName, null, false);
             Assert.True(!p.IsUnrestricted());
+            SecurityElement pele = (SecurityElement)(p.ToXml().Children[0]);
+            Assert.Contains(userName, pele.ToString());
         }
 
         [Fact]
         public void Role()
         {
-            PrincipalPermission p = new PrincipalPermission(null, "users");
+            const string roleName = "ThisIsARoleName";
+            PrincipalPermission p = new PrincipalPermission(null, roleName);
             Assert.True(!p.IsUnrestricted());
+            SecurityElement pele = (SecurityElement)(p.ToXml().Children[0]);
+            Assert.Contains(roleName, pele.ToString());
         }
 
         [Fact]
         public void UnauthenticatedRole()
         {
-            PrincipalPermission p = new PrincipalPermission(null, "users", false);
+            const string roleName = "ThisIsARoleName";
+            PrincipalPermission p = new PrincipalPermission(null, roleName, false);
             Assert.True(!p.IsUnrestricted());
+            SecurityElement pele = (SecurityElement)(p.ToXml().Children[0]);
+            Assert.Contains(roleName, pele.ToString());
         }
 
         [Fact]
         public void NameRole()
         {
-            PrincipalPermission p = new PrincipalPermission("user", "users", true);
+            const string userName = "UniqueUserName1";
+            const string roleName = "ThisIsARoleName";
+            PrincipalPermission p = new PrincipalPermission(userName, roleName);
             Assert.True(!p.IsUnrestricted());
+            SecurityElement pele = (SecurityElement)(p.ToXml().Children[0]);
+            Assert.Contains(userName, pele.ToString());
+            Assert.Contains(roleName, pele.ToString());
         }
 
         [Fact]
         public void UnauthenticatedNameRole()
         {
-            PrincipalPermission p = new PrincipalPermission("user", "users", false);
+            const string userName = "UniqueUserName1";
+            const string roleName = "ThisIsARoleName";
+            PrincipalPermission p = new PrincipalPermission(userName, roleName, false);
             Assert.True(!p.IsUnrestricted());
+            SecurityElement pele = (SecurityElement)(p.ToXml().Children[0]);
+            Assert.Contains(userName, pele.ToString());
+            Assert.Contains(roleName, pele.ToString());
         }
 
         [Fact]
@@ -169,8 +189,11 @@ namespace System.Security.Permissions.Tests
             PrincipalPermission p1 = new PrincipalPermission("user A", "role A");
             PrincipalPermission p2 = new PrincipalPermission("user B", "role B", false);
             PrincipalPermission p3 = (PrincipalPermission)p1.Union(p2);
-            Assert.True(p3.ToString().IndexOf("user A") >= 0);
-            Assert.True(p3.ToString().IndexOf("user B") >= 0);
+            string union = p3.ToString();
+            Assert.Contains("user A", union);
+            Assert.Contains("user B", union);
+            Assert.Contains("role A", union);
+            Assert.Contains("role B", union);
         }
 
         [Fact]
@@ -220,9 +243,11 @@ namespace System.Security.Permissions.Tests
             PrincipalPermission p2 = new PrincipalPermission("user C", "role 1");
             PrincipalPermission p3 = (PrincipalPermission)p2.Intersect(p1);
             Assert.NotNull(p3);
-            Assert.True(p3.ToString().IndexOf("user A") < 0);
-            Assert.True(p3.ToString().IndexOf("user C") < 0);
-            Assert.True(p3.ToString().IndexOf("role 1") >= 0);
+
+            string intersection = p3.ToString();
+            Assert.DoesNotContain("user A", intersection);
+            Assert.DoesNotContain("user C", intersection);
+            Assert.Contains("role 1", intersection);
         }
 
         [Fact]
@@ -315,6 +340,10 @@ namespace System.Security.Permissions.Tests
             PrincipalPermission p4 = new PrincipalPermission(null, null, true); // unrestricted
             Assert.True(!p4.IsSubsetOf(p1));
             Assert.True(p1.IsSubsetOf(p4));
+
+            PrincipalPermission p5 = new PrincipalPermission("user A", null);
+            Assert.True(p1.IsSubsetOf(p5));
+            Assert.True(!p5.IsSubsetOf(p1));
         }
 
         [Fact]
@@ -323,7 +352,6 @@ namespace System.Security.Permissions.Tests
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
             Assert.Throws<ArgumentException>(() => p1.IsSubsetOf(ep2));
-            // Assert.True(p1.IsSubsetOf(ep2));
         }
     }
 }

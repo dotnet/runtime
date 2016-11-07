@@ -1,4 +1,7 @@
-﻿// Authors:
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// See the LICENSE file in the project root for more information.
+//
+// Authors:
 //	Lawrence Pit (loz@cable.a2000.nl)
 //	Sebastien Pouliot  <sebastien@ximian.com>
 //
@@ -23,9 +26,6 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Globalization;
@@ -62,49 +62,40 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public void Constructor1()
         {
-            SecurityElement se = new SecurityElement("tag");
+            const string tagName = "testTag";
+            SecurityElement se = new SecurityElement(tagName);
             Assert.Null(se.Attributes);
             Assert.Null(se.Children);
-            Assert.Equal("tag", se.Tag);
+            Assert.Equal(tagName, se.Tag);
             Assert.Null(se.Text);
+        }
 
-            se = new SecurityElement(string.Empty);
+        [Fact]
+        public void Constructor1_EmptyString()
+        {
+            SecurityElement se = new SecurityElement(string.Empty);
             Assert.Null(se.Attributes);
             Assert.Null(se.Children);
             Assert.Equal(string.Empty, se.Tag);
             Assert.Null(se.Text);
         }
 
-        [Fact]
-        public void Constructor1_Tag_Invalid()
+        [Theory]
+        [InlineData("Nam>e")]
+        [InlineData("Na<me")]
+        public void Constructor1_Tag_Invalid(string tagName)
         {
             try
             {
-                new SecurityElement("Na<me");
+                new SecurityElement(tagName);
                 Assert.False(true);
             }
             catch (ArgumentException ex)
             {
-                // Invalid element tag Nam<e
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Na<me") != -1);
-                Assert.Null(ex.ParamName);
-            }
-
-            try
-            {
-                new SecurityElement("Nam>e");
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Invalid element tag Nam>e
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Nam>e") != -1);
+                Assert.True(ex.Message.IndexOf(tagName) != -1);
                 Assert.Null(ex.ParamName);
             }
         }
@@ -137,36 +128,22 @@ namespace System.Security.Permissions.Tests
             Assert.Equal("text", se.Text);
         }
 
-        [Fact]
-        public void Constructor2_Tag_Invalid()
+        [Theory]
+        [InlineData("Nam>e")]
+        [InlineData("Na<me")]
+        public void Constructor2_Tag_Invalid(string invalid)
         {
             try
             {
-                new SecurityElement("Na<me", "text");
+                new SecurityElement(invalid, "text");
                 Assert.False(true);
             }
             catch (ArgumentException ex)
             {
-                // Invalid element tag Nam<e
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Na<me") != -1);
-                Assert.Null(ex.ParamName);
-            }
-
-            try
-            {
-                new SecurityElement("Nam>e", "text");
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Invalid element tag Nam>e
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Nam>e") != -1);
+                Assert.True(ex.Message.IndexOf(invalid) != -1);
                 Assert.Null(ex.ParamName);
             }
         }
@@ -317,7 +294,7 @@ namespace System.Security.Permissions.Tests
             SecurityElement elem = CreateElement();
             Hashtable h = elem.Attributes;
             h.Add("<invalid>", "valid");
-            Assert.Throws<InvalidCastException>(() => elem.Attributes = h);
+            Assert.Throws<ArgumentException>(() => elem.Attributes = h);
         }
 
         [Fact]
@@ -333,7 +310,6 @@ namespace System.Security.Permissions.Tests
             }
             catch (ArgumentException ex)
             {
-                // Invalid attribute value '"invalid"'
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
@@ -359,18 +335,12 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public void Equal()
         {
-            int iTest = 0;
             SecurityElement elem = CreateElement();
             SecurityElement elem2 = CreateElement();
-            iTest++;
             Assert.True(elem.Equal(elem2));
-            iTest++;
             SecurityElement child = (SecurityElement)elem2.Children[0];
-            iTest++;
             child = (SecurityElement)child.Children[1];
-            iTest++;
             child.Text = "some text";
-            iTest++;
             Assert.False(elem.Equal(elem2));
         }
 
@@ -520,38 +490,23 @@ namespace System.Security.Permissions.Tests
                 se.ToString());
         }
 
-        [Fact]
-        public void Tag_Invalid()
+        [Theory]
+        [InlineData("Nam>e")]
+        [InlineData("Na<me")]
+        public void Tag_Invalid(string invalid)
         {
             SecurityElement se = new SecurityElement("Values");
-
             try
             {
-                se.Tag = "Na<me";
+                se.Tag = invalid;
                 Assert.False(true);
             }
             catch (ArgumentException ex)
             {
-                // Invalid element tag Nam<e
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Na<me") != -1);
-                Assert.Null(ex.ParamName);
-            }
-
-            try
-            {
-                se.Tag = "Nam>e";
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Invalid element tag Nam>e
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Nam>e") != -1);
+                Assert.True(ex.Message.IndexOf(invalid) != -1);
                 Assert.Null(ex.ParamName);
             }
         }
@@ -579,49 +534,33 @@ namespace System.Security.Permissions.Tests
         public void Text()
         {
             SecurityElement elem = CreateElement();
-            elem.Text = "Miguel&S�bastien";
-            Assert.Equal("Miguel&S�bastien", elem.Text);
+            elem.Text = "Basic string";
+            Assert.Equal("Basic string", elem.Text);
             elem.Text = null;
             Assert.Null(elem.Text);
-            elem.Text = "S�bastien\"Miguel";
-            Assert.Equal("S�bastien\"Miguel", elem.Text);
             elem.Text = string.Empty;
             Assert.Equal(string.Empty, elem.Text);
             elem.Text = "&lt;sample&amp;practice&unresolved;&gt;";
             Assert.Equal("<sample&practice&unresolved;>", elem.Text);
         }
 
-        [Fact]
-        public void Text_Invalid()
+        [Theory]
+        [InlineData("TagWith<Bracket")]
+        [InlineData("TagWith>Bracket")]
+        public void Text_Invalid(string invalid)
         {
             SecurityElement elem = CreateElement();
             try
             {
-                elem.Text = "Mig<uelS�bastien";
+                elem.Text = invalid;
                 Assert.False(true);
             }
             catch (ArgumentException ex)
             {
-                // Invalid element tag Mig<uelS�bastien
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Mig<uelS�bastien") != -1);
-                Assert.Null(ex.ParamName);
-            }
-
-            try
-            {
-                elem.Text = "Mig>uelS�bastien";
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Invalid element tag Mig>uelS�bastien
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Mig>uelS�bastien") != -1);
+                Assert.True(ex.Message.IndexOf(invalid) != -1);
                 Assert.Null(ex.ParamName);
             }
         }
@@ -633,7 +572,7 @@ namespace System.Security.Permissions.Tests
             se.AddAttribute("Attribute1", "One");
             se.AddAttribute("Attribute2", "Two");
 
-            string expected = String.Format("<Multiple Attribute1=\"One\"{0}Attribute2=\"Two\"/>{0}", Environment.NewLine);
+            string expected = string.Format("<Multiple Attribute1=\"One\"{0}Attribute2=\"Two\"/>{0}", Environment.NewLine);
             Assert.Equal(expected, se.ToString());
         }
 
