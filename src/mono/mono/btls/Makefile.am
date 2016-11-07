@@ -1,4 +1,4 @@
-EXTRA_DIST = btls-android-utils.c \
+EXTRA_DIST = \
 	btls-bio.c \
 	btls-bio.h \
 	btls-error.c \
@@ -11,6 +11,7 @@ EXTRA_DIST = btls-android-utils.c \
 	btls-ssl-ctx.c \
 	btls-ssl-ctx.h \
 	btls-ssl.h \
+	btls-time64.c \
 	btls-util.c \
 	btls-util.h \
 	btls-x509.c \
