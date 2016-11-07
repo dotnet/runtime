@@ -2796,7 +2796,8 @@ public:
         CONTRACTL_END;
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
-#ifndef FEATURE_CORECLR
+
+#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     void GetSynchronizationContext(OBJECTREF *pSyncContextObj)
     {
         CONTRACTL
@@ -2814,7 +2815,8 @@ public:
         if (ExposedThreadObj != NULL)
             *pSyncContextObj = ExposedThreadObj->GetSynchronizationContext();
     }
-#endif //!FEATURE_CORECLR
+#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
+
 #ifdef FEATURE_COMPRESSEDSTACK    
     OBJECTREF GetCompressedStack()
     {

@@ -54,11 +54,11 @@ namespace Internal.Runtime.Augments
         }
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool IsBackgroundNative();
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetBackgroundNative(bool isBackground);
 
         /*=========================================================================
@@ -89,11 +89,11 @@ namespace Internal.Runtime.Augments
         }
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetPriorityNative();
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetPriorityNative(int priority);
 
         /*=========================================================================
@@ -107,10 +107,10 @@ namespace Internal.Runtime.Augments
         }
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetThreadStateNative();
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
+        [SecuritySafeCritical]  // auto-generated
         public ApartmentState GetApartmentState()
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -125,7 +125,7 @@ namespace Internal.Runtime.Augments
         ** An unstarted thread can be marked to indicate that it will host a
         ** single-threaded or multi-threaded apartment.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
+        [SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization = true, SelfAffectingThreading = true)]
         public bool TrySetApartmentState(ApartmentState state)
         {
@@ -157,13 +157,27 @@ namespace Internal.Runtime.Augments
         }
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int GetApartmentStateNative();
 
         [SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+#if FEATURE_COMINTEROP
+        [SecurityCritical]  // auto-generated
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern void DisableComObjectEagerCleanup();
+#else // !FEATURE_COMINTEROP
+        [SecurityCritical]  // auto-generated
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        public void DisableComObjectEagerCleanup()
+        {
+            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
+        }
+#endif // FEATURE_COMINTEROP
 
         /*=========================================================================
         ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
@@ -182,8 +196,8 @@ namespace Internal.Runtime.Augments
 
         // Internal helper (since we can't place security demands on
         // ecalls/fcalls).
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [SecurityCritical]  // auto-generated
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InterruptInternal();
 
         /*=========================================================================
@@ -204,7 +218,7 @@ namespace Internal.Runtime.Augments
         public bool Join(int millisecondsTimeout) => JoinInternal(millisecondsTimeout);
 
         [SecurityCritical]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool JoinInternal(int millisecondsTimeout);
 
         public static void Sleep(int millisecondsTimeout) => Thread.Sleep(millisecondsTimeout);
