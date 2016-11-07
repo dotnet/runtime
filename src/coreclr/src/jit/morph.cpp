@@ -12378,7 +12378,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                             // Dereferencing the pointer in either case will have the
                             // same effect.
 
-                            if (!gtIsActiveCSE_Candidate(op1) && varTypeIsGC(op2->TypeGet()))
+                            if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) && ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
                             {
                                 op2->gtType = tree->gtType;
                                 DEBUG_DESTROY_NODE(op1);
