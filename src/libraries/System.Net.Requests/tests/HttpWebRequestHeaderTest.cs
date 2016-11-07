@@ -5,7 +5,6 @@
 using System.Net.Http;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
-
 using Xunit;
 using Xunit.Abstractions;
 
@@ -100,6 +99,63 @@ namespace System.Net.Tests
             using (httpWebRequest.EndGetRequestStream(httpWebRequest.BeginGetRequestStream(null, null), out context))
             {
                 Assert.Equal(null, context);
+            }
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_Connection_Validate(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            Assert.Throws<ArgumentException>(() => { request.Connection = "Close;keep-alive"; });
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_DefaultCachePolicy_Validate(Uri remoteServer)
+        {
+            Assert.Equal(Cache.RequestCacheLevel.BypassCache, HttpWebRequest.DefaultCachePolicy.Level);
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_Proxy_Validate(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                Assert.Throws<InvalidOperationException>(() => { request.Proxy = WebRequest.DefaultWebProxy; });
+            }
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_TimeOut_Validate(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            Assert.Throws<ArgumentOutOfRangeException>(() => { request.Timeout = -1; });
+            request.Timeout = 100;
+            Assert.Equal(100, request.Timeout);
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_ContentLength_Validate(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            request.ContentLength = 100;
+            Assert.Equal(100, request.ContentLength);
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_PreAuthenticate_Test(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            request.PreAuthenticate = true;
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                Assert.True(request.PreAuthenticate);
             }
         }
     }

@@ -54,7 +54,7 @@ namespace System.Net
             serializationInfo.AddValue("_StatusCode", StatusCode);
             serializationInfo.AddValue("_ContentLength", ContentLength);
             serializationInfo.AddValue("_Verb", Method);
-            serializationInfo.AddValue("_StatusDescription", StatusDescription);            
+            serializationInfo.AddValue("_StatusDescription", StatusDescription);
             base.GetObjectData(serializationInfo, streamingContext);
         }
 
