@@ -42,7 +42,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 
 | Area                                                                                          | Owners / experts | Description | Triage Status |
 |-----------------------------------------------------------------------------------------------|------------------|-------------|--------------------|
-| [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                |  | Issues without clear association to any specific API/contract (e.g. packaging, project-wide docs) |  |
+| [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                |  | Issues without clear association to any specific API/contract (e.g. packaging, project-wide docs, new contract proposals) |  |
 | [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      |  |  |  |
 | [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)              | [@shmao](https://github.com/shmao), [@zhenlan](https://github.com/zhenlan) | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerialization</li></ul> NOT:<ul><li>System.Runtime.Serialization.Formatters</li></ul> | Triaged |
 | **System contract assemblies** | | | |
@@ -80,13 +80,12 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Runtime.InteropServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.InteropServices) | [@tijoytom](https://github.com/tijoytom), [@yizhang82](https://github.com/yizhang82) | NOT: System.Runtime.InteropServices.RuntimeInfo | Triaged |
 | [System.Security](https://github.com/dotnet/corefx/labels/area-System.Security)               | [@bartonjs](https://github.com/bartonjs), [@steveharter](https://github.com/steveharter) |  |  |
 | System.ServiceModel                                                                           | N/A | [dotnet/wcf](https://github.com/dotnet/wcf) |  |
-| [System.ServiceProcess](https://github.com/dotnet/corefx/labels/area-System.ServiceProcess)   | [@Priya91](https://github.com/Priya91) |  |  |
+| [System.ServiceProcess](https://github.com/dotnet/corefx/labels/area-System.ServiceProcess)   | [@Priya91](https://github.com/Priya91) |  | Triaged |
 | [System.Text.Encoding](https://github.com/dotnet/corefx/labels/area-System.Text.Encoding)     | [@krwq](https://github.com/krwq), [@tarekgh](https://github.com/tarekgh) |  |  |
 | [System.Text.RegularExpressions](https://github.com/dotnet/corefx/labels/area-System.Text.RegularExpressions) | [@Priya91](https://github.com/Priya91) |  |  |
 | [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | [@kouvel](https://github.com/kouvel), [@alexperovich](https://github.com/alexperovich) |  | Triaged |
 | [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       | [@jimcarley](https://github.com/jimcarley), [@qizhanMS](https://github.com/qizhanMS), [@dmetzgar](https://github.com/dmetzgar) |  |  |
 | [System.Xml](https://github.com/dotnet/corefx/labels/area-System.Xml)                         | [@sepidehMS](https://github.com/sepidehMS), [@krwq](https://github.com/krwq)  | | Triaged |
-| [System](https://github.com/dotnet/corefx/labels/area-System)                                 |  | Issues without clear contract association (cross-contract, or potentially new contracts) |  |
 | **Microsoft contract assemblies** | | |  |
 | [Microsoft.CSharp](https://github.com/dotnet/corefx/labels/area-Microsoft.CSharp)             |  |  |  |
 | [Microsoft.VisualBasic](https://github.com/dotnet/corefx/labels/area-Microsoft.VisualBasic)   |  |  |  |
