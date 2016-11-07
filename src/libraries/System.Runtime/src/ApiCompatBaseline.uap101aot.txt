@@ -394,17 +394,22 @@ MembersMustExist : Member 'System.Globalization.CompareInfo.IsSortable(System.St
 MembersMustExist : Member 'System.Globalization.CompareInfo.LastIndexOf(System.String, System.Char, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CompareInfo.LastIndexOf(System.String, System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CompareInfo.LCID.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CompareInfo.Version.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo..ctor(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo..ctor(System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo..ctor(System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.ClearCachedData()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.CreateSpecificCulture(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.CultureTypes.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.GetConsoleFallbackUICulture()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.GetCultureInfo(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.GetCultureInfo(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.GetCultureInfo(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.GetCultureInfoByIetfLanguageTag(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.GetCultures(System.Globalization.CultureTypes)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.IetfLanguageTag.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.InstalledUICulture.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.KeyboardLayoutId.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.LCID.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.ThreeLetterISOLanguageName.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.CultureInfo.ThreeLetterWindowsLanguageName.get()' does not exist in the implementation but it does exist in the contract.
@@ -557,6 +562,7 @@ TypesMustExist : Type 'System.Runtime.Serialization.ISafeSerializationData' does
 TypesMustExist : Type 'System.Runtime.Serialization.SafeSerializationEventArgs' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.SerializationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo..ctor(System.Type, System.Runtime.Serialization.IFormatterConverter, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.AllowPartiallyTrustedCallersAttribute.PartialTrustVisibilityLevel.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.AllowPartiallyTrustedCallersAttribute.PartialTrustVisibilityLevel.set(System.Security.PartialTrustVisibilityLevel)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.PartialTrustVisibilityLevel' does not exist in the implementation but it does exist in the contract.
@@ -633,10 +639,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 634
-
-MembersMustExist : Member 'System.Globalization.CompareInfo.Version.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Globalization.CultureInfo.CultureTypes.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Globalization.CultureInfo.GetConsoleFallbackUICulture()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Globalization.CultureInfo.IetfLanguageTag.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Globalization.CultureInfo.KeyboardLayoutId.get()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 640

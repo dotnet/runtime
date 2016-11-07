@@ -6225,6 +6225,8 @@ namespace System.Runtime.Serialization
     {
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter) { }
+        [CLSCompliant(false)]
+        public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust) { }
         public string AssemblyName { get { throw null; } set { } }
         public string FullTypeName { get { throw null; } set { } }
         public int MemberCount { get { throw null; } }
