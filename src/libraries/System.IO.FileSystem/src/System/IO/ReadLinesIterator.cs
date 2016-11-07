@@ -97,7 +97,7 @@ namespace System.IO
 
         private static ReadLinesIterator CreateIterator(string path, Encoding encoding, StreamReader reader)
         {
-            return new ReadLinesIterator(path, encoding, reader ?? new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), encoding));
+            return new ReadLinesIterator(path, encoding, reader ?? new StreamReader(path, encoding));
         }
     }
 }
