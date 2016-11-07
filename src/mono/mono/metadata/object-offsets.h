@@ -238,6 +238,8 @@ DECL_OFFSET(GSharedVtCallInfo, gsharedvt_in)
 #endif
 
 #if defined(TARGET_ARM64)
+DECL_OFFSET (MonoContext, has_fregs)
+
 DECL_OFFSET(GSharedVtCallInfo, stack_usage)
 DECL_OFFSET(GSharedVtCallInfo, gsharedvt_in)
 DECL_OFFSET(GSharedVtCallInfo, ret_marshal)
