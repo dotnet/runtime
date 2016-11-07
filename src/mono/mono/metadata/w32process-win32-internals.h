@@ -20,7 +20,7 @@ mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle,
 				HANDLE stderr_handle,STARTUPINFO *startinfo);
 
 gboolean
-mono_process_create_process (MonoProcInfo *mono_process_info, gunichar2 *shell_path, MonoString *cmd,
+mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *shell_path, MonoString *cmd,
 			     guint32 creation_flags, gchar *env_vars, gunichar2 *dir, STARTUPINFO *start_info,
 			     PROCESS_INFORMATION *process_info);
 
@@ -35,6 +35,9 @@ mono_icall_get_priority_class (gpointer handle);
 
 MonoBoolean
 mono_icall_set_priority_class (gpointer handle, gint32 priorityClass);
+
+gboolean
+mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed);
 #endif  /* !G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 #endif /* __MONO_METADATA_PROCESS_INTERNALS_H__ */
