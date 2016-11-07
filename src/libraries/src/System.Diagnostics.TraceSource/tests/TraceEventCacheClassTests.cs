@@ -53,7 +53,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var cache = new TraceEventCache();
             Assert.Contains("at System.Environment.GetStackTrace(Exception e, Boolean needFileInfo)", cache.Callstack);
-            Assert.Contains("at System.Diagnostics.TraceEventCache.get_Callstack()", cache.Callstack);
+            Assert.Contains("at System.Environment.get_StackTrace()", cache.Callstack);
         }
 
         [Fact]
