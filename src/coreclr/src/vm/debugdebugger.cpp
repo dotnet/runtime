@@ -1367,6 +1367,11 @@ FCIMPL4(INT32, DebuggerAssert::ShowDefaultAssertDialog,
     
     int         result          = IDRETRY;
 
+    if (NoGuiOnAssert())
+    {
+        return FailTerminate;
+    }
+
     struct _gc {
         STRINGREF strCondition;
         STRINGREF strMessage;
@@ -1403,7 +1408,7 @@ FCIMPL4(INT32, DebuggerAssert::ShowDefaultAssertDialog,
     }
     msgText.Append(W("Description: "));
     msgText.Append(message);
-    
+
     StackSString stackTraceText;
     if (gc.strStackTrace != NULL) {
         stackTraceText.Append(W("Stack Trace:\n"));
@@ -1419,7 +1424,7 @@ FCIMPL4(INT32, DebuggerAssert::ShowDefaultAssertDialog,
     // Also, varargs and StackSString don't mix.  Convert to string first.
     const WCHAR* msgTextAsUnicode = msgText.GetUnicode();
     result = EEMessageBoxNonLocalizedNonFatal(W("%s"), windowTitle, stackTraceText, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION, msgTextAsUnicode);
-    
+
     // map the user's choice to the values recognized by 
     // the System.Diagnostics.Assert package
     if (result == IDRETRY)
