@@ -67,7 +67,9 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.NotNull(logicalOperationStack);
             Assert.Equal(2, logicalOperationStack.Count);
             Assert.Equal("MainThread", logicalOperationStack.Pop().ToString());
-            Assert.Equal("SecondaryThread", logicalOperationStack.Pop().ToString());
+            Assert.Equal("SecondaryThread", logicalOperationStack.Peek().ToString());
+            Trace.CorrelationManager.StopLogicalOperation();
+            Assert.Equal(0, logicalOperationStack.Count);
         }
     }
 }
