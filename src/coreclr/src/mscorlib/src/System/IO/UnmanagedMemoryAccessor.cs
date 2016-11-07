@@ -377,7 +377,7 @@ namespace System.IO {
                     // check if pointer is aligned
                     if (((int)pointer & (sizeOfType - 1)) == 0) {
 #endif
-                    result = *((Single*)(pointer));
+                    result = BitConverter.Int32BitsToSingle(*((int*)(pointer)));
 #if ALIGN_ACCESS
                     }
                     else {
@@ -413,7 +413,7 @@ namespace System.IO {
                     // check if pointer is aligned
                     if (((int)pointer & (sizeOfType - 1)) == 0) {
 #endif
-                    result = *((Double*)(pointer));
+                    result = BitConverter.Int64BitsToDouble(*((long*)(pointer)));
 #if ALIGN_ACCESS
                     }
                     else {
@@ -904,7 +904,7 @@ namespace System.IO {
                     // check if pointer is aligned
                     if (((int)pointer & (sizeOfType - 1)) == 0) {
 #endif
-                    *((Single*)pointer) = value;
+                    *((int*)pointer) = BitConverter.SingleToInt32Bits(value);
 #if ALIGN_ACCESS
                     }
                     else {
@@ -940,7 +940,7 @@ namespace System.IO {
                     // check if pointer is aligned
                     if (((int)pointer & (sizeOfType - 1)) == 0) {
 #endif
-                    *((Double*)pointer) = value;
+                    *((long*)pointer) = BitConverter.DoubleToInt64Bits(value);
 #if ALIGN_ACCESS
                     }
                     else {
