@@ -2,7 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Private.Xml.csproj" />
+    <Project Include="System.Private.Xml.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
     <Project Include="System.Private.Xml.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
