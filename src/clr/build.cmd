@@ -367,7 +367,12 @@ set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft
 
 if %__BuildNativeCoreLib% EQU 1 (
     echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
-	
+
+    if "%__AltJitCrossgen%"=="1" (
+        set COMPlus_AltJitNgen=*
+        set COMPlus_AltJitName=protojit.dll
+    )
+
     echo "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll"
     "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
@@ -386,11 +391,6 @@ if %__BuildNativeCoreLib% EQU 1 (
 
     set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
     set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
-
-    if "%__AltJitCrossgen%"=="1" (
-        set COMPlus_AltJitNgen=*
-        set COMPlus_AltJitName=protojit.dll
-    )
 
     "!__CrossgenExe!" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "!__CrossGenCoreLibLog!" 2>&1
     set err=!errorlevel!
