@@ -474,7 +474,7 @@ namespace System.Diagnostics
                 Initialize();
 
                 if (_attributes == null)
-                    _attributes  = new StringDictionary();
+                    _attributes = new StringDictionary();
 
                 return _attributes;
             }
