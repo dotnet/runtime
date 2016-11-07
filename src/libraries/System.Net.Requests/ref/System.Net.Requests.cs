@@ -189,7 +189,7 @@ namespace System.Net
         public HttpWebResponse() { }
         public override long ContentLength { get { throw null; } }
         public override string ContentType { get { throw null; } }
-        public virtual System.Net.CookieCollection Cookies { get { throw null; } }
+        public virtual System.Net.CookieCollection Cookies { get { throw null; } set { } }
         public override System.Net.WebHeaderCollection Headers { get { throw null; } }
         public virtual string Method { get { throw null; } }
         public override System.Uri ResponseUri { get { throw null; } }
@@ -204,6 +204,7 @@ namespace System.Net
         public String ContentEncoding { get { throw null; } }
         public string CharacterSet { get { throw null; } }
         public string Server { get { throw null; } }
+        public override void Close() { throw null; }
     }
     public interface IAuthenticationModule
     {
