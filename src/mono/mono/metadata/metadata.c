@@ -2959,6 +2959,8 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	MonoImageSet *set;
 	CollectData data;
 
+	g_assert (mono_class_get_generic_container (container_class)->type_argc == inst->type_argc);
+
 	memset (&helper, 0, sizeof(helper)); // act like g_new0
 	helper.container_class = container_class;
 	helper.context.class_inst = inst;
