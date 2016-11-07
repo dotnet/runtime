@@ -424,18 +424,20 @@ domain_remove (ThreadPoolDomain *tpdomain)
 static ThreadPoolDomain *
 domain_get (MonoDomain *domain, gboolean create)
 {
-	ThreadPoolDomain *tpdomain = NULL;
 	guint i;
 
 	g_assert (domain);
 
 	for (i = 0; i < threadpool->domains->len; ++i) {
+		ThreadPoolDomain *tpdomain;
+
 		tpdomain = (ThreadPoolDomain *)g_ptr_array_index (threadpool->domains, i);
 		if (tpdomain->domain == domain)
 			return tpdomain;
 	}
 
 	if (create) {
+		ThreadPoolDomain *tpdomain;
 		ThreadPoolDomainCleanupSemaphore *cleanup_semaphore;
 		cleanup_semaphore = g_new0 (ThreadPoolDomainCleanupSemaphore, 1);
 		cleanup_semaphore->ref = 2;
@@ -447,9 +449,11 @@ domain_get (MonoDomain *domain, gboolean create)
 		tpdomain = g_new0 (ThreadPoolDomain, 1);
 		tpdomain->domain = domain;
 		domain_add (tpdomain);
+
+		return tpdomain;
 	}
 
-	return tpdomain;
+	return NULL;
 }
 
 static void

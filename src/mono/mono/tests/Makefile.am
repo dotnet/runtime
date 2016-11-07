@@ -141,7 +141,8 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 	cross-domain.cs	\
 	generic-unloading.2.cs	\
 	namedmutex-destroy-race.cs	\
-	thread6.cs
+	thread6.cs	\
+	appdomain-threadpool-unload.cs
 
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
