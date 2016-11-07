@@ -1029,9 +1029,9 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         {
             if (typ != TYP_BYREF) // We don't want/need to optimize a zero byref
             {
-                genTreeOps oper = genTreeOps(func);
-                ValueNum   ZeroVN, OneVN; // We may need to create one of these in the switch below.
-                switch (oper)
+                ValueNum resultVN = NoVN;
+                ValueNum ZeroVN, OneVN; // We may need to create one of these in the switch below.
+                switch (genTreeOps(func))
                 {
                     case GT_ADD:
                         // This identity does not apply for floating point (when x == -0.0)
@@ -1041,11 +1041,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                             ZeroVN = VNZeroForType(typ);
                             if (arg0VN == ZeroVN)
                             {
-                                return arg1VN;
+                                resultVN = arg1VN;
                             }
                             else if (arg1VN == ZeroVN)
                             {
-                                return arg0VN;
+                                resultVN = arg0VN;
                             }
                         }
                         break;
@@ -1055,7 +1055,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         ZeroVN = VNZeroForType(typ);
                         if (arg1VN == ZeroVN)
                         {
-                            return arg0VN;
+                            resultVN = arg0VN;
                         }
                         break;
 
@@ -1066,11 +1066,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         {
                             if (arg0VN == OneVN)
                             {
-                                return arg1VN;
+                                resultVN = arg1VN;
                             }
                             else if (arg1VN == OneVN)
                             {
-                                return arg0VN;
+                                resultVN = arg0VN;
                             }
                         }
 
@@ -1080,11 +1080,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                             ZeroVN = VNZeroForType(typ);
                             if (arg0VN == ZeroVN)
                             {
-                                return ZeroVN;
+                                resultVN = ZeroVN;
                             }
                             else if (arg1VN == ZeroVN)
                             {
-                                return ZeroVN;
+                                resultVN = ZeroVN;
                             }
                         }
                         break;
@@ -1097,7 +1097,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         {
                             if (arg1VN == OneVN)
                             {
-                                return arg0VN;
+                                resultVN = arg0VN;
                             }
                         }
                         break;
@@ -1109,11 +1109,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         ZeroVN = VNZeroForType(typ);
                         if (arg0VN == ZeroVN)
                         {
-                            return arg1VN;
+                            resultVN = arg1VN;
                         }
                         else if (arg1VN == ZeroVN)
                         {
-                            return arg0VN;
+                            resultVN = arg0VN;
                         }
                         break;
 
@@ -1122,11 +1122,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         ZeroVN = VNZeroForType(typ);
                         if (arg0VN == ZeroVN)
                         {
-                            return ZeroVN;
+                            resultVN = ZeroVN;
                         }
                         else if (arg1VN == ZeroVN)
                         {
-                            return ZeroVN;
+                            resultVN = ZeroVN;
                         }
                         break;
 
@@ -1142,7 +1142,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         ZeroVN = VNZeroForType(typ);
                         if (arg1VN == ZeroVN)
                         {
-                            return arg0VN;
+                            resultVN = arg0VN;
                         }
                         break;
 
@@ -1150,29 +1150,34 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         // (x == x) => true (unless x is NaN)
                         if (!varTypeIsFloating(TypeOfVN(arg0VN)) && (arg0VN != NoVN) && (arg0VN == arg1VN))
                         {
-                            return VNOneForType(typ);
+                            resultVN = VNOneForType(typ);
                         }
                         if ((arg0VN == VNForNull() && IsKnownNonNull(arg1VN)) ||
                             (arg1VN == VNForNull() && IsKnownNonNull(arg0VN)))
                         {
-                            return VNZeroForType(typ);
+                            resultVN = VNZeroForType(typ);
                         }
                         break;
                     case GT_NE:
                         // (x != x) => false (unless x is NaN)
                         if (!varTypeIsFloating(TypeOfVN(arg0VN)) && (arg0VN != NoVN) && (arg0VN == arg1VN))
                         {
-                            return VNZeroForType(typ);
+                            resultVN = VNZeroForType(typ);
                         }
                         if ((arg0VN == VNForNull() && IsKnownNonNull(arg1VN)) ||
                             (arg1VN == VNForNull() && IsKnownNonNull(arg0VN)))
                         {
-                            return VNOneForType(typ);
+                            resultVN = VNOneForType(typ);
                         }
                         break;
 
                     default:
                         break;
+                }
+
+                if ((resultVN != NoVN) && (TypeOfVN(resultVN) == typ))
+                {
+                    return resultVN;
                 }
             }
         }
