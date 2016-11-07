@@ -25,7 +25,7 @@ mono_w32process_get_pid (gpointer handle)
 static gboolean
 mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)
 {
-	return EnumProcessModules (process, modules, size, &needed);
+	return EnumProcessModules (process, (HMODULE *) modules, size, (LPDWORD) needed);
 }
 
 static guint32
@@ -525,9 +525,10 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 
 	stash_system_image (mono_object_class (this_obj)->image);
 
-	if (mono_w32process_get_pid (process) == mono_process_current_pid ())
+	if (mono_w32process_get_pid (process) == mono_process_current_pid ()) {
 		assemblies = get_domain_assemblies (mono_domain_get ());
 		assembly_count = assemblies->len;
+	}
 
 	if (mono_w32process_try_get_modules (process, mods, sizeof(mods), &needed))
 		module_count += needed / sizeof(HMODULE);
