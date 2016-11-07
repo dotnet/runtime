@@ -1123,6 +1123,47 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_WriteObject_Use_DataContractResolver()
+    {
+        var settings = new DataContractSerializerSettings() { DataContractResolver = null, KnownTypes = new Type[] { typeof(MyOtherType) } };
+        var dcs = new DataContractSerializer(typeof(MyType), settings);
+
+        var value = new MyType() { Value = new MyOtherType() { Str = "Hello World" } };
+        using (var ms = new MemoryStream())
+        {
+            var myresolver = new MyResolver();
+            var xmlWriter = XmlDictionaryWriter.CreateTextWriter(ms);
+            dcs.WriteObject(xmlWriter, value, myresolver);
+
+            xmlWriter.Flush();
+            ms.Position = 0;
+
+            Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked was false");
+            Assert.True(myresolver.TryResolveTypeInvoked, "myresolver.TryResolveTypeInvoked was false");
+
+            ms.Position = 0;
+            myresolver = new MyResolver();
+            var xmlReader = XmlDictionaryReader.CreateTextReader(ms, XmlDictionaryReaderQuotas.Max);
+            MyType deserialized = (MyType)dcs.ReadObject(xmlReader, false, myresolver);
+
+            Assert.NotNull(deserialized);
+            Assert.True(deserialized.Value is MyOtherType, "deserialized.Value was not of MyOtherType.");
+            Assert.Equal(((MyOtherType)value.Value).Str, ((MyOtherType)deserialized.Value).Str);
+
+            Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked was false");
+        }
+    }
+
+    [Fact]
+    public static void DCS_DataContractResolver_Property()
+    {
+        var myresolver = new MyResolver();
+        var settings = new DataContractSerializerSettings() { DataContractResolver = myresolver };
+        var dcs = new DataContractSerializer(typeof(MyType), settings);
+        Assert.Equal(myresolver, dcs.DataContractResolver);
+    }
+
+    [Fact]
     public static void DCS_EnumerableStruct()
     {
         var original = new EnumerableStruct();
