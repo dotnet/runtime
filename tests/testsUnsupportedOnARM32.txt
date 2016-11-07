@@ -3,3 +3,9 @@ JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
 JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/DevDiv_902271.sh
 JIT/Methodical/tailcall_v4/smallFrame/smallFrame.sh
 JIT/jit64/opt/cse/HugeArray1/HugeArray1.sh
+JIT/Methodical/xxobj/sizeof/_il_dbgsizeof/_il_dbgsizeof.sh
+JIT/Methodical/xxobj/sizeof/_il_dbgsizeof32/_il_dbgsizeof32.sh
+JIT/Methodical/xxobj/sizeof/_il_dbgsizeof64/_il_dbgsizeof64.sh
+JIT/Methodical/xxobj/sizeof/_il_relsizeof/_il_relsizeof.sh
+JIT/Methodical/xxobj/sizeof/_il_relsizeof32/_il_relsizeof32.sh
+JIT/Methodical/xxobj/sizeof/_il_relsizeof64/_il_relsizeof64.sh
