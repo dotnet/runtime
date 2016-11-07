@@ -46,6 +46,9 @@
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
+    <Project Include="layout\Microsoft.Private.CoreFx.NETCoreApp\Microsoft.Private.CoreFx.NETCoreApp.builds" Condition="'$(BuildPackages)'=='true'">
+      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
+    </Project>
     <Project Include="src\post.builds">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
