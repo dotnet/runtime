@@ -10,95 +10,19 @@ using System.Threading;
 namespace System.Security.Permissions
 {
     [Serializable]
-    internal partial class IDRole
+    public sealed class PrincipalPermission : IPermission, ISecurityEncodable, IUnrestrictedPermission
     {
-        internal bool m_authenticated;
-        internal string m_id;
-        internal string m_role;
-
-        public override int GetHashCode()
-        {
-            return ((m_authenticated ? 0 : 101) +
-                        (m_id == null ? 0 : m_id.GetHashCode()) +
-                        (m_role == null ? 0 : m_role.GetHashCode()));
-        }
-
-        internal SecurityElement ToXml()
-        {
-            SecurityElement root = new SecurityElement("Identity");
-
-            if (m_authenticated)
-                root.AddAttribute("Authenticated", "true");
-
-            if (m_id != null)
-            {
-                root.AddAttribute("ID", SecurityElement.Escape(m_id));
-            }
-
-            if (m_role != null)
-            {
-                root.AddAttribute("Role", SecurityElement.Escape(m_role));
-            }
-
-            return root;
-        }
-
-        internal void FromXml(SecurityElement e)
-        {
-            string elAuth = e.Attribute("Authenticated");
-            if (elAuth != null)
-            {
-                m_authenticated = string.Compare(elAuth, "true", StringComparison.OrdinalIgnoreCase) == 0;
-            }
-            else
-            {
-                m_authenticated = false;
-            }
-
-            string elID = e.Attribute("ID");
-            if (elID != null)
-            {
-                m_id = elID;
-            }
-            else
-            {
-                m_id = null;
-            }
-
-            string elRole = e.Attribute("Role");
-            if (elRole != null)
-            {
-                m_role = elRole;
-            }
-            else
-            {
-                m_role = null;
-            }
-        }
-    }
-
-    [Serializable]
-    public sealed partial class PrincipalPermission : IPermission, ISecurityEncodable, IUnrestrictedPermission
-    {
-        private IDRole[] m_array;
+        private IDRole[] _idArray;
 
         public PrincipalPermission(PermissionState state)
         {
             if (state == PermissionState.Unrestricted)
             {
-                m_array = new IDRole[1];
-                m_array[0] = new IDRole();
-                m_array[0].m_authenticated = true;
-                m_array[0].m_id = null;
-                m_array[0].m_role = null;
+                _idArray = new IDRole[] { new IDRole(true, null, null) };
             }
             else if (state == PermissionState.None)
             {
-                m_array = new IDRole[1];
-                m_array[0] = new IDRole();
-                m_array[0].m_authenticated = false;
-                m_array[0].m_id = "";
-                m_array[0].m_role = "";
+                _idArray = new IDRole[] { new IDRole(false, string.Empty, string.Empty) };
             }
             else
             {
@@ -106,32 +30,27 @@ namespace System.Security.Permissions
             }
         }
 
-        public PrincipalPermission(string name, string role) : this(name, role, isAuthenticated: true) { }
+        public PrincipalPermission(string name, string role)
+        {
+            _idArray = new IDRole[] { new IDRole(true, name, role) };
+        }
 
         public PrincipalPermission(string name, string role, bool isAuthenticated)
         {
-            m_array = new IDRole[1];
-            m_array[0] = new IDRole();
-            m_array[0].m_authenticated = isAuthenticated;
-            m_array[0].m_id = name;
-            m_array[0].m_role = role;
+            _idArray = new IDRole[] { new IDRole(isAuthenticated, name, role) };
         }
 
         private PrincipalPermission(IDRole[] array)
         {
-            m_array = array;
+            _idArray = array;
         }
 
         private bool IsEmpty()
         {
-            for (int i = 0; i < m_array.Length; ++i)
+            foreach (IDRole idRole in _idArray)
             {
-                if ((m_array[i].m_id == null || m_array[i].m_id.Length != 0) ||
-                    (m_array[i].m_role == null || m_array[i].m_role.Length != 0) ||
-                    m_array[i].m_authenticated)
-                {
+                if (idRole.ID == null || idRole.ID.Length != 0 || idRole.Role == null || idRole.Role.Length != 0 || idRole.Authenticated)
                     return false;
-                }
             }
             return true;
         }
@@ -144,12 +63,10 @@ namespace System.Security.Permissions
 
         public bool IsUnrestricted()
         {
-            for (int i = 0; i < m_array.Length; ++i)
+            foreach (IDRole idRole in _idArray)
             {
-                if (m_array[i].m_id != null || m_array[i].m_role != null || !m_array[i].m_authenticated)
-                {
+                if (idRole.ID != null || idRole.Role != null || !idRole.Authenticated)
                     return false;
-                }
             }
             return true;
         }
@@ -160,45 +77,41 @@ namespace System.Security.Permissions
             {
                 return IsEmpty();
             }
-
-            try
-            {
-                PrincipalPermission operand = (PrincipalPermission)target;
-
-                if (operand.IsUnrestricted())
-                    return true;
-                else if (IsUnrestricted())
-                    return false;
-                else
-                {
-                    for (int i = 0; i < m_array.Length; ++i)
-                    {
-                        bool foundMatch = false;
-
-                        for (int j = 0; j < operand.m_array.Length; ++j)
-                        {
-                            if (operand.m_array[j].m_authenticated == m_array[i].m_authenticated &&
-                                (operand.m_array[j].m_id == null ||
-                                 (m_array[i].m_id != null && m_array[i].m_id.Equals(operand.m_array[j].m_id))) &&
-                                (operand.m_array[j].m_role == null ||
-                                 (m_array[i].m_role != null && m_array[i].m_role.Equals(operand.m_array[j].m_role))))
-                            {
-                                foundMatch = true;
-                                break;
-                            }
-                        }
-
-                        if (!foundMatch)
-                            return false;
-                    }
-
-                    return true;
-                }
-            }
-            catch (InvalidCastException)
+            else if (!VerifyType(target))
             {
                 throw new ArgumentException(SR.Argument_WrongType, GetType().FullName);
             }
+
+            PrincipalPermission operand = (PrincipalPermission)target;
+
+            if (operand.IsUnrestricted())
+            {
+                return true;
+            }
+            else if (IsUnrestricted())
+            {
+                return false;
+            }
+
+            foreach (IDRole idRole in _idArray)
+            {
+                bool foundMatch = false;
+                foreach (IDRole operandIdRole in operand._idArray)
+                {
+                    if ((operandIdRole.Authenticated == idRole.Authenticated) &&
+                        (operandIdRole.ID == null || (idRole.ID != null && idRole.ID.Equals(operandIdRole.ID))) &&
+                        (operandIdRole.Role == null || (idRole.Role != null && idRole.Role.Equals(operandIdRole.Role))))
+                    {
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                if (!foundMatch)
+                    return false;
+            }
+
+            return true;
         }
 
         public IPermission Intersect(IPermission target)
@@ -224,80 +137,38 @@ namespace System.Security.Permissions
             }
 
             List<IDRole> idroles = null;
-
-            for (int i = 0; i < m_array.Length; ++i)
+            foreach (IDRole idRole in _idArray)
             {
-                for (int j = 0; j < operand.m_array.Length; ++j)
+                foreach (IDRole operandIdRole in operand._idArray)
                 {
-                    if (operand.m_array[j].m_authenticated == m_array[i].m_authenticated)
+                    if (operandIdRole.Authenticated == idRole.Authenticated)
                     {
-                        if (operand.m_array[j].m_id == null ||
-                            m_array[i].m_id == null ||
-                            m_array[i].m_id.Equals(operand.m_array[j].m_id))
+                        string newID = string.Empty;
+                        string newRole = string.Empty;
+                        bool newAuthenticated = operandIdRole.Authenticated;
+                        bool addToNewIDRoles = false;
+
+                        if (operandIdRole.ID == null || idRole.ID == null || idRole.ID.Equals(operandIdRole.ID))
                         {
-                            if (idroles == null)
-                            {
-                                idroles = new List<IDRole>();
-                            }
-
-                            IDRole idrole = new IDRole();
-
-                            idrole.m_id = operand.m_array[j].m_id == null ? m_array[i].m_id : operand.m_array[j].m_id;
-
-                            if (operand.m_array[j].m_role == null ||
-                                m_array[i].m_role == null ||
-                                m_array[i].m_role.Equals(operand.m_array[j].m_role))
-                            {
-                                idrole.m_role = operand.m_array[j].m_role == null ? m_array[i].m_role : operand.m_array[j].m_role;
-                            }
-                            else
-                            {
-                                idrole.m_role = "";
-                            }
-
-                            idrole.m_authenticated = operand.m_array[j].m_authenticated;
-
-                            idroles.Add(idrole);
+                            newID = operandIdRole.ID == null ? idRole.ID : operandIdRole.ID;
+                            addToNewIDRoles = true;
                         }
-                        else if (operand.m_array[j].m_role == null ||
-                                 m_array[i].m_role == null ||
-                                 m_array[i].m_role.Equals(operand.m_array[j].m_role))
+                        if (operandIdRole.Role == null || idRole.Role == null || idRole.Role.Equals(operandIdRole.Role))
+                        {
+                            newRole = operandIdRole.Role == null ? idRole.Role : operandIdRole.Role;
+                            addToNewIDRoles = true;
+                        }
+                        if (addToNewIDRoles)
                         {
                             if (idroles == null)
-                            {
                                 idroles = new List<IDRole>();
-                            }
-
-                            IDRole idrole = new IDRole();
-
-                            idrole.m_id = "";
-                            idrole.m_role = operand.m_array[j].m_role == null ? m_array[i].m_role : operand.m_array[j].m_role;
-                            idrole.m_authenticated = operand.m_array[j].m_authenticated;
-
-                            idroles.Add(idrole);
+                            idroles.Add(new IDRole(newAuthenticated, newID, newRole));
                         }
                     }
                 }
             }
 
-            if (idroles == null)
-            {
-                return null;
-            }
-            else
-            {
-                IDRole[] idrolesArray = new IDRole[idroles.Count];
-
-                IEnumerator idrolesEnumerator = idroles.GetEnumerator();
-                int index = 0;
-
-                while (idrolesEnumerator.MoveNext())
-                {
-                    idrolesArray[index++] = (IDRole)idrolesEnumerator.Current;
-                }
-
-                return new PrincipalPermission(idrolesArray);
-            }
+            return (idroles == null) ? null : new PrincipalPermission(idroles.ToArray());
         }
 
         public IPermission Union(IPermission other)
@@ -318,23 +189,11 @@ namespace System.Security.Permissions
                 return new PrincipalPermission(PermissionState.Unrestricted);
             }
 
-            // Now we have to do a real union
-            int combinedLength = m_array.Length + operand.m_array.Length;
-            IDRole[] idrolesArray = new IDRole[combinedLength];
-
-            int i, j;
-            for (i = 0; i < m_array.Length; ++i)
-            {
-                idrolesArray[i] = m_array[i];
-            }
-
-            for (j = 0; j < operand.m_array.Length; ++j)
-            {
-                idrolesArray[i + j] = operand.m_array[j];
-            }
+            IDRole[] idrolesArray = new IDRole[_idArray.Length + operand._idArray.Length];
+            Array.Copy(_idArray, 0, idrolesArray, 0, _idArray.Length);
+            Array.Copy(operand._idArray, 0, idrolesArray, _idArray.Length, operand._idArray.Length);
 
             return new PrincipalPermission(idrolesArray);
-
         }
 
         public override bool Equals(object obj)
@@ -352,61 +211,41 @@ namespace System.Security.Permissions
         public override int GetHashCode()
         {
             int hash = 0;
-            int i;
-            for (i = 0; i < m_array.Length; i++)
-                hash += m_array[i].GetHashCode();
+            foreach (IDRole idRole in _idArray)
+                hash += idRole.GetHashCode();
             return hash;
         }
 
         public IPermission Copy()
         {
-            return new PrincipalPermission(m_array);
+            return new PrincipalPermission(_idArray);
         }
 
         public void Demand()
         {
-            new SecurityPermission(SecurityPermissionFlag.ControlPrincipal).Assert();
             IPrincipal principal = Thread.CurrentPrincipal;
             if (principal == null)
                 throw new SecurityException(SR.Security_PrincipalPermission);
-            if (m_array == null)
+            if (_idArray == null)
                 return;
 
             // A demand passes when the grant satisfies all entries.
-            int count = m_array.Length;
-            bool foundMatch = false;
-            for (int i = 0; i < count; ++i)
+            foreach (IDRole idRole in _idArray)
             {
                 // If the demand is authenticated, we need to check the identity and role
-                if (m_array[i].m_authenticated)
+                if (!idRole.Authenticated)
                 {
-                    IIdentity identity = principal.Identity;
-
-                    if ((identity.IsAuthenticated &&
-                         (m_array[i].m_id == null || string.Compare(identity.Name, m_array[i].m_id, StringComparison.OrdinalIgnoreCase) == 0)))
-                    {
-                        if (m_array[i].m_role == null)
-                        {
-                            foundMatch = true;
-                        }
-                        else
-                        {
-                            foundMatch = principal.IsInRole(m_array[i].m_role);
-                        }
-
-                        if (foundMatch)
-                            break;
-                    }
+                    return;
                 }
-                else
+                else if (principal.Identity.IsAuthenticated &&
+                         (idRole.ID == null || string.Equals(principal.Identity.Name, idRole.ID, StringComparison.OrdinalIgnoreCase)))
                 {
-                    foundMatch = true;
-                    break;
+                    if (idRole.Role == null || principal.IsInRole(idRole.Role))
+                        return;
                 }
             }
 
-            if (!foundMatch)
-                throw new SecurityException(SR.Security_PrincipalPermission);
+            throw new SecurityException(SR.Security_PrincipalPermission);
         }
 
         public SecurityElement ToXml()
@@ -417,12 +256,11 @@ namespace System.Security.Permissions
             root.AddAttribute("class", typename + ", " + GetType().Module.Assembly.FullName.Replace('\"', '\''));
             root.AddAttribute("version", "1");
 
-            if (m_array != null)
+            if (_idArray != null)
             {
-                int count = m_array.Length;
-                for (int i = 0; i < count; ++i)
+                foreach (IDRole idRole in _idArray)
                 {
-                    root.AddChild(m_array[i].ToXml());
+                    root.AddChild(idRole.ToXml());
                 }
             }
 
@@ -447,21 +285,14 @@ namespace System.Security.Permissions
                 int numChildren = elem.InternalChildren.Count;
                 int count = 0;
 
-                m_array = new IDRole[numChildren];
-
-                IEnumerator enumerator = elem.Children.GetEnumerator();
-
-                while (enumerator.MoveNext())
+                _idArray = new IDRole[numChildren];
+                foreach (object curr in elem.Children)
                 {
-                    IDRole idrole = new IDRole();
-
-                    idrole.FromXml((SecurityElement)enumerator.Current);
-
-                    m_array[count++] = idrole;
+                    _idArray[count++] = new IDRole((SecurityElement)curr);
                 }
             }
             else
-                m_array = new IDRole[0];
+                _idArray = new IDRole[0];
         }
 
         public override string ToString()

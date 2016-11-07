@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.s
 
 using System.Collections;
-using System.Text;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Diagnostics;
+using System.Text;
 
 namespace System.Security
 {
@@ -29,22 +29,21 @@ namespace System.Security
     }
 
     [Serializable]
-    sealed public class SecurityElement : ISecurityElementFactory
+    public sealed class SecurityElement : ISecurityElementFactory
     {
-        internal string m_strTag;
-        internal string m_strText;
-        private ArrayList m_lChildren;
-        internal ArrayList m_lAttributes;
+        internal string _tag;
+        internal string _text;
+        private ArrayList _children;
+        internal ArrayList _attributes;
 
-        internal readonly SecurityElementType m_type = SecurityElementType.Regular;
-        private const int c_AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
-        private const int c_ChildrenTypical = 1;
+        private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
+        private const int ChildrenTypical = 1;
+        private const string Indent = "   ";
 
         private static readonly char[] s_tagIllegalCharacters = new char[] { ' ', '<', '>' };
         private static readonly char[] s_textIllegalCharacters = new char[] { '<', '>' };
         private static readonly char[] s_valueIllegalCharacters = new char[] { '<', '>', '\"' };
-        private const string s_strIndent = "   ";
-
+        private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
         private static readonly string[] s_escapeStringPairs = new string[]
         {
             // these must be all once character escape sequences or a new escaping algorithm is needed
@@ -54,8 +53,6 @@ namespace System.Security
             "\'", "&apos;",
             "&", "&amp;"
         };
-
-        private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
 
         //-------------------------- Constructors ---------------------------
 
@@ -71,8 +68,8 @@ namespace System.Security
             if (!IsValidTag(tag))
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, tag));
 
-            m_strTag = tag;
-            m_strText = null;
+            _tag = tag;
+            _text = null;
         }
 
         public SecurityElement(string tag, string text)
@@ -86,8 +83,8 @@ namespace System.Security
             if (text != null && !IsValidText(text))
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementText, text));
 
-            m_strTag = tag;
-            m_strText = text;
+            _tag = tag;
+            _text = text;
         }
 
         //-------------------------- Properties -----------------------------
@@ -96,7 +93,7 @@ namespace System.Security
         {
             get
             {
-                return m_strTag;
+                return _tag;
             }
 
             set
@@ -107,7 +104,7 @@ namespace System.Security
                 if (!IsValidTag(value))
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, value));
 
-                m_strTag = value;
+                _tag = value;
             }
         }
 
@@ -115,20 +112,20 @@ namespace System.Security
         {
             get
             {
-                if (m_lAttributes == null || m_lAttributes.Count == 0)
+                if (_attributes == null || _attributes.Count == 0)
                 {
                     return null;
                 }
                 else
                 {
-                    Hashtable hashtable = new Hashtable(m_lAttributes.Count / 2);
+                    Hashtable hashtable = new Hashtable(_attributes.Count / 2);
 
-                    int iMax = m_lAttributes.Count;
+                    int iMax = _attributes.Count;
                     Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
 
                     for (int i = 0; i < iMax; i += 2)
                     {
-                        hashtable.Add(m_lAttributes[i], m_lAttributes[i + 1]);
+                        hashtable.Add(_attributes[i], _attributes[i + 1]);
                     }
 
                     return hashtable;
@@ -139,7 +136,7 @@ namespace System.Security
             {
                 if (value == null || value.Count == 0)
                 {
-                    m_lAttributes = null;
+                    _attributes = null;
                 }
                 else
                 {
@@ -152,16 +149,16 @@ namespace System.Security
                         string attrValue = (string)enumerator.Value;
 
                         if (!IsValidAttributeName(attrName))
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementName, (string)enumerator.Current));
+                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementName, attrName));
 
                         if (!IsValidAttributeValue(attrValue))
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementValue, (string)enumerator.Value));
+                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementValue, attrValue));
 
                         list.Add(attrName);
                         list.Add(attrValue);
                     }
 
-                    m_lAttributes = list;
+                    _attributes = list;
                 }
             }
         }
@@ -170,21 +167,21 @@ namespace System.Security
         {
             get
             {
-                return Unescape(m_strText);
+                return Unescape(_text);
             }
 
             set
             {
                 if (value == null)
                 {
-                    m_strText = null;
+                    _text = null;
                 }
                 else
                 {
                     if (!IsValidText(value))
                         throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, value));
 
-                    m_strText = value;
+                    _text = value;
                 }
             }
         }
@@ -194,36 +191,29 @@ namespace System.Security
             get
             {
                 ConvertSecurityElementFactories();
-                return m_lChildren;
+                return _children;
             }
 
             set
             {
-                if (value != null)
+                if (value != null && value.Contains(null))
                 {
-                    IEnumerator enumerator = value.GetEnumerator();
-
-                    while (enumerator.MoveNext())
-                    {
-                        if (enumerator.Current == null)
-                            throw new ArgumentException(SR.ArgumentNull_Child);
-                    }
+                    throw new ArgumentException(SR.ArgumentNull_Child);
                 }
-
-                m_lChildren = value;
+                _children = value;
             }
         }
 
         internal void ConvertSecurityElementFactories()
         {
-            if (m_lChildren == null)
+            if (_children == null)
                 return;
 
-            for (int i = 0; i < m_lChildren.Count; ++i)
+            for (int i = 0; i < _children.Count; ++i)
             {
-                ISecurityElementFactory iseFactory = m_lChildren[i] as ISecurityElementFactory;
-                if (iseFactory != null && !(m_lChildren[i] is SecurityElement))
-                    m_lChildren[i] = iseFactory.CreateSecurityElement();
+                ISecurityElementFactory iseFactory = _children[i] as ISecurityElementFactory;
+                if (iseFactory != null && !(_children[i] is SecurityElement))
+                    _children[i] = iseFactory.CreateSecurityElement();
             }
         }
 
@@ -233,7 +223,7 @@ namespace System.Security
             {
                 // Beware!  This array list can contain SecurityElements and other ISecurityElementFactories.
                 // If you want to get a consistent SecurityElement view, call get_Children.
-                return m_lChildren;
+                return _children;
             }
         }
 
@@ -241,26 +231,26 @@ namespace System.Security
 
         internal void AddAttributeSafe(string name, string value)
         {
-            if (m_lAttributes == null)
+            if (_attributes == null)
             {
-                m_lAttributes = new ArrayList(c_AttributesTypical);
+                _attributes = new ArrayList(AttributesTypical);
             }
             else
             {
-                int iMax = m_lAttributes.Count;
+                int iMax = _attributes.Count;
                 Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
 
                 for (int i = 0; i < iMax; i += 2)
                 {
-                    string strAttrName = (string)m_lAttributes[i];
+                    string strAttrName = (string)_attributes[i];
 
                     if (string.Equals(strAttrName, name))
                         throw new ArgumentException(SR.Argument_AttributeNamesMustBeUnique);
                 }
             }
 
-            m_lAttributes.Add(name);
-            m_lAttributes.Add(value);
+            _attributes.Add(name);
+            _attributes.Add(value);
         }
 
         public void AddAttribute(string name, string value)
@@ -285,22 +275,21 @@ namespace System.Security
             if (child == null)
                 throw new ArgumentNullException(nameof(child));
 
-            if (m_lChildren == null)
-                m_lChildren = new ArrayList(c_ChildrenTypical);
+            if (_children == null)
+                _children = new ArrayList(ChildrenTypical);
 
-            m_lChildren.Add(child);
+            _children.Add(child);
         }
 
         internal void AddChild(ISecurityElementFactory child)
         {
             if (child == null)
                 throw new ArgumentNullException(nameof(child));
-            
 
-            if (m_lChildren == null)
-                m_lChildren = new ArrayList(c_ChildrenTypical);
+            if (_children == null)
+                _children = new ArrayList(ChildrenTypical);
 
-            m_lChildren.Add(child);
+            _children.Add(child);
         }
 
         internal void AddChildNoDuplicates(ISecurityElementFactory child)
@@ -308,19 +297,19 @@ namespace System.Security
             if (child == null)
                 throw new ArgumentNullException(nameof(child));
 
-            if (m_lChildren == null)
+            if (_children == null)
             {
-                m_lChildren = new ArrayList(c_ChildrenTypical);
-                m_lChildren.Add(child);
+                _children = new ArrayList(ChildrenTypical);
+                _children.Add(child);
             }
             else
             {
-                for (int i = 0; i < m_lChildren.Count; ++i)
+                for (int i = 0; i < _children.Count; ++i)
                 {
-                    if (m_lChildren[i] == child)
+                    if (_children[i] == child)
                         return;
                 }
-                m_lChildren.Add(child);
+                _children.Add(child);
             }
         }
 
@@ -330,33 +319,33 @@ namespace System.Security
                 return false;
 
             // Check if the tags are the same
-            if (!string.Equals(m_strTag, other.m_strTag))
+            if (!string.Equals(_tag, other._tag))
                 return false;
 
             // Check if the text is the same
-            if (!string.Equals(m_strText, other.m_strText))
+            if (!string.Equals(_text, other._text))
                 return false;
 
             // Check if the attributes are the same and appear in the same
             // order.
-            if (m_lAttributes == null || other.m_lAttributes == null)
+            if (_attributes == null || other._attributes == null)
             {
-                if (m_lAttributes != other.m_lAttributes)
+                if (_attributes != other._attributes)
                     return false;
             }
             else
             {
-                int iMax = m_lAttributes.Count;
+                int iMax = _attributes.Count;
                 Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
 
                 // Maybe we can get away by only checking the number of attributes
-                if (iMax != other.m_lAttributes.Count)
+                if (iMax != other._attributes.Count)
                     return false;
 
                 for (int i = 0; i < iMax; i++)
                 {
-                    string lhs = (string)m_lAttributes[i];
-                    string rhs = (string)other.m_lAttributes[i];
+                    string lhs = (string)_attributes[i];
+                    string rhs = (string)other._attributes[i];
 
                     if (!string.Equals(lhs, rhs))
                         return false;
@@ -365,22 +354,22 @@ namespace System.Security
 
             // Finally we must check the child and make sure they are
             // equal and in the same order
-            if (m_lChildren == null || other.m_lChildren == null)
+            if (_children == null || other._children == null)
             {
-                if (m_lChildren != other.m_lChildren)
+                if (_children != other._children)
                     return false;
             }
             else
             {
                 // Maybe we can get away by only checking the number of children
-                if (m_lChildren.Count != other.m_lChildren.Count)
+                if (_children.Count != other._children.Count)
                     return false;
 
                 ConvertSecurityElementFactories();
                 other.ConvertSecurityElementFactories();
 
-                IEnumerator lhs = m_lChildren.GetEnumerator();
-                IEnumerator rhs = other.m_lChildren.GetEnumerator();
+                IEnumerator lhs = _children.GetEnumerator();
+                IEnumerator rhs = other._children.GetEnumerator();
 
                 SecurityElement e1, e2;
                 while (lhs.MoveNext())
@@ -397,9 +386,9 @@ namespace System.Security
 
         public SecurityElement Copy()
         {
-            SecurityElement element = new SecurityElement(m_strTag, m_strText);
-            element.m_lChildren = m_lChildren == null ? null : new ArrayList(m_lChildren);
-            element.m_lAttributes = m_lAttributes == null ? null : new ArrayList(m_lAttributes);
+            SecurityElement element = new SecurityElement(_tag, _text);
+            element._children = _children == null ? null : new ArrayList(_children);
+            element._attributes = _attributes == null ? null : new ArrayList(_attributes);
 
             return element;
         }
@@ -447,7 +436,7 @@ namespace System.Security
                     return strEscValue;
             }
 
-            Debug.Assert(false, "Unable to find escape sequence for this character");
+            Debug.Fail("Unable to find escape sequence for this character");
             return c.ToString();
         }
 
@@ -462,7 +451,7 @@ namespace System.Security
             int index; // Pointer into the string that indicates the location of the current '&' character
             int newIndex = 0; // Pointer into the string that indicates the start index of the "remaining" string (that still needs to be processed).
 
-            do
+            while (true)
             {
                 index = str.IndexOfAny(s_escapeChars, newIndex);
 
@@ -487,7 +476,6 @@ namespace System.Security
                     newIndex = (index + 1);
                 }
             }
-            while (true);
 
             // no normal exit is possible
         }
@@ -555,129 +543,82 @@ namespace System.Security
             while (true);
         }
 
-        private delegate void ToStringHelperFunc(object obj, string str);
-
-        private static void ToStringHelperStringBuilder(object obj, string str)
-        {
-            ((StringBuilder)obj).Append(str);
-        }
-
-        private static void ToStringHelperStreamWriter(object obj, string str)
-        {
-            ((StreamWriter)obj).Write(str);
-        }
-
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
 
-            ToString("", sb, new ToStringHelperFunc(ToStringHelperStringBuilder));
+            ToString("", sb, (obj, str) => ((StringBuilder)obj).Append(str));
 
             return sb.ToString();
         }
 
         internal void ToWriter(StreamWriter writer)
         {
-            ToString("", writer, new ToStringHelperFunc(ToStringHelperStreamWriter));
+            ToString("", writer, (obj, str) => ((StreamWriter)obj).Write(str));
         }
 
-        private void ToString(string indent, object obj, ToStringHelperFunc func)
+        private void ToString(string indent, object obj, Action<object, string> write)
         {
-            func(obj, "<");
-
-            switch (m_type)
-            {
-                case SecurityElementType.Format:
-                    func(obj, "?");
-                    break;
-
-                case SecurityElementType.Comment:
-                    func(obj, "!");
-                    break;
-
-                default:
-                    break;
-            }
-
-            func(obj, m_strTag);
+            write(obj, "<");
+            write(obj, _tag);
 
             // If there are any attributes, plop those in.
-            if (m_lAttributes != null && m_lAttributes.Count > 0)
+            if (_attributes != null && _attributes.Count > 0)
             {
-                func(obj, " ");
+                write(obj, " ");
 
-                int iMax = m_lAttributes.Count;
+                int iMax = _attributes.Count;
                 Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
 
                 for (int i = 0; i < iMax; i += 2)
                 {
-                    string strAttrName = (string)m_lAttributes[i];
-                    string strAttrValue = (string)m_lAttributes[i + 1];
+                    string strAttrName = (string)_attributes[i];
+                    string strAttrValue = (string)_attributes[i + 1];
 
-                    func(obj, strAttrName);
-                    func(obj, "=\"");
-                    func(obj, strAttrValue);
-                    func(obj, "\"");
+                    write(obj, strAttrName);
+                    write(obj, "=\"");
+                    write(obj, strAttrValue);
+                    write(obj, "\"");
 
-                    if (i != m_lAttributes.Count - 2)
+                    if (i != _attributes.Count - 2)
                     {
-                        if (m_type == SecurityElementType.Regular)
-                        {
-                            func(obj, Environment.NewLine);
-                        }
-                        else
-                        {
-                            func(obj, " ");
-                        }
+                        write(obj, Environment.NewLine);
                     }
                 }
             }
 
-            if (m_strText == null && (m_lChildren == null || m_lChildren.Count == 0))
+            if (_text == null && (_children == null || _children.Count == 0))
             {
                 // If we are a single tag with no children, just add the end of tag text.
-                switch (m_type)
-                {
-                    case SecurityElementType.Comment:
-                        func(obj, ">");
-                        break;
-
-                    case SecurityElementType.Format:
-                        func(obj, " ?>");
-                        break;
-
-                    default:
-                        func(obj, "/>");
-                        break;
-                }
-                func(obj, Environment.NewLine);
+                write(obj, "/>");
+                write(obj, Environment.NewLine);
             }
             else
             {
                 // Close the current tag.
-                func(obj, ">");
+                write(obj, ">");
 
                 // Output the text
-                func(obj, m_strText);
+                write(obj, _text);
 
                 // Output any children.
-                if (m_lChildren != null)
+                if (_children != null)
                 {
                     ConvertSecurityElementFactories();
 
-                    func(obj, Environment.NewLine);
+                    write(obj, Environment.NewLine);
 
-                    for (int i = 0; i < m_lChildren.Count; ++i)
+                    for (int i = 0; i < _children.Count; ++i)
                     {
-                        ((SecurityElement)m_lChildren[i]).ToString(string.Empty, obj, func);
+                        ((SecurityElement)_children[i]).ToString(string.Empty, obj, write);
                     }
                 }
 
                 // Output the closing tag
-                func(obj, "</");
-                func(obj, m_strTag);
-                func(obj, ">");
-                func(obj, Environment.NewLine);
+                write(obj, "</");
+                write(obj, _tag);
+                write(obj, ">");
+                write(obj, Environment.NewLine);
             }
         }
 
@@ -688,21 +629,21 @@ namespace System.Security
 
             // Note: we don't check for validity here because an
             // if an invalid name is passed we simply won't find it.
-            if (m_lAttributes == null)
+            if (_attributes == null)
                 return null;
 
             // Go through all the attribute and see if we know about
             // the one we are asked for
-            int iMax = m_lAttributes.Count;
+            int iMax = _attributes.Count;
             Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
 
             for (int i = 0; i < iMax; i += 2)
             {
-                string strAttrName = (string)m_lAttributes[i];
+                string strAttrName = (string)_attributes[i];
 
                 if (string.Equals(strAttrName, name))
                 {
-                    string strAttrValue = (string)m_lAttributes[i + 1];
+                    string strAttrValue = (string)_attributes[i + 1];
 
                     return Unescape(strAttrValue);
                 }
@@ -722,15 +663,10 @@ namespace System.Security
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.    
-            if (m_lChildren == null)
+            if (_children == null)
                 return null;
-
-            IEnumerator enumerator = m_lChildren.GetEnumerator();
-
-            while (enumerator.MoveNext())
+            foreach (SecurityElement current in _children)
             {
-                SecurityElement current = (SecurityElement)enumerator.Current;
-
                 if (current != null && string.Equals(current.Tag, tag))
                     return current;
             }
@@ -746,19 +682,17 @@ namespace System.Security
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.    
-            if (m_strTag == null)
+            if (_tag == null)
                 return null;
-            if (m_strTag.Equals(strLocalName) || m_strTag.EndsWith(":" + strLocalName, StringComparison.Ordinal))
-                return Unescape(m_strText);
-            if (m_lChildren == null)
+            if (_tag.Equals(strLocalName) || _tag.EndsWith(":" + strLocalName, StringComparison.Ordinal))
+                return Unescape(_text);
+            if (_children == null)
                 return null;
 
-            IEnumerator enumerator = m_lChildren.GetEnumerator();
-
-            while (enumerator.MoveNext())
+            IEnumerator enumerator = _children.GetEnumerator();
+            foreach (SecurityElement currentElement in _children)
             {
-                string current = ((SecurityElement)enumerator.Current).SearchForTextOfLocalName(strLocalName);
-
+                string current = currentElement.SearchForTextOfLocalName(strLocalName);
                 if (current != null)
                     return current;
             }
@@ -774,21 +708,16 @@ namespace System.Security
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.    
-            if (string.Equals(m_strTag, tag))
-                return Unescape(m_strText);
-            if (m_lChildren == null)
+            if (string.Equals(_tag, tag))
+                return Unescape(_text);
+            if (_children == null)
                 return null;
 
-            IEnumerator enumerator = m_lChildren.GetEnumerator();
-
-            ConvertSecurityElementFactories();
-
-            while (enumerator.MoveNext())
+            foreach (SecurityElement child in Children)
             {
-                string current = ((SecurityElement)enumerator.Current).SearchForTextOfTag(tag);
-
-                if (current != null)
-                    return current;
+                string text = child.SearchForTextOfTag(tag);
+                if (text != null)
+                    return text;
             }
             return null;
         }
@@ -822,7 +751,5 @@ namespace System.Security
         {
             return ((SecurityElement)this).Attribute(attributeName);
         }
-
-
     }
 }

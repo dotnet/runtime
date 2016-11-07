@@ -31,6 +31,7 @@
     <Compile Include="System\Security\Permissions\UrlIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\UrlIdentityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\ZoneIdentityPermission.cs" />
+    <Compile Include="System\Security\Permissions\IDRole.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermission.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\PublisherIdentityPermission.cs" />
