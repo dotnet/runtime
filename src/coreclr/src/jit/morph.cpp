@@ -5012,7 +5012,16 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
                     curAddr = baseAddr;
                 }
                 GenTreePtr curItem = gtNewOperNode(GT_IND, type[inx], curAddr);
-                listEntry          = new (this, GT_FIELD_LIST) GenTreeFieldList(curItem, offset, type[inx], listEntry);
+
+                // For safety all GT_IND should have at least GT_GLOB_REF set.
+                curItem->gtFlags |= GTF_GLOB_REF;
+                if (fgAddrCouldBeNull(curItem))
+                {
+                    // This indirection can cause a GPF if the address could be null.
+                    curItem->gtFlags |= GTF_EXCEPT;
+                }
+
+                listEntry = new (this, GT_FIELD_LIST) GenTreeFieldList(curItem, offset, type[inx], listEntry);
                 if (newArg == nullptr)
                 {
                     newArg = listEntry;
