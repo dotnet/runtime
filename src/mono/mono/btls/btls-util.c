@@ -8,14 +8,12 @@
 
 #include <btls-util.h>
 #include <assert.h>
-#include <time.h>
-
-#if defined(__ANDROID__) && !defined(__LP64__)
-#include <time64.h>
-extern time_t timegm (struct tm* const t);
-#endif
+// #include <time.h>
 
 extern int asn1_generalizedtime_to_tm (struct tm *tm, const ASN1_GENERALIZEDTIME *d);
+
+extern int64_t btls_timegm64 (const struct tm *date);
+
 
 MONO_API void
 mono_btls_free (void *data)
@@ -23,17 +21,20 @@ mono_btls_free (void *data)
 	OPENSSL_free (data);
 }
 
-long
+int64_t
 mono_btls_util_asn1_time_to_ticks (ASN1_TIME *time)
 {
 	ASN1_GENERALIZEDTIME *gtime;
 	struct tm tm;
-	time_t epoch;
+	int64_t epoch;
+	int ret;
+	
+	memset (&tm, 0, sizeof (tm));
 
 	gtime = ASN1_TIME_to_generalizedtime (time, NULL);
-	asn1_generalizedtime_to_tm (&tm, gtime);
+	ret = asn1_generalizedtime_to_tm (&tm, gtime);
 	ASN1_GENERALIZEDTIME_free (gtime);
-	epoch = timegm(&tm);
+	epoch = btls_timegm64 (&tm);
 
 	return epoch;
 }

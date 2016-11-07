@@ -126,14 +126,14 @@ mono_btls_x509_verify_param_add_host (MonoBtlsX509VerifyParam *param, const char
 	return X509_VERIFY_PARAM_set1_host (param->param, host, namelen);
 }
 
-MONO_API unsigned long
+MONO_API uint64_t
 mono_btls_x509_verify_param_get_flags (MonoBtlsX509VerifyParam *param)
 {
 	return X509_VERIFY_PARAM_get_flags (param->param);
 }
 
 MONO_API int
-mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, unsigned long flags)
+mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, uint64_t flags)
 {
 	if (!param->owns)
 		return -1;
@@ -144,7 +144,7 @@ MONO_API MonoBtlsX509VerifyFlags
 mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param)
 {
 	MonoBtlsX509VerifyFlags current;
-	unsigned long flags;
+	uint64_t flags;
 
 	if (!param->owns)
 		return -1;
@@ -165,7 +165,7 @@ mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param)
 MONO_API int
 mono_btls_x509_verify_param_set_mono_flags (MonoBtlsX509VerifyParam *param, MonoBtlsX509VerifyFlags flags)
 {
-	unsigned long current;
+	uint64_t current;
 
 	if (!param->owns)
 		return -1;
@@ -205,7 +205,7 @@ mono_btls_x509_verify_param_set_depth (MonoBtlsX509VerifyParam *param, int depth
 }
 
 MONO_API int
-mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, long time)
+mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, int64_t time)
 {
 	if (!param->owns)
 		return -1;

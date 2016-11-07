@@ -34,13 +34,13 @@ mono_btls_x509_crl_get_revoked_count (MonoBtlsX509Crl *crl);
 MonoBtlsX509Revoked *
 mono_btls_x509_crl_get_revoked (MonoBtlsX509Crl *crl, int index);
 
-long
+int64_t
 mono_btls_x509_crl_get_last_update (MonoBtlsX509Crl *crl);
 
-long
+int64_t
 mono_btls_x509_crl_get_next_update (MonoBtlsX509Crl *crl);
 
-long
+int64_t
 mono_btls_x509_crl_get_version (MonoBtlsX509Crl *crl);
 
 MonoBtlsX509Name *

@@ -18,7 +18,7 @@ typedef enum {
 
 typedef int (* MonoBtlsReadFunc) (const void *instance, const void *buf, int size, int *wantMore);
 typedef int (* MonoBtlsWriteFunc) (const void *instance, const void *buf, int size);
-typedef long (* MonoBtlsControlFunc) (const void *instance, MonoBtlsControlCommand command, long arg);
+typedef int64_t (* MonoBtlsControlFunc) (const void *instance, MonoBtlsControlCommand command, int64_t arg);
 
 BIO *
 mono_btls_bio_mono_new (void);

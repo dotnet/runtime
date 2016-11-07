@@ -46,7 +46,7 @@ mono_btls_x509_revoked_get_serial_number (MonoBtlsX509Revoked *revoked, char *bu
 	return serial->length;
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_revoked_get_revocation_date (MonoBtlsX509Revoked *revoked)
 {
 	ASN1_TIME *date;

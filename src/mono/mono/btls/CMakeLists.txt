@@ -51,6 +51,7 @@ set (
 	btls-ssl-ctx.h
 	btls-ssl.c
 	btls-ssl.h
+	btls-time64.c
 	btls-util.c
 	btls-util.h
 	btls-x509-chain.c
@@ -73,8 +74,6 @@ set (
 	btls-x509-verify-param.h
 	btls-x509.c
 	btls-x509.h
-
-	btls-android-utils.c
 
 	${BORINGSSL_OBJECTS}
 )

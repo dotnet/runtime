@@ -124,19 +124,19 @@ mono_btls_x509_crl_get_revoked (MonoBtlsX509Crl *crl, int index)
 	return mono_btls_x509_revoked_new (crl, revoked);
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_crl_get_last_update (MonoBtlsX509Crl *crl)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_CRL_get_lastUpdate (crl->crl));
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_crl_get_next_update (MonoBtlsX509Crl *crl)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_CRL_get_nextUpdate (crl->crl));
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_crl_get_version (MonoBtlsX509Crl *crl)
 {
 	return X509_CRL_get_version (crl->crl);

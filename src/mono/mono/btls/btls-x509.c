@@ -101,13 +101,13 @@ mono_btls_x509_get_hash (X509 *x509, const void **data)
 	return SHA_DIGEST_LENGTH;
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_get_not_before (X509 *x509)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_get_notBefore (x509));
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_get_not_after (X509 *x509)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_get_notAfter (x509));

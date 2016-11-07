@@ -50,11 +50,11 @@ mono_btls_x509_verify_param_set_host (MonoBtlsX509VerifyParam *param, const char
 int
 mono_btls_x509_verify_param_add_host (MonoBtlsX509VerifyParam *param, const char *host, int namelen);
 
-unsigned long
+uint64_t
 mono_btls_x509_verify_param_get_flags (MonoBtlsX509VerifyParam *param);
 
 int
-mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, unsigned long flags);
+mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, uint64_t flags);
 
 MonoBtlsX509VerifyFlags
 mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param);
@@ -72,7 +72,7 @@ int
 mono_btls_x509_verify_param_set_depth (MonoBtlsX509VerifyParam *param, int depth);
 
 int
-mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, long time);
+mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, int64_t time);
 
 char *
 mono_btls_x509_verify_param_get_peername (MonoBtlsX509VerifyParam *param);

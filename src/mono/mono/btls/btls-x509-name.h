@@ -56,10 +56,10 @@ mono_btls_x509_name_print_string (MonoBtlsX509Name *name, char *buffer, int size
 int
 mono_btls_x509_name_get_raw_data (MonoBtlsX509Name *name, void **buffer, int use_canon_enc);
 
-long
+int64_t
 mono_btls_x509_name_hash (MonoBtlsX509Name *name);
 
-long
+int64_t
 mono_btls_x509_name_hash_old (MonoBtlsX509Name *name);
 
 int

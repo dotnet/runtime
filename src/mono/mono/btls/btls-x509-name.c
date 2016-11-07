@@ -153,13 +153,13 @@ mono_btls_x509_name_print_string (MonoBtlsX509Name *name, char *buffer, int size
 	return X509_NAME_oneline (name->name, buffer, size) != NULL;
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_name_hash (MonoBtlsX509Name *name)
 {
 	return X509_NAME_hash (name->name);
 }
 
-MONO_API long
+MONO_API int64_t
 mono_btls_x509_name_hash_old (MonoBtlsX509Name *name)
 {
 	return X509_NAME_hash_old (name->name);

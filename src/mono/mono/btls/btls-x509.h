@@ -79,10 +79,10 @@ mono_btls_x509_cmp (const X509 *a, const X509 *b);
 int
 mono_btls_x509_get_hash (X509 *x509, const void **data);
 
-long
+int64_t
 mono_btls_x509_get_not_before (X509 *x509);
 
-long
+int64_t
 mono_btls_x509_get_not_after (X509 *x509);
 
 int

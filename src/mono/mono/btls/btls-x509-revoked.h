@@ -22,7 +22,7 @@ mono_btls_x509_revoked_free (MonoBtlsX509Revoked *revoked);
 int
 mono_btls_x509_revoked_get_serial_number (MonoBtlsX509Revoked *revoked, char *buffer, int size);
 
-long
+int64_t
 mono_btls_x509_revoked_get_revocation_date (MonoBtlsX509Revoked *revoked);
 
 int
