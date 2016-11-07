@@ -2826,7 +2826,7 @@ mono_unload_interface_id (MonoClass *klass)
  * LOCKING: Acquires the classes lock.
  * Returns: The new ID.
  */
-static guint
+static guint32
 mono_get_unique_iid (MonoClass *klass)
 {
 	int iid;
@@ -2880,7 +2880,9 @@ mono_get_unique_iid (MonoClass *klass)
 	}
 #endif
 
-	g_assert (iid <= 65535);
+	/* I've confirmed iids safe past 16 bits, however bitset code uses a signed int while testing.
+	 * Once this changes, it should be safe for us to allow 2^32-1 interfaces, until then 2^31-2 is the max. */
+	g_assert (iid < INT_MAX);
 	return iid;
 }
 
@@ -3528,7 +3530,8 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 {
 	MonoError error;
 	MonoClass *k, *ic;
-	int i, j, max_iid, num_ifaces;
+	int i, j, num_ifaces;
+	guint32 max_iid;
 	MonoClass **interfaces_full = NULL;
 	int *interface_offsets_full = NULL;
 	GPtrArray *ifaces;
@@ -3724,7 +3727,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		bitmap = (uint8_t *)mono_class_alloc0 (klass, bsize);
 #endif
 		for (i = 0; i < interface_offsets_count; i++) {
-			int id = interfaces_full [i]->interface_id;
+			guint32 id = interfaces_full [i]->interface_id;
 			bitmap [id >> 3] |= (1 << (id & 7));
 			klass->interfaces_packed [i] = interfaces_full [i];
 			klass->interface_offsets_packed [i] = interface_offsets_full [i];
@@ -4354,7 +4357,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	MonoError error;
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
-	int i, max_vtsize = 0, max_iid, cur_slot = 0;
+	int i, max_vtsize = 0, cur_slot = 0;
+	guint32 max_iid;
 	GPtrArray *ifaces = NULL;
 	GHashTable *override_map = NULL;
 	MonoMethod *cm;
@@ -5872,6 +5876,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
 			return NULL;
 		}
+
+		/* This is required now that it is possible for more than 2^16 interfaces to exist. */
+		g_assert(icount <= 65535);
 
 		klass->interfaces = interfaces;
 		klass->interface_count = icount;

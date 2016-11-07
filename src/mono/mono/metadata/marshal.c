@@ -9936,14 +9936,14 @@ get_virtual_stelemref_wrapper (int kind)
 		/* uiid = klass->interface_id; */
 		mono_mb_emit_ldloc (mb, aklass);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, interface_id));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
+		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		mono_mb_emit_stloc (mb, uiid);
 
 		/*if (uiid > vt->max_interface_id)*/
 		mono_mb_emit_ldloc (mb, uiid);
 		mono_mb_emit_ldloc (mb, vtable);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, max_interface_id));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
+		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		b2 = mono_mb_emit_branch (mb, CEE_BGT_UN);
 
 		/* if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7)))) */

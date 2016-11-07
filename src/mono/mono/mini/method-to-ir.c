@@ -1657,7 +1657,7 @@ mini_emit_max_iid_check_vtable (MonoCompile *cfg, int vtable_reg, MonoClass *kla
 {
 	int max_iid_reg = alloc_preg (cfg);
 		
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, max_iid_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, max_interface_id));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU4_MEMBASE, max_iid_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, max_interface_id));
 	mini_emit_max_iid_check (cfg, max_iid_reg, klass, false_target);
 }
 
@@ -1668,7 +1668,7 @@ mini_emit_max_iid_check_class (MonoCompile *cfg, int klass_reg, MonoClass *klass
 {
 	int max_iid_reg = alloc_preg (cfg);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, max_iid_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, max_interface_id));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU4_MEMBASE, max_iid_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, max_interface_id));
 	mini_emit_max_iid_check (cfg, max_iid_reg, klass, false_target);
 }
 

@@ -2202,7 +2202,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoVTable *vt, *pvt;
-	int i, j, vtsize, max_interface_id, extra_interface_vtsize = 0;
+	int i, j, vtsize, extra_interface_vtsize = 0;
+	guint32 max_interface_id;
 	MonoClass *k;
 	GSList *extra_interfaces = NULL;
 	MonoClass *klass = remote_class->proxy_class;

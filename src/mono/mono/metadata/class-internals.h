@@ -342,8 +342,8 @@ struct _MonoClass {
 	int        vtable_size; /* number of slots */
 
 	guint16     interface_count;
-	guint16     interface_id;        /* unique inderface id (for interfaces) */
-	guint16     max_interface_id;
+	guint32     interface_id;        /* unique inderface id (for interfaces) */
+	guint32     max_interface_id;
 	
 	guint16     interface_offsets_count;
 	MonoClass **interfaces_packed;
@@ -490,7 +490,7 @@ struct MonoVTable {
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
         gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
-	guint16     max_interface_id;
+	guint32     max_interface_id;
 	guint8      rank;
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
