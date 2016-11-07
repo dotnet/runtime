@@ -93,7 +93,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 }
 
 gpointer
-mono_string_to_lpstr (MonoString *s)
+mono_string_to_utf8str (MonoString *s)
 {
 	char *as, *tmp;
 	glong len;
