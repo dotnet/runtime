@@ -125,20 +125,17 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StreamReader OpenText()
         {
-            Stream stream = new FileStream(FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream, Encoding.UTF8, true);
+            return new StreamReader(FullPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         }
 
         public StreamWriter CreateText()
         {
-            Stream stream = new FileStream(FullPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            return new StreamWriter(stream);
+            return new StreamWriter(FullPath, append: false);
         }
 
         public StreamWriter AppendText()
         {
-            Stream stream = new FileStream(FullPath, FileMode.Append, FileAccess.Write, FileShare.Read);
-            return new StreamWriter(stream);
+            return new StreamWriter(FullPath, append: true);
         }
 
 
