@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <Import Project="$(MSBuildProjectName).props" />
+  
+  <PropertyGroup>
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <ProjectReference Include="@(Project)" />
+    
+    <!-- Include refs -->
+    <File Include="$(PackageLayoutDir)ref/$(TargetFramework)/*.*">
+      <TargetPath>ref/$(TargetFramework)</TargetPath>
+    </File>
+
+    <FilePackageDependency Include="Microsoft.NETCore.Platforms">
+      <Version>$(PlatformPackageVersion)</Version>
+    </FilePackageDependency>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <!-- Include lib -->
+    <File Include="$(PackageLayoutDir)runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)/*.*">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</TargetPath>
+    </File>
+    
+    <!-- Include native -->
+    <File Include="$(PackageLayoutDir)runtimes/$(PackageTargetRuntime)/native/*.*">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+</Project>
