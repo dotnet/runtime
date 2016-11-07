@@ -6184,7 +6184,8 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     {
         assignedInterval->assignedReg = regRec;
     }
-    else if (regRec->previousInterval != nullptr && regRec->previousInterval->assignedReg == regRec &&
+    else if (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
+             regRec->previousInterval->assignedReg == regRec &&
              regRec->previousInterval->getNextRefPosition() != nullptr)
     {
         regRec->assignedInterval = regRec->previousInterval;
