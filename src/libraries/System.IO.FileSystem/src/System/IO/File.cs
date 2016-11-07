@@ -29,8 +29,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream);
+            return new StreamReader(path);
         }
 
         public static StreamWriter CreateText(String path)
@@ -39,8 +38,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-            return new StreamWriter(stream);
+            return new StreamWriter(path, append: false);
         }
 
         public static StreamWriter AppendText(String path)
@@ -49,8 +47,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-            return new StreamWriter(stream);
+            return new StreamWriter(path, append: true);
         }
 
 
@@ -385,9 +382,7 @@ namespace System.IO
             Debug.Assert(encoding != null);
             Debug.Assert(path.Length > 0);
 
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            using (StreamReader sr = new StreamReader(stream, encoding, true))
+            using (StreamReader sr = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true))
                 return sr.ReadToEnd();
         }
 
@@ -400,7 +395,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalWriteAllText(path, contents, UTF8NoBOM);
+            using (StreamWriter sw = new StreamWriter(path))
+            {
+                sw.Write(contents);
+            }
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -414,20 +412,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalWriteAllText(path, contents, encoding);
-        }
-
-        [System.Security.SecurityCritical]
-        private static void InternalWriteAllText(String path, String contents, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length > 0);
-
-            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-
-            using (StreamWriter sw = new StreamWriter(stream, encoding))
+            using (StreamWriter sw = new StreamWriter(path, false, encoding))
+            {
                 sw.Write(contents);
+            }
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -520,9 +508,7 @@ namespace System.IO
             String line;
             List<String> lines = new List<String>();
 
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            using (StreamReader sr = new StreamReader(stream, encoding))
+            using (StreamReader sr = new StreamReader(path, encoding))
                 while ((line = sr.ReadLine()) != null)
                     lines.Add(line);
 
@@ -568,9 +554,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-
-            InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
+            InternalWriteAllLines(new StreamWriter(path), contents);
         }
 
         public static void WriteAllLines(String path, String[] contents, Encoding encoding)
@@ -590,9 +574,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-
-            InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
+            InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
         private static void InternalWriteAllLines(TextWriter writer, IEnumerable<String> contents)
@@ -617,7 +599,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalAppendAllText(path, contents, UTF8NoBOM);
+            using (StreamWriter sw = new StreamWriter(path, append: true))
+            {
+                sw.Write(contents);
+            }
         }
 
         public static void AppendAllText(String path, String contents, Encoding encoding)
@@ -630,19 +615,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalAppendAllText(path, contents, encoding);
-        }
-
-        private static void InternalAppendAllText(String path, String contents, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length > 0);
-
-            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-
-            using (StreamWriter sw = new StreamWriter(stream, encoding))
+            using (StreamWriter sw = new StreamWriter(path, true, encoding))
+            {
                 sw.Write(contents);
+            }
         }
 
         public static void AppendAllLines(String path, IEnumerable<String> contents)
@@ -655,9 +631,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-
-            InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
+            InternalWriteAllLines(new StreamWriter(path, append: true), contents);
         }
 
         public static void AppendAllLines(String path, IEnumerable<String> contents, Encoding encoding)
@@ -672,9 +646,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-
-            InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
+            InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
         public static void Replace(String sourceFileName, String destinationFileName, String destinationBackupFileName)
@@ -752,24 +724,6 @@ namespace System.IO
             // properly for Win32.
 
             throw new PlatformNotSupportedException();
-        }
-
-        private static volatile Encoding _UTF8NoBOM;
-
-        private static Encoding UTF8NoBOM
-        {
-            get
-            {
-                if (_UTF8NoBOM == null)
-                {
-                    // No need for double lock - we just want to avoid extra
-                    // allocations in the common case.
-                    UTF8Encoding noBOM = new UTF8Encoding(false, true);
-                    Interlocked.MemoryBarrier();
-                    _UTF8NoBOM = noBOM;
-                }
-                return _UTF8NoBOM;
-            }
         }
     }
 }
