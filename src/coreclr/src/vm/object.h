@@ -2192,15 +2192,28 @@ public:
     }
 #endif // FEATURE_LEAK_CULTURE_INFO
 
-#ifndef FEATURE_CORECLR
+#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
+#ifdef FEATURE_CORECLR
     OBJECTREF GetSynchronizationContext()
     {
-        LIMITED_METHOD_CONTRACT; 
+        LIMITED_METHOD_CONTRACT;
+        return m_SynchronizationContext;
+    }
+#else // !FEATURE_CORECLR
+    OBJECTREF GetSynchronizationContext()
+    {
+        LIMITED_METHOD_CONTRACT;
         if (m_ExecutionContext != NULL)
+        {
             return m_ExecutionContext->GetSynchronizationContext();
+        }
         return NULL;
     }
-    OBJECTREF GetExecutionContext() 
+#endif // FEATURE_CORECLR
+#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
+
+#ifndef FEATURE_CORECLR
+    OBJECTREF GetExecutionContext()
     { 
         LIMITED_METHOD_CONTRACT; 
         return (OBJECTREF)m_ExecutionContext;
