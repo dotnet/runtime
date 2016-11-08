@@ -17,7 +17,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "Prepared, Method Enter");
+                etwLog.MethodEnter(this);
                 etwLog.EnlistmentPrepared(_internalEnlistment);
             }
 
@@ -28,7 +28,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "Prepared, Method Enter");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -37,7 +37,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "ForceRollback, Method Enter");
+                etwLog.MethodEnter(this);
                 etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
 
@@ -48,7 +48,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("PreparingEnlistment.ForceRollback");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("PreparingEnlistment.ForceRollback");
+                etwLog.MethodEnter(this);
                 etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
  
@@ -68,7 +68,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("PreparingEnlistment.ForceRollback");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -77,7 +77,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("PreparingEnlisment.RecoveryInformation");
+                etwLog.MethodEnter(this);
             }
 
             try
@@ -91,7 +91,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(_internalEnlistment, "RecoveryInformation, Method Exit");
+                    etwLog.MethodExit(this);
                 }
             }
         }

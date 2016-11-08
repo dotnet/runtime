@@ -516,7 +516,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "Enlistment.Done, Method Enter");
+                etwLog.MethodEnter(this);
                 etwLog.EnlistmentDone(_internalEnlistment);
             }
 
@@ -527,7 +527,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "Enlistment.Done, Method Exit");
+                etwLog.MethodExit(this);
             }
         }
 

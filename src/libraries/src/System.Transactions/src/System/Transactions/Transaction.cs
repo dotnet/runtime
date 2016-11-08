@@ -362,7 +362,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("Transaction.get_TransactionInformation");
+                    etwLog.MethodEnter(this);
                 }
 
                 if (Disposed)
@@ -380,7 +380,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.get_TransactionInformation");
+                    etwLog.MethodExit(this);
                 }
 
                 return txInfo;
@@ -397,7 +397,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("Transaction.get_IsolationLevel");
+                    etwLog.MethodEnter(this);
                 }
 
                 if (Disposed)
@@ -407,7 +407,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.get_IsolationLevel");
+                    etwLog.MethodExit(this);
                 }
                 return _isoLevel;
             }
@@ -432,7 +432,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("Transaction.get_PromoterType");
+                    etwLog.MethodEnter(this);
                 }
 
                 if (Disposed)
@@ -471,7 +471,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.GetPromotedToken");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -499,7 +499,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.EnlistDurable( IEnlistmentNotification )");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -534,7 +534,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.EnlistDurable( IEnlistmentNotification )");
+                    etwLog.MethodExit(this);
                 }
 
                 return enlistment;
@@ -552,7 +552,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.EnlistDurable( ISinglePhaseNotification )");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -587,7 +587,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.EnlistDurable( ISinglePhaseNotification )");
+                    etwLog.MethodExit(this);
                 }
                 return enlistment;
             }
@@ -599,7 +599,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.Rollback");
+                etwLog.MethodEnter(this);
                 etwLog.TransactionRollback(this, "Transaction");
             }
 
@@ -616,7 +616,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("Transaction.Rollback");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -626,7 +626,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.Rollback");
+                etwLog.MethodEnter(this);
                 etwLog.TransactionRollback(this, "Transaction");
             }
 
@@ -643,7 +643,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("Transaction.Rollback");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -655,7 +655,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.EnlistVolatile( IEnlistmentNotification )");
+                etwLog.MethodEnter(this);
             }
  
             if (Disposed)
@@ -685,7 +685,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.EnlistVolatile( IEnlistmentNotification )");
+                    etwLog.MethodExit(this);
                 }
                 return enlistment;
             }
@@ -699,7 +699,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.EnlistVolatile( ISinglePhaseNotification )");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -729,7 +729,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.EnlistVolatile( ISinglePhaseNotification )");
+                    etwLog.MethodExit(this);
                 }
                 return enlistment;
             }
@@ -742,7 +742,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.Clone");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -759,7 +759,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("Transaction.Clone");
+                etwLog.MethodExit(this);
             }
             return clone;
         }
@@ -771,7 +771,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.Clone");
+                etwLog.MethodEnter(this);
                 etwLog.TransactionCloneCreate(clone, "Transaction");
             }
 
@@ -788,7 +788,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.DependentClone");
+                etwLog.MethodEnter(this);
             }
 
             if (cloneOption != DependentCloneOption.BlockCommitUntilComplete
@@ -813,7 +813,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.TransactionCloneCreate(clone, "DependentTransaction");
-                etwLog.MethodExit("Transaction.DependentClone");
+                etwLog.MethodExit(this);
             }
             return clone;
         }
@@ -881,7 +881,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.IDisposable.Dispose");
+                etwLog.MethodEnter(this);
             }
 
             if (Interlocked.Exchange(ref _disposed, Transaction._disposedTrueValue) == Transaction._disposedTrueValue)
@@ -898,7 +898,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("Transaction.IDisposable.Dispose");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -911,7 +911,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.ISerializable.GetObjectData");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -937,7 +937,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.TransactionSerialized(this, "Transaction");
-                etwLog.MethodExit("Transaction.ISerializable.GetObjectData");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -984,7 +984,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.EnlistPromotableSinglePhase");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -1016,7 +1016,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("Transaction.EnlistPromotableSinglePhase");
+                etwLog.MethodExit(this);
             }
 
             return succeeded;
@@ -1030,7 +1030,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.PromoteAndEnlistDurable");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -1070,7 +1070,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.PromoteAndEnlistDurable");
+                    etwLog.MethodExit(this);
                 }
 
                 return enlistment;
@@ -1083,7 +1083,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("Transaction.SetDistributedTransactionIdentifier");
+                etwLog.MethodEnter(this);
             }
 
             if (Disposed)
@@ -1114,7 +1114,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.SetDistributedTransactionIdentifier");
+                    etwLog.MethodExit(this);
                 }
                 return;
             }

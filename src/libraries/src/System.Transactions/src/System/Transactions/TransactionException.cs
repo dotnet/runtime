@@ -23,7 +23,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("TransactionException", message, innerException.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.TransactionException, message, innerException.ToString());
             }
 
             return new TransactionException(message, innerException);
@@ -43,7 +43,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", messagewithTxId, innerException.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, messagewithTxId, innerException.ToString());
             }
             return new InvalidOperationException(messagewithTxId, innerException);
         }
@@ -53,7 +53,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", message, innerException.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, message, innerException.ToString());
             }
 
             return new InvalidOperationException(message, innerException);
@@ -124,7 +124,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", messagewithTxId, string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, messagewithTxId, string.Empty);
             }
 
             return new InvalidOperationException(messagewithTxId);
@@ -161,7 +161,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("TransactionAbortedException", message, innerException.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.TransactionAbortedException, message, innerException.ToString());
             }
 
             return new TransactionAbortedException(message, innerException);
@@ -236,7 +236,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("TransactionInDoubtException", message, innerException.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.TransactionInDoubtException, message, innerException.ToString());
             }
 
             return new TransactionInDoubtException(message, innerException);
@@ -287,7 +287,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("TransactionManagerCommunicationException", message, innerException.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.TransactionManagerCommunicationException, message, innerException.ToString());
             }
  
             return new TransactionManagerCommunicationException(message, innerException);

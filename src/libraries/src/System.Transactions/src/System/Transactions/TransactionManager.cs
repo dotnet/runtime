@@ -181,7 +181,7 @@ namespace System.Transactions
                 {
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.TransactionExceptionTrace("UnrecognizedRecoveryInformation", nameof(recoveryInformation), string.Empty);
+                        etwLog.TransactionExceptionTrace(TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), string.Empty);
                     }
 
                     throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation));
@@ -191,7 +191,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.TransactionExceptionTrace("UnrecognizedRecoveryInformation", nameof(recoveryInformation), e.ToString());
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
                 }
                 throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
@@ -199,7 +199,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.TransactionExceptionTrace("UnrecognizedRecoveryInformation", nameof(recoveryInformation), e.ToString());
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
                 }
                 throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }

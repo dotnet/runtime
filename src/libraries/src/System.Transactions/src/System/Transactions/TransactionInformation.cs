@@ -20,7 +20,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("TransactionInformation.get_LocalIdentifier");
+                    etwLog.MethodEnter(this);
                 }
  
                 try
@@ -31,7 +31,7 @@ namespace System.Transactions
                 {
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.MethodExit("TransactionInformation.get_LocalIdentifier");
+                        etwLog.MethodExit(this);
                     }
                 }
             }
@@ -45,7 +45,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("TransactionInformation.get_DistributedIdentifier");
+                    etwLog.MethodEnter(this);
                 }
 
                 try
@@ -62,7 +62,7 @@ namespace System.Transactions
                 {
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.MethodExit("TransactionInformation.get_DistributedIdentifier");
+                        etwLog.MethodExit(this);
                     }
                 }
             }
@@ -78,7 +78,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("TransactionInformation.get_Status");
+                    etwLog.MethodEnter(this);
                 }
 
                 try
@@ -89,7 +89,7 @@ namespace System.Transactions
                 {
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.MethodExit("TransactionInformation.get_Status");
+                        etwLog.MethodExit(this);
                     }
                 }
             }

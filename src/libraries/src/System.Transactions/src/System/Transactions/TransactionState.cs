@@ -877,7 +877,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), e.ToString());
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), e.ToString());
             }
 
             throw new InvalidOperationException();
@@ -889,7 +889,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -901,7 +901,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -913,7 +913,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -925,7 +925,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -937,7 +937,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -949,7 +949,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -961,7 +961,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -973,7 +973,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -1001,7 +1001,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionExceptionTrace("InvalidOperationException", tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -1151,7 +1151,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, "Durable", "None");
+                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, EnlistmentType.Durable, EnlistmentOptions.None);
             }
 
             return en;
@@ -1300,7 +1300,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, "Volatile", enlistmentOptions.ToString());
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1326,7 +1326,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, "Volatile", enlistmentOptions.ToString());
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1352,7 +1352,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, "PromotableSinglePhase", "None");
+                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, EnlistmentType.PromotableSinglePhase, EnlistmentOptions.None);
             }
 
             // Specify the promoter for the transaction.
@@ -1581,7 +1581,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, "Volatile", enlistmentOptions.ToString());
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1608,7 +1608,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, "Volatile", enlistmentOptions.ToString());
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1643,7 +1643,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, "PromotableSinglePhase", "None");
+                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, EnlistmentType.PromotableSinglePhase, EnlistmentOptions.None);
             }
 
             // Specify the promoter for the transaction.
@@ -2126,7 +2126,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCommited(tx.TransactionTraceId);
+                etwLog.TransactionCommitted(tx.TransactionTraceId);
             }
 
             // Fire Completion for anyone listening
@@ -3709,7 +3709,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCommited(tx.TransactionTraceId);
+                etwLog.TransactionCommitted(tx.TransactionTraceId);
             }
         }
 
@@ -3889,7 +3889,7 @@ namespace System.Transactions
                     TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.EnlistmentStatus(tx._durableEnlistment, "Promote");
+                        etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Promote);
                     }
                 }
 
@@ -4040,7 +4040,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, "Volatile", enlistmentOptions.ToString());
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -4067,7 +4067,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, "Volatile", enlistmentOptions.ToString());
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -4473,7 +4473,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(tx._durableEnlistment,"SinglePhaseCommit");
+                etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.SinglePhaseCommit);
             }
 
             // We are about to tell the PSPE to do the SinglePhaseCommit. It is too late for us to timeout the transaction.
@@ -4792,7 +4792,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCommited(tx.TransactionTraceId);
+                etwLog.TransactionCommitted(tx.TransactionTraceId);
             }
         }
 
@@ -4905,7 +4905,7 @@ namespace System.Transactions
                     TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.EnlistmentStatus(tx._durableEnlistment, "Promote");
+                        etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Promote);
                     }
                 }
 
@@ -5260,7 +5260,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(tx._durableEnlistment, "SinglePhaseCommit");
+                etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.SinglePhaseCommit);
             }
 
             try
@@ -5296,7 +5296,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(tx._durableEnlistment, "Rollback");
+                    etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Rollback);
                 }
 
                 tx._durableEnlistment.PromotableSinglePhaseNotification.Rollback(

@@ -57,7 +57,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( TransactionScopeOption )");
+                etwLog.MethodEnter(this);
             }
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -98,7 +98,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( TransactionScopeOption )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -116,7 +116,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( TransactionScopeOption, TimeSpan )");
+                etwLog.MethodEnter(this);
             }
 
             ValidateScopeTimeout(nameof(scopeTimeout), scopeTimeout);
@@ -170,7 +170,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( TransactionScopeOption, TimeSpan )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -188,7 +188,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( TransactionScopeOption, TransactionOptions )");
+                etwLog.MethodEnter(this);
             }
 
             ValidateScopeTimeout("transactionOptions.Timeout", transactionOptions.Timeout);
@@ -256,7 +256,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( TransactionScopeOption, TransactionOptions )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -268,7 +268,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( TransactionScopeOption, TransactionOptions, EnterpriseServicesInteropOption )");
+                etwLog.MethodEnter(this);
             }
  
             ValidateScopeTimeout("transactionOptions.Timeout", transactionOptions.Timeout);
@@ -338,7 +338,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( TransactionScopeOption, TransactionOptions, EnterpriseServicesInteropOption )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -355,7 +355,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( Transaction )");
+                etwLog.MethodEnter(this);
             }
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -367,7 +367,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( Transaction )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -384,7 +384,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( Transaction, TimeSpan )");
+                etwLog.MethodEnter(this);
             }
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -396,7 +396,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( Transaction, TimeSpan )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -409,7 +409,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.ctor( Transaction, TimeSpan, EnterpriseServicesInteropOption )");
+                etwLog.MethodEnter(this);
             }
 
             ValidateInteropOption(interopOption);
@@ -422,7 +422,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.ctor( Transaction, TimeSpan, EnterpriseServicesInteropOption )");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -508,13 +508,13 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.Dispose");
+                etwLog.MethodEnter(this);
             }
             if (_disposed)
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("TransactionScope.Dispose");
+                    etwLog.MethodExit(this);
                 }
                 return;
             }
@@ -749,7 +749,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.Dispose");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -844,7 +844,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionScope.Complete");
+                etwLog.MethodEnter(this);
             }
             if (_disposed)
             {
@@ -859,7 +859,7 @@ namespace System.Transactions
             _complete = true;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionScope.Complete");
+                etwLog.MethodExit(this);
             }
         }
 
