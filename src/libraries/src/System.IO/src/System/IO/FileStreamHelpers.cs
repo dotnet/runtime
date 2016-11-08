@@ -17,9 +17,10 @@ namespace System.IO
         private const int FileMode_Append = 6;
         private const int FileAccess_Read = 1;
         private const int FileAccess_Write = 2;
+        private const int FileShare_Read = 1;
 
         private static FileOpenDelegate s_fileOpen;
-        private delegate Stream FileOpenDelegate(string path, int fileMode, int fileAccess);
+        private delegate Stream FileOpenDelegate(string path, int fileMode, int fileAccess, int fileShare);
 
         public static Stream CreateFileStream(string path, bool write, bool append)
         {
@@ -29,7 +30,7 @@ namespace System.IO
             }
             int filemode = !write ? FileMode_Open : append ? FileMode_Append : FileMode_Create;
             int fileaccess = write ? FileAccess_Write : FileAccess_Read;
-            return s_fileOpen(path, filemode, fileaccess);
+            return s_fileOpen(path, filemode, fileaccess, FileShare_Read);
         }
 
         private static FileOpenDelegate GetFileOpenFunction()
@@ -41,10 +42,11 @@ namespace System.IO
                 foreach (MethodInfo methodInfo in methodInfos)
                 {
                     var methodParams = methodInfo.GetParameters();
-                    if (methodParams?.Length == 3 &&
+                    if (methodParams?.Length == 4 &&
                         methodParams[0].Name == "path" &&
                         methodParams[1].Name == "mode" &&
-                        methodParams[2].Name == "access")
+                        methodParams[2].Name == "access" &&
+                        methodParams[3].Name == "share")
                     {
                         return (FileOpenDelegate)methodInfo.CreateDelegate(typeof(FileOpenDelegate));
                     }
