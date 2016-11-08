@@ -219,6 +219,9 @@ struct _MonoException {
 	MonoArray  *native_trace_ips;
 };
 
+/* Safely access System.Exception from native code */
+TYPED_HANDLE_DECL (MonoException);
+
 typedef struct {
 	MonoException base;
 } MonoSystemException;
@@ -1627,10 +1630,10 @@ MonoString*
 mono_string_intern_checked (MonoString *str, MonoError *error);
 
 char *
-mono_exception_get_native_backtrace (MonoException *exc);
+mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
 
-MonoString *
-ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc);
+MonoStringHandle
+ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *erro);
 
 char *
 mono_exception_get_managed_backtrace (MonoException *exc);

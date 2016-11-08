@@ -7700,6 +7700,15 @@ mono_object_try_to_string (MonoObject *obj, MonoObject **exc, MonoError *error)
 
 
 
+static char *
+get_native_backtrace (MonoException *exc_raw)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL(MonoException, exc);
+	char * trace = mono_exception_handle_get_native_backtrace (exc);
+	HANDLE_FUNCTION_RETURN_VAL (trace);
+}
+
 /**
  * mono_print_unhandled_exception:
  * @exc: The exception
@@ -7725,7 +7734,7 @@ mono_print_unhandled_exception (MonoObject *exc)
 	} else {
 		
 		if (((MonoException*)exc)->native_trace_ips) {
-			message = mono_exception_get_native_backtrace ((MonoException*)exc);
+			message = get_native_backtrace ((MonoException*)exc);
 			free_message = TRUE;
 		} else {
 			MonoObject *other_exc = NULL;
