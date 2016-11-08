@@ -49,11 +49,11 @@ Daily Builds
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
-[build-badge-master]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/3548/badge
-[build-master]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=3548
+[build-badge-master]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/3160/badge
+[build-master]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=3160&_a=completed
 
-[build-badge-1.0.0]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/3597/badge
-[build-1.0.0]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=3597
+[build-badge-1.0.0]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/4187/badge
+[build-1.0.0]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=4187&_a=completed
 
 
 [win-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Windows_x64_Release_version_badge.svg
