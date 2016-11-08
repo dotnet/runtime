@@ -422,7 +422,7 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { osName ->
-            (isPR ? ['SoftFP'] : ['HardFP', 'SoftFP']).each { abi ->
+            (isPR ? [/*'SoftFP'*/] : ['HardFP', 'SoftFP']).each { abi ->
                 def osGroup = osGroupMap[osName]
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
