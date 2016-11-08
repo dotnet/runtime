@@ -42,8 +42,8 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 
 | Area                                                                                          | Owners / experts | Description | Triage Status |
 |-----------------------------------------------------------------------------------------------|------------------|-------------|--------------------|
-| [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                |  | Issues without clear association to any specific API/contract (e.g. packaging, project-wide docs, new contract proposals) |  |
-| [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      |  |  |  |
+| [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                | [@tarekgh](https://github.com/tarekgh) | Issues without clear association to any specific API/contract (e.g. packaging, project-wide docs, new contract proposals) |  |
+| [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      | [@mellinoe](https://github.com/mellinoe) |  |  |
 | [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)              | [@shmao](https://github.com/shmao), [@zhenlan](https://github.com/zhenlan) | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerialization</li></ul> NOT:<ul><li>System.Runtime.Serialization.Formatters</li></ul> | Triaged |
 | **System contract assemblies** | | | |
 | [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           | [@AlexGhiondea](https://github.com/AlexGhiondea) |  |  |
@@ -60,7 +60,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Diagnostics.Process](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Process) | [@Priya91](https://github.com/Priya91) |  |  |
 | [System.Diagnostics.Tracing](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Tracing) |  |  |  |
 | [System.DirectoryServices](https://github.com/dotnet/corefx/labels/area-System.DirectoryServices) |  |  |  |
-| [System.Drawing](https://github.com/dotnet/corefx/labels/area-System.Drawing)                 | [@AlexPerovich](https://github.com/AlexPerovich) |  |  |
+| [System.Drawing](https://github.com/dotnet/corefx/labels/area-System.Drawing)                 | [@alexperovich](https://github.com/alexperovich) |  |  |
 | [System.Dynamic.Runtime](https://github.com/dotnet/corefx/labels/area-System.Dynamic.Runtime) | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |  |
 | [System.Globalization](https://github.com/dotnet/corefx/labels/area-System.Globalization)     | [@krwq](https://github.com/krwq), [@tarekgh](https://github.com/tarekgh) |  |  |
 | [System.IO](https://github.com/dotnet/corefx/labels/area-System.IO)                           | [@JeremyKhune](https://github.com/JeremyKuhne), [@ianhays](https://github.com/ianhays) |  | Triaged |
@@ -73,10 +73,10 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           |  |  |  |
 | [System.Reflection.Emit](https://github.com/dotnet/corefx/labels/area-System.Reflection.Emit) |  |  |  |
 | [System.Reflection.Metadata](https://github.com/dotnet/corefx/labels/area-System.Reflection.Metadata) | [@tmat](https://github.com/tmat), [@nguerrera](https://github.com/nguerrera) |  |  |
-| [System.Resources](https://github.com/dotnet/corefx/labels/area-System.Resources)             |  |  |  |
-| [System.Runtime](https://github.com/dotnet/corefx/labels/area-System.Runtime)                 | [@AlexGhiondea](https://github.com/AlexGhiondea), [@joperezr](https://github.com/dotnet/joperezr) | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |  |
-| [System.Runtime.CompilerServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.CompilerServices)   |  |  |  |
-| [System.Runtime.Extensions](https://github.com/dotnet/corefx/labels/area-System.Runtime.Extensions)   |  |  |  |
+| [System.Resources](https://github.com/dotnet/corefx/labels/area-System.Resources)             | [@ramarag](https://github.com/ramarag), [@tarekgh](https://github.com/tarekgh) |  |  |
+| [System.Runtime](https://github.com/dotnet/corefx/labels/area-System.Runtime)                 | [@AlexGhiondea](https://github.com/AlexGhiondea), [@joperezr](https://github.com/dotnet/joperezr) | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>WebUtility -> System.Net</li></ul> |  |
+| [System.Runtime.CompilerServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.CompilerServices)   | [@AlexGhiondea](https://github.com/AlexGhiondea), [@joperezr](https://github.com/dotnet/joperezr) |  |  |
+| [System.Runtime.Extensions](https://github.com/dotnet/corefx/labels/area-System.Runtime.Extensions)   | [@AlexGhiondea](https://github.com/AlexGhiondea), [@joperezr](https://github.com/dotnet/joperezr) |  |  |
 | [System.Runtime.InteropServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.InteropServices) | [@tijoytom](https://github.com/tijoytom), [@yizhang82](https://github.com/yizhang82) | NOT: System.Runtime.InteropServices.RuntimeInfo | Triaged |
 | [System.Security](https://github.com/dotnet/corefx/labels/area-System.Security)               | [@bartonjs](https://github.com/bartonjs), [@steveharter](https://github.com/steveharter) |  |  |
 | System.ServiceModel                                                                           | N/A | [dotnet/wcf](https://github.com/dotnet/wcf) |  |
