@@ -37,6 +37,7 @@
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
     <Compile Include="System\IO\TextReader.netstandard17.cs" />
     <Compile Include="System\IO\TextWriter.netstandard17.cs" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
@@ -55,7 +56,6 @@
     <Compile Include="System\IO\StringWriter.cs" />
     <Compile Include="System\IO\TextReader.cs" />
     <Compile Include="System\IO\TextWriter.cs" />
-    <Compile Include="System\IO\FileStreamHelpers.cs" />
     <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
@@ -69,6 +69,7 @@
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
+    <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
   </ItemGroup>
 
