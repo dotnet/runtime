@@ -30,30 +30,33 @@ They can be downloaded from [here](https://www.microsoft.com/net/download#core).
 Daily Builds
 ------------
 
-|Platform |Master<br>[![][build-badge-master]][build-master]| Release/1.0.0<br>[![][build-badge-1.0.0]][build-1.0.0] |
-|---------|:----------:|:----------:|
-|   **Windows x64**    |   [![][win-x64-badge-master]][win-x64-version-master]<br>[Installer][win-x64-installer-master]<br>[zip][win-x64-zip-master]   |   [![][win-x64-badge-preview]][win-x64-version-preview]<br>[Installer][win-x64-installer-preview]<br>[zip][win-x64-zip-preview]   |
-|   **Windows x86**    |   [![][win-x86-badge-master]][win-x86-version-master]<br>[Installer][win-x86-installer-master]<br>[zip][win-x86-zip-master]   |   [![][win-x86-badge-preview]][win-x86-version-preview]<br>[Installer][win-x86-installer-preview]<br>[zip][win-x86-zip-preview]   |
-|   **Windows Arm32**  |   [![][win-arm-badge-master]][win-arm-version-master]<br>[Installer][win-arm-installer-master]<br>[zip][win-arm-zip-master]   |   N/A   |
-|   **Mac OS X**       |   [![][osx-badge-master]][osx-version-master]<br>[Installer][osx-installer-master]<br>[tar.gz][osx-targz-master]   |   [![][osx-badge-preview]][osx-version-preview]<br>[Installer][osx-installer-preview]<br>[tar.gz][osx-targz-preview]   |
-|   **Ubuntu 14.04**   |   [![][ubuntu-14.04-badge-master]][ubuntu-14.04-version-master]<br>[Host][ubuntu-14.04-host-master]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-master]<br>[Shared Framework][ubuntu-14.04-sharedfx-master]<br>[tar.gz][ubuntu-14.04-targz-master]   |   [![][ubuntu-14.04-badge-preview]][ubuntu-14.04-version-preview]<br>[Host][ubuntu-14.04-host-preview]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-preview]<br>[Shared Framework][ubuntu-14.04-sharedfx-preview]<br>[tar.gz][ubuntu-14.04-targz-preview]   |
-|   **Ubuntu 16.04**   |   [![][ubuntu-16.04-badge-master]][ubuntu-16.04-version-master]<br>[Host][ubuntu-16.04-host-master]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-master]<br>[Shared Framework][ubuntu-16.04-sharedfx-master]<br>[tar.gz][ubuntu-16.04-targz-master]   |   [![][ubuntu-16.04-badge-preview]][ubuntu-16.04-version-preview]<br>[Host][ubuntu-16.04-host-preview]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-preview]<br>[Shared Framework][ubuntu-16.04-sharedfx-preview]<br>[tar.gz][ubuntu-16.04-targz-preview]   |
-|   **Ubuntu 16.10**   |   [![][ubuntu-16.10-badge-master]][ubuntu-16.10-version-master]<br>[Host][ubuntu-16.10-host-master]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-master]<br>[Shared Framework][ubuntu-16.10-sharedfx-master]<br>[tar.gz][ubuntu-16.10-targz-master]   |   N/A   |
-|   **Debian 8.2**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[tar.gz][debian-8.2-targz-master]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
-|   **CentOS 7.1**     |   [![][centos-badge-master]][centos-version-master]<br>[tar.gz][centos-targz-master]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
-|   **RHEL 7.2**       |   [![][rhel-badge-master]][rhel-version-master]<br>[tar.gz][rhel-targz-master]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
-|   **Fedora 23**      |   [![][fedora-23-badge-master]][fedora-23-version-master]<br>[tar.gz][fedora-23-targz-master]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
-|   **Fedora 24**      |   [![][fedora-24-badge-master]][fedora-24-version-master]<br>[tar.gz][fedora-24-targz-master]   |   N/A   |
-|   **OpenSUSE 13.2**  |   [![][opensuse-13.2-badge-master]][opensuse-13.2-version-master]<br>[tar.gz][opensuse-13.2-targz-master]   |   [![][opensuse-13.2-badge-preview]][opensuse-13.2-version-preview]<br>[tar.gz][opensuse-13.2-targz-preview]   |
-|   **OpenSUSE 42.1**  |   [![][opensuse-42.1-badge-master]][opensuse-42.1-version-master]<br>[tar.gz][opensuse-42.1-targz-master]   |   N/A   |
+|   Platform   |   Master<br>[![][build-badge-master]][build-master]   |   Release/1.X.X<br>[![][build-badge-1.X.X]][build-1.X.X]   |   Release/1.0.X<br>[![][build-badge-1.0.X]][build-1.0.X]   |
+|---------|:----------:|:----------:|:----------:|
+|   **Windows x64**    |   [![][win-x64-badge-master]][win-x64-version-master]<br>[Installer][win-x64-installer-master]<br>[zip][win-x64-zip-master]   |   |   [![][win-x64-badge-preview]][win-x64-version-preview]<br>[Installer][win-x64-installer-preview]<br>[zip][win-x64-zip-preview]   |
+|   **Windows x86**    |   [![][win-x86-badge-master]][win-x86-version-master]<br>[Installer][win-x86-installer-master]<br>[zip][win-x86-zip-master]   |   |   [![][win-x86-badge-preview]][win-x86-version-preview]<br>[Installer][win-x86-installer-preview]<br>[zip][win-x86-zip-preview]   |
+|   **Windows Arm32**  |   [![][win-arm-badge-master]][win-arm-version-master]<br>[zip][win-arm-zip-master]   |   |   N/A   |
+|   **Mac OS X**       |   [![][osx-badge-master]][osx-version-master]<br>[Installer][osx-installer-master]<br>[tar.gz][osx-targz-master]   |   |   [![][osx-badge-preview]][osx-version-preview]<br>[Installer][osx-installer-preview]<br>[tar.gz][osx-targz-preview]   |
+|   **Ubuntu 14.04**   |   [![][ubuntu-14.04-badge-master]][ubuntu-14.04-version-master]<br>[Host][ubuntu-14.04-host-master]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-master]<br>[Shared Framework][ubuntu-14.04-sharedfx-master]<br>[tar.gz][ubuntu-14.04-targz-master]   |   |   [![][ubuntu-14.04-badge-preview]][ubuntu-14.04-version-preview]<br>[Host][ubuntu-14.04-host-preview]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-preview]<br>[Shared Framework][ubuntu-14.04-sharedfx-preview]<br>[tar.gz][ubuntu-14.04-targz-preview]   |
+|   **Ubuntu 16.04**   |   [![][ubuntu-16.04-badge-master]][ubuntu-16.04-version-master]<br>[Host][ubuntu-16.04-host-master]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-master]<br>[Shared Framework][ubuntu-16.04-sharedfx-master]<br>[tar.gz][ubuntu-16.04-targz-master]   |   |   [![][ubuntu-16.04-badge-preview]][ubuntu-16.04-version-preview]<br>[Host][ubuntu-16.04-host-preview]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-preview]<br>[Shared Framework][ubuntu-16.04-sharedfx-preview]<br>[tar.gz][ubuntu-16.04-targz-preview]   |
+|   **Ubuntu 16.10**   |   [![][ubuntu-16.10-badge-master]][ubuntu-16.10-version-master]<br>[Host][ubuntu-16.10-host-master]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-master]<br>[Shared Framework][ubuntu-16.10-sharedfx-master]<br>[tar.gz][ubuntu-16.10-targz-master]   |   |   N/A   |
+|   **Debian 8.2**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[tar.gz][debian-8.2-targz-master]   |   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
+|   **CentOS 7.1**     |   [![][centos-badge-master]][centos-version-master]<br>[tar.gz][centos-targz-master]   |   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
+|   **RHEL 7.2**       |   [![][rhel-badge-master]][rhel-version-master]<br>[tar.gz][rhel-targz-master]   |   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
+|   **Fedora 23**      |   [![][fedora-23-badge-master]][fedora-23-version-master]<br>[tar.gz][fedora-23-targz-master]   |   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
+|   **Fedora 24**      |   [![][fedora-24-badge-master]][fedora-24-version-master]<br>[tar.gz][fedora-24-targz-master]   |   |   N/A   |
+|   **OpenSUSE 13.2**  |   [![][opensuse-13.2-badge-master]][opensuse-13.2-version-master]<br>[tar.gz][opensuse-13.2-targz-master]   |   |   [![][opensuse-13.2-badge-preview]][opensuse-13.2-version-preview]<br>[tar.gz][opensuse-13.2-targz-preview]   |
+|   **OpenSUSE 42.1**  |   [![][opensuse-42.1-badge-master]][opensuse-42.1-version-master]<br>[tar.gz][opensuse-42.1-targz-master]   |   |   N/A   |
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
 [build-badge-master]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/3160/badge
 [build-master]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=3160&_a=completed
 
-[build-badge-1.0.0]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/4187/badge
-[build-1.0.0]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=4187&_a=completed
+[build-badge-1.X.X]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/4188/badge
+[build-1.X.X]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=4188&_a=completed
+
+[build-badge-1.0.X]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/4187/badge
+[build-1.0.X]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=4187&_a=completed
 
 
 [win-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Windows_x64_Release_version_badge.svg
@@ -79,7 +82,6 @@ Daily Builds
 
 [win-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Windows_arm_Release_version_badge.svg
 [win-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win.arm.version
-[win-arm-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-win-arm.latest.exe
 [win-arm-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-win-arm.latest.zip
 
 
