@@ -1761,6 +1761,7 @@ combinedScenarios.each { scenario ->
                                     }
                                     else if (scenario == 'formatting') {
                                         buildCommands += "python -u tests\\scripts\\format.py -c %WORKSPACE% -o Windows_NT -a ${arch}"
+                                        Utilities.addArchival(newJob, "format.patch", "", true, false)
                                         break
                                     }
                                     else {
@@ -1972,6 +1973,7 @@ combinedScenarios.each { scenario ->
 
                                     if (scenario == 'formatting') {
                                         buildCommands += "python tests/scripts/format.py -c \${WORKSPACE} -o Linux -a ${arch}"
+                                        Utilities.addArchival(newJob, "format.patch", "", true, false)
                                         break
                                     }
                                 
