@@ -201,6 +201,8 @@ void mono_handle_verify (MonoRawHandle handle);
 
 #define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
+#define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
+
 
 /*
  * TYPED_HANDLE_DECL(SomeType):
@@ -213,8 +215,12 @@ void mono_handle_verify (MonoRawHandle handle);
  * } MonoObjectHandlePayload;
  *
  * typedef MonoObjectHandlePayload* MonoObjectHandle;
+ * typedef MonoObjectHandlePayload* MonoObjectHandleOut;
  */
-#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE)
+#define TYPED_HANDLE_DECL(TYPE)						\
+	typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
+	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE); \
+	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_OUT_HANDLE_NAME (TYPE)
 /* Have to double expand because MONO_STRUCT_OFFSET is doing token pasting on cross-compilers. */
 #define MONO_HANDLE_PAYLOAD_OFFSET_(PayloadType) MONO_STRUCT_OFFSET(PayloadType, __obj)
 #define MONO_HANDLE_PAYLOAD_OFFSET(TYPE) MONO_HANDLE_PAYLOAD_OFFSET_(TYPED_HANDLE_PAYLOAD_NAME (TYPE))
