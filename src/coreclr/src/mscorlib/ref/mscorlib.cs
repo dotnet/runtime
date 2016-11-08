@@ -11971,6 +11971,7 @@ namespace System.Runtime.Loader
         public event System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> Resolving { add { } remove { } }
         public event System.Action<System.Runtime.Loader.AssemblyLoadContext> Unloading { add { } remove { } }
         public static event AssemblyLoadEventHandler AssemblyLoad { add { } remove { } }
+        public static event ResolveEventHandler AssemblyResolve { add { } remove { } }
         public static event ResolveEventHandler TypeResolve { add { } remove { } }
         public static event ResolveEventHandler ResourceResolve { add { } remove { } }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyPath) { throw null; }
