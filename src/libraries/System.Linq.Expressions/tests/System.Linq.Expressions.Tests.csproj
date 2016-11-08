@@ -159,6 +159,7 @@
     <Compile Include="MemberInit\MemberBindTests.cs" />
     <Compile Include="MemberInit\MemberInitTests.cs" />
     <Compile Include="Member\MemberAccessTests.cs" />
+    <Compile Include="New\NewWithByRefParameterTests.cs" />
     <Compile Include="New\NewTests.cs" />
     <Compile Include="New\NewWithParameterTests.cs" />
     <Compile Include="New\NewWithTwoParametersTests.cs" />
