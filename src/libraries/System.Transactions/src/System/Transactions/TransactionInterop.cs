@@ -262,14 +262,14 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetTransactionFromDtc");
+                etwLog.MethodEnter("TransactionInterop.GetTransactionFromDtcTransaction");
             }
 
             Transaction transaction = DistributedTransactionManager.GetTransactionFromDtcTransaction(transactionNative);
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetTransactionFromDtc");
+                etwLog.MethodExit("TransactionInterop.GetTransactionFromDtcTransaction");
             }
             return transaction;
         }

@@ -197,7 +197,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, "Rollback");
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
                 }
 
                 // Send the Rollback notification to the enlistment
@@ -251,7 +251,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, "SinglePhaseCommit");
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.SinglePhaseCommit);
                 }
 
                 // Send the Commit notification to the enlistment

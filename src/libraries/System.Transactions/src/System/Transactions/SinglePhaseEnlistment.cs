@@ -15,7 +15,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "SinglePhaseEnlistment.Aborted, Method Enter");
+                etwLog.MethodEnter(this);
                 etwLog.EnlistmentAborted(_internalEnlistment);
             }
 
@@ -26,7 +26,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "SinglePhaseEnlistment.Aborted, Method Exit");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -35,7 +35,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(_internalEnlistment, "SinglePhaseEnlistment.Aborted, Method Enter");
+                etwLog.MethodEnter(this);
                 etwLog.EnlistmentAborted(_internalEnlistment);
             }
 
@@ -46,7 +46,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("PreparingEnlistment.SinglePhaseEnlistment.Aborted");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -56,8 +56,8 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("SinglePhaseEnlistment.Commited");
-                etwLog.EnlistmentCommited(_internalEnlistment);
+                etwLog.MethodEnter(this);
+                etwLog.EnlistmentCommitted(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -67,7 +67,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("SinglePhaseEnlistment.Commited");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -77,7 +77,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodEnter(this);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -92,7 +92,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodExit(this);
             }
         }
 
@@ -102,7 +102,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodEnter(this);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -117,7 +117,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodExit(this);
             }
         }
     }

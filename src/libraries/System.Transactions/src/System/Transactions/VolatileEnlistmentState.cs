@@ -324,7 +324,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, "Prepare");
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Prepare);
                 }
 
                 enlistment.EnlistmentNotification.Prepare(enlistment.PreparingEnlistment);
@@ -394,7 +394,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(enlistment, "SinglePhaseCommit");
+                etwLog.EnlistmentStatus(enlistment, NotificationCall.SinglePhaseCommit);
             }
 
             Monitor.Exit(enlistment.Transaction);
@@ -545,7 +545,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, "Rollback");
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
                 }
 
                 enlistment.EnlistmentNotification.Rollback(enlistment.SinglePhaseEnlistment);
@@ -587,7 +587,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, "Commit");
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Commit);
                 }
 
                 // Forward the notification to the enlistment
@@ -620,7 +620,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, "InDoubt");
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.InDoubt);
                 }
 
                 // Forward the notification to the enlistment

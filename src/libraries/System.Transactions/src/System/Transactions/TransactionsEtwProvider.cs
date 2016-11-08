@@ -5,10 +5,41 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Collections;
 
 namespace System.Transactions
 {
+    internal enum EnlistmentType
+    {
+        Volatile = 0,
+        Durable = 1,
+        PromotableSinglePhase = 2
+    }
 
+    internal enum NotificationCall
+    {
+        // IEnlistmentNotification
+        Prepare = 0,
+        Commit = 1,
+        Rollback = 2,
+        InDoubt = 3,
+        // ISinglePhaseNotification
+        SinglePhaseCommit = 4,
+        // IPromotableSinglePhaseNotification
+        Promote = 5
+    }
+
+    internal enum EnlistmentCallback
+    {
+        Done = 0,
+        Prepared = 1,
+        ForceRollback = 2,
+        Committed = 3,
+        Aborted = 4,
+        InDoubt = 5
+    }
     internal enum TransactionScopeResult
     {
         CreatedTransaction = 0,
@@ -18,6 +49,15 @@ namespace System.Transactions
         NoTransaction = 4
     }
 
+    internal enum TransactionExceptionType
+    {
+        InvalidOperationException = 0,
+        TransactionAbortedException = 1,
+        TransactionException = 2,
+        TransactionInDoubtException = 3,
+        TransactionManagerCommunicationException = 4,
+        UnrecognizedRecoveryInformation = 5
+    }
     /// <summary>Provides an event source for tracing Transactions information.</summary>
     [EventSource(
         Name = "System.Transactions.TransactionsEventSource",
@@ -45,83 +85,94 @@ namespace System.Transactions
         //
 
         /// <summary>The event ID for configured default timeout adjusted event.</summary>
-        private const int CONFIGURED_DEFAULT_TIMEOUT_ADJUSTED_EVENTID = 22;
+        private const int CONFIGURED_DEFAULT_TIMEOUT_ADJUSTED_EVENTID = 1;
         /// <summary>The event ID for the enlistment abort event.</summary>
-        private const int ENLISTMENT_ABORTED_EVENTID = 6;
+        private const int ENLISTMENT_ABORTED_EVENTID = 2;
         /// <summary>The event ID for the enlistment commit event.</summary>
-        private const int ENLISTMENT_COMMITED_EVENTID = 7;
+        private const int ENLISTMENT_COMMITTED_EVENTID = 3;
         /// <summary>The event ID for the enlistment done event.</summary>
-        private const int ENLISTMENT_DONE_EVENTID = 11;
+        private const int ENLISTMENT_DONE_EVENTID = 4;
         /// <summary>The event ID for the enlistment status.</summary>
-        private const int ENLISTMENT_EVENTID = 4;
+        private const int ENLISTMENT_EVENTID = 5;
         /// <summary>The event ID for the enlistment forcerollback event.</summary>
-        private const int ENLISTMENT_FORCEROLLBACK_EVENTID = 5;
+        private const int ENLISTMENT_FORCEROLLBACK_EVENTID = 6;
         /// <summary>The event ID for the enlistment indoubt event.</summary>
-        private const int ENLISTMENT_INDOUBT_EVENTID = 8;
+        private const int ENLISTMENT_INDOUBT_EVENTID = 7;
         /// <summary>The event ID for the enlistment prepared event.</summary>
-        private const int ENLISTMENT_PREPARED_EVENTID = 12;
+        private const int ENLISTMENT_PREPARED_EVENTID = 8;
         /// <summary>The event ID for exception consumed event.</summary>
-        private const int EXCEPTION_CONSUMED_EVENTID = 30;
+        private const int EXCEPTION_CONSUMED_EVENTID = 9;
         /// <summary>The event ID for method enter event.</summary>
-        private const int METHOD_ENTER_EVENTID = 18;
+        private const int METHOD_ENTER_EVENTID = 10;
         /// <summary>The event ID for method exit event.</summary>
-        private const int METHOD_EXIT_EVENTID = 19;
+        private const int METHOD_EXIT_EVENTID = 11;
         /// <summary>The event ID for transaction aborted event.</summary>
-        private const int TRANSACTION_ABORTED_EVENTID = 36;
+        private const int TRANSACTION_ABORTED_EVENTID = 12;
         /// <summary>The event ID for the transaction clone create event.</summary>
-        private const int TRANSACTION_CLONECREATE_EVENTID = 15;
+        private const int TRANSACTION_CLONECREATE_EVENTID = 13;
         /// <summary>The event ID for the transaction commit event.</summary>
-        private const int TRANSACTION_COMMIT_EVENTID = 9;
-        /// <summary>The event ID for transaction commited event.</summary>
-        private const int TRANSACTION_COMMITED_EVENTID = 33;
+        private const int TRANSACTION_COMMIT_EVENTID = 14;
+        /// <summary>The event ID for transaction committed event.</summary>
+        private const int TRANSACTION_COMMITTED_EVENTID = 15;
         /// <summary>The event ID for when we encounter a new Transactions object that hasn't had its name traced to the trace file.</summary>
-        private const int TRANSACTION_CREATED_EVENTID = 1;
+        private const int TRANSACTION_CREATED_EVENTID = 16;
         /// <summary>The event ID for the transaction dependent clone complete event.</summary>
-        private const int TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID = 10;
+        private const int TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID = 17;
         /// <summary>The event ID for the transaction exception event.</summary>
-        private const int TRANSACTION_EXCEPTION_EVENTID = 17;
+        private const int TRANSACTION_EXCEPTION_EVENTID = 18;
         /// <summary>The event ID for transaction indoubt event.</summary>
-        private const int TRANSACTION_INDOUBT_EVENTID = 34;
+        private const int TRANSACTION_INDOUBT_EVENTID = 19;
         /// <summary>The event ID for the transaction invalid operation event.</summary>
-        private const int TRANSACTION_INVALID_OPERATION_EVENTID = 13;
+        private const int TRANSACTION_INVALID_OPERATION_EVENTID = 20;
         /// <summary>The event ID for transaction promoted event.</summary>
-        private const int TRANSACTION_PROMOTED_EVENTID = 35;
+        private const int TRANSACTION_PROMOTED_EVENTID = 21;
         /// <summary>The event ID for the transaction rollback event.</summary>
-        private const int TRANSACTION_ROLLBACK_EVENTID = 14;
+        private const int TRANSACTION_ROLLBACK_EVENTID = 22;
         /// <summary>The event ID for the transaction serialized event.</summary>
-        private const int TRANSACTION_SERIALIZED_EVENTID = 16;
+        private const int TRANSACTION_SERIALIZED_EVENTID = 23;
         /// <summary>The event ID for transaction timeout event.</summary>
-        private const int TRANSACTION_TIMEOUT_EVENTID = 32;
+        private const int TRANSACTION_TIMEOUT_EVENTID = 24;
         /// <summary>The event ID for transactionmanager recovery complete event.</summary>
-        private const int TRANSACTIONMANAGER_RECOVERY_COMPLETE_EVENTID = 21;
+        private const int TRANSACTIONMANAGER_RECOVERY_COMPLETE_EVENTID = 25;
         /// <summary>The event ID for transactionmanager reenlist event.</summary>
-        private const int TRANSACTIONMANAGER_REENLIST_EVENTID = 20;
+        private const int TRANSACTIONMANAGER_REENLIST_EVENTID = 26;
         /// <summary>The event ID for transactionscope created event.</summary>
-        private const int TRANSACTIONSCOPE_CREATED_EVENTID = 23;
+        private const int TRANSACTIONSCOPE_CREATED_EVENTID = 27;
         /// <summary>The event ID for transactionscope current changed event.</summary>
-        private const int TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID = 24;
+        private const int TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID = 28;
         /// <summary>The event ID for transactionscope nested incorrectly event.</summary>
-        private const int TRANSACTIONSCOPE_DISPOSED_EVENTID = 26;
+        private const int TRANSACTIONSCOPE_DISPOSED_EVENTID = 29;
         /// <summary>The event ID for transactionscope incomplete event.</summary>
-        private const int TRANSACTIONSCOPE_INCOMPLETE_EVENTID = 27;
+        private const int TRANSACTIONSCOPE_INCOMPLETE_EVENTID = 30;
         /// <summary>The event ID for transactionscope internal error event.</summary>
-        private const int TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID = 28;
+        private const int TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID = 31;
         /// <summary>The event ID for transactionscope nested incorrectly event.</summary>
-        private const int TRANSACTIONSCOPE_NESTED_INCORRECTLY_EVENTID = 25;
+        private const int TRANSACTIONSCOPE_NESTED_INCORRECTLY_EVENTID = 32;
         /// <summary>The event ID for transactionscope timeout event.</summary>
-        private const int TRANSACTIONSCOPE_TIMEOUT_EVENTID = 29;
+        private const int TRANSACTIONSCOPE_TIMEOUT_EVENTID = 33;
         /// <summary>The event ID for enlistment event.</summary>
-        private const int TRANSACTIONSTATE_ENLIST_EVENTID = 31;
+        private const int TRANSACTIONSTATE_ENLIST_EVENTID = 34;
 
         //-----------------------------------------------------------------------------------
         //        
         // Transactions Events
         //
 
-        #region Transcation Creation
+        private const string NullInstance = "(null)";
+        //-----------------------------------------------------------------------------------
+        //        
+        // Transactions Events
+        //
+        [NonEvent]
+        public static string IdOf(object value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
+
+        [NonEvent]
+        public static int GetHashCode(object value) => value?.GetHashCode() ?? 0;
+
+        #region Transaction Creation
         /// <summary>Trace an event when a new transaction is created.</summary>
         /// <param name="transaction">The transaction that was created.</param>
-        /// <param name="type">The type of transaction.</param>
+        /// <param name="type">The type of transaction.</param>Method
         [NonEvent]
         internal void TransactionCreated(Transaction transaction, string type)
         {
@@ -141,7 +192,7 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transcation Clone Create
+        #region Transaction Clone Create
         /// <summary>Trace an event when a new transaction is clone created.</summary>
         /// <param name="transaction">The transaction that was clone created.</param>
         /// <param name="type">The type of transaction.</param>
@@ -164,7 +215,7 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transcation Serialized
+        #region Transaction Serialized
         /// <summary>Trace an event when a transaction is serialized.</summary>
         /// <param name="transaction">The transaction that was serialized.</param>
         /// <param name="type">The type of transaction.</param>
@@ -187,17 +238,17 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transcation Exception
+        #region Transaction Exception
         /// <summary>Trace an event when an exception happens.</summary>
         /// <param name="type">The type of transaction.</param>
         /// <param name="message">The message for the exception.</param>
         /// <param name="innerExceptionStr">The inner exception.</param>
         [NonEvent]
-        internal void TransactionExceptionTrace(string type, string message, string innerExceptionStr)
+        internal void TransactionExceptionTrace(TransactionExceptionType type, string message, string innerExceptionStr)
         {
             if (IsEnabled(EventLevel.Error, ALL_KEYWORDS))
             {
-                TransactionException(type, message, innerExceptionStr);
+                TransactionException(type.ToString(), message, innerExceptionStr);
             }
         }
 
@@ -208,7 +259,7 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transcation Invalid Operation
+        #region Transaction Invalid Operation
         /// <summary>Trace an event when an invalid operation happened on a transaction.</summary>
         /// <param name="transaction">The transaction that has invalid operation.</param>
         /// <param name="type">The type of transaction.</param>
@@ -242,7 +293,7 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transcation Rollback
+        #region Transaction Rollback
         /// <summary>Trace an event when rollback on a transaction.</summary>
         /// <param name="transaction">The transaction to rollback.</param>
         /// <param name="type">The type of transaction.</param>
@@ -265,7 +316,7 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transcation Dependent Clone Complete
+        #region Transaction Dependent Clone Complete
         /// <summary>Trace an event when transaction dependent clone complete.</summary>
         /// <param name="transaction">The transaction that do dependent clone.</param>
         /// <param name="type">The type of transaction.</param>
@@ -287,7 +338,7 @@ namespace System.Transactions
             WriteEvent(TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID, transactionIdentifier, type);
         }
         #endregion
-        #region Transcation Commit
+        #region Transaction Commit
         /// <summary>Trace an event when there is commit on that transaction.</summary>
         /// <param name="transaction">The transaction to commit.</param>
         /// <param name="type">The type of transaction.</param>
@@ -315,13 +366,13 @@ namespace System.Transactions
         /// <param name="enlisment">The enlistment to report status.</param>
         /// <param name="notificationCall">The notification call on the enlistment.</param>
         [NonEvent]
-        internal void EnlistmentStatus(InternalEnlistment enlistment, string notificationCall)
+        internal void EnlistmentStatus(InternalEnlistment enlistment, NotificationCall notificationCall)
         {
             Debug.Assert(enlistment != null, "Enlistment needed for the ETW event.");
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                EnlistmentStatus(enlistment.EnlistmentTraceId.EnlistmentIdentifier, notificationCall);
+                EnlistmentStatus(enlistment.EnlistmentTraceId.EnlistmentIdentifier, notificationCall.ToString());
             }
         }
 
@@ -420,25 +471,25 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Enlistment Commited
-        /// <summary>Trace an enlistment that commited.</summary>
-        /// <param name="enlistment">The enlistment aborted.</param>
+        #region Enlistment Committed
+        /// <summary>Trace an enlistment that committed.</summary>
+        /// <param name="enlistment">The enlistment committed.</param>
         [NonEvent]
-        internal void EnlistmentCommited(InternalEnlistment enlistment)
+        internal void EnlistmentCommitted(InternalEnlistment enlistment)
         {
             Debug.Assert(enlistment != null, "Enlistment needed for the ETW event.");
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                EnlistmentCommited(
+                EnlistmentCommitted(
                     enlistment.EnlistmentTraceId.EnlistmentIdentifier);
             }
         }
 
-        [Event(ENLISTMENT_COMMITED_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Enlistment, Opcode = Opcodes.Commited, Message = "Enlistment Commited: ID is {0}")]
-        private void EnlistmentCommited(int enlistmentIdentifier)
+        [Event(ENLISTMENT_COMMITTED_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Enlistment, Opcode = Opcodes.Committed, Message = "Enlistment Committed: ID is {0}")]
+        private void EnlistmentCommitted(int enlistmentIdentifier)
         {
-            WriteEvent(ENLISTMENT_COMMITED_EVENTID, enlistmentIdentifier);
+            WriteEvent(ENLISTMENT_COMMITTED_EVENTID, enlistmentIdentifier);
         }
         #endregion
 
@@ -464,41 +515,65 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Method Enter
+        #region Method Enter New
         /// <summary>Trace an event when enter a method.</summary>
+        /// <param name="thisOrContextObject">'this', or another object that serves to provide context for the operation.</param>
         /// <param name="methodname">The name of method.</param>
         [NonEvent]
-        internal void MethodEnter(string methodname)
+        internal void MethodEnter(object thisOrContextObject, [CallerMemberName] string methodname = null)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                MethodEnterTrace(methodname);
+                 MethodEnterTrace(IdOf(thisOrContextObject), methodname);
             }
         }
 
-        [Event(METHOD_ENTER_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method: {0}")]
-        private void MethodEnterTrace(string methodname)
+        /// <summary>Trace an event when enter a method.</summary>
+        /// <param name="methodname">The name of method.</param>
+        [NonEvent]
+        internal void MethodEnter([CallerMemberName] string methodname = null)
         {
-            WriteEvent(METHOD_ENTER_EVENTID, methodname);
+            if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
+            {
+                    MethodEnterTrace(string.Empty, methodname);
+            }
+        }
+
+        [Event(METHOD_ENTER_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
+        private void MethodEnterTrace(string thisOrContextObject, string methodname)
+        {
+            WriteEvent(METHOD_ENTER_EVENTID, thisOrContextObject, methodname);
         }
         #endregion
 
         #region Method Exit
-        /// <summary>Trace an event when exit a method.</summary>
+        /// <summary>Trace an event when enter a method.</summary>
+        /// <param name="thisOrContextObject">'this', or another object that serves to provide context for the operation.</param>
         /// <param name="methodname">The name of method.</param>
         [NonEvent]
-        internal void MethodExit(string methodname)
+        internal void MethodExit(object thisOrContextObject, [CallerMemberName] string methodname = null)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                MethodExitTrace(methodname);
+                MethodExitTrace(IdOf(thisOrContextObject), methodname);
             }
         }
 
-        [Event(METHOD_EXIT_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}")]
-        private void MethodExitTrace(string methodname)
+        /// <summary>Trace an event when enter a method.</summary>
+        /// <param name="methodname">The name of method.</param>
+        [NonEvent]
+        internal void MethodExit([CallerMemberName] string methodname = null)
         {
-            WriteEvent(METHOD_EXIT_EVENTID, methodname);
+            if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
+            {
+                MethodExitTrace(string.Empty, methodname);
+            }
+        }
+
+        [Event(METHOD_EXIT_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
+        private void MethodExitTrace(string thisOrContextObject, string methodname)
+        {
+            WriteEvent(METHOD_EXIT_EVENTID, thisOrContextObject, methodname);
         }
         #endregion
 
@@ -610,7 +685,7 @@ namespace System.Transactions
             }
         }
 
-        [Event(TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID, Level = EventLevel.Warning, Task = Tasks.TransactionScope, Opcode = Opcodes.CurentChanged, Message = "Transactionscope current transaction ID changed from {0} to {1}")]
+        [Event(TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID, Level = EventLevel.Warning, Task = Tasks.TransactionScope, Opcode = Opcodes.CurrentChanged, Message = "Transactionscope current transaction ID changed from {0} to {1}")]
         private void TransactionScopeCurrentChanged(string currenttransactionID, string newtransactionID)
         {
             WriteEvent(TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID, currenttransactionID, newtransactionID);
@@ -686,7 +761,7 @@ namespace System.Transactions
             }
         }
 
-        [Event(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, Level = EventLevel.Critical, Task = Tasks.TransactionScope, Opcode = Opcodes.IntrenalError, Message = "Transactionscope internal error: {0}")]
+        [Event(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, Level = EventLevel.Critical, Task = Tasks.TransactionScope, Opcode = Opcodes.InternalError, Message = "Transactionscope internal error: {0}")]
         private void TransactionScopeInternalErrorTrace(string error)
         {
             WriteEvent(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, error);
@@ -737,11 +812,11 @@ namespace System.Transactions
         /// <param name="enlistmentType">The enlistment type.</param>
         /// <param name="enlistmentOption">The enlistment option.</param>
         [NonEvent]
-        internal void TransactionstateEnlist(EnlistmentTraceIdentifier enlistmentID, string enlistmentType, string enlistmentOption)
+        internal void TransactionstateEnlist(EnlistmentTraceIdentifier enlistmentID, EnlistmentType enlistmentType, EnlistmentOptions enlistmentOption)
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionstateEnlist(enlistmentID.EnlistmentIdentifier.ToString(), enlistmentType, enlistmentOption);
+                TransactionstateEnlist(enlistmentID.EnlistmentIdentifier.ToString(), enlistmentType.ToString(), enlistmentOption.ToString());
             }
         }
 
@@ -752,22 +827,22 @@ namespace System.Transactions
         }
         #endregion
 
-        #region Transactionstate commited
-        /// <summary>Trace an event when transaction is commited.</summary>
+        #region Transactionstate committed
+        /// <summary>Trace an event when transaction is committed.</summary>
         /// <param name="transactionID">The transaction ID.</param>
         [NonEvent]
-        internal void TransactionCommited(TransactionTraceIdentifier transactionID)
+        internal void TransactionCommitted(TransactionTraceIdentifier transactionID)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                TransactionCommited(transactionID.TransactionIdentifier.ToString());
+                TransactionCommitted(transactionID.TransactionIdentifier.ToString());
             }
         }
 
-        [Event(TRANSACTION_COMMITED_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Transaction, Opcode = Opcodes.Commited, Message = "Transaction commited: transaction ID is {0}")]
-        private void TransactionCommited(string transactionID)
+        [Event(TRANSACTION_COMMITTED_EVENTID, Level = EventLevel.Verbose, Task = Tasks.Transaction, Opcode = Opcodes.Committed, Message = "Transaction committed: transaction ID is {0}")]
+        private void TransactionCommitted(string transactionID)
         {
-            WriteEvent(TRANSACTION_COMMITED_EVENTID, transactionID);
+            WriteEvent(TRANSACTION_COMMITTED_EVENTID, transactionID);
         }
         #endregion
 
@@ -830,35 +905,35 @@ namespace System.Transactions
         #endregion
         public class Opcodes
         {
-            public const EventOpcode Aborted = (EventOpcode)103;
+            public const EventOpcode Aborted = (EventOpcode)100;
             public const EventOpcode Activity = (EventOpcode)101;
-            public const EventOpcode Adjusted = (EventOpcode)118;
-            public const EventOpcode CloneCreate = (EventOpcode)112;
-            public const EventOpcode Commit = (EventOpcode)106;
-            public const EventOpcode Commited = (EventOpcode)104;
-            public const EventOpcode Create = (EventOpcode)100;
-            public const EventOpcode Created = (EventOpcode)119;
-            public const EventOpcode CurentChanged = (EventOpcode)120;
-            public const EventOpcode DependentCloneComplete = (EventOpcode)107;
-            public const EventOpcode Disposed = (EventOpcode)122;
-            public const EventOpcode Done = (EventOpcode)108;
-            public const EventOpcode Enlist = (EventOpcode)127;
-            public const EventOpcode Enter = (EventOpcode)115;
-            public const EventOpcode ExceptionConsumed = (EventOpcode)126;
-            public const EventOpcode Exit = (EventOpcode)116;
-            public const EventOpcode ForceRollback = (EventOpcode)102;
-            public const EventOpcode Incomplete = (EventOpcode)123;
-            public const EventOpcode InDoubt = (EventOpcode)105;
-            public const EventOpcode IntrenalError = (EventOpcode)124;
-            public const EventOpcode InvalidOperation = (EventOpcode)110;
+            public const EventOpcode Adjusted = (EventOpcode)102;
+            public const EventOpcode CloneCreate = (EventOpcode)103;
+            public const EventOpcode Commit = (EventOpcode)104;
+            public const EventOpcode Committed = (EventOpcode)105;
+            public const EventOpcode Create = (EventOpcode)106;
+            public const EventOpcode Created = (EventOpcode)107;
+            public const EventOpcode CurrentChanged = (EventOpcode)108;
+            public const EventOpcode DependentCloneComplete = (EventOpcode)109;
+            public const EventOpcode Disposed = (EventOpcode)110;
+            public const EventOpcode Done = (EventOpcode)111;
+            public const EventOpcode Enlist = (EventOpcode)112;
+            public const EventOpcode Enter = (EventOpcode)113;
+            public const EventOpcode ExceptionConsumed = (EventOpcode)114;
+            public const EventOpcode Exit = (EventOpcode)115;
+            public const EventOpcode ForceRollback = (EventOpcode)116;
+            public const EventOpcode Incomplete = (EventOpcode)117;
+            public const EventOpcode InDoubt = (EventOpcode)118;
+            public const EventOpcode InternalError = (EventOpcode)119;
+            public const EventOpcode InvalidOperation = (EventOpcode)120;
             public const EventOpcode NestedIncorrectly = (EventOpcode)121;
-            public const EventOpcode Prepared = (EventOpcode)109;
-            public const EventOpcode Promoted = (EventOpcode)128;
-            public const EventOpcode RecoveryComplete = (EventOpcode)117;
-            public const EventOpcode Reenlist = (EventOpcode)114;
-            public const EventOpcode Rollback = (EventOpcode)111;
-            public const EventOpcode Serialized = (EventOpcode)113;
-            public const EventOpcode Timeout = (EventOpcode)125;
+            public const EventOpcode Prepared = (EventOpcode)122;
+            public const EventOpcode Promoted = (EventOpcode)123;
+            public const EventOpcode RecoveryComplete = (EventOpcode)124;
+            public const EventOpcode Reenlist = (EventOpcode)125;
+            public const EventOpcode Rollback = (EventOpcode)126;
+            public const EventOpcode Serialized = (EventOpcode)127;
+            public const EventOpcode Timeout = (EventOpcode)128;
         }
 
         public class Tasks
