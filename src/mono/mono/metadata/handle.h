@@ -116,6 +116,19 @@ Icall macros
 	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
 	mono_stack_mark_pop (__info, &__mark);
 
+#define HANDLE_FUNCTION_ENTER() do {				\
+	MonoThreadInfo *__info = mono_thread_info_current ();	\
+	SETUP_ICALL_FRAME					\
+
+#define HANDLE_FUNCTION_RETURN()		\
+	CLEAR_ICALL_FRAME;			\
+	} while (0)
+
+#define HANDLE_FUNCTION_RETURN_VAL(VAL)		\
+	CLEAR_ICALL_FRAME;			\
+	return (VAL);				\
+	} while (0)
+
 #ifdef MONO_NEEDS_STACK_WATERMARK
 
 static void
