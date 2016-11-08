@@ -540,7 +540,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	guint kMaxCodeSize = 128;
+	guint kMaxCodeSize = 192;
 
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
