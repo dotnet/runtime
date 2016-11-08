@@ -983,6 +983,7 @@ namespace System.Net.Sockets
         //     A Task<int> representing the read.
         public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
+#if netcore50
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
@@ -991,10 +992,15 @@ namespace System.Net.Sockets
             return Task.Factory.FromAsync(
                 (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
                 iar => ((NetworkStream)iar.AsyncState).EndRead(iar),
-                buffer, 
-                offset, 
-                size, 
+                buffer,
+                offset,
+                size,
                 this);
+#else
+            // Use optimized Stream.ReadAsync that's more efficient than
+            // Task.Factory.FromAsync when NetworkStream overrides Begin/EndRead.
+            return base.ReadAsync(buffer, offset, size, cancellationToken);
+#endif
         }
 
         // WriteAsync - provide async write functionality.
@@ -1014,6 +1020,7 @@ namespace System.Net.Sockets
         //     A Task representing the write.
         public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
+#if netcore50
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
@@ -1022,10 +1029,15 @@ namespace System.Net.Sockets
             return Task.Factory.FromAsync(
                 (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
                 iar => ((NetworkStream)iar.AsyncState).EndWrite(iar),
-                buffer, 
-                offset, 
-                size, 
+                buffer,
+                offset,
+                size,
                 this);
+#else
+            // Use optimized Stream.WriteAsync that's more efficient than
+            // Task.Factory.FromAsync when NetworkStream overrides Begin/EndWrite.
+            return base.WriteAsync(buffer, offset, size, cancellationToken);
+#endif
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
