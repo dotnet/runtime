@@ -3382,10 +3382,15 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
+#if !defined(FEATURE_CORECLR)
     if (CPU_X86_USE_SSE2(pVersionInfo->cpuInfo.dwFeatures))
     {
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
     }
+#else
+    // .NET Core requires SSE2.
+    m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
+#endif // !defined(FEATURE_CORECLR)
 
 #endif // _TARGET_X86_
 
