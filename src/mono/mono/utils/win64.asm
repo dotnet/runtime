@@ -13,13 +13,13 @@ ifdef RAX
 PUBLIC mono_context_get_current
 
 mono_context_get_current PROC
-;rdi has the ctx ptr
+;rcx has the ctx ptr
 	mov [rcx + 00h], rax
-	mov [rcx + 08h], rbx
-	mov [rcx + 10h], rcx
-	mov [rcx + 18h], rdx
-	mov [rcx + 20h], rbp
-	mov [rcx + 28h], rsp
+	mov [rcx + 08h], rcx
+	mov [rcx + 10h], rdx
+	mov [rcx + 18h], rbx
+	mov [rcx + 20h], rsp
+	mov [rcx + 28h], rbp
 	mov [rcx + 30h], rsi
 	mov [rcx + 38h], rdi
 	mov [rcx + 40h], r8
