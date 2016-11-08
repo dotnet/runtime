@@ -119,7 +119,7 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
 
         // I could probably have just done one method signature and put the #if inside the body but the implementations
         // are just completely different so I wanted to make that clear by putting the whole thing inside the #if.
-#if NET451
+#if NET45
         private static Platform DetermineOSPlatform()
         {
             var platform = (int)Environment.OSVersion.Platform;
