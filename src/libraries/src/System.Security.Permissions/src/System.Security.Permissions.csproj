@@ -5,7 +5,6 @@
     <ProjectGuid>{07390899-C8F6-4E83-A3A9-6867B8CB46A0}</ProjectGuid>
     <RootNamespace>System.Security.Permissions</RootNamespace>
     <AssemblyName>System.Security.Permissions</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
@@ -14,8 +13,8 @@
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Net\NetworkInformation\NetworkInformationAccess.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationPermission.cs" />
@@ -32,6 +31,7 @@
     <Compile Include="System\Security\Permissions\UrlIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\UrlIdentityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\ZoneIdentityPermission.cs" />
+    <Compile Include="System\Security\Permissions\IDRole.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermission.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\PublisherIdentityPermission.cs" />
