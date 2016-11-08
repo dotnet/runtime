@@ -30,7 +30,7 @@ namespace System.Net.Http
                 default:
                     // Marshal.GetHRForLastWin32Error can't be used as not all error codes originate from native
                     // code.
-                    return Interop.mincore.HRESULT_FROM_WIN32(error);
+                    return Interop.HRESULT_FROM_WIN32(error);
             }
         }
 
@@ -54,8 +54,8 @@ namespace System.Net.Http
         {
             // Look up specific error message in WINHTTP.DLL since it is not listed in default system resources
             // and thus can't be found by default .Net interop.
-            IntPtr moduleHandle = Interop.mincore.GetModuleHandle(Interop.Libraries.WinHttp);
-            return Interop.mincore.GetMessage(moduleHandle, error);
+            IntPtr moduleHandle = Interop.Kernel32.GetModuleHandle(Interop.Libraries.WinHttp);
+            return Interop.Kernel32.GetMessage(moduleHandle, error);
         }
     }
 }
