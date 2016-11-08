@@ -93,8 +93,8 @@
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ResolveLocaleName.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.ResolveLocaleName.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
       <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>
