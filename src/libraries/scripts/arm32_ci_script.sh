@@ -151,7 +151,7 @@ function mount_with_checking {
 function mount_emulator {
     #Check if the mount path exists and create if neccessary
     if [ ! -d "$__ARMRootfsMountPath" ]; then
-        sudo mkdir "$__ARMRootfsMountPath"
+        sudo mkdir -p "$__ARMRootfsMountPath"
     fi
 
     set +x
@@ -236,6 +236,8 @@ exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not prov
 exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
 exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
 exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
+
+__ARMRootfsMountPath="${__ARMRootfsMountPath}/${__buildArch}"
 
 set -x
 set -e
