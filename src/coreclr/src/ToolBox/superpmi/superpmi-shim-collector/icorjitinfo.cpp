@@ -1388,7 +1388,9 @@ CorInfoType interceptor_ICJI::getHFAType (
         )
 {
     mc->cr->AddCall("getHFAType");
-    return original_ICorJitInfo->getHFAType(hClass);
+    CorInfoType temp = original_ICorJitInfo->getHFAType(hClass);
+    this->mc->recGetHFAType(hClass, temp);
+    return temp;
 }
 
 /*****************************************************************************
