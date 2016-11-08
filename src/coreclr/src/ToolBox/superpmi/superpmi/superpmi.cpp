@@ -45,6 +45,8 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
     }
 #elif defined(_TARGET_X86_)
     SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+#elif defined(_TARGET_ARM_)
+    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
 #endif
 }
 
