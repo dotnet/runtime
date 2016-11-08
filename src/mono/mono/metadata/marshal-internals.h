@@ -32,7 +32,7 @@ void
 mono_marshal_free_hglobal (void *ptr);
 
 gpointer
-mono_string_to_lpstr (MonoString *s);
+mono_string_to_utf8str (MonoString *s);
 #endif  /* HOST_WIN32 */
 
 #endif /* __MONO_METADATA_MARSHAL_INTERNALS_H__ */

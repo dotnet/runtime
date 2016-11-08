@@ -109,8 +109,10 @@ mono_marshal_string_to_utf16 (MonoString *s);
 static void *
 mono_marshal_string_to_utf16_copy (MonoString *s);
 
+#ifndef HOST_WIN32
 static gpointer
 mono_string_to_utf8str (MonoString *string_obj);
+#endif
 
 static MonoStringBuilder *
 mono_string_utf8_to_builder2 (char *text);
@@ -1080,6 +1082,7 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 	return str;
 }
 
+#ifndef HOST_WIN32
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
 static gpointer
 mono_string_to_utf8str (MonoString *s)
@@ -1089,6 +1092,7 @@ mono_string_to_utf8str (MonoString *s)
 	mono_error_set_pending_exception (&error);
 	return result;
 }
+#endif
 
 gpointer
 mono_string_to_ansibstr (MonoString *string_obj)
