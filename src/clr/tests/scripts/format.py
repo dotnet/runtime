@@ -202,7 +202,25 @@ def main(argv):
                 errorMessage += " -c <absolute-path-to-coreclr> --verbose --fix --projects " + project +"\n"
                 returncode = errorcode
 
+                # Fix mode doesn't return an error, so we have to run the build, then run with
+                # --fix to generate the patch. This means that it is likely only the first run
+                # of jit-format will return a formatting failure.
+                if errorcode == -2:
+                    # If errorcode was -2, no need to run clang-tidy again
+                    proc = subprocess.Popen([jitformat, "--fix", "--untidy", "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
+                    output,error = proc.communicate()
+                else:
+                    # Otherwise, must run both
+                    proc = subprocess.Popen([jitformat, "--fix", "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
+                    output,error = proc.communicate()
+
     os.chdir(current_dir)
+
+    if returncode != 0:
+        # Create a patch file
+        patchFile = open("format.patch", "w")
+        proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
+        output,error = proc.communicate()
 
     if os.path.isdir(jitUtilsPath):
         print("Deleting " + jitUtilsPath)
@@ -217,8 +235,12 @@ def main(argv):
         os.remove(bootstrapPath)
 
     if returncode != 0:
+        buildUrl = my_env["BUILD_URL"]
         print("There were errors in formatting. Please run jit-format locally with: \n")
         print(errorMessage)
+        print("\nOr download and apply generated patch:")
+        print("wget " + buildUrl + "artifacts/format.patch")
+        print("git apply format.patch")
 
     return returncode
 
