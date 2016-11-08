@@ -491,6 +491,14 @@ namespace System.Runtime.Loader
             add { AppDomain.CurrentDomain.ResourceResolve += value; } 
             remove { AppDomain.CurrentDomain.ResourceResolve -= value; } 
         } 
+
+        // Occurs when resolution of assembly fails
+        // This event is fired after resolve events of AssemblyLoadContext fails
+        public static event ResolveEventHandler AssemblyResolve
+        {
+            add { AppDomain.CurrentDomain.AssemblyResolve += value; } 
+            remove { AppDomain.CurrentDomain.AssemblyResolve -= value; } 
+        }
     }
 
     [System.Security.SecuritySafeCritical]
@@ -510,9 +518,9 @@ namespace System.Runtime.Loader
     }
 
     [System.Security.SecuritySafeCritical]
-    internal class FileLoadAssemblyLoadContext : AssemblyLoadContext
+    internal class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
-        internal FileLoadAssemblyLoadContext() : base(false)
+        internal IndividualAssemblyLoadContext() : base(false)
         {
         }
 
