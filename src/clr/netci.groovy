@@ -234,8 +234,8 @@ def static getStressModeDisplayName(def scenario) {
 }
 
 // Generates the string for creating a file that sets environment variables
-// that makes it possible to run stress modes.  Writes the script to a file called
-// SetStressModes.[sh/cmd]
+// that makes it possible to run stress modes.  Writes the script to the file
+// specified by the stepScriptLocation parameter.
 def static genStressModeScriptStep(def os, def stressModeName, def stressModeVars, def stepScriptLocation) {
     def stepScript = ''
     if (os == 'Windows_NT') {
@@ -267,28 +267,6 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
         stepScript += "chmod +x ${stepScriptLocation}\n"
     }
     return stepScript
-}
-
-// Corefx doesn't have a support to pass stress mode environment variables. This function
-// generates commands to set or export environment variables
-def static getStressModeEnvSetCmd(def os, def stressModeName) {
-    def envVars = Constants.jitStressModeScenarios[stressModeName]
-    def setEnvVars = ''
-    if (os == 'Windows_NT') {
-        envVars.each{ VarName, Value   ->
-            if (VarName != '') {
-                setEnvVars += "set ${VarName}=${Value}\n"
-            }
-        }
-    }
-    else {
-        envVars.each{ VarName, Value   ->
-            if (VarName != '') {
-                setEnvVars += "export ${VarName}=${Value}\n"
-            }
-        }
-    }
-    return setEnvVars
 }
 
 // Calculates the name of the build job based on some typical parameters.
@@ -852,7 +830,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'corefx_jitstressregs8':
                         case 'corefx_jitstressregs0x10':
                         case 'corefx_jitstressregs0x80':
-                            def displayName = 'CoreFx' + getStressModeDisplayName(scenario)                                                    
+                            def displayName = 'CoreFx ' + getStressModeDisplayName(scenario)                                                    
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayName})",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
@@ -1128,7 +1106,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
-                            break                                   
+                            break
                         case 'corefx_baseline':
                         case 'corefx_minopts':
                         case 'corefx_jitstress1':
@@ -1602,6 +1580,22 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test (Jit - ${displayStr})",
                        "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     break                                   
+                case 'corefx_baseline':
+                case 'corefx_minopts':
+                case 'corefx_jitstress1':
+                case 'corefx_jitstress2':
+                case 'corefx_jitstressregs1':
+                case 'corefx_jitstressregs2':
+                case 'corefx_jitstressregs3':
+                case 'corefx_jitstressregs4':
+                case 'corefx_jitstressregs8':
+                case 'corefx_jitstressregs0x10':
+                case 'corefx_jitstressregs0x80':
+                    def displayName = 'CoreFx ' + getStressModeDisplayName(scenario)
+                    assert (os == 'Windows_NT')
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test (Jit - ${displayName})",
+                       "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
+                    break
                 default:
                     println("Unknown scenario: ${os} ${arch} ${jit} ${scenario}");
                     assert false
@@ -1834,12 +1828,8 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'x64':
-                                // Everything implemented
-                                break
                             case 'x86':
-                                if (enableCorefxTesting) {
-                                    return
-                                }
+                                // Everything implemented
                                 break
                             case 'x86compatjit':
                             case 'x86lb':
@@ -2151,24 +2141,26 @@ combinedScenarios.each { scenario ->
                                         runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments}"
 
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                            def stepScriptLocation = "%WORKSPACE%\\SetStressModes.bat"
+                                            buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
+
                                             if (enableCorefxTesting) {
-                                                // Sync to corefx repo
-                                                // Move coreclr files to a subdirectory, %workspace%/clr. Otherwise, corefx build 
-                                                // thinks that %workspace% is the project base directory.
-                                                buildCommands += "powershell new-item clr -type directory -force"
-                                                buildCommands += 'powershell foreach ($x in get-childitem -force) { if (\$x.name -ne \'clr\') { move-item $x clr }}'
-                                                buildCommands += "git clone -b $branch --single-branch https://github.com/dotnet/corefx fx"
-                                                
-                                                buildCommands += getStressModeEnvSetCmd(os, scenario);
-                                                
-                                                // Run corefx build and testing
-                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd -Release -- /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\clr\\bin\\Product\\Windows_NT.x64.Checked "                                                                                              
+                                                def fxRoot = "%WORKSPACE%\\_\\fx"
+                                                buildCommands += "python %WORKSPACE%\\tests\\scripts\\run-corefx-tests.cmd -arch ${arch} -build_type ${configuration} -fx_root ${fxRoot} -fx_branch ${branch} -env_script ${stepScriptLocation}"
+
+                                                // Archive only result xml files since corefx/bin/tests is very large around 10 GB.
+                                                // For windows, pull full test results and test drops for x86/x64
+                                                Utilities.addArchival(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
+
+                                                // Set timeout
+                                                setTestJobTimeOut(newJob, scenario)
+
+                                                if (architecture == 'x64' || !isPR) {
+                                                    Utilities.addXUnitDotNETResults(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
+                                                }
                                             }
                                             else {
-                                                def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
-                                                buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
-                                                // Run tests with the 
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${stepScriptLocation}"
+                                                buildCommands += "%WORKSPACE%\\tests\\runtest.cmd ${runtestArguments} TestEnv ${stepScriptLocation}"
                                             }
                                         }
                                         else if (architecture == 'x64' || architecture == 'x86') {
@@ -2216,19 +2208,6 @@ combinedScenarios.each { scenario ->
                                             setTestJobTimeOut(newJob, scenario)
                                         }
                                     }
-                                    else {
-                                        // Archive only result xml files since corefx/bin/tests is very large around 10 GB.                                        
-                                        // For windows, pull full test results and test drops for x86/x64
-                                        Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
-                                        
-                                        // Set timeout 
-                                        setTestJobTimeOut(newJob, scenario)
-                                        
-                                        if (architecture == 'x64' || !isPR) {
-                                            Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
-                                        }
-                                    }
-                                    
                                     break
                                 case 'arm':
                                     assert (scenario == 'default')
@@ -2326,26 +2305,22 @@ combinedScenarios.each { scenario ->
                                         assert os == 'Ubuntu'
                                         assert architecture == 'x64'
                                         assert lowerConfiguration == 'checked'
+                                        assert Constants.jitStressModeScenarios.containsKey(scenario)
                                         
-                                        // Build coreclr and move it to clr directory
+                                        // Build coreclr
                                         buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
-                                        buildCommands += "rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr"
                                         
-                                        // Get corefx
-                                        buildCommands += "git clone -b $branch --single-branch https://github.com/dotnet/corefx fx"
-                                        
-                                        // Set environment variable
-                                        def setEnvVar = getStressModeEnvSetCmd(os, scenario)
+                                        def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
+                                        buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
 
                                         // Build and text corefx
-                                        buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
-                                        buildCommands += setEnvVar
-                                        buildCommands += "cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh -Release -Outerloop -TestWithLocalLibraries -- /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+                                        def fxRoot = "\$WORKSPACE%/_/fx"
+                                        buildCommands += "python \$WORKSPACE/tests/scripts/run-corefx-tests.cmd -arch ${arch} -build_type ${configuration} -fx_root ${fxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
                                         // Archive and process test result
-                                        Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
+                                        Utilities.addArchival(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
                                         setTestJobTimeOut(newJob, scenario)
-                                        Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
+                                        Utilities.addXUnitDotNETResults(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
                                     }
                                     break
                                 case 'arm64':
@@ -2844,10 +2819,8 @@ combinedScenarios.each { scenario ->
                                 if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                     def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
                                     def createScriptCmds = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
-                                    if (createScriptCmds != "") {
-                                        shell("${createScriptCmds}")
-                                        testEnvOpt = "--test-env=" + scriptFileName
-                                    }
+                                    shell("${createScriptCmds}")
+                                    testEnvOpt = "--test-env=" + scriptFileName
                                 }
                                 
                                 if (isGCStressRelatedTesting(scenario)) {
