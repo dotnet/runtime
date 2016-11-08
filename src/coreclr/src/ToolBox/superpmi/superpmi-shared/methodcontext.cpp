@@ -2842,6 +2842,34 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO* sig, CORINF
     return (CORINFO_CLASS_HANDLE)value.result;
 }
 
+void MethodContext::recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result)
+{
+    if (GetHFAType == nullptr)
+        GetHFAType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    GetHFAType->Add((DWORDLONG)clsHnd, (DWORD)result);
+    DEBUG_REC(dmpGetHFAType((DWORDLONG)clsHnd, (DWORD)result));
+    return;
+}
+
+void MethodContext::dmpGetHFAType(DWORDLONG key, DWORD value)
+{
+    printf("GetHFAType key %016llX, value %u ", key, value);
+    return;
+}
+
+CorInfoType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
+{
+    DWORD value;
+
+    AssertCodeMsg(GetHFAType != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)clsHnd);
+    AssertCodeMsg(GetHFAType->GetIndex((DWORDLONG)clsHnd) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)clsHnd);
+
+    value = GetHFAType->Get((DWORDLONG)clsHnd);
+    DEBUG_REP(dmpGetHFAType((DWORDLONG)clsHnd, value));
+    return (CorInfoType)value;
+}
+
 void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO *info, bool result, DWORD exceptionCode)
 {
     if (GetMethodInfo == nullptr)
