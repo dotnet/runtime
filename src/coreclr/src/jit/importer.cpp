@@ -1480,9 +1480,15 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd,
     assert(structHnd != NO_CLASS_HANDLE);
 
     const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
-    const bool  isRefAny    = (structHnd == impGetRefAnyClass());
-    const bool  hasGCPtrs   = isRefAny || ((structFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0);
     var_types   structType  = TYP_STRUCT;
+
+#ifdef FEATURE_CORECLR
+    const bool hasGCPtrs = (structFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
+#else
+    // Desktop CLR won't report FLG_CONTAINS_GC_PTR for RefAnyClass - need to check explicitly.
+    const bool        isRefAny    = (structHnd == impGetRefAnyClass());
+    const bool        hasGCPtrs   = isRefAny || ((structFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0);
+#endif
 
 #ifdef FEATURE_SIMD
     // Check to see if this is a SIMD type.
@@ -3260,7 +3266,7 @@ GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
 #if COR_JIT_EE_VERSION > 460
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
 #else
-    CorInfoIntrinsics intrinsicID                                      = info.compCompHnd->getIntrinsicID(method);
+    CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method);
 #endif
     *pIntrinsicID = intrinsicID;
 
