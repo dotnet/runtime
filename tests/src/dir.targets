@@ -87,11 +87,6 @@
     <MSBuild Projects="@(ProjectReference)" />
     <MakeDir Condition="'$(CLRTestKind)' == 'RunOnly'" ContinueOnError="false" Directories="$(OutputPath)" />
   </Target>
- 
-  <Target Name="CopyJsonProjectFiles" AfterTargets="Build">  
-    <!-- Post build copy project json files so we can generate assembly lists for the projects -->  
-    <Copy SourceFiles="$(ProjectLockJson)" DestinationFolder="$(OutputPath)" Condition="Exists('$(ProjectLockJson)')" />  
-  </Target>  
   
   <!-- We will use an imported build here in the instance that we have source that we need to build, and we are the correct priority...OR if we are being asked to build for
   a test with a higher priority. -->
