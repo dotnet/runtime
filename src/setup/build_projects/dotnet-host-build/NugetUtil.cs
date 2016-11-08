@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.Cli.Build.Framework;
 using NugetProgram = NuGet.CommandLine.XPlat.Program;
@@ -7,17 +8,39 @@ namespace Microsoft.DotNet.Cli.Build
 {
     public static class NuGetUtil
     {
-        public static void PushPackages(string packagesPath, string destinationUrl, string apiKey)
+        public static void PushPackages(
+            string packageDirPath,
+            string destinationUrl,
+            string apiKey,
+            bool includeSymbolPackages)
         {
-            int result = RunNuGetCommand(
-                "push",
-                "-s", destinationUrl,
-                "-k", apiKey,
-                Path.Combine(packagesPath, "*.nupkg"));
-
-            if (result != 0)
+            string[] paths;
+            if (includeSymbolPackages)
             {
-                throw new BuildFailureException($"NuGet Push failed with exit code '{result}'.");
+                paths = new[]
+                {
+                    Path.Combine(packageDirPath, "*.nupkg")
+                };
+            }
+            else
+            {
+                paths = Directory.GetFiles(packageDirPath, "*.nupkg")
+                    .Where(path => !path.EndsWith(".symbols.nupkg"))
+                    .ToArray();
+            }
+
+            foreach (var path in paths)
+            {
+                int result = RunNuGetCommand(
+                    "push",
+                    "-s", destinationUrl,
+                    "-k", apiKey,
+                    path);
+
+                if (result != 0)
+                {
+                    throw new BuildFailureException($"NuGet Push failed with exit code '{result}'.");
+                }
             }
         }
 

@@ -151,6 +151,7 @@ namespace Microsoft.DotNet.Host.Build
             c.BuildContext["BuildVersion"] = buildVersion;
             c.BuildContext["HostVersion"] = hostVersion;
             c.BuildContext["CommitHash"] = commitHash;
+            c.BuildContext["BranchName"] = branchInfo.Entries["BRANCH_NAME"];
 
             // Define the version string to be used based upon whether we are stabilizing the versions or not.
             if (!fStabilizePackageVersion)
