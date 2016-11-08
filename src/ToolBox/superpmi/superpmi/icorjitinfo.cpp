@@ -1192,9 +1192,8 @@ CorInfoType MyICJI::getHFAType (
         )
 {
     jitInstance->mc->cr->AddCall("getHFAType");
-    LogError("Hit unimplemented getHFAType");
-    DebugBreakorAV(75);
-    return (CorInfoType)0;
+    CorInfoType value = jitInstance->mc->repGetHFAType(hClass);
+    return value;
 }
 
 /*****************************************************************************
