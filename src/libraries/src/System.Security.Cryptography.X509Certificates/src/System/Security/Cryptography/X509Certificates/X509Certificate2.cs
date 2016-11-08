@@ -53,6 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString password)
             : base(rawData, password)
         {
@@ -63,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
@@ -88,6 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString password)
             : base(fileName, password)
         {
@@ -99,6 +102,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
@@ -566,6 +570,7 @@ namespace System.Security.Cryptography.X509Certificates
             base.Import(rawData, password, keyStorageFlags);
         }
 
+        [System.CLSCompliantAttribute(false)]
         public override void Import(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
@@ -581,6 +586,7 @@ namespace System.Security.Cryptography.X509Certificates
             base.Import(fileName, password, keyStorageFlags);
         }
 
+        [System.CLSCompliantAttribute(false)]
         public override void Import(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);
