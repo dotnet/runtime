@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
 
         private static string GetArch()
         {
-#if NET451
+#if NET45
             return Environment.Is64BitProcess ? "x64" : "x86";
 #else
             return IntPtr.Size == 8 ? "x64" : "x86";

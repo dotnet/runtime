@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
         private static string GetApplicationBasePath()
         {
             var basePath =
-#if NET451
+#if NET45
                 (string)AppDomain.CurrentDomain.GetData("APP_CONTEXT_BASE_DIRECTORY") ??
                 AppDomain.CurrentDomain.BaseDirectory;
 #else
