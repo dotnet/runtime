@@ -114,6 +114,10 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj" />
+    <Project Include="Misc\System.Xml.Misc.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0;netcore50</TestTFMs>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
