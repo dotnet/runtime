@@ -180,6 +180,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.NistValidation.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.NistValidation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs</Link>
     </Compile>
