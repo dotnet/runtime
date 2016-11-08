@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
-    unsafe internal partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
+    unsafe internal sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private int _socketAddressSize;
 
