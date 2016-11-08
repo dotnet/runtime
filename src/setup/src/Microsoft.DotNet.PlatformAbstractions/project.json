@@ -7,7 +7,7 @@
     "allowUnsafe": true
   },
   "frameworks": {
-    "net451": {},
+    "net45": {},
     "netstandard1.3": {
       "dependencies": {
         "System.AppContext": "4.1.0",
