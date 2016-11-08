@@ -2854,7 +2854,7 @@ void MethodContext::recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType resul
 
 void MethodContext::dmpGetHFAType(DWORDLONG key, DWORD value)
 {
-    printf("GetHFATypet key %016llX, value %u ", key, value);
+    printf("GetHFAType key %016llX, value %u ", key, value);
     return;
 }
 
