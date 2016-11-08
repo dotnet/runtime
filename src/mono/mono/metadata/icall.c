@@ -7937,14 +7937,15 @@ ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObject *obj)
 }
 
 
-ICALL_EXPORT MonoString*
-ves_icall_Mono_Runtime_GetDisplayName (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_Mono_Runtime_GetDisplayName (MonoError *error)
 {
 	char *info;
-	MonoString *display_name;
+	MonoStringHandle display_name;
 
+	mono_error_init (error);
 	info = mono_get_runtime_callbacks ()->get_runtime_build_info ();
-	display_name = mono_string_new (mono_domain_get (), info);
+	display_name = mono_string_new_handle (mono_domain_get (), info, error);
 	g_free (info);
 	return display_name;
 }
