@@ -10811,7 +10811,9 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static object BindToMoniker(string monikerName) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCritical]
-        public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak) { throw null; }        
+        public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static void CleanupUnusedObjectsInCurrentContext() { throw null; }        
         [System.Security.SecurityCriticalAttribute]
         public static void Copy(byte[] source, int startIndex, System.IntPtr destination, int length) { }
         [System.Security.SecurityCriticalAttribute]
