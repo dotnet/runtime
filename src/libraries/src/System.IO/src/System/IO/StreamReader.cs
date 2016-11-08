@@ -32,7 +32,7 @@ namespace System.IO
         // saves construction time.  This does break adaptive buffering,
         // but this is slightly faster.
         internal const int DefaultBufferSize = 1024;  // Byte buffer size
-        private const int DefaultFileStreamBufferSize = 4096;
+        internal const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         private Stream _stream;
