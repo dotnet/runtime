@@ -223,3 +223,11 @@ mono_handle_verify (MonoRawHandle raw_handle)
 	
 }
 #endif
+
+uintptr_t
+mono_array_handle_length (MonoArrayHandle arr)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	return MONO_HANDLE_RAW (arr)->max_length;
+}

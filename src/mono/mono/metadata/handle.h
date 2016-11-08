@@ -215,6 +215,9 @@ void mono_handle_verify (MonoRawHandle handle);
 #define MONO_HANDLE_NEW(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( mono_handle_new ((MonoObject*)(VALUE)) )
 #define MONO_HANDLE_CAST(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( VALUE )
 
+#define MONO_HANDLE_IS_NULL(HANDLE) (MONO_HANDLE_RAW(HANDLE) == NULL)
+
+
 /*
 WARNING WARNING WARNING
 
@@ -227,12 +230,20 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_SETRAW(HANDLE, FIELD, VALUE) do {	\
 		MonoObject *__val = (MonoObject*)(VALUE);	\
 		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (HANDLE), FIELD, __val);	\
-	} while (0);
+	} while (0)
 
 #define MONO_HANDLE_SET(HANDLE, FIELD, VALUE) do {	\
 		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);	\
 		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (HANDLE), FIELD, MONO_HANDLE_RAW (__val));	\
-	} while (0);
+	} while (0)
+
+/* N.B. RESULT is evaluated before HANDLE */
+#define MONO_HANDLE_GET(RESULT, HANDLE, FIELD) do {			\
+		MonoObjectHandle __dest = MONO_HANDLE_CAST(MonoObject, RESULT);	\
+		mono_gc_wbarrier_generic_store (&__dest->__obj,  (MonoObject*)(MONO_HANDLE_RAW(HANDLE)->FIELD)); \
+	} while (0)
+
+#define MONO_HANDLE_GETVAL(HANDLE, FIELD) (MONO_HANDLE_RAW(HANDLE)->FIELD)
 
 /* VS doesn't support typeof :( :( :( */
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
@@ -246,12 +257,28 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, MONO_HANDLE_RAW (__val));	\
 	} while (0)
 
+#define MONO_HANDLE_ARRAY_SETVAL(HANDLE, TYPE, IDX, VALUE) do {		\
+		int __idx = (IDX);					\
+   		TYPE __val = (VALUE);			\
+		mono_array_set (MONO_HANDLE_RAW (HANDLE), TYPE, __idx, __val); \
+	} while (0)
+
 #define MONO_HANDLE_ARRAY_SETRAW(HANDLE, IDX, VALUE) do {	\
 		int __idx = (IDX);	\
 		MonoObject *__val = (MonoObject*)(VALUE);	\
-		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, __val);	\
+		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, __val); \
 	} while (0)
 
+/* N.B. DEST is evaluated AFTER all the other arguments */
+#define MONO_HANDLE_ARRAY_GETVAL(DEST, HANDLE, TYPE, IDX) do {		\
+		MonoArrayHandle __arr = (HANDLE);			\
+		int __idx = (IDX);					\
+		TYPE __result = mono_array_get (MONO_HANDLE_RAW(__arr), TYPE, __idx); \
+		(DEST) =  __result;					\
+	} while (0)
+
+#define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
+	mono_handle_assign (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_CAST(MonoObject, (SRCH)))
 
 #define MONO_HANDLE_DOMAIN(HANDLE) (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, HANDLE))))
 
@@ -268,10 +295,19 @@ Init values to it.
 */
 extern const MonoObjectHandle mono_null_value_handle;
 
+static inline void
+mono_handle_assign (MonoObjectHandle dest, MonoObjectHandle src)
+{
+	mono_gc_wbarrier_generic_store (&dest->__obj, MONO_HANDLE_RAW(src));
+}
 
 //FIXME this should go somewhere else
 MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error);
 MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+
+uintptr_t mono_array_handle_length (MonoArrayHandle arr);
+
+#define mono_handle_class(o) mono_object_class (MONO_HANDLE_RAW (o))
 
 G_END_DECLS
 
