@@ -517,8 +517,6 @@ namespace SOS
 
                     foreach (SequencePoint point in sequencePoints)
                     {
-                        if (point.StartLine == 0 || point.StartLine == SequencePoint.HiddenLine)
-                            continue;
 
                         DebugInfo debugInfo = new DebugInfo();
                         debugInfo.lineNumber = point.StartLine;

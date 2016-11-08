@@ -105,10 +105,13 @@ struct __attribute__((packed)) DwarfLineNumHeader
     uint8_t m_std_num_arg[DW_LNS_MAX];
 };
 
+const ULONG32 HiddenLine = 0x00feefee;
+
 struct SymbolsInfo
 {
     int lineNumber, ilOffset, nativeOffset, fileIndex;
     char fileName[2*MAX_PATH_FNAME];
+    ICorDebugInfo::SourceTypes source;
 };
 
 class DwarfDumpable
@@ -351,7 +354,10 @@ public:
 
     typedef MapSHash<TypeKey*, TypeInfoBase*, DeleteValuesOnDestructSHashTraits<TypeKeyHashTraits<TypeInfoBase*>>> TK_TypeInfoMap;
     typedef TK_TypeInfoMap* PTK_TypeInfoMap;
-
+    typedef SetSHash< TADDR,
+                      NoRemoveSHashTraits <
+                      NonDacAwareSHashTraits< SetSHashTraits <TADDR> >
+                    > > AddrSet;
 private:
 
     struct MemBuf
@@ -360,11 +366,27 @@ private:
         unsigned MemSize;
         MemBuf() : MemPtr(0), MemSize(0)
         {}
+        bool Resize(unsigned newSize)
+        {
+            if (newSize == 0)
+            {
+                MemPtr = nullptr;
+                MemSize = 0;
+                return true;
+            }
+            char *tmp = new (nothrow) char [newSize];
+            if (tmp == nullptr)
+                return false;
+            memmove(tmp, MemPtr.GetValue(), newSize < MemSize ? newSize : MemSize);
+            MemPtr = tmp;
+            MemSize = newSize;
+            return true;
+        }
     };
 
+    static int GetSectionIndex(const char *sectName);
     static bool BuildELFHeader(MemBuf& buf);
-    static bool BuildSectionNameTable(MemBuf& buf);
-    static bool BuildSectionTable(MemBuf& buf);
+    static bool BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf);
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize);
     static bool BuildStringTableSection(MemBuf& strTab);
     static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap);
@@ -374,12 +396,10 @@ private:
     static bool BuildLineTable(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines);
     static bool BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines);
     static bool BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines);
-    static bool FitIntoSpecialOpcode(int8_t line_shift, uint8_t addr_shift);
     static void IssueSetAddress(char*& ptr, PCODE addr);
     static void IssueEndOfSequence(char*& ptr);
     static void IssueSimpleCommand(char*& ptr, uint8_t command);
     static void IssueParamCommand(char*& ptr, uint8_t command, char* param, int param_len);
-    static void IssueSpecialCommand(char*& ptr, int8_t line_shift, uint8_t addr_shift);
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
     static bool CollectCalledMethods(CalledMethod* pCM);
 #ifdef _DEBUG
