@@ -394,26 +394,24 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type t)
         {
-            if (!t.GetTypeInfo().IsEnum)
+            Debug.Assert(!t.GetTypeInfo().IsEnum);
+            switch (t.GetTypeCode())
             {
-                switch (t.GetTypeCode())
-                {
-                    case TypeCode.Boolean: return s_boolean ?? (s_boolean = new CastInstructionT<bool>());
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new CastInstructionT<byte>());
-                    case TypeCode.Char: return s_char ?? (s_char = new CastInstructionT<char>());
-                    case TypeCode.DateTime: return s_dateTime ?? (s_dateTime = new CastInstructionT<DateTime>());
-                    case TypeCode.Decimal: return s_decimal ?? (s_decimal = new CastInstructionT<decimal>());
-                    case TypeCode.Double: return s_double ?? (s_double = new CastInstructionT<double>());
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new CastInstructionT<short>());
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new CastInstructionT<int>());
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new CastInstructionT<long>());
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new CastInstructionT<sbyte>());
-                    case TypeCode.Single: return s_single ?? (s_single = new CastInstructionT<float>());
-                    case TypeCode.String: return s_string ?? (s_string = new CastInstructionT<string>());
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new CastInstructionT<ushort>());
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new CastInstructionT<uint>());
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new CastInstructionT<ulong>());
-                }
+                case TypeCode.Boolean: return s_boolean ?? (s_boolean = new CastInstructionT<bool>());
+                case TypeCode.Byte: return s_byte ?? (s_byte = new CastInstructionT<byte>());
+                case TypeCode.Char: return s_char ?? (s_char = new CastInstructionT<char>());
+                case TypeCode.DateTime: return s_dateTime ?? (s_dateTime = new CastInstructionT<DateTime>());
+                case TypeCode.Decimal: return s_decimal ?? (s_decimal = new CastInstructionT<decimal>());
+                case TypeCode.Double: return s_double ?? (s_double = new CastInstructionT<double>());
+                case TypeCode.Int16: return s_int16 ?? (s_int16 = new CastInstructionT<short>());
+                case TypeCode.Int32: return s_int32 ?? (s_int32 = new CastInstructionT<int>());
+                case TypeCode.Int64: return s_int64 ?? (s_int64 = new CastInstructionT<long>());
+                case TypeCode.SByte: return s_SByte ?? (s_SByte = new CastInstructionT<sbyte>());
+                case TypeCode.Single: return s_single ?? (s_single = new CastInstructionT<float>());
+                case TypeCode.String: return s_string ?? (s_string = new CastInstructionT<string>());
+                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new CastInstructionT<ushort>());
+                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new CastInstructionT<uint>());
+                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new CastInstructionT<ulong>());
             }
 
             return CastInstructionNoT.Create(t);
