@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Reflection": "4.4.0-beta-24708-05",
-    "System.Reflection.Primitives": "4.4.0-beta-24708-05",
-    "System.Runtime": "4.4.0-beta-24708-05",
-    "System.Runtime.Handles": "4.4.0-beta-24708-05"
+    "System.Reflection": "4.4.0-beta-24709-01",
+    "System.Reflection.Primitives": "4.4.0-beta-24709-01",
+    "System.Runtime": "4.4.0-beta-24709-01",
+    "System.Runtime.Handles": "4.4.0-beta-24709-01"
   },
   "frameworks": {
     "netstandard1.7": {}
