@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable CS0067 // events are declared but not used
+
 extern alias System_Security_Principal;
 
 using System;
@@ -51,7 +53,7 @@ namespace System
 
         public bool IsHomogenous => true;
 
-        public event EventHandler DomainUnload { add { } remove { } }
+        public event EventHandler DomainUnload;
 
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
@@ -191,6 +193,7 @@ namespace System
                 throw new PlatformNotSupportedException();
             }
         }
+
         public long MonitoringSurvivedMemorySize { get { throw CreateResMonNotAvailException(); } }
 
         public static long MonitoringSurvivedProcessMemorySize { get { throw CreateResMonNotAvailException(); } }
@@ -257,7 +260,7 @@ namespace System
             }
         }
 
-        // TODO
-        public event ResolveEventHandler AssemblyResolve { add { } remove { } }
+        // TODO: #9327
+        public event ResolveEventHandler AssemblyResolve;
     }
 }
