@@ -471,65 +471,57 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object from = frame.Pop();
-            if (from == null)
+            Debug.Assert(from != null);
+            Type underlying = Enum.GetUnderlyingType(_t);
+            // Order checks in order of likelihood. int first as the vast majority of enums
+            // are int-based, then long as that is sometimes used when required for a large set of flags
+            // and so-on.
+            if (underlying == typeof(int))
             {
-                frame.Push(null);
+                // If from is neither an int nor a type assignable to int (viz. an int-backed enum)
+                // this will cause an InvalidCastException, which is what this operation should
+                // throw in this case.
+                frame.Push(Enum.ToObject(_t, (int)from));
+            }
+            else if (underlying == typeof(long))
+            {
+                frame.Push(Enum.ToObject(_t, (long)from));
+            }
+            else if (underlying == typeof(uint))
+            {
+                frame.Push(Enum.ToObject(_t, (uint)from));
+            }
+            else if (underlying == typeof(ulong))
+            {
+                frame.Push(Enum.ToObject(_t, (ulong)from));
+            }
+            else if (underlying == typeof(byte))
+            {
+                frame.Push(Enum.ToObject(_t, (byte)from));
+            }
+            else if (underlying == typeof(sbyte))
+            {
+                frame.Push(Enum.ToObject(_t, (sbyte)from));
+            }
+            else if (underlying == typeof(short))
+            {
+                frame.Push(Enum.ToObject(_t, (short)from));
+            }
+            else if (underlying == typeof(ushort))
+            {
+                frame.Push(Enum.ToObject(_t, (ushort)from));
+            }
+            else if (underlying == typeof(char))
+            {
+                // Disallowed in C#, but allowed in CIL
+                frame.Push(Enum.ToObject(_t, (char)from));
             }
             else
             {
-                Type underlying = _t.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(_t) : _t;
-                // Order checks in order of likelihood. int first as the vast majority of enums
-                // are int-based, then long as that is sometimes used when required for a large set of flags
-                // and so-on.
-                if (underlying == typeof(int))
-                {
-                    // If from is neither an int nor a type assignable to int (viz. an int-backed enum)
-                    // this will cause an InvalidCastException, which is what this operation should
-                    // throw in this case.
-                    frame.Push(Enum.ToObject(_t, (int)from));
-                }
-                else if (underlying == typeof(long))
-                {
-                    frame.Push(Enum.ToObject(_t, (long)from));
-                }
-                else if (underlying == typeof(uint))
-                {
-                    frame.Push(Enum.ToObject(_t, (uint)from));
-                }
-                else if (underlying == typeof(ulong))
-                {
-                    frame.Push(Enum.ToObject(_t, (ulong)from));
-                }
-                else if (underlying == typeof(byte))
-                {
-                    frame.Push(Enum.ToObject(_t, (byte)from));
-                }
-                else if (underlying == typeof(sbyte))
-                {
-                    frame.Push(Enum.ToObject(_t, (sbyte)from));
-                }
-                else if (underlying == typeof(short))
-                {
-                    frame.Push(Enum.ToObject(_t, (short)from));
-                }
-                else if (underlying == typeof(ushort))
-                {
-                    frame.Push(Enum.ToObject(_t, (ushort)from));
-                }
-                else if (underlying == typeof(char))
-                {
-                    // Disallowed in C#, but allowed in CIL
-                    frame.Push(Enum.ToObject(_t, (char)from));
-                }
-                else if (underlying == typeof(bool))
-                {
-                    // Disallowed in C#, but allowed in CIL
-                    frame.Push(Enum.ToObject(_t, (bool)from));
-                }
-                else
-                {
-                    throw new InvalidCastException();
-                }
+                // Only remaining possible type.
+                // Disallowed in C#, but allowed in CIL
+                Debug.Assert(underlying == typeof(bool));
+                frame.Push(Enum.ToObject(_t, (bool)from));
             }
 
             return 1;
