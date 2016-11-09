@@ -76,7 +76,6 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree, GenTree* asgdLclVar)
         if ((lhsLclNum == lclNum) && ((tree->gtFlags & GTF_VAR_DEF) == 0) && (tree != asgdLclVar))
         {
             /* bingo - we have an x = f(x) case */
-            noway_assert(lvaTable[lhsLclNum].lvType != TYP_STRUCT);
             asgdLclVar->gtFlags |= GTF_VAR_USEDEF;
             rhsUSEDEF = true;
         }
