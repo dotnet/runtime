@@ -24,71 +24,16 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
     <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
-    <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
-    <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
-  </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <ContractProject Include="..\ref\System.IO.csproj">
       <TargetGroup>netstandard1.7</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
-    <Compile Include="System\IO\TextReader.netstandard17.cs" />
-    <Compile Include="System\IO\TextWriter.netstandard17.cs" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
-      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
-      <Name>System.Diagnostics.Debug</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">
-    <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
-    <Compile Include="System\IO\EncodingCache.cs" />
-    <Compile Include="System\IO\StreamReader.cs" />
-    <Compile Include="System\IO\StreamWriter.cs" />
-    <Compile Include="System\IO\StringReader.cs" />
-    <Compile Include="System\IO\StringWriter.cs" />
-    <Compile Include="System\IO\TextReader.cs" />
-    <Compile Include="System\IO\TextWriter.cs" />
-    <Compile Include="System\IO\BufferedStream.cs" />
-    <Compile Include="System\IO\InvalidDataException.cs" />
-    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <Compile Include="System\IO\BinaryReader.cs" />
-    <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="System\IO\EndOfStreamException.cs" />
-    <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
-    <Compile Include="System\IO\MemoryStream.cs" />
-  </ItemGroup>
-
-  <!-- Common -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <Compile Include="$(CommonPath)\System\SystemException.cs" />
-    <Compile Include="$(CommonPath)\System\HResults.cs">
-      <Link>Common\System\HResults.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
-      <Link>Common\System\IO\StringBuilderCache.cs</Link>
-    </Compile>
-    <Compile Include="$(Commonpath)\System\SR.Core.cs">
-      <Link>Common\System\SR.Core.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot'" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
