@@ -433,27 +433,13 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object from = frame.Pop();
-            switch (Convert.GetTypeCode(from))
-            {
-                case TypeCode.Empty:
-                    frame.Push(null);
-                    break;
-                case TypeCode.Int32:
-                case TypeCode.SByte:
-                case TypeCode.Int16:
-                case TypeCode.Int64:
-                case TypeCode.UInt32:
-                case TypeCode.Byte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt64:
-                case TypeCode.Char:
-                case TypeCode.Boolean:
-                    frame.Push(Enum.ToObject(_t, from));
-                    break;
-                default:
-                    throw new InvalidCastException();
-            }
-
+            Debug.Assert(
+                new[]
+                {
+                    TypeCode.Empty, TypeCode.Int32, TypeCode.SByte, TypeCode.Int16, TypeCode.Int64, TypeCode.UInt32,
+                    TypeCode.Byte, TypeCode.UInt16, TypeCode.UInt64, TypeCode.Char, TypeCode.Boolean
+                }.Contains(Convert.GetTypeCode(from)));
+            frame.Push(from == null ? null : Enum.ToObject(_t, from));
             return +1;
         }
     }
