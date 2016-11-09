@@ -1,3 +1,4 @@
+Compat issues with assembly System.Diagnostics.StackTrace:
 CannotSealType : Type 'System.Diagnostics.StackFrame' is sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Diagnostics.StackFrame..ctor()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.StackFrame..ctor(System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -23,5 +24,7 @@ MembersMustExist : Member 'System.Diagnostics.StackTrace..ctor(System.Exception,
 MembersMustExist : Member 'System.Diagnostics.StackTrace..ctor(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.StackTrace..ctor(System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.StackTrace.FrameCount.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.StackTrace.GetFrame(System.Int32)' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Diagnostics.StackTrace.GetFrames()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Diagnostics.StackTrace.ToString()' is non-virtual in the implementation but is virtual in the contract.
+Total Issues: 28

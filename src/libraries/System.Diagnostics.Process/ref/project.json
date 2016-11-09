@@ -7,6 +7,7 @@
     "System.Text.Encoding": "4.4.0-beta-24708-05",
     "System.Collections": "4.4.0-beta-24708-05",
     "System.Collections.NonGeneric": "4.4.0-beta-24708-05",
+    "System.Collections.Specialized": "4.4.0-beta-24708-05",
     "System.Diagnostics.FileVersionInfo": "4.4.0-beta-24708-05"
   },
   "frameworks": {
