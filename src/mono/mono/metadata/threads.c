@@ -453,6 +453,10 @@ static void thread_cleanup (MonoInternalThread *thread)
 		thread->thread_pinning_ref = NULL;
 	}
 
+	g_assert (thread->suspended);
+	mono_os_event_destroy (thread->suspended);
+	g_free (thread->suspended);
+	thread->suspended = NULL;
 }
 
 /*
@@ -1288,11 +1292,6 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 		this_obj->name = NULL;
 		g_free (name);
 	}
-
-	g_assert (this_obj->suspended);
-	mono_os_event_destroy (this_obj->suspended);
-	g_free (this_obj->suspended);
-	this_obj->suspended = NULL;
 }
 
 void
@@ -3255,8 +3254,8 @@ void mono_thread_suspend_all_other_threads (void)
 			     || mono_gc_is_finalizer_internal_thread (thread)
 			     || (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE)
 			) {
-				//mono_threads_close_thread_handle (wait->handles [i]);
-				wait->threads [i] = NULL; /* ignore this thread in next loop */
+				mono_threads_close_thread_handle (wait->handles [i]);
+				wait->threads [i] = NULL;
 				continue;
 			}
 
@@ -3267,7 +3266,7 @@ void mono_thread_suspend_all_other_threads (void)
 				(thread->state & ThreadState_Stopped) != 0) {
 				UNLOCK_THREAD (thread);
 				mono_threads_close_thread_handle (wait->handles [i]);
-				wait->threads [i] = NULL; /* ignore this thread in next loop */
+				wait->threads [i] = NULL;
 				continue;
 			}
 
@@ -3283,6 +3282,9 @@ void mono_thread_suspend_all_other_threads (void)
 
 			/* Signal the thread to suspend + calls UNLOCK_THREAD (thread) */
 			async_suspend_internal (thread, TRUE);
+
+			mono_threads_close_thread_handle (wait->handles [i]);
+			wait->threads [i] = NULL;
 		}
 		if (eventidx <= 0) {
 			/* 
