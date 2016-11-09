@@ -697,6 +697,11 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	}
 #else
 	UCONTEXT_REG_NIP(uc) = (unsigned long)altstack_handle_and_restore;
+#if _CALL_ELF == 2
+	/* ELF v2 ABI calling convention requires to put the target address into
+	* r12 if we use the global entry point of a function. */
+	UCONTEXT_REG_Rn(uc, 12) = (unsigned long) altstack_handle_and_restore;
+#endif
 #endif
 	UCONTEXT_REG_Rn(uc, 1) = (unsigned long)sp;
 	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG) = (unsigned long)(sp + 16);
@@ -739,6 +744,11 @@ setup_ucontext_return (void *uc, gpointer func)
 	}
 #else
 	UCONTEXT_REG_NIP(uc) = (unsigned long)func;
+#if _CALL_ELF == 2
+	/* ELF v2 ABI calling convention requires to put the target address into
+	* r12 if we use the global entry point of a function. */
+	UCONTEXT_REG_Rn(uc, 12) = (unsigned long) func;
+#endif
 #endif
 #endif
 }
