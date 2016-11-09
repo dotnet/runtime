@@ -11,6 +11,11 @@ internal static class SR
         get { return Environment.GetResourceString("Arg_ArrayZeroError"); }
     }
 
+    public static string Arg_ExternalException
+    {
+        get { return Environment.GetResourceString("Arg_ExternalException"); }
+    }
+
     public static string Arg_HexStyleNotSupported
     {
         get { return Environment.GetResourceString("Arg_HexStyleNotSupported"); }

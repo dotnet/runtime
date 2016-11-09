@@ -10,6 +10,8 @@
 #include <map>
 
 #include "icushim.h"
+#include "locale.hpp"
+#include "errors.h"
 
 const int32_t CompareOptionsIgnoreCase = 0x1;
 const int32_t CompareOptionsIgnoreNonSpace = 0x2;
@@ -331,24 +333,30 @@ extern "C" int32_t GlobalizationNative_GetSortVersion()
     return UCOL_RUNTIME_VERSION << 16 | UCOL_BUILDER_VERSION;
 }
 
-extern "C" SortHandle* GlobalizationNative_GetSortHandle(const char* lpLocaleName)
+extern "C" ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
 {
-    SortHandle* pSortHandle = new SortHandle();
+    assert(ppSortHandle != nullptr);
+    
+    *ppSortHandle = new (std::nothrow) SortHandle();
+    if ((*ppSortHandle) == nullptr)
+    {
+        return GetResultCode(U_MEMORY_ALLOCATION_ERROR);
+    }
 
     UErrorCode err = U_ZERO_ERROR;
 
-    pSortHandle->regular = ucol_open(lpLocaleName, &err);
+    (*ppSortHandle)->regular = ucol_open(lpLocaleName, &err);
 
     if (U_FAILURE(err))
     {
-        if (pSortHandle->regular != nullptr)
-              ucol_close(pSortHandle->regular);
+        if ((*ppSortHandle)->regular != nullptr)
+            ucol_close((*ppSortHandle)->regular);
 
-        delete pSortHandle;
-        pSortHandle = nullptr;
+        delete (*ppSortHandle);
+        (*ppSortHandle) = nullptr;
     }
 
-    return pSortHandle;
+    return GetResultCode(err);
 }
 
 extern "C" void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
