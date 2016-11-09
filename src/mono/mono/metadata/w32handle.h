@@ -29,6 +29,14 @@ typedef enum {
 	MONO_W32HANDLE_COUNT
 } MonoW32HandleType;
 
+typedef enum {
+	MONO_W32HANDLE_WAIT_RET_SUCCESS_0   =  0,
+	MONO_W32HANDLE_WAIT_RET_ABANDONED_0 =  MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS,
+	MONO_W32HANDLE_WAIT_RET_ALERTED     = -1,
+	MONO_W32HANDLE_WAIT_RET_TIMEOUT     = -2,
+	MONO_W32HANDLE_WAIT_RET_FAILED      = -3,
+} MonoW32HandleWaitRet;
+
 typedef struct 
 {
 	void (*close)(gpointer handle, gpointer data);
@@ -55,7 +63,7 @@ typedef struct
 	 * instead of using the normal handle signal mechanism.
 	 * Returns the WaitForSingleObject return code.
 	 */
-	guint32 (*special_wait)(gpointer handle, guint32 timeout, gboolean *alerted);
+	MonoW32HandleWaitRet (*special_wait)(gpointer handle, guint32 timeout, gboolean *alerted);
 
 	/* Called by WaitForSingleObject and WaitForMultipleObjects,
 	 * if the handle in question needs some preprocessing before the
@@ -103,9 +111,6 @@ mono_w32handle_get_type (gpointer handle);
 gboolean
 mono_w32handle_lookup (gpointer handle, MonoW32HandleType type, gpointer *handle_specific);
 
-gpointer
-mono_w32handle_search (MonoW32HandleType type, gboolean (*check)(gpointer, gpointer), gpointer user_data, gpointer *handle_specific, gboolean search_shared);
-
 void
 mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpointer user_data), gpointer user_data);
 
@@ -136,7 +141,7 @@ mono_w32handle_ops_own (gpointer handle, guint32 *statuscode);
 gboolean
 mono_w32handle_ops_isowned (gpointer handle);
 
-guint32
+MonoW32HandleWaitRet
 mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *alerted);
 
 void
@@ -165,14 +170,6 @@ mono_w32handle_trylock_handle (gpointer handle);
 
 int
 mono_w32handle_unlock_handle (gpointer handle);
-
-typedef enum {
-	MONO_W32HANDLE_WAIT_RET_SUCCESS_0   =  0,
-	MONO_W32HANDLE_WAIT_RET_ABANDONED_0 =  MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS,
-	MONO_W32HANDLE_WAIT_RET_ALERTED     = -1,
-	MONO_W32HANDLE_WAIT_RET_TIMEOUT     = -2,
-	MONO_W32HANDLE_WAIT_RET_FAILED      = -3,
-} MonoW32HandleWaitRet;
 
 MonoW32HandleWaitRet
 mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable);
