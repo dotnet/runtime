@@ -12227,38 +12227,42 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     goto CM_OVF_OP;
                 }
 
-                /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
-
-                noway_assert(op2);
-                if (op2->IsCnsIntOrI())
+                // TODO #4104: there are a lot of other places where
+                // this condition is not checked before transformations.
+                if (fgGlobalMorph)
                 {
-                    /* Negate the constant and change the node to be "+" */
+                    /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
 
-                    op2->gtIntConCommon.SetIconValue(-op2->gtIntConCommon.IconValue());
-                    oper = GT_ADD;
-                    tree->ChangeOper(oper);
-                    goto CM_ADD_OP;
+                    noway_assert(op2);
+                    if (op2->IsCnsIntOrI())
+                    {
+                        /* Negate the constant and change the node to be "+" */
+
+                        op2->gtIntConCommon.SetIconValue(-op2->gtIntConCommon.IconValue());
+                        oper = GT_ADD;
+                        tree->ChangeOper(oper);
+                        goto CM_ADD_OP;
+                    }
+
+                    /* Check for "cns1 - op2" , we change it to "(cns1 + (-op2))" */
+
+                    noway_assert(op1);
+                    if (op1->IsCnsIntOrI())
+                    {
+                        noway_assert(varTypeIsIntOrI(tree));
+
+                        tree->gtOp.gtOp2 = op2 = gtNewOperNode(GT_NEG, tree->gtType, op2); // The type of the new GT_NEG
+                                                                                           // node should be the same
+                        // as the type of the tree, i.e. tree->gtType.
+                        fgMorphTreeDone(op2);
+
+                        oper = GT_ADD;
+                        tree->ChangeOper(oper);
+                        goto CM_ADD_OP;
+                    }
+
+                    /* No match - exit */
                 }
-
-                /* Check for "cns1 - op2" , we change it to "(cns1 + (-op2))" */
-
-                noway_assert(op1);
-                if (op1->IsCnsIntOrI())
-                {
-                    noway_assert(varTypeIsIntOrI(tree));
-
-                    tree->gtOp.gtOp2 = op2 =
-                        gtNewOperNode(GT_NEG, tree->gtType, op2); // The type of the new GT_NEG node should be the same
-                                                                  // as the type of the tree, i.e. tree->gtType.
-                    fgMorphTreeDone(op2);
-
-                    oper = GT_ADD;
-                    tree->ChangeOper(oper);
-                    goto CM_ADD_OP;
-                }
-
-                /* No match - exit */
-
                 break;
 
 #ifdef _TARGET_ARM64_
