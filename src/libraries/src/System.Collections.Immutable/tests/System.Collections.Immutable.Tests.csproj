@@ -23,7 +23,7 @@
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTestBase.cs" />
-    <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests .cs" />
+    <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests.cs" />
     <Compile Include="ImmutableDictionaryBuilderTestBase.cs" />
     <Compile Include="GenericParameterHelper.cs" />
     <Compile Include="ImmutableDictionaryBuilderTest.cs" />
