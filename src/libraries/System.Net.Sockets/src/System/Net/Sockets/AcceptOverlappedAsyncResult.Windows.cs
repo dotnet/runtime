@@ -12,7 +12,7 @@ using Microsoft.Win32;
 namespace System.Net.Sockets
 {
     // AcceptOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
-    internal partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Socket _acceptSocket;
         private int _addressBufferLength;
@@ -26,7 +26,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress remoteSocketAddress = null;
             if (errorCode == SocketError.Success)
             {
-                _localBytesTransferred = numBytes;
+                _numBytes = numBytes;
                 if (NetEventSource.IsEnabled) LogBuffer(numBytes);
 
                 // get the endpoint
