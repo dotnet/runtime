@@ -56,6 +56,9 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
