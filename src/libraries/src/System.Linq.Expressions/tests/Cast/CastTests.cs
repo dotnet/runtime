@@ -2374,6 +2374,12 @@ namespace System.Linq.Expressions.Tests
                 where type != value.GetType()
                 select new[] {type, value};
 
+        public static IEnumerable<object[]> EnumerableTypesAndIncompatibleUnderlyingObjects()
+            => from value in EnumerableTypes().Select(t => Activator.CreateInstance(Enum.GetUnderlyingType(t)))
+                from type in EnumerableTypes()
+                where Enum.GetUnderlyingType(type) != value.GetType()
+                select new[] {type, value};
+
         [Theory, PerCompilationType(nameof(EnumerableTypeArgs))]
         public static void CanCastReferenceToUnderlyingTypeToEnumType(Type type, bool useInterpreter)
         {
@@ -2388,6 +2394,30 @@ namespace System.Linq.Expressions.Tests
 
         [Theory, PerCompilationType(nameof(EnumerableTypesAndIncompatibleObjects))]
         public static void CannotCastReferenceToWrongUnderlyingTypeEnum(Type type, object value, bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.Convert(Expression.Constant(value, typeof(object)), type),
+                    Expression.Empty()));
+            var act = exp.Compile(useInterpreter);
+            Assert.Throws<InvalidCastException>(act);
+        }
+
+        [Theory, PerCompilationType(nameof(EnumerableTypeArgs))]
+        public static void CanCastUnderlyingTypeToEnumType(Type type, bool useInterpreter)
+        {
+            Type underlying = Enum.GetUnderlyingType(type);
+            object value = Activator.CreateInstance(underlying);
+            var exp = Expression.Lambda<Func<bool>>(
+                Expression.Equal(
+                    Expression.Default(type),
+                    Expression.Convert(Expression.Constant(value, underlying), type)));
+            var func = exp.Compile(useInterpreter);
+            Assert.True(func());
+        }
+
+        [Theory, PerCompilationType(nameof(EnumerableTypesAndIncompatibleUnderlyingObjects))]
+        public static void CannotCastWrongUnderlyingTypeEnum(Type type, object value, bool useInterpreter)
         {
             var exp = Expression.Lambda<Action>(
                 Expression.Block(

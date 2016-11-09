@@ -947,6 +947,10 @@ namespace System.Linq.Expressions.Compiler
                                 il.Emit(OpCodes.Conv_I8);
                             }
                             break;
+                        case TypeCode.Boolean:
+                            il.Emit(OpCodes.Ldc_I4_0);
+                            il.Emit(OpCodes.Cgt_Un);
+                            break;
                         default:
                             throw Error.UnhandledConvert(typeTo);
                     }
