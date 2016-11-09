@@ -27,7 +27,7 @@ initialize (void)
 }
 
 void
-mono_os_event_init (MonoOSEvent *event, gboolean manual, gboolean initial)
+mono_os_event_init (MonoOSEvent *event, gboolean initial)
 {
 	g_assert (event);
 
@@ -36,8 +36,6 @@ mono_os_event_init (MonoOSEvent *event, gboolean manual, gboolean initial)
 	mono_os_mutex_init (&event->mutex);
 	mono_os_cond_init (&event->cond);
 	event->signalled = initial;
-	event->manual = manual;
-	event->set_count = (initial && !manual) ? 1 : 0;
 }
 
 void
@@ -57,25 +55,6 @@ mono_os_event_is_signalled (MonoOSEvent *event)
 	return event->signalled;
 }
 
-static void
-mono_os_event_signal (MonoOSEvent *event, gboolean broadcast)
-{
-	g_assert (event);
-
-	mono_os_mutex_lock (&signal_mutex);
-
-	event->signalled = TRUE;
-
-	if (broadcast)
-		mono_os_cond_broadcast (&event->cond);
-	else
-		mono_os_cond_signal (&event->cond);
-
-	mono_os_cond_broadcast (&signal_cond);
-
-	mono_os_mutex_unlock (&signal_mutex);
-}
-
 void
 mono_os_event_set (MonoOSEvent *event)
 {
@@ -84,15 +63,15 @@ mono_os_event_set (MonoOSEvent *event)
 	g_assert (event);
 
 	mono_os_mutex_lock (&event->mutex);
+	mono_os_mutex_lock (&signal_mutex);
 
-	if (event->manual) {
-		mono_os_event_signal (event, TRUE);
-	} else {
-		event->set_count = 1;
-		mono_os_event_signal (event, FALSE);
-	}
+	event->signalled = TRUE;
+
+	mono_os_cond_broadcast (&event->cond);
+	mono_os_cond_broadcast (&signal_cond);
 
 	mono_os_mutex_unlock (&event->mutex);
+	mono_os_mutex_unlock (&signal_mutex);
 }
 
 void
@@ -104,31 +83,9 @@ mono_os_event_reset (MonoOSEvent *event)
 
 	mono_os_mutex_lock (&event->mutex);
 
-	if (mono_os_event_is_signalled (event))
-		event->signalled = FALSE;
-
-	event->set_count = 0;
+	event->signalled = FALSE;
 
 	mono_os_mutex_unlock (&event->mutex);
-}
-
-static gboolean
-mono_os_event_own (MonoOSEvent *event)
-{
-	g_assert (event);
-
-	if (!mono_os_event_is_signalled (event))
-		return FALSE;
-
-	if (!event->manual) {
-		g_assert (event->set_count > 0);
-		event->set_count -= 1;
-
-		if (event->set_count == 0)
-			mono_os_event_signal (event, FALSE);
-	}
-
-	return TRUE;
 }
 
 MonoOSEventWaitRet
@@ -209,7 +166,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 
 	data = g_new0 (OSEventWaitData, 1);
 	data->ref = 2;
-	mono_os_event_init (&data->event, TRUE, FALSE);
+	mono_os_event_init (&data->event, FALSE);
 
 	innerevents [nevents ++] = &data->event;
 
@@ -247,11 +204,6 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 			signalled = (count == nevents - 1);
 		else /* waitany */
 			signalled = (count > 0);
-
-		if (signalled) {
-			for (i = 0; i < nevents - 1; ++i)
-				mono_os_event_own (innerevents [i]);
-		}
 
 		mono_os_event_unlock_events (innerevents, nevents);
 

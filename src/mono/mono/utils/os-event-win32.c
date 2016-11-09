@@ -15,11 +15,11 @@
 #include "atomic.h"
 
 void
-mono_os_event_init (MonoOSEvent *event, gboolean manual, gboolean initial)
+mono_os_event_init (MonoOSEvent *event, gboolean initial)
 {
 	g_assert (event);
 
-	event->handle = CreateEvent (NULL, manual, initial, NULL);
+	event->handle = CreateEvent (NULL, TRUE, initial, NULL);
 	if (G_UNLIKELY (!event->handle))
 		g_error ("%s: CreateEvent failed with error %d", __func__, GetLastError ());
 }

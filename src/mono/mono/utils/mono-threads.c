@@ -350,7 +350,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 
 	info->handle = g_new0 (MonoThreadHandle, 1);
 	info->handle->ref = 1;
-	mono_os_event_init (&info->handle->event, TRUE, FALSE);
+	mono_os_event_init (&info->handle->event, FALSE);
 
 	mono_os_sem_init (&info->resume_semaphore, 0);
 

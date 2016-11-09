@@ -29,14 +29,12 @@ struct _MonoOSEvent {
 #else
 	mono_mutex_t mutex;
 	mono_cond_t cond;
-	gboolean manual;
 	gboolean signalled;
-	guint32 set_count;
 #endif
 };
 
 void
-mono_os_event_init (MonoOSEvent *event, gboolean manual, gboolean initial);
+mono_os_event_init (MonoOSEvent *event, gboolean initial);
 
 void
 mono_os_event_destroy (MonoOSEvent *event);

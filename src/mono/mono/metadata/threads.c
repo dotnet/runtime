@@ -584,7 +584,7 @@ create_internal_thread_object (void)
 	thread->priority = MONO_THREAD_PRIORITY_NORMAL;
 
 	thread->suspended = g_new0 (MonoOSEvent, 1);
-	mono_os_event_init (thread->suspended, TRUE, TRUE);
+	mono_os_event_init (thread->suspended, TRUE);
 
 	return thread;
 }
@@ -2860,7 +2860,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_os_mutex_init_recursive(&interlocked_mutex);
 	mono_os_mutex_init_recursive(&joinable_threads_mutex);
 	
-	mono_os_event_init (&background_change_event, TRUE, FALSE);
+	mono_os_event_init (&background_change_event, FALSE);
 	
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
