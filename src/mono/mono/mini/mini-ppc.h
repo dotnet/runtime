@@ -77,13 +77,8 @@ typedef struct MonoCompileArch {
 #define PPC_USES_FUNCTION_DESCRIPTOR
 #endif
 
-#ifndef __mono_ilp32__
-#define MONO_ARCH_HAVE_TLS_GET 1
-#endif
-
 #else /* must be __mono_ppc__ */
 
-#define MONO_ARCH_HAVE_TLS_GET 1
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
