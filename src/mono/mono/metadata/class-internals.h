@@ -1500,6 +1500,12 @@ mono_class_get_marshal_info (MonoClass *class);
 void
 mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info);
 
+MonoClassExt*
+mono_class_get_ext (MonoClass *class);
+
+void
+mono_class_set_ext (MonoClass *class, MonoClassExt *ext);
+
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
 

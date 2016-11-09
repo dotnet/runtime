@@ -234,3 +234,16 @@ mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info)
 {
 	class->marshal_info = marshal_info;
 }
+
+MonoClassExt*
+mono_class_get_ext (MonoClass *class)
+{
+	return class->ext;
+}
+
+void
+mono_class_set_ext (MonoClass *class, MonoClassExt *ext)
+{
+	class->ext = ext;
+}
+
