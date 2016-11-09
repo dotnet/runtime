@@ -11,11 +11,8 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Reflection;
     using System.Xml.Serialization.Configuration;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
     using System.Collections.Specialized;
     using System.Globalization;
-    using System.Xml.Serialization.Advanced;
 
 #if DEBUG
     using System.Diagnostics;
@@ -32,33 +29,26 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSchemaImporter(XmlSchemas schemas) : base(schemas, CodeGenerationOptions.GenerateProperties, null, new ImportContext()) { }
+        public XmlSchemaImporter(XmlSchemas schemas) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext()) { }
 
         /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, null, new ImportContext(typeIdentifiers, false)) { }
+        public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext(typeIdentifiers, false)) { }
 
         /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers typeIdentifiers, CodeGenerationOptions options) : base(schemas, options, null, new ImportContext(typeIdentifiers, false)) { }
+        public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers typeIdentifiers, CodeGenerationOptions options) : base(schemas, options, new ImportContext(typeIdentifiers, false)) { }
 
         /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, ImportContext context) : base(schemas, options, null, context) { }
+        public XmlSchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, ImportContext context) : base(schemas, options, context) { }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        internal XmlSchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, CodeDomProvider codeProvider, ImportContext context) : base(schemas, options, codeProvider, context)
-        {
-        }
 
         /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportDerivedTypeMapping"]/*' />
         /// <devdoc>
@@ -418,66 +408,7 @@ namespace System.Xml.Serialization
 
         private void RunSchemaExtensions(TypeMapping mapping, XmlQualifiedName qname, XmlSchemaType type, XmlSchemaObject context, TypeFlags flags)
         {
-            string typeName = null;
-            SchemaImporterExtension typeOwner = null;
-            CodeCompileUnit compileUnit = new CodeCompileUnit();
-            CodeNamespace mainNamespace = new CodeNamespace();
-            compileUnit.Namespaces.Add(mainNamespace);
-
-            if (!qname.IsEmpty)
-            {
-                typeName = FindExtendedType(qname.Name, qname.Namespace, context, compileUnit, mainNamespace, out typeOwner);
-            }
-            else if (type != null)
-            {
-                typeName = FindExtendedType(type, context, compileUnit, mainNamespace, out typeOwner);
-            }
-            else if (context is XmlSchemaAny)
-            {
-                typeName = FindExtendedAnyElement((XmlSchemaAny)context, ((flags & TypeFlags.CanBeTextValue) != 0), compileUnit, mainNamespace, out typeOwner);
-            }
-
-            if (typeName != null && typeName.Length > 0)
-            {
-                // check if the type name is valid 
-                typeName = typeName.Replace('+', '.');
-                try
-                {
-                    CodeGenerator.ValidateIdentifiers(new CodeTypeReference(typeName));
-                }
-                catch (ArgumentException)
-                {
-                    if (qname.IsEmpty)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.XmlImporterExtensionBadLocalTypeName, typeOwner.GetType().FullName, typeName));
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.XmlImporterExtensionBadTypeName, typeOwner.GetType().FullName, qname.Name, qname.Namespace, typeName));
-                    }
-                }
-                // UNDONE: check if it in use
-                //CodeIdentifiers.IsInUse
-                //TypeIdentifiers.AddUnique(typeName, typeName);
-                foreach (CodeNamespace ns in compileUnit.Namespaces)
-                {
-                    CodeGenerator.ValidateIdentifiers(ns);
-                }
-                // UNDONE compile
-                //mapping.TypeName = typeName;
-                mapping.TypeDesc = mapping.TypeDesc.CreateMappedTypeDesc(new MappedTypeDesc(typeName, qname.Name, qname.Namespace, type, context, typeOwner, mainNamespace, compileUnit.ReferencedAssemblies));
-
-                if (mapping is ArrayMapping)
-                {
-                    TypeMapping top = ((ArrayMapping)mapping).TopLevelMapping;
-                    top.TypeName = mapping.TypeName;
-                    top.TypeDesc = mapping.TypeDesc;
-                }
-                else
-                {
-                    mapping.TypeName = qname.IsEmpty ? null : typeName;
-                }
-            }
+            // nop
         }
         private string GenerateUniqueTypeName(string desiredName, string ns)
         {
@@ -2091,51 +2022,6 @@ namespace System.Xml.Serialization
                 return XmlSchemaForm.Qualified;
             }
             return element.Form;
-        }
-
-        internal string FindExtendedAnyElement(XmlSchemaAny any, bool mixed, CodeCompileUnit compileUnit, CodeNamespace mainNamespace, out SchemaImporterExtension extension)
-        {
-            extension = null;
-            foreach (SchemaImporterExtension ex in Extensions)
-            {
-                string typeName = ex.ImportAnyElement(any, mixed, Schemas, this, compileUnit, mainNamespace, Options, CodeProvider);
-                if (typeName != null && typeName.Length > 0)
-                {
-                    extension = ex;
-                    return typeName;
-                }
-            }
-            return null;
-        }
-
-        internal string FindExtendedType(string name, string ns, XmlSchemaObject context, CodeCompileUnit compileUnit, CodeNamespace mainNamespace, out SchemaImporterExtension extension)
-        {
-            extension = null;
-            foreach (SchemaImporterExtension ex in Extensions)
-            {
-                string typeName = ex.ImportSchemaType(name, ns, context, Schemas, this, compileUnit, mainNamespace, Options, CodeProvider);
-                if (typeName != null && typeName.Length > 0)
-                {
-                    extension = ex;
-                    return typeName;
-                }
-            }
-            return null;
-        }
-
-        internal string FindExtendedType(XmlSchemaType type, XmlSchemaObject context, CodeCompileUnit compileUnit, CodeNamespace mainNamespace, out SchemaImporterExtension extension)
-        {
-            extension = null;
-            foreach (SchemaImporterExtension ex in Extensions)
-            {
-                string typeName = ex.ImportSchemaType(type, context, Schemas, this, compileUnit, mainNamespace, Options, CodeProvider);
-                if (typeName != null && typeName.Length > 0)
-                {
-                    extension = ex;
-                    return typeName;
-                }
-            }
-            return null;
         }
 
         private XmlSchemaForm AttributeForm(string ns, XmlSchemaAttribute attribute)

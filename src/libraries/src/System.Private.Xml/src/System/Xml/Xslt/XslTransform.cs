@@ -13,7 +13,6 @@ namespace System.Xml.Xsl
     using MS.Internal.Xml.Cache;
     using System.Collections.Generic;
     using System.Xml.Xsl.XsltOld.Debugger;
-    using System.Security.Policy;
     using System.Runtime.Versioning;
 
     [Obsolete("This class has been deprecated. Please use System.Xml.Xsl.XslCompiledTransform instead. http://go.microsoft.com/fwlink/?linkid=14202")]
