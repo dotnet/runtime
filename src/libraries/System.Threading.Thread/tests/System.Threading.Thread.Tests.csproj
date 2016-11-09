@@ -17,7 +17,11 @@
   <ItemGroup>
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="ThreadExceptionEventArgsTests.cs" />
-    <Compile Include="ThreadTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -27,6 +31,7 @@
     <ProjectReference Include="..\pkg\System.Threading.Thread.pkgproj">
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Threading\tests\System.Threading.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
