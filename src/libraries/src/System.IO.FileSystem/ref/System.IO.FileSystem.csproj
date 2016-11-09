@@ -10,6 +10,10 @@
     <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
     <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\ref\System.IO.FileSystem.Primitives.csproj" />
   </ItemGroup>
   <ItemGroup>

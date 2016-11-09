@@ -18,6 +18,12 @@
       <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
       <Name>System.Security.Cryptography.Algorithms</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
