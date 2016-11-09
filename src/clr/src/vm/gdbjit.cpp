@@ -66,9 +66,6 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
 
             typeInfo->m_type_size = typeHandle.AsMethodTable()->GetClass()->GetSize();
 
-            pTypeMap->Add(typeInfo->GetTypeKey(), typeInfo);
-            typeInfo->CalculateName();
-
             RefTypeInfo* refTypeInfo = nullptr;
             if (!typeHandle.IsValueType())
             {
@@ -84,6 +81,10 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
 
                 pTypeMap->Add(refTypeInfo->GetTypeKey(), refTypeInfo);
             }
+
+            pTypeMap->Add(typeInfo->GetTypeKey(), typeInfo);
+            typeInfo->CalculateName();
+
             //
             // Now fill in the array
             //
@@ -106,13 +107,15 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
                 else
                 {
                     PTR_BYTE base = 0;
-                    if (!pField->IsRVA())
+                    MethodTable* pMT = pField->GetEnclosingMethodTable();
+                    base = pField->GetBase();
+
+                    // TODO: add support of generics with static fields
+                    if (pField->IsRVA() || !pMT->IsDynamicStatics())
                     {
-                        MethodTable* pMT = pField->GetEnclosingMethodTable();
-                        base = pField->GetBaseInDomainLocalModule(pMT->GetDomainLocalModule(NULL));
+                        PTR_VOID pAddress = pField->GetStaticAddressHandle((PTR_VOID)dac_cast<TADDR>(base));
+                        info->members[i].m_static_member_address = dac_cast<TADDR>(pAddress);
                     }
-                    PTR_VOID pAddress = pField->GetStaticAddressHandle((PTR_VOID)dac_cast<TADDR>(base));
-                    info->members[i].m_static_member_address = dac_cast<TADDR>(pAddress);
                 }
 
                 info->members[i].m_member_type =
@@ -134,6 +137,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
             else
                 return typeInfo;
         }
+        case ELEMENT_TYPE_PTR:
         case ELEMENT_TYPE_BYREF:
         {
             TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetTypeParam(), pTypeMap);
