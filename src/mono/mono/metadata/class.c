@@ -5701,6 +5701,8 @@ mono_class_setup_supertypes (MonoClass *klass)
 
 	mono_loader_lock ();
 	klass->idepth = idepth;
+	/* Needed so idepth is visible before supertypes is set */
+	mono_memory_barrier ();
 	klass->supertypes = supertypes;
 	mono_loader_unlock ();
 }
