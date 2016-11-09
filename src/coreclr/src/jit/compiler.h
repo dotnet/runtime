@@ -3205,8 +3205,6 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    bool seenConditionalJump;
-
     static BOOL impIsAddressInLocal(GenTreePtr tree, GenTreePtr* lclVarTreeOut);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
