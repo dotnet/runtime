@@ -5,7 +5,6 @@
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
 using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Formatters.Binary
@@ -23,10 +22,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Top object and headers
         internal long _topId;
         internal bool _isSimpleAssembly = false;
-        internal object _handlerObject;
         internal object _topObject;
-        internal Header[] _headers;
-        internal HeaderHandler _handler;
         internal SerObjectInfoInit _serObjectInfoInit;
         internal IFormatterConverter _formatterConverter;
 
@@ -78,8 +74,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binder = binder;
             _formatterEnums = formatterEnums;
         }
-
-        internal object Deserialize(HeaderHandler handler, BinaryParser serParser, bool fCheck)
+        internal object Deserialize(BinaryParser serParser, bool fCheck)
         {
             if (serParser == null)
             {
@@ -92,7 +87,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             _isSimpleAssembly = (_formatterEnums._assemblyFormat == FormatterAssemblyStyle.Simple);
 
-            _handler = handler;
 
             if (_fullDeserialization)
             {
@@ -131,15 +125,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _objectManager.RaiseDeserializationEvent(); // This will raise both IDeserialization and [OnDeserialized] events
             }
 
-            // Return the headers if there is a handler
-            if (handler != null)
-            {
-                _handlerObject = handler(_headers);
-            }
-
             return TopObject;
         }
-
         private bool HasSurrogate(Type t)
         {
             ISurrogateSelector ignored;
@@ -448,12 +435,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                             pr._objectA = (object[])pr._newObj;
                         }
                     }
-                }
-
-                // For binary, headers comes in as an array of header objects
-                if (pr._objectPositionEnum == InternalObjectPositionE.Headers)
-                {
-                    _headers = (Header[])pr._newObj;
                 }
 
                 pr._indexMap = new int[1];
