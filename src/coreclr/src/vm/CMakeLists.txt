@@ -117,7 +117,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     virtualcallstub.cpp
     win32threadpool.cpp
     zapsig.cpp
-    ${VM_SOURCES_GDBJIT}
 )
 
 if(FEATURE_READYTORUN)
@@ -241,6 +240,7 @@ set(VM_SOURCES_WKS
     typeparse.cpp
     verifier.cpp
     weakreferencenative.cpp
+    ${VM_SOURCES_GDBJIT}
 )
 
 if(FEATURE_EVENT_TRACE)
