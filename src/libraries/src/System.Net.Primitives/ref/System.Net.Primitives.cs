@@ -455,6 +455,11 @@ namespace System.Security.Authentication
         Md5 = 32771,
         None = 0,
         Sha1 = 32772,
+#if netcoreapp11
+        Sha256 = 32780,
+        Sha384 = 32781,
+        Sha512 = 32782
+#endif
     }
     [System.FlagsAttribute]
     public enum SslProtocols

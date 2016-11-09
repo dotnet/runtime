@@ -12,10 +12,11 @@ using System.Threading.Tasks;
 
 namespace System.Net.Security.Tests
 {
-    public class SchSendAuxRecordTestServer
+    public class HttpsTestServer
     {
         private readonly X509Certificate _serverCertificate;
-        private readonly int _port;
+        private int _port;
+        private readonly SslProtocols _protocols;
         private TcpListener _listener;
         private VerboseTestLogging _log;
 
@@ -33,10 +34,10 @@ Connection: close
 </html>
 ";
 
-        public SchSendAuxRecordTestServer(X509Certificate serverCertificate, int port = 0)
+        public HttpsTestServer(X509Certificate serverCertificate, SslProtocols acceptedProtocols = SslProtocols.Tls)
         {
             _serverCertificate = serverCertificate;
-            _port = port;
+            _protocols = acceptedProtocols;
             _log = VerboseTestLogging.GetInstance();
             AuxRecordDetected = false;
         }
@@ -47,17 +48,36 @@ Connection: close
             private set;
         }
 
-        public bool IsInconclusive
+        public bool IsAuxRecordDetectionInconclusive
         {
             get;
             private set;
+        }
+
+        public SslProtocols SslProtocol
+        {
+            get;
+            private set;
+        }
+
+        public int Port
+        {
+            get
+            {
+                if (_port == 0)
+                {
+                    throw new NotSupportedException("Server is not bound to a port.");
+                }
+
+                return _port;
+            }
         }
 
         /// <summary>
         /// Starts the server.
         /// </summary>
         /// <returns>The local port that the server is bound to.</returns>
-        public int StartServer()
+        public void StartServer()
         {
             if (_listener != null)
             {
@@ -70,7 +90,7 @@ Connection: close
             _listener.Start(1);
 
             _log.WriteLine("[Server] waiting for connections ({0}:{1})", address, _port);
-            return ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _port = ((IPEndPoint)_listener.LocalEndpoint).Port;
         }
 
         public async Task RunTest()
@@ -90,7 +110,7 @@ Connection: close
                             await tls.AuthenticateAsServerAsync(
                                 _serverCertificate,
                                 false,
-                                SslProtocols.Tls,
+                                _protocols,
                                 false);
 
                             _log.WriteLine("[Server] Client authenticated.");
@@ -112,6 +132,8 @@ Connection: close
         {
             int totalBytesRead = 0;
             int chunks = 0;
+
+            SslProtocol = tls.SslProtocol;
 
             while (totalBytesRead < 5)
             {
@@ -142,7 +164,7 @@ Connection: close
                 tls.CipherAlgorithm == CipherAlgorithmType.Null ||
                 tls.CipherAlgorithm == CipherAlgorithmType.Rc4)
             {
-                IsInconclusive = true;
+                IsAuxRecordDetectionInconclusive = true;
             }
 
             byte[] responseBuffer = Encoding.UTF8.GetBytes(ResponseString);
