@@ -68,13 +68,12 @@ namespace System.Net.Security.Tests
                 tasks[0] = AuthenticateClient(serverHost, clientCertificates, checkCertificateRevocation: false);
                 tasks[1] = AuthenticateServer(serverCertificate, clientCertificateRequired:true, checkCertificateRevocation:false);
                 await Task.WhenAll(tasks);
-
                 
-                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion > 10)
+                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
                 {
-                    Assert.True( _clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
-                                   _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
-                                   _clientStream.HashAlgorithm == HashAlgorithmType.Sha512);
+                    Assert.True(_clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
+                                _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
+                                _clientStream.HashAlgorithm == HashAlgorithmType.Sha512);
                 }
             }
 
@@ -84,7 +83,16 @@ namespace System.Net.Security.Tests
                 X509Chain chain,
                 SslPolicyErrors sslPolicyErrors)
             {
-                return true;
+                switch (sslPolicyErrors)
+                {
+                    case SslPolicyErrors.None:
+                    case SslPolicyErrors.RemoteCertificateChainErrors:
+                    case SslPolicyErrors.RemoteCertificateNameMismatch:
+                        return true;
+                    case SslPolicyErrors.RemoteCertificateNotAvailable:
+                    default:
+                        return false;
+                }
             }
 
             protected abstract Task AuthenticateClient(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation);
