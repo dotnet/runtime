@@ -198,4 +198,25 @@
   <data name="LockRecursionException_RecursiveReadNotAllowed" xml:space="preserve">
     <value>Recursive read lock acquisitions not allowed in this mode.</value>
   </data>
+  <data name="Overflow_UInt16" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt16.</value>
+  </data>
+  <data name="ReaderWriterLock_Timeout" xml:space="preserve">
+    <value>The operation has timed out. {0}</value>
+  </data>
+  <data name="ArgumentOutOfRange_TimeoutMilliseconds" xml:space="preserve">
+    <value>Timeout value in milliseconds must be nonnegative and less than or equal to Int32.MaxValue, or -1 for an infinite timeout.</value>
+  </data>
+  <data name="ReaderWriterLock_NotOwner" xml:space="preserve">
+    <value>Attempt to release a lock that is not owned by the calling thread. {0}</value>
+  </data>
+  <data name="ExceptionFromHResult" xml:space="preserve">
+    <value>(Exception from HRESULT: 0x{0:X})</value>
+  </data>
+  <data name="ReaderWriterLock_InvalidLockCookie" xml:space="preserve">
+    <value>The specified lock cookie is invalid for this operation. {0}</value>
+  </data>
+  <data name="ReaderWriterLock_RestoreLockWithOwnedLocks" xml:space="preserve">
+    <value>ReaderWriterLock.RestoreLock was called without releasing all locks acquired since the call to ReleaseLock.</value>
+  </data>
 </root>

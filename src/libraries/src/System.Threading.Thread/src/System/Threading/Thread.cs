@@ -274,7 +274,7 @@ namespace System.Threading
         public static void Sleep(int millisecondsTimeout) => RuntimeThread.Sleep(millisecondsTimeout);
         public static void Sleep(TimeSpan timeout) => Sleep(ToTimeoutMilliseconds(timeout));
         public static void SpinWait(int iterations) => RuntimeThread.SpinWait(iterations);
-        public static bool Yield() => false; // TODO: RuntimeThread.Yield();
+        public static bool Yield() => RuntimeThread.Yield();
         public void Start() => _runtimeThread.Start();
         public void Start(object parameter) => _runtimeThread.Start(parameter);
 
