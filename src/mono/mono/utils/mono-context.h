@@ -640,7 +640,7 @@ typedef struct {
 		"stfd 30, 8*30+4*32+8(%0)\n"	\
 		"stfd 31, 8*31+4*32+8(%0)\n"	\
 		: : "r" (&(ctx))	\
-		: "memory"			\
+		: "memory", "r0"	\
 	)
 
 #endif
