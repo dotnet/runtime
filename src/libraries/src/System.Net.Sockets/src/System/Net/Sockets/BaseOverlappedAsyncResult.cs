@@ -17,10 +17,24 @@ namespace System.Net.Sockets
     // BeginReceive, BeginReceiveFrom, BeginSendFile, and BeginAccept calls.
     internal partial class BaseOverlappedAsyncResult : ContextAwareResult
     {
+        // Sentinel object passed to callers of PostCompletion to use as the
+        // "result" of this operation, in order to avoid boxing the actual result.
+        private static readonly object s_resultObjectSentinel = new object();
+        // The actual result (number of bytes transferred)
+        internal int _numBytes;
+
         // PostCompletion returns the result object to be set before the user's callback is invoked.
         internal virtual object PostCompletion(int numBytes)
         {
-            return numBytes;
+            _numBytes = numBytes;
+            return s_resultObjectSentinel; // return sentinel rather than boxing numBytes
+        }
+
+        // Used instead of the base InternalWaitForCompletion when storing an Int32 result
+        internal int InternalWaitForCompletionInt32Result()
+        {
+            base.InternalWaitForCompletion();
+            return _numBytes;
         }
 
         // This method is called after an asynchronous call is made for the user.

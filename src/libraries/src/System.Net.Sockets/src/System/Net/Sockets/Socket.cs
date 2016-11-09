@@ -2817,7 +2817,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSend"));
             }
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             if (s_perfCountersEnabled)
@@ -2997,7 +2997,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendTo"));
             }
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             if (s_perfCountersEnabled)
@@ -3316,7 +3316,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndReceive"));
             }
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             if (s_perfCountersEnabled)
@@ -3518,7 +3518,7 @@ namespace System.Net.Sockets
 
             Internals.SocketAddress socketAddressOriginal = SnapshotAndSerialize(ref endPoint);
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             // Update socket address size.
@@ -3752,7 +3752,7 @@ namespace System.Net.Sockets
 
             Internals.SocketAddress socketAddressOriginal = SnapshotAndSerialize(ref endPoint);
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             // Update socket address size.
