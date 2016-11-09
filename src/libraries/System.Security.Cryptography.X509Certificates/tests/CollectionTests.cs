@@ -641,7 +641,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
 #if netcoreapp11
-        [ActiveIssue(13471)]
         [Fact]
         public static void ExportCert_SecureString()
         {
