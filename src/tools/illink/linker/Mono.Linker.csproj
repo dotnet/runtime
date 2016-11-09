@@ -71,7 +71,7 @@
     <Compile Include="Mono.Linker\XApiReader.cs" />
     <Compile Include="Mono.Linker.Steps\TypeMapStep.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition=" '$(DoNotEmbedDescriptors)' == '' ">
     <EmbeddedResource Include="Descriptors\mscorlib.xml">
       <LogicalName>mscorlib.xml</LogicalName>
     </EmbeddedResource>
