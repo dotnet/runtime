@@ -40,7 +40,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
 #if netcoreapp11
-        [ActiveIssue(13471)]
         [Theory]
         [MemberData(nameof(StorageFlags))]
         public static void TestConstructor_SecureString(X509KeyStorageFlags keyStorageFlags)
