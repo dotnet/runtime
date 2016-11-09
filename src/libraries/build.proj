@@ -82,21 +82,24 @@
     <ProjectJsonFiles Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(SourceDir)**/project.json" />
     <ProjectJsonFiles Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(ProjectDir)pkg/**/project.json" />
     <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
     <!-- Additional generated ProjectJsonFiles are added in the build.proj target AddGeneratedProjectJsons -->
   </ItemGroup>
   
   <ItemGroup>
     <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
+    <SupportsDefinitionFileGroup Include="$(MSBuildThisFileDirectory)/packages/Microsoft.DotNet.BuildTools.TestSuite/**/runtime.json" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SupportsDefinitionFile>@(SupportsDefinitionFileGroup)</SupportsDefinitionFile>
+  </PropertyGroup>
+
   <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-  
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
   <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
     <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
-<Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] KARTHIKDEBUG '$(PackagesDir)'" />
     <IsRestoreRequired ProjectJsons="@(ProjectJsonFiles)" PackagesFolder="$(PackagesDir)">
       <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
     </IsRestoreRequired>
@@ -137,12 +140,14 @@
   <Target Name="UpdateVersionsOnTestProjectJson" >
 
   <!-- Duplicate properties to be removed in future -->
-    <PropertyGroup>
-        <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
-    </PropertyGroup>
     <ItemGroup>
       <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
     </ItemGroup>
+    <PropertyGroup>
+      <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
+    </PropertyGroup>
+    
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] KARTHIKDEBUG supprots '$(SupportsDefinitionFile)'" />
 
     <AddDependenciesToProjectJson AdditionalDependencies="@(_InjectProjectReferenceDependency)"
                                   PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
@@ -151,6 +156,9 @@
                                   ProjectJson="$(CommonTestProjectJson)"
                                   OutputProjectJson="$(CommonOutputTestProjectJson)"
                                   UseNewestAvailablePackages="$(UseNewestAvailablePackages)"
+                                  SupportsFile="$(SupportsDefinitionFile)"
+                                  TestRuntime="$(TestNugetRuntimeId)"
+                                  TestTargetFramework="$(TestTFM)"
                                   />
   </Target>
 

@@ -6,14 +6,17 @@
     <Project Include="win\runtime.native.System.Data.SqlClient.sni.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>x86</Platform>
+      <UndefineProperties>AllowPartialPackages</UndefineProperties>
     </Project>
     <Project Include="win\runtime.native.System.Data.SqlClient.sni.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>amd64</Platform>
+      <UndefineProperties>AllowPartialPackages</UndefineProperties>
     </Project>
     <Project Include="win\runtime.native.System.Data.SqlClient.sni.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>arm64</Platform>
+      <UndefineProperties>AllowPartialPackages</UndefineProperties>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
