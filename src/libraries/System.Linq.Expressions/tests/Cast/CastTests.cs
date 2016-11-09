@@ -1000,6 +1000,12 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastValueTypeAsDateTime(bool useInterpreter)
+        {
+            CheckGenericWithStructRestrictionCastValueTypeHelper<DateTime>(useInterpreter);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void ConvertValueTypeCastGenericWithStructRestrictionAsEnum(bool useInterpreter)
         {
             CheckValueTypeCastGenericWithStructRestrictionHelper<E>(useInterpreter);
@@ -1009,6 +1015,12 @@ namespace System.Linq.Expressions.Tests
         public static void ConvertValueTypeCastGenericWithStructRestrictionAsStruct(bool useInterpreter)
         {
             CheckValueTypeCastGenericWithStructRestrictionHelper<S>(useInterpreter);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertValueTypeCastGenericWithDateTime(bool useInterpreter)
+        {
+            CheckValueTypeCastGenericWithStructRestrictionHelper<DateTime>(useInterpreter);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
