@@ -51,12 +51,10 @@
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>$(RootBinDir)\obj</BaseIntermediateOutputPath>
-    <!-- Note the trailing '\\' - they are needed so that genfacade does not fail due to an invalid path
-         In particular, the facadepath is sent in quotes.
-         And the IntermediateOutputPath is required to end in a '\' in the coreclr repo. This means that the
-         facadepath ends up being sent as 'mypath\"' and that trips the Path normalization.
-         Introducing a second '\' tricks the normalization logic to treat this '\\"' as '\"' and not complain.    -->
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(Configuration)\facade\\</IntermediateOutputPath>
+    <!-- IntermediateOutputPath must have a trailing slash, however GenFacades
+         surrounds the value in quotes when passing as the '-facadepath' argument.
+         To avoid escaping the trailing quote, use a forward slash. -->
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(Configuration)\facade/</IntermediateOutputPath>
     <OutputPath>$(BinDir)\facade</OutputPath>
   </PropertyGroup>
 
