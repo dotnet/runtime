@@ -2351,5 +2351,50 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        public static IEnumerable<Type> EnumerableTypes()
+        {
+            yield return typeof(ByteEnum);
+            yield return typeof(SByteEnum);
+            yield return typeof(Int16Enum);
+            yield return typeof(UInt16Enum);
+            yield return typeof(Int32Enum);
+            yield return typeof(UInt32Enum);
+            yield return typeof(Int64Enum);
+            yield return typeof(UInt64Enum);
+            yield return NonCSharpTypes.CharEnumType;
+            yield return NonCSharpTypes.BoolEnumType;
+        }
+
+        public static IEnumerable<object[]> EnumerableTypeArgs() => EnumerableTypes().Select(t => new object[] {t});
+
+        public static IEnumerable<object[]> EnumerableTypesAndIncompatibleObjects()
+            => from value in EnumerableTypes().Select(Activator.CreateInstance)
+                from type in EnumerableTypes()
+                where type != value.GetType()
+                select new[] {type, value};
+
+        [Theory, PerCompilationType(nameof(EnumerableTypeArgs))]
+        public static void CanCastReferenceToUnderlyingTypeToEnumType(Type type, bool useInterpreter)
+        {
+            object value = Activator.CreateInstance(type);
+            var exp = Expression.Lambda<Func<bool>>(
+                Expression.Equal(
+                    Expression.Default(type),
+                    Expression.Convert(Expression.Constant(value, typeof(object)), type)));
+            var func = exp.Compile(useInterpreter);
+            Assert.True(func());
+        }
+
+        [Theory, PerCompilationType(nameof(EnumerableTypesAndIncompatibleObjects))]
+        public static void CannotCastReferenceToWrongUnderlyingTypeEnum(Type type, object value, bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.Convert(Expression.Constant(value, typeof(object)), type),
+                    Expression.Empty()));
+            var act = exp.Compile(useInterpreter);
+            Assert.Throws<InvalidCastException>(act);
+        }
     }
 }

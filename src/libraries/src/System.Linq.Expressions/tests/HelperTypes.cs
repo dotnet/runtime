@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -345,6 +346,52 @@ namespace System.Linq.Expressions.Tests
     public enum UInt32Enum : uint { A = UInt32.MaxValue }
     public enum Int64Enum : long { A = Int64.MaxValue }
     public enum UInt64Enum : ulong { A = UInt64.MaxValue }
+
+    public static class NonCSharpTypes
+    {
+        private static Type _charEnumType;
+        private static Type _boolEnumType;
+
+        private static ModuleBuilder GetModuleBuilder()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            return assembly.DefineDynamicModule("Name");
+        }
+
+        public static Type CharEnumType
+        {
+            get
+            {
+                if (_charEnumType == null)
+                {
+                    EnumBuilder eb = GetModuleBuilder().DefineEnum("CharEnumType", TypeAttributes.Public, typeof(char));
+                    eb.DefineLiteral("A", 'A');
+                    eb.DefineLiteral("B", 'B');
+                    eb.DefineLiteral("C", 'C');
+                    _charEnumType = eb.CreateTypeInfo().AsType();
+                }
+
+                return _charEnumType;
+            }
+        }
+
+        public static Type BoolEnumType
+        {
+            get
+            {
+                if (_boolEnumType == null)
+                {
+                    EnumBuilder eb = GetModuleBuilder().DefineEnum("BoolEnumType", TypeAttributes.Public, typeof(bool));
+                    eb.DefineLiteral("False", false);
+                    eb.DefineLiteral("True", true);
+                    _boolEnumType = eb.CreateTypeInfo().AsType();
+                }
+
+                return _boolEnumType;
+            }
+        }
+    }
 
     public class FakeExpression : Expression
     {
