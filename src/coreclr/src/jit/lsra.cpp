@@ -8576,8 +8576,8 @@ void LinearScan::resolveRegisters()
                     }
                     if (firstRefPosition->registerAssignment == RBM_NONE || firstRefPosition->spillAfter)
                     {
-                        // Either this RefPosition is spilled, or it is not a "real" def or use
-                        assert(firstRefPosition->spillAfter ||
+                        // Either this RefPosition is spilled, or regOptional or it is not a "real" def or use
+                        assert(firstRefPosition->spillAfter || firstRefPosition->AllocateIfProfitable() ||
                                (firstRefPosition->refType != RefTypeDef && firstRefPosition->refType != RefTypeUse));
                         varDsc->lvRegNum = REG_STK;
                     }
