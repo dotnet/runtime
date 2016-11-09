@@ -34,8 +34,14 @@
     <File Include="$(PackageLayoutDir)runtimes/$(PackageTargetRuntime)/native/*.*">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
+    
+    <IgnoredReference Include="System.Private.CoreLib" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="VerifyClosure" AfterTargets="Build">
+    <VerifyClosure Sources="@(File)"
+                   IgnoredReferences="@(IgnoredReference)" />
+  </Target>
 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
