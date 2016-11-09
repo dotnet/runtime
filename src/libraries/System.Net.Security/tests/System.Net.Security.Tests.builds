@@ -4,7 +4,17 @@
   <ItemGroup>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Linux</OSGroup>
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
+      <OSGroup>Linux</OSGroup>
       <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
+      <OSGroup>OSX</OSGroup>
+      <TargetGroup>netcoreapp1.1</TargetGroup>
       <TestTFMs>netcoreapp1.1</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
