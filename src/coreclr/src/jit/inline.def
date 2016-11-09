@@ -122,7 +122,6 @@ INLINE_OBSERVATION(CANT_EMBED_VARARGS_COOKIE, bool,   "can't embed varargs cooki
 INLINE_OBSERVATION(CLASS_INIT_FAILURE_SPEC,   bool,   "speculative class init failed", FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",             FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_FAILURE,       bool,   "failed to compile",             FATAL,       CALLSITE)
-INLINE_OBSERVATION(CONDITIONAL_THROW,         bool,   "conditional throw",             FATAL,       CALLSITE)
 INLINE_OBSERVATION(CROSS_BOUNDARY_CALLI,      bool,   "cross-boundary calli",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(CROSS_BOUNDARY_SECURITY,   bool,   "cross-boundary security check", FATAL,       CALLSITE)
 INLINE_OBSERVATION(EXCEEDS_THRESHOLD,         bool,   "exceeds profit threshold",      FATAL,       CALLSITE)
