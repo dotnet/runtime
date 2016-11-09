@@ -2335,10 +2335,10 @@ namespace System.Linq.Expressions.Tests
                 Assert.Throws<NullReferenceException>(() => f());
             else
             {
-                Ts expected = default(Ts);
+                Ts expected;
                 try
                 {
-                    expected = f();
+                    expected = (Ts)value;
                 }
                 catch(InvalidCastException)
                 {
