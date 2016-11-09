@@ -115,6 +115,22 @@ namespace Mono.Linker.Steps {
 				ProcessQueue ();
 				ProcessVirtualMethods ();
 			}
+
+			// deal with [TypeForwardedTo] pseudo-attributes
+			foreach (AssemblyDefinition assembly in _context.GetAssemblies ()) {
+				if (!assembly.MainModule.HasExportedTypes)
+					continue;
+
+				foreach (var exported in assembly.MainModule.ExportedTypes) {
+					if (!exported.IsForwarder)
+						continue;
+					var type = exported.Resolve ();
+					if (!Annotations.IsMarked (type))
+						continue;
+					Annotations.Mark (exported);
+					Annotations.Mark (assembly.MainModule);
+				}
+			}
 		}
 
 		void ProcessQueue ()

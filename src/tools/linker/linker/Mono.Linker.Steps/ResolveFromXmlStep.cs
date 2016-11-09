@@ -125,6 +125,23 @@ namespace Mono.Linker.Steps {
 				}
 
 				TypeDefinition type = assembly.MainModule.GetType (fullname);
+
+				if (type == null) {
+					if (assembly.MainModule.HasExportedTypes) {
+						foreach (var exported in assembly.MainModule.ExportedTypes) {
+							if (fullname == exported.FullName) {
+								Annotations.Mark (exported);
+								Annotations.Mark (assembly.MainModule);
+								var resolvedExternal = exported.Resolve ();
+								if (resolvedExternal != null) {
+									type = resolvedExternal;
+									break;
+								}
+							}
+						}
+					}
+				}
+
 				if (type == null)
 					continue;
 
@@ -154,12 +171,31 @@ namespace Mono.Linker.Steps {
 				MatchType (nt, regex, nav);
 		}
 
+		void MatchExportedType (ExportedType exportedType, ModuleDefinition module, Regex regex, XPathNavigator nav)
+		{
+			if (regex.Match (exportedType.FullName).Success) {
+				Annotations.Mark (exportedType);
+				Annotations.Mark (module);
+				var type = exportedType.Resolve ();
+				if (type != null) {
+					ProcessType (type, nav);
+				}
+			}
+		}
+
+
 		void ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav)
 		{
 			Regex regex = CreateRegexFromPattern (fullname);
 
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
 				MatchType (type, regex, nav);
+			}
+
+			if (assembly.MainModule.HasExportedTypes) {
+				foreach (var exported in assembly.MainModule.ExportedTypes) {
+					MatchExportedType(exported, assembly.MainModule, regex, nav);
+				}
 			}
 		}
 
