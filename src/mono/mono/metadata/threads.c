@@ -2930,42 +2930,7 @@ struct wait_data
 };
 
 static void
-wait_for_tids (struct wait_data *wait, guint32 timeout)
-{
-	guint32 i;
-	MonoThreadInfoWaitRet ret;
-	
-	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
-
-	MONO_ENTER_GC_SAFE;
-	ret = mono_thread_info_wait_multiple_handle(wait->handles, wait->num, NULL, TRUE, timeout, TRUE);
-	MONO_EXIT_GC_SAFE;
-
-	if(ret==MONO_THREAD_INFO_WAIT_RET_FAILED) {
-		/* See the comment in build_wait_tids() */
-		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
-		return;
-	}
-	
-	for(i=0; i<wait->num; i++)
-		mono_threads_close_thread_handle (wait->handles [i]);
-
-	if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT)
-		return;
-
-	for(i=0; i<wait->num; i++) {
-		MonoInternalThread *internal;
-
-		internal = wait->threads [i];
-
-		mono_threads_lock ();
-		if (mono_g_hash_table_lookup (threads, (gpointer) internal->tid) == internal)
-			g_error ("%s: failed to call mono_thread_detach_internal on thread %p, InternalThread: %p", __func__, internal->tid, internal);
-		mono_threads_unlock ();
-	}
-}
-
-static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeout)
+wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_change)
 {
 	guint32 i;
 	MonoThreadInfoWaitRet ret;
@@ -2976,16 +2941,19 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 	 * up if a thread changes to background mode. */
 
 	MONO_ENTER_GC_SAFE;
-	ret = mono_thread_info_wait_multiple_handle (wait->handles, wait->num, &background_change_event, FALSE, timeout, TRUE);
+	if (check_state_change)
+		ret = mono_thread_info_wait_multiple_handle (wait->handles, wait->num, &background_change_event, FALSE, timeout, TRUE);
+	else
+		ret = mono_thread_info_wait_multiple_handle (wait->handles, wait->num, NULL, TRUE, timeout, TRUE);
 	MONO_EXIT_GC_SAFE;
 
-	if(ret==MONO_THREAD_INFO_WAIT_RET_FAILED) {
+	if (ret == MONO_THREAD_INFO_WAIT_RET_FAILED) {
 		/* See the comment in build_wait_tids() */
 		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
 		return;
 	}
 	
-	for(i=0; i<wait->num; i++)
+	for( i = 0; i < wait->num; i++)
 		mono_threads_close_thread_handle (wait->handles [i]);
 
 	if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT)
@@ -3162,14 +3130,13 @@ void mono_thread_manage (void)
 	
 		mono_os_event_reset (&background_change_event);
 		wait->num=0;
-		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
+		/* We must zero all InternalThread pointers to avoid making the GC unhappy. */
 		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
 		mono_threads_unlock ();
-		if(wait->num>0) {
+		if (wait->num > 0)
 			/* Something to wait for */
-			wait_for_tids_or_state_change (wait, INFINITE);
-		}
+			wait_for_tids (wait, INFINITE, TRUE);
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
@@ -3195,9 +3162,9 @@ void mono_thread_manage (void)
 		mono_threads_unlock ();
 
 		THREAD_DEBUG (g_message ("%s: wait->num is now %d", __func__, wait->num));
-		if(wait->num>0) {
+		if (wait->num > 0) {
 			/* Something to wait for */
-			wait_for_tids (wait, INFINITE);
+			wait_for_tids (wait, INFINITE, FALSE);
 		}
 	} while (wait->num > 0);
 	
@@ -3800,7 +3767,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 			 * We should wait for the threads either to abort, or to leave the
 			 * domain. We can't do the latter, so we wait with a timeout.
 			 */
-			wait_for_tids (&user_data.wait, 100);
+			wait_for_tids (&user_data.wait, 100, FALSE);
 		}
 
 		/* Update remaining time */
