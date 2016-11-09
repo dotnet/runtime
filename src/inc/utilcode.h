@@ -5170,6 +5170,11 @@ template<class T> void DeleteExecutable(T *p)
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
+BOOL NoGuiOnAssert();
+#ifdef _DEBUG
+VOID TerminateOnAssert();
+#endif // _DEBUG
+
 class HighCharHelper {
 public:
     static inline BOOL IsHighChar(int c) {

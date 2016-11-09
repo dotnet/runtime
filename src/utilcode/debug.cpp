@@ -76,16 +76,6 @@ BOOL ContinueOnAssert()
     return fNoGui.val(CLRConfig::INTERNAL_ContinueOnAssert);
 }
 
-BOOL NoGuiOnAssert()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    static ConfigDWORD fNoGui;
-    return fNoGui.val(CLRConfig::INTERNAL_NoGuiOnAssert);
-}
-
 void DoRaiseExceptionOnAssert(DWORD chance)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -793,6 +783,16 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
 } // GetStackTraceAtContext
 #endif // !defined(DACCESS_COMPILE)
 #endif // _DEBUG
+
+BOOL NoGuiOnAssert()
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_DEBUG_ONLY;
+
+    static ConfigDWORD fNoGui;
+    return fNoGui.val(CLRConfig::INTERNAL_NoGuiOnAssert);
+}
 
 // This helper will throw up a message box without allocating or using stack if possible, and is
 // appropriate for either low memory or low stack situations.
