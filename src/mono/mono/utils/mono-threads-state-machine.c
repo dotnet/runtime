@@ -157,50 +157,6 @@ STATE_BLOCKING_AND_SUSPENDED: This is a bug in coop x suspend that resulted the 
 }
 
 /*
-This transition initiates the suspension of the current thread.
-*/
-void
-mono_threads_transition_request_self_suspension (MonoThreadInfo *info)
-{
-	int raw_state, cur_state, suspend_count;
-	g_assert (info ==  mono_thread_info_current ());
-
-retry_state_change:
-	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
-
-	switch (cur_state) {
-	case STATE_RUNNING: //Post a self suspend request
-		if (!(suspend_count == 0))
-			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SELF_SUSPEND_REQUESTED, 1), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("SELF_SUSPEND_REQUEST", info, raw_state, STATE_SELF_SUSPEND_REQUESTED, 1);
-		break;
-
-	case STATE_ASYNC_SUSPEND_REQUESTED: //Bump the suspend count but don't change the request type as async takes preference
-		if (!(suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX))
-			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("SUSPEND_REQUEST", info, raw_state, cur_state, 1);
-		break;
-/*
-Other states:
-STATE_ASYNC_SUSPENDED: Code should not be running while suspended.
-STATE_SELF_SUSPENDED: Code should not be running while suspended.
-STATE_SELF_SUSPEND_REQUESTED: Self suspends should not nest as begin/end should be paired. [1]
-STATE_BLOCKING:
-STATE_BLOCKING_AND_SUSPENDED: Self suspension cannot be started when the thread is in blocking state as it must finish first
-
-[1] This won't trap this sequence of requests: self suspend, async suspend and self suspend. 
-If this turns to be an issue we can introduce a new suspend request state for when both have been requested.
-*/
-	default:
-		mono_fatal_with_history ("Cannot transition thread %p from %s with SUSPEND_REQUEST", mono_thread_info_get_tid (info), state_name (cur_state));
-	}
-}
-
-/*
 This transition initiates the suspension of another thread.
 
 Returns one of the following values:

@@ -473,7 +473,8 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	abort-cctor.cs	\
 	thread-native-exit.cs \
 	reference-loader.cs \
-	thread-suspend-suspended.cs
+	thread-suspend-suspended.cs \
+	thread-suspend-selfsuspended.cs
 
 if INSTALL_MOBILE_STATIC
 BASE_TEST_CS_SRC= \

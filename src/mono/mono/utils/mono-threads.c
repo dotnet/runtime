@@ -721,53 +721,6 @@ mono_threads_get_runtime_callbacks (void)
 	return &runtime_callbacks;
 }
 
-/*
-Signal that the current thread wants to be suspended.
-This function can be called without holding the suspend lock held.
-To finish suspending, call mono_suspend_check.
-*/
-void
-mono_thread_info_begin_self_suspend (void)
-{
-	g_assert (!mono_threads_is_coop_enabled ());
-
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
-	if (!info)
-		return;
-
-	THREADS_SUSPEND_DEBUG ("BEGIN SELF SUSPEND OF %p\n", info);
-	mono_threads_transition_request_self_suspension (info);
-}
-
-void
-mono_thread_info_end_self_suspend (void)
-{
-	MonoThreadInfo *info;
-
-	g_assert (!mono_threads_is_coop_enabled ());
-
-	info = mono_thread_info_current ();
-	if (!info)
-		return;
-	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", info);
-
-	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
-
-	/* commit the saved state and notify others if needed */
-	switch (mono_threads_transition_state_poll (info)) {
-	case SelfSuspendResumed:
-		return;
-	case SelfSuspendWait:
-		mono_thread_info_wait_for_resume (info);
-		break;
-	case SelfSuspendNotifyAndWait:
-		mono_threads_notify_initiator_of_suspend (info);
-		mono_thread_info_wait_for_resume (info);
-		mono_threads_notify_initiator_of_resume (info);
-		break;
-	}
-}
-
 static gboolean
 mono_thread_info_core_resume (MonoThreadInfo *info)
 {

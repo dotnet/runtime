@@ -330,15 +330,6 @@ mono_thread_info_resume (MonoNativeThreadId tid);
 void
 mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt_kernel, MonoSuspendThreadCallback callback, gpointer user_data);
 
-//XXX new API, fix the world
-void
-mono_thread_info_begin_self_suspend (void);
-
-void
-mono_thread_info_end_self_suspend (void);
-
-//END of new API
-
 void
 mono_thread_info_setup_async_call (THREAD_INFO_TYPE *info, void (*target_func)(void*), void *user_data);
 
@@ -565,7 +556,6 @@ typedef enum {
 
 void mono_threads_transition_attach (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
-void mono_threads_transition_request_self_suspension (THREAD_INFO_TYPE *info);
 MonoRequestAsyncSuspendResult mono_threads_transition_request_async_suspension (THREAD_INFO_TYPE *info);
 MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info);
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
