@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24708-03",
-    "System.Threading.Tasks": "4.4.0-beta-24708-03",
-    "System.IO": "4.4.0-beta-24708-03",
-    "System.Net.Primitives": "4.4.0-beta-24708-03",
-    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24708-03",
-    "System.Text.Encoding": "4.4.0-beta-24708-03"
+    "System.Runtime": "4.4.0-beta-24708-05",
+    "System.Threading.Tasks": "4.4.0-beta-24708-05",
+    "System.IO": "4.4.0-beta-24708-05",
+    "System.Net.Primitives": "4.4.0-beta-24708-05",
+    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24708-05",
+    "System.Text.Encoding": "4.4.0-beta-24708-05"
   },
   "frameworks": {
     "netstandard1.7": {},
