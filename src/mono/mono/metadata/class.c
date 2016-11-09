@@ -3555,6 +3555,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 	ifaces_array = g_new0 (GPtrArray *, klass->idepth);
 	for (j = 0; j < klass->idepth; j++) {
 		k = klass->supertypes [j];
+		g_assert (k);
 		num_ifaces += k->interface_count;
 		for (i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i];
@@ -5664,12 +5665,12 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
  *  - supertypes: array of classes: each element has a class in the hierarchy
  *    starting from @class up to System.Object
  * 
- * LOCKING: This function is atomic, in case of contention we waste memory.
+ * LOCKING: Acquires the loader lock.
  */
 void
 mono_class_setup_supertypes (MonoClass *klass)
 {
-	int ms;
+	int ms, idepth;
 	MonoClass **supertypes;
 
 	mono_atomic_load_acquire (supertypes, MonoClass **, &klass->supertypes);
@@ -5679,15 +5680,15 @@ mono_class_setup_supertypes (MonoClass *klass)
 	if (klass->parent && !klass->parent->supertypes)
 		mono_class_setup_supertypes (klass->parent);
 	if (klass->parent)
-		klass->idepth = klass->parent->idepth + 1;
+		idepth = klass->parent->idepth + 1;
 	else
-		klass->idepth = 1;
+		idepth = 1;
 
-	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, klass->idepth);
+	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, idepth);
 	supertypes = (MonoClass **)mono_class_alloc0 (klass, sizeof (MonoClass *) * ms);
 
 	if (klass->parent) {
-		CHECKED_METADATA_WRITE_PTR ( supertypes [klass->idepth - 1] , klass );
+		CHECKED_METADATA_WRITE_PTR ( supertypes [idepth - 1] , klass );
 
 		int supertype_idx;
 		for (supertype_idx = 0; supertype_idx < klass->parent->idepth; supertype_idx++)
@@ -5696,7 +5697,12 @@ mono_class_setup_supertypes (MonoClass *klass)
 		CHECKED_METADATA_WRITE_PTR ( supertypes [0] , klass );
 	}
 
-	CHECKED_METADATA_WRITE_PTR_ATOMIC ( klass->supertypes , supertypes );
+	mono_memory_barrier ();
+
+	mono_loader_lock ();
+	klass->idepth = idepth;
+	klass->supertypes = supertypes;
+	mono_loader_unlock ();
 }
 
 static gboolean
@@ -10703,6 +10709,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	MonoClass *klass = field->parent;
 	MonoImage *image = klass->image;
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
+	MonoType *ftype;
 	int field_idx = field - klass->fields;
 
 	mono_error_init (error);
@@ -10716,7 +10723,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 			g_free (full_name);
 		}
 
-		field->type = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (klass), error);
+		ftype = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (klass), error);
 		if (!mono_error_ok (error)) {
 			char *full_name = mono_type_get_full_name (klass);
 			mono_class_set_type_load_failure (klass, "Could not load instantiated type of field '%s:%s' (%d) due to: %s", full_name, field->name, field_idx, mono_error_get_message (error));
@@ -10755,13 +10762,15 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
 
-		field->type = mono_metadata_parse_type_checked (image, container, cols [MONO_FIELD_FLAGS], FALSE, sig + 1, &sig, error);
-		if (!field->type) {
+		ftype = mono_metadata_parse_type_checked (image, container, cols [MONO_FIELD_FLAGS], FALSE, sig + 1, &sig, error);
+		if (!ftype) {
 			char *full_name = mono_type_get_full_name (klass);
 			mono_class_set_type_load_failure (klass, "Could not load type of field '%s:%s' (%d) due to: %s", full_name, field->name, field_idx, mono_error_get_message (error));
 			g_free (full_name);
 		}
 	}
+	mono_memory_barrier ();
+	field->type = ftype;
 }
 
 static guint32
