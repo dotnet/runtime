@@ -3780,6 +3780,33 @@ void Compiler::compSetOptimizationLevel()
         }
     }
 
+#if 0
+    // The code in this #if can be used to debug optimization issues according to method hash.
+	// To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
+#ifdef DEBUG
+    unsigned methHash = info.compMethodHash();
+    char* lostr = getenv("minoptshashlo");
+    unsigned methHashLo = 0;
+	if (lostr != nullptr)
+	{
+		sscanf_s(lostr, "%x", &methHashLo);
+		char* histr = getenv("minoptshashhi");
+		unsigned methHashHi = UINT32_MAX;
+		if (histr != nullptr)
+		{
+			sscanf_s(histr, "%x", &methHashHi);
+			if (methHash >= methHashLo && methHash <= methHashHi)
+			{
+				printf("MinOpts for method %s, hash = 0x%x.\n",
+					info.compFullName, info.compMethodHash());
+				printf("");         // in our logic this causes a flush
+				theMinOptsValue = true;
+			}
+		}
+	}
+#endif
+#endif
+
     if (compStressCompile(STRESS_MIN_OPTS, 5))
     {
         theMinOptsValue = true;
