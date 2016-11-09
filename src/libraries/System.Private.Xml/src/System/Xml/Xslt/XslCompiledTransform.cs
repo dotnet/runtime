@@ -60,7 +60,7 @@ namespace System.Xml.Xsl
         private bool _enableDebug = false;
 
         // Results of compilation
-        private CompilerResults _compilerResults = null;
+        private CompilerErrorCollection _compilerErrorColl = null;
         private XmlWriterSettings _outputSettings = null;
         private QilExpression _qil = null;
 
@@ -79,15 +79,10 @@ namespace System.Xml.Xsl
         /// </summary>
         private void Reset()
         {
-            _compilerResults = null;
+            _compilerErrorColl = null;
             _outputSettings = null;
             _qil = null;
             _command = null;
-        }
-
-        internal CompilerErrorCollection Errors
-        {
-            get { return _compilerResults != null ? _compilerResults.Errors : null; }
         }
 
         /// <summary>
@@ -99,11 +94,6 @@ namespace System.Xml.Xsl
             {
                 return _outputSettings;
             }
-        }
-
-        internal TempFileCollection TemporaryFiles
-        {
-            get { return _compilerResults != null ? _compilerResults.TempFiles : null; }
         }
 
         //------------------------------------------------
@@ -162,7 +152,7 @@ namespace System.Xml.Xsl
             LoadInternal(stylesheetUri, settings, stylesheetResolver);
         }
 
-        private CompilerResults LoadInternal(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
+        private CompilerErrorCollection LoadInternal(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
         {
             if (stylesheet == null)
             {
@@ -182,13 +172,13 @@ namespace System.Xml.Xsl
             {
                 CompileQilToMsil(settings);
             }
-            return _compilerResults;
+            return _compilerErrorColl;
         }
 
         private void CompileXsltToQil(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
         {
             //BinCompat TODO: Change arugment back to _enableDebug when all coomented-out dynamic modules and methods setup in XmlILModule is fixed
-            _compilerResults = new Compiler(settings, false /*_enableDebug*/, null).Compile(stylesheet, stylesheetResolver, out _qil);
+            _compilerErrorColl = new Compiler(settings, false /*_enableDebug*/, null).Compile(stylesheet, stylesheetResolver, out _qil);
         }
 
         /// <summary>
@@ -196,7 +186,7 @@ namespace System.Xml.Xsl
         /// </summary>
         private CompilerError GetFirstError()
         {
-            foreach (CompilerError error in _compilerResults.Errors)
+            foreach (CompilerError error in _compilerErrorColl)
             {
                 if (!error.IsWarning)
                 {
@@ -211,47 +201,6 @@ namespace System.Xml.Xsl
             _command = new XmlILGenerator().Generate(_qil, /*typeBuilder:*/null);
             _outputSettings = _command.StaticData.DefaultWriterSettings;
             _qil = null;
-        }
-
-        //------------------------------------------------
-        // Compile stylesheet to a TypeBuilder
-        //------------------------------------------------
-
-        private static volatile ConstructorInfo s_generatedCodeCtor;
-
-        internal static CompilerErrorCollection CompileToType(XmlReader stylesheet, XsltSettings settings, XmlResolver stylesheetResolver, bool debug, TypeBuilder typeBuilder, string scriptAssemblyPath)
-        {
-            if (stylesheet == null)
-                throw new ArgumentNullException(nameof(stylesheet));
-
-            if (typeBuilder == null)
-                throw new ArgumentNullException(nameof(typeBuilder));
-
-            if (settings == null)
-                settings = XsltSettings.Default;
-
-            if (settings.EnableScript && scriptAssemblyPath == null)
-                throw new ArgumentNullException(nameof(scriptAssemblyPath));
-
-            if (scriptAssemblyPath != null)
-                scriptAssemblyPath = Path.GetFullPath(scriptAssemblyPath);
-
-            QilExpression qil;
-            CompilerErrorCollection errors = new Compiler(settings, debug, scriptAssemblyPath).Compile(stylesheet, stylesheetResolver, out qil).Errors;
-
-            if (!errors.HasErrors)
-            {
-                // Mark the type with GeneratedCodeAttribute to identify its origin
-                if (s_generatedCodeCtor == null)
-                    s_generatedCodeCtor = typeof(GeneratedCodeAttribute).GetConstructor(new Type[] { typeof(string), typeof(string) });
-
-                typeBuilder.SetCustomAttribute(new CustomAttributeBuilder(s_generatedCodeCtor,
-                    new object[] { typeof(XslCompiledTransform).FullName, Version }));
-
-                new XmlILGenerator().Generate(qil, typeBuilder);
-            }
-
-            return errors;
         }
 
         //------------------------------------------------
