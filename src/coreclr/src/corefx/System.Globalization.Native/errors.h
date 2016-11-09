@@ -13,6 +13,7 @@ enum ResultCode : int32_t
     Success = 0,
     UnknownError = 1,
     InsufficentBuffer = 2,
+    OutOfMemory = 3
 };
 
 /*
@@ -23,6 +24,11 @@ static ResultCode GetResultCode(UErrorCode err)
     if (err == U_BUFFER_OVERFLOW_ERROR || err == U_STRING_NOT_TERMINATED_WARNING)
     {
         return InsufficentBuffer;
+    }
+    
+    if (err == U_MEMORY_ALLOCATION_ERROR)
+    {
+        return OutOfMemory;
     }
 
     if (U_SUCCESS(err))
