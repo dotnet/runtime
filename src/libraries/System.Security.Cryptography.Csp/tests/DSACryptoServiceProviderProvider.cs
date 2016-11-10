@@ -16,13 +16,8 @@ namespace System.Security.Cryptography.Dsa.Tests
             return new DSACryptoServiceProvider(keySize);
         }
 
-        public bool SupportsFips186_3
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool SupportsFips186_3 => false;
+        public bool SupportsKeyGeneration => true;
     }
 
     public partial class DSAFactory
