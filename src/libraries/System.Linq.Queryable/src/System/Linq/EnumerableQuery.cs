@@ -105,7 +105,6 @@ namespace System.Linq
         {
             if (expression == null)
                 throw Error.ArgumentNull(nameof(expression));
-            Type execType = typeof(EnumerableExecutor<>).MakeGenericType(expression.Type);
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
 
