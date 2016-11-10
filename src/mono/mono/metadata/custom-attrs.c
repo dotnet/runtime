@@ -120,7 +120,8 @@ static guint32
 find_field_index (MonoClass *klass, MonoClassField *field) {
 	int i;
 
-	for (i = 0; i < klass->field.count; ++i) {
+	int fcount = mono_class_get_field_count (klass);
+	for (i = 0; i < fcount; ++i) {
 		if (field == &klass->fields [i])
 			return mono_class_get_first_field_idx (klass) + 1 + i;
 	}

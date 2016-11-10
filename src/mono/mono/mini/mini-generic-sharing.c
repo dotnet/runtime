@@ -482,14 +482,15 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 		mono_class_setup_methods (klass);
 		if (mono_class_has_failure (klass))
 			return NULL;
-		for (i = 0; i < klass->method.count; ++i) {
+		int mcount = mono_class_get_method_count (klass);
+		for (i = 0; i < mcount; ++i) {
 			m = klass->methods [i];
 			if (m == declaring)
 				break;
 			if (m->is_inflated && mono_method_get_declaring_generic_method (m) == declaring)
 				break;
 		}
-		if (i >= klass->method.count)
+		if (i >= mcount)
 			return NULL;
 	}
 

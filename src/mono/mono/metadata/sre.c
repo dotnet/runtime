@@ -2939,11 +2939,13 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 	if (!mono_class_get_generic_class (klass)->need_sync)
 		return TRUE;
 
-	if (klass->method.count != gklass->method.count) {
-		klass->method.count = gklass->method.count;
-		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * (klass->method.count + 1));
+	int mcount = mono_class_get_method_count (klass);
+	int gmcount = mono_class_get_method_count (gklass);
+	if (mcount != gmcount) {
+		mono_class_set_method_count (klass, gmcount);
+		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * (gmcount + 1));
 
-		for (i = 0; i < klass->method.count; i++) {
+		for (i = 0; i < gmcount; i++) {
 			klass->methods [i] = mono_class_inflate_generic_method_full_checked (
 				gklass->methods [i], klass, mono_class_get_context (klass), error);
 			mono_error_assert_ok (error);
@@ -2968,11 +2970,13 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 		klass->interfaces_inited = 1;
 	}
 
-	if (klass->field.count != gklass->field.count) {
-		klass->field.count = gklass->field.count;
-		klass->fields = image_g_new0 (klass->image, MonoClassField, klass->field.count);
+	int fcount = mono_class_get_field_count (klass);
+	int gfcount = mono_class_get_field_count (gklass);
+	if (fcount != gfcount) {
+		mono_class_set_field_count (klass, gfcount);
+		klass->fields = image_g_new0 (klass->image, MonoClassField, gfcount);
 
-		for (i = 0; i < klass->field.count; i++) {
+		for (i = 0; i < gfcount; i++) {
 			klass->fields [i] = gklass->fields [i];
 			klass->fields [i].parent = klass;
 			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), error);
@@ -3032,7 +3036,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 	if (tb) {
 		num = tb->ctors? mono_array_length (tb->ctors): 0;
 		num += tb->num_methods;
-		klass->method.count = num;
+		mono_class_set_method_count (klass, num);
 		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * num);
 		num = tb->ctors? mono_array_length (tb->ctors): 0;
 		for (i = 0; i < num; ++i) {
@@ -3069,9 +3073,10 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (mono_class_is_interface (klass)) {
+	if (mono_class_is_interface (klass) && !mono_class_is_ginst (klass)) {
 		int slot_num = 0;
-		for (i = 0; i < klass->method.count; ++i) {
+		int mcount = mono_class_get_method_count (klass);
+		for (i = 0; i < mcount; ++i) {
 			MonoMethod *im = klass->methods [i];
 			if (!(im->flags & METHOD_ATTRIBUTE_STATIC))
 				im->slot = slot_num++;
@@ -3198,7 +3203,8 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		instance_size = sizeof (MonoObject);
 	}
 
-	klass->field.count = tb->num_fields;
+	int fcount = tb->num_fields;
+	mono_class_set_field_count (klass, fcount);
 
 	mono_error_init (error);
 
@@ -3207,9 +3213,9 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		instance_size += tb->class_size;
 	}
 	
-	klass->fields = image_g_new0 (image, MonoClassField, klass->field.count);
+	klass->fields = image_g_new0 (image, MonoClassField, fcount);
 	mono_class_alloc_ext (klass);
-	klass->ext->field_def_values = image_g_new0 (image, MonoFieldDefaultValue, klass->field.count);
+	klass->ext->field_def_values = image_g_new0 (image, MonoFieldDefaultValue, fcount);
 	/*
 	This is, guess what, a hack.
 	The issue is that the runtime doesn't know how to setup the fields of a typebuider and crash.
@@ -3219,7 +3225,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	*/
 	klass->size_inited = 1;
 
-	for (i = 0; i < klass->field.count; ++i) {
+	for (i = 0; i < fcount; ++i) {
 		MonoArray *rva_data;
 		fb = (MonoReflectionFieldBuilder *)mono_array_get (tb->fields, gpointer, i);
 		field = &klass->fields [i];

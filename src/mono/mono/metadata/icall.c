@@ -2099,7 +2099,7 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *rfield)
 		MonoClass *klass = field->parent;
 		int fidx = field - klass->fields;
 
-		g_assert (fidx >= 0 && fidx < klass->field.count);
+		g_assert (fidx >= 0 && fidx < mono_class_get_field_count (klass));
 		g_assert (klass->ext);
 		g_assert (klass->ext->field_def_values);
 		def_type = klass->ext->field_def_values [fidx].def_type;
@@ -5107,7 +5107,8 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 	mono_class_setup_methods (method->klass);
 	if (mono_class_has_failure (method->klass))
 		return NULL;
-	for (i = 0; i < method->klass->method.count; ++i) {
+	int mcount = mono_class_get_method_count (method->klass);
+	for (i = 0; i < mcount; ++i) {
 		if (method->klass->methods [i] == method) {
 			offset = i;
 			break;
@@ -5116,7 +5117,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 	mono_class_setup_methods (klass);
 	if (mono_class_has_failure (klass))
 		return NULL;
-	g_assert (offset >= 0 && offset < klass->method.count);
+	g_assert (offset >= 0 && offset < mono_class_get_method_count (klass));
 	return klass->methods [offset];
 }
 

@@ -983,7 +983,8 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 	for (klass = obj->vtable->klass; klass; klass = klass->parent) {
 		int i;
 
-		for (i = 0; i < klass->field.count; ++i) {
+		int fcount = mono_class_get_field_count (klass);
+		for (i = 0; i < fcount; ++i) {
 			if (klass->fields[i].offset == offset) {
 				field = &klass->fields[i];
 				break;

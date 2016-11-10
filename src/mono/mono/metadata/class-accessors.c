@@ -138,3 +138,87 @@ mono_class_set_first_field_idx (MonoClass *klass, guint32 idx)
 
 	((MonoClassDef*)klass)->first_field_idx = idx;
 }
+
+guint32
+mono_class_get_method_count (MonoClass *klass)
+{
+	switch (klass->class_kind) {
+	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD:
+		return ((MonoClassDef*)klass)->method_count;
+	case MONO_CLASS_GINST:
+		return mono_class_get_method_count (((MonoClassGenericInst*)klass)->generic_class->container_class);
+	case MONO_CLASS_GPARAM:
+		return 0;
+	case MONO_CLASS_ARRAY:
+		return ((MonoClassArray*)klass)->method_count;
+	case MONO_CLASS_POINTER:
+		return 0;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+void
+mono_class_set_method_count (MonoClass *klass, guint32 count)
+{
+	switch (klass->class_kind) {
+	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD:
+		((MonoClassDef*)klass)->method_count = count;
+		break;
+	case MONO_CLASS_GINST:
+		break;
+	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_POINTER:
+		g_assert (count == 0);
+		break;
+	case MONO_CLASS_ARRAY:
+		((MonoClassArray*)klass)->method_count = count;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
+guint32
+mono_class_get_field_count (MonoClass *klass)
+{
+	switch (klass->class_kind) {
+	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD:
+		return ((MonoClassDef*)klass)->field_count;
+	case MONO_CLASS_GINST:
+		return mono_class_get_field_count (((MonoClassGenericInst*)klass)->generic_class->container_class);
+	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_ARRAY:
+	case MONO_CLASS_POINTER:
+		return 0;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+void
+mono_class_set_field_count (MonoClass *klass, guint32 count)
+{
+	switch (klass->class_kind) {
+	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD:
+		((MonoClassDef*)klass)->field_count = count;
+		break;
+	case MONO_CLASS_GINST:
+		break;
+	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_ARRAY:
+	case MONO_CLASS_POINTER:
+		g_assert (count == 0);
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}

@@ -206,7 +206,8 @@ get_default_ctor (MonoClass *klass)
 	if (!klass->methods)
 		return NULL;
 
-	for (i = 0; i < klass->method.count; ++i) {
+	int mcount = mono_class_get_method_count (klass);
+	for (i = 0; i < mcount; ++i) {
 		MonoMethodSignature *sig;
 		MonoMethod *method = klass->methods [i];
 

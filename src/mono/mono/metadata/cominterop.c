@@ -360,7 +360,8 @@ cominterop_get_method_interface (MonoMethod* method)
 				gboolean found = FALSE;
 				ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 				offset = mono_class_interface_offset (method->klass, ic);
-				for (j = 0; j < ic->method.count; ++j) {
+				int mcount = mono_class_get_method_count (ic);
+				for (j = 0; j < mcount; ++j) {
 					if (method->klass->vtable [j + offset] == method) {
 						found = TRUE;
 						break;
@@ -400,7 +401,8 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 		ic = cominterop_get_method_interface (method);
 		offset = mono_class_interface_offset (method->klass, ic);
 		g_assert(offset >= 0);
-		for(i = 0; i < ic->method.count; ++i) {
+		int mcount = mono_class_get_method_count (ic);
+		for(i = 0; i < mcount; ++i) {
 			if (method->klass->vtable [i + offset] == method)
 			{
 				slot = ic->methods[i]->slot;
@@ -2022,7 +2024,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 		start_slot = 7;
 	}
 	else {
-		method_count += iface->method.count;
+		method_count += mono_class_get_method_count (iface);
 		start_slot = cominterop_get_com_slot_begin (iface);
 		iface = NULL;
 	}
@@ -2037,7 +2039,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 			memcpy (vtable+3, idispatch, sizeof (idispatch));
 
 		iface = itf;
-		for (i = iface->method.count-1; i >= 0;i--) {
+		for (i = mono_class_get_method_count (iface) - 1; i >= 0; i--) {
 			int param_index = 0;
 			MonoMethodBuilder *mb;
 			MonoMarshalSpec ** mspecs;

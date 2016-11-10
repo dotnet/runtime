@@ -471,7 +471,8 @@ mono_class_has_default_constructor (MonoClass *klass)
 	if (mono_class_has_failure (klass))
 		return FALSE;
 
-	for (i = 0; i < klass->method.count; ++i) {
+	int mcount = mono_class_get_method_count (klass);
+	for (i = 0; i < mcount; ++i) {
 		method = klass->methods [i];
 		if (mono_method_is_constructor (method) &&
 			mono_method_signature (method) &&
@@ -6117,7 +6118,8 @@ verify_class_for_overlapping_reference_fields (MonoClass *klass)
 		if (mono_field_is_deleted (field) || (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 
-		for (j = i; j < klass->field.count; ++j) {
+		int fcount = mono_class_get_field_count (klass);
+		for (j = i; j < fcount; ++j) {
 			MonoClassField *other = &klass->fields [j];
 			int otherEnd = get_field_end (other);
 			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)) || (other->type->attrs & FIELD_ATTRIBUTE_STATIC))
