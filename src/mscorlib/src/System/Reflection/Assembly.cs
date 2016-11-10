@@ -484,7 +484,7 @@ namespace System.Reflection
 #if FEATURE_CORECLR
             if(rawAssembly == null)
                 throw new ArgumentNullException(nameof(rawAssembly));
-            AssemblyLoadContext alc = new FileLoadAssemblyLoadContext();
+            AssemblyLoadContext alc = new IndividualAssemblyLoadContext();
             MemoryStream assemblyStream = new MemoryStream(rawAssembly);
             MemoryStream symbolStream = (rawSymbolStore!=null)?new MemoryStream(rawSymbolStore):null;
             return alc.LoadFromStream(assemblyStream, symbolStream);
@@ -595,7 +595,7 @@ namespace System.Reflection
             {          
                 if(s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
-                AssemblyLoadContext alc = new FileLoadAssemblyLoadContext();
+                AssemblyLoadContext alc = new IndividualAssemblyLoadContext();
                 result = alc.LoadFromAssemblyPath(normalizedPath);
                 s_loadfile.Add(normalizedPath, result);
             }
