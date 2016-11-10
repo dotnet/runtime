@@ -3,6 +3,27 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <Import Project="$(MSBuildProjectName).props" />
+
+  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))"/>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
   
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
@@ -43,5 +64,13 @@
                    IgnoredReferences="@(IgnoredReference)" />
   </Target>
 
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <File>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
