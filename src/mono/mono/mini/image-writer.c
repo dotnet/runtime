@@ -5,6 +5,7 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Zoltan Varga (vargaz@gmail.com)
  *   Paolo Molaro (lupus@ximian.com)
+ *   Johan Lorensson (lateralusx.github@gmail.com)
  *
  * (C) 2002 Ximian, Inc.
  */
@@ -88,6 +89,8 @@
 
 #if defined(TARGET_ASM_APPLE)
 #define AS_INT16_DIRECTIVE ".short"
+#elif defined(TARGET_ASM_GAS) && defined(TARGET_WIN32)
+#define AS_INT16_DIRECTIVE ".word"
 #elif defined(TARGET_ASM_GAS)
 #define AS_INT16_DIRECTIVE ".hword"
 #else
@@ -1735,8 +1738,45 @@ const char *get_label (const char *s)
 	return s;
 }
 
+#ifdef TARGET_WIN32
+#define GLOBAL_SYMBOL_DEF_SCL 2
+#define LOCAL_SYMBOL_DEF_SCL 3
+
+static gboolean
+asm_writer_in_data_section (MonoImageWriter *acfg)
+{
+	gboolean	in_data_section = FALSE;
+	const char	*data_sections [] = {".data", ".bss", ".rdata"};
+
+	for (guchar i = 0; i < G_N_ELEMENTS (data_sections); ++i) {
+		if (strcmp (acfg->current_section, data_sections [i]) == 0) {
+			in_data_section = TRUE;
+			break;
+		}
+	}
+
+	return in_data_section;
+}
+
 static void
-asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean func)
+asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean func, gboolean global)
+{
+	asm_writer_emit_unset_mode (acfg);
+
+	if (func) {
+		fprintf (acfg->fp, "\t.def %s; .scl %d; .type 32; .endef\n", name, (global == TRUE ? GLOBAL_SYMBOL_DEF_SCL : LOCAL_SYMBOL_DEF_SCL));
+	} else {
+		if (!asm_writer_in_data_section (acfg))
+			fprintf (acfg->fp, "\t.data\n");
+	}
+
+	return;
+}
+
+#else
+
+static void
+asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean func, gboolean global)
 {
 	const char *stype;
 
@@ -1749,17 +1789,13 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 
 #if defined(TARGET_ASM_APPLE)
 
-#elif defined(TARGET_WIN32)
-	if (func)
-		fprintf (acfg->fp, "\t.def %s; .scl 2; .type 32; .endef\n", name);
-	else
-		fprintf (acfg->fp, "\t.data\n");
 #elif defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #endif
 }
+#endif /* TARGET_WIN32 */
 
 static void
 asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
@@ -1768,7 +1804,7 @@ asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 
 	fprintf (acfg->fp, "\t.globl %s\n", name);
 
-	asm_writer_emit_symbol_type (acfg, name, func);
+	asm_writer_emit_symbol_type (acfg, name, func, TRUE);
 }
 
 static void
@@ -1780,7 +1816,7 @@ asm_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 	fprintf (acfg->fp, "\t.local %s\n", name);
 #endif
 
-	asm_writer_emit_symbol_type (acfg, name, func);
+	asm_writer_emit_symbol_type (acfg, name, func, FALSE);
 }
 
 static void
