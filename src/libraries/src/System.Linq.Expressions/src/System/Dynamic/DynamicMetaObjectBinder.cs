@@ -21,8 +21,6 @@ namespace System.Dynamic
     /// </remarks>
     public abstract class DynamicMetaObjectBinder : CallSiteBinder
     {
-        #region Public APIs
-
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicMetaObjectBinder"/> class.
         /// </summary>
@@ -33,10 +31,7 @@ namespace System.Dynamic
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public virtual Type ReturnType
-        {
-            get { return typeof(object); }
-        }
+        public virtual Type ReturnType => typeof(object);
 
         /// <summary>
         /// Performs the runtime binding of the dynamic operation on a set of arguments.
@@ -120,7 +115,7 @@ namespace System.Dynamic
                 }
             }
 
-            // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding. 
+            // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding.
             // it makes sense to restrict on the target's type in such cases.
             // ideally IDO metaobjects should do this, but they often miss that type of "this" is significant.
             if (IsStandardBinder && args[0] as IDynamicMetaObjectProvider != null)
@@ -233,15 +228,7 @@ namespace System.Dynamic
             );
         }
 
-        #endregion
-
         // used to detect standard MetaObjectBinders.
-        internal virtual bool IsStandardBinder
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal virtual bool IsStandardBinder => false;
     }
 }

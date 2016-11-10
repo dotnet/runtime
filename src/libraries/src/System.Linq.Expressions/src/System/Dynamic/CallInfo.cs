@@ -27,9 +27,6 @@ namespace System.Dynamic
     /// </remarks>
     public sealed class CallInfo
     {
-        private readonly int _argCount;
-        private readonly ReadOnlyCollection<string> _argNames;
-
         /// <summary>
         /// Creates a new PositionalArgumentInfo.
         /// </summary>
@@ -56,25 +53,19 @@ namespace System.Dynamic
             if (argCount < argNameCol.Count) throw System.Linq.Expressions.Error.ArgCntMustBeGreaterThanNameCnt();
             ContractUtils.RequiresNotNullItems(argNameCol, nameof(argNames));
 
-            _argCount = argCount;
-            _argNames = argNameCol;
+            ArgumentCount = argCount;
+            ArgumentNames = argNameCol;
         }
 
         /// <summary>
         /// The number of arguments.
         /// </summary>
-        public int ArgumentCount
-        {
-            get { return _argCount; }
-        }
+        public int ArgumentCount { get; }
 
         /// <summary>
         /// The argument names.
         /// </summary>
-        public ReadOnlyCollection<string> ArgumentNames
-        {
-            get { return _argNames; }
-        }
+        public ReadOnlyCollection<string> ArgumentNames { get; }
 
         /// <summary>
         /// Serves as a hash function for the current CallInfo.
@@ -82,7 +73,7 @@ namespace System.Dynamic
         /// <returns>A hash code for the current CallInfo.</returns>
         public override int GetHashCode()
         {
-            return _argCount ^ _argNames.ListHashCode();
+            return ArgumentCount ^ ArgumentNames.ListHashCode();
         }
 
         /// <summary>
@@ -93,7 +84,7 @@ namespace System.Dynamic
         public override bool Equals(object obj)
         {
             var other = obj as CallInfo;
-            return other != null && _argCount == other._argCount && _argNames.ListEquals(other._argNames);
+            return other != null && ArgumentCount == other.ArgumentCount && ArgumentNames.ListEquals(other.ArgumentNames);
         }
     }
 }
