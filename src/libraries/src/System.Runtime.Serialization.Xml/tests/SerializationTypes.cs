@@ -3932,3 +3932,10 @@ public class MyISerializableType : ISerializable
         _stringValue = (string)info.GetValue(nameof(_stringValue), typeof(string));
     }
 }
+
+[DataContract]
+public class TypeForRootNameTest
+{
+    [DataMember]
+    public string StringProperty { get; set; }
+}
