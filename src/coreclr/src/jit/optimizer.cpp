@@ -2862,7 +2862,6 @@ void Compiler::optUnrollLoops()
         bool       unsTest;      // Is the comparison u/int
 
         unsigned totalIter;     // total number of iterations in the constant loop
-        unsigned loopCostSz;    // Cost is size of one iteration
         unsigned loopFlags;     // actual lpFlags
         unsigned requiredFlags; // required lpFlags
 
@@ -3030,69 +3029,70 @@ void Compiler::optUnrollLoops()
 
         /* heuristic - Estimated cost in code size of the unrolled loop */
 
-        loopCostSz = 0;
-
-        block         = head->bbNext;
-        auto tryIndex = block->bbTryIndex;
-
-        for (;; block = block->bbNext)
         {
-            if (block->bbTryIndex != tryIndex)
+            ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
+
+            block         = head->bbNext;
+            auto tryIndex = block->bbTryIndex;
+
+            for (;; block = block->bbNext)
             {
-                // Unrolling would require cloning EH regions
+                if (block->bbTryIndex != tryIndex)
+                {
+                    // Unrolling would require cloning EH regions
+                    goto DONE_LOOP;
+                }
+
+                /* Visit all the statements in the block */
+
+                for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+                {
+                    /* Calculate gtCostSz */
+                    gtSetStmtInfo(stmt);
+
+                    /* Update loopCostSz */
+                    loopCostSz += stmt->gtCostSz;
+                }
+
+                if (block == bottom)
+                {
+                    break;
+                }
+            }
+
+            /* Compute the estimated increase in code size for the unrolled loop */
+
+            ClrSafeInt<unsigned> fixedLoopCostSz(8);
+
+            ClrSafeInt<int> unrollCostSz((loopCostSz * ClrSafeInt<unsigned>(totalIter)) -
+                                         (loopCostSz + fixedLoopCostSz));
+
+            /* Don't unroll if too much code duplication would result. */
+
+            if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
+            {
+                /* prevent this loop from being revisited */
+                optLoopTable[lnum].lpFlags |= LPFLG_DONT_UNROLL;
                 goto DONE_LOOP;
             }
 
-            /* Visit all the statements in the block */
-
-            for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
-            {
-                /* Calculate gtCostSz */
-                gtSetStmtInfo(stmt);
-
-                /* Update loopCostSz */
-                loopCostSz += stmt->gtCostSz;
-            }
-
-            if (block == bottom)
-            {
-                break;
-            }
-        }
-
-        /* Compute the estimated increase in code size for the unrolled loop */
-
-        unsigned int fixedLoopCostSz;
-        fixedLoopCostSz = 8;
-
-        int unrollCostSz;
-        unrollCostSz = (loopCostSz * totalIter) - (loopCostSz + fixedLoopCostSz);
-
-        /* Don't unroll if too much code duplication would result. */
-
-        if (unrollCostSz > unrollLimitSz)
-        {
-            /* prevent this loop from being revisited */
-            optLoopTable[lnum].lpFlags |= LPFLG_DONT_UNROLL;
-            goto DONE_LOOP;
-        }
-
-        /* Looks like a good idea to unroll this loop, let's do it! */
-        CLANG_FORMAT_COMMENT_ANCHOR;
+            /* Looks like a good idea to unroll this loop, let's do it! */
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nUnrolling loop BB%02u", head->bbNext->bbNum);
-            if (head->bbNext->bbNum != bottom->bbNum)
+            if (verbose)
             {
-                printf("..BB%02u", bottom->bbNum);
+                printf("\nUnrolling loop BB%02u", head->bbNext->bbNum);
+                if (head->bbNext->bbNum != bottom->bbNum)
+                {
+                    printf("..BB%02u", bottom->bbNum);
+                }
+                printf(" over V%02u from %u to %u", lvar, lbeg, llim);
+                printf(" unrollCostSz = %d\n", unrollCostSz);
+                printf("\n");
             }
-            printf(" over V%02u from %u to %u", lvar, lbeg, llim);
-            printf(" unrollCostSz = %d\n", unrollCostSz);
-            printf("\n");
-        }
 #endif
+        }
 
         /* Create the unrolled loop statement list */
         {
