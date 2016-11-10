@@ -45,6 +45,10 @@ if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
 
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
+
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
 endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
@@ -112,7 +116,9 @@ if(WIN32)
 else(WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc_debug
+        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available  
         coreclrpal
+        ${END_WHOLE_ARCHIVE}
         palrt
     )
 endif(WIN32)
