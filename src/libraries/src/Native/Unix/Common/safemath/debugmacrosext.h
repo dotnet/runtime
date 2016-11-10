@@ -9,8 +9,7 @@
 //
 //*****************************************************************************
 
-#ifndef __DebugMacrosExt_h__
-#define __DebugMacrosExt_h__
+#pragma once
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1
@@ -40,7 +39,4 @@
 #define INDEBUGIMPL(x)
 #define INDEBUGIMPL_COMMA(x)
 #define COMMA_INDEBUGIMPL(x)
-#endif
-
-
 #endif
