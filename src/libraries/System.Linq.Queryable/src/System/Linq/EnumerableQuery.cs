@@ -29,7 +29,7 @@ namespace System.Linq
     // Must remain public for Silverlight
     public class EnumerableQuery<T> : EnumerableQuery, IOrderedQueryable<T>, IQueryable, IQueryProvider, IEnumerable<T>, IEnumerable
     {
-        private Expression _expression;
+        private readonly Expression _expression;
         private IEnumerable<T> _enumerable;
 
         IQueryProvider IQueryable.Provider

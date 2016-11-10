@@ -22,7 +22,7 @@ namespace System.Linq
     // Must remain public for Silverlight
     public class EnumerableExecutor<T> : EnumerableExecutor
     {
-        private Expression _expression;
+        private readonly Expression _expression;
 
         // Must remain public for Silverlight
         public EnumerableExecutor(Expression expression)
