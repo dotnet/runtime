@@ -414,7 +414,8 @@
         "settings": {
           "MsBuildLog": "default",
           "MsBuildWrn": "default",
-          "MsBuildErr": "default"
+          "MsBuildErr": "default",
+          "MsBuildEventLogging": "default"
         }
       }
     },
