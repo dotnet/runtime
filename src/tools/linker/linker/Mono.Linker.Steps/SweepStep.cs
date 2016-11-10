@@ -52,6 +52,16 @@ namespace Mono.Linker.Steps {
 					if (ResolveAllTypeReferences (assembly))
 						Annotations.SetAction (assembly, AssemblyAction.Save);
 				}
+
+				AssemblyAction currentAction = Annotations.GetAction(assembly);
+
+				if ((currentAction == AssemblyAction.Link) || (currentAction == AssemblyAction.Save)) {
+					// if we save (only or by linking) then unmarked exports (e.g. forwarders) must be cleaned
+					// or they can point to nothing which will break later (e.g. when re-loading for stripping IL)
+					// reference: https://bugzilla.xamarin.com/show_bug.cgi?id=36577
+					if (assembly.MainModule.HasExportedTypes)
+						SweepCollection(assembly.MainModule.ExportedTypes);
+				}
 			}
 		}
 
