@@ -262,21 +262,18 @@ namespace System.Linq.Expressions.Interpreter
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     internal struct InterpretedFrameInfo
     {
-        public readonly string MethodName;
+        private readonly string _methodName;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public readonly DebugInfo DebugInfo;
+        private readonly DebugInfo _debugInfo;
 
         public InterpretedFrameInfo(string methodName, DebugInfo info)
         {
-            MethodName = methodName;
-            DebugInfo = info;
+            _methodName = methodName;
+            _debugInfo = info;
         }
 
-        public override string ToString()
-        {
-            return MethodName + (DebugInfo != null ? ": " + DebugInfo : null);
-        }
+        public override string ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -309,7 +306,6 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         public InstructionList Instructions => _instructions;
-        public LocalVariables Locals => _locals;
 
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
@@ -336,7 +332,7 @@ namespace System.Linq.Expressions.Interpreter
         private Interpreter MakeInterpreter(string lambdaName)
         {
             DebugInfo[] debugInfos = _debugInfos.ToArray();
-            return new Interpreter(lambdaName, _locals, GetBranchMapping(), _instructions.ToArray(), debugInfos);
+            return new Interpreter(lambdaName, _locals, _instructions.ToArray(), debugInfos);
         }
 
         private void CompileConstantExpression(Expression expr)
@@ -405,7 +401,7 @@ namespace System.Linq.Expressions.Interpreter
             return local;
         }
 
-        public void CompileGetVariable(ParameterExpression variable)
+        private void CompileGetVariable(ParameterExpression variable)
         {
             LoadLocalNoValueTypeCopy(variable);
 
@@ -448,7 +444,7 @@ namespace System.Linq.Expressions.Interpreter
             return type.GetTypeInfo().IsValueType && !type.GetTypeInfo().IsEnum && !type.GetTypeInfo().IsPrimitive;
         }
 
-        public void CompileGetBoxedVariable(ParameterExpression variable)
+        private void CompileGetBoxedVariable(ParameterExpression variable)
         {
             LocalVariable local = ResolveLocal(variable);
 
@@ -465,7 +461,7 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.SetDebugCookie(variable.Name);
         }
 
-        public void CompileSetVariable(ParameterExpression variable, bool isVoid)
+        private void CompileSetVariable(ParameterExpression variable, bool isVoid)
         {
             LocalVariable local = ResolveLocal(variable);
 
@@ -506,7 +502,7 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.SetDebugCookie(variable.Name);
         }
 
-        public void CompileParameterExpression(Expression expr)
+        private void CompileParameterExpression(Expression expr)
         {
             var node = (ParameterExpression)expr;
             CompileGetVariable(node);
@@ -1737,13 +1733,13 @@ namespace System.Linq.Expressions.Interpreter
                 node.Target.Type != typeof(void));
         }
 
-        public void PushLabelBlock(LabelScopeKind type)
+        private void PushLabelBlock(LabelScopeKind type)
         {
             _labelBlock = new LabelScopeInfo(_labelBlock, type);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
-        public void PopLabelBlock(LabelScopeKind kind)
+        private void PopLabelBlock(LabelScopeKind kind)
         {
             Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
             _labelBlock = _labelBlock.Parent;
@@ -1871,17 +1867,6 @@ namespace System.Linq.Expressions.Interpreter
                     DefineLabel(label.Target);
                 }
             }
-        }
-
-        private HybridReferenceDictionary<LabelTarget, BranchLabel> GetBranchMapping()
-        {
-            var newLabelMapping = new HybridReferenceDictionary<LabelTarget, BranchLabel>(_treeLabels.Count);
-            foreach (KeyValuePair<LabelTarget, LabelInfo> kvp in _treeLabels)
-            {
-                kvp.Value.ValidateFinish();
-                newLabelMapping[kvp.Key] = kvp.Value.GetLabel(this);
-            }
-            return newLabelMapping;
         }
 
         private void CheckRethrow()
@@ -2904,7 +2889,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal void Compile(Expression expr, bool asVoid)
+        private void Compile(Expression expr, bool asVoid)
         {
             if (asVoid)
             {
@@ -2916,7 +2901,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal void CompileAsVoid(Expression expr)
+        private void CompileAsVoid(Expression expr)
         {
             bool pushLabelBlock = TryPushLabelBlock(expr);
             int startingStackDepth = _instructions.CurrentStackDepth;
@@ -3043,7 +3028,7 @@ namespace System.Linq.Expressions.Interpreter
                 string.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
         }
 
-        public void Compile(Expression expr)
+        private void Compile(Expression expr)
         {
             bool pushLabelBlock = TryPushLabelBlock(expr);
             CompileNoLabelPush(expr);
