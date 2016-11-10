@@ -4666,6 +4666,7 @@
       <Member MemberType="Field" Name="Cond_Branch" />
       <Member MemberType="Field" Name="Meta" />
       <Member MemberType="Field" Name="Next" />
+      <Member MemberType="Field" Name="Phi" />
       <Member MemberType="Field" Name="Return" />
       <Member MemberType="Field" Name="Throw" />
       <Member MemberType="Field" Name="value__" />
@@ -5184,6 +5185,7 @@
       <Member Name="TakesSingleByteArgument(System.Reflection.Emit.OpCode)" />
     </Type>
     <Type Name="System.Reflection.Emit.OpCodeType">
+      <Member MemberType="Field" Name="Annotation" />
       <Member MemberType="Field" Name="Macro" />
       <Member MemberType="Field" Name="Nternal" />
       <Member MemberType="Field" Name="Objmodel" />
@@ -5198,6 +5200,7 @@
       <Member MemberType="Field" Name="InlineI8" />
       <Member MemberType="Field" Name="InlineMethod" />
       <Member MemberType="Field" Name="InlineNone" />
+      <Member MemberType="Field" Name="InlinePhi" />
       <Member MemberType="Field" Name="InlineR" />
       <Member MemberType="Field" Name="InlineSig" />
       <Member MemberType="Field" Name="InlineString" />

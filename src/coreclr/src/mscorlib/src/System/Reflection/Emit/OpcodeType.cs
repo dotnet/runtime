@@ -21,11 +21,8 @@ using System;
 public enum OpCodeType
 {
 
-#if !FEATURE_CORECLR
-    /// <internalonly/>
     [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
     Annotation  = 0,
-#endif
     Macro       = 1,
     Nternal     = 2,
     Objmodel    = 3,
