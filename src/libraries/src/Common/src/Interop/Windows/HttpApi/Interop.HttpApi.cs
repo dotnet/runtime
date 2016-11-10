@@ -13,13 +13,16 @@ using System.Threading;
 
 internal static partial class Interop
 {
-    internal unsafe static partial class HttpApi
+    internal static partial class HttpApi
     {
-        internal static readonly HTTPAPI_VERSION Version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
+        internal static readonly HTTPAPI_VERSION s_version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
+        internal static readonly bool s_supported = InitHttpApi(s_version);
+        internal static IPEndPoint s_any = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
+        internal static IPEndPoint s_ipv6Any = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort);
+        internal const int IPv4AddressSize = 16;
+        internal const int IPv6AddressSize = 28;
 
-        internal static readonly bool Supported = InitHttpApi(Version);
-
-        private static bool InitHttpApi(HTTPAPI_VERSION version)
+        private unsafe static bool InitHttpApi(HTTPAPI_VERSION version)
         {
             uint statusCode = HttpInitialize(version, (uint)HTTP_FLAGS.HTTP_INITIALIZE_SERVER, null);
             return statusCode == ERROR_SUCCESS;
@@ -40,7 +43,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_RESPONSE_INFO
+        internal unsafe struct HTTP_RESPONSE_INFO
         {
             internal HTTP_RESPONSE_INFO_TYPE Type;
             internal uint Length;
@@ -48,7 +51,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_RESPONSE_HEADERS
+        internal unsafe struct HTTP_RESPONSE_HEADERS
         {
             internal ushort UnknownHeaderCount;
             internal HTTP_UNKNOWN_HEADER* pUnknownHeaders;
@@ -87,14 +90,14 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_KNOWN_HEADER
+        internal unsafe struct HTTP_KNOWN_HEADER
         {
             internal ushort RawValueLength;
             internal sbyte* pRawValue;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_UNKNOWN_HEADER
+        internal unsafe struct HTTP_UNKNOWN_HEADER
         {
             internal ushort NameLength;
             internal ushort RawValueLength;
@@ -111,7 +114,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, Size = 32)]
-        internal struct HTTP_DATA_CHUNK
+        internal unsafe struct HTTP_DATA_CHUNK
         {
             internal HTTP_DATA_CHUNK_TYPE DataChunkType;
             internal uint p0;
@@ -120,7 +123,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_RESPONSE
+        internal unsafe struct HTTP_RESPONSE
         {
             internal uint Flags;
             internal HTTP_VERSION Version;
@@ -135,7 +138,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_REQUEST_INFO
+        internal unsafe struct HTTP_REQUEST_INFO
         {
             internal HTTP_REQUEST_INFO_TYPE InfoType;
             internal uint InfoLength;
@@ -196,14 +199,14 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_TRANSPORT_ADDRESS
+        internal unsafe struct HTTP_TRANSPORT_ADDRESS
         {
             internal SOCKADDR* pRemoteAddress;
             internal SOCKADDR* pLocalAddress;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_REQUEST_HEADERS
+        internal unsafe struct HTTP_REQUEST_HEADERS
         {
             internal ushort UnknownHeaderCount;
             internal HTTP_UNKNOWN_HEADER* pUnknownHeaders;
@@ -253,7 +256,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_SSL_CLIENT_CERT_INFO
+        internal unsafe struct HTTP_SSL_CLIENT_CERT_INFO
         {
             internal uint CertFlags;
             internal uint CertEncodedSize;
@@ -263,7 +266,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_SSL_INFO
+        internal unsafe struct HTTP_SSL_INFO
         {
             internal ushort ServerCertKeySize;
             internal ushort ConnectionKeySize;
@@ -276,7 +279,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_REQUEST
+        internal unsafe struct HTTP_REQUEST
         {
             internal uint Flags;
             internal ulong ConnectionId;
@@ -299,7 +302,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct HTTP_REQUEST_V2
+        internal unsafe struct HTTP_REQUEST_V2
         {
             internal HTTP_REQUEST RequestV1;
             internal ushort RequestInfoCount;
@@ -514,16 +517,16 @@ internal static partial class Interop
 
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpInitialize(HTTPAPI_VERSION version, uint flags, void* pReserved);
+        internal unsafe static extern uint HttpInitialize(HTTPAPI_VERSION version, uint flags, void* pReserved);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, IntPtr pPropertyInfo, uint propertyInfoLength);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpCreateServerSession(HTTPAPI_VERSION version, ulong* serverSessionId, uint reserved);
+        internal unsafe static extern uint HttpCreateServerSession(HTTPAPI_VERSION version, ulong* serverSessionId, uint reserved);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpCreateUrlGroup(ulong serverSessionId, ulong* urlGroupId, uint reserved);
+        internal unsafe static extern uint HttpCreateUrlGroup(ulong serverSessionId, ulong* urlGroupId, uint reserved);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern uint HttpCloseUrlGroup(ulong urlGroupId);
@@ -539,19 +542,19 @@ internal static partial class Interop
         internal static extern uint HttpRemoveUrlFromUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, uint flags);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpReceiveHttpRequest(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_REQUEST* pRequestBuffer, uint requestBufferLength, uint* pBytesReturned, NativeOverlapped* pOverlapped);
+        internal unsafe static extern uint HttpReceiveHttpRequest(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_REQUEST* pRequestBuffer, uint requestBufferLength, uint* pBytesReturned, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+        internal unsafe static extern uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpWaitForDisconnect(SafeHandle requestQueueHandle, ulong connectionId, NativeOverlapped* pOverlapped);
+        internal unsafe static extern uint HttpWaitForDisconnect(SafeHandle requestQueueHandle, ulong connectionId, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpReceiveRequestEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, void* pEntityBuffer, uint entityBufferLength, out uint bytesReturned, NativeOverlapped* pOverlapped);
+        internal unsafe static extern uint HttpReceiveRequestEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, void* pEntityBuffer, uint entityBufferLength, out uint bytesReturned, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+        internal unsafe static extern uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern unsafe uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
@@ -597,15 +600,11 @@ internal static partial class Interop
         internal static extern SafeLocalFreeChannelBinding LocalAllocChannelBinding(int uFlags, UIntPtr sizetdwBytes);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
+        internal unsafe static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
-
-        //
-        // TODO: move this to a better location
-        //
-
+        internal unsafe static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
+        
         [Flags]
         internal enum FileCompletionNotificationModes : byte
         {
@@ -747,7 +746,7 @@ internal static partial class Interop
             }
         }
 
-        private static string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
+        private unsafe static string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
             if (NetEventSource.IsEnabled) { NetEventSource.Enter(null); }
 
@@ -772,12 +771,12 @@ internal static partial class Interop
             return header;
         }
 
-        internal static string GetKnownHeader(HTTP_REQUEST* request, int headerIndex)
+        internal unsafe static string GetKnownHeader(HTTP_REQUEST* request, int headerIndex)
         {
             return GetKnownHeader(request, 0, headerIndex);
         }
 
-        internal static string GetKnownHeader(byte[] memoryBlob, IntPtr originalAddress, int headerIndex)
+        internal unsafe static string GetKnownHeader(byte[] memoryBlob, IntPtr originalAddress, int headerIndex)
         {
             fixed (byte* pMemoryBlob = memoryBlob)
             {
@@ -816,7 +815,7 @@ internal static partial class Interop
 
         // Server API
 
-        internal static WebHeaderCollection GetHeaders(byte[] memoryBlob, IntPtr originalAddress)
+        internal unsafe static WebHeaderCollection GetHeaders(byte[] memoryBlob, IntPtr originalAddress)
         {
             NetEventSource.Enter(null);
 
@@ -874,7 +873,7 @@ internal static partial class Interop
         }
 
 
-        internal static uint GetChunks(byte[] memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
+        internal unsafe static uint GetChunks(byte[] memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
         {
             if (NetEventSource.IsEnabled)
             {
@@ -937,7 +936,7 @@ internal static partial class Interop
             return dataRead;
         }
 
-        internal static HTTP_VERB GetKnownVerb(byte[] memoryBlob, IntPtr originalAddress)
+        internal unsafe static HTTP_VERB GetKnownVerb(byte[] memoryBlob, IntPtr originalAddress)
         {
             NetEventSource.Enter(null);
 
@@ -956,62 +955,90 @@ internal static partial class Interop
             return verb;
         }
 
-        internal static IPEndPoint GetRemoteEndPoint(byte[] memoryBlob, IntPtr originalAddress)
+        internal unsafe static IPEndPoint GetRemoteEndPoint(byte[] memoryBlob, IntPtr originalAddress)
         {
-            throw new NotImplementedException();
-            //NetEventSource.Enter(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
-            //SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
-            //SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
+            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
+            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
-            //fixed (byte* pMemoryBlob = memoryBlob)
-            //{
-            //    HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
-            //    IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
-            //    CopyOutAddress(address, ref v4address, ref v6address);
-            //}
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
+                CopyOutAddress(address, ref v4address, ref v6address);
+            }
 
-            //IPEndPoint endpoint = null;
-            //if (v4address != null)
-            //{
-            //    endpoint = IPEndPoint.Any.Create(v4address) as IPEndPoint;
-            //}
-            //else if (v6address != null)
-            //{
-            //    endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
-            //}
+            IPEndPoint endpoint = null;
+            if (v4address != null)
+            {
+                endpoint = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort).Create(v4address) as IPEndPoint;
+            }
+            else if (v6address != null)
+            {
+                endpoint = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort).Create(v6address) as IPEndPoint;
+            }
 
-            //NetEventSource.Exit(null);
-            //return endpoint;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
+            return endpoint;
         }
 
-        internal static IPEndPoint GetLocalEndPoint(byte[] memoryBlob, IntPtr originalAddress)
+        internal unsafe static IPEndPoint GetLocalEndPoint(byte[] memoryBlob, IntPtr originalAddress)
         {
-            throw new NotImplementedException();
-            //NetEventSource.Enter(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
-            //SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
-            //SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
+            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
+            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
-            //fixed (byte* pMemoryBlob = memoryBlob)
-            //{
-            //    HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
-            //    IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
-            //    CopyOutAddress(address, ref v4address, ref v6address);
-            //}
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
+                CopyOutAddress(address, ref v4address, ref v6address);
+            }
 
-            //IPEndPoint endpoint = null;
-            //if (v4address != null)
-            //{
-            //    endpoint = IPEndPoint.Any.Create(v4address) as IPEndPoint;
-            //}
-            //else if (v6address != null)
-            //{
-            //    endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
-            //}
+            IPEndPoint endpoint = null;
+            if (v4address != null)
+            {
+                endpoint = s_any.Create(v4address) as IPEndPoint;
+            }
+            else if (v6address != null)
+            {
+                endpoint = s_ipv6Any.Create(v6address) as IPEndPoint;
+            }
 
-            //NetEventSource.Exit(null);
-            //return endpoint;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
+            return endpoint;
+        }
+
+        private unsafe static void CopyOutAddress(IntPtr address, ref SocketAddress v4address, ref SocketAddress v6address)
+        {
+            if (address != IntPtr.Zero)
+            {
+                ushort addressFamily = *((ushort*)address);
+                if (addressFamily == (ushort)AddressFamily.InterNetwork)
+                {
+                    v6address = null;
+                    for (int index = 2; index < IPv4AddressSize; index++)
+                    {
+                        v4address[index] = ((byte*)address)[index];
+                    }
+                    return;
+                }
+                if (addressFamily == (ushort)AddressFamily.InterNetworkV6)
+                {
+                    v4address = null;
+                    for (int index = 2; index < IPv6AddressSize; index++)
+                    {
+                        v6address[index] = ((byte*)address)[index];
+                    }
+                    return;
+                }
+            }
+
+            v4address = null;
+            v6address = null;
         }
     }
 }
+
