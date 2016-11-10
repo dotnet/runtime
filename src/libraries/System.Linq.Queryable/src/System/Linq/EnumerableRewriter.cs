@@ -210,7 +210,7 @@ namespace System.Linq
 
 
 
-        private static volatile ILookup<string, MethodInfo> s_seqMethods;
+        private static ILookup<string, MethodInfo> s_seqMethods;
         private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[] typeArgs)
         {
             if (s_seqMethods == null)
