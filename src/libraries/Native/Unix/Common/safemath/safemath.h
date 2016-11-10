@@ -7,36 +7,19 @@
 // overflow checking infrastructure
 // ---------------------------------------------------------------------------
 
+#pragma once
 
-#ifndef SAFEMATH_H_
-#define SAFEMATH_H_
+#define UINT32 uint32_t
+#define INT32 int32_t
+#define UINT64 uint64_t
+#define INT64 int64_t
+#define UINT16 uint16_t
+#define INT16 int16_t
+#define UINT8 uint8_t
+#define SIZE_T size_t
 
-// This file is included from several places outside the CLR, so we can't
-// pull in files like DebugMacros.h.  However, we assume that the standard
-// clrtypes (UINT32 etc.) are defined.
 #include "debugmacrosext.h"
-
-#ifndef _ASSERTE_SAFEMATH
-#ifdef _ASSERTE
-// Use _ASSERTE if we have it (should always be the case in the CLR)
-#define _ASSERTE_SAFEMATH _ASSERTE
-#else
-// Otherwise (eg. we're being used from a tool like SOS) there isn't much
-// we can rely on that is both available everywhere and rotor-safe.  In 
-// several other tools we just take the recourse of disabling asserts,
-// we'll do the same here.  
-// Ideally we'd have a collection of common utilities available evererywhere.
-#define _ASSERTE_SAFEMATH(a) 
-#endif
-#endif
-
-#include "static_assert.h"
-
-#ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
-#else
-#include "clr_std/type_traits"
-#endif
 
 //==================================================================
 // Semantics: if val can be represented as the exact same value
@@ -71,7 +54,7 @@ inline bool FitsIn(Src val)
         }
         else
         {   // Truncation is possible, requiring runtime check
-            return val == (Src)((Dst)val);
+            return val == static_cast<Src>(static_cast<Dst>(val));
         }
     }
     else if (std::is_signed<Src>::value)
@@ -94,7 +77,7 @@ inline bool FitsIn(Src val)
             }
             else
             {   // Truncation is possible, requiring runtime check
-                return val == (Src)((Dst)val);
+                return val == static_cast<Src>(static_cast<Dst>(val));
             }
         }
     }
@@ -112,11 +95,11 @@ inline bool FitsIn(Src val)
             // true due to limited range of data type." If in fact
             // Dst were unsigned we'd never execute this code
             // anyway.
-            return ((Dst)val > 0 || (Dst)val == 0) &&
+            return (static_cast<Dst>(val) > 0 || static_cast<Dst>(val) == 0) &&
 #else
-            return ((Dst)val >= 0) &&
+            return (static_cast<Dst>(val) >= 0) &&
 #endif
-                   (val == (Src)((Dst)val));
+                   (val == static_cast<Src>(static_cast<Dst>(val)));
         }
     }
 }
@@ -185,7 +168,10 @@ inline bool DoubleFitsInIntType(double val)
 // TODO: Any way to prevent unintended instantiations?  This is only designed to
 //  work with unsigned integral types (signed types will work but we probably 
 //  don't need signed support).
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
 template<typename T> class ClrSafeInt
+#pragma clang diagnostic pop
 {
 public:
     // Default constructor - 0 value by default
@@ -226,7 +212,7 @@ public:
         }
         else
         {
-            m_value = (T)u;
+            m_value = static_cast<T>(u);
         }
     }
 
@@ -242,7 +228,7 @@ public:
         }
         else
         {
-            m_value = (T)u.Value();
+            m_value = static_cast<T>(u.Value());
     }
     }
 
@@ -282,8 +268,8 @@ public:
     // on overflow we'll assert in Debug and return 0 in release.
     inline T Value() const
     {
-        _ASSERTE_SAFEMATH( m_checkedOverflow );  // Ensure our caller first checked the overflow bit
-        _ASSERTE_SAFEMATH( !m_overflow );
+        INDEBUG( assert(m_checkedOverflow); )  // Ensure our caller first checked the overflow bit
+        assert(!m_overflow);
         return m_value;
     }
 
@@ -432,28 +418,28 @@ public:
     {
         if(IsSigned())
         {
-            return (T)~((T)1 << (BitCount()-1));
+            return static_cast<T>(~(static_cast<T>(1) << (BitCount()-1)));
         }
         //else
-        return (T)(~(T)0);
+        return static_cast<T>(~static_cast<T>(0));
     }
 
     static T MinInt()
     {
         if(IsSigned())
         {
-            return (T)((T)1 << (BitCount()-1));
+            return static_cast<T>(static_cast<T>(1) << (BitCount()-1));
         }
         else
         {
-            return ((T)0);
+            return static_cast<T>(0);
         }
     }
 
     // Align a value up to the nearest boundary, which must be a power of 2
     inline void AlignUp( T alignment )
     {
-        _ASSERTE_SAFEMATH( IsPowerOf2( alignment ) );
+        assert( IsPowerOf2( alignment ) );
         *this += (alignment - 1);
         if( !this->m_overflow ) 
         {
@@ -587,15 +573,15 @@ public:
             //we're 32-bit
             if(IsSigned())
             {
-                INT64 tmp = (INT64)lhs * (INT64)rhs;
+                INT64 tmp = static_cast<INT64>(lhs) * static_cast<INT64>(rhs);
 
                 //upper 33 bits must be the same
                 //most common case is likely that both are positive - test first
-                if( (tmp & 0xffffffff80000000LL) == 0 || 
-                    (tmp & 0xffffffff80000000LL) == 0xffffffff80000000LL)
+                if( (static_cast<UINT64>(tmp) & 0xffffffff80000000LL) == 0 || 
+                    (static_cast<UINT64>(tmp) & 0xffffffff80000000LL) == 0xffffffff80000000LL)
                 {
                     //this is OK
-                    result = (T)tmp;
+                    result = static_cast<T>(tmp);
                     return true;
                 }
 
@@ -605,13 +591,13 @@ public:
             }
             else
             {
-                UINT64 tmp = (UINT64)lhs * (UINT64)rhs;
+                UINT64 tmp = static_cast<UINT64>(lhs) * static_cast<UINT64>(rhs);
                 if (tmp & 0xffffffff00000000ULL) //overflow
                 {
                     //overflow
                     return false;
                 }
-                result = (T)tmp;
+                result = static_cast<T>(tmp);
                 return true;
             }
         }
@@ -620,13 +606,13 @@ public:
             //16-bit
             if(IsSigned())
             {
-                INT32 tmp = (INT32)lhs * (INT32)rhs;
+                INT32 tmp = static_cast<INT32>(lhs) * static_cast<INT32>(rhs);
                 //upper 17 bits must be the same
                 //most common case is likely that both are positive - test first
-                if( (tmp & 0xffff8000) == 0 || (tmp & 0xffff8000) == 0xffff8000)
+                if( (static_cast<UINT32>(tmp) & 0xffff8000) == 0 || (static_cast<UINT32>(tmp) & 0xffff8000) == 0xffff8000)
                 {
                     //this is OK
-                    result = (T)tmp;
+                    result = static_cast<T>(tmp);
                     return true;
                 }
 
@@ -635,28 +621,28 @@ public:
             }
             else
             {
-                UINT32 tmp = (UINT32)lhs * (UINT32)rhs;
+                UINT32 tmp = static_cast<UINT32>(lhs) * static_cast<UINT32>(rhs);
                 if (tmp & 0xffff0000) //overflow
                 {
                     return false;
                 }
-                result = (T)tmp;
+                result = static_cast<T>(tmp);
                 return true;
             }
         }
         else //8-bit
         {
-            _ASSERTE_SAFEMATH(Is8Bit());
+            assert(Is8Bit());
 
             if(IsSigned())
             {
-                INT16 tmp = (INT16)lhs * (INT16)rhs;
+                INT16 tmp = static_cast<INT16>(lhs) * static_cast<INT16>(rhs);
                 //upper 9 bits must be the same
                 //most common case is likely that both are positive - test first
                 if( (tmp & 0xff80) == 0 || (tmp & 0xff80) == 0xff80)
                 {
                     //this is OK
-                    result = (T)tmp;
+                    result = static_cast<T>(tmp);
                     return true;
                 }
 
@@ -665,13 +651,13 @@ public:
             }
             else
             {
-                UINT16 tmp = ((UINT16)lhs) * ((UINT16)rhs);
+                UINT16 tmp = static_cast<UINT16>(lhs) * static_cast<UINT16>(rhs);
 
                 if (tmp & 0xff00) //overflow
                 {
                     return false;
                 }
-                result = (T)tmp;
+                result = static_cast<T>(tmp);
                 return true;
             }
         }
@@ -695,7 +681,7 @@ public:
 #endif // __GNUC__ else
                 {
                     //two negatives
-                    if(lhs < (T)(MinInt() - rhs)) //remember rhs < 0
+                    if(lhs < static_cast<T>(MinInt() - rhs)) //remember rhs < 0
                     {
                         return false;
                     }
@@ -704,7 +690,7 @@ public:
                 else
                 {
                     //two positives
-                    if((T)(MaxInt() - lhs) < rhs)
+                    if(static_cast<T>(MaxInt() - lhs) < rhs)
                     {
                         return false;
                     }
@@ -717,7 +703,7 @@ public:
         }
         else //unsigned
         {
-            if((T)(MaxInt() - lhs) < rhs)
+            if(static_cast<T>(MaxInt() - lhs) < rhs)
             {
                 return false;
                 
@@ -869,4 +855,3 @@ typedef ClrSafeInt<SIZE_T> S_SIZE_T;
 #define S_SIZE_T_WP64BUG(v)  S_SIZE_T( v )
 #endif
 
- #endif // SAFEMATH_H_
