@@ -1,3 +1,0 @@
-Compat issues with assembly System.Net.Http.WebRequest:
-TypesMustExist : Type 'System.Net.Http.WebRequestHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1
