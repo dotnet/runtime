@@ -794,6 +794,7 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\DriveInfo.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
+    <IoSources Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\File.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileAccess.cs" />
