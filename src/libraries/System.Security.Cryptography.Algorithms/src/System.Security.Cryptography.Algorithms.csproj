@@ -335,8 +335,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
-    <Compile Include="$(CommonPath)\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs">
-      <Link>Common\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs</Link>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
