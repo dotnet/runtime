@@ -9291,6 +9291,10 @@
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.Int32)" />
     </Type>
     <Type Name="System.IO.FileStream">
+      <Member Name="#ctor(System.IntPtr,System.IO.FileAccess)" />
+      <Member Name="#ctor(System.IntPtr,System.IO.FileAccess,System.Boolean)" />
+      <Member Name="#ctor(System.IntPtr,System.IO.FileAccess,System.Boolean,System.Int32)" />
+      <Member Name="#ctor(System.IntPtr,System.IO.FileAccess,System.Boolean,System.Int32,System.Boolean)" />
       <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess)" />
       <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess,System.Int32)" />
       <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess,System.Int32,System.Boolean)" />
@@ -10049,7 +10053,7 @@
       <Member Status="ImplRoot" MemberType="Field" Name="_empty2" />
       <Member Status="ImplRoot" MemberType="Field" Name="_empty3" />
     </Type>
-	<Type Name="System.Reflection.TypeFilter">
+    <Type Name="System.Reflection.TypeFilter">
       <Member Name="#ctor(System.Object,System.IntPtr)" />
       <Member Status="ApiRoot" Name="BeginInvoke(System.Type,System.Object,System.AsyncCallback,System.Object)" />
       <Member Status="ApiRoot" Name="EndInvoke(System.IAsyncResult)" />
