@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <BuildOSGroup Include="alpine.3.4.3" />
+    <BuildOSGroup Include="debian.8" />
+    <BuildOSGroup Include="fedora.23" />
+    <BuildOSGroup Include="fedora.24" />
+    <BuildOSGroup Include="opensuse.13.2" />
+    <BuildOSGroup Include="opensuse.42.1" />
+    <BuildOSGroup Include="osx.10.10" />
+    <BuildOSGroup Include="rhel.7" />
+    <BuildOSGroup Include="ubuntu.14.04" />
+    <BuildOSGroup Include="ubuntu.16.04" />
+    <BuildOSGroup Include="ubuntu.16.10" />
+    <BuildOSGroup Include="Windows_NT">
+      <Platform>x86</Platform>
+      <PackageTargetRuntime>win7-x86</PackageTargetRuntime>
+    </BuildOSGroup>
+    <BuildOSGroup Include="Windows_NT">
+      <Platform>amd64</Platform>
+      <PackageTargetRuntime>win7-x64</PackageTargetRuntime>
+    </BuildOSGroup>
+    <BuildOSGroup Include="Windows_NT">
+      <Platform>arm64</Platform>
+      <PackageTargetRuntime>win10-arm64</PackageTargetRuntime>
+    </BuildOSGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_project Include="@(BuildOSGroup)">
+      <OSGroup>%(Identity)</OSGroup>
+      <Platform Condition="'%(Platform)' == ''">amd64</Platform>
+      <PackageTargetRuntime Condition="'%(PackageTargetRuntime)' == ''">%(Identity)-x64</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(PackageTargetRuntime)</AdditionalProperties>
+    </_project>
+    
+    <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
+  </ItemGroup>
+</Project>
