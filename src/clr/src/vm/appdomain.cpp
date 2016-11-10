@@ -12580,11 +12580,13 @@ AppDomain::RaiseAssemblyResolveEvent(
     {
         if (pSpec->GetParentAssembly() != NULL)
         {
+#ifndef FEATURE_CORECLR
             if ( pSpec->IsIntrospectionOnly() 
 #ifdef FEATURE_FUSION
                     || pSpec->GetParentLoadContext() == LOADCTX_TYPE_UNKNOWN
 #endif
                 )
+#endif // FEATURE_CORECLR
             {
                 gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedAssemblyObject();
             }
