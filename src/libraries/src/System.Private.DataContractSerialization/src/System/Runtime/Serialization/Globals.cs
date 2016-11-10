@@ -412,6 +412,20 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfOptionalFieldAttribute;
+        internal static Type TypeOfOptionalFieldAttribute
+        {
+            get
+            {
+                if (s_typeOfOptionalFieldAttribute == null)
+                {
+                    s_typeOfOptionalFieldAttribute = typeof(OptionalFieldAttribute);
+                }
+
+                return s_typeOfOptionalFieldAttribute;
+            }
+        }
+
         [SecurityCritical]
         private static Type s_typeOfObjectArray;
         internal static Type TypeOfObjectArray

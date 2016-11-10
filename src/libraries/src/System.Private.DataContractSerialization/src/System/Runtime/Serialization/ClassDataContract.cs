@@ -1145,17 +1145,30 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        // [Serializible] and [NonSerialized] are deprecated on FxCore
-                        // Try to mimic the behavior by allowing certain known types to go through
-                        // POD types are fine also
-
                         FieldInfo field = member as FieldInfo;
-                        if (CanSerializeMember(field))
+
+                        bool canSerializeMember;
+
+                        // Previously System.SerializableAttribute was not available in NetCore, so we had
+                        // a list of known [Serializable] types for type in the framework. Although now SerializableAttribute
+                        // is available in NetCore, some framework types still do not have [Serializable] 
+                        // yet, e.g. ReadOnlyDictionary<TKey, TValue>. So, we still need to maintain the known serializable
+                        // type list.
+                        if (IsKnownSerializableType(type))
+                        {
+                            canSerializeMember = CanSerializeMember(field);
+                        }
+                        else
+                        {
+                            canSerializeMember = field != null && !field.IsNotSerialized;
+                        }
+
+                        if (canSerializeMember)
                         {
                             DataMember memberContract = new DataMember(member);
 
                             memberContract.Name = DataContract.EncodeLocalName(member.Name);
-                            object[] optionalFields = null; // TODO 11477: Add back optional field support
+                            object[] optionalFields = field.GetCustomAttributes(Globals.TypeOfOptionalFieldAttribute, false);
                             if (optionalFields == null || optionalFields.Length == 0)
                             {
                                 if (this.IsReference)
