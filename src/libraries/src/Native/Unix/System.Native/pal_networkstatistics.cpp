@@ -262,13 +262,14 @@ extern "C" int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionI
     while (sysctlbyname("net.inet.tcp.pcblist", buffer, &estimatedSize, newp, newlen) != 0)
     {
         delete[] buffer;
-        estimatedSize = estimatedSize * 2;
-        buffer = new (std::nothrow) uint8_t[estimatedSize];
-        if (buffer == nullptr)
+        size_t tmpEstimatedSize;
+        if (!multiply_s(estimatedSize, static_cast<size_t>(2), &tmpEstimatedSize) ||
+            (buffer = new (std::nothrow) uint8_t[estimatedSize]) == nullptr)
         {
             errno = ENOMEM;
             return -1;
         }
+        estimatedSize = tmpEstimatedSize;
     }
 
     int32_t count = static_cast<int32_t>(estimatedSize / sizeof(xtcpcb));
@@ -361,13 +362,14 @@ extern "C" int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int
     while (sysctlbyname("net.inet.udp.pcblist", buffer, &estimatedSize, newp, newlen) != 0)
     {
         delete[] buffer;
-        estimatedSize = estimatedSize * 2;
-        buffer = new (std::nothrow) uint8_t[estimatedSize];
-        if (buffer == nullptr)
+        size_t tmpEstimatedSize;
+        if (!multiply_s(estimatedSize, static_cast<size_t>(2), &tmpEstimatedSize) ||
+            (buffer = new (std::nothrow) uint8_t[estimatedSize]) == nullptr)
         {
             errno = ENOMEM;
             return -1;
         }
+        estimatedSize = tmpEstimatedSize;
     }
     int32_t count = static_cast<int32_t>(estimatedSize / sizeof(xtcpcb));
     if (count > *infoCount)
