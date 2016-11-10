@@ -11,9 +11,6 @@ namespace System.Dynamic
     /// </summary>
     public abstract class SetMemberBinder : DynamicMetaObjectBinder
     {
-        private readonly string _name;
-        private readonly bool _ignoreCase;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SetMemberBinder" />.
         /// </summary>
@@ -23,39 +20,24 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(name, nameof(name));
 
-            _name = name;
-            _ignoreCase = ignoreCase;
+            Name = name;
+            IgnoreCase = ignoreCase;
         }
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return typeof(object); }
-        }
+        public override sealed Type ReturnType => typeof(object);
 
         /// <summary>
         /// Gets the name of the member to get.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         /// <summary>
         /// Gets the value indicating if the string comparison should ignore the case of the member name.
         /// </summary>
-        public bool IgnoreCase
-        {
-            get
-            {
-                return _ignoreCase;
-            }
-        }
+        public bool IgnoreCase { get; }
 
         /// <summary>
         /// Performs the binding of the dynamic set member operation.
@@ -76,13 +58,7 @@ namespace System.Dynamic
         }
 
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
 
         /// <summary>
         /// Performs the binding of the dynamic set member operation if the target dynamic object cannot bind.

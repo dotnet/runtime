@@ -74,11 +74,11 @@ namespace System.Dynamic
         {
             if (obj.Value == null && obj.HasValue)
             {
-                return BindingRestrictions.GetInstanceRestriction(obj.Expression, null);
+                return GetInstanceRestriction(obj.Expression, null);
             }
             else
             {
-                return BindingRestrictions.GetTypeRestriction(obj.Expression, obj.LimitType);
+                return GetTypeRestriction(obj.Expression, obj.LimitType);
             }
         }
 
@@ -231,6 +231,7 @@ namespace System.Dynamic
                 Left = left;
                 Right = right;
             }
+
             internal override Expression GetExpression()
             {
                 throw ContractUtils.Unreachable;
@@ -366,15 +367,9 @@ namespace System.Dynamic
                 _node = node;
             }
 
-            public bool IsEmpty
-            {
-                get { return _node == Empty; }
-            }
+            public bool IsEmpty => _node == Empty;
 
-            public Expression Test
-            {
-                get { return _node.ToExpression(); }
-            }
+            public Expression Test => _node.ToExpression();
 
             public BindingRestrictions[] Restrictions
             {

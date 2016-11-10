@@ -186,12 +186,6 @@ namespace System.Dynamic
         /// Gets the names of the keys that can be stored in the Expando class.  The
         /// list is sorted ordinally.
         /// </summary>
-        internal string[] Keys
-        {
-            get
-            {
-                return _keys;
-            }
-        }
+        internal string[] Keys => _keys;
     }
 }
