@@ -309,7 +309,7 @@ class JitLog : IDisposable
             }
             if (simdIntrinsicsSupported && methodFound)
             {
-                Console.WriteLine("Method " + method + " was compiled but should not have been\n");
+                Console.WriteLine("Method " + method + " was compiled but should not have been");
                 return false;
             }
             // Useful when developing / debugging just to be sure that we reached here:
