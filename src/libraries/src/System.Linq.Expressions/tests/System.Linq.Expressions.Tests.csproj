@@ -93,6 +93,7 @@
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
     <Compile Include="DelegateType\FuncTypeTests.cs" />
     <Compile Include="DelegateType\GetDelegateTypeTests.cs" />
+    <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
