@@ -6,6 +6,7 @@
     "System.Globalization": "4.4.0-beta-24710-01",
     "System.IO": "4.4.0-beta-24710-01",
     "System.Runtime": "4.4.0-beta-24710-01",
+    "System.Runtime.Extensions": "4.4.0-beta-24710-01",
     "System.Threading.Tasks": "4.4.0-beta-24710-01",
     "System.Xml.ReaderWriter": "4.4.0-beta-24710-01"
   },
