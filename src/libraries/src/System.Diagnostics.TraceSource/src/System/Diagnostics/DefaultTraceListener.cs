@@ -33,12 +33,15 @@ namespace System.Diagnostics
         {
         }
 
-        public bool AssertUiEnabled {
-            get { 
+        public bool AssertUiEnabled 
+        {
+            get 
+            { 
                 if (!_settingsInitialized) InitializeSettings();
                 return _assertUIEnabled; 
             }
-            set { 
+            set 
+            { 
                 if (!_settingsInitialized) InitializeSettings();
                 _assertUIEnabled = value; 
             }
@@ -82,7 +85,8 @@ namespace System.Diagnostics
             WriteAssert(String.Empty, message, detailMessage);
         }
 
-         private void InitializeSettings() {
+         private void InitializeSettings() 
+         {
             // don't use the property setters here to avoid infinite recursion.
             _assertUIEnabled = DiagnosticsConfiguration.AssertUIEnabled;
             _logFileName = DiagnosticsConfiguration.LogFileName;

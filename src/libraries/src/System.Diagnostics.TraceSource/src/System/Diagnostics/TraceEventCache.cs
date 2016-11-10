@@ -66,8 +66,10 @@ namespace System.Diagnostics
             }
         }
 
-        public Stack LogicalOperationStack {
-            get {
+        public Stack LogicalOperationStack 
+        {
+            get 
+            {
                 return Trace.CorrelationManager.LogicalOperationStack;
             }
         }
