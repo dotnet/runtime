@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic
@@ -211,11 +210,7 @@ namespace System.Dynamic
             }
 
             // Notify property changed outside the lock
-            PropertyChangedEventHandler propertyChanged = _propertyChanged;
-            if (propertyChanged != null)
-            {
-                propertyChanged(this, new PropertyChangedEventArgs(data.Class.Keys[index]));
-            }
+            _propertyChanged?.Invoke(this, new PropertyChangedEventArgs(data.Class.Keys[index]));
 
             return true;
         }
@@ -241,13 +236,7 @@ namespace System.Dynamic
         /// Exposes the ExpandoClass which we've associated with this 
         /// Expando object.  Used for type checks in rules.
         /// </summary>
-        internal ExpandoClass Class
-        {
-            get
-            {
-                return _data.Class;
-            }
-        }
+        internal ExpandoClass Class => _data.Class;
 
         /// <summary>
         /// Promotes the class from the old type to the new type and returns the new
@@ -285,6 +274,7 @@ namespace System.Dynamic
         {
             return new MetaExpando(parameter, this);
         }
+
         #endregion
 
         #region Helper methods
@@ -314,6 +304,7 @@ namespace System.Dynamic
         private sealed class KeyCollectionDebugView
         {
             private ICollection<string> _collection;
+
             public KeyCollectionDebugView(ICollection<string> collection)
             {
                 Debug.Assert(collection != null);
@@ -409,10 +400,7 @@ namespace System.Dynamic
                 }
             }
 
-            public bool IsReadOnly
-            {
-                get { return true; }
-            }
+            public bool IsReadOnly => true;
 
             public bool Remove(string item)
             {
@@ -443,6 +431,7 @@ namespace System.Dynamic
             {
                 return GetEnumerator();
             }
+
             #endregion
         }
 
@@ -454,6 +443,7 @@ namespace System.Dynamic
         private sealed class ValueCollectionDebugView
         {
             private ICollection<object> _collection;
+
             public ValueCollectionDebugView(ICollection<object> collection)
             {
                 Debug.Assert(collection != null);
@@ -560,10 +550,7 @@ namespace System.Dynamic
                 }
             }
 
-            public bool IsReadOnly
-            {
-                get { return true; }
-            }
+            public bool IsReadOnly => true;
 
             public bool Remove(object item)
             {
@@ -598,27 +585,17 @@ namespace System.Dynamic
             {
                 return GetEnumerator();
             }
+
             #endregion
         }
 
         #endregion
 
         #region IDictionary<string, object> Members
-        ICollection<string> IDictionary<string, object>.Keys
-        {
-            get
-            {
-                return new KeyCollection(this);
-            }
-        }
 
-        ICollection<object> IDictionary<string, object>.Values
-        {
-            get
-            {
-                return new ValueCollection(this);
-            }
-        }
+        ICollection<string> IDictionary<string, object>.Keys => new KeyCollection(this);
+
+        ICollection<object> IDictionary<string, object>.Values => new ValueCollection(this);
 
         object IDictionary<string, object>.this[string key]
         {
@@ -668,18 +645,10 @@ namespace System.Dynamic
         #endregion
 
         #region ICollection<KeyValuePair<string, object>> Members
-        int ICollection<KeyValuePair<string, object>>.Count
-        {
-            get
-            {
-                return _count;
-            }
-        }
 
-        bool ICollection<KeyValuePair<string, object>>.IsReadOnly
-        {
-            get { return false; }
-        }
+        int ICollection<KeyValuePair<string, object>>.Count => _count;
+
+        bool ICollection<KeyValuePair<string, object>>.IsReadOnly => false;
 
         void ICollection<KeyValuePair<string, object>>.Add(KeyValuePair<string, object> item)
         {
@@ -741,6 +710,7 @@ namespace System.Dynamic
         {
             return TryDeleteValue(null, -1, item.Key, false, item.Value);
         }
+
         #endregion
 
         #region IEnumerable<KeyValuePair<string, object>> Member
@@ -779,6 +749,7 @@ namespace System.Dynamic
                 }
             }
         }
+
         #endregion
 
         #region MetaExpando
@@ -1020,13 +991,7 @@ namespace System.Dynamic
                 return BindingRestrictions.GetTypeRestriction(this);
             }
 
-            public new ExpandoObject Value
-            {
-                get
-                {
-                    return (ExpandoObject)base.Value;
-                }
-            }
+            public new ExpandoObject Value => (ExpandoObject)base.Value;
         }
 
         #endregion
@@ -1073,15 +1038,9 @@ namespace System.Dynamic
                 }
             }
 
-            internal int Version
-            {
-                get { return _version; }
-            }
+            internal int Version => _version;
 
-            internal int Length
-            {
-                get { return _dataArray.Length; }
-            }
+            internal int Length => _dataArray.Length;
 
             /// <summary>
             /// Constructs an empty ExpandoData object with the empty class and no data.
@@ -1110,7 +1069,6 @@ namespace System.Dynamic
             /// <summary>
             /// Update the associated class and increases the storage for the data array if needed.
             /// </summary>
-            /// <returns></returns>
             internal ExpandoData UpdateClass(ExpandoClass newClass)
             {
                 if (_dataArray.Length >= newClass.Keys.Length)
@@ -1150,6 +1108,7 @@ namespace System.Dynamic
             add { _propertyChanged += value; }
             remove { _propertyChanged -= value; }
         }
+
         #endregion
     }
 }

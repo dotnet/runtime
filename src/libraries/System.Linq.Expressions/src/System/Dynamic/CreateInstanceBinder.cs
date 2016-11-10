@@ -11,8 +11,6 @@ namespace System.Dynamic
     /// </summary>
     public abstract class CreateInstanceBinder : DynamicMetaObjectBinder
     {
-        private readonly CallInfo _callInfo;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateInstanceBinder" />.
         /// </summary>
@@ -20,24 +18,18 @@ namespace System.Dynamic
         protected CreateInstanceBinder(CallInfo callInfo)
         {
             ContractUtils.RequiresNotNull(callInfo, nameof(callInfo));
-            _callInfo = callInfo;
+            CallInfo = callInfo;
         }
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return typeof(object); }
-        }
+        public override sealed Type ReturnType => typeof(object);
 
         /// <summary>
         /// Gets the signature of the arguments at the call site.
         /// </summary>
-        public CallInfo CallInfo
-        {
-            get { return _callInfo; }
-        }
+        public CallInfo CallInfo { get; }
 
         /// <summary>
         /// Performs the binding of the dynamic create operation if the target dynamic object cannot bind.
@@ -74,12 +66,6 @@ namespace System.Dynamic
         }
 
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
     }
 }
