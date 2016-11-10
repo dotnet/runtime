@@ -59,7 +59,7 @@ Book of the Runtime
 The Book of the Runtime is a set of chapters that go in depth into various 
 interesting aspects of the design of the .NET Framework.  
 
-- [Book of the Runtime](botr/_tableOfContents.md)
+- [Book of the Runtime](botr/README.md)
 
 For your convenience, here are a few quick links to popular chapters:
 
