@@ -844,6 +844,7 @@ corruption bug caused by invalid GCEncoding for a particular method.
 
 COMMAND: bpmd.
 bpmd [-nofuturemodule] <module name> <method name> [<il offset>]
+bpmd <source file name>:<line number>
 bpmd -md <MethodDesc>
 bpmd -list
 bpmd -clear <pending breakpoint number>

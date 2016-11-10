@@ -5888,6 +5888,56 @@ HRESULT PrintSpecialThreads()
 }
 #endif //FEATURE_PAL
 
+HRESULT SwitchToExceptionThread()
+{
+    HRESULT Status;
+    
+    DacpThreadStoreData ThreadStore;
+    if ((Status = ThreadStore.Request(g_sos)) != S_OK)
+    {
+        Print("Failed to request ThreadStore\n");
+        return Status;
+    }
+
+    DacpThreadData Thread;
+    CLRDATA_ADDRESS CurThread = ThreadStore.firstThread;
+    while (CurThread)
+    {
+        if (IsInterrupt())
+            break;
+
+        if ((Status = Thread.Request(g_sos, CurThread)) != S_OK)
+        {
+            PrintLn("Failed to request Thread at ", Pointer(CurThread));
+            return Status;
+        }
+        
+        TADDR taLTOH;
+        if (Thread.lastThrownObjectHandle != NULL)
+        {
+            if (SafeReadMemory(TO_TADDR(Thread.lastThrownObjectHandle), &taLTOH, sizeof(taLTOH), NULL))
+            {
+                if (taLTOH != NULL)
+                {
+                    ULONG id;
+                    if (g_ExtSystem->GetThreadIdBySystemId(Thread.osThreadId, &id) == S_OK)
+                    {
+                        if (g_ExtSystem->SetCurrentThreadId(id) == S_OK)
+                        {
+                            PrintLn("Found managed exception on thread ", ThreadID(Thread.osThreadId));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        CurThread = Thread.nextThread;
+    }
+
+    return Status;
+}
+
 struct ThreadStateTable
 {
     unsigned int State;
@@ -5961,12 +6011,14 @@ DECLARE_API(Threads)
 
     BOOL bPrintSpecialThreads = FALSE;
     BOOL bPrintLiveThreadsOnly = FALSE;
+    BOOL bSwitchToManagedExceptionThread = FALSE;
     BOOL dml = FALSE;
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
         {"-special", &bPrintSpecialThreads, COBOOL, FALSE},
         {"-live", &bPrintLiveThreadsOnly, COBOOL, FALSE},
+        {"-managedexception", &bSwitchToManagedExceptionThread, COBOOL, FALSE},
 #ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
 #endif
@@ -5974,6 +6026,11 @@ DECLARE_API(Threads)
     if (!GetCMDOption(args, option, _countof(option), NULL, 0, NULL)) 
     {
         return Status;
+    }
+
+    if (bSwitchToManagedExceptionThread)
+    {
+        return SwitchToExceptionThread();
     }
     
     // We need to support minidumps for this command.
