@@ -22,7 +22,7 @@ namespace System.Net
         {
             get
             {
-                return Interop.HttpApi.Supported;
+                return Interop.HttpApi.s_supported;
             }
         }
 
@@ -549,7 +549,7 @@ namespace System.Net
             try
             {
                 statusCode = Interop.HttpApi.HttpCreateServerSession(
-                    Interop.HttpApi.Version, &id, 0);
+                    Interop.HttpApi.s_version, &id, 0);
 
                 if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
                 {
@@ -772,7 +772,7 @@ namespace System.Net
             HttpRequestQueueV2Handle requestQueueHandle = null;
             statusCode =
                 Interop.HttpApi.HttpCreateRequestQueue(
-                    Interop.HttpApi.Version, null, null, 0, out requestQueueHandle);
+                    Interop.HttpApi.s_version, null, null, 0, out requestQueueHandle);
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
