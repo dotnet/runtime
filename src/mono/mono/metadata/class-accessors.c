@@ -6,6 +6,11 @@
 #include <mono/metadata/tabledefs.h>
 
 
+enum InfrequentDataKind {
+	PROP_MARSHAL_INFO = 1, /* MonoMarshalType */
+	PROP_EXT = 2, /* MonoClassExt */
+};
+
 /* Accessors based on class kind*/
 
 /*
@@ -226,24 +231,25 @@ mono_class_set_field_count (MonoClass *klass, guint32 count)
 MonoMarshalType*
 mono_class_get_marshal_info (MonoClass *class)
 {
-	return class->marshal_info;
+	return mono_property_bag_get (&class->infrequent_data, PROP_MARSHAL_INFO);
 }
 
 void
 mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info)
 {
-	class->marshal_info = marshal_info;
+	marshal_info->head.tag = PROP_MARSHAL_INFO;
+	mono_property_bag_add (&class->infrequent_data, marshal_info);
 }
 
 MonoClassExt*
 mono_class_get_ext (MonoClass *class)
 {
-	return class->ext;
+	return mono_property_bag_get (&class->infrequent_data, PROP_EXT);
 }
 
 void
 mono_class_set_ext (MonoClass *class, MonoClassExt *ext)
 {
-	class->ext = ext;
+	ext->head.tag = PROP_EXT;
+	mono_property_bag_add (&class->infrequent_data, ext);
 }
-
