@@ -38,6 +38,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get { return true; }
         }
+
+        public bool SupportsKeyGeneration => true;
     }
 
     public partial class RSAFactory
