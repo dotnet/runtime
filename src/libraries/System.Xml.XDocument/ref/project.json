@@ -2,6 +2,7 @@
   "dependencies": {
     "System.IO": "4.4.0-beta-24710-01",
     "System.Runtime": "4.4.0-beta-24710-01",
+    "System.Runtime.Extensions": "4.4.0-beta-24710-01",
     "System.Xml.ReaderWriter": "4.4.0-beta-24710-01"
   },
   "frameworks": {
