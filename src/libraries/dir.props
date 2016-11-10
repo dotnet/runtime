@@ -85,7 +85,7 @@
 
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
-    <!-- Example to consume local CoreCLR package: 
+    <!-- Example to consume local CoreCLR package:
          /t:BatchRestorePackages /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
     -->
     <DnuSourceList Include="$(OverridePackageSource)" />
