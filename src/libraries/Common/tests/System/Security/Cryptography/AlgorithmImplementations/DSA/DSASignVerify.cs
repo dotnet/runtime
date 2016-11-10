@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -32,6 +31,38 @@ namespace System.Security.Cryptography.Dsa.Tests
                 byte[] signature = dsa.SignData(DSATestData.HelloBytes, new HashAlgorithmName("SHA1"));
                 bool signatureMatched = dsa.VerifyData(DSATestData.HelloBytes, signature, new HashAlgorithmName("SHA1"));
                 Assert.True(signatureMatched);
+            }
+        }
+
+        [Fact]
+        public static void VerifyKnown_512()
+        {
+            byte[] signature = (
+                // r:
+                "E21F20B0B5E553137F6649DDC58F5E4AB7D4E6DE" +
+                // s:
+                "C37534CC7D9630339936C581690E832BD85C6C79").HexToByteArray();
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.Dsa512Parameters);
+                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
+            }
+        }
+
+        [Fact]
+        public static void VerifyKnown_576()
+        {
+            byte[] signature = (
+                // r:
+                "490AEFA5A4F28B35183BBA3BE2536514AB13A088" +
+                // s:
+                "3F883FE96524D4CC596F67B64A3382E794C8D65B").HexToByteArray();
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.Dsa576Parameters);
+                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
             }
         }
 
