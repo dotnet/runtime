@@ -1054,6 +1054,7 @@
       <Member Name="SetProfileOptimizationRoot(System.String)" />
       <Member Name="StartProfileOptimization(System.String)" />
       <Member MemberType="Event" Name="AssemblyLoad" />
+      <Member MemberType="Event" Name="AssemblyResolve" />
       <Member MemberType="Event" Name="Resolving" />
       <Member MemberType="Event" Name="ResourceResolve" />
       <Member MemberType="Event" Name="TypeResolve" />
