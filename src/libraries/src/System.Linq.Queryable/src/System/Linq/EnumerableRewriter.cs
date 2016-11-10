@@ -315,7 +315,6 @@ namespace System.Linq
                 return Expression.Condition(test, ifTrue, ifFalse, trueType);
             if (falseType.IsAssignableFrom(trueType))
                 return Expression.Condition(test, ifTrue, ifFalse, falseType);
-            TypeInfo info = type.GetTypeInfo();
             return Expression.Condition(test, ifTrue, ifFalse, GetEquivalentType(type));
         }
 
