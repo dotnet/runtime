@@ -57,7 +57,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -98,7 +98,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -116,7 +116,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
 
             ValidateScopeTimeout(nameof(scopeTimeout), scopeTimeout);
@@ -170,7 +170,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -188,7 +188,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
 
             ValidateScopeTimeout("transactionOptions.Timeout", transactionOptions.Timeout);
@@ -256,7 +256,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -268,7 +268,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
  
             ValidateScopeTimeout("transactionOptions.Timeout", transactionOptions.Timeout);
@@ -338,7 +338,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -355,7 +355,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -367,7 +367,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -384,7 +384,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -396,7 +396,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -409,7 +409,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
 
             ValidateInteropOption(interopOption);
@@ -422,7 +422,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -508,13 +508,13 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
             if (_disposed)
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
                 }
                 return;
             }
@@ -566,7 +566,7 @@ namespace System.Transactions
 
                         successful = true;
                         throw TransactionException.CreateInvalidOperationException(
-                            SR.TransactionScopeInvalidNesting, null, rollbackTransaction.DistributedTxId);
+                            TraceSourceType.TraceSourceBase, SR.TransactionScopeInvalidNesting, null, rollbackTransaction.DistributedTxId);
                     }
                     // Verify that expectedCurrent is the same as the "current" current if we the interopOption value is None.
                     else if (EnterpriseServicesInteropOption.None == actualCurrentScope._interopOption)
@@ -602,7 +602,7 @@ namespace System.Transactions
                                 etwLog.TransactionScopeCurrentChanged(currentId, myId);
                             }
 
-                            exToThrow = TransactionException.CreateInvalidOperationException(SR.TransactionScopeIncorrectCurrent, null,
+                            exToThrow = TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceBase, SR.TransactionScopeIncorrectCurrent, null,
                                 current == null ? Guid.Empty : current.DistributedTxId);
 
                             // If there is a current transaction, abort it.
@@ -629,7 +629,7 @@ namespace System.Transactions
                     {
                         if (null == exToThrow)
                         {
-                            exToThrow = TransactionException.CreateInvalidOperationException(SR.TransactionScopeInvalidNesting, null,
+                            exToThrow = TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceBase, SR.TransactionScopeInvalidNesting, null,
                                 current == null ? Guid.Empty : current.DistributedTxId);
                         }
 
@@ -703,7 +703,7 @@ namespace System.Transactions
 
                             if (null == exToThrow)
                             {
-                                exToThrow = TransactionException.CreateInvalidOperationException(SR.TransactionScopeIncorrectCurrent, null,
+                                exToThrow = TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceBase, SR.TransactionScopeIncorrectCurrent, null,
                                     current == null ? Guid.Empty : current.DistributedTxId);
                             }
 
@@ -749,7 +749,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -844,7 +844,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
             if (_disposed)
             {
@@ -853,13 +853,13 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateInvalidOperationException(SR.DisposeScope, null);
+                throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceBase, SR.DisposeScope, null);
             }
 
             _complete = true;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, this);
             }
         }
 
@@ -874,7 +874,7 @@ namespace System.Transactions
                     etwLog.TransactionScopeInternalError("TransactionScopeTimerObjectInvalid");
                 }
 
-                throw TransactionException.Create(SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
+                throw TransactionException.Create(TraceSourceType.TraceSourceBase, SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
             }
 
             scope.Timeout();
@@ -898,7 +898,7 @@ namespace System.Transactions
                     // Tolerate the fact that the transaction has already been disposed.
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.ExceptionConsumed(ex);
+                        etwLog.ExceptionConsumed(TraceSourceType.TraceSourceBase, ex);
                     }
                 }
                 catch (TransactionException txEx)
@@ -906,7 +906,7 @@ namespace System.Transactions
                     // Tolerate transaction exceptions
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.ExceptionConsumed(txEx);
+                        etwLog.ExceptionConsumed(TraceSourceType.TraceSourceBase, txEx);
                     }
                 }
             }

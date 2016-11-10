@@ -155,7 +155,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("Transaction.get_Current");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
                 Transaction current = null;
@@ -173,7 +173,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.get_Current");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
                 return current;
@@ -184,7 +184,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("Transaction.set_Current");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.set_Current");
                 }
 
                 // Bring your own Transaction(BYOT) is supported only for legacy scenarios. 
@@ -206,7 +206,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("Transaction.set_Current");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "Transaction.set_Current");
                 }
             }
         }
@@ -362,7 +362,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter(this);
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 if (Disposed)
@@ -380,7 +380,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 return txInfo;
@@ -397,7 +397,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter(this);
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 if (Disposed)
@@ -407,7 +407,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return _isoLevel;
             }
@@ -432,7 +432,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter(this);
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 if (Disposed)
@@ -471,7 +471,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -499,7 +499,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -534,7 +534,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 return enlistment;
@@ -552,7 +552,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -587,7 +587,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return enlistment;
             }
@@ -599,7 +599,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.TransactionRollback(this, "Transaction");
             }
 
@@ -616,7 +616,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -626,7 +626,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.TransactionRollback(this, "Transaction");
             }
 
@@ -643,7 +643,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -655,7 +655,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
  
             if (Disposed)
@@ -685,7 +685,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return enlistment;
             }
@@ -699,7 +699,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -729,7 +729,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return enlistment;
             }
@@ -742,7 +742,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -759,7 +759,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
             return clone;
         }
@@ -771,7 +771,6 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
                 etwLog.TransactionCloneCreate(clone, "Transaction");
             }
 
@@ -788,7 +787,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (cloneOption != DependentCloneOption.BlockCommitUntilComplete
@@ -813,7 +812,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.TransactionCloneCreate(clone, "DependentTransaction");
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
             return clone;
         }
@@ -881,7 +880,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Interlocked.Exchange(ref _disposed, Transaction._disposedTrueValue) == Transaction._disposedTrueValue)
@@ -898,7 +897,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -911,7 +910,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -937,7 +936,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.TransactionSerialized(this, "Transaction");
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -984,7 +983,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -1016,7 +1015,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
 
             return succeeded;
@@ -1030,7 +1029,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, this);
             }
 
             if (Disposed)
@@ -1070,7 +1069,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, this);
                 }
 
                 return enlistment;
@@ -1083,7 +1082,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -1114,7 +1113,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return;
             }

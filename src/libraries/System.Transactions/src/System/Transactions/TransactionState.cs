@@ -2217,19 +2217,19 @@ namespace System.Transactions
 
         internal override void EndCommit(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
     }
 
@@ -2748,7 +2748,7 @@ namespace System.Transactions
 
             if (tx._outcomeSource._isoLevel == IsolationLevel.Snapshot)
             {
-                throw TransactionException.CreateInvalidOperationException(
+                throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                     SR.CannotPromoteSnapshot, null);
             }
 
@@ -3441,6 +3441,7 @@ namespace System.Transactions
             if (!ThreadPool.QueueUserWorkItem(SignalMethod, tx))
             {
                 throw TransactionException.CreateInvalidOperationException(
+                    TraceSourceType.TraceSourceLtm,
                     SR.UnexpectedFailureOfThreadPool,
                     null,
                     tx == null ? Guid.Empty : tx.DistributedTxId
@@ -3798,12 +3799,12 @@ namespace System.Transactions
 
         internal override void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3829,19 +3830,19 @@ namespace System.Transactions
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3872,7 +3873,7 @@ namespace System.Transactions
         {
             if (tx._outcomeSource._isoLevel == IsolationLevel.Snapshot)
             {
-                throw TransactionException.CreateInvalidOperationException(
+                throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                     SR.CannotPromoteSnapshot, null, tx == null ? Guid.Empty : tx.DistributedTxId);
             }
 
@@ -4577,6 +4578,7 @@ namespace System.Transactions
             if (!ThreadPool.QueueUserWorkItem(SignalMethod, tx))
             {
                 throw TransactionException.CreateInvalidOperationException(
+                    TraceSourceType.TraceSourceLtm,
                     SR.UnexpectedFailureOfThreadPool,
                     null,
                     tx == null ? Guid.Empty : tx.DistributedTxId
@@ -4847,12 +4849,12 @@ namespace System.Transactions
 
         internal override void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
@@ -4861,17 +4863,17 @@ namespace System.Transactions
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionInDoubtException.Create(SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CreateBlockingClone(InternalTransaction tx)
@@ -5062,6 +5064,7 @@ namespace System.Transactions
                 {
                     // There should not already be a PSPEPromote call outstanding.
                     throw TransactionException.CreateInvalidOperationException(
+                            TraceSourceType.TraceSourceLtm,
                             SR.PromotedReturnedInvalidValue,
                             null,
                             tx.DistributedTxId
@@ -5078,6 +5081,7 @@ namespace System.Transactions
                     if (propagationToken == null)
                     {
                         throw TransactionException.CreateInvalidOperationException(
+                                TraceSourceType.TraceSourceLtm,
                                 SR.PromotedReturnedInvalidValue,
                                 null,
                                 tx.DistributedTxId
@@ -5100,6 +5104,7 @@ namespace System.Transactions
                     {
                         // The PSPE has returned an invalid promoted transaction.
                         throw TransactionException.CreateInvalidOperationException(
+                                TraceSourceType.TraceSourceLtm,
                                 SR.PromotedReturnedInvalidValue,
                                 null,
                                 tx.DistributedTxId
@@ -5125,7 +5130,8 @@ namespace System.Transactions
                     catch (ArgumentException e)
                     {
                         // The PSPE has returned an invalid promoted transaction.
-                        throw TransactionException.CreateInvalidOperationException(             
+                        throw TransactionException.CreateInvalidOperationException(
+                                TraceSourceType.TraceSourceLtm,             
                                 SR.PromotedReturnedInvalidValue,
                                 e,
                                 tx.DistributedTxId
@@ -5137,6 +5143,7 @@ namespace System.Transactions
                         // If there is already a promoted transaction then someone has committed an error.
                         distributedTx.Dispose();
                         throw TransactionException.CreateInvalidOperationException(
+                                TraceSourceType.TraceSourceLtm,
                                 SR.PromotedTransactionExists,
                                 null,
                                 tx.DistributedTxId
@@ -5178,6 +5185,7 @@ namespace System.Transactions
             if (promotableNotification != tx._promoter)
             {
                 throw TransactionException.CreateInvalidOperationException(
+                        TraceSourceType.TraceSourceLtm,
                         SR.InvalidIPromotableSinglePhaseNotificationSpecified,
                         null,
                         tx.DistributedTxId
@@ -5220,6 +5228,7 @@ namespace System.Transactions
             if (promotableNotification != tx._promoter)
             {
                 throw TransactionException.CreateInvalidOperationException(
+                        TraceSourceType.TraceSourceLtm,
                         SR.InvalidIPromotableSinglePhaseNotificationSpecified,
                         null,
                         tx.DistributedTxId

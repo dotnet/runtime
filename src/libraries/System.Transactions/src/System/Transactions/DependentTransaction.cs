@@ -34,7 +34,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             lock (_internalTransaction)
@@ -64,7 +64,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.TransactionDependentCloneComplete(this, "DependentTransaction");
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
     }

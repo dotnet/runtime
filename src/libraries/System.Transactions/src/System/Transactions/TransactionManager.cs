@@ -156,7 +156,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionManager.Reenlist");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.Reenlist");
                 etwLog.TransactionManagerReenlist(resourceManagerIdentifier);
             }
 
@@ -181,7 +181,7 @@ namespace System.Transactions
                 {
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.TransactionExceptionTrace(TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), string.Empty);
+                        etwLog.TransactionExceptionTrace(TraceSourceType.TraceSourceBase, TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), string.Empty);
                     }
 
                     throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation));
@@ -191,7 +191,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.TransactionExceptionTrace(TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
+                    etwLog.TransactionExceptionTrace(TraceSourceType.TraceSourceBase, TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
                 }
                 throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
@@ -199,7 +199,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.TransactionExceptionTrace(TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
+                    etwLog.TransactionExceptionTrace(TraceSourceType.TraceSourceBase, TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
                 }
                 throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
@@ -224,7 +224,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionManager.Reenlist");
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.Reenlist");
             }
 
             return returnValue;
@@ -252,7 +252,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionManager.RecoveryComplete");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.RecoveryComplete");
                 etwLog.TransactionManagerRecoveryComplete(resourceManagerIdentifier);
             }
 
@@ -260,7 +260,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionManager.RecoveryComplete");
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.RecoveryComplete");
             }
         }
 
@@ -289,8 +289,8 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("TransactionManager.get_DefaultIsolationLevel");
-                    etwLog.MethodExit("TransactionManager.get_DefaultIsolationLevel");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultIsolationLevel");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultIsolationLevel");
                 }
 
                 return IsolationLevel.Serializable;
@@ -336,7 +336,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("TransactionManager.get_DefaultTimeout");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
                 }
 
                 if (!s_defaultTimeoutValidated)
@@ -355,7 +355,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("TransactionManager.get_DefaultTimeout");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
                 }
                 return s_defaultTimeout;
             }
@@ -372,7 +372,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodEnter("TransactionManager.get_DefaultMaximumTimeout");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
                 if (!s_cachedMaxTimeout)
@@ -390,7 +390,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("TransactionManager.get_DefaultMaximumTimeout");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
                 return s_maximumTimeout;
@@ -407,7 +407,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionManager.GetRecoveryInformation");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
             }
 
             MemoryStream stream = new MemoryStream();
@@ -438,7 +438,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionManager.GetRecoveryInformation");
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
             }
 
             return returnValue;

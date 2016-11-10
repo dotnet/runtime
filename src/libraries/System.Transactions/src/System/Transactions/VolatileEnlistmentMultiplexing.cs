@@ -114,6 +114,7 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(PrepareCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
+                            TraceSourceType.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -171,6 +172,7 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(CommitCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
+                            TraceSourceType.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -228,6 +230,7 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(RollbackCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
+                            TraceSourceType.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -285,6 +288,7 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(InDoubtCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
+                            TraceSourceType.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );

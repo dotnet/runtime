@@ -230,6 +230,7 @@ namespace System.Transactions
                         if (!_timer.Change(_timerInterval, _timerInterval))
                         {
                             throw TransactionException.CreateInvalidOperationException(
+                                TraceSourceType.TraceSourceLtm,
                                 SR.UnexpectedTimerFailure,
                                 null
                                 );
@@ -438,6 +439,7 @@ namespace System.Transactions
                         if (!_timer.Change(Timeout.Infinite, Timeout.Infinite))
                         {
                             throw TransactionException.CreateInvalidOperationException(
+                                TraceSourceType.TraceSourceLtm,
                                 SR.UnexpectedTimerFailure,
                                 null
                                 );

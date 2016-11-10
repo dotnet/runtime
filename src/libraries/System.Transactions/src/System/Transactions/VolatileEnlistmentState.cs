@@ -251,7 +251,7 @@ namespace System.Transactions
         // Override of get_RecoveryInformation to be more specific with the exception string.
         internal override byte[] RecoveryInformation(InternalEnlistment enlistment)
         {
-            throw TransactionException.CreateInvalidOperationException(
+            throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                 SR.VolEnlistNoRecoveryInfo, null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
     }
