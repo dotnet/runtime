@@ -1715,7 +1715,7 @@ namespace System.IO
             if (CanWrite)
             {
                 return Task.Factory.StartNew(
-                    state => FlushOSBuffer(),
+                    state => ((FileStream)state).FlushOSBuffer(),
                     this,
                     cancellationToken,
                     TaskCreationOptions.DenyChildAttach,
