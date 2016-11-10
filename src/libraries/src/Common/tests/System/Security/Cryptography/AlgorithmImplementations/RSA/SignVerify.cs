@@ -10,7 +10,9 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public class SignVerify
     {
-        [Fact]
+        public static bool SupportsKeyGeneration => RSAFactory.SupportsKeyGeneration;
+
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void InvalidKeySize_DoesNotInvalidateKey()
         {
             using (RSA rsa = RSAFactory.Create())
