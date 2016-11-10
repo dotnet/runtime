@@ -40,7 +40,7 @@ namespace System.IO {
         private bool     m_isMemoryStream; // "do we sit on MemoryStream?" for Read/ReadInt32 perf
         private bool     m_leaveOpen;
 
-        public BinaryReader(Stream input) : this(input, new UTF8Encoding(), false) {
+        public BinaryReader(Stream input) : this(input, Encoding.UTF8, false) {
         }
 
         public BinaryReader(Stream input, Encoding encoding) : this(input, encoding, false) {
