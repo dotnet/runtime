@@ -2321,6 +2321,9 @@ void Compiler::compSetProcessor()
     if (opts.compUseCMOV)
         opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 
+// X86 RyuJIT requires SSE2 to be available and hence
+// don't turn off compCanUseSSE2 under stress.
+#ifdef LEGACY_BACKEND
     // Should we override the SSE2 setting
     enum
     {
@@ -2335,7 +2338,12 @@ void Compiler::compSetProcessor()
         opts.compCanUseSSE2 = true;
     else if (opts.compCanUseSSE2)
         opts.compCanUseSSE2 = !compStressCompile(STRESS_GENERIC_VARN, 50);
+#else  // !LEGACY_JITBACKEND
+    assert(opts.compCanUseSSE2);
+#endif // !LEGACY_JITBACKEND
+
 #endif // DEBUG
+
 #endif // _TARGET_X86_
 }
 
