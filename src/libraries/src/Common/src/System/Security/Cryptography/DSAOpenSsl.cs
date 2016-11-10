@@ -173,12 +173,12 @@ namespace System.Security.Cryptography
                 Debug.Assert(count >= 0 && count <= data.Length);
                 Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-                return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
             }
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
             {
-                return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+                return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
             }
 
             public override byte[] CreateSignature(byte[] rgbHash)
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
                     signature.Length);
 
                 int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
-                byte[] converted = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(signature, 0, signatureSize, signatureFieldSize);
+                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureSize, signatureFieldSize);
                 return converted;
             }
 
@@ -224,7 +224,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                byte[] openSslFormat = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(rgbSignature);
+                byte[] openSslFormat = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(rgbSignature);
 
                 return Interop.Crypto.DsaVerify(key, rgbHash, rgbHash.Length, openSslFormat, openSslFormat.Length);
             }
