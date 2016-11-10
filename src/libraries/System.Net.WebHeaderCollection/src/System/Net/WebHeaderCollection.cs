@@ -351,20 +351,20 @@ namespace System.Net
             InnerCollection.Add(name, value);
         }
 
-        protected void AddWithoutValidate(string name, string value)
+        protected void AddWithoutValidate(string headerName, string headerValue)
         {
-            name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
-            value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"calling InnerCollection.Add() key:[{name}], value:[{value}]");
+            headerName = HttpValidationHelpers.CheckBadHeaderNameChars(headerName);
+            headerValue = HttpValidationHelpers.CheckBadHeaderValueChars(headerValue);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"calling InnerCollection.Add() key:[{headerName}], value:[{headerValue}]");
             if (_type == WebHeaderCollectionType.WebResponse)
             {
-                if (value != null && value.Length > ushort.MaxValue)
+                if (headerValue != null && headerValue.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(headerValue), headerValue, string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
-            InnerCollection.Add(name, value);
+            InnerCollection.Add(headerName, headerValue);
         }
 
         internal void ThrowOnRestrictedHeader(string headerName)

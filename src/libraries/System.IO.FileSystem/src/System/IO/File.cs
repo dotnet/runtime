@@ -244,16 +244,16 @@ namespace System.IO
             return dateTime.ToUniversalTime();
         }
 
-        public static void SetCreationTime(String path, DateTime creationTimeUtc)
+        public static void SetCreationTime(String path, DateTime creationTime)
         {
             String fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetCreationTime(fullPath, creationTimeUtc, asDirectory: false);
+            FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: false);
         }
 
-        public static void SetCreationTimeUtc(String path, DateTime creationTime)
+        public static void SetCreationTimeUtc(String path, DateTime creationTimeUtc)
         {
             String fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTime), asDirectory: false);
+            FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
