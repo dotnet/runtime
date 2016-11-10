@@ -152,11 +152,16 @@ static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 static MonoInst*
 emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp);
 
+inline static MonoInst*
+mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoInst *imt_arg, MonoInst *rgctx_arg);
+
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_domain_get;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline;
 static MonoMethodSignature *helper_sig_jit_thread_attach;
+static MonoMethodSignature *helper_sig_get_tls_tramp;
+static MonoMethodSignature *helper_sig_set_tls_tramp;
 
 /* type loading helpers */
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, System.Runtime.CompilerServices, RuntimeHelpers)
@@ -369,6 +374,8 @@ mono_create_helper_signatures (void)
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 	helper_sig_llvmonly_imt_trampoline = mono_create_icall_signature ("ptr ptr ptr");
 	helper_sig_jit_thread_attach = mono_create_icall_signature ("ptr ptr");
+	helper_sig_get_tls_tramp = mono_create_icall_signature ("ptr");
+	helper_sig_set_tls_tramp = mono_create_icall_signature ("void ptr");
 }
 
 static MONO_NEVER_INLINE void
@@ -1716,22 +1723,34 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	}
 }
 
-static void
-emit_tls_set (MonoCompile *cfg, int sreg1, MonoTlsKey tls_key)
+MonoInst*
+mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
-	MonoInst *ins, *c;
-
 	if (cfg->compile_aot) {
-		EMIT_NEW_TLS_OFFSETCONST (cfg, c, tls_key);
-		MONO_INST_NEW (cfg, ins, OP_TLS_SET_REG);
-		ins->sreg1 = sreg1;
-		ins->sreg2 = c->dreg;
-		MONO_ADD_INS (cfg->cbb, ins);
+		MonoInst *addr;
+		/*
+		 * tls getters are critical pieces of code and we don't want to resolve them
+		 * through the standard plt/tramp mechanism since we might expose ourselves
+		 * to crashes and infinite recursions.
+		 */
+		EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_GET_TLS_TRAMP, (void*)key);
+		return mono_emit_calli (cfg, helper_sig_get_tls_tramp, NULL, addr, NULL, NULL);
 	} else {
-		MONO_INST_NEW (cfg, ins, OP_TLS_SET);
-		ins->sreg1 = sreg1;
-		ins->inst_offset = mini_get_tls_offset (tls_key);
-		MONO_ADD_INS (cfg->cbb, ins);
+		gpointer getter = mono_tls_get_tls_getter (key, FALSE);
+		return mono_emit_jit_icall (cfg, getter, NULL);
+	}
+}
+
+static MonoInst*
+mono_create_tls_set (MonoCompile *cfg, MonoInst *value, MonoTlsKey key)
+{
+	if (cfg->compile_aot) {
+		MonoInst *addr;
+		EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_SET_TLS_TRAMP, (void*)key);
+		return mono_emit_calli (cfg, helper_sig_set_tls_tramp, &value, addr, NULL, NULL);
+	} else {
+		gpointer setter = mono_tls_get_tls_setter (key, FALSE);
+		return mono_emit_jit_icall (cfg, setter, &value);
 	}
 }
 
@@ -1750,24 +1769,23 @@ emit_push_lmf (MonoCompile *cfg)
 	 * lmf->prev_lmf = *lmf_addr
 	 * *lmf_addr = lmf
 	 */
-	int lmf_reg, prev_lmf_reg;
 	MonoInst *ins, *lmf_ins;
 
 	if (!cfg->lmf_ir)
 		return;
 
-	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
+	if (cfg->lmf_ir_mono_lmf) {
+		MonoInst *lmf_vara_ins, *lmf_ins;
 		/* Load current lmf */
-		lmf_ins = mono_get_lmf_intrinsic (cfg);
+		lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF);
 		g_assert (lmf_ins);
-		MONO_ADD_INS (cfg->cbb, lmf_ins);
-		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
-		lmf_reg = ins->dreg;
+		EMIT_NEW_VARLOADA (cfg, lmf_vara_ins, cfg->lmf_var, NULL);
 		/* Save previous_lmf */
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_vara_ins->dreg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
 		/* Set new LMF */
-		emit_tls_set (cfg, lmf_reg, TLS_KEY_LMF);
+		mono_create_tls_set (cfg, lmf_vara_ins, TLS_KEY_LMF);
 	} else {
+		int lmf_reg, prev_lmf_reg;
 		/*
 		 * Store lmf_addr in a variable, so it can be allocated to a global register.
 		 */
@@ -1775,41 +1793,15 @@ emit_push_lmf (MonoCompile *cfg)
 			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
 #ifdef HOST_WIN32
-		ins = mono_get_jit_tls_intrinsic (cfg);
-		if (ins) {
-			int jit_tls_dreg = ins->dreg;
+		ins = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
+		g_assert (ins);
+		int jit_tls_dreg = ins->dreg;
 
-			MONO_ADD_INS (cfg->cbb, ins);
-			lmf_reg = alloc_preg (cfg);
-			EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
-		} else {
-			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
-		}
+		lmf_reg = alloc_preg (cfg);
+		EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
 #else
-		lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
-		if (lmf_ins) {
-			MONO_ADD_INS (cfg->cbb, lmf_ins);
-		} else {
-#ifdef TARGET_IOS
-			MonoInst *args [16], *jit_tls_ins, *ins;
-
-			/* Inline mono_get_lmf_addr () */
-			/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
-
-			/* Load mono_jit_tls_id */
-			if (cfg->compile_aot)
-				EMIT_NEW_AOTCONST (cfg, args [0], MONO_PATCH_INFO_JIT_TLS_ID, NULL);
-			else
-				EMIT_NEW_ICONST (cfg, args [0], mono_jit_tls_id);
-			/* call pthread_getspecific () */
-			jit_tls_ins = mono_emit_jit_icall (cfg, pthread_getspecific, args);
-			/* lmf_addr = &jit_tls->lmf */
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, cfg->lmf_addr_var->dreg, jit_tls_ins->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
-			lmf_ins = ins;
-#else
-			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
-#endif
-		}
+		lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
+		g_assert (lmf_ins);
 #endif
 		lmf_ins->dreg = cfg->lmf_addr_var->dreg;
 
@@ -1833,7 +1825,7 @@ emit_push_lmf (MonoCompile *cfg)
 static void
 emit_pop_lmf (MonoCompile *cfg)
 {
-	int lmf_reg, lmf_addr_reg, prev_lmf_reg;
+	int lmf_reg, lmf_addr_reg;
 	MonoInst *ins;
 
 	if (!cfg->lmf_ir)
@@ -1842,13 +1834,13 @@ emit_pop_lmf (MonoCompile *cfg)
  	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
  	lmf_reg = ins->dreg;
 
-	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
+	if (cfg->lmf_ir_mono_lmf) {
 		/* Load previous_lmf */
-		prev_lmf_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, alloc_preg (cfg), lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* Set new LMF */
-		emit_tls_set (cfg, prev_lmf_reg, TLS_KEY_LMF);
+		mono_create_tls_set (cfg, ins, TLS_KEY_LMF);
 	} else {
+		int prev_lmf_reg;
 		/*
 		 * Emit IR to pop the LMF:
 		 * *(lmf->lmf_addr) = lmf->prev_lmf
@@ -3680,13 +3672,12 @@ mini_save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg, gboolea
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
 		}
 
-		tls_get = mono_get_jit_tls_intrinsic (cfg);
+		tls_get = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
 		if (!tls_get) {
 			fprintf (stderr, "error: --debug=casts not supported on this platform.\n.");
 			exit (1);
 		}
 
-		MONO_ADD_INS (cfg->cbb, tls_get);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
@@ -3714,9 +3705,7 @@ mini_reset_cast_details (MonoCompile *cfg)
 {
 	/* Reset the variables holding the cast details */
 	if (mini_get_debug_options ()->better_cast_details) {
-		MonoInst *tls_get = mono_get_jit_tls_intrinsic (cfg);
-
-		MONO_ADD_INS (cfg->cbb, tls_get);
+		MonoInst *tls_get = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
 		/* It is enough to reset the from field */
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, tls_get->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), 0);
 	}
@@ -10802,7 +10791,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			is_special_static = mono_class_field_is_special_static (field);
 
 			if (is_special_static && ((gsize)addr & 0x80000000) == 0)
-				thread_ins = mono_get_thread_intrinsic (cfg);
+				thread_ins = mono_create_tls_get (cfg, TLS_KEY_THREAD);
 			else
 				thread_ins = NULL;
 
@@ -10818,7 +10807,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				GSHAREDVT_FAILURE (op);
 
-				MONO_ADD_INS (cfg->cbb, thread_ins);
 				static_data_reg = alloc_ireg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
 
@@ -11982,18 +11970,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (key < TLS_KEY_NUM);
 
 				ins = mono_create_tls_get (cfg, key);
-				if (!ins) {
-					if (cfg->compile_aot) {
-						DISABLE_AOT (cfg);
-						MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-						ins->dreg = alloc_preg (cfg);
-						ins->type = STACK_PTR;
-					} else {
-						g_assert_not_reached ();
-					}
-				}
+				g_assert (ins);
 				ins->type = STACK_PTR;
-				MONO_ADD_INS (cfg->cbb, ins);
 				*sp++ = ins;
 				ip += 6;
 				break;
@@ -12061,10 +12039,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_PCONST (cfg, ins, NULL);
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 
-				ad_ins = mono_get_domain_intrinsic (cfg);
-				jit_tls_ins = mono_get_jit_tls_intrinsic (cfg);
+				ad_ins = mono_create_tls_get (cfg, TLS_KEY_DOMAIN);
+				jit_tls_ins = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
 
-				if (cfg->backend->have_tls_get && ad_ins && jit_tls_ins) {
+				if (ad_ins && jit_tls_ins) {
 					NEW_BBLOCK (cfg, next_bb);
 					NEW_BBLOCK (cfg, call_bb);
 
@@ -12074,11 +12052,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else {
 						EMIT_NEW_PCONST (cfg, domain_ins, cfg->domain);
 					}
-					MONO_ADD_INS (cfg->cbb, ad_ins);
 					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, ad_ins->dreg, domain_ins->dreg);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, call_bb);
 
-					MONO_ADD_INS (cfg->cbb, jit_tls_ins);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, jit_tls_ins->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, call_bb);
 
@@ -12877,11 +12853,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		cfg->cbb = init_localsbb;
 
-		if ((get_domain = mono_get_domain_intrinsic (cfg))) {
-			MONO_ADD_INS (cfg->cbb, get_domain);
-		} else {
-			get_domain = mono_emit_jit_icall (cfg, mono_domain_get, NULL);
-		}
+		get_domain = mono_create_tls_get (cfg, TLS_KEY_DOMAIN);
 		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (cfg->cbb, store);
 	}

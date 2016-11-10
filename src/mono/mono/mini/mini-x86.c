@@ -2380,21 +2380,6 @@ emit_tls_set_reg (guint8* code, int sreg, int offset_reg)
 	return code;
 }
  
- /*
- * mono_arch_translate_tls_offset:
- *
- *   Translate the TLS offset OFFSET computed by MONO_THREAD_VAR_OFFSET () into a format usable by OP_TLS_GET_REG/OP_TLS_SET_REG.
- */
-int
-mono_arch_translate_tls_offset (int offset)
-{
-#ifdef __APPLE__
-	return tls_gs_offset + (offset * 4);
-#else
-	return offset;
-#endif
-}
-
 /*
  * emit_setup_lmf:
  *
@@ -5328,17 +5313,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		gint32 lmf_offset = cfg->lmf_var->inst_offset;
 		guint8 *patch;
-		gboolean supported = FALSE;
-
-		if (cfg->compile_aot) {
-#if defined(MONO_HAVE_FAST_TLS)
-			supported = TRUE;
-#endif
-		} else if (mono_get_jit_tls_offset () != -1) {
-			supported = TRUE;
-		}
 
 		/* check if we need to restore protection of the stack after a stack overflow */
+		/* FIXME */
+#if 0
 		if (supported) {
 			if (cfg->compile_aot) {
 				code = emit_load_aotconst (NULL, code, cfg, NULL, X86_ECX, MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (TLS_KEY_JIT_TLS));
@@ -5361,6 +5339,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
+#endif
 
 		/* restore caller saved regs */
 		if (cfg->used_int_regs & (1 << X86_EBX)) {

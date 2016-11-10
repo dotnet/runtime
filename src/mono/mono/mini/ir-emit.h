@@ -309,15 +309,6 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL)
 
-#define NEW_TLS_OFFSETCONST(cfg,dest,key) do { \
-	if (cfg->compile_aot) { \
-		NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (key)); \
-	} else {															\
-		int _offset = mini_get_tls_offset ((key));							\
-		NEW_PCONST ((cfg), (dest), GINT_TO_POINTER (_offset)); \
-		} \
-	} while (0)
-
 #define NEW_DECLSECCONST(cfg,dest,image,entry) do { \
 		if (cfg->compile_aot) { \
 			NEW_AOTCONST_TOKEN (cfg, dest, MONO_PATCH_INFO_DECLSEC, image, (entry).index, NULL, STACK_OBJ, NULL); \

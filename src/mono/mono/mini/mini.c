@@ -1957,104 +1957,6 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_free (cfg);
 }
 
-static MonoInst*
-mono_create_tls_get_offset (MonoCompile *cfg, int offset)
-{
-	MonoInst* ins;
-
-	if (!cfg->backend->have_tls_get)
-		return NULL;
-
-	if (offset == -1)
-		return NULL;
-
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->dreg = mono_alloc_preg (cfg);
-	ins->inst_offset = offset;
-	return ins;
-}
-
-gboolean
-mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
-{
-	if (!cfg->backend->have_tls_get)
-		return FALSE;
-
-	if (cfg->compile_aot)
-		return cfg->backend->have_tls_get_reg;
-	else
-		return mini_get_tls_offset (key) != -1;
-}
-
-MonoInst*
-mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
-{
-	if (!cfg->backend->have_tls_get)
-		return NULL;
-
-#ifdef HAVE_KW_THREAD
-	/*
-	 * MONO_THREAD_VAR_OFFSET definitions don't work when loading mono as a
-	 * dynamic library. This means that we need to be conservative and don't
-	 * aot code that contains these tls chunks.
-	 *
-	 * FIXME Remove HAVE_KW_THREAD altogether and use only pthread since it
-	 * simplifies the code alot.
-	 */
-	if (!cfg->full_aot)
-		cfg->disable_aot = TRUE;
-#endif
-	/*
-	 * TLS offsets might be different at AOT time, so load them from a GOT slot and
-	 * use a different opcode.
-	 */
-	if (cfg->compile_aot) {
-		if (cfg->backend->have_tls_get_reg) {
-			MonoInst *ins, *c;
-
-			EMIT_NEW_TLS_OFFSETCONST (cfg, c, key);
-			MONO_INST_NEW (cfg, ins, OP_TLS_GET_REG);
-			ins->dreg = mono_alloc_preg (cfg);
-			ins->sreg1 = c->dreg;
-			return ins;
-		} else {
-			return NULL;
-		}
-	}
-
-	return mono_create_tls_get_offset (cfg, mini_get_tls_offset (key));
-}
-
-MonoInst*
-mono_get_jit_tls_intrinsic (MonoCompile *cfg)
-{
-	return mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
-}
-
-MonoInst*
-mono_get_domain_intrinsic (MonoCompile* cfg)
-{
-	return mono_create_tls_get (cfg, TLS_KEY_DOMAIN);
-}
-
-MonoInst*
-mono_get_thread_intrinsic (MonoCompile* cfg)
-{
-	return mono_create_tls_get (cfg, TLS_KEY_THREAD);
-}
-
-MonoInst*
-mono_get_lmf_intrinsic (MonoCompile* cfg)
-{
-	return mono_create_tls_get (cfg, TLS_KEY_LMF);
-}
-
-MonoInst*
-mono_get_lmf_addr_intrinsic (MonoCompile* cfg)
-{
-	return mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
-}
-
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
 {
@@ -3150,11 +3052,6 @@ init_backend (MonoBackend *backend)
 #endif
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	backend->gshared_supported = 1;
-#endif
-	if (MONO_ARCH_HAVE_TLS_GET)
-		backend->have_tls_get = 1;
-#ifdef MONO_ARCH_HAVE_TLS_GET_REG
-		backend->have_tls_get_reg = 1;
 #endif
 	if (MONO_ARCH_USE_FPSTACK)
 		backend->use_fpstack = 1;

@@ -208,9 +208,6 @@ MONO_API MonoException* mono_thread_get_undeniable_exception (void);
 
 void mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean permanent, MonoError *error);
 
-void mono_runtime_set_has_tls_get (gboolean val);
-gboolean mono_runtime_has_tls_get (void);
-
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
 
@@ -238,8 +235,6 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 
 MonoThread *
 mono_thread_attach_full (MonoDomain *domain, gboolean force_attach);
-
-void mono_thread_init_tls (void);
 
 /* Can't include utils/mono-threads.h because of the THREAD_INFO_TYPE wizardry */
 void mono_threads_add_joinable_thread (gpointer tid);

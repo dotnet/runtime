@@ -1824,7 +1824,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
 #if !defined(TARGET_WIN32)
-		if (mono_get_lmf_tls_offset () != -1 && !optimize_for_xen)
+		if (!optimize_for_xen)
 			cfg->lmf_ir_mono_lmf = TRUE;
 #endif
 	}
@@ -3679,21 +3679,6 @@ amd64_emit_tls_set_reg (guint8 *code, int sreg, int offset_reg)
 	return code;
 }
  
- /*
- * mono_arch_translate_tls_offset:
- *
- *   Translate the TLS offset OFFSET computed by MONO_THREAD_VAR_OFFSET () into a format usable by OP_TLS_GET_REG/OP_TLS_SET_REG.
- */
-int
-mono_arch_translate_tls_offset (int offset)
-{
-#ifdef __APPLE__
-	return tls_gs_offset + (offset * 8);
-#else
-	return offset;
-#endif
-}
-
 /*
  * emit_setup_lmf:
  *
@@ -7202,6 +7187,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (method->save_lmf) {
 		/* check if we need to restore protection of the stack after a stack overflow */
+		/* FIXME */
+#if 0
 		if (!cfg->compile_aot && mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
 			code = mono_amd64_emit_tls_get (code, AMD64_RCX, mono_get_jit_tls_offset ());
@@ -7218,6 +7205,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
+#endif
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
 			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
 		}

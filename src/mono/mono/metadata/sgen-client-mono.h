@@ -697,21 +697,8 @@ sgen_client_binary_protocol_pin_stats (int objects_pinned_in_nursery, size_t byt
 {
 }
 
-#ifdef HAVE_KW_THREAD
-extern __thread SgenThreadInfo *sgen_thread_info;
-#define TLAB_ACCESS_INIT
-#define IN_CRITICAL_REGION sgen_thread_info->client_info.in_critical_region
-#else
-extern MonoNativeTlsKey thread_info_key;
-#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
+#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = (SgenThreadInfo*)mono_tls_get_sgen_thread_info ()
 #define IN_CRITICAL_REGION (__thread_info__->client_info.in_critical_region)
-#endif
-
-#ifdef HAVE_KW_THREAD
-#define IN_CRITICAL_REGION sgen_thread_info->client_info.in_critical_region
-#else
-#define IN_CRITICAL_REGION (__thread_info__->client_info.in_critical_region)
-#endif
 
 /* Enter must be visible before anything is done in the critical region. */
 #define ENTER_CRITICAL_REGION do { mono_atomic_store_acquire (&IN_CRITICAL_REGION, 1); } while (0)

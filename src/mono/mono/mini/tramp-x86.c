@@ -612,7 +612,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 static gpointer
 handler_block_trampoline_helper (void)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	return jit_tls->handler_block_return_address;
 }
 
@@ -640,13 +640,8 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
 	 */
 
-	if (mono_get_jit_tls_offset () != -1) {
-		code = mono_x86_emit_tls_get (code, X86_EAX, mono_get_jit_tls_offset ());
-		x86_mov_reg_membase (code, X86_EAX, X86_EAX, MONO_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 4);
-	} else {
-		/*Slow path uses a c helper*/
-		x86_call_code (code, handler_block_trampoline_helper);
-	}
+	/*Slow path uses a c helper*/
+	x86_call_code (code, handler_block_trampoline_helper);
 	/* Simulate a call */
 	/*Fix stack alignment*/
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x4);

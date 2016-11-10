@@ -868,7 +868,7 @@ mono_gc_get_restart_signal (void)
 }
 
 #if defined(USE_COMPILER_TLS) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
-extern __thread MONO_TLS_FAST void* GC_thread_tls;
+extern __thread void* GC_thread_tls;
 #include "metadata-internals.h"
 
 static int
@@ -900,6 +900,8 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	MonoMethodSignature *csig;
 	const char *name = NULL;
 	WrapperInfo *info;
+
+	g_assert_not_reached ();
 
 	if (atype == ATYPE_FREEPTR) {
 		name = slowpath ? "SlowAllocPtrfree" : "AllocPtrfree";
@@ -1142,13 +1144,14 @@ mono_gc_is_critical_method (MonoMethod *method)
 MonoMethod*
 mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size)
 {
-	int offset = -1;
 	int atype;
-	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
 
-	/*g_print ("thread tls: %d\n", offset);*/
-	if (offset == -1)
-		return NULL;
+	/*
+	 * Tls implementation changed, we jump to tls native getters/setters.
+	 * Is boehm managed allocator ok with this ? Do we even care ?
+	 */
+	return NULL;
+
 	if (!SMALL_ENOUGH (klass->instance_size))
 		return NULL;
 	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass))
@@ -1196,19 +1199,17 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 MonoMethod*
 mono_gc_get_managed_allocator_by_type (int atype, ManagedAllocatorVariant variant)
 {
-	int offset = -1;
 	MonoMethod *res;
 	gboolean slowpath = variant != MANAGED_ALLOCATOR_REGULAR;
 	MonoMethod **cache = slowpath ? slowpath_alloc_method_cache : alloc_method_cache;
-	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
 
-	mono_tls_key_set_offset (TLS_KEY_BOEHM_GC_THREAD, offset);
+	return NULL;
 
 	res = cache [atype];
 	if (res)
 		return res;
 
-	res = create_allocator (atype, TLS_KEY_BOEHM_GC_THREAD, slowpath);
+	res = create_allocator (atype, -1, slowpath);
 	mono_os_mutex_lock (&mono_gc_lock);
 	if (cache [atype]) {
 		mono_free_method (res);

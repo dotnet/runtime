@@ -545,7 +545,6 @@ typedef struct MonoLMF MonoLMF;
 typedef struct MonoSpillInfo MonoSpillInfo;
 typedef struct MonoTraceSpec MonoTraceSpec;
 
-extern MonoNativeTlsKey mono_jit_tls_id;
 extern MonoTraceSpec *mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
@@ -1495,8 +1494,6 @@ typedef struct {
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_trampoline : 1;
-	guint            have_tls_get : 1;
-	guint            have_tls_get_reg : 1;
 	guint            have_liverange_ops: 1;
 	guint            have_op_tail_call : 1;
 	guint            have_dummy_init : 1;
@@ -2431,17 +2428,7 @@ void      mono_set_lmf                      (MonoLMF *lmf);
 MonoJitTlsData* mono_get_jit_tls            (void);
 MONO_API MonoDomain* mono_jit_thread_attach (MonoDomain *domain);
 MONO_API void      mono_jit_set_domain      (MonoDomain *domain);
-gint32    mono_get_jit_tls_offset           (void);
-gint32    mono_get_lmf_tls_offset           (void);
-gint32    mono_get_lmf_addr_tls_offset      (void);
-int       mini_get_tls_offset               (MonoTlsKey key);
-gboolean  mini_tls_get_supported            (MonoCompile *cfg, MonoTlsKey key);
 MonoInst* mono_create_tls_get               (MonoCompile *cfg, MonoTlsKey key);
-MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg);
-MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg);
-MonoInst* mono_get_thread_intrinsic         (MonoCompile* cfg);
-MonoInst* mono_get_lmf_intrinsic            (MonoCompile* cfg);
-MonoInst* mono_get_lmf_addr_intrinsic       (MonoCompile* cfg);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type);
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);
 void      mono_analyze_liveness             (MonoCompile *cfg);
@@ -3207,10 +3194,6 @@ void MONO_SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler) ;
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
 gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
-
-#ifndef MONO_ARCH_HAVE_TLS_GET
-#define MONO_ARCH_HAVE_TLS_GET 0
-#endif
 
 #ifdef MONO_ARCH_VARARG_ICALLS
 #define ARCH_VARARG_ICALLS 1
