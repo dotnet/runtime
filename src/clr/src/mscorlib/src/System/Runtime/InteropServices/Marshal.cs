@@ -2370,7 +2370,7 @@ namespace System.Runtime.InteropServices
         public static Guid GenerateGuidForType(Type type)
         {
 #if FEATURE_CORECLR
-            throw new PlatformNotSupportedException();
+            return type.GUID;
         }
 #else
             Guid result = new Guid ();
