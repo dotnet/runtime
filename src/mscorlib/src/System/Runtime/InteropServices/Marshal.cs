@@ -2392,9 +2392,6 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static String GenerateProgIdForType(Type type)
         {
-#if FEATURE_CORECLR
-            throw new PlatformNotSupportedException();
-#else
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
             if (type.IsImport)
@@ -2403,8 +2400,10 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
             Contract.EndContractBlock();
 
+#if !FEATURE_CORECLR
             if (!RegistrationServices.TypeRequiresRegistrationHelper(type))
                 throw new ArgumentException(Environment.GetResourceString("Argument_TypeMustBeComCreatable"), nameof(type));
+#endif // FEATURE_CORECLR            
 
             IList<CustomAttributeData> cas = CustomAttributeData.GetCustomAttributes(type);
             for (int i = 0; i < cas.Count; i ++)
@@ -2429,7 +2428,6 @@ namespace System.Runtime.InteropServices
 
             // If there is no prog ID attribute then use the full name of the type as the prog id.
             return type.FullName;
-#endif // FEATURE_CORECLR            
         }
 
 #if FEATURE_COMINTEROP
