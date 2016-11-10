@@ -2255,6 +2255,45 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value.StringValue, actual.StringValue);
     }
 
+    [Fact]
+    public static void DCJS_ConstructorWithRootName()
+    {
+        var value = new TypeForRootNameTest() { StringProperty = "Test String" };
+        var serializer = new DataContractJsonSerializer(typeof(TypeForRootNameTest), typeof(TypeForRootNameTest).Name);
+        string actualString = ConstructorWithRootNameTestHelper(value, serializer);
+        string expectedString = "{\"TypeForRootNameTest\":{\"StringProperty\":\"Test String\"}}";
+        Utils.CompareResult result = Utils.Compare(expectedString, actualString, false);
+        Assert.True(result.Equal, $"The serialization payload was not as expected.{Environment.NewLine}Expected: {expectedString}.{Environment.NewLine}Actual: {actualString}");
+    }
+
+
+    [Fact]
+    public static void DCJS_ConstructorWithRootNameAsXmlDictionaryString()
+    {
+        var value = new TypeForRootNameTest() { StringProperty = "Test String" };
+        XmlDictionary dict = new XmlDictionary();
+        XmlDictionaryString rootName = dict.Add(typeof(TypeForRootNameTest).Name);
+        var serializer = new DataContractJsonSerializer(typeof(TypeForRootNameTest), rootName);
+        string actualString = ConstructorWithRootNameTestHelper(value, serializer);
+        string expectedString = "{\"TypeForRootNameTest\":{\"StringProperty\":\"Test String\"}}";
+        Utils.CompareResult result = Utils.Compare(expectedString, actualString, false);
+        Assert.True(result.Equal, $"The serialization payload was not as expected.{Environment.NewLine}Expected: {expectedString}.{Environment.NewLine}Actual: {actualString}");
+    }
+
+    private static string ConstructorWithRootNameTestHelper(TypeForRootNameTest value, DataContractJsonSerializer serializer)
+    {
+        using (var ms = new MemoryStream())
+        {
+            XmlDictionaryWriter w = JsonReaderWriterFactory.CreateJsonWriter(ms);
+            w.WriteStartElement("root");
+            w.WriteAttributeString("type", "object");
+            serializer.WriteObject(w, value);
+            w.WriteEndElement();
+            w.Flush();
+            return Encoding.Default.GetString(ms.ToArray());
+        }
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;
