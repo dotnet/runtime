@@ -15,7 +15,7 @@ namespace System.Dynamic
         private ExpressionType _operation;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryOperationBinder"/> class.
+        /// Initializes a new instance of the <see cref="UnaryOperationBinder"/> class.
         /// </summary>
         /// <param name="operation">The unary operation kind.</param>
         protected UnaryOperationBinder(ExpressionType operation)
