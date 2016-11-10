@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2(byte[] rawData, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate2(System.IntPtr handle) { }
         protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
+        public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }
         public X509Certificate2(string fileName) { }
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, System.Security.SecureString password) { }

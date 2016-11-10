@@ -1078,7 +1078,7 @@ namespace System
         public DuplicateWaitObjectException() { }
         public DuplicateWaitObjectException(string parameterName) { }
         public DuplicateWaitObjectException(string parameterName, string message) { }
-        public DuplicateWaitObjectException(string message, System.Exception inner) { }
+        public DuplicateWaitObjectException(string message, System.Exception innerException) { }
         protected DuplicateWaitObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.IFormattable
@@ -2662,7 +2662,7 @@ namespace System
     {
         public TypeUnloadedException() { }
         public TypeUnloadedException(string message) { }
-        public TypeUnloadedException(string message, System.Exception inner) { }
+        public TypeUnloadedException(string message, System.Exception innerException) { }
         protected TypeUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4701,7 +4701,7 @@ namespace System.Reflection
         public static System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
         public static System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public static System.Reflection.Assembly LoadFile(String path) { throw null; }
-        public static System.Reflection.Assembly LoadFrom(String path) { throw null; }
+        public static System.Reflection.Assembly LoadFrom(String assemblyFile) { throw null; }
         public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
