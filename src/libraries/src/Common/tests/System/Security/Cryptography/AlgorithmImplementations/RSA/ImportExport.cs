@@ -151,6 +151,24 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public static void ImportPrivateExportPublic()
+        {
+            RSAParameters imported = TestData.RSA1024Params;
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(imported);
+
+                RSAParameters exportedPublic = rsa.ExportParameters(false);
+
+                Assert.Equal(imported.Modulus, exportedPublic.Modulus);
+                Assert.Equal(imported.Exponent, exportedPublic.Exponent);
+                Assert.Null(exportedPublic.D);
+                ValidateParameters(ref exportedPublic);
+            }
+        }
+
+        [Fact]
         public static void MultiExport()
         {
             RSAParameters imported = TestData.RSA1024Params;

@@ -9,8 +9,9 @@ namespace System.Security.Cryptography.Dsa.Tests
     public partial class DSAImportExport
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
+        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void ExportAutoKey()
         {
             DSAParameters privateParams;
