@@ -15,7 +15,7 @@ namespace System.Dynamic
         private readonly bool _ignoreCase;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeleteIndexBinder" />.
+        /// Initializes a new instance of the <see cref="DeleteMemberBinder" />.
         /// </summary>
         /// <param name="name">The name of the member to delete.</param>
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
