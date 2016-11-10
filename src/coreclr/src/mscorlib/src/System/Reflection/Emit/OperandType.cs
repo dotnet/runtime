@@ -27,11 +27,8 @@ public enum OperandType
     InlineI8        = 3,
     InlineMethod    = 4,
     InlineNone      = 5,
-#if !FEATURE_CORECLR
-    /// <internalonly/>
     [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
     InlinePhi       = 6,
-#endif
     InlineR         = 7,
     InlineSig       = 9,
     InlineString    = 10,
