@@ -815,6 +815,10 @@ extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, i
 
     bool useStackBuffer = bufferSize <= 2048;
     pollfd* pollfds = reinterpret_cast<pollfd*>(useStackBuffer ? alloca(bufferSize) : malloc(bufferSize));
+    if (pollfds == nullptr)
+    {
+        return PAL_ENOMEM;
+    }
 
     for (uint32_t i = 0; i < eventCount; i++)
     {
