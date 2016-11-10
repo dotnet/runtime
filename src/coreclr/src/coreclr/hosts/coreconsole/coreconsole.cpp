@@ -44,7 +44,7 @@ public:
             m_capacity = m_defaultSize;
         }
         if (m_length + strLen + 1 > m_capacity) {
-            size_t newCapacity = m_capacity * 2;
+            size_t newCapacity = (m_length + strLen + 1) * 2;
             wchar_t* newBuffer = new wchar_t[newCapacity];
             wcsncpy_s(newBuffer, newCapacity, m_buffer, m_length);
             delete[] m_buffer;
