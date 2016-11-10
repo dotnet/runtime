@@ -7,9 +7,7 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-      <!--ToDo: Remove this P2P reference once Overlapped packages are updated -->
     <Compile Include="System.Threading.ThreadPool.cs" />
-    <ProjectReference Include="..\..\System.Threading.Overlapped\ref\System.Threading.Overlapped.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
