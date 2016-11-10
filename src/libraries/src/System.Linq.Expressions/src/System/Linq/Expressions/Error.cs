@@ -228,7 +228,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static Exception PropertyTypeMustMatchSetter(string paramName)
         {
-            return new ArgumentException(Strings.PropertyTypeMustMatchSetter);
+            return new ArgumentException(Strings.PropertyTypeMustMatchSetter, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Both accessors must be static."
