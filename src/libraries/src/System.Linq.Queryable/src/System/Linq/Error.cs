@@ -4,7 +4,7 @@
 
 namespace System.Linq
 {
-    internal class Error
+    internal static class Error
     {
         internal static Exception ArgumentNull(string message)
         {

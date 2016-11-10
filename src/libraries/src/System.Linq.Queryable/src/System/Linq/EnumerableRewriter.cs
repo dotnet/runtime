@@ -73,10 +73,8 @@ namespace System.Linq
                             newArgs.Add(argList[j]);
                         }
                     }
-                    if (newArgs != null)
-                    {
-                        newArgs.Add(arg);
-                    }
+
+                    newArgs?.Add(arg);
                 }
                 if (newArgs != null)
                     argList = newArgs.AsReadOnly();
