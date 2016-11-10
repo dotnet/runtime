@@ -516,7 +516,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.EnlistmentDone(_internalEnlistment);
             }
 
@@ -527,7 +527,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 

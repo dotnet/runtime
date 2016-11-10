@@ -17,7 +17,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.EnlistmentPrepared(_internalEnlistment);
             }
 
@@ -28,7 +28,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -37,7 +37,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
 
@@ -48,7 +48,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
  
@@ -68,7 +68,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit(this);
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -77,7 +77,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             try
@@ -91,7 +91,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
             }
         }

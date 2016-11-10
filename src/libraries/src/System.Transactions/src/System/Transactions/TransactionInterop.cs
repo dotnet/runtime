@@ -76,7 +76,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetExportCookie");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetExportCookie");
             }
 
             // Copy the whereabouts so that it cannot be modified later.
@@ -88,7 +88,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetExportCookie");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetExportCookie");
             }
 
             return cookie;
@@ -109,7 +109,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetTransactionFromExportCookie");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
             }
 
             var cookieCopy = new byte[cookie.Length];
@@ -133,7 +133,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("TransactionInterop.GetTransactionFromExportCookie");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
                 }
 
                 return transaction;
@@ -145,7 +145,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetTransactionFromExportCookie");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
             }
 
             return transaction;
@@ -161,7 +161,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetTransmitterPropagationToken");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
             DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
@@ -169,7 +169,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetTransmitterPropagationToken");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
             return token;
@@ -190,7 +190,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetTransactionFromTransmitterPropagationToken");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
             }
 
             // Extract the transaction guid from the propagation token to see if we already have a
@@ -210,7 +210,7 @@ namespace System.Transactions
             {
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit("TransactionInterop.GetTransactionFromTransmitterPropagationToken");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
                 }
 
                 return tx;
@@ -223,7 +223,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetTransactionFromTransmitterPropagationToken");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
             }
             return returnValue;
         }
@@ -238,7 +238,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetDtcTransaction");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
             DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
@@ -246,7 +246,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetDtcTransaction");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
             return transactionNative;
@@ -262,14 +262,14 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetTransactionFromDtcTransaction");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromDtcTransaction");
             }
 
             Transaction transaction = DistributedTransactionManager.GetTransactionFromDtcTransaction(transactionNative);
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetTransactionFromDtcTransaction");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromDtcTransaction");
             }
             return transaction;
         }
@@ -279,7 +279,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter("TransactionInterop.GetWhereabouts");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
 
             DistributedTransactionManager dTm = TransactionManager.DistributedTransactionManager;
@@ -287,7 +287,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodExit("TransactionInterop.GetWhereabouts");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
             return returnValue;
         }
