@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -749,31 +748,39 @@ namespace System.Dynamic
             /// </summary>
             private bool IsOverridden(string method)
             {
-                var methods = Value.GetType().GetMember(method, BindingFlags.Public | BindingFlags.Instance).OfType<MethodInfo>();
+                MemberInfo[] members = Value.GetType().GetMember(method, BindingFlags.Public | BindingFlags.Instance);
 
-                foreach (MethodInfo mi in methods)
+                foreach (MemberInfo member in members)
                 {
-                    if (mi.DeclaringType != typeof(DynamicObject))
-                    {
-                        var baseMethods = typeof(DynamicObject).GetMember(method, BindingFlags.Public | BindingFlags.Instance).OfType<MethodInfo>();
-                        foreach (MethodInfo baseMethod in baseMethods)
-                        {
-                            var baseParams = baseMethod.GetParameters();
-                            var miParams = mi.GetParameters();
+                    var mi = member as MethodInfo;
 
-                            if (baseParams.Length == miParams.Length)
+                    if (mi != null && mi.DeclaringType != typeof(DynamicObject))
+                    {
+                        MemberInfo[] baseMembers = typeof(DynamicObject).GetMember(method, BindingFlags.Public | BindingFlags.Instance);
+
+                        foreach (MemberInfo baseMember in baseMembers)
+                        {
+                            var baseMethod = baseMember as MethodInfo;
+
+                            if (baseMethod != null)
                             {
-                                bool mismatch = false;
-                                for (int i = 0; i < baseParams.Length; i++)
+                                ParameterInfo[] baseParams = baseMethod.GetParameters();
+                                ParameterInfo[] miParams = mi.GetParameters();
+
+                                if (baseParams.Length == miParams.Length)
                                 {
-                                    if (baseParams[i].ParameterType != miParams[i].ParameterType)
+                                    bool mismatch = false;
+                                    for (int i = 0; i < baseParams.Length; i++)
                                     {
-                                        mismatch = true;
+                                        if (baseParams[i].ParameterType != miParams[i].ParameterType)
+                                        {
+                                            mismatch = true;
+                                        }
                                     }
-                                }
-                                if (!mismatch)
-                                {
-                                    return true;
+                                    if (!mismatch)
+                                    {
+                                        return true;
+                                    }
                                 }
                             }
                         }
