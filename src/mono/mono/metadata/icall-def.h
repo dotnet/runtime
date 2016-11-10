@@ -256,7 +256,7 @@ ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
 ICALL(STOPWATCH_1, "GetTimestamp", mono_100ns_ticks)
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
-ICALL(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames)
+HANDLES(ICALL(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames))
 ICALL(ENUM_2, "InternalBoxEnum", ves_icall_System_Enum_ToObject)
 ICALL(ENUM_3, "InternalCompareTo", ves_icall_System_Enum_compare_value_to)
 ICALL(ENUM_4, "InternalGetUnderlyingType", ves_icall_System_Enum_get_underlying_type)
