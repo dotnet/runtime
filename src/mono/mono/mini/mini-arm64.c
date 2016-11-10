@@ -1789,25 +1789,21 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	 * icache/dcache cache line sizes, that can vary between cores on
 	 * big.LITTLE architectures. */
 	guint64 end = (guint64) (code + size);
-	guint64 addr, ctr_el0;
-	static size_t icache_line_size = 0xffff, dcache_line_size = 0xffff;
-	size_t isize, dsize;
+	guint64 addr;
+	/* always go with cacheline size of 4 bytes as this code isn't perf critical
+	 * anyway. Reading the cache line size from a machine register can be racy
+	 * on a big.LITTLE architecture if the cores don't have the same cache line
+	 * sizes. */
+	const size_t icache_line_size = 4;
+	const size_t dcache_line_size = 4;
 
-	asm volatile ("mrs %0, ctr_el0" : "=r" (ctr_el0));
-	isize = 4 << ((ctr_el0 >> 0 ) & 0xf);
-	dsize = 4 << ((ctr_el0 >> 16) & 0xf);
-
-	/* determine the global minimum cache line size */
-	icache_line_size = isize = MIN (icache_line_size, isize);
-	dcache_line_size = dsize = MIN (dcache_line_size, dsize);
-
-	addr = (guint64) code & ~(guint64) (dsize - 1);
-	for (; addr < end; addr += dsize)
+	addr = (guint64) code & ~(guint64) (dcache_line_size - 1);
+	for (; addr < end; addr += dcache_line_size)
 		asm volatile("dc civac, %0" : : "r" (addr) : "memory");
 	asm volatile("dsb ish" : : : "memory");
 
-	addr = (guint64) code & ~(guint64) (isize - 1);
-	for (; addr < end; addr += isize)
+	addr = (guint64) code & ~(guint64) (icache_line_size - 1);
+	for (; addr < end; addr += icache_line_size)
 		asm volatile("ic ivau, %0" : : "r" (addr) : "memory");
 
 	asm volatile ("dsb ish" : : : "memory");
