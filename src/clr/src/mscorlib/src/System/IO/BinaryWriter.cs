@@ -38,6 +38,7 @@ namespace System.IO {
         [OptionalField]  // New in .NET FX 4.5.  False is the right default value.
         private bool _leaveOpen;
 
+#if !FEATURE_CORECLR
         // This field should never have been serialized and has not been used since before v2.0.
         // However, this type is serializable, and we need to keep the field name around when deserializing.
         // Also, we'll make .NET FX 4.5 not break if it's missing.
@@ -45,6 +46,7 @@ namespace System.IO {
         [OptionalField]
         private char[] _tmpOneCharBuffer;
 #pragma warning restore 169
+#endif
 
         // Perf optimization stuff
         private byte[] _largeByteBuffer;  // temp space for writing chars.
