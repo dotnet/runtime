@@ -422,7 +422,7 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { osName ->
-            (isPR ? [/*'SoftFP'*/] : ['HardFP', 'SoftFP']).each { abi ->
+            ['HardFP', 'SoftFP'].each { abi ->
                 def osGroup = osGroupMap[osName]
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
@@ -457,9 +457,7 @@ def osShortName = ['Windows 10': 'win10',
 
                 // Set up triggers
                 if (isPR) {
-                    if (osName == 'LinuxARMEmulator') {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build")
-                    }
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+linuxarmemulator\\W+${abi}\\W+${configurationGroup}.*")
                 }
                 else {
                     // Set a push trigger
