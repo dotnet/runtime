@@ -12648,8 +12648,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            tree->gtType      = typ = temp->TypeGet();
-                            foldAndReturnTemp = true;
+                            tree->gtType = typ = temp->TypeGet();
+                            foldAndReturnTemp  = true;
                         }
                         else
                         {
@@ -12748,43 +12748,67 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     }
                 }
 
+                // At this point we may have a lclVar or lclFld that might be foldable with a bit of extra massaging:
+                // - We may have a load of a local where the load has a different type than the local
+                // - We may have a load of a local plus an offset
+                //
+                // In these cases, we will change the lclVar or lclFld into a lclFld of the appropriate type and
+                // offset if doing so is legal. The only cases in which this transformation is illegal are if the load
+                // begins before the local or if the load extends beyond the end of the local (i.e. if the load is
+                // out-of-bounds w.r.t. the local).
                 if ((temp != nullptr) && !foldAndReturnTemp)
                 {
                     assert(temp->OperIsLocal());
 
-                    LclVarDsc* varDsc = &(lvaTable[temp->AsLclVarCommon()->gtLclNum]);
-                    // Make sure we don't separately promote the fields of this struct.
-                    if (varDsc->lvRegStruct)
-                    {
-                        // We can enregister, but can't promote.
-                        varDsc->lvPromoted = false;
-                    }
-                    else
-                    {
-                        lvaSetVarDoNotEnregister(temp->gtLclVarCommon.gtLclNum DEBUGARG(DNER_LocalField));
-                    }
+                    const unsigned   lclNum  = temp->AsLclVarCommon()->gtLclNum;
+                    LclVarDsc* const varDsc  = &lvaTable[lclNum];
 
-                    // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
-                    // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
-                    // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
-                    //
-                    if (temp->OperGet() == GT_LCL_FLD)
+                    const var_types tempTyp      = temp->TypeGet();
+                    const bool      useExactSize = varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
+                    const unsigned  varSize      = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
+
+                    // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
+                    // a lclFld: the access represented by an lclFld node must begin at or after the start of the
+                    // lclVar and must not extend beyond the end of the lclVar.
+                    if ((ival1 < 0) || ((ival1 + genTypeSize(typ)) > varSize))
                     {
-                        temp->AsLclFld()->gtLclOffs += (unsigned short)ival1;
-                        temp->AsLclFld()->gtFieldSeq =
-                            GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                     }
                     else
                     {
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField"...
-                        temp->AsLclFld()->gtLclOffs = (unsigned short)ival1;
-                        if (fieldSeq != nullptr)
-                        { // If it does represent a field, note that.
-                            temp->AsLclFld()->gtFieldSeq = fieldSeq;
+                        // Make sure we don't separately promote the fields of this struct.
+                        if (varDsc->lvRegStruct)
+                        {
+                            // We can enregister, but can't promote.
+                            varDsc->lvPromoted = false;
                         }
+                        else
+                        {
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
+                        }
+
+                        // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
+                        // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
+                        // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
+                        //
+                        if (temp->OperGet() == GT_LCL_FLD)
+                        {
+                            temp->AsLclFld()->gtLclOffs += (unsigned short)ival1;
+                            temp->AsLclFld()->gtFieldSeq =
+                                GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                        }
+                        else
+                        {
+                            temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField"...
+                            temp->AsLclFld()->gtLclOffs = (unsigned short)ival1;
+                            if (fieldSeq != nullptr)
+                            { // If it does represent a field, note that.
+                                temp->AsLclFld()->gtFieldSeq = fieldSeq;
+                            }
+                        }
+                        temp->gtType      = tree->gtType;
+                        foldAndReturnTemp = true;
                     }
-                    temp->gtType      = tree->gtType;
-                    foldAndReturnTemp = true;
                 }
 
                 if (foldAndReturnTemp)
