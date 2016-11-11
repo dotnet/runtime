@@ -12630,7 +12630,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                                 // Also make sure that the tree type matches the fieldVarType and that it's lvFldOffset
                                 // is zero
-                                if (fieldVarDsc->TypeGet() == tree->TypeGet() && (fieldVarDsc->lvFldOffset == 0))
+                                if (fieldVarDsc->TypeGet() == typ && (fieldVarDsc->lvFldOffset == 0))
                                 {
                                     // We can just use the existing promoted field LclNum
                                     temp->gtLclVarCommon.SetLclNum(lclNumFld);
@@ -12648,7 +12648,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            tree->gtType      = temp->gtType;
+                            tree->gtType      = typ = temp->TypeGet();
                             foldAndReturnTemp = true;
                         }
                         else
@@ -12664,7 +12664,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                                 // Append the field sequence, change the type.
                                 temp->AsLclFld()->gtFieldSeq =
                                     GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
-                                temp->gtType = tree->TypeGet();
+                                temp->gtType = typ;
 
                                 foldAndReturnTemp = true;
                             }
@@ -12733,9 +12733,9 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 #ifdef _TARGET_ARM_
                             // Check for a LclVar TYP_STRUCT with misalignment on a Floating Point field
                             //
-                            if (varTypeIsFloating(tree->TypeGet()))
+                            if (varTypeIsFloating(typ))
                             {
-                                if ((ival1 % emitTypeSize(tree->TypeGet())) != 0)
+                                if ((ival1 % emitTypeSize(typ)) != 0)
                                 {
                                     tree->gtFlags |= GTF_IND_UNALIGNED;
                                     break;
@@ -12748,69 +12748,55 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     }
                 }
 
-#ifdef DEBUG
-                // If we have decided to fold, then temp cannot be nullptr
+                if ((temp != nullptr) && !foldAndReturnTemp)
+                {
+                    assert(temp->OperIsLocal());
+
+                    LclVarDsc* varDsc = &(lvaTable[temp->AsLclVarCommon()->gtLclNum]);
+                    // Make sure we don't separately promote the fields of this struct.
+                    if (varDsc->lvRegStruct)
+                    {
+                        // We can enregister, but can't promote.
+                        varDsc->lvPromoted = false;
+                    }
+                    else
+                    {
+                        lvaSetVarDoNotEnregister(temp->gtLclVarCommon.gtLclNum DEBUGARG(DNER_LocalField));
+                    }
+
+                    // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
+                    // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
+                    // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
+                    //
+                    if (temp->OperGet() == GT_LCL_FLD)
+                    {
+                        temp->AsLclFld()->gtLclOffs += (unsigned short)ival1;
+                        temp->AsLclFld()->gtFieldSeq =
+                            GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                    }
+                    else
+                    {
+                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField"...
+                        temp->AsLclFld()->gtLclOffs = (unsigned short)ival1;
+                        if (fieldSeq != nullptr)
+                        { // If it does represent a field, note that.
+                            temp->AsLclFld()->gtFieldSeq = fieldSeq;
+                        }
+                    }
+                    temp->gtType      = tree->gtType;
+                    foldAndReturnTemp = true;
+                }
+
                 if (foldAndReturnTemp)
                 {
                     assert(temp != nullptr);
-                }
-#endif
+                    assert(temp->TypeGet() == typ);
+                    assert((op1->OperGet() == GT_ADD) || (op1->OperGet() == GT_ADDR));
 
-                if (temp != nullptr)
-                {
-                    noway_assert(op1->gtOper == GT_ADD || op1->gtOper == GT_ADDR);
-
-                    // If we haven't already decided to fold this expression
-                    //
-                    if (!foldAndReturnTemp)
-                    {
-                        noway_assert(temp->OperIsLocal());
-                        LclVarDsc* varDsc = &(lvaTable[temp->AsLclVarCommon()->gtLclNum]);
-                        // Make sure we don't separately promote the fields of this struct.
-                        if (varDsc->lvRegStruct)
-                        {
-                            // We can enregister, but can't promote.
-                            varDsc->lvPromoted = false;
-                        }
-                        else
-                        {
-                            lvaSetVarDoNotEnregister(temp->gtLclVarCommon.gtLclNum DEBUGARG(DNER_LocalField));
-                        }
-
-                        // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
-                        // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
-                        // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
-                        //
-                        if (temp->OperGet() == GT_LCL_FLD)
-                        {
-                            temp->AsLclFld()->gtLclOffs += (unsigned short)ival1;
-                            temp->AsLclFld()->gtFieldSeq =
-                                GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
-                        }
-                        else
-                        {
-                            temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField"...
-                            temp->AsLclFld()->gtLclOffs = (unsigned short)ival1;
-                            if (fieldSeq != nullptr)
-                            { // If it does represent a field, note that.
-                                temp->AsLclFld()->gtFieldSeq = fieldSeq;
-                            }
-                        }
-                        temp->gtType      = tree->gtType;
-                        foldAndReturnTemp = true;
-                    }
-
-                    assert(foldAndReturnTemp == true);
-
-                    // Keep the DONT_CSE flag in sync
-                    // (i.e keep the original value of this flag from tree)
-                    // as it can be set for 'temp' because a GT_ADDR always marks it for it's op1
-                    //
+                    // Copy the value of GTF_DONT_CSE from the original tree to `temp`: it can be set for
+                    // 'temp' because a GT_ADDR always marks it for its operand.
                     temp->gtFlags &= ~GTF_DONT_CSE;
                     temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
-
-                    noway_assert(op1->gtOper == GT_ADD || op1->gtOper == GT_ADDR);
-                    noway_assert(temp->gtType == tree->gtType);
 
                     if (op1->OperGet() == GT_ADD)
                     {
