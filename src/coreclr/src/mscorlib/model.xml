@@ -3973,6 +3973,9 @@
       <Member Name="GetExecutingAssembly" />
       <Member Name="GetEntryAssembly" />
       <Member Name="GetExportedTypes" />
+      <Member Name="GetFile(System.String)" />
+      <Member Name="GetFiles" />
+      <Member Name="GetFiles(System.Boolean)" />
       <Member Name="GetLoadedModules" />
       <Member Name="GetLoadedModules(System.Boolean)" />
       <Member Name="GetManifestResourceNames" />
