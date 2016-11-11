@@ -78,3 +78,11 @@ g_file_test (const gchar *filename, GFileTest test)
 	}
 	return FALSE;
 }
+
+gchar *
+g_mkdtemp (char *tmp_template)
+{
+	char *template_copy = g_strdup (tmp_template);
+
+	return mkdtemp (template_copy);
+}
