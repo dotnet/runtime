@@ -1,4 +1,4 @@
-﻿Issue Guide
+Issue Guide
 ===========
 
 This page outlines how the CoreFx team thinks about and handles issues.  For us, issues on GitHub represent actionable work that should be done at some future point.  It may be as simple as a small product or test bug or as large as the work tracking the design of a new feature.  However, it should be work that falls under the charter of CoreFx, which is a collection of foundational libraries that make up the .NET Core development stack.  We will keep issues open even if the CoreFx team internally has no plans to address them in an upcoming release, as long as we consider the issue to fall under our purview.
@@ -14,10 +14,10 @@ Sometimes after debate, we'll decide an issue isn't a good fit for CoreFx.  In t
 
 ### Labels
 We use GitHub [labels](https://github.com/dotnet/corefx/labels) on our issues in order to classify them.  We have the following categories per issue:
-* **Area**: These area-* labels (e.g. [area-System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)) call out the assembly or assemblies the issue applies to. In addition to labels per assembly, we have a few other area labels: [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure), for issues that relate to our build or test infrastructure, and [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta) for issues that deal with the repository itself, the direction of the .NET Core Platform, our processes, etc. See [full list of areas](#areas).
+* **Area**: These area-&#42; labels (e.g. [area-System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)) call out the assembly or assemblies the issue applies to. In addition to labels per assembly, we have a few other area labels: [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure), for issues that relate to our build or test infrastructure, and [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta) for issues that deal with the repository itself, the direction of the .NET Core Platform, our processes, etc. See [full list of areas](#areas).
 * **Issue Type**: These labels classify the type of issue.  We use the following types:
  * [bug](https://github.com/dotnet/corefx/labels/bug): Bugs in an assembly.
- * api-* ([api-approved](https://github.com/dotnet/corefx/labels/api-approved), [api-needs-work](https://github.com/dotnet/corefx/labels/api-needs-work)): Issues which would add APIs to an assembly (see [API Review process](api-review-process.md) for details).
+ * api-&#42; ([api-approved](https://github.com/dotnet/corefx/labels/api-approved), [api-needs-work](https://github.com/dotnet/corefx/labels/api-needs-work)): Issues which would add APIs to an assembly (see [API Review process](api-review-process.md) for details).
  * [enhancement](https://github.com/dotnet/corefx/labels/enhancement): Improvements to an assembly which do not add new APIs (e.g. performance improvements, code cleanup).
  * [test bug](https://github.com/dotnet/corefx/labels/test%20bug): Bugs in the tests for a specific assembly.
  * [test enhancement](https://github.com/dotnet/corefx/labels/test%20enhancement): Improvements in the tests for a specific assembly (e.g. improving test coverage).
@@ -38,7 +38,7 @@ We assign each issue to assignee, when the assignee is ready to pick up the work
 Note: This is a new scheme introduced in 2016/9.  The old scheme used assignees as area owners.  We will migrate issues to the new scheme throughout 2016.
 
 ### Areas
-Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastructure. Each area typically corresponds to one or more contract assemblies.
+Areas are tracked by labels area-&#42; (e.g. area-System.Collections), or Infrastructure. Each area typically corresponds to one or more contract assemblies.
 
 | Area                                                                                          | Owners / experts | Description |
 |-----------------------------------------------------------------------------------------------|------------------|-------------|
@@ -93,3 +93,13 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 
 
 Note: Area triage will apply the new scheme (issue types and assignee) throughout 2016.
+
+### Triage rules - simplified
+
+1. Each issue has exactly one **area-&#42;** label
+1. Issue has no **Assignee**, unless someone is working on the issue at the moment
+1. Use **up for grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue
+1. Set milestone to **Future**, unless you can 95%-commit you can fund the issue in specific milestone
+1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, etc.)
+1. Don't be afraid to say no, or close issues - just explain why and be polite
+1. Don't be afraid to be wrong - just be flexible when new information appears
