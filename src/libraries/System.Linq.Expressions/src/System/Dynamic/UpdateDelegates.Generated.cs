@@ -49,10 +49,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -190,10 +190,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -333,10 +333,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -476,10 +476,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -619,10 +619,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -762,10 +762,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -905,10 +905,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1048,10 +1048,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1191,10 +1191,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1334,10 +1334,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1477,10 +1477,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return result;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1619,10 +1619,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1761,10 +1761,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -1903,10 +1903,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2045,10 +2045,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2187,10 +2187,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2329,10 +2329,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2471,10 +2471,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2613,10 +2613,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2755,10 +2755,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
@@ -2897,10 +2897,10 @@ namespace System.Dynamic
                         {
                             CallSiteOps.UpdateRules(@this, i);
                             return;
-                        }        
+                        }
 
                         // Rule didn't match, try the next one
-                        CallSiteOps.ClearMatch(site);            
+                        CallSiteOps.ClearMatch(site);
                     }
                 }
             }
