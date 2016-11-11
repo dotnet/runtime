@@ -589,8 +589,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "al-net_4_x", "mcs/tools/al/
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "monolinker-net_4_x", "mcs/tools/linker/monolinker-net_4_x.csproj", "{FA920637-C202-4E75-AC0F-1A8DBD631DF1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Tuner-net_4_x", "mcs/tools/tuner/Mono.Tuner-net_4_x.csproj", "{8CCE7044-3466-4599-B09E-9F8E0C2F4614}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "genxs-net_4_x", "mcs/tools/genxs/genxs-net_4_x.csproj", "{DCD2613C-B1A0-489B-BCA1-79BEBB9B9541}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mkbundle-net_4_x", "mcs/tools/mkbundle/mkbundle-net_4_x.csproj", "{3A3DAEC2-3DF4-4968-A191-8D6F207ABA5E}"
@@ -1855,10 +1853,6 @@ Global
 		{FA920637-C202-4E75-AC0F-1A8DBD631DF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA920637-C202-4E75-AC0F-1A8DBD631DF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA920637-C202-4E75-AC0F-1A8DBD631DF1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8CCE7044-3466-4599-B09E-9F8E0C2F4614}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CCE7044-3466-4599-B09E-9F8E0C2F4614}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8CCE7044-3466-4599-B09E-9F8E0C2F4614}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8CCE7044-3466-4599-B09E-9F8E0C2F4614}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DCD2613C-B1A0-489B-BCA1-79BEBB9B9541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DCD2613C-B1A0-489B-BCA1-79BEBB9B9541}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCD2613C-B1A0-489B-BCA1-79BEBB9B9541}.Release|Any CPU.ActiveCfg = Release|Any CPU

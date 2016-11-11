@@ -4664,17 +4664,6 @@
       <resources></resources>
       <response>monolinker.exe.sources</response>
     </project>
-    <project dir="tools/tuner" library="Mono.Tuner-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -r:./../../class/lib/net_4_x/monolinker.exe -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/System.Core.dll -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/Mono.Cecil.dll</flags>
-      <output>Mono.Tuner.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/Mono.Tuner.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>Mono.Tuner.dll.sources</response>
-    </project>
     <project dir="tools/culevel" library="culevel-net_4_x">
       <boot></boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System -r:System.Xml</flags>
