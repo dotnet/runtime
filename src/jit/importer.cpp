@@ -14911,7 +14911,8 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
 
                 if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
                 {
-                    assert(info.compRetNativeType != TYP_VOID && fgMoreThanOneReturnBlock());
+                    assert(info.compRetNativeType != TYP_VOID &&
+                           (fgMoreThanOneReturnBlock() || impInlineInfo->hasPinnedLocals));
 
                     // This is a bit of a workaround...
                     // If we are inlining a call that returns a struct, where the actual "native" return type is
@@ -15002,7 +15003,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     // in this case we have to insert multiple struct copies to the temp
                     // and the retexpr is just the temp.
                     assert(info.compRetNativeType != TYP_VOID);
-                    assert(fgMoreThanOneReturnBlock());
+                    assert(fgMoreThanOneReturnBlock() || impInlineInfo->hasPinnedLocals);
 
                     impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
                                      (unsigned)CHECK_SPILL_ALL);
@@ -17429,12 +17430,17 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         var_types type = (var_types)eeGetArgType(localsSig, &methInfo->locals, &isPinned);
 
         lclVarInfo[i + argCnt].lclHasLdlocaOp = false;
+        lclVarInfo[i + argCnt].lclIsPinned    = isPinned;
         lclVarInfo[i + argCnt].lclTypeInfo    = type;
 
         if (isPinned)
         {
-            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_PINNED_LOCALS);
-            return;
+            // Pinned locals may cause inlines to fail.
+            inlineResult->Note(InlineObservation::CALLEE_HAS_PINNED_LOCALS);
+            if (inlineResult->IsFailure())
+            {
+                return;
+            }
         }
 
         lclVarInfo[i + argCnt].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->locals, localsSig);
@@ -17509,6 +17515,28 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
         if (impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclHasLdlocaOp)
         {
             lvaTable[tmpNum].lvHasLdAddrOp = 1;
+        }
+
+        if (impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclIsPinned)
+        {
+            lvaTable[tmpNum].lvPinned = 1;
+
+            if (!impInlineInfo->hasPinnedLocals)
+            {
+                // If the inlinee returns a value, use a spill temp
+                // for the return value to ensure that even in case
+                // where the return expression refers to one of the
+                // pinned locals, we can unpin the local right after
+                // the inlined method body.
+                if ((info.compRetNativeType != TYP_VOID) && (lvaInlineeReturnSpillTemp == BAD_VAR_NUM))
+                {
+                    lvaInlineeReturnSpillTemp =
+                        lvaGrabTemp(false DEBUGARG("Inline candidate pinned local return spill temp"));
+                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
+                }
+            }
+
+            impInlineInfo->hasPinnedLocals = true;
         }
 
         if (impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclVerTypeInfo.IsStruct())

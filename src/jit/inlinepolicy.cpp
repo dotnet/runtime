@@ -383,6 +383,12 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
             }
 
+            case InlineObservation::CALLEE_HAS_PINNED_LOCALS:
+                // The legacy policy is to never inline methods with
+                // pinned locals.
+                SetNever(obs);
+                break;
+
             default:
                 // Ignore the remainder for now
                 break;
@@ -879,6 +885,17 @@ void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
             {
                 assert(m_CallsiteFrequency == InlineCallsiteFrequency::RARE);
                 SetFailure(obs);
+                return;
+            }
+            break;
+
+        case InlineObservation::CALLEE_HAS_PINNED_LOCALS:
+            if (m_CallsiteIsInTryRegion)
+            {
+                // Inlining a method with pinned locals in a try
+                // region requires wrapping the inline body in a
+                // try/finally to ensure unpinning. Bail instead.
+                SetFailure(InlineObservation::CALLSITE_PIN_IN_TRY_REGION);
                 return;
             }
             break;
