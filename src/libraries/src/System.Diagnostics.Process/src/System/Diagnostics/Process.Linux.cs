@@ -83,6 +83,18 @@ namespace System.Diagnostics
             }
         }
 
+        partial void EnsureHandleCountPopulated()
+        {
+            if (_processInfo.HandleCount <= 0 && _haveProcessId)
+            {
+                string path = "/proc/" + _processId.ToString() + "/fd";
+                if (Directory.Exists(path))
+                {
+                    _processInfo.HandleCount = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly).Length;
+                }
+            }
+        }
+
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
