@@ -76,6 +76,22 @@
     <Compile Include="System\Runtime\Versioning\ResourceExposureAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\ResourceScope.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.cs" />
+    <Compile Include="System\Collections\ArrayList.cs" />
+    <Compile Include="System\Collections\Comparer.cs" />
+    <Compile Include="System\Collections\Hashtable.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\CompatibleComparer.cs">
+      <Link>Common\System\Collections\CompatibleComparer.cs</Link>
+    </Compile>
+    <Compile Include="System\Collections\IHashCodeProvider.cs" />
+    <Compile Include="System\Collections\KeyValuePairs.cs" />
+    <Compile Include="System\Security\IPermission.cs" />
+    <Compile Include="System\Security\ISecurityEncodable.cs" />
+    <Compile Include="System\Security\SecurityElement.cs" />
+    <Compile Include="System\Security\Permissions\CodeAccessSecurityAttribute.cs" />
+    <Compile Include="System\Security\Permissions\SecurityAction.cs" />
+    <Compile Include="System\Security\Permissions\SecurityAttribute.cs" />
+    <Compile Include="System\Security\Permissions\SecurityPermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\SecurityPermissionFlag.cs" />
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>

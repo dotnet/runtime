@@ -5,7 +5,7 @@
     <ProjectGuid>{585E3764-534B-4A12-8BD5-8578CB826A45}</ProjectGuid>
     <RootNamespace>System.Collections.NonGeneric</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -16,14 +16,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <Compile Include="System\Collections\ArrayList.cs" />
     <Compile Include="System\Collections\CaseInsensitiveComparer.cs" />
     <Compile Include="System\Collections\CaseInsensitiveHashCodeProvider.cs" />
     <Compile Include="System\Collections\CollectionBase.cs" />
-    <Compile Include="System\Collections\Comparer.cs" />
     <Compile Include="System\Collections\DictionaryBase.cs" />
-    <Compile Include="System\Collections\Hashtable.cs" />
-    <Compile Include="System\Collections\IHashCodeProvider.cs" />
     <Compile Include="System\Collections\KeyValuePairs.cs" />
     <Compile Include="System\Collections\Queue.cs" />
     <Compile Include="System\Collections\ReadOnlyCollectionBase.cs" />
@@ -33,6 +29,8 @@
     <Compile Include="$(CommonPath)\System\Collections\CompatibleComparer.cs">
       <Link>Common\System\Collections\CompatibleComparer.cs</Link>
     </Compile>
+    <!-- ToDo: Remove this P2P reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="System" />

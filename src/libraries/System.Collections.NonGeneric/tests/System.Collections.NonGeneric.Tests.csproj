@@ -66,6 +66,12 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
+    <!-- Do not remove this P2P reference since part of the implementation of NonGeneric has moved to Runtime.Extensions -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once packages are updated -->
+    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.NonGeneric.pkgproj">
