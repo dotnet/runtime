@@ -33,6 +33,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="FileInfo\Serialization.cs" />
+    <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
     <Compile Include="DirectoryInfo\Serialization.cs" />

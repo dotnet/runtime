@@ -12,7 +12,7 @@ namespace System.Dynamic
 {
     /// <summary>
     /// Provides a simple class that can be inherited from to create an object with dynamic behavior
-    /// at runtime.  Subclasses can override the various binder methods (GetMember, SetMember, Call, etc...)
+    /// at runtime.  Subclasses can override the various binder methods (GetMember, SetMember, Call, etc.)
     /// to provide custom behavior that will be invoked at runtime.
     /// 
     /// If a method is not overridden then the DynamicObject does not directly support that behavior and
@@ -477,7 +477,7 @@ namespace System.Dynamic
                 //
                 DynamicMetaObject fallbackResult = fallback(null);
 
-                var callDynamic = BuildCallMethodWithResult(methodName, binder, args, fallbackResult, fallbackInvoke);
+                DynamicMetaObject callDynamic = BuildCallMethodWithResult(methodName, binder, args, fallbackResult, fallbackInvoke);
 
                 //
                 // Now, call fallback again using our new MO as the error
@@ -513,9 +513,9 @@ namespace System.Dynamic
                 //   TryGetMember(payload, out result) ? fallbackInvoke(result) : fallbackResult
                 // }
                 //
-                var result = Expression.Parameter(typeof(object), null);
+                ParameterExpression result = Expression.Parameter(typeof(object), null);
                 ParameterExpression callArgs = methodName != nameof(DynamicObject.TryBinaryOperation) ? Expression.Parameter(typeof(object[]), null) : Expression.Parameter(typeof(object), null);
-                var callArgsValue = GetConvertedArgs(args);
+                Expression[] callArgsValue = GetConvertedArgs(args);
 
                 var resultMO = new DynamicMetaObject(result, BindingRestrictions.Empty);
 
@@ -524,7 +524,7 @@ namespace System.Dynamic
                 {
                     Debug.Assert(binder is ConvertBinder && fallbackInvoke == null);
 
-                    var convert = Expression.Convert(resultMO.Expression, binder.ReturnType);
+                    UnaryExpression convert = Expression.Convert(resultMO.Expression, binder.ReturnType);
                     // will always be a cast or unbox
                     Debug.Assert(convert.Method == null);
 
@@ -549,7 +549,7 @@ namespace System.Dynamic
                                         Expression.TypeIs(resultMO.Expression, binder.ReturnType));
                     }
 
-                    var checkedConvert = Expression.Condition(
+                    Expression checkedConvert = Expression.Condition(
                         condition,
                         convert,
                         Expression.Throw(
@@ -637,9 +637,9 @@ namespace System.Dynamic
                 // }
                 //
 
-                var result = Expression.Parameter(typeof(object), null);
-                var callArgs = Expression.Parameter(typeof(object[]), null);
-                var callArgsValue = GetConvertedArgs(args);
+                ParameterExpression result = Expression.Parameter(typeof(object), null);
+                ParameterExpression callArgs = Expression.Parameter(typeof(object[]), null);
+                Expression[] callArgsValue = GetConvertedArgs(args);
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
@@ -695,8 +695,8 @@ namespace System.Dynamic
                 // This produces either an error or a call to a .NET member
                 //
                 DynamicMetaObject fallbackResult = fallback(null);
-                var callArgs = Expression.Parameter(typeof(object[]), null);
-                var callArgsValue = GetConvertedArgs(args);
+                ParameterExpression callArgs = Expression.Parameter(typeof(object[]), null);
+                Expression[] callArgsValue = GetConvertedArgs(args);
 
                 //
                 // Build a new expression like:

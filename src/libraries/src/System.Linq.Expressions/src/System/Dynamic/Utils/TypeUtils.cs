@@ -182,15 +182,15 @@ namespace System.Dynamic.Utils
             }
             if (instanceType.GetTypeInfo().IsValueType)
             {
-                if (AreReferenceAssignable(targetType, typeof(System.Object)))
+                if (AreReferenceAssignable(targetType, typeof(object)))
                 {
                     return true;
                 }
-                if (AreReferenceAssignable(targetType, typeof(System.ValueType)))
+                if (AreReferenceAssignable(targetType, typeof(ValueType)))
                 {
                     return true;
                 }
-                if (instanceType.GetTypeInfo().IsEnum && AreReferenceAssignable(targetType, typeof(System.Enum)))
+                if (instanceType.GetTypeInfo().IsEnum && AreReferenceAssignable(targetType, typeof(Enum)))
                 {
                     return true;
                 }
@@ -305,7 +305,7 @@ namespace System.Dynamic.Utils
         private static bool IsDelegate(Type t)
         {
             Debug.Assert(t != null);
-            return t.GetTypeInfo().IsSubclassOf(typeof(System.MulticastDelegate));
+            return t.GetTypeInfo().IsSubclassOf(typeof(MulticastDelegate));
         }
 
         public static bool IsLegalExplicitVariantDelegateConversion(Type source, Type dest)
@@ -655,9 +655,9 @@ namespace System.Dynamic.Utils
 
         private static bool IsImplicitBoxingConversion(Type source, Type destination)
         {
-            if (source.GetTypeInfo().IsValueType && (destination == typeof(object) || destination == typeof(System.ValueType)))
+            if (source.GetTypeInfo().IsValueType && (destination == typeof(object) || destination == typeof(ValueType)))
                 return true;
-            if (source.GetTypeInfo().IsEnum && destination == typeof(System.Enum))
+            if (source.GetTypeInfo().IsEnum && destination == typeof(Enum))
                 return true;
             return false;
         }
