@@ -610,6 +610,7 @@ namespace System
         public static System.OperatingSystem OSVersion { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
         public static string StackTrace { get { throw null; } }
+        public static string SystemDirectory { get { throw null; } }
         public static int SystemPageSize { get { throw null; } }
         public static int TickCount { get { throw null; } }
         public static bool UserInteractive { get { throw null; } }
