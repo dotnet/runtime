@@ -162,13 +162,13 @@ mono_w32handle_set_signal_state (gpointer handle, gboolean state, gboolean broad
 gboolean
 mono_w32handle_issignalled (gpointer handle);
 
-int
+void
 mono_w32handle_lock_handle (gpointer handle);
 
-int
+gboolean
 mono_w32handle_trylock_handle (gpointer handle);
 
-int
+void
 mono_w32handle_unlock_handle (gpointer handle);
 
 MonoW32HandleWaitRet

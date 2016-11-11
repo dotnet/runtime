@@ -2913,7 +2913,6 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	gunichar2 *utf16_basename;
 	time_t create_time;
 	glong bytes;
-	int thr_ret;
 	gboolean ret = FALSE;
 	
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FIND,
@@ -2925,8 +2924,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 		return(FALSE);
 	}
 
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_lock_handle (handle);
 	
 retry:
 	if (find_handle->count >= find_handle->num) {
@@ -3032,8 +3030,7 @@ retry:
 	g_free (utf16_basename);
 
 cleanup:
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_unlock_handle (handle);
 	
 	return(ret);
 }
@@ -3050,7 +3047,6 @@ gboolean FindClose (gpointer handle)
 {
 	struct _WapiHandle_find *find_handle;
 	gboolean ok;
-	int thr_ret;
 
 	if (handle == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -3066,14 +3062,12 @@ gboolean FindClose (gpointer handle)
 		return(FALSE);
 	}
 
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_lock_handle (handle);
 	
 	g_strfreev (find_handle->namelist);
 	g_free (find_handle->dir_part);
 
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_unlock_handle (handle);
 	
 	mono_w32handle_unref (handle);
 	

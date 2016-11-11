@@ -140,7 +140,6 @@ static gpointer
 sem_handle_create (MonoW32HandleSemaphore *sem_handle, MonoW32HandleType type, gint32 initial, gint32 max)
 {
 	gpointer handle;
-	int thr_ret;
 
 	sem_handle->val = initial;
 	sem_handle->max = max;
@@ -153,14 +152,12 @@ sem_handle_create (MonoW32HandleSemaphore *sem_handle, MonoW32HandleType type, g
 		return NULL;
 	}
 
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_lock_handle (handle);
 
 	if (initial != 0)
 		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_unlock_handle (handle);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: created %s handle %p",
 		__func__, mono_w32handle_ops_typename (type), handle);
@@ -260,7 +257,6 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 {
 	MonoW32HandleType type;
 	MonoW32HandleSemaphore *sem_handle;
-	int thr_ret;
 	MonoBoolean ret;
 
 	if (!handle) {
@@ -285,8 +281,7 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: releasing %s handle %p",
 		__func__, mono_w32handle_ops_typename (type), handle);
 
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_lock_handle (handle);
 
 	/* Do this before checking for count overflow, because overflowing
 	 * max is a listed technique for finding the current value */
@@ -309,8 +304,7 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 		ret = TRUE;
 	}
 
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
+	mono_w32handle_unlock_handle (handle);
 
 	return ret;
 }
