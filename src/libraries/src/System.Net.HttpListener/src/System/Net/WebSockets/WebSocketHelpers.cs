@@ -68,10 +68,10 @@ namespace System.Net.WebSockets
             ArraySegment<byte> internalBuffer)
         {
             HttpListenerWebSocketContext webSocketContext = null;
-            //if (NetEventSource.Log.IsEnabled())
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, context, "AcceptWebSocketAsync", "");
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, context);
+            }
 
             try
             {
@@ -119,22 +119,15 @@ namespace System.Net.WebSockets
                         hresult));
                 }
 
-                //if (NetEventSource.Log.IsEnabled())
-                //{
-                //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, string.Format("{0} = {1}",
-                //        HttpKnownHeaderNames.Origin, origin));
-                //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, string.Format("{0} = {1}",
-                //        HttpKnownHeaderNames.SecWebSocketVersion, secWebSocketVersion));
-                //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, string.Format("{0} = {1}",
-                //        HttpKnownHeaderNames.SecWebSocketKey, secWebSocketKey));
-                //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, string.Format("{0} = {1}",
-                //        HttpKnownHeaderNames.SecWebSocketAccept, secWebSocketAccept));
-                //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, string.Format("Request  {0} = {1}",
-                //        HttpKnownHeaderNames.SecWebSocketProtocol,
-                //        request.Headers[HttpKnownHeaderNames.SecWebSocketProtocol]));
-                //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, string.Format("Response {0} = {1}",
-                //        HttpKnownHeaderNames.SecWebSocketProtocol, outgoingSecWebSocketProtocolString));
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(null, $"{HttpKnownHeaderNames.Origin} = {origin}");
+                    NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketVersion} = {secWebSocketVersion}");
+                    NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketKey} = {secWebSocketKey}");
+                    NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketAccept} = {secWebSocketAccept}");
+                    NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketProtocol} = {request.Headers[HttpKnownHeaderNames.SecWebSocketProtocol]}");
+                    NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketProtocol} = {outgoingSecWebSocketProtocolString}");
+                }
 
                 await response.OutputStream.FlushAsync().SuppressContextFlow();
 
@@ -165,26 +158,26 @@ namespace System.Net.WebSockets
                                                                     secWebSocketKey,
                                                                     webSocket);
 
-                //if (NetEventSource.Log.IsEnabled())
-                //{
-                //    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, context, webSocketContext);
-                //    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, webSocketContext, webSocket);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Associate(context, webSocketContext);
+                    NetEventSource.Associate(webSocketContext, webSocket);
+                }
             }
-            //catch (Exception ex)
-            //{
-            //    if (NetEventSource.Log.IsEnabled())
-            //    {
-            //        NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, context, "AcceptWebSocketAsync", ex);
-            //    }
-            //    throw;
-            //}
+            catch (Exception ex)
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Error(context, ex);
+                }
+                throw;
+            }
             finally
             {
-                //if (NetEventSource.Log.IsEnabled())
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, context, "AcceptWebSocketAsync", "");
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(context);
+                }
             }
 
             return webSocketContext;

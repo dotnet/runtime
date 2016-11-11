@@ -39,7 +39,7 @@ namespace System.Net
 
         internal HttpListenerResponse()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, ".ctor", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             _nativeResponse = new Interop.HttpApi.HTTP_RESPONSE();
             _webHeaders = new WebHeaderCollection();
             _boundaryType = BoundaryType.None;
@@ -52,7 +52,7 @@ namespace System.Net
 
         internal HttpListenerResponse(HttpListenerContext httpContext) : this()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(NetEventSource.ComponentType.HttpListener, this, httpContext);
+            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, httpContext);
             _httpContext = httpContext;
         }
 
@@ -209,7 +209,7 @@ namespace System.Net
 
         public void CopyFrom(HttpListenerResponse templateResponse)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "CopyFrom", "templateResponse#" + LoggingHash.HashString(templateResponse));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"templateResponse {templateResponse}");
             _nativeResponse = new Interop.HttpApi.HTTP_RESPONSE();
             _responseState = ResponseState.Created;
             _webHeaders = templateResponse._webHeaders;
@@ -312,19 +312,19 @@ namespace System.Net
 
         public void AddHeader(string name, string value)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "AddHeader", " name=" + name + " value=" + value);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
             Headers.Set(name, value);
         }
 
         public void AppendHeader(string name, string value)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "AppendHeader", " name=" + name + " value=" + value);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
             Headers.Add(value);
         }
 
         public void Redirect(string url)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "Redirect", " url=" + url);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
             Headers[HttpResponseHeader.Location] = url;
             StatusCode = (int)HttpStatusCode.Redirect;
             StatusDescription = HttpStatusDescription.Get(StatusCode);
@@ -336,7 +336,7 @@ namespace System.Net
             {
                 throw new ArgumentNullException("cookie");
             }
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "AppendCookie", " cookie#" + LoggingHash.HashString(cookie));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "cookie: {cookie}");
             Cookies.Add(cookie);
         }
 
@@ -357,7 +357,7 @@ namespace System.Net
                 Debug.Assert(!added);
             }
 
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "SetCookie", " cookie#" + LoggingHash.HashString(cookie));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
 
             if (!added)
             {
@@ -415,7 +415,7 @@ namespace System.Net
 
         public void Abort()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "abort", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 if (_responseState >= ResponseState.Closed)
@@ -428,13 +428,13 @@ namespace System.Net
             }
             finally
             {
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "abort", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Close", " responseEntity=" + LoggingHash.HashString(responseEntity) + " willBlock=" + willBlock);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"responseEntity={responseEntity},willBlock={willBlock}");
             try
             {
                 CheckDisposed();
@@ -442,7 +442,7 @@ namespace System.Net
                 {
                     throw new ArgumentNullException("responseEntity");
                 }
-                //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::Close() ResponseState:" + m_ResponseState + " BoundaryType:" + m_BoundaryType + " ContentLength:" + m_ContentLength);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
                 if (_responseState < ResponseState.SentHeaders && _boundaryType != BoundaryType.Chunked)
                 {
                     ContentLength64 = responseEntity.Length;
@@ -466,15 +466,12 @@ namespace System.Net
                 }
                 else
                 {
-                    // <CONSIDER>
-                    // make this call unsafe, since we don't call user's code in the callback
-                    // </CONSIDER>
                     _responseStream.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
                 }
             }
             finally
             {
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -568,11 +565,12 @@ namespace System.Net
             Interop.HttpApi.HTTP_FLAGS flags,
             bool isWebSocketHandshake)
         {
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SendHeaders() pDataChunk:" + LoggingHash.ObjectToString((IntPtr)pDataChunk) + " asyncResult:" + LoggingHash.ObjectToString(asyncResult));
-            //Debug.Assert(!SentHeaders, "HttpListenerResponse#{0}::SendHeaders()|SentHeaders is true.", LoggingHash.HashString(this));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"pDataChunk: { ((IntPtr)pDataChunk)}, asyncResult: {asyncResult}");
+            Debug.Assert(!SentHeaders, "SentHeaders is true.");
 
             if (StatusCode == (int)HttpStatusCode.Unauthorized)
-            { // User set 401
+            {
+                // User set 401
                 // Using the configured Auth schemes, populate the auth challenge headers. This is for scenarios where 
                 // Anonymous access is allowed for some resources, but the server later determines that authorization 
                 // is required for this request.
@@ -580,7 +578,7 @@ namespace System.Net
             }
 
             // Log headers
-            if (NetEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
                 StringBuilder sb = new StringBuilder("HttpListenerResponse Headers:\n");
                 for (int i = 0; i < Headers.Count; i++)
@@ -591,14 +589,10 @@ namespace System.Net
                     sb.Append(Headers.Get(i));
                     sb.Append("\n");
                 }
-                //NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, ".ctor", sb.ToString());
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, sb.ToString());
             }
             _responseState = ResponseState.SentHeaders;
-            /*
-            if (m_BoundaryType==BoundaryType.Raw) {
-                use HTTP_SEND_RESPONSE_FLAG_RAW_HEADER;
-            }
-            */
+            
             uint statusCode;
             uint bytesSent;
             List<GCHandle> pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
@@ -619,7 +613,7 @@ namespace System.Net
                     _nativeResponse.EntityChunkCount = 0;
                     _nativeResponse.pEntityChunks = null;
                 }
-                //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SendHeaders() calling Interop.HttpApi.HttpSendHttpResponse flags:" + flags);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpSendHttpResponse flags:" + flags);
                 if (StatusDescription.Length > 0)
                 {
                     byte[] statusDescriptionBytes = new byte[WebHeaderEncoding.GetByteCount(StatusDescription)];
@@ -679,7 +673,7 @@ namespace System.Net
                         }
                     }
                 }
-                //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SendHeaders() call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
             }
             finally
             {
@@ -690,7 +684,8 @@ namespace System.Net
 
         internal void ComputeCookies()
         {
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeCookies() entering Set-Cookie: " + LoggingHash.ObjectToString(Headers[HttpResponseHeader.SetCookie]) + " Set-Cookie2: " + LoggingHash.ObjectToString(Headers[HttpKnownHeaderNames.SetCookie2]));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
+                $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
             if (_cookies != null)
             {
                 // now go through the collection, and concatenate all the cookies in per-variant strings
@@ -704,7 +699,7 @@ namespace System.Net
                     {
                         continue;
                     }
-                    //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeCookies() now looking at index:" + index + " cookie.Variant:" + cookie.Variant + " cookie:" + cookie.ToString());
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
                     if (cookie.IsRfc2965Variant())
                     {
                         setCookie2 = setCookie2 == null ? cookieString : setCookie2 + ", " + cookieString;
@@ -731,30 +726,25 @@ namespace System.Net
                     }
                 }
             }
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeCookies() exiting Set-Cookie: " + LoggingHash.ObjectToString(Headers[HttpResponseHeader.SetCookie]) + " Set-Cookie2: " + LoggingHash.ObjectToString(Headers[HttpKnownHeaderNames.SetCookie2]));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this,
+                $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
         }
 
         internal Interop.HttpApi.HTTP_FLAGS ComputeHeaders()
         {
             Interop.HttpApi.HTTP_FLAGS flags = Interop.HttpApi.HTTP_FLAGS.NONE;
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeHeaders()");
-            //Debug.Assert(!ComputedHeaders, "HttpListenerResponse#{0}::ComputeHeaders()|ComputedHeaders is true.", LoggingHash.HashString(this));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            Debug.Assert(!ComputedHeaders, "ComputedHeaders is true.");
             _responseState = ResponseState.ComputedHeaders;
-            /*
-            // here we would check for BoundaryType.Raw, in this case we wouldn't need to do anything
-            if (m_BoundaryType==BoundaryType.Raw) {
-                return flags;
-            }
-            */
-
+            
             ComputeCoreHeaders();
 
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeHeaders() flags:" + flags + " m_BoundaryType:" + m_BoundaryType + " m_ContentLength:" + m_ContentLength + " m_KeepAlive:" + m_KeepAlive);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this,
+                $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength} _keepAlive: {_keepAlive}");
             if (_boundaryType == BoundaryType.None)
             {
                 if (HttpListenerRequest.ProtocolVersion.Minor == 0)
                 {
-                    // CONSIDER: here we could also buffer.
                     _keepAlive = false;
                 }
                 else
@@ -771,7 +761,7 @@ namespace System.Net
                 }
             }
 
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeHeaders() flags:" + flags + " m_BoundaryType:" + m_BoundaryType + " m_ContentLength:" + m_ContentLength + " m_KeepAlive:" + m_KeepAlive);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"flags:{flags} _BoundaryType:{_boundaryType} _contentLength:{_contentLength} _keepAlive: {_keepAlive}");
             if (_boundaryType == BoundaryType.ContentLength)
             {
                 Headers[HttpResponseHeader.ContentLength] = _contentLength.ToString("D", NumberFormatInfo.InvariantInfo);
@@ -807,7 +797,7 @@ namespace System.Net
                     Headers[HttpResponseHeader.KeepAlive] = "true";
                 }
             }
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::ComputeHeaders() flags:" + flags + " m_BoundaryType:" + m_BoundaryType + " m_ContentLength:" + m_ContentLength + " m_KeepAlive:" + m_KeepAlive);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"flags:{flags} _BoundaryType:{_boundaryType} _contentLength:{_contentLength} _keepAlive: {_keepAlive}");
             return flags;
         }
 
@@ -827,13 +817,8 @@ namespace System.Net
             Interop.HttpApi.HTTP_UNKNOWN_HEADER[] unknownHeaders = null;
             List<GCHandle> pinnedHeaders;
             GCHandle gcHandle;
-            /*
-            // here we would check for BoundaryType.Raw, in this case we wouldn't need to do anything
-            if (m_BoundaryType==BoundaryType.Raw) {
-                return null;
-            }
-            */
-            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SerializeHeaders(HTTP_RESPONSE_HEADERS)");
+           
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "SerializeHeaders(HTTP_RESPONSE_HEADERS)");
             if (Headers.Count == 0)
             {
                 return null;
@@ -845,7 +830,6 @@ namespace System.Net
             pinnedHeaders = new List<GCHandle>();
 
             //---------------------------------------------------
-            // DTS Issue: 609383:
             // The Set-Cookie headers are being merged into one. 
             // There are two issues here. 
             // 1. When Set-Cookie headers are set through SetCookie method on the ListenerResponse,
@@ -916,16 +900,12 @@ namespace System.Net
                         {
                             lookup = -1;
                         }
-                        //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SerializeHeaders(" + index + "/" + Headers.Count + ") headerName:" + LoggingHash.ObjectToString(headerName) + " lookup:" + lookup + " headerValue:" + LoggingHash.ObjectToString(headerValue));
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this,
+                            $"index={index},headers.count={Headers.Count},headerName:{headerName},lookup:{lookup} headerValue:{headerValue}");
                         if (lookup == -1)
                         {
                             if (unknownHeaders == null)
                             {
-                                //----------------------------------------
-                                //*** This following comment is no longer true ***
-                                // we waste some memory here (up to 32*41=1312 bytes) but we gain speed
-                                //unknownHeaders = new Interop.HttpApi.HTTP_UNKNOWN_HEADER[Headers.Count-index];
-                                //--------------------------------------------
                                 unknownHeaders = new Interop.HttpApi.HTTP_UNKNOWN_HEADER[numUnknownHeaders];
                                 gcHandle = GCHandle.Alloc(unknownHeaders, GCHandleType.Pinned);
                                 pinnedHeaders.Add(gcHandle);
@@ -956,12 +936,12 @@ namespace System.Net
                                 pinnedHeaders.Add(gcHandle);
                                 unknownHeaders[headers.UnknownHeaderCount].pRawValue = (sbyte*)gcHandle.AddrOfPinnedObject();
                                 headers.UnknownHeaderCount++;
-                                //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SerializeHeaders(Unknown) UnknownHeaderCount:" + headers.UnknownHeaderCount);
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "UnknownHeaderCount:" + headers.UnknownHeaderCount);
                             }
                         }
                         else
                         {
-                            //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SerializeHeaders(Known) HttpResponseHeader[" + lookup + "]:" + ((HttpResponseHeader)lookup) + " headerValue:" + LoggingHash.ObjectToString(headerValue));
+                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpResponseHeader[{lookup}]:{((HttpResponseHeader)lookup)} headerValue:{headerValue}");
                             if (headerValue != null)
                             {
                                 bytes = new byte[WebHeaderEncoding.GetByteCount(headerValue)];
@@ -970,8 +950,10 @@ namespace System.Net
                                 gcHandle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
                                 pinnedHeaders.Add(gcHandle);
                                 pKnownHeaders[lookup].pRawValue = (sbyte*)gcHandle.AddrOfPinnedObject();
-                                //GlobalLog.Print("HttpListenerResponse#" + LoggingHash.HashString(this) + "::SerializeHeaders(Known) pRawValue:" + LoggingHash.ObjectToString((IntPtr)(pKnownHeaders[lookup].pRawValue)) + " RawValueLength:" + pKnownHeaders[lookup].RawValueLength + " lookup:" + lookup);
-                                //GlobalLog.Dump((IntPtr)pKnownHeaders[lookup].pRawValue, 0, pKnownHeaders[lookup].RawValueLength);
+                                if (NetEventSource.IsEnabled)
+                                {
+                                    NetEventSource.Info(this, $"pRawValue:{((IntPtr)(pKnownHeaders[lookup].pRawValue))} RawValueLength:{pKnownHeaders[lookup].RawValueLength} lookup: {lookup}");
+                                }
                             }
                         }
                     }

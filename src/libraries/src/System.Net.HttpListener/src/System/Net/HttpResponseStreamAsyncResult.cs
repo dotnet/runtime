@@ -52,7 +52,7 @@ namespace System.Net
 
         private static byte[] GetChunkHeader(int size, out int offset)
         {
-            //GlobalLog.Enter("ConnectStream::GetChunkHeader", "size:" + size.ToString());
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, $"size:{size}");
 
             uint Mask = 0xf0000000;
             byte[] Header = new byte[10];
@@ -107,7 +107,7 @@ namespace System.Net
             Header[8] = (byte)'\r';
             Header[9] = (byte)'\n';
 
-            //GlobalLog.Leave("ConnectStream::GetChunkHeader");
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
             return Header;
         }
 
@@ -128,7 +128,7 @@ namespace System.Net
             {
                 _dataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[chunked ? 3 : 1];
 
-                //GlobalLog.Print("HttpResponseStreamAsyncResult#" + LoggingHash.HashString(this) + "::.ctor() m_pOverlapped:0x" + ((IntPtr)m_pOverlapped).ToString("x8"));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "m_pOverlapped:0x" + ((IntPtr)m_pOverlapped).ToString("x8"));
 
                 object[] objectsToPin = new object[1 + _dataChunks.Length];
                 objectsToPin[_dataChunks.Length] = _dataChunks;
@@ -190,7 +190,7 @@ namespace System.Net
 
         private static void IOCompleted(HttpResponseStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
         {
-            //GlobalLog.Print("HttpResponseStreamAsyncResult#" + LoggingHash.HashString(asyncResult) + "::Callback() errorCode:0x" + errorCode.ToString("x8") + " numBytes:" + numBytes);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
             object result = null;
             try
             {
@@ -202,19 +202,18 @@ namespace System.Net
                 else
                 {
                     // if we sent headers and body together, numBytes will be the total, but we need to only account for the data
-                    // result = numBytes;
                     if (asyncResult._dataChunks == null)
                     {
                         result = (uint)0;
-                        //if (NetEventSource.Log.IsEnabled()) { NetEventSource.Dump(NetEventSource.ComponentType.HttpListener, asyncResult, "Callback", IntPtr.Zero, 0); }
+                        if (NetEventSource.IsEnabled) { NetEventSource.DumpBuffer(null, IntPtr.Zero, 0); }
                     }
                     else
                     {
                         result = asyncResult._dataChunks.Length == 1 ? asyncResult._dataChunks[0].BufferLength : 0;
-                        //if (NetEventSource.Log.IsEnabled()) { for (int i = 0; i < asyncResult.m_DataChunks.Length; i++) { NetEventSource.Dump(NetEventSource.ComponentType.HttpListener, asyncResult, "Callback", (IntPtr)asyncResult.m_DataChunks[0].pBuffer, (int)asyncResult.m_DataChunks[0].BufferLength); } }
+                        if (NetEventSource.IsEnabled) { for (int i = 0; i < asyncResult._dataChunks.Length; i++) { NetEventSource.DumpBuffer(null, (IntPtr)asyncResult._dataChunks[0].pBuffer, (int)asyncResult._dataChunks[0].BufferLength); } }
                     }
                 }
-                //GlobalLog.Print("HttpResponseStreamAsyncResult#" + LoggingHash.HashString(asyncResult) + "::Callback() calling Complete()");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Calling Complete()");
             }
             catch (Exception e)
             {
@@ -227,7 +226,7 @@ namespace System.Net
         {
             object state = ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
             HttpResponseStreamAsyncResult asyncResult = state as HttpResponseStreamAsyncResult;
-            //GlobalLog.Print("HttpResponseStreamAsyncResult#" + LoggingHash.HashString(asyncResult) + "::Callback() errorCode:0x" + errorCode.ToString("x8") + " numBytes:" + numBytes + " nativeOverlapped:0x" + ((IntPtr)nativeOverlapped).ToString("x8"));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, "errorCode:0x" + errorCode.ToString("x8") + " numBytes:" + numBytes + " nativeOverlapped:0x" + ((IntPtr)nativeOverlapped).ToString("x8"));
 
             IOCompleted(asyncResult, errorCode, numBytes);
         }

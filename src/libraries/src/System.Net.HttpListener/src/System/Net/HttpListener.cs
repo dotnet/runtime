@@ -12,20 +12,20 @@ namespace System.Net
 
         public void Close()
         {
-            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, nameof(Close));
             try
             {
-                //GlobalLog.Print("HttpListenerRequest::Close()");
+                if (NetEventSource.IsEnabled) NetEventSource.Info("HttpListenerRequest::Close()");
                 ((IDisposable)this).Dispose();
             }
-            //catch (Exception exception)
-            //{
-            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Close", exception);
-            //    throw;
-            //}
+            catch (Exception exception)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Close {exception}");
+                throw;
+            }
             finally
             {
-                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 

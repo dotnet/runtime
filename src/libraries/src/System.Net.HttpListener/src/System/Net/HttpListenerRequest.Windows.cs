@@ -24,7 +24,7 @@ namespace System.Net
     {
         private Uri _requestUri;
         private ulong _requestId;
-        internal ulong m_ConnectionId;
+        internal ulong _connectionId;
         private SslStatus _sslStatus;
         private string _rawUrl;
         private string _cookedUrlHost;
@@ -59,15 +59,18 @@ namespace System.Net
 
         internal HttpListenerRequest(HttpListenerContext httpContext, RequestContextBase memoryBlob)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, ".ctor", "httpContext#" + LoggingHash.HashString(httpContext) + " memoryBlob# " + LoggingHash.HashString((IntPtr)memoryBlob.RequestBlob));
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(NetEventSource.ComponentType.HttpListener, this, httpContext);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(this, $"httpContext:${httpContext} memoryBlob {((IntPtr)memoryBlob.RequestBlob)}");
+                NetEventSource.Associate(this, httpContext);
+            }
             _httpContext = httpContext;
             _memoryBlob = memoryBlob;
             _boundaryType = BoundaryType.None;
 
             // Set up some of these now to avoid refcounting on memory blob later.
             _requestId = memoryBlob.RequestBlob->RequestId;
-            m_ConnectionId = memoryBlob.RequestBlob->ConnectionId;
+            _connectionId = memoryBlob.RequestBlob->ConnectionId;
             _sslStatus = memoryBlob.RequestBlob->pSslInfo == null ? SslStatus.Insecure :
                 memoryBlob.RequestBlob->pSslInfo->SslClientCertNegotiated == 0 ? SslStatus.NoClientCert :
                 SslStatus.ClientCert;
@@ -92,22 +95,25 @@ namespace System.Net
             _version = new Version(memoryBlob.RequestBlob->Version.MajorVersion, memoryBlob.RequestBlob->Version.MinorVersion);
             _clientCertState = ListenerClientCertState.NotInitialized;
             _keepAlive = null;
-            //GlobalLog.Print("HttpListenerContext#" + LoggingHash.HashString(this) + "::.ctor() RequestId:" + RequestId + " ConnectionId:" + m_ConnectionId + " RawConnectionId:" + memoryBlob.RequestBlob->RawConnectionId + " UrlContext:" + memoryBlob.RequestBlob->UrlContext + " RawUrl:" + m_RawUrl + " Version:" + m_Version.ToString() + " Secure:" + m_SslStatus.ToString());
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, ".ctor", "httpContext#" + LoggingHash.HashString(httpContext) + " RequestUri:" + LoggingHash.ObjectToString(RequestUri) + " Content-Length:" + LoggingHash.ObjectToString(ContentLength64) + " HTTP Method:" + LoggingHash.ObjectToString(HttpMethod));
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(this, $"RequestId:{RequestId} ConnectionId:{_connectionId} RawConnectionId:{memoryBlob.RequestBlob->RawConnectionId} UrlContext:{memoryBlob.RequestBlob->UrlContext} RawUrl:{_rawUrl} Version:{_version} Secure:{_sslStatus}");
+                NetEventSource.Info(this, $"httpContext:${httpContext} RequestUri:{RequestUri} Content-Length:{ContentLength64} HTTP Method:{HttpMethod}");
+            }
             // Log headers
-            //if (NetEventSource.Log.IsEnabled())
-            //{
-            //    StringBuilder sb = new StringBuilder("HttpListenerRequest Headers:\n");
-            //    for (int i = 0; i < Headers.Count; i++)
-            //    {
-            //        sb.Append("\t");
-            //        sb.Append(Headers.GetKey(i));
-            //        sb.Append(" : ");
-            //        sb.Append(Headers.Get(i));
-            //        sb.Append("\n");
-            //    }
-            //    NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, ".ctor", sb.ToString());
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                StringBuilder sb = new StringBuilder("HttpListenerRequest Headers:\n");
+                for (int i = 0; i < Headers.Count; i++)
+                {
+                    sb.Append("\t");
+                    sb.Append(Headers.GetKey(i));
+                    sb.Append(" : ");
+                    sb.Append(Headers.Get(i));
+                    sb.Append("\n");
+                }
+                NetEventSource.Info(this, sb.ToString());
+            }
         }
 
         internal HttpListenerContext HttpListenerContext
@@ -237,7 +243,7 @@ namespace System.Net
                         }
                     }
                 }
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ContentLength_get() returning m_ContentLength:" + m_ContentLength + " m_BoundaryType:" + m_BoundaryType);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_contentLength:{_contentLength} _boundaryType:{_boundaryType}");
                 return _contentLength;
             }
         }
@@ -258,7 +264,7 @@ namespace System.Net
                 {
                     _webHeaders = Interop.HttpApi.GetHeaders(RequestBuffer, OriginalBlobAddress);
                 }
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::Headers_get() returning#" + LoggingHash.HashString(m_WebHeaders));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"webHeaders:{_webHeaders}");
                 return _webHeaders;
             }
         }
@@ -271,7 +277,7 @@ namespace System.Net
                 {
                     _httpMethod = Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
                 }
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::HttpMethod_get() returning m_HttpMethod:" + LoggingHash.ObjectToString(m_HttpMethod));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_httpMethod:{_httpMethod}");
                 return _httpMethod;
             }
         }
@@ -280,12 +286,12 @@ namespace System.Net
         {
             get
             {
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "InputStream_get", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 if (_requestStream == null)
                 {
                     _requestStream = HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
                 }
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "InputStream_get", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return _requestStream;
             }
         }
@@ -444,7 +450,7 @@ namespace System.Net
                 else if (_clientCertState == ListenerClientCertState.InProgress)
                     throw new InvalidOperationException(SR.Format(SR.net_listener_mustcompletecall, "GetClientCertificate()/BeginGetClientCertificate()"));
 
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ClientCertificateError_get() returning ClientCertificateError:" + LoggingHash.ObjectToString(m_ClientCertificateError));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ClientCertificateError:{_clientCertificateError}");
                 return _clientCertificateError;
             }
         }
@@ -472,28 +478,28 @@ namespace System.Net
 
         public X509Certificate2 GetClientCertificate()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "GetClientCertificate", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 ProcessClientCertificate();
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::GetClientCertificate() returning m_ClientCertificate:" + LoggingHash.ObjectToString(m_ClientCertificate));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{_clientCertificate}");
             }
             finally
             {
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "GetClientCertificate", LoggingHash.ObjectToString(m_ClientCertificate));
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return _clientCertificate;
         }
 
         public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, "BeginGetClientCertificate", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             return AsyncProcessClientCertificate(requestCallback, state);
         }
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "EndGetClientCertificate", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             X509Certificate2 clientCertificate = null;
             try
             {
@@ -512,11 +518,11 @@ namespace System.Net
                 }
                 clientCertAsyncResult.EndCalled = true;
                 clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::EndGetClientCertificate() returning m_ClientCertificate:" + LoggingHash.ObjectToString(m_ClientCertificate));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{_clientCertificate}");
             }
             finally
             {
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "EndGetClientCertificate", LoggingHash.HashString(clientCertificate));
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return clientCertificate;
         }
@@ -536,7 +542,7 @@ namespace System.Net
 
         private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
         {
-            //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ParseCookies() uri:" + uri + " setCookieHeader:" + setCookieHeader);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
             CookieContainer container = new CookieContainer();
             container.SetCookies(uri, setCookieHeader);
             return container.GetCookies(uri);
@@ -610,7 +616,7 @@ namespace System.Net
                     }
                 }
 
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::KeepAlive_get() returning:" + m_KeepAlive);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
                 return _keepAlive == true;
             }
         }
@@ -623,7 +629,7 @@ namespace System.Net
                 {
                     _remoteEndPoint = Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
                 }
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::RemoteEndPoint_get() returning:" + m_RemoteEndPoint);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_remoteEndPoint" + _remoteEndPoint);
                 return _remoteEndPoint;
             }
         }
@@ -636,7 +642,7 @@ namespace System.Net
                 {
                     _localEndPoint = Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
                 }
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::LocalEndPoint_get() returning:" + m_LocalEndPoint);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_localEndPoint={_localEndPoint}");
                 return _localEndPoint;
             }
         }
@@ -644,7 +650,7 @@ namespace System.Net
         //should only be called from httplistenercontext
         internal void Close()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             RequestContextBase memoryBlob = _memoryBlob;
             if (memoryBlob != null)
             {
@@ -652,7 +658,7 @@ namespace System.Net
                 _memoryBlob = null;
             }
             _isDisposed = true;
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+           if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private ListenerClientCertAsyncResult AsyncProcessClientCertificate(AsyncCallback requestCallback, object state)
@@ -703,20 +709,21 @@ namespace System.Net
                 {
                     while (true)
                     {
-                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() calling Interop.HttpApi.HttpReceiveClientCertificate size:" + size);
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpReceiveClientCertificate size:" + size);
                         uint bytesReceived = 0;
 
                         uint statusCode =
                             Interop.HttpApi.HttpReceiveClientCertificate(
                                 HttpListenerContext.RequestQueueHandle,
-                                m_ConnectionId,
+                                _connectionId,
                                 (uint)Interop.HttpApi.HTTP_FLAGS.NONE,
                                 asyncResult.RequestBlob,
                                 size,
                                 &bytesReceived,
                                 asyncResult.NativeOverlapped);
 
-                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this,
+                            "Call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
                         if (statusCode == Interop.HttpApi.ERROR_MORE_DATA)
                         {
                             Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult.RequestBlob;
@@ -727,7 +734,7 @@ namespace System.Net
                         if (statusCode != Interop.HttpApi.ERROR_SUCCESS &&
                             statusCode != Interop.HttpApi.ERROR_IO_PENDING)
                         {
-                            // someother bad error, possible(?) return values are:
+                            // someother bad error, possible return values are:
                             // ERROR_INVALID_HANDLE, ERROR_INSUFFICIENT_BUFFER, ERROR_OPERATION_ABORTED
                             // Also ERROR_BAD_DATA if we got it twice or it reported smaller size buffer required.
                             throw new HttpListenerException((int)statusCode);
@@ -763,7 +770,7 @@ namespace System.Net
             if (_clientCertState == ListenerClientCertState.InProgress)
                 throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, "GetClientCertificate()/BeginGetClientCertificate()"));
             _clientCertState = ListenerClientCertState.InProgress;
-            //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate()");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             //--------------------------------------------------------------------
             //When you configure the HTTP.SYS with a flag value 2
             //which means require client certificates, when the client makes the
@@ -807,20 +814,21 @@ namespace System.Net
                     {
                         Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)pClientCertInfoBlob;
 
-                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() calling Interop.HttpApi.HttpReceiveClientCertificate size:" + size);
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpReceiveClientCertificate size:" + size);
                         uint bytesReceived = 0;
 
                         uint statusCode =
                             Interop.HttpApi.HttpReceiveClientCertificate(
                                 HttpListenerContext.RequestQueueHandle,
-                                m_ConnectionId,
+                                _connectionId,
                                 (uint)Interop.HttpApi.HTTP_FLAGS.NONE,
                                 pClientCertInfo,
                                 size,
                                 &bytesReceived,
                                 null);
 
-                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this,
+                            "Call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
                         if (statusCode == Interop.HttpApi.ERROR_MORE_DATA)
                         {
                             size = bytesReceived + pClientCertInfo->CertEncodedSize;
@@ -830,12 +838,9 @@ namespace System.Net
                         {
                             if (pClientCertInfo != null)
                             {
-                                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() pClientCertInfo:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo)
-                                //    + " pClientCertInfo->CertFlags:" + LoggingHash.ObjectToString(pClientCertInfo->CertFlags)
-                                //    + " pClientCertInfo->CertEncodedSize:" + LoggingHash.ObjectToString(pClientCertInfo->CertEncodedSize)
-                                //    + " pClientCertInfo->pCertEncoded:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo->pCertEncoded)
-                                //    + " pClientCertInfo->Token:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo->Token)
-                                //    + " pClientCertInfo->CertDeniedByMapper:" + LoggingHash.ObjectToString(pClientCertInfo->CertDeniedByMapper));
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(this,
+                                    $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
+
                                 if (pClientCertInfo->pCertEncoded != null)
                                 {
                                     try
@@ -844,13 +849,13 @@ namespace System.Net
                                         Marshal.Copy((IntPtr)pClientCertInfo->pCertEncoded, certEncoded, 0, certEncoded.Length);
                                         _clientCertificate = new X509Certificate2(certEncoded);
                                     }
-                                    catch (CryptographicException /*exception*/)
+                                    catch (CryptographicException exception)
                                     {
-                                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() caught CryptographicException in X509Certificate2..ctor():" + LoggingHash.ObjectToString(exception));
+                                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CryptographicException={exception}");
                                     }
-                                    catch (SecurityException /*exception*/)
+                                    catch (SecurityException exception)
                                     {
-                                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::ProcessClientCertificate() caught SecurityException in X509Certificate2..ctor():" + LoggingHash.ObjectToString(exception));
+                                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SecurityException={exception}");
                                     }
                                 }
                                 _clientCertificateError = (int)pClientCertInfo->CertFlags;
@@ -858,7 +863,8 @@ namespace System.Net
                         }
                         else
                         {
-                            //Debug.Assert(statusCode == Interop.HttpApi.ERROR_NOT_FOUND, "HttpListenerRequest#{0}::ProcessClientCertificate()|Call to Interop.HttpApi.HttpReceiveClientCertificate() failed with statusCode {1}.", LoggingHash.HashString(this), statusCode);
+                            Debug.Assert(statusCode == Interop.HttpApi.ERROR_NOT_FOUND,
+                                $"Call to Interop.HttpApi.HttpReceiveClientCertificate() failed with statusCode {statusCode}.");
                         }
                     }
                     break;
@@ -885,7 +891,7 @@ namespace System.Net
                         _rawUrl, RequestScheme, _cookedUrlHost, _cookedUrlPath, _cookedUrlQuery);
                 }
 
-                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(this) + "::RequestUri_get() returning m_RequestUri:" + LoggingHash.ObjectToString(m_RequestUri));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_requestUri:{_requestUri}");
                 return _requestUri;
             }
         }
@@ -897,7 +903,7 @@ namespace System.Net
 
         internal ChannelBinding GetChannelBinding()
         {
-            return HttpListenerContext.Listener.GetChannelBindingFromTls(m_ConnectionId);
+            return HttpListenerContext.Listener.GetChannelBindingFromTls(_connectionId);
         }
 
         internal void CheckDisposed()
@@ -913,7 +919,7 @@ namespace System.Net
             //
             // Get attribute off header value
             //
-            internal static String GetAttributeFromHeader(String headerValue, String attrName)
+            internal static string GetAttributeFromHeader(string headerValue, string attrName)
             {
                 if (headerValue == null)
                     return null;
@@ -934,7 +940,7 @@ namespace System.Net
 
                     char chPrev = headerValue[i - 1];
                     char chNext = headerValue[i + k];
-                    if ((chPrev == ';' || chPrev == ',' || Char.IsWhiteSpace(chPrev)) && (chNext == '=' || Char.IsWhiteSpace(chNext)))
+                    if ((chPrev == ';' || chPrev == ',' || char.IsWhiteSpace(chPrev)) && (chNext == '=' || char.IsWhiteSpace(chNext)))
                         break;
 
                     i += k;
@@ -945,18 +951,18 @@ namespace System.Net
 
                 // skip to '=' and the following whitespaces
                 i += k;
-                while (i < l && Char.IsWhiteSpace(headerValue[i]))
+                while (i < l && char.IsWhiteSpace(headerValue[i]))
                     i++;
                 if (i >= l || headerValue[i] != '=')
                     return null;
                 i++;
-                while (i < l && Char.IsWhiteSpace(headerValue[i]))
+                while (i < l && char.IsWhiteSpace(headerValue[i]))
                     i++;
                 if (i >= l)
                     return null;
 
                 // parse the value
-                String attrValue = null;
+                string attrValue = null;
 
                 int j;
 
@@ -987,7 +993,7 @@ namespace System.Net
                 return attrValue;
             }
 
-            internal static String[] ParseMultivalueHeader(String s)
+            internal static string[] ParseMultivalueHeader(string s)
             {
                 if (s == null)
                     return null;
@@ -1020,18 +1026,18 @@ namespace System.Net
                 // return list as array of strings
 
                 int n = values.Count;
-                String[] strings;
+                string[] strings;
 
                 // if n is 0 that means s was empty string
 
                 if (n == 0)
                 {
-                    strings = new String[1];
-                    strings[0] = String.Empty;
+                    strings = new string[1];
+                    strings[0] = string.Empty;
                 }
                 else
                 {
-                    strings = new String[n];
+                    strings = new string[n];
                     values.CopyTo(0, strings, 0, n);
                 }
                 return strings;
@@ -1151,14 +1157,6 @@ namespace System.Net
 
                 internal void AddByte(byte b)
                 {
-                    // if there are no pending bytes treat 7 bit bytes as characters
-                    // this optimization is temp disable as it doesn't work for some encodings
-                    /*
-                                    if (_numBytes == 0 && ((b & 0x80) == 0)) {
-                                        AddChar((char)b);
-                                    }
-                                    else
-                    */
                     {
                         if (_byteBuffer == null)
                             _byteBuffer = new byte[_bufferSize];
@@ -1167,20 +1165,20 @@ namespace System.Net
                     }
                 }
 
-                internal String GetString()
+                internal string GetString()
                 {
                     if (_numBytes > 0)
                         FlushBytes();
 
                     if (_numChars > 0)
-                        return new String(_charBuffer, 0, _numChars);
+                        return new string(_charBuffer, 0, _numChars);
                     else
-                        return String.Empty;
+                        return string.Empty;
                 }
             }
 
 
-            internal static void FillFromString(NameValueCollection nvc, String s, bool urlencoded, Encoding encoding)
+            internal static void FillFromString(NameValueCollection nvc, string s, bool urlencoded, Encoding encoding)
             {
                 int l = (s != null) ? s.Length : 0;
                 int i = (s.Length > 0 && s[0] == '?') ? 1 : 0;
@@ -1211,8 +1209,8 @@ namespace System.Net
 
                     // extract the name / value pair
 
-                    String name = null;
-                    String value = null;
+                    string name = null;
+                    string value = null;
 
                     if (ti >= 0)
                     {
