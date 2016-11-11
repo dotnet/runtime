@@ -17,6 +17,8 @@
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uap101aot'">win8-aot</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <!-- windows.winmd is lower-case, see issue: https://github.com/dotnet/corefx/issues/13599 -->
+    <RunApiCompat Condition="'$(OSEnvironment)' != 'Windows_NT'">false</RunApiCompat>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
