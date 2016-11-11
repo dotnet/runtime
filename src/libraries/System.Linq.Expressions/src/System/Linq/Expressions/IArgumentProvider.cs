@@ -18,16 +18,16 @@ namespace System.Linq.Expressions
     /// both a <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/> and an array for storing their
     /// elements, thus saving 32 bytes per node.  This technique is used by various nodes including
     /// <see cref="BlockExpression"/>, <see cref="InvocationExpression"/>, <see cref="MethodCallExpression"/>.
-    /// 
+    ///
     /// Meanwhile the nodes can expose properties of <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/>s.
     /// They do this by re-using one field for storing both the array or an element that would normally be stored
     /// in the array.
-    /// 
+    ///
     /// For the array case the collection is typed to <see cref="Collections.Generic.IList{T}"/> instead
     /// of <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/>. When the node is initially constructed
     /// it is an array.  When utilities in this library access the arguments it uses this interface. If a user
     /// accesses the property the array is promoted to a <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/>.
-    /// 
+    ///
     /// For the object case we store the first argument in a field typed to <see cref="object"/> and when
     /// the node is initially constructed this holds directly onto the <see cref="Expression"/> of the
     /// first argument.  When utilities in this library access the arguments it again uses this interface
@@ -35,8 +35,8 @@ namespace System.Linq.Expressions
     /// which handles the <see cref="Expression"/> or <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/> case.
     /// When the user accesses the property the object field is updated to hold directly onto the
     /// <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/>.
-    /// 
-    /// It is important that <see cref="Expression"/> properties consistently return the same 
+    ///
+    /// It is important that <see cref="Expression"/> properties consistently return the same
     /// <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/> otherwise the rewriter used by expression
     /// visitors will be broken and it would be a breaking change from LINQ v1.  The problem is that currently
     /// users can rely on object identity to tell if the node has changed.  Storing the read-only collection in

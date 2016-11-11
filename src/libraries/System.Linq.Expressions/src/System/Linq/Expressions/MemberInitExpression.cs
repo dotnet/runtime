@@ -29,7 +29,7 @@ namespace System.Linq.Expressions
         public sealed override Type Type => NewExpression.Type;
 
         /// <summary>
-        /// Gets a value that indicates whether the expression tree node can be reduced. 
+        /// Gets a value that indicates whether the expression tree node can be reduced.
         /// </summary>
         public override bool CanReduce => true;
 
@@ -57,9 +57,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Reduces the <see cref="MemberInitExpression"/> to a simpler expression. 
+        /// Reduces the <see cref="MemberInitExpression"/> to a simpler expression.
         /// If CanReduce returns true, this should return a valid expression.
-        /// This method is allowed to return another node which itself 
+        /// This method is allowed to return another node which itself
         /// must be reduced.
         /// </summary>
         /// <returns>The reduced expression.</returns>

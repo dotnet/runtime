@@ -78,7 +78,7 @@ namespace System.Linq.Expressions
 
         /// <summary>
         /// Gets the value that indicates if the lambda expression will be compiled with
-        /// tail call optimization. 
+        /// tail call optimization.
         /// </summary>
         public bool TailCall => _tailCall;
 
@@ -676,7 +676,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="System.Type"/> object that represents a generic System.Action delegate type that has specific type arguments. 
+        /// Creates a <see cref="System.Type"/> object that represents a generic System.Action delegate type that has specific type arguments.
         /// </summary>
         /// <param name="typeArgs">An array of <see cref="System.Type"/> objects that specify the type arguments for the System.Action delegate type.</param>
         /// <returns>The type of a System.Action delegate that has the specified type arguments.</returns>

@@ -45,6 +45,6 @@ namespace System.Dynamic.Utils
 
             return (pi.Attributes & (ParameterAttributes.Out)) == ParameterAttributes.Out;
         }
-#endif 
+#endif
     }
 }

@@ -91,8 +91,8 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets a value that indicates whether the expression tree node can be reduced. 
-        /// </summary>        
+        /// Gets a value that indicates whether the expression tree node can be reduced.
+        /// </summary>
         public override bool CanReduce
         {
             get
@@ -110,9 +110,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Reduces the expression node to a simpler expression. 
+        /// Reduces the expression node to a simpler expression.
         /// If CanReduce returns true, this should return a valid expression.
-        /// This method is allowed to return another node which itself 
+        /// This method is allowed to return another node which itself
         /// must be reduced.
         /// </summary>
         /// <returns>The reduced expression.</returns>
@@ -542,7 +542,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NegateChecked"/> and the <see cref="UnaryExpression.Operand"/> property set to the specified value.</returns>
         /// <param name="expression">An <see cref="Expression"/> to set the <see cref="UnaryExpression.Operand"/> property equal to.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="expression"/> is null.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when the unary minus operator is not defined for <paramref name="expression"/>.Type.</exception> 
+        /// <exception cref="InvalidOperationException">Thrown when the unary minus operator is not defined for <paramref name="expression"/>.Type.</exception>
         public static UnaryExpression NegateChecked(Expression expression)
         {
             return NegateChecked(expression, method: null);
@@ -1032,7 +1032,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression 
+        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression
         /// followed by a subsequent increment by 1 of the original expression.
         /// </summary>
         /// <param name="expression">An <see cref="Expression"/> to apply the operations on.</param>
@@ -1043,7 +1043,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression 
+        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression
         /// followed by a subsequent increment by 1 of the original expression.
         /// </summary>
         /// <param name="expression">An <see cref="Expression"/> to apply the operations on.</param>
@@ -1055,7 +1055,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression 
+        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression
         /// followed by a subsequent decrement by 1 of the original expression.
         /// </summary>
         /// <param name="expression">An <see cref="Expression"/> to apply the operations on.</param>
@@ -1066,7 +1066,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression 
+        /// Creates a <see cref="UnaryExpression"/> that represents the assignment of the expression
         /// followed by a subsequent decrement by 1 of the original expression.
         /// </summary>
         /// <param name="expression">An <see cref="Expression"/> to apply the operations on.</param>

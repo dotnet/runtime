@@ -504,13 +504,13 @@ namespace System.Linq.Expressions.Compiler
         /// and generate similar IL to the C# compiler. This is important for
         /// the JIT to optimize patterns like:
         ///     x != null AndAlso x.GetType() == typeof(SomeType)
-        ///     
+        ///
         /// One optimization we don't do: we always emits at least one
         /// conditional branch to the label, and always possibly falls through,
         /// even if we know if the branch will always succeed or always fail.
         /// We do this to avoid generating unreachable code, which is fine for
         /// the CLR JIT, but doesn't verify with peverify.
-        /// 
+        ///
         /// This kind of optimization could be implemented safely, by doing
         /// constant folding over conditionals and logical expressions at the
         /// tree level.
@@ -632,7 +632,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        // For optimized Equal/NotEqual, we can eliminate reference 
+        // For optimized Equal/NotEqual, we can eliminate reference
         // conversions. IL allows comparing managed pointers regardless of
         // type. See ECMA-335 "Binary Comparison or Branch Operations", in
         // Partition III, Section 1.5 Table 4.
@@ -691,7 +691,7 @@ namespace System.Linq.Expressions.Compiler
         // or optimized OrElse with branch == false
         private void EmitBranchAnd(bool branch, BinaryExpression node, Label label)
         {
-            // if (left) then 
+            // if (left) then
             //   if (right) branch label
             // endif
 

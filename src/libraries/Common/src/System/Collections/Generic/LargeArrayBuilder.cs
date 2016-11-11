@@ -111,12 +111,12 @@ namespace System.Collections.Generic
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0 && count <= Count);
             Debug.Assert(array.Length - arrayIndex >= count);
-            
+
             for (int i = -1; count > 0; i++)
             {
                 // Find the buffer we're copying from.
                 T[] buffer = i < 0 ? _first : i < _buffers.Count ? _buffers[i] : _current;
-                
+
                 // Copy until we satisfy count, or we reach the end of the buffer.
                 int toCopy = Math.Min(count, buffer.Length);
                 Array.Copy(buffer, 0, array, arrayIndex, toCopy);
@@ -153,7 +153,7 @@ namespace System.Collections.Generic
             CopyTo(array, 0, _count);
             return array;
         }
-        
+
         private void AllocateBuffer()
         {
             // - On the first few adds, simply resize _first.

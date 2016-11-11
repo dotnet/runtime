@@ -224,7 +224,7 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentNullException>("right", () => Expression.Assign(Expression.Variable(typeof(int)), null));
         }
-        
+
         [Theory]
         [InlineData(typeof(int), "Hello", typeof(string))]
         [InlineData(typeof(long), 1, typeof(int))]
