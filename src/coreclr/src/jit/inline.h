@@ -537,6 +537,7 @@ struct InlLclVarInfo
     var_types lclTypeInfo;
     typeInfo  lclVerTypeInfo;
     bool      lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
+    bool      lclIsPinned;
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.
@@ -563,6 +564,7 @@ struct InlineInfo
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 
     bool thisDereferencedFirst;
+    bool hasPinnedLocals;
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;
 #endif // FEATURE_SIMD
