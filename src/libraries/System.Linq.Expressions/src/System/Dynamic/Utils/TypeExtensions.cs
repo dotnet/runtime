@@ -11,7 +11,7 @@ namespace System.Dynamic.Utils
     internal static partial class TypeExtensions
     {
         // Returns the matching method if the parameter types are reference
-        // assignable from the provided type arguments, otherwise null. 
+        // assignable from the provided type arguments, otherwise null.
         public static MethodInfo GetAnyStaticMethodValidated(
             this Type type,
             string name,
