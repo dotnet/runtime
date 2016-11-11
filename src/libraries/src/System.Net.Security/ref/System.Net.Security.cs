@@ -215,7 +215,7 @@ namespace System.Security.Authentication.ExtendedProtection
         TransportSelected = 0,
         TrustedProxy = 1,
     }
-    public partial class ServiceNameCollection
+    public partial class ServiceNameCollection : System.Collections.ReadOnlyCollectionBase
     {
         public ServiceNameCollection(System.Collections.ICollection items) { }
         public bool Contains(string searchServiceName) { throw null; }

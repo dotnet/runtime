@@ -8,7 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Security.cs" />
-    <Compile Include="System.Net.Security.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
