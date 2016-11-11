@@ -334,6 +334,9 @@
       <Project>{8fc2b0c8-51ad-49df-851f-5d01a77a75e4}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\mono\mini\Makefile.am.in" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

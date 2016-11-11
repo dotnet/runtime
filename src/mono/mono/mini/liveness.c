@@ -10,6 +10,7 @@
  */
 
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT
 
@@ -1158,4 +1159,8 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	g_free (vreg_to_varinfo);
 }
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (liveness);
+
+#endif /* !DISABLE_JIT */

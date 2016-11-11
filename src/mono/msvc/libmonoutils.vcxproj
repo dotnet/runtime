@@ -144,7 +144,7 @@
     <ClInclude Include="..\mono\utils\mono-counters.h" />
     <ClInclude Include="..\mono\utils\mono-digest.h" />
     <ClInclude Include="..\mono\utils\mono-dl-fallback.h" />
-    <ClInclude Include="..\mono\utils\mono-dl-windows.h" />
+    <ClInclude Include="..\mono\utils\mono-dl-windows-internals.h" />
     <ClInclude Include="..\mono\utils\mono-dl.h" />
     <ClInclude Include="..\mono\utils\mono-error-internals.h" />
     <ClInclude Include="..\mono\utils\mono-error.h" />
@@ -157,7 +157,8 @@
     <ClInclude Include="..\mono\utils\mono-math.h" />
     <ClInclude Include="..\mono\utils\mono-membar.h" />
     <ClInclude Include="..\mono\utils\mono-memory-model.h" />
-    <ClInclude Include="..\mono\utils\mono-mmap-windows.h" />
+    <ClInclude Include="..\mono\utils\mono-mmap-internals.h" />
+    <ClInclude Include="..\mono\utils\mono-mmap-windows-internals.h" />
     <ClInclude Include="..\mono\utils\mono-mmap.h" />
     <ClInclude Include="..\mono\utils\mono-networkinterfaces.h" />
     <ClInclude Include="..\mono\utils\mono-once.h" />
@@ -165,11 +166,11 @@
     <ClInclude Include="..\mono\utils\mono-os-semaphore.h" />
     <ClInclude Include="..\mono\utils\mono-path.h" />
     <ClInclude Include="..\mono\utils\mono-poll.h" />
-    <ClInclude Include="..\mono\utils\mono-proclib-windows.h" />
+    <ClInclude Include="..\mono\utils\mono-proclib-windows-internals.h" />
     <ClInclude Include="..\mono\utils\mono-proclib.h" />
     <ClInclude Include="..\mono\utils\mono-property-hash.h" />
     <ClInclude Include="..\mono\utils\mono-publib.h" />
-    <ClInclude Include="..\mono\utils\mono-rand-windows.h" />
+    <ClInclude Include="..\mono\utils\mono-rand-windows-internals.h" />
     <ClInclude Include="..\mono\utils\mono-rand.h" />
     <ClInclude Include="..\mono\utils\mono-sigcontext.h" />
     <ClInclude Include="..\mono\utils\mono-stack-unwinding.h" />
@@ -204,6 +205,9 @@
     <ProjectReference Include="eglib.vcxproj">
       <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\mono\utils\Makefile.am" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8FC2B0C8-51AD-49DF-851F-5D01A77A75E4}</ProjectGuid>

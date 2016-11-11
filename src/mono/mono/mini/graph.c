@@ -8,6 +8,7 @@
  */
 
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT
 
@@ -346,5 +347,9 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 #endif
 }
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (graph);
+
+#endif /* !DISABLE_JIT */
 

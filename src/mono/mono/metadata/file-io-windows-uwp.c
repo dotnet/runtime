@@ -6,9 +6,10 @@
 */
 #include <config.h>
 #include <glib.h>
+#include "mono/utils/mono-compiler.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-#include <Windows.h>
+#include <windows.h>
 #include "mono/metadata/file-io-windows-internals.h"
 
 gboolean
@@ -112,10 +113,55 @@ mono_file_io_unlock_file (HANDLE handle, gint64 position, gint64 length, gint32 
 	return result;
 }
 
+HANDLE
+mono_file_io_get_console_output (void)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("GetStdHandle (STD_OUTPUT_HANDLE)");
+
+	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetStdHandle (STD_OUTPUT_HANDLE)");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return INVALID_HANDLE_VALUE;
+}
+
+HANDLE
+mono_file_io_get_console_input (void)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("GetStdHandle (STD_INPUT_HANDLE)");
+
+	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetStdHandle (STD_INPUT_HANDLE)");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return INVALID_HANDLE_VALUE;
+}
+
+HANDLE
+mono_file_io_get_console_error (void)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("GetStdHandle (STD_ERROR_HANDLE)");
+
+	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetStdHandle (STD_ERROR_HANDLE)");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return INVALID_HANDLE_VALUE;
+}
+
 #else /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */
 
-#ifdef _MSC_VER
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_file_io_windows_uwp_quiet_lnk4221(void) {}
-#endif
+MONO_EMPTY_SOURCE_FILE (file_io_windows_uwp);
 #endif /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */

@@ -15,6 +15,7 @@
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT
 
@@ -1968,4 +1969,8 @@ mono_local_emulate_ops (MonoCompile *cfg)
 	}
 }
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (decompose);
+
+#endif /* !DISABLE_JIT */

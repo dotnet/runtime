@@ -13,6 +13,7 @@
 #include "mini.h"
 #include "ir-emit.h"
 #include "glib.h"
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT
 
@@ -361,5 +362,9 @@ done:
 	if (cfg->verbose_level > 2)
 		mono_print_code (cfg, "AFTER ALIAS_ANALYSIS");
 }
+
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (alias_analysis);
 
 #endif /* !DISABLE_JIT */

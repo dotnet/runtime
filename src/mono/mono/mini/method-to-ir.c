@@ -12,6 +12,7 @@
  */
 
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT
 
@@ -15295,4 +15296,8 @@ NOTES
   the values on the stack before emitting the last instruction of the bb.
 */
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (method_to_ir);
+
+#endif /* !DISABLE_JIT */

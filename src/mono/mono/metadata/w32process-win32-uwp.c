@@ -6,9 +6,13 @@
 */
 #include <config.h>
 #include <glib.h>
+#include "mono/utils/mono-compiler.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-#include <Windows.h>
+#include <windows.h>
+#include <mono/metadata/object-internals.h>
+#include "mono/metadata/w32process.h"
+#include "mono/metadata/w32process-internals.h"
 #include "mono/metadata/w32process-win32-internals.h"
 
 gboolean
@@ -24,16 +28,17 @@ mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)
 HANDLE
 ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
-	HANDLE handle;
+	MonoError mono_error;
+	mono_error_init (&mono_error);
 
-	/* GetCurrentProcess returns a pseudo-handle, so use
-	 * OpenProcess instead
-	 */
-	handle = OpenProcess (PROCESS_ALL_ACCESS, TRUE, pid);
-	if (handle == NULL)
-		/* FIXME: Throw an exception */
-		return NULL;
-	return handle;
+	g_unsupported_api ("OpenProcess");
+
+	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "OpenProcess");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return NULL;
 }
 
 void
@@ -77,7 +82,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 }
 
 MonoBoolean
-ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_info)
+ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_info)
 {
 	MonoError mono_error;
 	mono_error_init (&mono_error);
@@ -124,7 +129,7 @@ mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle, HANDL
 }
 
 gboolean
-mono_process_create_process (MonoProcInfo *mono_process_info, gunichar2 *shell_path, MonoString *cmd, guint32 creation_flags,
+mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *shell_path, MonoString *cmd, guint32 creation_flags,
 			     gchar *env_vars, gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
 {
 	MonoError	mono_error;
@@ -214,8 +219,5 @@ mono_icall_set_priority_class (gpointer handle, gint32 priorityClass)
 
 #else /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */
 
-#ifdef _MSC_VER
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_process_windows_uwp_quiet_lnk4221(void) {}
-#endif
+MONO_EMPTY_SOURCE_FILE (process_windows_uwp);
 #endif /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */

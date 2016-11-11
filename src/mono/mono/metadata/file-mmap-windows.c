@@ -13,8 +13,9 @@
  */
 
 #include <config.h>
-
-#ifdef HOST_WIN32
+#include <glib.h>
+#include <mono/utils/mono-compiler.h>
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
 
 #include <glib.h>
 
@@ -409,5 +410,9 @@ gboolean mono_mmap_unmap (void *mmap_handle)
 	g_free (h);
 	return result;
 }
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (file_mmap_windows);
 
 #endif

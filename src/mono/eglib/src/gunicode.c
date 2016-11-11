@@ -39,18 +39,13 @@
 #include <unicode-data.h>
 #include <errno.h>
 
-#if defined(_MSC_VER) || defined(G_OS_WIN32)
-/* FIXME */
-#  define CODESET 1
-#  include <windows.h>
-#else
+#ifndef G_OS_WIN32
 #    ifdef HAVE_LOCALCHARSET_H
 #       include <localcharset.h>
 #    endif
 #endif
 
-static const char *my_charset;
-static gboolean is_utf8;
+const char *my_charset;
 
 /*
  * Character set conversion
@@ -205,31 +200,8 @@ g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gs
 	return res;
 }
 
-#ifdef G_OS_WIN32
-extern WINBASEAPI UINT WINAPI GetACP(void);
-gboolean
-g_get_charset (G_CONST_RETURN char **charset)
-{
-	if (my_charset == NULL) {
-		static char buf [14];
-#if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-		CPINFOEXA cp_info;
-		GetCPInfoExA (CP_ACP, 0, &cp_info);
-		sprintf (buf, "CP%u", cp_info.CodePage);
-#else
-		sprintf (buf, "CP%u", GetACP ());
-#endif
-		my_charset = buf;
-		is_utf8 = FALSE;
-	}
-	
-	if (charset != NULL)
-		*charset = my_charset;
-
-	return is_utf8;
-}
-
-#else /* G_OS_WIN32 */
+#ifndef G_OS_WIN32
+static gboolean is_utf8;
 
 gboolean
 g_get_charset (G_CONST_RETURN char **charset)

@@ -9,6 +9,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 #include "mono-endian.h"
 
 #if NO_UNALIGNED_ACCESS
@@ -85,5 +86,9 @@ mono_read64 (const unsigned char *x)
 #endif
 	return r.i;
 }
+
+#else /* NO_UNALIGNED_ACCESS */
+
+MONO_EMPTY_SOURCE_FILE (mono_endian);
 
 #endif

@@ -88,7 +88,7 @@
     <ClCompile Include="..\eglib\src\gutf8.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\vasprintf.c">
+    <ClCompile Include="..\eglib\src\gunicode-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -102,6 +102,9 @@
     <ClInclude Include="..\eglib\src\sort.frag.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\eglib\src\gmodule-win32-internals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
@@ -113,5 +116,10 @@
     <Filter Include="Resource Files">
       <UniqueIdentifier>{38a39ff1-842b-431b-b54b-24094e8283eb}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\eglib\src\Makefile.am">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -191,11 +191,11 @@ typedef struct MonoCompileArch {
 
 static AMD64_Reg_No param_regs [] = { AMD64_RCX, AMD64_RDX, AMD64_R8, AMD64_R9 };
 
-static AMD64_Reg_No float_param_regs [] = { AMD64_XMM0, AMD64_XMM1, AMD64_XMM2, AMD64_XMM3 };
+static AMD64_XMM_Reg_No float_param_regs [] = { AMD64_XMM0, AMD64_XMM1, AMD64_XMM2, AMD64_XMM3 };
 
 static AMD64_Reg_No return_regs [] = { AMD64_RAX };
 
-static AMD64_Reg_No float_return_regs [] = { AMD64_XMM0 };
+static AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 
 #define PARAM_REGS G_N_ELEMENTS(param_regs)
 #define FLOAT_PARAM_REGS G_N_ELEMENTS(float_param_regs)

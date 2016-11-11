@@ -8,6 +8,7 @@
  */
 
 #include "config.h"
+#include <mono/utils/mono-compiler.h>
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 #include "dwarfwriter.h"
@@ -2002,4 +2003,9 @@ mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_name, c
 	emit_fde (w, w->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, FALSE);
 	w->fde_index ++;
 }
+
+#else /* !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
+
+MONO_EMPTY_SOURCE_FILE (dwarfwriter);
+
 #endif /* End of: !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
