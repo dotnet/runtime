@@ -48,6 +48,9 @@
     </Compile>
     <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
     <Compile Include="System\MarshalByRefObjectTest.cs" />
+    <!-- ToDo: Remove these P2P references once packages are updated -->
+    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\pkg\System.Collections.NonGeneric.pkgproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
     <Compile Include="System\BitConverter.netcoreapp1.1.cs" />
