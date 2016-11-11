@@ -34,8 +34,8 @@ namespace System.Net.WebSockets
 #if DEBUG
         private class OutstandingOperations
         {
-            internal int m_Reads;
-            internal int m_Writes;
+            internal int _reads;
+            internal int _writes;
         }
 
         private readonly OutstandingOperations _outstandingOperations = new OutstandingOperations();
@@ -153,7 +153,7 @@ namespace System.Net.WebSockets
                     // When using fast path only one outstanding read is permitted. By switching into opaque mode
                     // via IWebSocketStream.SwitchToOpaqueMode (see more detailed comments in interface definition)
                     // caller takes responsibility for enforcing this constraint.
-                    Debug.Assert(Interlocked.Increment(ref _outstandingOperations.m_Reads) == 1,
+                    Debug.Assert(Interlocked.Increment(ref _outstandingOperations._reads) == 1,
                         "Only one outstanding read allowed at any given time.");
 #endif
                     _readTaskCompletionSource = new TaskCompletionSource<int>();
@@ -369,7 +369,7 @@ namespace System.Net.WebSockets
                 // When using fast path only one outstanding read is permitted. By switching into opaque mode
                 // via IWebSocketStream.SwitchToOpaqueMode (see more detailed comments in interface definition)
                 // caller takes responsibility for enforcing this constraint.
-                Debug.Assert(Interlocked.Increment(ref _outstandingOperations.m_Writes) == 1,
+                Debug.Assert(Interlocked.Increment(ref _outstandingOperations._writes) == 1,
                     "Only one outstanding write allowed at any given time.");
 #endif
                 _writeTaskCompletionSource = new TaskCompletionSource<object>();
@@ -438,7 +438,7 @@ namespace System.Net.WebSockets
                     // When using fast path only one outstanding read is permitted. By switching into opaque mode
                     // via IWebSocketStream.SwitchToOpaqueMode (see more detailed comments in interface definition)
                     // caller takes responsibility for enforcing this constraint.
-                    Debug.Assert(Interlocked.Increment(ref _outstandingOperations.m_Writes) == 1,
+                    Debug.Assert(Interlocked.Increment(ref _outstandingOperations._writes) == 1,
                         "Only one outstanding write allowed at any given time.");
 #endif
                     _writeTaskCompletionSource = new TaskCompletionSource<object>();
@@ -620,7 +620,7 @@ namespace System.Net.WebSockets
                 // When using fast path only one outstanding read is permitted. By switching into opaque mode
                 // via IWebSocketStream.SwitchToOpaqueMode (see more detailed comments in interface definition)
                 // caller takes responsibility for enforcing this constraint.
-                Debug.Assert(Interlocked.Increment(ref _outstandingOperations.m_Writes) == 1,
+                Debug.Assert(Interlocked.Increment(ref _outstandingOperations._writes) == 1,
                     "Only one outstanding write allowed at any given time.");
 #endif
                 _writeTaskCompletionSource = new TaskCompletionSource<object>();
@@ -773,7 +773,7 @@ namespace System.Net.WebSockets
             WebSocketHttpListenerDuplexStream thisPtr = eventArgs.CurrentStream;
             Debug.Assert(thisPtr != null, "'thisPtr' MUST NOT be NULL.");
 #if DEBUG
-            Debug.Assert(Interlocked.Decrement(ref thisPtr._outstandingOperations.m_Writes) >= 0,
+            Debug.Assert(Interlocked.Decrement(ref thisPtr._outstandingOperations._writes) >= 0,
                 "'thisPtr.m_OutstandingOperations.m_Writes' MUST NOT be negative.");
 #endif
 
@@ -803,7 +803,7 @@ namespace System.Net.WebSockets
             WebSocketHttpListenerDuplexStream thisPtr = eventArgs.CurrentStream;
             Debug.Assert(thisPtr != null, "'thisPtr' MUST NOT be NULL.");
 #if DEBUG
-            Debug.Assert(Interlocked.Decrement(ref thisPtr._outstandingOperations.m_Reads) >= 0,
+            Debug.Assert(Interlocked.Decrement(ref thisPtr._outstandingOperations._reads) >= 0,
                 "'thisPtr.m_OutstandingOperations.m_Reads' MUST NOT be negative.");
 #endif
 

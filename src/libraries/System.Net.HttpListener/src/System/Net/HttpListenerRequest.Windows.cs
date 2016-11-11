@@ -505,16 +505,16 @@ namespace System.Net
             {
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
                 ListenerClientCertAsyncResult clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
                 if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
                 {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
                 if (clientCertAsyncResult.EndCalled)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndGetClientCertificate"));
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetClientCertificate)));
                 }
                 clientCertAsyncResult.EndCalled = true;
                 clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;

@@ -61,11 +61,11 @@ namespace System.Net
             _httpListener.CheckDisposed();
             if (Count > array.Length)
             {
-                throw new ArgumentOutOfRangeException("array", SR.net_array_too_small);
+                throw new ArgumentOutOfRangeException(nameof(array), SR.net_array_too_small);
             }
             if (offset + Count > array.Length)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             int index = 0;
             foreach (string uriPrefix in _httpListener.PrefixCollection)
@@ -79,11 +79,11 @@ namespace System.Net
             _httpListener.CheckDisposed();
             if (Count > array.Length)
             {
-                throw new ArgumentOutOfRangeException("array", SR.net_array_too_small);
+                throw new ArgumentOutOfRangeException(nameof(array), SR.net_array_too_small);
             }
             if (offset + Count > array.Length)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             int index = 0;
             foreach (string uriPrefix in _httpListener.PrefixCollection)

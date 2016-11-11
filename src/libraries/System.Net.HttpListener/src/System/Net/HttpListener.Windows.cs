@@ -1091,17 +1091,17 @@ namespace System.Net
                 CheckDisposed();
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
                 ListenerAsyncResult castedAsyncResult = asyncResult as ListenerAsyncResult;
                 if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
                 {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
                 if (castedAsyncResult.EndCalled)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndGetContext"));
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetContext)));
                 }
                 castedAsyncResult.EndCalled = true;
                 httpContext = castedAsyncResult.InternalWaitForCompletion() as HttpListenerContext;

@@ -173,7 +173,7 @@ namespace System.Net
                 CheckDisposed();
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 // Need to verify the status description doesn't contain any control characters except HT.  We mask off the high
@@ -334,9 +334,9 @@ namespace System.Net
         {
             if (cookie == null)
             {
-                throw new ArgumentNullException("cookie");
+                throw new ArgumentNullException(nameof(cookie));
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "cookie: {cookie}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
 
@@ -344,7 +344,7 @@ namespace System.Net
         {
             if (cookie == null)
             {
-                throw new ArgumentNullException("cookie");
+                throw new ArgumentNullException(nameof(cookie));
             }
             bool added = false;
             try
@@ -362,7 +362,7 @@ namespace System.Net
             if (!added)
             {
                 // cookie already existed and couldn't be replaced
-                throw new ArgumentException(SR.net_cookie_exists, "cookie");
+                throw new ArgumentException(SR.net_cookie_exists, nameof(cookie));
             }
         }
 
@@ -386,7 +386,7 @@ namespace System.Net
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_clsmall);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
                 }
             }
         }
@@ -402,11 +402,11 @@ namespace System.Net
                 CheckDisposed();
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Major != 1 || (value.Minor != 0 && value.Minor != 1))
                 {
-                    throw new ArgumentException(SR.net_wrongversion, "value");
+                    throw new ArgumentException(SR.net_wrongversion, nameof(value));
                 }
                 _nativeResponse.Version.MajorVersion = (ushort)value.Major;
                 _nativeResponse.Version.MinorVersion = (ushort)value.Minor;
@@ -440,7 +440,7 @@ namespace System.Net
                 CheckDisposed();
                 if (responseEntity == null)
                 {
-                    throw new ArgumentNullException("responseEntity");
+                    throw new ArgumentNullException(nameof(responseEntity));
                 }
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
                 if (_responseState < ResponseState.SentHeaders && _boundaryType != BoundaryType.Chunked)

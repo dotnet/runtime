@@ -195,7 +195,7 @@ namespace System.Net.WebSockets
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
-            WebSocketHelpers.ValidateArraySegment<byte>(buffer, "buffer");
+            WebSocketHelpers.ValidateArraySegment<byte>(buffer, nameof(buffer));
             return ReceiveAsyncCore(buffer, cancellationToken);
         }
 
@@ -286,7 +286,7 @@ namespace System.Net.WebSockets
                     nameof(messageType));
             }
 
-            WebSocketHelpers.ValidateArraySegment<byte>(buffer, "buffer");
+            WebSocketHelpers.ValidateArraySegment<byte>(buffer, nameof(buffer));
 
             return SendAsyncCore(buffer, messageType, endOfMessage, cancellationToken);
         }

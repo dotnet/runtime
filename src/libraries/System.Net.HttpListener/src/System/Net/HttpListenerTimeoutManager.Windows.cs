@@ -52,7 +52,7 @@ namespace System.Net
 
             if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("value");
+                throw new ArgumentOutOfRangeException(nameof(value));
             }
 
             //
@@ -181,7 +181,7 @@ namespace System.Net
                 //
                 if (value < 0 || value > uint.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 _listener.SetServerTimeout(_timeouts, (uint)value);
