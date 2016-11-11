@@ -8419,20 +8419,18 @@
     </Type>
     <Type Name="System.TimeZone">
       <Member Name="#ctor" />
+      <Member Name="get_CurrentTimeZone" />
       <Member Name="get_DaylightName" />
       <Member Name="get_StandardName" />
       <Member Name="GetDaylightChanges(System.Int32)" />
       <Member Name="GetUtcOffset(System.DateTime)" />
       <Member Name="IsDaylightSavingTime(System.DateTime)" />
       <Member Name="IsDaylightSavingTime(System.DateTime,System.Globalization.DaylightTime)" />
+      <Member Name="ToLocalTime(System.DateTime)" />
       <Member Name="ToUniversalTime(System.DateTime)" />
+      <Member MemberType="Property" Name="CurrentTimeZone" />
       <Member MemberType="Property" Name="DaylightName" />
       <Member MemberType="Property" Name="StandardName" />
-<!-- This members need CurrentSystemTimeZone which needs Linux implementations
-      <Member Name="ToLocalTime(System.DateTime)" />
-      <Member MemberType="Property" Name="CurrentTimeZone" />
-      <Member Name="get_CurrentTimeZone" />
--->
     </Type>
     <Type Name="System.TimeZoneInfo">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />

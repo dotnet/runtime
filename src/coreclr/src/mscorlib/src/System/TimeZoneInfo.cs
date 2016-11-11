@@ -319,23 +319,57 @@ namespace System {
             }
         }
 
+#if PLATFORM_UNIX
+        // The rules we use in Unix cares mostly about the start and end dates but doesnâ€™t fill the transition start and end info. 
+        // as the rules now is public, we should fill it properly so the caller doesnâ€™t have to know how we use it internally 
+        // and can use it as it is used in Windows
+
+        private AdjustmentRule[] GetFilledRules()
+        {
+            Contract.Assert(m_adjustmentRules != null, "m_adjustmentRules expected to be not null");
+            AdjustmentRule[] rules = new AdjustmentRule[m_adjustmentRules.Length];
+
+            for (int i = 0; i < m_adjustmentRules.Length; i++)
+            {
+                var rule = m_adjustmentRules[i];
+                var start = rule.DateStart.Kind == DateTimeKind.Utc ?
+                            new DateTime(TimeZoneInfo.ConvertTime(rule.DateStart, this).Ticks, DateTimeKind.Unspecified) :
+                            rule.DateStart;
+                var end = rule.DateEnd.Kind == DateTimeKind.Utc ?
+                            new DateTime(TimeZoneInfo.ConvertTime(rule.DateEnd, this).Ticks - 1, DateTimeKind.Unspecified) :
+                            rule.DateEnd;
+
+                var startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
+                var endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+
+                rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
+            }
+
+            return rules;
+        }
+#endif // PLATFORM_UNIX        
 
         // ---- SECTION: public methods --------------*
-
         //
         // GetAdjustmentRules -
         //
         // returns a cloned array of AdjustmentRule objects
         //
-        public AdjustmentRule [] GetAdjustmentRules() {
-            if (m_adjustmentRules == null) {
-                return new AdjustmentRule[0];
+        public AdjustmentRule [] GetAdjustmentRules()
+        {
+            if (m_adjustmentRules == null)
+            {
+                return Array.Empty<AdjustmentRule>();
             }
-            else {
-                return (AdjustmentRule[])m_adjustmentRules.Clone();
+            else
+            {
+#if PLATFORM_UNIX
+                return GetFilledRules(); 
+#else
+                return (AdjustmentRule[]) m_adjustmentRules.Clone();
+#endif // PLATFORM_UNIX        
             }
         }
-
 
         //
         // GetAmbiguousTimeOffsets -
@@ -2719,7 +2753,7 @@ namespace System {
 
                 // As we get the associated rule using the adjusted targetTime, we should use the adjusted year (targetTime.Year) too as after adding the baseOffset, 
                 // sometimes the year value can change if the input datetime was very close to the beginning or the end of the year. Examples of such cases:
-                //      “Libya Standard Time” when used with the date 2011-12-31T23:59:59.9999999Z
+                //      Libya Standard Time when used with the date 2011-12-31T23:59:59.9999999Z
                 //      "W. Australia Standard Time" used with date 2005-12-31T23:59:00.0000000Z
                 DateTime targetTime = time + baseOffset;
                 year = targetTime.Year;
@@ -2856,7 +2890,7 @@ namespace System {
         //
         // Helper function that converts a year and TransitionTime into a DateTime
         //
-        static private DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime) {
+        internal static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime) {
             DateTime value;
             DateTime timeOfDay = transitionTime.TimeOfDay;
 

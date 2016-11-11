@@ -195,15 +195,6 @@ FCFuncStart(gTimeSpanFuncs)
 FCFuncEnd()
 #endif // !FEATURE_CORECLR
 
-#ifndef FEATURE_CORECLR  // FCalls used by System.TimeZone
-FCFuncStart(gTimeZoneFuncs)
-    FCFuncElement("nativeGetTimeZoneMinuteOffset", COMNlsInfo::nativeGetTimeZoneMinuteOffset)
-    FCFuncElement("nativeGetStandardName", COMNlsInfo::nativeGetStandardName)
-    FCFuncElement("nativeGetDaylightName", COMNlsInfo::nativeGetDaylightName)
-    FCFuncElement("nativeGetDaylightChanges", COMNlsInfo::nativeGetDaylightChanges)
-FCFuncEnd()
-#endif // FEATURE_CORECLR
-
 FCFuncStart(gObjectFuncs)
     FCIntrinsic("GetType", ObjectNative::GetClass, CORINFO_INTRINSIC_Object_GetType)
     FCFuncElement("MemberwiseClone", ObjectNative::Clone)
@@ -2212,9 +2203,6 @@ FCClassElement("CultureData", "System.Globalization", gCultureDataFuncs)
 FCClassElement("CultureInfo", "System.Globalization", gCultureInfoFuncs)
 #endif
 FCClassElement("Currency", "System", gCurrencyFuncs)
-#ifndef FEATURE_CORECLR
-FCClassElement("CurrentSystemTimeZone", "System", gTimeZoneFuncs)
-#endif // FEATURE_CORECLR
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
 FCClassElement("DateMarshaler", "System.StubHelpers", gDateMarshalerFuncs)
