@@ -524,7 +524,7 @@ namespace System.Linq.Expressions.Interpreter
             if (liftedToNull)
             {
                 // Boxed enums can be unboxed as their underlying types:
-                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
 
                 switch (underlyingType.GetTypeCode())
                 {
@@ -558,7 +558,7 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 // Boxed enums can be unboxed as their underlying types:
-                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
 
                 switch (underlyingType.GetTypeCode())
                 {

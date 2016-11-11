@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Compiler
             if (!curTypeInfo.TypeChain.TryGetValue(lookingUp, out nextTypeInfo))
             {
                 nextTypeInfo = new TypeInfo();
-                if (TypeUtils.CanCache(lookingUp))
+                if (lookingUp.CanCache())
                 {
                     curTypeInfo.TypeChain[lookingUp] = nextTypeInfo;
                 }

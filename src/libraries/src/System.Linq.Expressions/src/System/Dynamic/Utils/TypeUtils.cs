@@ -19,7 +19,7 @@ namespace System.Dynamic.Utils
             return type;
         }
 
-        public static Type GetNullableType(Type type)
+        public static Type GetNullableType(this Type type)
         {
             Debug.Assert(type != null, "type cannot be null");
             if (type.GetTypeInfo().IsValueType && !IsNullableType(type))
@@ -39,12 +39,12 @@ namespace System.Dynamic.Utils
             return !type.GetTypeInfo().IsValueType || IsNullableType(type);
         }
 
-        public static bool IsBool(Type type)
+        public static bool IsBool(this Type type)
         {
             return GetNonNullableType(type) == typeof(bool);
         }
 
-        public static bool IsNumeric(Type type)
+        public static bool IsNumeric(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -68,7 +68,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsInteger(Type type)
+        public static bool IsInteger(this Type type)
         {
             type = GetNonNullableType(type);
             if (type.GetTypeInfo().IsEnum)
@@ -91,7 +91,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static bool IsInteger64(Type type)
+        public static bool IsInteger64(this Type type)
         {
             type = GetNonNullableType(type);
             if (type.GetTypeInfo().IsEnum)
@@ -108,7 +108,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static bool IsArithmetic(Type type)
+        public static bool IsArithmetic(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -129,7 +129,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsUnsignedInt(Type type)
+        public static bool IsUnsignedInt(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -145,7 +145,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsIntegerOrBool(Type type)
+        public static bool IsIntegerOrBool(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -167,7 +167,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsNumericOrBool(Type type)
+        public static bool IsNumericOrBool(this Type type)
         {
             return IsNumeric(type) || IsBool(type);
         }
@@ -210,7 +210,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool HasIdentityPrimitiveOrNullableConversion(Type source, Type dest)
+        public static bool HasIdentityPrimitiveOrNullableConversionTo(this Type source, Type dest)
         {
             Debug.Assert(source != null && dest != null);
 
@@ -242,7 +242,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool HasReferenceConversion(Type source, Type dest)
+        public static bool HasReferenceConversionTo(this Type source, Type dest)
         {
             Debug.Assert(source != null && dest != null);
 
@@ -254,8 +254,8 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            Type nnSourceType = TypeUtils.GetNonNullableType(source);
-            Type nnDestType = TypeUtils.GetNonNullableType(dest);
+            Type nnSourceType = GetNonNullableType(source);
+            Type nnDestType = GetNonNullableType(dest);
 
             // Down conversion
             if (nnSourceType.GetTypeInfo().IsAssignableFrom(nnDestType.GetTypeInfo()))
@@ -364,7 +364,7 @@ namespace System.Dynamic.Utils
 
                 if (IsCovariant(genericParameter))
                 {
-                    if (!HasReferenceConversion(sourceArgument, destArgument))
+                    if (!sourceArgument.HasReferenceConversionTo(destArgument))
                     {
                         return false;
                     }
@@ -380,7 +380,7 @@ namespace System.Dynamic.Utils
             return true;
         }
 
-        public static bool IsConvertible(Type type)
+        public static bool IsConvertible(this Type type)
         {
             type = GetNonNullableType(type);
             if (type.GetTypeInfo().IsEnum)
@@ -465,7 +465,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsImplicitlyConvertible(Type source, Type destination)
+        public static bool IsImplicitlyConvertibleTo(this Type source, Type destination)
         {
             return AreEquivalent(source, destination) ||                // identity conversion
                 IsImplicitNumericConversion(source, destination) ||
@@ -477,8 +477,8 @@ namespace System.Dynamic.Utils
         public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType, bool implicitOnly)
         {
             // check for implicit coercions first
-            Type nnExprType = TypeUtils.GetNonNullableType(convertFrom);
-            Type nnConvType = TypeUtils.GetNonNullableType(convertToType);
+            Type nnExprType = GetNonNullableType(convertFrom);
+            Type nnConvType = GetNonNullableType(convertToType);
 
             bool retryForLifted = !AreEquivalent(nnExprType, convertFrom) || !AreEquivalent(nnConvType, convertToType);
 
@@ -665,7 +665,7 @@ namespace System.Dynamic.Utils
         private static bool IsImplicitNullableConversion(Type source, Type destination)
         {
             if (IsNullableType(destination))
-                return IsImplicitlyConvertible(GetNonNullableType(source), GetNonNullableType(destination));
+                return IsImplicitlyConvertibleTo(GetNonNullableType(source), GetNonNullableType(destination));
             return false;
         }
 
@@ -720,7 +720,7 @@ namespace System.Dynamic.Utils
         }
 
 #if FEATURE_COMPILE
-        internal static bool IsUnsigned(Type type)
+        internal static bool IsUnsigned(this Type type)
         {
             type = GetNonNullableType(type);
             switch (type.GetTypeCode())
@@ -736,7 +736,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        internal static bool IsFloatingPoint(Type type)
+        internal static bool IsFloatingPoint(this Type type)
         {
             type = GetNonNullableType(type);
             switch (type.GetTypeCode())

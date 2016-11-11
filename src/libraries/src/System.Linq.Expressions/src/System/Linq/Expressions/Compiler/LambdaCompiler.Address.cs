@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitExpression(node.Left);
                 EmitExpression(node.Right);
                 Type rightType = node.Right.Type;
-                if (TypeUtils.IsNullableType(rightType))
+                if (rightType.IsNullableType())
                 {
                     LocalBuilder loc = GetLocal(rightType);
                     _ilg.Emit(OpCodes.Stloc, loc);
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.EmitGetValue(rightType);
                     FreeLocal(loc);
                 }
-                Type indexType = TypeUtils.GetNonNullableType(rightType);
+                Type indexType = rightType.GetNonNullableType();
                 if (indexType != typeof(int))
                 {
                     _ilg.EmitConvertToType(indexType, typeof(int), isChecked: true);

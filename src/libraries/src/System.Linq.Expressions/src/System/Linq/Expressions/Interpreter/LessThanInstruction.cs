@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             if (liftedToNull)
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanSByte(null));
                     case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanByte(null));
@@ -301,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanSByte(ScriptingRuntimeHelpers.Boolean_False));
                     case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanByte(ScriptingRuntimeHelpers.Boolean_False));
@@ -595,7 +595,7 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             if (liftedToNull)
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanOrEqualSByte(null));
                     case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanOrEqualByte(null));
@@ -615,7 +615,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanOrEqualSByte(ScriptingRuntimeHelpers.Boolean_False));
                     case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanOrEqualByte(ScriptingRuntimeHelpers.Boolean_False));
