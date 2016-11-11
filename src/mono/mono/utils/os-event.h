@@ -27,8 +27,7 @@ struct _MonoOSEvent {
 #ifdef HOST_WIN32
 	gpointer handle;
 #else
-	mono_mutex_t mutex;
-	mono_cond_t cond;
+	GPtrArray *conds;
 	gboolean signalled;
 #endif
 };

@@ -17,13 +17,11 @@
 static mono_lazy_init_t status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
 static mono_mutex_t signal_mutex;
-static mono_cond_t signal_cond;
 
 static void
 initialize (void)
 {
 	mono_os_mutex_init (&signal_mutex);
-	mono_os_cond_init (&signal_cond);
 }
 
 void
@@ -33,8 +31,7 @@ mono_os_event_init (MonoOSEvent *event, gboolean initial)
 
 	mono_lazy_initialize (&status, initialize);
 
-	mono_os_mutex_init (&event->mutex);
-	mono_os_cond_init (&event->cond);
+	event->conds = g_ptr_array_new ();
 	event->signalled = initial;
 }
 
@@ -45,8 +42,10 @@ mono_os_event_destroy (MonoOSEvent *event)
 
 	g_assert (event);
 
-	mono_os_mutex_destroy (&event->mutex);
-	mono_os_cond_destroy (&event->cond);
+	if (event->conds->len > 0)
+		g_error ("%s: cannot destroy osevent, there are still %d threads waiting on it", __func__, event->conds->len);
+
+	g_ptr_array_free (event->conds, TRUE);
 }
 
 static gboolean
@@ -58,19 +57,19 @@ mono_os_event_is_signalled (MonoOSEvent *event)
 void
 mono_os_event_set (MonoOSEvent *event)
 {
+	gsize i;
+
 	g_assert (mono_lazy_is_initialized (&status));
 
 	g_assert (event);
 
-	mono_os_mutex_lock (&event->mutex);
 	mono_os_mutex_lock (&signal_mutex);
 
 	event->signalled = TRUE;
 
-	mono_os_cond_broadcast (&event->cond);
-	mono_os_cond_broadcast (&signal_cond);
+	for (i = 0; i < event->conds->len; ++i)
+		mono_os_cond_signal ((mono_cond_t*) event->conds->pdata [i]);
 
-	mono_os_mutex_unlock (&event->mutex);
 	mono_os_mutex_unlock (&signal_mutex);
 }
 
@@ -81,11 +80,11 @@ mono_os_event_reset (MonoOSEvent *event)
 
 	g_assert (event);
 
-	mono_os_mutex_lock (&event->mutex);
+	mono_os_mutex_lock (&signal_mutex);
 
 	event->signalled = FALSE;
 
-	mono_os_mutex_unlock (&event->mutex);
+	mono_os_mutex_unlock (&signal_mutex);
 }
 
 MonoOSEventWaitRet
@@ -113,41 +112,11 @@ signal_and_unref (gpointer user_data)
 	}
 }
 
-static void
-mono_os_event_lock_events (MonoOSEvent **events, gsize nevents)
-{
-	gint i, j;
-
-retry:
-	for (i = 0; i < nevents; ++i) {
-		gint res;
-
-		res = mono_os_mutex_trylock (&events [i]->mutex);
-		if (res != 0) {
-			for (j = i - 1; j >= 0; j--)
-				mono_os_mutex_unlock (&events [j]->mutex);
-
-			mono_thread_info_yield ();
-
-			goto retry;
-		}
-	}
-}
-
-static void
-mono_os_event_unlock_events (MonoOSEvent **events, gsize nevents)
-{
-	gint i;
-
-	for (i = 0; i < nevents; ++i)
-		mono_os_mutex_unlock (&events [i]->mutex);
-}
-
 MonoOSEventWaitRet
 mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout)
 {
 	MonoOSEventWaitRet ret;
-	MonoOSEvent *innerevents [MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS + 1];
+	mono_cond_t signal_cond;
 	OSEventWaitData *data;
 	gboolean alerted;
 	gint64 start;
@@ -162,13 +131,9 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	for (i = 0; i < nevents; ++i)
 		g_assert (events [i]);
 
-	memcpy (innerevents, events, sizeof (MonoOSEvent*) * nevents);
-
 	data = g_new0 (OSEventWaitData, 1);
 	data->ref = 2;
 	mono_os_event_init (&data->event, FALSE);
-
-	innerevents [nevents ++] = &data->event;
 
 	alerted = FALSE;
 	mono_thread_info_install_interrupt (signal_and_unref, data, &alerted);
@@ -181,17 +146,24 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
+	mono_os_cond_init (&signal_cond);
+
+	mono_os_mutex_lock (&signal_mutex);
+
+	for (i = 0; i < nevents; ++i)
+		g_ptr_array_add (events [i]->conds, &signal_cond);
+
+	g_ptr_array_add (data->event.conds, &signal_cond);
+
 	for (;;) {
 		gint count, lowest;
 		gboolean signalled;
 
-		mono_os_event_lock_events (innerevents, nevents);
-
 		count = 0;
 		lowest = -1;
 
-		for (i = 0; i < nevents - 1; ++i) {
-			if (mono_os_event_is_signalled (innerevents [i])) {
+		for (i = 0; i < nevents; ++i) {
+			if (mono_os_event_is_signalled (events [i])) {
 				count += 1;
 				if (lowest == -1)
 					lowest = i;
@@ -201,42 +173,13 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 		if (mono_os_event_is_signalled (&data->event))
 			signalled = TRUE;
 		else if (waitall)
-			signalled = (count == nevents - 1);
+			signalled = (count == nevents);
 		else /* waitany */
 			signalled = (count > 0);
-
-		mono_os_event_unlock_events (innerevents, nevents);
 
 		if (signalled) {
 			ret = MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + lowest;
 			goto done;
-		}
-
-		mono_os_mutex_lock (&signal_mutex);
-
-		if (mono_os_event_is_signalled (&data->event)) {
-			signalled = TRUE;
-		} else if (waitall) {
-			signalled = TRUE;
-			for (i = 0; i < nevents - 1; ++i) {
-				if (!mono_os_event_is_signalled (innerevents [i])) {
-					signalled = FALSE;
-					break;
-				}
-			}
-		} else {
-			signalled = FALSE;
-			for (i = 0; i < nevents - 1; ++i) {
-				if (mono_os_event_is_signalled (innerevents [i])) {
-					signalled = TRUE;
-					break;
-				}
-			}
-		}
-
-		if (signalled) {
-			mono_os_mutex_unlock (&signal_mutex);
-			continue;
 		}
 
 		if (timeout == MONO_INFINITE_WAIT) {
@@ -247,25 +190,28 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 
 			elapsed = mono_msec_ticks () - start;
 			if (elapsed >= timeout) {
-				mono_os_mutex_unlock (&signal_mutex);
-
 				ret = MONO_OS_EVENT_WAIT_RET_TIMEOUT;
 				goto done;
 			}
 
 			res = mono_os_cond_timedwait (&signal_cond, &signal_mutex, timeout - elapsed);
 			if (res != 0) {
-				mono_os_mutex_unlock (&signal_mutex);
-
 				ret = MONO_OS_EVENT_WAIT_RET_TIMEOUT;
 				goto done;
 			}
 		}
-
-		mono_os_mutex_unlock (&signal_mutex);
 	}
 
 done:
+	for (i = 0; i < nevents; ++i)
+		g_ptr_array_remove (events [i]->conds, &signal_cond);
+
+	g_ptr_array_remove (data->event.conds, &signal_cond);
+
+	mono_os_mutex_unlock (&signal_mutex);
+
+	mono_os_cond_destroy (&signal_cond);
+
 	mono_thread_info_uninstall_interrupt (&alerted);
 	if (alerted) {
 		if (InterlockedDecrement ((gint32*) &data->ref) == 0) {
