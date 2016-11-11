@@ -2903,6 +2903,11 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         varNum = tmpDsc->tdTempNum();
         offset = 0;
     }
+    else if (memBase->OperGet() == GT_LCL_VAR_ADDR)
+    {
+        varNum = memBase->AsLclVarCommon()->GetLclNum();
+        offset = 0;
+    }
 
     // Spill temp numbers are negative and start with -1
     // which also happens to be BAD_VAR_NUM. For this reason
@@ -2910,7 +2915,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (varNum != BAD_VAR_NUM || tmpDsc != nullptr)
     {
         // Is the memory op in the source position?
-        if (src->isContainedLclField() || src->isContainedLclVar() || src->isContainedSpillTemp())
+        if (src->isContainedLclField() || src->isContainedLclVar() || src->isContainedSpillTemp() || src->isContainedMemoryOp())
         {
             if (instrHasImplicitRegPairDest(ins))
             {
