@@ -3544,6 +3544,8 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 	int num_array_interfaces;
 	int is_enumerator = FALSE;
 
+	mono_loader_lock ();
+
 	mono_class_setup_supertypes (klass);
 	/* 
 	 * get the implicit generic interfaces for either the arrays or for System.Array/InternalEnumerator<T>
@@ -3704,8 +3706,6 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 	}
 
 	/* Publish the data */
-	mono_loader_lock ();
-
 	klass->max_interface_id = max_iid;
 	/*
 	 * We might get called multiple times:
@@ -3747,9 +3747,9 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		klass->interface_bitmap = bitmap;
 #endif
 	}
+end:
 	mono_loader_unlock ();
 
-end:
 	g_free (interfaces_full);
 	g_free (interface_offsets_full);
 	g_free (array_interfaces);
