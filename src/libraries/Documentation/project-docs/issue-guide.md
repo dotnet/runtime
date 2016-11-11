@@ -40,8 +40,8 @@ Note: This is a new scheme introduced in 2016/9.  The old scheme used assignees 
 ### Areas
 Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastructure. Each area typically corresponds to one or more contract assemblies.
 
-| Area                                                                                          | Owners / experts | Description | Triage Status |
-|-----------------------------------------------------------------------------------------------|------------------|-------------|--------------------|
+| Area                                                                                          | Owners / experts | Description |
+|-----------------------------------------------------------------------------------------------|------------------|-------------|
 | [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                | [@tarekgh](https://github.com/tarekgh) | Issues without clear association to any specific API/contract (e.g. project-wide docs, new contract proposals, FxCop failures across repo, etc.)<br/>**Pending triage** |
 | [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      | [@mellinoe](https://github.com/mellinoe), [@ericstj](https://github.com/ericstj), [@weshaggard](https://github.com/weshaggard) | Packaging, build and test infra<br/>**Pending triage** |
 | [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)              | [@shmao](https://github.com/shmao), [@zhenlan](https://github.com/zhenlan) | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerialization</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
