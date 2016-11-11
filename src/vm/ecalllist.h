@@ -1278,6 +1278,9 @@ FCFuncStart(gRuntimeThreadFuncs)
     FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
     FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+#ifdef FEATURE_COMINTEROP
+    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
+#endif // FEATURE_COMINTEROP
     FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
     FCFuncElement("JoinInternal", ThreadNative::Join)
 FCFuncEnd()
@@ -1329,9 +1332,6 @@ FCFuncStart(gThreadFuncs)
     FCIntrinsic("GetCurrentThreadNative", ThreadNative::GetCurrentThread, CORINFO_INTRINSIC_GetCurrentManagedThread)
     FCIntrinsic("get_ManagedThreadId", ThreadNative::GetManagedThreadId, CORINFO_INTRINSIC_GetManagedThreadId)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
-    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
-#endif // defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
 #ifdef FEATURE_LEAK_CULTURE_INFO
     FCFuncElement("nativeSetThreadUILocale", ThreadNative::SetThreadUILocale)
 #endif
@@ -1348,9 +1348,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("PostQueuedCompletionStatus", ThreadPoolNative::CorPostQueuedCompletionStatus)
-#ifndef FEATURE_CORECLR
     FCFuncElement("GetAvailableThreadsNative", ThreadPoolNative::CorGetAvailableThreads)
-#endif // FEATURE_CORECLR
     FCFuncElement("SetMinThreadsNative", ThreadPoolNative::CorSetMinThreads)
     FCFuncElement("GetMinThreadsNative", ThreadPoolNative::CorGetMinThreads)
     FCFuncElement("RegisterWaitForSingleObjectNative", ThreadPoolNative::CorRegisterWaitForSingleObject)
