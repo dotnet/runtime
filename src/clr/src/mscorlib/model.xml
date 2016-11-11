@@ -8101,14 +8101,18 @@
     </Type>
     <Type Name="System.Threading.SynchronizationContext">
       <Member Name="#ctor"/>
-      <Member Name="Send(System.Threading.SendOrPostCallback,System.Object)"/>
-      <Member Name="Post(System.Threading.SendOrPostCallback,System.Object)"/>
-      <Member Name="OperationStarted"/>
-      <Member Name="OperationCompleted"/>
-      <Member Name="SetSynchronizationContext(System.Threading.SynchronizationContext)"/>
-      <Member Name="get_Current"/>
       <Member Name="CreateCopy"/>
       <Member MemberType="Property" Name="Current"/>
+      <Member Status="ImplRoot" Name="InvokeWaitMethodHelper(System.Threading.SynchronizationContext,System.IntPtr[],System.Boolean,System.Int32)"/>
+      <Member Name="IsWaitNotificationRequired"/>
+      <Member Name="OperationCompleted"/>
+      <Member Name="OperationStarted"/>
+      <Member Name="Post(System.Threading.SendOrPostCallback,System.Object)"/>
+      <Member Name="Send(System.Threading.SendOrPostCallback,System.Object)"/>
+      <Member Name="SetSynchronizationContext(System.Threading.SynchronizationContext)"/>
+      <Member Name="SetWaitNotificationRequired"/>
+      <Member Name="Wait(System.IntPtr[],System.Boolean,System.Int32)"/>
+      <Member Name="WaitHelper(System.IntPtr[],System.Boolean,System.Int32)"/>
     </Type>
     <Type Name="System.Threading.SynchronizationLockException">
       <Member Name="#ctor" />
@@ -8156,6 +8160,7 @@
       <Member Name="Create(System.Threading.ThreadStart,System.Int32)" />
       <Member Name="Create(System.Threading.ParameterizedThreadStart)" />
       <Member Name="Create(System.Threading.ParameterizedThreadStart,System.Int32)" />
+      <Member Name="DisableComObjectEagerCleanup" />
       <Member Name="GetApartmentState" />
       <Member Name="Interrupt" />
       <Member Name="Join" />
@@ -8171,27 +8176,33 @@
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.ThreadPool">
-      <Member Name="GetMaxThreads(System.Int32@,System.Int32@)" />
-      <Member Name="QueueUserWorkItem(System.Threading.WaitCallback)" />
-      <Member Name="QueueUserWorkItem(System.Threading.WaitCallback,System.Object)" />
-      <Member Name="SetMaxThreads(System.Int32,System.Int32)" />
       <Member Name="BindHandle(System.IntPtr)" />
       <Member Name="BindHandle(System.Runtime.InteropServices.SafeHandle)" />
-      <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" />
+      <Member Status="ImplRoot" Name="GetGloballyQueuedWorkItemsForDebugger"/>
+      <Member Status="ImplRoot" Name="GetLocallyQueuedWorkItemsForDebugger"/>
+      <Member Name="GetAvailableThreads(System.Int32@,System.Int32@)" />
+      <Member Name="GetMaxThreads(System.Int32@,System.Int32@)" />
+      <Member Name="GetMinThreads(System.Int32@,System.Int32@)" />
+      <Member Status="ImplRoot" Name="GetQueuedWorkItemsForDebugger"/>
+      <Member Status="ImplRoot" Name="NotifyWorkItemProgress"/>
+      <Member Name="QueueUserWorkItem(System.Threading.WaitCallback)" />
+      <Member Name="QueueUserWorkItem(System.Threading.WaitCallback,System.Object)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int32,System.Boolean)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int64,System.Boolean)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.TimeSpan,System.Boolean)" />
-      <Member Name="SetMinThreads(System.Int32,System.Int32)" />
-      <Member Name="GetMinThreads(System.Int32@,System.Int32@)" />
+      <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" />
       <Member Status="ImplRoot" Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean,System.Threading.StackCrawlMark@,System.Boolean)" />
       <Member Status="ImplRoot" Name="RegisterWaitForSingleObjectNative(System.Threading.WaitHandle,System.Object,System.UInt32,System.Boolean,System.Threading.RegisteredWaitHandle,System.Threading.StackCrawlMark@,System.Boolean)" />
-      <Member Name="UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped*)" />
-      <Member Status="ImplRoot" Name="UnsafeQueueCustomWorkItem(System.Threading.IThreadPoolWorkItem,System.Boolean)"/>
+      <Member Name="SetMaxThreads(System.Int32,System.Int32)" />
+      <Member Name="SetMinThreads(System.Int32,System.Int32)" />
       <Member Status="ImplRoot" Name="TryPopCustomWorkItem(System.Threading.IThreadPoolWorkItem)"/>
-      <Member Status="ImplRoot" Name="GetQueuedWorkItemsForDebugger"/>
-      <Member Status="ImplRoot" Name="GetGloballyQueuedWorkItemsForDebugger"/>
-      <Member Status="ImplRoot" Name="GetLocallyQueuedWorkItemsForDebugger"/>
-      <Member Status="ImplRoot" Name="NotifyWorkItemProgress"/>
+      <Member Status="ImplRoot" Name="UnsafeQueueCustomWorkItem(System.Threading.IThreadPoolWorkItem,System.Boolean)"/>
+      <Member Name="UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped*)" />
+      <Member Name="UnsafeQueueUserWorkItem(System.Threading.WaitCallback,System.Object)" />
+      <Member Name="UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int32,System.Boolean)" />
+      <Member Name="UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int64,System.Boolean)" />
+      <Member Name="UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.TimeSpan,System.Boolean)" />
+      <Member Name="UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" />
     </Type>
     <Type Name="System.Threading.ThreadPriority">
       <Member MemberType="Field" Name="AboveNormal" />
