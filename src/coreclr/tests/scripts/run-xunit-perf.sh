@@ -30,6 +30,11 @@ function print_usage {
     echo '                                     (e.g. "corefx/bin/Linux.AnyCPU.Debug;corefx/bin/Unix.AnyCPU.Debug;corefx/bin/AnyOS.AnyCPU.Debug").'
     echo '                                     If files with the same name are present in multiple directories, the first one wins.'
     echo '  --coreFxNativeBinDir=<path>      : Directory of the CoreFX native build (e.g. corefx/bin/Linux.x64.Debug).'
+	echo '  --uploadToBenchview              : Specify this flag in order to have the results of the run uploaded to Benchview.'
+	echo '                                     This also requires that the os flag and runtype flag to be set.  Lastly you must'
+	echo '                                     also have the BV_UPLOAD_SAS_TOKEN set to a SAS token for the Benchview upload container'
+	echo '  --benchViewOS=<os>               : Specify the os that will be used to insert data into Benchview.'
+	echo '  --runType=<private|rolling>      : Specify the runType for Benchview.'
 }
 
 # Variables for xUnit-style XML output. XML format: https://xunit.github.io/docs/format-xml-v2.html
@@ -311,6 +316,9 @@ coreClrBinDir=
 mscorlibDir=
 coreFxBinDir=
 coreFxNativeBinDir=
+uploadToBenchview=
+benchViewOS=
+runType=
 
 for i in "$@"
 do
@@ -339,6 +347,15 @@ do
             ;;
         --coreFxNativeBinDir=*)
             coreFxNativeBinDir=${i#*=}
+            ;;
+		--benchViewOS=*)
+            benchViewOS=${i#*=}
+            ;;
+		--runType=*)
+            runType=${i#*=}
+            ;;
+        --uploadToBenchview)
+            uploadToBenchview=TRUE
             ;;
         *)
             echo "Unknown switch: $i"
@@ -394,16 +411,15 @@ fi
 
 # Run coreclr performance tests
 echo "Test root dir is: $testRootDir"
-tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe'))
+tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe') $(find $testRootDir/performance/perflab/PerfLab -name '*.dll'))
 
 echo "current dir is $PWD"
-
+rm measurement.json
 for testcase in ${tests[@]}; do
 
 test=$(basename $testcase)
 testname=$(basename $testcase .exe)
 echo "....Running $testname"
-
 cp $testcase .
 
 chmod u+x ./corerun
@@ -411,7 +427,15 @@ echo "./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner 
 ./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname
 echo "./corerun Microsoft.DotNet.xunit.performance.analysis.cli.dll perf-$testname.xml -xml perf-$testname-summary.xml"
 ./corerun Microsoft.DotNet.xunit.performance.analysis.cli.dll perf-$testname.xml -xml perf-$testname-summary.xml
+if [ "$uploadToBenchview" == "TRUE" ]
+    then
+	python3.5 ../../../../../tests/scripts/Microsoft.BenchView.JSONFormat/tools/measurement.py xunit perf-$testname.xml --better desc --drop-first-value --append
+fi
 done
-
+if [ "$uploadToBenchview" == "TRUE" ]
+    then
+	python3.5 ../../../../../tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission.py measurement.json --build ../../../../../build.json --machine-data ../../../../../machinedata.json --metadata ../../../../../submission-metadata.json --group "CoreCLR" --type "$runType" --config-name "Release" --config Configuration "Release" --config OS "$benchViewOS" --arch "x64" --machinepool "Perfsnake"
+	python3.5 ../../../../../tests/scripts/Microsoft.BenchView.JSONFormat/tools/upload.py submission.json --container coreclr
+fi
 mkdir ../../../../../sandbox
 cp *.xml ../../../../../sandbox
