@@ -20,6 +20,7 @@
 #include <openssl/rand.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <memory>
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -1250,7 +1251,7 @@ extern "C" int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, co
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 
 // Set of locks initialized for OpenSSL
-static pthread_mutex_t* g_locks = NULL;
+static pthread_mutex_t* g_locks = nullptr;
 
 /*
 Function:
@@ -1315,7 +1316,7 @@ extern "C" int32_t CryptoNative_EnsureOpenSslInitialized()
 
     pthread_mutex_lock(&g_initLock);
 
-    if (g_locks != NULL)
+    if (g_locks != nullptr)
     {
         // Already initialized; nothing more to do.
         goto done;
@@ -1331,8 +1332,8 @@ extern "C" int32_t CryptoNative_EnsureOpenSslInitialized()
     }
 
     // Create the locks array
-    g_locks = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t) * UnsignedCast(numLocks)));
-    if (g_locks == NULL)
+    g_locks = new (std::nothrow) pthread_mutex_t[numLocks];
+    if (g_locks == nullptr)
     {
         ret = 2;
         goto done;
@@ -1375,13 +1376,13 @@ done:
     if (ret != 0)
     {
         // Cleanup on failure
-        if (g_locks != NULL)
+        if (g_locks != nullptr)
         {
             for (int i = locksInitialized - 1; i >= 0; i--)
             {
                 pthread_mutex_destroy(&g_locks[i]); // ignore failures
             }
-            free(g_locks);
+            delete[] g_locks;
             g_locks = NULL;
         }
     }

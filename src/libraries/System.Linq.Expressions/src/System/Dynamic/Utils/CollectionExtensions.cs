@@ -25,7 +25,10 @@ namespace System.Dynamic.Utils
             }
             using (var e = source.GetEnumerator())
             {
-                if (e.MoveNext()) return e.Current;
+                if (e.MoveNext())
+                {
+                    return e.Current;
+                }
             }
             throw new InvalidOperationException();
         }

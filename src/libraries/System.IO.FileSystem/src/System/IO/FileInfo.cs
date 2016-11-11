@@ -296,6 +296,17 @@ namespace System.IO
             Invalidate();
         }
 
+        public FileInfo Replace(String destinationFileName, String destinationBackupFileName)
+        {
+            return Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
+        }
+
+        public FileInfo Replace(String destinationFileName, String destinationBackupFileName, bool ignoreMetadataErrors)
+        {
+            File.Replace(FullPath, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
+            return new FileInfo(destinationFileName);
+        }
+
         // Returns the display path
         public override String ToString()
         {
