@@ -8449,11 +8449,9 @@
       <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo)" />
       <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo,System.TimeZoneInfo)" />
       <Member Name="ConvertTime(System.DateTimeOffset,System.TimeZoneInfo)" />
-<!-- Need Linux Implementation
       <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTime,System.String)" />
       <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTime,System.String,System.String)" />
       <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTimeOffset,System.String)" />
--->
       <Member Name="ConvertTimeFromUtc(System.DateTime,System.TimeZoneInfo)" />
       <Member Name="ConvertTimeToUtc(System.DateTime)" />
       <Member Name="ConvertTimeToUtc(System.DateTime,System.TimeZoneInfo)" />
