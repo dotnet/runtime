@@ -28,7 +28,7 @@ namespace System.Net.WebSockets
 
             WebSocketHelpers.ValidateInnerStream(innerStream);
             WebSocketHelpers.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            WebSocketHelpers.ValidateArraySegment<byte>(internalBuffer, "internalBuffer");
+            WebSocketHelpers.ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
             WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
 
             return new ServerWebSocket(innerStream,

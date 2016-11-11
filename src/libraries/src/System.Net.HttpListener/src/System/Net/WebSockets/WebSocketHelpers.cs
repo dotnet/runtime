@@ -55,7 +55,7 @@ namespace System.Net.WebSockets
             ArraySegment<byte> internalBuffer)
         {
             WebSocketHelpers.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            WebSocketHelpers.ValidateArraySegment<byte>(internalBuffer, "internalBuffer");
+            WebSocketHelpers.ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
             WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
 
             return AcceptWebSocketAsyncCore(context, subProtocol, receiveBufferSize, keepAliveInterval, internalBuffer);
@@ -279,17 +279,17 @@ namespace System.Net.WebSockets
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (offset < 0 || offset > buffer.Length)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer.Length - offset))
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
         }
 
@@ -366,7 +366,7 @@ namespace System.Net.WebSockets
         {
             if (string.IsNullOrWhiteSpace(subProtocol))
             {
-                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, "subProtocol");
+                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
             }
 
             char[] chars = subProtocol.ToCharArray();
@@ -394,7 +394,7 @@ namespace System.Net.WebSockets
             if (invalidChar != null)
             {
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar),
-                    "subProtocol");
+                    nameof(subProtocol));
             }
         }
 
@@ -405,7 +405,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_ReasonNotNull,
                     statusDescription,
                     WebSocketCloseStatus.Empty),
-                    "statusDescription");
+                    nameof(statusDescription));
             }
 
             int closeStatusCode = (int)closeStatus;
@@ -418,7 +418,7 @@ namespace System.Net.WebSockets
                 // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,
                     closeStatusCode),
-                    "closeStatus");
+                    nameof(closeStatus));
             }
 
             int length = 0;
@@ -432,7 +432,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusDescription,
                     statusDescription,
                     WebSocketHelpers.MaxControlFramePayloadLength),
-                    "statusDescription");
+                    nameof(statusDescription));
             }
         }
 
@@ -451,7 +451,7 @@ namespace System.Net.WebSockets
 
             if (keepAliveInterval < Timeout.InfiniteTimeSpan) // -1
             {
-                throw new ArgumentOutOfRangeException("keepAliveInterval", keepAliveInterval,
+                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, Timeout.InfiniteTimeSpan.ToString()));
             }
         }
@@ -460,30 +460,30 @@ namespace System.Net.WebSockets
         {
             if (receiveBufferSize < WebSocketBuffer.MinReceiveBufferSize)
             {
-                throw new ArgumentOutOfRangeException("receiveBufferSize", receiveBufferSize,
+                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, WebSocketBuffer.MinReceiveBufferSize));
             }
 
             if (sendBufferSize < WebSocketBuffer.MinSendBufferSize)
             {
-                throw new ArgumentOutOfRangeException("sendBufferSize", sendBufferSize,
+                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, WebSocketBuffer.MinSendBufferSize));
             }
 
             if (receiveBufferSize > WebSocketBuffer.MaxBufferSize)
             {
-                throw new ArgumentOutOfRangeException("receiveBufferSize", receiveBufferSize,
+                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
-                        "receiveBufferSize",
+                        nameof(receiveBufferSize),
                         receiveBufferSize,
                         WebSocketBuffer.MaxBufferSize));
             }
 
             if (sendBufferSize > WebSocketBuffer.MaxBufferSize)
             {
-                throw new ArgumentOutOfRangeException("sendBufferSize", sendBufferSize,
+                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
-                        "sendBufferSize",
+                        nameof(sendBufferSize),
                         sendBufferSize,
                         WebSocketBuffer.MaxBufferSize));
             }
@@ -493,17 +493,17 @@ namespace System.Net.WebSockets
         {
             if (innerStream == null)
             {
-                throw new ArgumentNullException("innerStream");
+                throw new ArgumentNullException(nameof(innerStream));
             }
 
             if (!innerStream.CanRead)
             {
-                throw new ArgumentException(SR.net_writeonlystream, "innerStream");
+                throw new ArgumentException(SR.net_writeonlystream, nameof(innerStream));
             }
 
             if (!innerStream.CanWrite)
             {
-                throw new ArgumentException(SR.net_readonlystream, "innerStream");
+                throw new ArgumentException(SR.net_readonlystream, nameof(innerStream));
             }
         }
 
@@ -532,16 +532,16 @@ namespace System.Net.WebSockets
 
             if (arraySegment.Array == null)
             {
-                throw new ArgumentNullException(parameterName + ".Array");
+                throw new ArgumentNullException(parameterName + "." + nameof(arraySegment.Array));
             }
 
             if (arraySegment.Offset < 0 || arraySegment.Offset > arraySegment.Array.Length)
             {
-                throw new ArgumentOutOfRangeException(parameterName + ".Offset");
+                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Offset));
             }
             if (arraySegment.Count < 0 || arraySegment.Count > (arraySegment.Array.Length - arraySegment.Offset))
             {
-                throw new ArgumentOutOfRangeException(parameterName + ".Count");
+                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Count));
             }
         }
 
