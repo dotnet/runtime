@@ -724,22 +724,25 @@ namespace System {
             s_cachedData = new CachedData();
         }
 
-#if FEATURE_WIN32_REGISTRY
         //
         // ConvertTimeBySystemTimeZoneId -
         //
         // Converts the value of a DateTime object from sourceTimeZone to destinationTimeZone
         //
-        static public DateTimeOffset ConvertTimeBySystemTimeZoneId(DateTimeOffset dateTimeOffset, String destinationTimeZoneId) {
+        static public DateTimeOffset ConvertTimeBySystemTimeZoneId(DateTimeOffset dateTimeOffset, String destinationTimeZoneId)
+        {
             return ConvertTime(dateTimeOffset, FindSystemTimeZoneById(destinationTimeZoneId));
         }
 
-        static public DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, String destinationTimeZoneId) {
+        static public DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, String destinationTimeZoneId)
+        {
             return ConvertTime(dateTime, FindSystemTimeZoneById(destinationTimeZoneId));
         }
 
-        static public DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, String sourceTimeZoneId, String destinationTimeZoneId) {
-            if (dateTime.Kind == DateTimeKind.Local && String.Compare(sourceTimeZoneId, TimeZoneInfo.Local.Id, StringComparison.OrdinalIgnoreCase) == 0) {
+        static public DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, String sourceTimeZoneId, String destinationTimeZoneId)
+        {
+            if (dateTime.Kind == DateTimeKind.Local && String.Compare(sourceTimeZoneId, TimeZoneInfo.Local.Id, StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 // TimeZoneInfo.Local can be cleared by another thread calling TimeZoneInfo.ClearCachedData.
                 // Take snapshot of cached data to guarantee this method will not be impacted by the ClearCachedData call.
                 // Without the snapshot, there is a chance that ConvertTime will throw since 'source' won't
@@ -748,7 +751,8 @@ namespace System {
                 CachedData cachedData = s_cachedData;
                 return ConvertTime(dateTime, cachedData.Local, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
             }    
-            else if (dateTime.Kind == DateTimeKind.Utc && String.Compare(sourceTimeZoneId, TimeZoneInfo.Utc.Id, StringComparison.OrdinalIgnoreCase) == 0) {
+            else if (dateTime.Kind == DateTimeKind.Utc && String.Compare(sourceTimeZoneId, TimeZoneInfo.Utc.Id, StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 // TimeZoneInfo.Utc can be cleared by another thread calling TimeZoneInfo.ClearCachedData.
                 // Take snapshot of cached data to guarantee this method will not be impacted by the ClearCachedData call.
                 // Without the snapshot, there is a chance that ConvertTime will throw since 'source' won't
@@ -757,12 +761,11 @@ namespace System {
                 CachedData cachedData = s_cachedData;
                 return ConvertTime(dateTime, cachedData.Utc, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
             }
-            else {
+            else
+            {
                 return ConvertTime(dateTime, FindSystemTimeZoneById(sourceTimeZoneId), FindSystemTimeZoneById(destinationTimeZoneId));
             }
         }
-#endif // FEATURE_WIN32_REGISTRY
-
 
         //
         // ConvertTime -
