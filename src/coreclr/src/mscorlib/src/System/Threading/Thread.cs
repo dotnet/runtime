@@ -816,14 +816,16 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
 
+#if !FEATURE_CORECLR
 #if FEATURE_COMINTEROP
         [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern void DisableComObjectEagerCleanup();
-#endif //FEATURE_COMINTEROP
+        public new void DisableComObjectEagerCleanup()
+        {
+            base.DisableComObjectEagerCleanup();
+        }
+#endif // FEATURE_COMINTEROP
 
-#if !FEATURE_CORECLR
         /*=========================================================================
         ** Return whether or not this thread is a background thread.  Background
         ** threads do not affect when the Execution Engine shuts down.
