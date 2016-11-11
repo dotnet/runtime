@@ -8,9 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.SecureString.cs" />
-
-    <!-- TODO: Remove this when the package reference is ready -->
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
