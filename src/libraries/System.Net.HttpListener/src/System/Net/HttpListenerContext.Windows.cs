@@ -26,12 +26,12 @@ namespace System.Net
 
         internal HttpListenerContext(HttpListener httpListener, RequestContextBase memoryBlob)
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, this, ".ctor", "httpListener#" + LoggingHash.HashString(httpListener) + " requestBlob=" + LoggingHash.HashString((IntPtr)memoryBlob.RequestBlob));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"httpListener {httpListener} requestBlob={((IntPtr)memoryBlob.RequestBlob)}");
             _listener = httpListener;
             _request = new HttpListenerRequest(this, memoryBlob);
             _authenticationSchemes = httpListener.AuthenticationSchemes;
             _extendedProtectionPolicy = httpListener.ExtendedProtectionPolicy;
-            //GlobalLog.Print("HttpListenerContext#" + LoggingHash.HashString(this) + "::.ctor() HttpListener#" + LoggingHash.HashString(m_Listener) + " HttpListenerRequest#" + LoggingHash.HashString(m_Request));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener} HttpListenerRequest: {_request}");
         }
 
         // Call this right after construction, and only once!  Not after it's been handed to a user.
@@ -39,7 +39,7 @@ namespace System.Net
         {
             _mutualAuthentication = mutualAuthentication;
             _user = principal;
-            //GlobalLog.Print("HttpListenerContext#" + LoggingHash.HashString(this) + "::SetIdentity() mutual:" + (mutualAuthentication == null ? "<null>" : mutualAuthentication) + " Principal#" + LoggingHash.HashString(principal));
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
 
         public HttpListenerRequest Request
@@ -54,20 +54,19 @@ namespace System.Net
         {
             get
             {
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Response", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 if (_response == null)
                 {
                     _response = new HttpListenerResponse(this);
-                    //GlobalLog.Print("HttpListenerContext#" + LoggingHash.HashString(this) + "::.Response_get() HttpListener#" + LoggingHash.HashString(m_Listener) + " HttpListenerRequest#" + LoggingHash.HashString(m_Request) + " HttpListenerResponse#" + LoggingHash.HashString(m_Response));
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener}, HttpListenerRequest: {_request}, HttpListenerResponse: {_response}");
                 }
-                //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Response", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return _response;
             }
         }
 
         public IPrincipal User => _user;
 
-        // What auth schemes were expected of this request?
         // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
         internal AuthenticationSchemes AuthenticationSchemes
         {
@@ -176,7 +175,7 @@ namespace System.Net
 
         internal void Close()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Close()", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             try
             {
@@ -204,12 +203,12 @@ namespace System.Net
                     }
                 }
             }
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal void Abort()
         {
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Abort", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ForceCancelRequest(RequestQueueHandle, _request.RequestId);
             try
             {
@@ -223,12 +222,12 @@ namespace System.Net
                     user.Dispose();
                 }
             }
-            //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Abort", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal Interop.HttpApi.HTTP_VERB GetKnownMethod()
         {
-            //GlobalLog.Print("HttpListenerContext::GetKnownMethod()");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Visited {nameof(GetKnownMethod)}()");
             return Interop.HttpApi.GetKnownVerb(Request.RequestBuffer, Request.OriginalBlobAddress);
         }
 

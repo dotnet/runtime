@@ -55,11 +55,11 @@ namespace System.Net.WebSockets
             _outputStream = outputStream;
             _context = context;
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, inputStream, this);
-            //    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, outputStream, this);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Associate(inputStream, this);
+                NetEventSource.Associate(outputStream, this);
+            }
         }
 
         public override bool CanRead
@@ -128,11 +128,10 @@ namespace System.Net.WebSockets
 
         private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.ReadAsyncCore,
-            //        WebSocketHelpers.GetTraceMsgForParameters(offset, count, cancellationToken));
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(this, WebSocketHelpers.GetTraceMsgForParameters(offset, count, cancellationToken));
+            }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
 
@@ -187,10 +186,10 @@ namespace System.Net.WebSockets
             {
                 cancellationTokenRegistration.Dispose();
 
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.ReadAsyncCore, bytesRead);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(this, bytesRead);
+                }
             }
 
             return bytesRead;
@@ -201,10 +200,10 @@ namespace System.Net.WebSockets
         // true: async completion
         private unsafe bool ReadAsyncFast(HttpListenerAsyncEventArgs eventArgs)
         {
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.ReadAsyncFast, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(this);
+            }
 
             eventArgs.StartOperationCommon(this, _inputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationReceive();
@@ -296,10 +295,10 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.ReadAsyncFast, completedAsynchronously);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(this, completedAsynchronously);
+                }
             }
 
             return completedAsynchronously;
@@ -353,10 +352,10 @@ namespace System.Net.WebSockets
             Debug.Assert(sendBuffers != null, "'sendBuffers' MUST NOT be NULL.");
             Debug.Assert(sendBuffers.Count == 2, "'sendBuffers.Count' MUST be '2' at this point.");
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.MultipleWriteAsyncCore, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(this);
+            }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
 
@@ -394,10 +393,10 @@ namespace System.Net.WebSockets
             {
                 cancellationTokenRegistration.Dispose();
 
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.MultipleWriteAsyncCore, string.Empty);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(this);
+                }
             }
         }
 
@@ -415,11 +414,10 @@ namespace System.Net.WebSockets
 
         private async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.WriteAsyncCore,
-            //        WebSocketHelpers.GetTraceMsgForParameters(offset, count, cancellationToken));
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(this, WebSocketHelpers.GetTraceMsgForParameters(offset, count, cancellationToken));
+            }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
 
@@ -465,10 +463,10 @@ namespace System.Net.WebSockets
             {
                 cancellationTokenRegistration.Dispose();
 
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.WriteAsyncCore, string.Empty);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(this);
+                }
             }
         }
 
@@ -477,10 +475,10 @@ namespace System.Net.WebSockets
         // true: async completion
         private unsafe bool WriteAsyncFast(HttpListenerAsyncEventArgs eventArgs)
         {
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.WriteAsyncFast, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(this);
+            }
 
             Interop.HttpApi.HTTP_FLAGS flags = Interop.HttpApi.HTTP_FLAGS.NONE;
 
@@ -552,10 +550,10 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.WriteAsyncFast, completedAsynchronously);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(this, completedAsynchronously);
+                }
             }
 
             return completedAsynchronously;
@@ -605,10 +603,10 @@ namespace System.Net.WebSockets
             // need to yield here to make sure that we don't get any exception synchronously
             await Task.Yield();
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.CloseNetworkConnectionAsync, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(this);
+            }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
 
@@ -647,10 +645,10 @@ namespace System.Net.WebSockets
             {
                 cancellationTokenRegistration.Dispose();
 
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.CloseNetworkConnectionAsync, string.Empty);
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Exit(this);
+                }
             }
         }
 
@@ -707,10 +705,10 @@ namespace System.Net.WebSockets
             WebSocketHttpListenerDuplexStream thisPtr = state as WebSocketHttpListenerDuplexStream;
             Debug.Assert(thisPtr != null, "'thisPtr' MUST NOT be NULL.");
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, state, nameof(OnCancel), string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(state);
+            }
 
             try
             {
@@ -733,10 +731,10 @@ namespace System.Net.WebSockets
                 writeTaskCompletionSourceSnapshot.TrySetCanceled();
             }
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, state, nameof(OnCancel), string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Exit(state);
+            }
         }
 
         public void SwitchToOpaqueMode(WebSocketBase webSocket)
@@ -763,10 +761,10 @@ namespace System.Net.WebSockets
             _writeEventArgs = new HttpListenerAsyncEventArgs(webSocket, this);
             _writeEventArgs.Completed += s_OnWriteCompleted;
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, this, webSocket);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Associate(this, webSocket);
+            }
         }
 
         private static void OnWriteCompleted(object sender, HttpListenerAsyncEventArgs eventArgs)
@@ -779,10 +777,10 @@ namespace System.Net.WebSockets
                 "'thisPtr.m_OutstandingOperations.m_Writes' MUST NOT be negative.");
 #endif
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnWriteCompleted, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(thisPtr);
+            }
 
             if (eventArgs.Exception != null)
             {
@@ -793,10 +791,10 @@ namespace System.Net.WebSockets
                 thisPtr._writeTaskCompletionSource.TrySetResult(null);
             }
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnWriteCompleted, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Exit(thisPtr);
+            }
         }
 
         private static void OnReadCompleted(object sender, HttpListenerAsyncEventArgs eventArgs)
@@ -809,10 +807,10 @@ namespace System.Net.WebSockets
                 "'thisPtr.m_OutstandingOperations.m_Reads' MUST NOT be negative.");
 #endif
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnReadCompleted, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(thisPtr);
+            }
 
             if (eventArgs.Exception != null)
             {
@@ -823,10 +821,10 @@ namespace System.Net.WebSockets
                 thisPtr._readTaskCompletionSource.TrySetResult(eventArgs.BytesTransferred);
             }
 
-            //if (WebSocketBase.LoggingEnabled)
-            //{
-            //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnReadCompleted, string.Empty);
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Exit(thisPtr);
+            }
         }
 
         internal class HttpListenerAsyncEventArgs : EventArgs, IDisposable
@@ -960,11 +958,7 @@ namespace System.Net.WebSockets
 
             protected virtual void OnCompleted(HttpListenerAsyncEventArgs e)
             {
-                EventHandler<HttpListenerAsyncEventArgs> handler = m_Completed;
-                if (handler != null)
-                {
-                    handler(e._currentStream, e);
-                }
+                m_Completed?.Invoke(e._currentStream, e);
             }
 
             public void SetShouldCloseOutput()
@@ -1156,12 +1150,11 @@ namespace System.Net.WebSockets
             {
                 SetResults(exception, 0);
 
-                //if (WebSocketBase.LoggingEnabled)
-                //{
-                //    NetEventSource.PrintError(NetEventSource.ComponentType.WebSocket, m_CurrentStream,
-                //        m_CompletedOperation == HttpListenerAsyncOperation.Receive ? Methods.ReadAsyncFast : Methods.WriteAsyncFast,
-                //        exception.ToString());
-                //}
+                if (NetEventSource.IsEnabled)
+                {
+                    string methodName = _completedOperation == HttpListenerAsyncOperation.Receive ? nameof(ReadAsyncFast) : nameof(WriteAsyncFast);
+                    NetEventSource.Error(_currentStream, $"{methodName} {exception.ToString()}");
+                }
 
                 Complete();
                 OnCompleted(this);
@@ -1171,23 +1164,22 @@ namespace System.Net.WebSockets
             {
                 SetResults(null, bytesTransferred);
 
-                if (WebSocketBase.LoggingEnabled)
+                if (NetEventSource.IsEnabled)
                 {
-                    if (_buffer != null)
+                    if (_buffer != null && NetEventSource.IsEnabled)
                     {
-                        //NetEventSource.Dump(NetEventSource.ComponentType.WebSocket, m_CurrentStream,
-                        //    m_CompletedOperation == HttpListenerAsyncOperation.Receive ? Methods.ReadAsyncFast : Methods.WriteAsyncFast,
-                        //    m_Buffer, m_Offset, bytesTransferred);
+                        string methodName = _completedOperation == HttpListenerAsyncOperation.Receive ? nameof(ReadAsyncFast) : nameof(WriteAsyncFast);
+                        NetEventSource.DumpBuffer(_currentStream, _buffer, _offset, bytesTransferred, methodName);
                     }
                     else if (_bufferList != null)
                     {
                         Debug.Assert(_completedOperation == HttpListenerAsyncOperation.Send,
                             "'BufferList' is only supported for send operations.");
 
-                        //foreach (ArraySegment<byte> buffer in BufferList)
-                        //{
-                        //    NetEventSource.Dump(NetEventSource.ComponentType.WebSocket, this, Methods.WriteAsyncFast, buffer.Array, buffer.Offset, buffer.Count);
-                        //}
+                        foreach (ArraySegment<byte> buffer in BufferList)
+                        {
+                            NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, buffer.Count, nameof(WriteAsyncFast));
+                        }
                     }
                 }
 
@@ -1220,19 +1212,6 @@ namespace System.Net.WebSockets
                 Receive,
                 Send
             }
-        }
-
-        private static class Methods
-        {
-            public const string CloseNetworkConnectionAsync = "CloseNetworkConnectionAsync";
-            public const string OnCancel = "OnCancel";
-            public const string OnReadCompleted = "OnReadCompleted";
-            public const string OnWriteCompleted = "OnWriteCompleted";
-            public const string ReadAsyncFast = "ReadAsyncFast";
-            public const string ReadAsyncCore = "ReadAsyncCore";
-            public const string WriteAsyncFast = "WriteAsyncFast";
-            public const string WriteAsyncCore = "WriteAsyncCore";
-            public const string MultipleWriteAsyncCore = "MultipleWriteAsyncCore";
         }
     }
 }

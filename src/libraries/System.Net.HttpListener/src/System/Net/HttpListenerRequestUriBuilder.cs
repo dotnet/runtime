@@ -457,10 +457,10 @@ namespace System.Net
 
         private void LogWarning(string methodName, string message, params object[] args)
         {
-            //if (NetEventSource.Log.IsEnabled())
-            //{
-            //    NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, methodName, SR.Format(message, args));
-            //}
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Error(this, SR.Format(message, args), methodName);
+            }
         }
 
         private enum ParsingResult
