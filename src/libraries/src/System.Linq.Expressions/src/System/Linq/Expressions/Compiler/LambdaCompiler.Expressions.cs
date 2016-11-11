@@ -372,7 +372,7 @@ namespace System.Linq.Expressions.Compiler
                 Debug.Assert(obj != null);
                 EmitInstance(obj, out objectType);
             }
-            // if the obj has a value type, its address is passed to the method call so we cannot destroy the 
+            // if the obj has a value type, its address is passed to the method call so we cannot destroy the
             // stack by emitting a tail call
             if (obj != null && obj.Type.GetTypeInfo().IsValueType)
             {
@@ -403,7 +403,7 @@ namespace System.Linq.Expressions.Compiler
                 // This automatically boxes value types if necessary.
                 _ilg.Emit(OpCodes.Constrained, objectType);
             }
-            // The method call can be a tail call if 
+            // The method call can be a tail call if
             // 1) the method call is the last instruction before Ret
             // 2) the method does not have any ByRef parameters, refer to ECMA-335 Partition III Section 2.4.
             //    "Verification requires that no managed pointers are passed to the method being called, since
@@ -474,7 +474,7 @@ namespace System.Linq.Expressions.Compiler
             //
             // We never need to generate a non-virtual call to a virtual method on a reference type because
             // expression trees do not support "base.Foo()" style calling.
-            // 
+            //
             // We could do an optimization here for the case where we know that the object is a non-null
             // reference type and the method is a non-virtual instance method.  For example, if we had
             // (new Foo()).Bar() for instance method Bar we don't need the null check so we could do a

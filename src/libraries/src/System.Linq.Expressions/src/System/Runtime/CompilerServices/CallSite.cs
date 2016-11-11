@@ -12,7 +12,7 @@ using System.Reflection;
 
 #if FEATURE_COMPILE
 using System.Linq.Expressions.Compiler;
-#endif 
+#endif
 
 namespace System.Runtime.CompilerServices
 {
@@ -22,16 +22,16 @@ namespace System.Runtime.CompilerServices
     // based on previous types that have been seen at the call-site. This delegate will
     // call UpdateAndExecute if it is called with types that it hasn't seen before.
     // Updating the binding will typically create (or lookup) a new delegate
-    // that supports fast-paths for both the new type and for any types that 
+    // that supports fast-paths for both the new type and for any types that
     // have been seen previously.
-    // 
+    //
     // DynamicSites will generate the fast-paths specialized for sets of runtime argument
     // types. However, they will generate exactly the right amount of code for the types
     // that are seen in the program so that int addition will remain as fast as it would
     // be with custom implementation of the addition, and the user-defined types can be
     // as fast as ints because they will all have the same optimal dynamically generated
     // fast-paths.
-    // 
+    //
     // DynamicSites don't encode any particular caching policy, but use their
     // CallSiteBinding to encode a caching policy.
     //
@@ -128,7 +128,7 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                // if this site is set up for match making, then use NoMatch as an Update 
+                // if this site is set up for match making, then use NoMatch as an Update
                 if (_match)
                 {
                     Debug.Assert(s_cachedNoMatch != null, "all normal sites should have Update cached once there is an instance.");

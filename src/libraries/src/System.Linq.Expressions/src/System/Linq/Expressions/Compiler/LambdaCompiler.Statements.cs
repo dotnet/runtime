@@ -569,7 +569,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            // 
+            //
             // If we're switching off of Int64/UInt64, we need more guards here
             // because we'll have to narrow the switch value to an Int32, and
             // we can't do that unless the value is in the right range.
@@ -913,7 +913,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // emit filter block. Filter blocks are untyped so we need to do
-            // the type check ourselves.  
+            // the type check ourselves.
             Label endFilter = _ilg.DefineLabel();
             Label rightType = _ilg.DefineLabel();
 
@@ -934,7 +934,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(cb.Filter);
             PopLabelBlock(LabelScopeKind.Filter);
 
-            // begin the catch, clear the exception, we've 
+            // begin the catch, clear the exception, we've
             // already saved it
             _ilg.MarkLabel(endFilter);
             _ilg.BeginCatchBlock(exceptionType: null);

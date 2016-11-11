@@ -196,7 +196,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
         public override string InstructionName => "MulOvf";
-        
+
         private MulOvfInstruction() { }
 
         private sealed class MulOvfInt32 : MulOvfInstruction

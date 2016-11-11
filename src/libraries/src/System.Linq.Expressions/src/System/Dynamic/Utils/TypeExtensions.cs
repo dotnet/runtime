@@ -30,8 +30,8 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// Returns true if the method's parameter types are reference assignable from
         /// the argument types, otherwise false.
-        /// 
-        /// An example that can make the method return false is that 
+        ///
+        /// An example that can make the method return false is that
         /// typeof(double).GetMethod("op_Equality", ..., new[] { typeof(double), typeof(int) })
         /// returns a method with two double parameters, which doesn't match the provided
         /// argument types.

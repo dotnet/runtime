@@ -127,7 +127,7 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Performs the binding of the dynamic set member operation. 
+        /// Performs the binding of the dynamic set member operation.
         /// </summary>
         /// <param name="binder">An instance of the <see cref="SetMemberBinder"/> that represents the details of the dynamic operation.</param>
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set member operation.</param>
@@ -278,13 +278,13 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Creates a meta-object for the specified object. 
+        /// Creates a meta-object for the specified object.
         /// </summary>
         /// <param name="value">The object to get a meta-object for.</param>
         /// <param name="expression">The expression representing this <see cref="DynamicMetaObject"/> during the dynamic binding process.</param>
         /// <returns>
         /// If the given object implements <see cref="IDynamicMetaObjectProvider"/> and is not a remote object from outside the current AppDomain,
-        /// returns the object's specific meta-object returned by <see cref="IDynamicMetaObjectProvider.GetMetaObject"/>. Otherwise a plain new meta-object 
+        /// returns the object's specific meta-object returned by <see cref="IDynamicMetaObjectProvider.GetMetaObject"/>. Otherwise a plain new meta-object
         /// with no restrictions is created and returned.
         /// </returns>
         public static DynamicMetaObject Create(object value, Expression expression)

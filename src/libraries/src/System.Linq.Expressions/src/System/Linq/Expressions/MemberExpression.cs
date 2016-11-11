@@ -335,7 +335,7 @@ namespace System.Linq.Expressions
             {
                 return true;
             }
-            // If the type is an interface then the handle for the method got by the compiler will not be the 
+            // If the type is an interface then the handle for the method got by the compiler will not be the
             // same as that returned by reflection.
             // Check for this condition and try and get the method from reflection.
             Type type = method.DeclaringType;

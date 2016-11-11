@@ -67,12 +67,12 @@ namespace System.Linq.Expressions.Compiler
             _lambda = lambda;
             _method = method;
 
-            // In a Win8 immersive process user code is not allowed to access non-W8P framework APIs through 
+            // In a Win8 immersive process user code is not allowed to access non-W8P framework APIs through
             // reflection or RefEmit. Framework code, however, is given an exemption.
             // This is to make sure that user code cannot access non-W8P framework APIs via ExpressionTree.
 
             // TODO: This API is not available, is there an alternative way to achieve the same.
-            // method.ProfileAPICheck = true; 
+            // method.ProfileAPICheck = true;
 
             _ilg = method.GetILGenerator();
 
@@ -189,7 +189,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Mutates the MethodBuilder parameter, filling in IL, parameters,
         /// and return type.
-        /// 
+        ///
         /// (probably shouldn't be modifying parameters/return type...)
         /// </summary>
         internal static void Compile(LambdaExpression lambda, MethodBuilder method)

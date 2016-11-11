@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Compiler
                 default: return null;
             }
         }
-#endif 
+#endif
 
         /// <summary>
         /// Creates a new delegate, or uses a func/action
@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Compiler
                 return MakeNewCustomDelegate(types);
 #else
                 return TryMakeVBStyledCallSite(types) ?? MakeNewCustomDelegate(types);
-#endif 
+#endif
             }
 
             Type result;

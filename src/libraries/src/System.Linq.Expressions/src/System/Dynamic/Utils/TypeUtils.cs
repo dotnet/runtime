@@ -312,14 +312,14 @@ namespace System.Dynamic.Utils
         {
             Debug.Assert(source != null && dest != null);
 
-            // There *might* be a legal conversion from a generic delegate type S to generic delegate type  T, 
+            // There *might* be a legal conversion from a generic delegate type S to generic delegate type  T,
             // provided all of the follow are true:
             //   o Both types are constructed generic types of the same generic delegate type, D<X1,... Xk>.
             //     That is, S = D<S1...>, T = D<T1...>.
             //   o If type parameter Xi is declared to be invariant then Si must be identical to Ti.
             //   o If type parameter Xi is declared to be covariant ("out") then Si must be convertible
             //     to Ti via an identify conversion,  implicit reference conversion, or explicit reference conversion.
-            //   o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti, 
+            //   o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti,
             //     or Si and Ti must both be reference types.
 
             if (!IsDelegate(source) || !IsDelegate(dest) || !source.GetTypeInfo().IsGenericType || !dest.GetTypeInfo().IsGenericType)
@@ -414,7 +414,7 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            // If we have an interface and a reference type then we can do 
+            // If we have an interface and a reference type then we can do
             // reference equality.
 
             // If we have two reference types and one is assignable to the
@@ -427,7 +427,7 @@ namespace System.Dynamic.Utils
 
         public static bool HasBuiltInEqualityOperator(Type left, Type right)
         {
-            // If we have an interface and a reference type then we can do 
+            // If we have an interface and a reference type then we can do
             // reference equality.
             if (left.GetTypeInfo().IsInterface && !right.GetTypeInfo().IsValueType)
             {
@@ -446,13 +446,13 @@ namespace System.Dynamic.Utils
                     return true;
                 }
             }
-            // Otherwise, if the types are not the same then we definitely 
+            // Otherwise, if the types are not the same then we definitely
             // do not have a built-in equality operator.
             if (!AreEquivalent(left, right))
             {
                 return false;
             }
-            // We have two identical value types, modulo nullability.  (If they were both the 
+            // We have two identical value types, modulo nullability.  (If they were both the
             // same reference type then we would have returned true earlier.)
             Debug.Assert(left.GetTypeInfo().IsValueType);
             // Equality between struct types is only defined for numerics, bools, enums,
@@ -695,7 +695,7 @@ namespace System.Dynamic.Utils
         /// Searches for an operator method on the type. The method must have
         /// the specified signature, no generic arguments, and have the
         /// SpecialName bit set. Also searches inherited operator methods.
-        /// 
+        ///
         /// NOTE: This was designed to satisfy the needs of op_True and
         /// op_False, because we have to do runtime lookup for those. It may
         /// not work right for unary operators in general.
@@ -748,7 +748,7 @@ namespace System.Dynamic.Utils
                     return false;
             }
         }
-#endif 
+#endif
 
         public static bool IsVector(this Type type)
         {

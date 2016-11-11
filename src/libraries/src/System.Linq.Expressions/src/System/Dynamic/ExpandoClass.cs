@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace System.Dynamic
 {
     /// <summary>
-    /// Represents a dynamically assigned class.  Expando objects which share the same 
+    /// Represents a dynamically assigned class.  Expando objects which share the same
     /// members will share the same class.  Classes are dynamically assigned as the
     /// expando object gains members.
     /// </summary>
@@ -33,7 +33,7 @@ namespace System.Dynamic
 
         /// <summary>
         /// Constructs a new ExpandoClass that can hold onto the specified keys.  The
-        /// keys must be sorted ordinally.  The hash code must be precalculated for 
+        /// keys must be sorted ordinally.  The hash code must be precalculated for
         /// the keys.
         /// </summary>
         internal ExpandoClass(string[] keys, int hashCode)
@@ -49,7 +49,7 @@ namespace System.Dynamic
         /// </summary>
         internal ExpandoClass FindNewClass(string newKey)
         {
-            // just XOR the newKey hash code 
+            // just XOR the newKey hash code
             int hashCode = _hashCode ^ newKey.GetHashCode();
 
             lock (this)

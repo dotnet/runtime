@@ -105,9 +105,9 @@ namespace System.Dynamic
 
                 if (data.Class != indexClass || ignoreCase)
                 {
-                    // The class has changed or we are doing a case-insensitive search, 
-                    // we need to get the correct index and set the value there.  If we 
-                    // don't have the value then we need to promote the class - that 
+                    // The class has changed or we are doing a case-insensitive search,
+                    // we need to get the correct index and set the value there.  If we
+                    // don't have the value then we need to promote the class - that
                     // should only happen when we have multiple concurrent writers.
                     index = data.Class.GetValueIndex(name, ignoreCase, this);
                     if (index == ExpandoObject.AmbiguousMatchFound)
@@ -116,7 +116,7 @@ namespace System.Dynamic
                     }
                     if (index == ExpandoObject.NoMatch)
                     {
-                        // Before creating a new class with the new member, need to check 
+                        // Before creating a new class with the new member, need to check
                         // if there is the exact same member but is deleted. We should reuse
                         // the class if there is such a member.
                         int exactMatch = ignoreCase ?
@@ -233,7 +233,7 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Exposes the ExpandoClass which we've associated with this 
+        /// Exposes the ExpandoClass which we've associated with this
         /// Expando object.  Used for type checks in rules.
         /// </summary>
         internal ExpandoClass Class => _data.Class;
@@ -737,7 +737,7 @@ namespace System.Dynamic
                 {
                     // The underlying expando object has changed:
                     // 1) the version of the expando data changed
-                    // 2) the data object is changed 
+                    // 2) the data object is changed
                     throw System.Linq.Expressions.Error.CollectionModifiedWhileEnumerating();
                 }
                 // Capture the value into a temp so we don't inadvertently
@@ -903,7 +903,7 @@ namespace System.Dynamic
                 if (originalClass != null)
                 {
                     // we are accessing a member which has not yet been defined on this class.
-                    // We force a class promotion after the type check.  If the class changes the 
+                    // We force a class promotion after the type check.  If the class changes the
                     // promotion will fail and the set/delete will do a full lookup using the new
                     // class to discover the name.
                     Debug.Assert(originalClass != klass);
@@ -1014,8 +1014,8 @@ namespace System.Dynamic
 
             /// <summary>
             /// data stored in the expando object, key names are stored in the class.
-            /// 
-            /// Expando._data must be locked when mutating the value.  Otherwise a copy of it 
+            ///
+            /// Expando._data must be locked when mutating the value.  Otherwise a copy of it
             /// could be made and lose values.
             /// </summary>
             private readonly object[] _dataArray;

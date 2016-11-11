@@ -134,7 +134,7 @@ namespace System.Collections.Generic
             }
 
             nextCapacity = Math.Max(nextCapacity, minimum);
-            
+
             T[] next = new T[nextCapacity];
             if (_count > 0)
             {
