@@ -106,7 +106,7 @@ mono_mach_arch_get_thread_state_size ()
 int
 mono_mach_arch_get_thread_fpstate_size ()
 {
-	g_assert_not_reached ();
+	return sizeof (arm_neon_state_t);
 }
 
 kern_return_t
