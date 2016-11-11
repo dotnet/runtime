@@ -186,42 +186,7 @@ namespace System.Dynamic
         /// Creates the <see cref="Expression"/> representing the binding restrictions.
         /// </summary>
         /// <returns>The expression tree representing the restrictions.</returns>
-        public Expression ToExpression()
-        {
-            // We could optimize this better, e.g. common subexpression elimination
-            // But for now, it's good enough.
-
-            if (this == Empty)
-            {
-                return AstUtils.Constant(true);
-            }
-
-            var testBuilder = new TestBuilder();
-
-            // Visit the tree, left to right.
-            // Use an explicit stack so we don't stack overflow.
-            //
-            // Left-most node is on top of the stack, so we always expand the
-            // left most node each iteration.
-            var stack = new Stack<BindingRestrictions>();
-            stack.Push(this);
-            do
-            {
-                var top = stack.Pop();
-                var m = top as MergedRestriction;
-                if (m != null)
-                {
-                    stack.Push(m.Right);
-                    stack.Push(m.Left);
-                }
-                else
-                {
-                    testBuilder.Append(top);
-                }
-            } while (stack.Count > 0);
-
-            return testBuilder.ToExpression();
-        }
+        public Expression ToExpression() => GetExpression();
 
         private sealed class MergedRestriction : BindingRestrictions
         {
@@ -234,10 +199,39 @@ namespace System.Dynamic
                 Right = right;
             }
 
-            [ExcludeFromCodeCoverage]
             internal override Expression GetExpression()
             {
-                throw ContractUtils.Unreachable;
+                // We could optimize this better, e.g. common subexpression elimination
+                // But for now, it's good enough.
+
+                var testBuilder = new TestBuilder();
+
+                // Visit the tree, left to right.
+                // Use an explicit stack so we don't stack overflow.
+                //
+                // Left-most node is on top of the stack, so we always expand the
+                // left most node each iteration.
+                var stack = new Stack<BindingRestrictions>();
+                BindingRestrictions top = this;
+                for (;;)
+                {
+                    var m = top as MergedRestriction;
+                    if (m != null)
+                    {
+                        stack.Push(m.Right);
+                        top = m.Left;
+                    }
+                    else
+                    {
+                        testBuilder.Append(top);
+                        if (stack.Count == 0)
+                        {
+                            return testBuilder.ToExpression();
+                        }
+
+                        top = stack.Pop();
+                    }
+                }
             }
         }
 
@@ -372,23 +366,26 @@ namespace System.Dynamic
                     // Left-most node is on top of the stack, so we always expand the
                     // left most node each iteration.
                     var stack = new Stack<BindingRestrictions>();
-                    stack.Push(_node);
-                    do
+                    BindingRestrictions top = _node;
+                    for (;;)
                     {
-                        var top = stack.Pop();
                         var m = top as MergedRestriction;
                         if (m != null)
                         {
                             stack.Push(m.Right);
-                            stack.Push(m.Left);
+                            top = m.Left;
                         }
                         else
                         {
                             restrictions.Add(top);
-                        }
-                    } while (stack.Count > 0);
+                            if (stack.Count == 0)
+                            {
+                                return restrictions.ToArray();
+                            }
 
-                    return restrictions.ToArray();
+                            top = stack.Pop();
+                        }
+                    }
                 }
             }
 
