@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             if (liftedToNull)
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new GreaterThanSByte(null));
                     case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new GreaterThanByte(null));
@@ -301,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanSByte(ScriptingRuntimeHelpers.Boolean_False));
                     case TypeCode.Byte: return s_byte ?? (s_byte = new GreaterThanByte(ScriptingRuntimeHelpers.Boolean_False));
@@ -597,7 +597,7 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             if (liftedToNull)
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new GreaterThanOrEqualSByte(null));
                     case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new GreaterThanOrEqualByte(null));
@@ -617,7 +617,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanOrEqualSByte(ScriptingRuntimeHelpers.Boolean_False));
                     case TypeCode.Byte: return s_byte ?? (s_byte = new GreaterThanOrEqualByte(ScriptingRuntimeHelpers.Boolean_False));

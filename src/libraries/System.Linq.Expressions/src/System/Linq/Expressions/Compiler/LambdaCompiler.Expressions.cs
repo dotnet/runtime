@@ -1130,7 +1130,7 @@ namespace System.Linq.Expressions.Compiler
             }
             for (int i = 0, n = variables.Count; i < n; i++)
             {
-                if (!TypeUtils.AreReferenceAssignable(variables[i].Type, TypeUtils.GetNonNullableType(arguments[i].Type)))
+                if (!TypeUtils.AreReferenceAssignable(variables[i].Type, arguments[i].Type.GetNonNullableType()))
                 {
                     throw Error.ArgumentTypesMustMatch();
                 }
@@ -1140,7 +1140,7 @@ namespace System.Linq.Expressions.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, ParameterExpression[] paramList, Expression[] argList)
         {
-            Debug.Assert(TypeUtils.AreEquivalent(TypeUtils.GetNonNullableType(resultType), TypeUtils.GetNonNullableType(mc.Type)));
+            Debug.Assert(TypeUtils.AreEquivalent(resultType.GetNonNullableType(), mc.Type.GetNonNullableType()));
 
             switch (nodeType)
             {
@@ -1157,7 +1157,7 @@ namespace System.Linq.Expressions.Compiler
                         {
                             ParameterExpression v = paramList[i];
                             Expression arg = argList[i];
-                            if (TypeUtils.IsNullableType(arg.Type))
+                            if (arg.Type.IsNullableType())
                             {
                                 _scope.AddLocal(this, v);
                                 EmitAddress(arg, arg.Type);
@@ -1186,14 +1186,14 @@ namespace System.Linq.Expressions.Compiler
                             _ilg.Emit(OpCodes.Brtrue, exitNull);
                         }
                         EmitMethodCallExpression(mc);
-                        if (TypeUtils.IsNullableType(resultType) && !TypeUtils.AreEquivalent(resultType, mc.Type))
+                        if (resultType.IsNullableType() && !TypeUtils.AreEquivalent(resultType, mc.Type))
                         {
                             ConstructorInfo ci = resultType.GetConstructor(new Type[] { mc.Type });
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }
                         _ilg.Emit(OpCodes.Br_S, exit);
                         _ilg.MarkLabel(exitNull);
-                        if (TypeUtils.AreEquivalent(resultType, TypeUtils.GetNullableType(mc.Type)))
+                        if (TypeUtils.AreEquivalent(resultType, mc.Type.GetNullableType()))
                         {
                             if (resultType.GetTypeInfo().IsValueType)
                             {
@@ -1228,7 +1228,7 @@ namespace System.Linq.Expressions.Compiler
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual:
                     {
-                        if (TypeUtils.AreEquivalent(resultType, TypeUtils.GetNullableType(mc.Type)))
+                        if (TypeUtils.AreEquivalent(resultType, mc.Type.GetNullableType()))
                         {
                             goto default;
                         }
@@ -1248,7 +1248,7 @@ namespace System.Linq.Expressions.Compiler
                             ParameterExpression v = paramList[i];
                             Expression arg = argList[i];
                             _scope.AddLocal(this, v);
-                            if (TypeUtils.IsNullableType(arg.Type))
+                            if (arg.Type.IsNullableType())
                             {
                                 EmitAddress(arg, arg.Type);
                                 _ilg.Emit(OpCodes.Dup);
@@ -1294,7 +1294,7 @@ namespace System.Linq.Expressions.Compiler
                         _ilg.Emit(OpCodes.Brtrue, exitAnyNull);
 
                         EmitMethodCallExpression(mc);
-                        if (TypeUtils.IsNullableType(resultType) && !TypeUtils.AreEquivalent(resultType, mc.Type))
+                        if (resultType.IsNullableType() && !TypeUtils.AreEquivalent(resultType, mc.Type))
                         {
                             ConstructorInfo ci = resultType.GetConstructor(new Type[] { mc.Type });
                             _ilg.Emit(OpCodes.Newobj, ci);

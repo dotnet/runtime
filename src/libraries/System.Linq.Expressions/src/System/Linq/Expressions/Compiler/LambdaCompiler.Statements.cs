@@ -248,7 +248,7 @@ namespace System.Linq.Expressions.Compiler
             Type result = node.Comparison.GetParametersCached()[1].ParameterType.GetNonRefType();
             if (node.IsLifted)
             {
-                result = TypeUtils.GetNullableType(result);
+                result = result.GetNullableType();
             }
             return result;
         }
@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Compiler
                 Value = value;
                 Default = @default;
                 Type = Node.SwitchValue.Type;
-                IsUnsigned = TypeUtils.IsUnsigned(Type);
+                IsUnsigned = Type.IsUnsigned();
                 TypeCode code = Type.GetTypeCode();
                 Is64BitSwitch = code == TypeCode.UInt64 || code == TypeCode.Int64;
             }

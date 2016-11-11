@@ -95,7 +95,7 @@ namespace System.Dynamic.Utils
             {
                 foreach (Type g in t.GetGenericArguments())
                 {
-                    if (!CanCache(g))
+                    if (!g.CanCache())
                     {
                         return false;
                     }

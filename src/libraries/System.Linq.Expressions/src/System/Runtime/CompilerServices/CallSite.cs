@@ -97,7 +97,7 @@ namespace System.Runtime.CompilerServices
             {
                 method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod("Create");
 
-                if (TypeUtils.CanCache(delegateType))
+                if (delegateType.CanCache())
                 {
                     ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
                     ctors.Add(delegateType, ctor);

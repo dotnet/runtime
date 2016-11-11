@@ -981,7 +981,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             Expression left = node.Left;
             Expression right = node.Right;
-            Debug.Assert(left.Type == right.Type && TypeUtils.IsNumeric(left.Type));
+            Debug.Assert(left.Type == right.Type && left.Type.IsNumeric());
 
             Compile(left);
             Compile(right);
@@ -998,7 +998,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileArithmetic(ExpressionType nodeType, Expression left, Expression right)
         {
-            Debug.Assert(left.Type == right.Type && TypeUtils.IsArithmetic(left.Type));
+            Debug.Assert(left.Type == right.Type && left.Type.IsArithmetic());
             Compile(left);
             Compile(right);
             switch (nodeType)
@@ -1028,7 +1028,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitStoreLocal(opTemp.Index);
 
                 if (!node.Operand.Type.GetTypeInfo().IsValueType ||
-                    (TypeUtils.IsNullableType(node.Operand.Type) && node.IsLiftedToNull))
+                    (node.Operand.Type.IsNullableType() && node.IsLiftedToNull))
                 {
                     _instructions.EmitLoadLocal(opTemp.Index);
                     _instructions.EmitLoad(null, typeof(object));
@@ -1037,8 +1037,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
 
                 _instructions.EmitLoadLocal(opTemp.Index);
-                if (TypeUtils.IsNullableType(node.Operand.Type) &&
-                    node.Method.GetParametersCached()[0].ParameterType.Equals(TypeUtils.GetNonNullableType(node.Operand.Type)))
+                if (node.Operand.Type.IsNullableType() &&
+                    node.Method.GetParametersCached()[0].ParameterType.Equals(node.Operand.Type.GetNonNullableType()))
                 {
                     _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
                 }
@@ -1075,16 +1075,16 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (typeFrom.GetTypeInfo().IsValueType &&
-                TypeUtils.IsNullableType(typeTo) &&
-                TypeUtils.GetNonNullableType(typeTo).Equals(typeFrom))
+                typeTo.IsNullableType() &&
+                typeTo.GetNonNullableType().Equals(typeFrom))
             {
                 // VT -> vt?, no conversion necessary
                 return;
             }
 
             if (typeTo.GetTypeInfo().IsValueType &&
-                TypeUtils.IsNullableType(typeFrom) &&
-                TypeUtils.GetNonNullableType(typeFrom).Equals(typeTo))
+                typeFrom.IsNullableType() &&
+                typeFrom.GetNonNullableType().Equals(typeTo))
             {
                 // VT? -> vt, call get_Value
                 _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
@@ -1095,8 +1095,8 @@ namespace System.Linq.Expressions.Interpreter
             Type nonNullableTo = typeTo.GetNonNullableType();
 
             // use numeric conversions for both numeric types and enums
-            if ((TypeUtils.IsNumericOrBool(nonNullableFrom) || nonNullableFrom.GetTypeInfo().IsEnum)
-                 && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
+            if ((nonNullableFrom.IsNumericOrBool() || nonNullableFrom.GetTypeInfo().IsEnum)
+                 && (nonNullableTo.IsNumeric() || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
             {
                 Type enumTypeTo = null;
 
@@ -2547,14 +2547,14 @@ namespace System.Linq.Expressions.Interpreter
 
             bool hasConversion = node.Conversion != null;
             bool hasImplicitConversion = false;
-            if (!hasConversion && TypeUtils.IsNullableType(node.Left.Type))
+            if (!hasConversion && node.Left.Type.IsNullableType())
             {
                 // reference types don't need additional conversions (the interpreter operates on Object
                 // anyway); non-nullable value types can't occur on the left side; all that's left is
                 // nullable value types with implicit (numeric) conversions which are allowed by Coalesce
                 // factory methods
 
-                Type nnLeftType = TypeUtils.GetNonNullableType(node.Left.Type);
+                Type nnLeftType = node.Left.Type.GetNonNullableType();
                 if (!TypeUtils.AreEquivalent(node.Type, nnLeftType))
                 {
                     hasImplicitConversion = true;
@@ -2593,7 +2593,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else if (hasImplicitConversion)
             {
-                Type nnLeftType = TypeUtils.GetNonNullableType(node.Left.Type);
+                Type nnLeftType = node.Left.Type.GetNonNullableType();
                 CompileConvertToType(nnLeftType, node.Type, isChecked: true, isLiftedToNull: false);
             }
 
@@ -2818,7 +2818,7 @@ namespace System.Linq.Expressions.Interpreter
 
             Compile(node.Operand);
 
-            if (node.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(node.Type))
+            if (node.Type.GetTypeInfo().IsValueType && !node.Type.IsNullableType())
             {
                 _instructions.Emit(NullCheckInstruction.Instance);
             }
