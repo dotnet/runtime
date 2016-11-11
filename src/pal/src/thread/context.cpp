@@ -1033,7 +1033,7 @@ CONTEXT_GetThreadContextFromThreadState(
                     memcpy(&lpContext->FltSave.FloatRegisters[i], (&pState->__fpu_stmm0)[i].__mmst_reg, 10);
 
                 // AMD64's FLOATING_POINT includes the xmm registers.
-                memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 8 * 16);
+                memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 16 * 16);
             }
             break;
 #else
