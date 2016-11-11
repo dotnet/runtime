@@ -118,17 +118,6 @@ public:
 #endif
     static BOOL QCALLTYPE InternalGetNlsVersionEx(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR lpLocaleName, NLSVERSIONINFOEX * lpVersionInformation);
 
-
-#ifndef FEATURE_CORECLR
-    //
-    //  Native helper function for methods in TimeZone
-    //
-    static FCDECL0(LONG, nativeGetTimeZoneMinuteOffset);
-    static FCDECL0(Object*, nativeGetStandardName);
-    static FCDECL0(Object*, nativeGetDaylightName);
-    static FCDECL1(Object*, nativeGetDaylightChanges, int year);
-#endif // FEATURE_CORECLR
-
     //
     //  Native helper function for methods in EncodingTable
     //
