@@ -820,6 +820,9 @@ public:
         m_MethodXmlFilePosition = val;
     }
 
+    // Set up or access random state (for use by RandomPolicy)
+    CLRRandom* GetRandom();
+
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Some inline limit values
@@ -884,7 +887,8 @@ private:
     bool           m_HasForceViaDiscretionary;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    long m_MethodXmlFilePosition;
+    long       m_MethodXmlFilePosition;
+    CLRRandom* m_Random;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 };
 
