@@ -1,0 +1,44 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.4.0-beta-24711-02",
+    "Microsoft.NETCore.Platforms": "1.2.0-beta-24711-02",
+    "System.AppContext": "4.4.0-beta-24711-02",
+    "System.Console": "4.4.0-beta-24711-02",
+    "System.Collections": "4.4.0-beta-24711-02",
+    "System.Collections.Concurrent": "4.4.0-beta-24711-02",
+    "System.Data.Common": "4.4.0-beta-24711-02",
+    "System.Data.SqlClient": "4.4.0-beta-24711-02",
+    "System.Diagnostics.Debug": "4.4.0-beta-24711-02",
+    "System.Diagnostics.DiagnosticSource": "4.4.0-beta-24711-02",
+    "System.Diagnostics.FileVersionInfo": "4.4.0-beta-24711-02",
+    "System.Diagnostics.Process": "4.4.0-beta-24711-02",
+    "System.Diagnostics.TextWriterTraceListener": "4.4.0-beta-24711-02",
+    "System.Diagnostics.TraceSource": "4.4.0-beta-24711-02",
+    "System.IO.FileSystem": "4.4.0-beta-24711-02",
+    "System.Net.NameResolution": "4.4.0-beta-24711-02",
+    "System.Security.Principal": "4.4.0-beta-24711-02",
+    "System.Security.Principal.Windows": "4.4.0-beta-24711-02",
+    "System.Threading.Thread": "4.0.0",
+    "System.Threading": "4.4.0-beta-24711-02",
+    "System.Threading.Timer": "4.4.0-beta-24711-02",
+    "System.Reflection.Extensions": "4.4.0-beta-24711-02",
+    "System.Reflection": "4.4.0-beta-24711-02",
+    "System.Reflection.Emit": "4.4.0-beta-24711-02",
+    "System.Reflection.TypeExtensions": "4.4.0-beta-24711-02",
+    "System.Runtime.InteropServices": "4.4.0-beta-24711-02",
+    "System.Threading.ThreadPool": "4.4.0-beta-24711-02",
+    "System.Runtime.Extensions": "4.4.0-beta-24711-02",
+    "System.Text.RegularExpressions": "4.4.0-beta-24711-02",
+    "System.Xml.ReaderWriter": "4.4.0-beta-24711-02",
+    "System.Xml.XmlDocument": "4.4.0-beta-24711-02",
+    "runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24711-02"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": [
+        "dnxcore50"
+      ]
+    },
+    "netstandard1.3": {}
+  }
+}

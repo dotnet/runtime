@@ -26,7 +26,7 @@
   </ItemGroup>
   <!--Import the targets-->
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
+    <ProjectReference Include="..\..\..\pkg\System.Data.SqlClient.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
