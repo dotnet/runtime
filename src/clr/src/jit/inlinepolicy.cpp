@@ -30,13 +30,12 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 #ifdef DEBUG
 
     // Optionally install the RandomPolicy.
-    bool useRandomPolicy = compiler->compRandomInlineStress();
+    const bool useRandomPolicyForStress = compiler->compRandomInlineStress();
+    const bool useRandomPolicy          = (JitConfig.JitInlinePolicyRandom() != 0);
 
-    if (useRandomPolicy)
+    if (useRandomPolicyForStress || useRandomPolicy)
     {
-        unsigned seed = getJitStressLevel();
-        assert(seed != 0);
-        return new (compiler, CMK_Inlining) RandomPolicy(compiler, isPrejitRoot, seed);
+        return new (compiler, CMK_Inlining) RandomPolicy(compiler, isPrejitRoot);
     }
 
 #endif // DEBUG
@@ -974,7 +973,7 @@ bool EnhancedLegacyPolicy::PropagateNeverToRuntime() const
     return propagate;
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
 // RandomPolicy: construct a new RandomPolicy
@@ -982,9 +981,8 @@ bool EnhancedLegacyPolicy::PropagateNeverToRuntime() const
 // Arguments:
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
-//    seed -- seed value for the random number generator
 
-RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
+RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot)
     : LegalPolicy(isPrejitRoot)
     , m_RootCompiler(compiler)
     , m_Random(nullptr)
@@ -992,19 +990,7 @@ RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
     , m_IsForceInline(false)
     , m_IsForceInlineKnown(false)
 {
-    // If necessary, setup and seed the random state.
-    if (compiler->inlRNG == nullptr)
-    {
-        compiler->inlRNG = new (compiler, CMK_Inlining) CLRRandom();
-
-        unsigned hash = m_RootCompiler->info.compMethodHash();
-        assert(hash != 0);
-        assert(seed != 0);
-        int hashSeed = static_cast<int>(hash ^ seed);
-        compiler->inlRNG->Init(hashSeed);
-    }
-
-    m_Random = compiler->inlRNG;
+    m_Random = compiler->m_inlineStrategy->GetRandom();
 }
 
 //------------------------------------------------------------------------
@@ -1211,7 +1197,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 }
 
-#endif // DEBUG
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #ifdef _MSC_VER
 // Disable warning about new array member initialization behavior

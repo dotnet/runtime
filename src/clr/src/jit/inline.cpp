@@ -747,6 +747,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_HasForceViaDiscretionary(false)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_MethodXmlFilePosition(0)
+    , m_Random(nullptr)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 {
@@ -1594,6 +1595,47 @@ void InlineStrategy::FinalizeXml(FILE* file)
 
     // Finalize reading inline xml
     ReplayPolicy::FinalizeXml();
+}
+
+//------------------------------------------------------------------------
+// GetRandom: setup or access random state
+//
+// Return Value:
+//    New or pre-existing random state.
+//
+// Notes:
+//    Random state is kept per jit compilation request. Seed is partially
+//    specified externally (via stress or policy setting) and partially
+//    specified internally via method hash.
+
+CLRRandom* InlineStrategy::GetRandom()
+{
+    if (m_Random == nullptr)
+    {
+        int externalSeed = 0;
+        if (m_Compiler->compRandomInlineStress())
+        {
+            externalSeed = getJitStressLevel();
+        }
+
+        int randomPolicyFlag = JitConfig.JitInlinePolicyRandom();
+        if (randomPolicyFlag != 0)
+        {
+            externalSeed = randomPolicyFlag;
+        }
+
+        int internalSeed = m_Compiler->info.compMethodHash();
+
+        assert(externalSeed != 0);
+        assert(internalSeed != 0);
+
+        int seed = externalSeed ^ internalSeed;
+
+        m_Random = new (m_Compiler, CMK_Inlining) CLRRandom();
+        m_Random->Init(seed);
+    }
+
+    return m_Random;
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
