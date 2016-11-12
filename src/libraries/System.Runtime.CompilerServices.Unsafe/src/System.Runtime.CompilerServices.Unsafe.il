@@ -305,6 +305,16 @@
         ret
   } // end of method Unsafe::SubtractByteOffset
 
+  .method public hidebysig static native int ByteOffset<T>(!!T& origin, !!T& target) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.1
+        ldarg.0
+        sub
+        ret
+  } // end of method Unsafe::ByteOffset
+
   .method public hidebysig static bool AreSame<T>(!!T& left, !!T& right) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )

@@ -17,13 +17,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyBuilderTests.cs" />
-    <Compile Include="ConstructorBuilder\ConstructorBuilderAttributes.cs" />
-    <Compile Include="ConstructorBuilder\ConstructorBuilderCallingConvention.cs" />
-    <Compile Include="ConstructorBuilder\ConstructorBuilderDeclaringType.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderDefineParameter.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderGetILGenerator.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderInitLocals.cs" />
-    <Compile Include="ConstructorBuilder\ConstructorBuilderName.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderSetCustomAttribute.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderSetImplementationFlags.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderToString.cs" />
@@ -47,10 +43,7 @@
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetCustomAttribute.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetGenericParameterAttributes.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetInterfaceConstraints.cs" />
-    <Compile Include="MethodBuilder\MethodBuilderAttributes.cs" />
-    <Compile Include="MethodBuilder\MethodBuilderCallingConvention.cs" />
     <Compile Include="MethodBuilder\MethodBuilderContainsGenericParameters.cs" />
-    <Compile Include="MethodBuilder\MethodBuilderDeclaringType.cs" />
     <Compile Include="MethodBuilder\MethodBuilderDefineGenericParameters.cs" />
     <Compile Include="MethodBuilder\MethodBuilderDefineParameter.cs" />
     <Compile Include="MethodBuilder\MethodBuilderEquals.cs" />
@@ -61,7 +54,6 @@
     <Compile Include="MethodBuilder\MethodBuilderInitLocals.cs" />
     <Compile Include="MethodBuilder\MethodBuilderIsGenericMethod.cs" />
     <Compile Include="MethodBuilder\MethodBuilderMakeGenericMethod.cs" />
-    <Compile Include="MethodBuilder\MethodBuilderName.cs" />
     <Compile Include="MethodBuilder\MethodBuilderReturnParameter.cs" />
     <Compile Include="MethodBuilder\MethodBuilderSetCustomAttribute.cs" />
     <Compile Include="MethodBuilder\MethodBuilderSetImplementationFlags.cs" />
@@ -94,6 +86,7 @@
     <Compile Include="TypeBuilder\TypeBuilderDeclaringMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineDefaultConstructor.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineField.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineGenericParameters.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineEvent.cs" />

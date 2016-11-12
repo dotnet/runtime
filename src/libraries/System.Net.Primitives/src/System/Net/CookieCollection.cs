@@ -86,6 +86,14 @@ namespace System.Net
             }
         }
 
+        public bool IsReadOnly
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public int Count
         {
             get
@@ -94,7 +102,7 @@ namespace System.Net
             }
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get
             {
@@ -102,7 +110,7 @@ namespace System.Net
             }
         }
 
-        object ICollection.SyncRoot
+        public object SyncRoot
         {
             get
             {
@@ -110,9 +118,14 @@ namespace System.Net
             }
         }
 
-        void ICollection.CopyTo(Array array, int index)
+        public void CopyTo(Array array, int index)
         {
             ((ICollection)_list).CopyTo(array, index);
+        }
+
+        public void CopyTo(Cookie[] array, int index)
+        {
+            _list.CopyTo(array, index);
         }
 
         internal DateTime TimeStamp(Stamp how)
@@ -213,9 +226,9 @@ namespace System.Net
 #if DEBUG
         internal void Dump()
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Print("CookieCollection:");
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 foreach (Cookie cookie in this)
                 {
                     cookie.Dump();

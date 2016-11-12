@@ -9,15 +9,15 @@ namespace System.Net.Mail.Tests
     public class MailAddressDisplayNameTest
     {
         private const string Address = "test@example.com";
-        private const string DisplayNameWithUnicode = "DisplayNameWithÉÀĆĀĉąäUnicode";
+        private const string DisplayNameWithUnicode = "DisplayNameWith\u00C9\u00C0\u0106\u0100\u0109\u0105\u00E4Unicode";
         private const string DisplayNameWithNoUnicode = "testDisplayName";
 
-        [Fact]        
+        [Fact]
         public void MailAddress_WithUnicodeDisplayAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
         {
             MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithUnicode);
             Assert.Equal(_mailAddress.DisplayName, DisplayNameWithUnicode);
-            
+
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
         }
 
@@ -33,9 +33,9 @@ namespace System.Net.Mail.Tests
         {
             MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithNoUnicode);
             Assert.Equal(_mailAddress.DisplayName, DisplayNameWithNoUnicode);
-            
+
             Assert.Equal(Address, _mailAddress.Address);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithNoUnicode, Address), _mailAddress.ToString());            
+            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithNoUnicode, Address), _mailAddress.ToString());
         }
 
         [Fact]
@@ -52,7 +52,7 @@ namespace System.Net.Mail.Tests
         public void MailAddress_WithUnicodeDisplayAndMailAddress_ConstructorShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
         {
             MailAddress _mailAddress = new MailAddress(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address));
-            Assert.Equal(DisplayNameWithUnicode, _mailAddress.DisplayName );
+            Assert.Equal(DisplayNameWithUnicode, _mailAddress.DisplayName);
 
             Assert.Equal(Address, _mailAddress.Address);
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());

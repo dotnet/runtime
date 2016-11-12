@@ -92,6 +92,79 @@ namespace System.Net.Mail.Tests
             Assert.Throws<ArgumentException>(() => Smtp.Host = "");
         }
 
+        [Fact]
+        public void ServicePoint_GetsCachedInstanceSpecificToHostPort()
+        {
+            using (var smtp1 = new SmtpClient("localhost1", 25))
+            using (var smtp2 = new SmtpClient("localhost1", 25))
+            using (var smtp3 = new SmtpClient("localhost2", 25))
+            using (var smtp4 = new SmtpClient("localhost2", 26))
+            {
+                ServicePoint s1 = smtp1.ServicePoint;
+                ServicePoint s2 = smtp2.ServicePoint;
+                ServicePoint s3 = smtp3.ServicePoint;
+                ServicePoint s4 = smtp4.ServicePoint;
+
+                Assert.NotNull(s1);
+                Assert.NotNull(s2);
+                Assert.NotNull(s3);
+                Assert.NotNull(s4);
+
+                Assert.Same(s1, s2);
+                Assert.NotSame(s2, s3);
+                Assert.NotSame(s2, s4);
+                Assert.NotSame(s3, s4);
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public void ServicePoint_NetCoreApp_AddressIsAccessible()
+        {
+            using (var smtp = new SmtpClient("localhost", 25))
+            {
+                Assert.Equal("mailto", smtp.ServicePoint.Address.Scheme);
+                Assert.Equal("localhost", smtp.ServicePoint.Address.Host);
+                Assert.Equal(25, smtp.ServicePoint.Address.Port);
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        [Fact]
+        public void ServicePoint_NetFramework_AddressIsInaccessible()
+        {
+            using (var smtp = new SmtpClient("localhost", 25))
+            {
+                ServicePoint sp = smtp.ServicePoint;
+                Assert.Throws<NotSupportedException>(() => sp.Address);
+            }
+        }
+
+        [Fact]
+        public void ServicePoint_ReflectsHostAndPortChange()
+        {
+            using (var smtp = new SmtpClient("localhost1", 25))
+            {
+                ServicePoint s1 = smtp.ServicePoint;
+
+                smtp.Host = "localhost2";
+                ServicePoint s2 = smtp.ServicePoint;
+                smtp.Host = "localhost2";
+                ServicePoint s3 = smtp.ServicePoint;
+
+                Assert.NotSame(s1, s2);
+                Assert.Same(s2, s3);
+
+                smtp.Port = 26;
+                ServicePoint s4 = smtp.ServicePoint;
+                smtp.Port = 26;
+                ServicePoint s5 = smtp.ServicePoint;
+
+                Assert.NotSame(s3, s4);
+                Assert.Same(s4, s5);
+            }
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData(null)]
@@ -219,7 +292,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue(12740, TestPlatforms.AnyUnix)]
         public void TestMailDeliveryAsync()
         {
             SmtpServer server = new SmtpServer();

@@ -18,6 +18,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.10':'Linux',
                   'Debian8.4':'Linux',
                   'Fedora23':'Linux',
+                  'Fedora24':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
@@ -32,6 +33,7 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu16.04' : 'ubuntu.16.04-x64',
                              'Ubuntu16.10' : 'ubuntu.16.10-x64',
                              'Fedora23' : 'fedora.23-x64',
+                             'Fedora24' : 'fedora.24-x64',
                              'Debian8.4' : 'debian.8-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'opensuse.13.2-x64',
@@ -51,6 +53,7 @@ def osShortName = ['Windows 10': 'win10',
                    'OpenSUSE13.2' : 'opensuse13.2',
                    'OpenSUSE42.1' : 'opensuse42.1',
                    'Fedora23' : 'fedora23',
+                   'Fedora24' : 'fedora24',
                    'RHEL7.2' : 'rhel7.2']
 
 // **************************
@@ -213,7 +216,7 @@ def osShortName = ['Windows 10': 'win10',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
@@ -348,7 +351,7 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'RHEL7.2', 'OSX'].each { osName ->
+        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX'].each { osName ->
             def osGroup = osGroupMap[osName]
             def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
@@ -419,44 +422,47 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { osName ->
-            def osGroup = osGroupMap[osName]
-            def newJobName = "${osName.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
-            def arch = "arm-softfp"
+            ['HardFP', 'SoftFP'].each { abi ->
+                def osGroup = osGroupMap[osName]
+                def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
-        // Setup variables to hold emulator folder path and the rootfs mount path
-        def armemul_path = '/opt/linux-arm-emulator'
-        def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
+                // Setup variables to hold emulator folder path and the rootfs mount path
+                def armemul_path = '/opt/linux-arm-emulator'
+                def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
 
-            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                steps {
-                    // Call the arm32_ci_script.sh script to perform the cross build of native corefx
-                    shell("./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --softfp --verbose")
+                def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                    steps {
+                        // Call the arm32_ci_script.sh script to perform the cross build of native corefx
+                        def script = "./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --verbose"
+                        if (abi == "SoftFP") {
+                            script += " --softfp"
+                        }
+                        shell(script)
 
-                    // Archive the native and managed binaries
-                    shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                        // Archive the native and managed binaries
+                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                    }
                 }
-            }
 
-            // The cross build jobs run on Ubuntu. The arm-cross-latest version
-            // contains the packages needed for cross building corefx
-            Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
+                // The cross build jobs run on Ubuntu. The arm-cross-latest version
+                // contains the packages needed for cross building corefx
+                Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
 
-            // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                // Set up standard options.
+                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-            // Add archival for the built binaries
-            def archiveContents = "bin/build.tar.gz"
-            Utilities.addArchival(newJob, archiveContents)
+                // Add archival for the built binaries
+                def archiveContents = "bin/build.tar.gz"
+                Utilities.addArchival(newJob, archiveContents)
 
-            // Set up triggers
-            if (isPR) {
-                if (osName == 'LinuxARMEmulator') {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
+                // Set up triggers
+                if (isPR) {
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+linuxarmemulator\\W+${abi}\\W+${configurationGroup}.*")
                 }
-            }
-            else {
-                // Set a push trigger
-                Utilities.addGithubPushTrigger(newJob)
+                else {
+                    // Set a push trigger
+                    Utilities.addGithubPushTrigger(newJob)
+                }
             }
         }
     }

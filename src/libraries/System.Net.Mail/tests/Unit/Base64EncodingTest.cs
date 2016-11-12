@@ -63,7 +63,7 @@ namespace System.Net.Mime.Tests
 
             Assert.Equal(LongString, Encoding.UTF8.GetString(stringToDecode, 0, result));
         }
-        
+
         private const string LongString =
 @"01234567
 11234567

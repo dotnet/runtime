@@ -24,13 +24,23 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="Internal\Cryptography\AesImplementation.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
+    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.cs" />
+    <Compile Include="Internal\Cryptography\RijndaelImplementation.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
+    <Compile Include="System\Security\Cryptography\AesManaged.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
+    <Compile Include="System\Security\Cryptography\DES.cs" />
     <Compile Include="System\Security\Cryptography\DSA.cs" />
     <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureDeformatter.cs" />
@@ -44,9 +54,13 @@
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA256.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA384.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA512.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACMD5.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA1.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />
@@ -54,6 +68,9 @@
     <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\RC2.cs" />
+    <Compile Include="System\Security\Cryptography\Rijndael.cs" />
+    <Compile Include="System\Security\Cryptography\RijndaelManaged.cs" />
     <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RSA.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
@@ -68,10 +85,6 @@
     <Compile Include="System\Security\Cryptography\RSASignaturePadding.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
     <Compile Include="System\Security\Cryptography\TripleDES.cs" />
-    <Compile Include="Internal\Cryptography\AesImplementation.cs" />
-    <Compile Include="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
-    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
     </Compile>
@@ -93,14 +106,16 @@
     <Compile Include="System\Security\Cryptography\DSACng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipherBCrypt.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipherBCrypt.cs</Link>
     </Compile>
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
-    <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -151,6 +166,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
       <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\DESBCryptModes.cs">
+      <Link>Common\Interop\Windows\BCrypt\DESBCryptModes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\RC2BCryptModes.cs">
+      <Link>Common\Interop\Windows\BCrypt\RC2BCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
       <Link>Common\Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
@@ -275,10 +296,12 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
@@ -304,9 +327,11 @@
     </Compile>
     <Compile Include="Internal\Cryptography\AesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\AppleCCCryptor.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.OSX.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.OSX.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />

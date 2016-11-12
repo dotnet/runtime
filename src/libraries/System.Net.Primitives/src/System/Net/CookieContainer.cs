@@ -117,7 +117,7 @@ namespace System.Net
             // Otherwise it will remain string.Empty.
         }
 
-        internal CookieContainer(int capacity) : this()
+        public CookieContainer(int capacity) : this()
         {
             if (capacity <= 0)
             {
@@ -126,7 +126,7 @@ namespace System.Net
             _maxCookies = capacity;
         }
 
-        internal CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
+        public CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
         {
             if (perDomainCapacity != Int32.MaxValue && (perDomainCapacity <= 0 || perDomainCapacity > capacity))
             {
@@ -214,7 +214,7 @@ namespace System.Net
         }
 
         // This method will construct a faked URI: the Domain property is required for param.
-        internal void Add(Cookie cookie)
+        public void Add(Cookie cookie)
         {
             if (cookie == null)
             {
@@ -520,7 +520,7 @@ namespace System.Net
             }
         }
 
-        internal void Add(CookieCollection cookies)
+        public void Add(CookieCollection cookies)
         {
             if (cookies == null)
             {
@@ -637,9 +637,9 @@ namespace System.Net
 
         internal CookieCollection CookieCutter(Uri uri, string headerName, string setCookieHeader, bool isThrow)
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() uri:" + uri + " headerName:" + headerName + " setCookieHeader:" + setCookieHeader + " isThrow:" + isThrow);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
             }
 
             CookieCollection cookies = new CookieCollection();
@@ -666,10 +666,7 @@ namespace System.Net
                 do
                 {
                     Cookie cookie = parser.Get();
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() CookieParser returned cookie:" + LoggingHash.ObjectToString(cookie));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
 
                     if (cookie == null)
                     {

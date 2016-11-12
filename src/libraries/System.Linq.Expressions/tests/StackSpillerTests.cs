@@ -800,6 +800,165 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
+        [Fact]
+        public static void Spill_Optimizations_NoSpillBeyondSpillSite1()
+        {
+            var f = Expression.Parameter(typeof(Func<int, int, int, int>));
+            var x = Expression.Parameter(typeof(int));
+            var y = Expression.Parameter(typeof(int));
+            var z = Expression.Parameter(typeof(int));
+
+            var e =
+                Expression.Lambda<Func<Func<int, int, int, int>, int, int, int, int>>(
+                    Expression.Invoke(
+                        f,
+                        Expression.TryFinally(
+                            x,
+                            Expression.Empty()
+                        ),
+                        y,  // NB: These occur after the spill site and don't have
+                        z   //     to be stored in temporaries.
+                    ),
+                    f,
+                    x,
+                    y,
+                    z
+                );
+
+            var d = e.Compile();
+            Assert.Equal(7, d((a, b, c) => a + b * c, 1, 2, 3));
+
+            e.VerifyIL(@"
+                .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>,int32,int32,int32)
+                {
+                  .maxstack 5
+                  .locals init (
+                    [0] class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>,
+                    [1] int32,
+                    [2] int32
+                  )
+
+                  // Save invocation target (`f`) into V_0
+                  IL_0000: ldarg.1    
+                  IL_0001: stloc.0    
+
+                  // Save arg0 (`try { x } finally {}`) into V_1
+                  .try
+                  {
+                    IL_0002: ldarg.2    
+                    IL_0003: stloc.2    
+                    IL_0004: leave      IL_000a
+                  }
+                  finally
+                  {
+                    IL_0009: endfinally 
+                  }
+                  IL_000a: ldloc.2    
+                  IL_000b: stloc.1    
+
+                  // Load invocation target from V_0
+                  IL_000c: ldloc.0    
+
+                  // Load arg0 from V_1
+                  IL_000d: ldloc.1    
+
+                  // <OPTIMIZATION> Load arguments beyond spill site </OPTIMIZATION>
+                  IL_000e: ldarg.3    
+                  IL_000f: ldarg.s    V_4
+
+                  // Evaluate `f(try { x } finally {}, y, z)`
+                  IL_0011: callvirt   instance int32 class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>::Invoke(int32,int32,int32)
+
+                  IL_0016: ret        
+                }");
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_NoSpillBeyondSpillSite2()
+        {
+            var f = Expression.Parameter(typeof(Func<int, int, int, int>));
+            var x1 = Expression.Parameter(typeof(int));
+            var x2 = Expression.Parameter(typeof(int));
+            var x3 = Expression.Parameter(typeof(int));
+            var x4 = Expression.Parameter(typeof(int));
+
+            var e =
+                Expression.Lambda<Func<int, int, int, int, int>>(
+                    Expression.Add(
+                        Expression.Add(
+                            Expression.Add(
+                                x1, // NB: Occurs before spill site; needs to be saved.
+                                Expression.TryFinally(
+                                    x2,
+                                    Expression.Empty()
+                                )
+                            ),
+                            x3  // NB: Occurs beyond spill site; does not need to be saved.
+                        ),
+                        x4 // NB: Occurs beyond spill site; does not need to be saved.
+                    ),
+                    x1,
+                    x2,
+                    x3,
+                    x4
+                );
+
+            var d = e.Compile();
+            Assert.Equal(10, d(1, 2, 3, 4));
+
+            e.VerifyIL(@"
+                .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32,int32,int32,int32)
+                {
+                  .maxstack 3
+                  .locals init (
+                    [0] int32,
+                    [1] int32,
+                    [2] int32,
+                    [3] int32,
+                    [4] int32
+                  )
+
+                  // Save `x1` into V_0
+                  IL_0000: ldarg.1    
+                  IL_0001: stloc.0    
+
+                  // Save `try { x2 } finally {}` into V_1
+                  .try
+                  {
+                    IL_0002: ldarg.2    
+                    IL_0003: stloc.s    V_4
+                    IL_0005: leave      IL_000b
+                  }
+                  finally
+                  {
+                    IL_000a: endfinally 
+                  }
+                  IL_000b: ldloc.s    V_4
+                  IL_000d: stloc.1    
+
+                  // Eval `x1 + x2` and store into V_2
+                  IL_000e: ldloc.0    
+                  IL_000f: ldloc.1    
+                  IL_0010: add        
+                  IL_0011: stloc.2    
+
+                  // Eval `(x1 + x2) + x3` and save into V_3
+                  // <OPTIMIZATION> `x3` does not get stored in a temporary </OPTIMIZATION>
+                  IL_0012: ldloc.2    
+                  IL_0013: ldarg.3    
+                  IL_0014: add        
+                  IL_0015: stloc.3    
+
+                  // Eval `((x1 + x2) + x3) + x4`
+                  // <OPTIMIZATION> `x4` does not get stored in a temporary </OPTIMIZATION>
+                  IL_0016: ldloc.3    
+                  IL_0017: ldarg.s    V_4
+                  IL_0019: add        
+
+                  IL_001a: ret        
+                }");
+        }
+
         private static void NotSupported(Expression expression)
         {
             Assert.Throws<NotSupportedException>(() =>

@@ -41,8 +41,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void AddStringSortKey(XmlCollation collation, string value)
         {
-            //BinCompat TODO
-            throw new NotImplementedException();
+            AppendSortKey(collation.CreateSortKey(value));
         }
 
         public void AddDecimalSortKey(XmlCollation collation, decimal value)

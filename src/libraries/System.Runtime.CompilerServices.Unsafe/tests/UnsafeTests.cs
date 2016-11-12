@@ -387,9 +387,37 @@ namespace System.Runtime.CompilerServices
             Assert.IsType(typeof(Object), Unsafe.As<string>(o));
         }
 
-        // Active Issue: https://github.com/dotnet/coreclr/issues/6505
-        // These tests require C# compiler with support for ref returns and locals
-#if false
+        [Fact]
+        public static void ByteOffsetArray()
+        {
+            var a = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
+
+            Assert.Equal(new IntPtr(0), Unsafe.ByteOffset(ref a[0], ref a[0]));
+            Assert.Equal(new IntPtr(1), Unsafe.ByteOffset(ref a[0], ref a[1]));
+            Assert.Equal(new IntPtr(-1), Unsafe.ByteOffset(ref a[1], ref a[0]));
+            Assert.Equal(new IntPtr(2), Unsafe.ByteOffset(ref a[0], ref a[2]));
+            Assert.Equal(new IntPtr(-2), Unsafe.ByteOffset(ref a[2], ref a[0]));
+            Assert.Equal(new IntPtr(3), Unsafe.ByteOffset(ref a[0], ref a[3]));
+            Assert.Equal(new IntPtr(4), Unsafe.ByteOffset(ref a[0], ref a[4]));
+            Assert.Equal(new IntPtr(5), Unsafe.ByteOffset(ref a[0], ref a[5]));
+            Assert.Equal(new IntPtr(6), Unsafe.ByteOffset(ref a[0], ref a[6]));
+            Assert.Equal(new IntPtr(7), Unsafe.ByteOffset(ref a[0], ref a[7]));
+        }
+        
+        [Fact]
+        public static void ByteOffsetStackByte4()
+        {
+            var byte4 = new Byte4();
+
+            Assert.Equal(new IntPtr(0), Unsafe.ByteOffset(ref byte4.B0, ref byte4.B0));
+            Assert.Equal(new IntPtr(1), Unsafe.ByteOffset(ref byte4.B0, ref byte4.B1));
+            Assert.Equal(new IntPtr(-1), Unsafe.ByteOffset(ref byte4.B1, ref byte4.B0));
+            Assert.Equal(new IntPtr(2), Unsafe.ByteOffset(ref byte4.B0, ref byte4.B2));
+            Assert.Equal(new IntPtr(-2), Unsafe.ByteOffset(ref byte4.B2, ref byte4.B0));
+            Assert.Equal(new IntPtr(3), Unsafe.ByteOffset(ref byte4.B0, ref byte4.B3));
+            Assert.Equal(new IntPtr(-3), Unsafe.ByteOffset(ref byte4.B3, ref byte4.B0));
+        }
+
         [Fact]
         public unsafe static void AsRef()
         {
@@ -442,7 +470,7 @@ namespace System.Runtime.CompilerServices
             ref int r2 = ref Unsafe.Add(ref r1, (IntPtr)2);
             Assert.Equal(0x456, r2);
 
-            ref int r3 = ref Unsafe.Add(ref r2, (IntPtr)-3);
+            ref int r3 = ref Unsafe.Add(ref r2, (IntPtr)(-3));
             Assert.Equal(0x123, r3);
         }
 
@@ -451,13 +479,13 @@ namespace System.Runtime.CompilerServices
         {
             byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
 
-            ref int r1 = ref Unsafe.AddByteOffset(ref a[0], (IntPtr)1);
+            ref byte r1 = ref Unsafe.AddByteOffset(ref a[0], (IntPtr)1);
             Assert.Equal(0x34, r1);
 
-            ref int r2 = ref Unsafe.AddByteOffset(ref r1, (IntPtr)2);
+            ref byte r2 = ref Unsafe.AddByteOffset(ref r1, (IntPtr)2);
             Assert.Equal(0x78, r2);
 
-            ref int r3 = ref Unsafe.AddByteOffset(ref r2, (IntPtr) - 3);
+            ref byte r3 = ref Unsafe.AddByteOffset(ref r2, (IntPtr)(-3));
             Assert.Equal(0x12, r3);
         }
 
@@ -481,10 +509,10 @@ namespace System.Runtime.CompilerServices
         {
             string[] a = new string[] { "abc", "def", "ghi", "jkl" };
 
-            ref string r1 = ref Unsafe.Subtract(ref a[0], (IntPtr)-2);
+            ref string r1 = ref Unsafe.Subtract(ref a[0], (IntPtr)(-2));
             Assert.Equal("ghi", r1);
 
-            ref string r2 = ref Unsafe.Subtract(ref r1, (IntPtr)-1);
+            ref string r2 = ref Unsafe.Subtract(ref r1, (IntPtr)(-1));
             Assert.Equal("jkl", r2);
 
             ref string r3 = ref Unsafe.Subtract(ref r2, (IntPtr)3);
@@ -496,13 +524,13 @@ namespace System.Runtime.CompilerServices
         {
             byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
 
-            ref int r1 = ref Unsafe.SubtractByteOffset(ref a[0], (IntPtr)-1);
+            ref byte r1 = ref Unsafe.SubtractByteOffset(ref a[0], (IntPtr)(-1));
             Assert.Equal(0x34, r1);
 
-            ref int r2 = ref Unsafe.SubtractByteOffset(ref r1, (IntPtr)-2);
+            ref byte r2 = ref Unsafe.SubtractByteOffset(ref r1, (IntPtr)(-2));
             Assert.Equal(0x78, r2);
 
-            ref int r3 = ref Unsafe.SubtractByteOffset(ref r2, (IntPtr)3);
+            ref byte r3 = ref Unsafe.SubtractByteOffset(ref r2, (IntPtr)3);
             Assert.Equal(0x12, r3);
         }
 
@@ -514,7 +542,6 @@ namespace System.Runtime.CompilerServices
             Assert.True(Unsafe.AreSame(ref a[0], ref a[0]));
             Assert.False(Unsafe.AreSame(ref a[0], ref a[1]));
         }
-#endif
     }
 
     [StructLayout(LayoutKind.Explicit)]

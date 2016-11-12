@@ -16,7 +16,7 @@ find_package(OpenSSL REQUIRED)
 include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    openssl.c
+    openssl.cpp
     pal_asn1.cpp
     pal_asn1_print.cpp
     pal_bignum.cpp

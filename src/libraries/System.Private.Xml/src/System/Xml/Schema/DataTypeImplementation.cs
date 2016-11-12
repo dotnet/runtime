@@ -3823,9 +3823,9 @@ namespace System.Xml.Schema
             {
                 return XmlQualifiedName.Parse(s.Trim(), nsmgr, out prefix);
             }
-            catch (XmlSchemaException e)
+            catch (XmlSchemaException)
             {
-                throw e;
+                throw;
             }
             catch (Exception e)
             {
@@ -3866,9 +3866,9 @@ namespace System.Xml.Schema
             {
                 return XmlConvert.ToChar(s);
             }
-            catch (XmlSchemaException e)
+            catch (XmlSchemaException)
             {
-                throw e;
+                throw;
             }
             catch (Exception e)
             {
@@ -3910,9 +3910,9 @@ namespace System.Xml.Schema
 
                 return value;
             }
-            catch (XmlSchemaException e)
+            catch (XmlSchemaException)
             {
-                throw e;
+                throw;
             }
             catch (Exception e)
             {
@@ -3967,9 +3967,9 @@ namespace System.Xml.Schema
             {
                 return XmlConvert.ToGuid(s);
             }
-            catch (XmlSchemaException e)
+            catch (XmlSchemaException)
             {
-                throw e;
+                throw;
             }
             catch (Exception e)
             {

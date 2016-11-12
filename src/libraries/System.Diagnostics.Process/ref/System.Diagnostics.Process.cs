@@ -25,6 +25,28 @@ namespace System.Diagnostics
     public delegate void DataReceivedEventHandler(object sender, System.Diagnostics.DataReceivedEventArgs e);
     public partial class Process : System.ComponentModel.Component
     {
+        public IntPtr Handle { get { throw null; } }
+        public int HandleCount { get { throw null; } }
+        public IntPtr MainWindowHandle { get { throw null; } }
+        public string MainWindowTitle { get { throw null; } }
+        public int NonpagedSystemMemorySize { get { throw null; } }
+        public int PagedMemorySize { get { throw null; } }
+        public int PagedSystemMemorySize { get { throw null; } }
+        public int PeakPagedMemorySize { get { throw null; } }
+        public int PeakVirtualMemorySize { get { throw null; } }
+        public int PeakWorkingSet { get { throw null; } }
+        public int PrivateMemorySize { get { throw null; } }
+        public bool Responding { get { throw null; } }
+        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { throw null; } set { } }
+        public int VirtualMemorySize { get { throw null; } }
+        public int WorkingSet { get { throw null; } }
+        public void Close() { }
+        public bool CloseMainWindow() { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public bool WaitForInputIdle() { throw null; }
+        public bool WaitForInputIdle(int milliseconds) { throw null; }
+        public override string ToString() { throw null; }
+
         public Process() { }
         public int BasePriority { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(false)]
@@ -137,6 +159,14 @@ namespace System.Diagnostics
         public string UserName { get { throw null; } set { } }
         public bool UseShellExecute { get { throw null; } set { } }
         public string WorkingDirectory { get { throw null; } set { } }
+        public bool ErrorDialog { get { throw null; } set { } }
+        public System.IntPtr ErrorDialogParentHandle { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(null)]
+        public string Verb { get { throw null; } set { } }
+        public string[] Verbs { get { throw null; } }
+        [System.ComponentModel.DefaultValueAttribute(null)]
+        public System.Diagnostics.ProcessWindowStyle WindowStyle { get { throw null ; } set { } }
+        public System.Collections.Specialized.StringDictionary EnvironmentVariables { get { throw null; } }
     }
     public partial class ProcessThread : System.ComponentModel.Component
     {

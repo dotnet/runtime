@@ -194,6 +194,11 @@ namespace System.Net.Sockets
             }
         }
 
+        public void AllowNatTraversal(bool allowed)
+        {
+            _clientSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
+        }
+
         private bool _cleanedUp = false;
         private void FreeResources()
         {
@@ -228,11 +233,7 @@ namespace System.Net.Sockets
         {
             if (disposing)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("UdpClient::Dispose()");
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
                 FreeResources();
                 GC.SuppressFinalize(this);
             }

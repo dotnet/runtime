@@ -289,10 +289,12 @@ namespace System.Net.NetworkInformation
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(System.Net.NetworkInformation.NetworkChange nc) { }
     }
-    public partial class NetworkInformationException : System.Exception
+    public partial class NetworkInformationException : System.ComponentModel.Win32Exception
     {
         public NetworkInformationException() { }
         public NetworkInformationException(int errorCode) { }
+        protected NetworkInformationException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override int ErrorCode { get { throw null; } }
     }
     public abstract partial class NetworkInterface
     {

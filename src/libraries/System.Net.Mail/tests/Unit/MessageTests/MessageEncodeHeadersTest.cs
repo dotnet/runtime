@@ -12,7 +12,7 @@ namespace System.Net.Mail.Tests
     {
         private HeaderCollection _headers = new HeaderCollection();
         private Message _message = new Message();
-        private const string CustomUnicodeHeaderValue = "STARTêëïfÚêëïïÚaasubjectêëïfÚEND";
+        private const string CustomUnicodeHeaderValue = "START\u00EA\u00EB\u00EFf\u00DA\u00EA\u00EB\u00EF\u00EF\u00DAaasubject\u00EA\u00EB\u00EFf\u00DAEND";
 
         [Fact]
         public void EncodeHeaders_WithCustomUnicodeHeaders_ShouldEncodeHeaders()
@@ -43,7 +43,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void EncodeHeaders_WithWellKnownHeader_ShouldNotEncodeWellKnownHeaders()
         {
-            string hvalue = "\"jeffARTêëïfÚê\" <jeff@nclmailtest.com>";
+            string hvalue = "\"jeffART\u00EA\u00EB\u00EFf\u00DA\u00EA\" <jeff@nclmailtest.com>";
             _headers.InternalAdd("Reply-To", hvalue);
             _message.EncodeHeaders(_headers, false);
 

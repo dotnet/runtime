@@ -58,28 +58,17 @@ namespace System.Linq.Expressions
             _out = file;
         }
 
-        private int Base
-        {
-            get
-            {
-                return _stack.Count > 0 ? _stack.Peek() : 0;
-            }
-        }
+        private int Base => _stack.Count > 0 ? _stack.Peek() : 0;
 
-        private int Delta
-        {
-            get { return _delta; }
-        }
+        private int Delta => _delta;
 
-        private int Depth
-        {
-            get { return Base + Delta; }
-        }
+        private int Depth => Base + Delta;
 
         private void Indent()
         {
             _delta += Tab;
         }
+
         private void Dedent()
         {
             _delta -= Tab;
@@ -113,19 +102,19 @@ namespace System.Linq.Expressions
 
         private int GetLambdaId(LambdaExpression le)
         {
-            Debug.Assert(String.IsNullOrEmpty(le.Name));
+            Debug.Assert(string.IsNullOrEmpty(le.Name));
             return GetId(le, ref _lambdaIds);
         }
 
         private int GetParamId(ParameterExpression p)
         {
-            Debug.Assert(String.IsNullOrEmpty(p.Name));
+            Debug.Assert(string.IsNullOrEmpty(p.Name));
             return GetId(p, ref _paramIds);
         }
 
         private int GetLabelTargetId(LabelTarget target)
         {
-            Debug.Assert(String.IsNullOrEmpty(target.Name));
+            Debug.Assert(string.IsNullOrEmpty(target.Name));
             return GetId(target, ref _labelIds);
         }
 
@@ -193,7 +182,7 @@ namespace System.Linq.Expressions
                     break;
                 case Flow.NewLine:
                     WriteLine();
-                    Write(new String(' ', Depth));
+                    Write(new string(' ', Depth));
                     break;
             }
             Write(s);
@@ -205,6 +194,7 @@ namespace System.Linq.Expressions
             _out.WriteLine();
             _column = 0;
         }
+
         private void Write(string s)
         {
             _out.Write(s);
@@ -242,17 +232,17 @@ namespace System.Linq.Expressions
 
         #region The AST Output
 
-        private void VisitExpressions<T>(char open, IList<T> expressions) where T : Expression
+        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions) where T : Expression
         {
             VisitExpressions<T>(open, ',', expressions);
         }
 
-        private void VisitExpressions<T>(char open, char separator, IList<T> expressions) where T : Expression
+        private void VisitExpressions<T>(char open, char separator, IReadOnlyList<T> expressions) where T : Expression
         {
             VisitExpressions(open, separator, expressions, e => Visit(e));
         }
 
-        private void VisitDeclarations(IList<ParameterExpression> expressions)
+        private void VisitDeclarations(IReadOnlyList<ParameterExpression> expressions)
         {
             VisitExpressions('(', ',', expressions, variable =>
             {
@@ -266,7 +256,7 @@ namespace System.Linq.Expressions
             });
         }
 
-        private void VisitExpressions<T>(char open, char separator, IList<T> expressions, Action<T> visit)
+        private void VisitExpressions<T>(char open, char separator, IReadOnlyList<T> expressions, Action<T> visit)
         {
             Out(open.ToString());
 
@@ -401,7 +391,7 @@ namespace System.Linq.Expressions
         {
             // Have '$' for the DebugView of ParameterExpressions
             Out("$");
-            if (String.IsNullOrEmpty(node.Name))
+            if (string.IsNullOrEmpty(node.Name))
             {
                 // If no name if provided, generate a name as $var1, $var2.
                 // No guarantee for not having name conflicts with user provided variable names.
@@ -419,7 +409,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitLambda<T>(Expression<T> node)
         {
             Out(
-                String.Format(CultureInfo.CurrentCulture,
+                string.Format(CultureInfo.CurrentCulture,
                     ".Lambda {0}<{1}>",
                     GetLambdaName(node),
                     node.Type.ToString()
@@ -488,14 +478,14 @@ namespace System.Linq.Expressions
             }
             else if ((value is string) && node.Type == typeof(string))
             {
-                Out(String.Format(
+                Out(string.Format(
                     CultureInfo.CurrentCulture,
                     "\"{0}\"",
                     value));
             }
             else if ((value is char) && node.Type == typeof(char))
             {
-                Out(String.Format(
+                Out(string.Format(
                     CultureInfo.CurrentCulture,
                     "'{0}'",
                     value));
@@ -515,7 +505,7 @@ namespace System.Linq.Expressions
                 }
                 else
                 {
-                    Out(String.Format(
+                    Out(string.Format(
                         CultureInfo.CurrentCulture,
                         ".Constant<{0}>({1})",
                         node.Type.ToString(),
@@ -527,27 +517,27 @@ namespace System.Linq.Expressions
 
         private static string GetConstantValueSuffix(Type type)
         {
-            if (type == typeof(UInt32))
+            if (type == typeof(uint))
             {
                 return "U";
             }
-            if (type == typeof(Int64))
+            if (type == typeof(long))
             {
                 return "L";
             }
-            if (type == typeof(UInt64))
+            if (type == typeof(ulong))
             {
                 return "UL";
             }
-            if (type == typeof(Double))
+            if (type == typeof(double))
             {
                 return "D";
             }
-            if (type == typeof(Single))
+            if (type == typeof(float))
             {
                 return "F";
             }
-            if (type == typeof(Decimal))
+            if (type == typeof(decimal))
             {
                 return "M";
             }
@@ -1014,7 +1004,7 @@ namespace System.Linq.Expressions
             // last expression's type in the block.
             if (node.Type != node.GetExpression(node.ExpressionCount - 1).Type)
             {
-                Out(String.Format(CultureInfo.CurrentCulture, "<{0}>", node.Type.ToString()));
+                Out(string.Format(CultureInfo.CurrentCulture, "<{0}>", node.Type.ToString()));
             }
 
             VisitDeclarations(node.Variables);
@@ -1074,7 +1064,7 @@ namespace System.Linq.Expressions
 
         protected override SwitchCase VisitSwitchCase(SwitchCase node)
         {
-            foreach (var test in node.TestValues)
+            foreach (Expression test in node.TestValues)
             {
                 Out(".Case (");
                 Visit(test);
@@ -1169,7 +1159,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitExtension(Expression node)
         {
-            Out(String.Format(CultureInfo.CurrentCulture, ".Extension<{0}>", node.GetType().ToString()));
+            Out(string.Format(CultureInfo.CurrentCulture, ".Extension<{0}>", node.GetType().ToString()));
 
             if (node.CanReduce)
             {
@@ -1185,7 +1175,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            Out(String.Format(
+            Out(string.Format(
                 CultureInfo.CurrentCulture,
                 ".DebugInfo({0}: {1}, {2} - {3}, {4})",
                 node.Document.FileName,
@@ -1200,7 +1190,7 @@ namespace System.Linq.Expressions
 
         private void DumpLabel(LabelTarget target)
         {
-            Out(String.Format(CultureInfo.CurrentCulture, ".LabelTarget {0}:", GetLabelTargetName(target)));
+            Out(string.Format(CultureInfo.CurrentCulture, ".LabelTarget {0}:", GetLabelTargetName(target)));
         }
 
         private string GetLabelTargetName(LabelTarget target)
@@ -1219,7 +1209,7 @@ namespace System.Linq.Expressions
         private void WriteLambda(LambdaExpression lambda)
         {
             Out(
-                String.Format(
+                string.Format(
                     CultureInfo.CurrentCulture,
                     ".Lambda {0}<{1}>",
                     GetLambdaName(lambda),
@@ -1238,7 +1228,7 @@ namespace System.Linq.Expressions
 
         private string GetLambdaName(LambdaExpression lambda)
         {
-            if (String.IsNullOrEmpty(lambda.Name))
+            if (string.IsNullOrEmpty(lambda.Name))
             {
                 return "#Lambda" + GetLambdaId(lambda);
             }
@@ -1253,7 +1243,7 @@ namespace System.Linq.Expressions
         {
             foreach (char c in name)
             {
-                if (Char.IsWhiteSpace(c))
+                if (char.IsWhiteSpace(c))
                 {
                     return true;
                 }
@@ -1263,7 +1253,7 @@ namespace System.Linq.Expressions
 
         private static string QuoteName(string name)
         {
-            return String.Format(CultureInfo.CurrentCulture, "'{0}'", name);
+            return string.Format(CultureInfo.CurrentCulture, "'{0}'", name);
         }
 
         private static string GetDisplayName(string name)
@@ -1278,6 +1268,7 @@ namespace System.Linq.Expressions
                 return name;
             }
         }
+
         #endregion
     }
 }

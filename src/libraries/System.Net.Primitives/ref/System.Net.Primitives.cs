@@ -48,12 +48,15 @@ namespace System.Net
         public CookieCollection() { }
         public int Count { get { throw null; } }
         public System.Net.Cookie this[string name] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public System.Net.Cookie this[int index] { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public void Add(System.Net.Cookie cookie) { }
         public void Add(System.Net.CookieCollection cookies) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(Cookie[] array, int index) { }
+        public bool IsReadOnly { get { throw null; } }
     }
     public partial class CookieContainer
     {
@@ -70,6 +73,10 @@ namespace System.Net
         public string GetCookieHeader(System.Uri uri) { throw null; }
         public System.Net.CookieCollection GetCookies(System.Uri uri) { throw null; }
         public void SetCookies(System.Uri uri, string cookieHeader) { }
+        public CookieContainer(int capacity) { }
+        public CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) { }
+        public void Add(CookieCollection cookies) { }
+        public void Add(Cookie cookie) { }
     }
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
     {
@@ -259,6 +266,38 @@ namespace System.Net
         protected TransportContext() { }
         public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
     }
+
+    public static class HttpVersion
+    {
+#if netcoreapp11
+        public static readonly Version Unknown = new Version(0, 0);
+#endif
+        public static readonly Version Version10 = new Version(1, 0);
+        public static readonly Version Version11 = new Version(1, 1);
+#if netcoreapp11
+        public static readonly Version Version20 = new Version(2, 0);
+#endif
+    }
+}
+namespace System.Net.Cache
+{
+    public enum RequestCacheLevel
+    {
+        Default = 0,
+        BypassCache = 1,
+        CacheOnly = 2,
+        CacheIfAvailable = 3,
+        Revalidate = 4,
+        Reload = 5,
+        NoCacheNoStore = 6
+    }
+    public class RequestCachePolicy
+    {
+        public RequestCachePolicy() { }
+        public RequestCachePolicy(System.Net.Cache.RequestCacheLevel level) { }
+        public System.Net.Cache.RequestCacheLevel Level { get { throw null; } }
+        public override string ToString() { throw null; }
+    }
 }
 namespace System.Net.NetworkInformation
 {
@@ -379,10 +418,12 @@ namespace System.Net.Sockets
         VersionNotSupported = 10092,
         WouldBlock = 10035,
     }
-    public partial class SocketException : System.Exception
+    public partial class SocketException : System.ComponentModel.Win32Exception
     {
         public SocketException() { }
         public SocketException(int errorCode) { }
+        protected SocketException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override int ErrorCode { get { throw null; } }
         public override string Message { get { throw null; } }
         public System.Net.Sockets.SocketError SocketErrorCode { get { throw null; } }
     }
@@ -414,6 +455,11 @@ namespace System.Security.Authentication
         Md5 = 32771,
         None = 0,
         Sha1 = 32772,
+#if netcoreapp11
+        Sha256 = 32780,
+        Sha384 = 32781,
+        Sha512 = 32782
+#endif
     }
     [System.FlagsAttribute]
     public enum SslProtocols

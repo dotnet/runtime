@@ -10,10 +10,12 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherCreate")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherCreate2")]
         internal static extern SafeEvpCipherCtxHandle EvpCipherCreate(
             IntPtr cipher,
             byte[] key,
+            int keyLength,
+            int effectivekeyLength,
             byte[] iv,
             int enc);
 
@@ -62,10 +64,22 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes256Cbc")]
         internal static extern IntPtr EvpAes256Cbc();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDes3Ecb")]
-        internal static extern IntPtr EvpDes3Ecb();
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDesCbc")]
+        internal static extern IntPtr EvpDesCbc();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDesEcb")]
+        internal static extern IntPtr EvpDesEcb();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDes3Cbc")]
         internal static extern IntPtr EvpDes3Cbc();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDes3Ecb")]
+        internal static extern IntPtr EvpDes3Ecb();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpRC2Cbc")]
+        internal static extern IntPtr EvpRC2Cbc();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpRC2Ecb")]
+        internal static extern IntPtr EvpRC2Ecb();
     }
 }

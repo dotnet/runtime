@@ -3,14 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.AccessControl.cs" />
     <Compile Include="System.Security.AccessControl.Manual.cs" />
-    <!--Technically this contract only depends on surface area from System.Runtime.Handles,
-        but we pull in the old version of System.Runtime.InteropServices since it will be needed
-        by the implementation and is "more portable" today since it exists on all platforms. -->
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

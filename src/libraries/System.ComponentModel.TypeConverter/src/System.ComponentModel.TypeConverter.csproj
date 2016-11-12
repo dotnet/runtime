@@ -67,6 +67,7 @@
     <Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <Compile Include="System\ComponentModel\IListSource.cs" />
+    <Compile Include="System\ComponentModel\InterlockedBitVector32.cs" />
     <Compile Include="System\ComponentModel\InvalidAsynchronousStateException.cs" />
     <Compile Include="System\InvariantComparer.cs" />
     <Compile Include="System\ComponentModel\ITypedList.cs" />
@@ -150,7 +151,6 @@
     <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
     <Compile Include="System\ComponentModel\ISupportInitialize.cs" />
     <Compile Include="System\ComponentModel\ISupportInitializeNotification.cs" />
-    <Compile Include="System\ComponentModel\ISynchronizeInvoke.cs" />
     <Compile Include="System\ComponentModel\License.cs" />
     <Compile Include="System\ComponentModel\LicenseContext.cs" />
     <Compile Include="System\ComponentModel\LicenseUsageMode.cs" />
@@ -244,10 +244,6 @@
 
     <!-- Random pieces of code required to build  -->
     <Compile Include="System\misc.cs" />
-
-    <!-- TODO: Replace this reference with package reference -->
-    <ProjectReference Include="$(SourceDir)System.Resources.ResourceManager/pkg/System.Resources.ResourceManager.pkgproj"/>
-
   </ItemGroup>
 
   <ItemGroup>

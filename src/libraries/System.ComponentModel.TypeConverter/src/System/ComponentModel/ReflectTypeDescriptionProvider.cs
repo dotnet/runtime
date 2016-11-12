@@ -329,7 +329,6 @@ namespace System.ComponentModel
             return td.GetDefaultProperty(instance);
         }
 
-#if FEATURE_EDITOR
         /// <summary>
         ///     Retrieves the editor for the given base type.
         /// </summary>
@@ -338,7 +337,6 @@ namespace System.ComponentModel
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetEditor(instance, editorBaseType);
         }
-#endif
 
         /// <summary> 
         ///      Retrieves a default editor table for the given editor base type. 
@@ -457,7 +455,6 @@ namespace System.ComponentModel
             return null; // extender properties are never the default.
         }
 
-#if FEATURE_EDITOR
         /// <summary>
         ///     Retrieves the editor for the given base type.
         /// </summary>
@@ -465,7 +462,6 @@ namespace System.ComponentModel
         {
             return GetEditor(instance.GetType(), instance, editorBaseType);
         }
-#endif
 
         /// <summary>
         ///     Retrieves the events for this type.
@@ -576,7 +572,7 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             IComponent component = instance as IComponent;
@@ -768,7 +764,6 @@ namespace System.ComponentModel
         /// </summary>
         public override string GetFullComponentName(object component)
         {
-#if FEATURE_NESTED_SITE
             IComponent comp = component as IComponent;
             if (comp != null)
             {
@@ -778,7 +773,6 @@ namespace System.ComponentModel
                     return ns.FullName;
                 }
             }
-#endif
 
             return TypeDescriptor.GetComponentName(component);
         }

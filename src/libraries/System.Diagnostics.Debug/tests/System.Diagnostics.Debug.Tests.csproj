@@ -37,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeTests.cs" />
-    <Compile Include="DebuggerTests.cs" />
+    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'==''"/>
     <Compile Include="DebugTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>

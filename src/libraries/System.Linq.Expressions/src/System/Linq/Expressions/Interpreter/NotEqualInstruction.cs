@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private NotEqualInstruction() { }
 
-        internal sealed class NotEqualBoolean : NotEqualInstruction
+        private sealed class NotEqualBoolean : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -31,17 +31,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Boolean)left) != ((Boolean)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((bool)left) != ((bool)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualSByte : NotEqualInstruction
+        private sealed class NotEqualSByte : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -53,17 +53,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((SByte)left) != ((SByte)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((sbyte)left) != ((sbyte)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualInt16 : NotEqualInstruction
+        private sealed class NotEqualInt16 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -75,17 +75,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Int16)left) != ((Int16)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((short)left) != ((short)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualChar : NotEqualInstruction
+        private sealed class NotEqualChar : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -97,17 +97,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Char)left) != ((Char)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((char)left) != ((char)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualInt32 : NotEqualInstruction
+        private sealed class NotEqualInt32 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -119,17 +119,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Int32)left) != ((Int32)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((int)left) != ((int)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualInt64 : NotEqualInstruction
+        private sealed class NotEqualInt64 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -141,17 +141,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Int64)left) != ((Int64)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((long)left) != ((long)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualByte : NotEqualInstruction
+        private sealed class NotEqualByte : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -163,17 +163,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Byte)left) != ((Byte)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((byte)left) != ((byte)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualUInt16 : NotEqualInstruction
+        private sealed class NotEqualUInt16 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -185,17 +185,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((UInt16)left) != ((UInt16)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ushort)left) != ((ushort)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualUInt32 : NotEqualInstruction
+        private sealed class NotEqualUInt32 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -207,17 +207,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((UInt32)left) != ((UInt32)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((uint)left) != ((uint)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualUInt64 : NotEqualInstruction
+        private sealed class NotEqualUInt64 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -229,17 +229,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((UInt64)left) != ((UInt64)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ulong)left) != ((ulong)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualSingle : NotEqualInstruction
+        private sealed class NotEqualSingle : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -251,17 +251,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Single)left) != ((Single)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((float)left) != ((float)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualDouble : NotEqualInstruction
+        private sealed class NotEqualDouble : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -273,17 +273,17 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Double)left) != ((Double)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((double)left) != ((double)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualReference : NotEqualInstruction
+        private sealed class NotEqualReference : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 
 
-        internal sealed class NotEqualBooleanLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualBooleanLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -305,13 +305,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Boolean)left) != ((Boolean)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((bool)left) != ((bool)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualSByteLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualSByteLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -323,13 +323,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((SByte)left) != ((SByte)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((sbyte)left) != ((sbyte)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualInt16LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualInt16LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -341,13 +341,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Int16)left) != ((Int16)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((short)left) != ((short)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualCharLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualCharLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -359,13 +359,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Char)left) != ((Char)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((char)left) != ((char)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualInt32LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualInt32LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -377,13 +377,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Int32)left) != ((Int32)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((int)left) != ((int)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualInt64LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualInt64LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -395,13 +395,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Int64)left) != ((Int64)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((long)left) != ((long)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualByteLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualByteLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -413,13 +413,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Byte)left) != ((Byte)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((byte)left) != ((byte)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualUInt16LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualUInt16LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -431,13 +431,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((UInt16)left) != ((UInt16)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ushort)left) != ((ushort)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualUInt32LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualUInt32LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -449,13 +449,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((UInt32)left) != ((UInt32)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((uint)left) != ((uint)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualUInt64LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualUInt64LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -467,13 +467,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((UInt64)left) != ((UInt64)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ulong)left) != ((ulong)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualSingleLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualSingleLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -485,13 +485,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Single)left) != ((Single)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((float)left) != ((float)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualDoubleLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualDoubleLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -503,13 +503,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((Double)left) != ((Double)right)));
+                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((double)left) != ((double)right)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class NotEqualReferenceLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualReferenceLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -524,7 +524,9 @@ namespace System.Linq.Expressions.Interpreter
             if (liftedToNull)
             {
                 // Boxed enums can be unboxed as their underlying types:
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+                switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_booleanLiftedToNull ?? (s_booleanLiftedToNull = new NotEqualBooleanLiftedToNull());
                     case TypeCode.SByte: return s_SByteLiftedToNull ?? (s_SByteLiftedToNull = new NotEqualSByteLiftedToNull());
@@ -556,7 +558,9 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 // Boxed enums can be unboxed as their underlying types:
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+                switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_boolean ?? (s_boolean = new NotEqualBoolean());
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new NotEqualSByte());

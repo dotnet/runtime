@@ -49,6 +49,7 @@ namespace System.Text
     **
     ==============================================================================*/
 
+    [Serializable]
     internal class ISO2022Encoding : DBCSCodePageEncoding
     {
         private const byte SHIFT_OUT = (byte)0x0E;
@@ -1804,6 +1805,7 @@ namespace System.Text
             return new ISO2022Decoder(this);
         }
 
+        [Serializable]
         internal class ISO2022Encoder : System.Text.EncoderNLS
         {
             internal ISO2022Modes currentMode;
@@ -1836,6 +1838,7 @@ namespace System.Text
             }
         }
 
+        [Serializable]
         internal class ISO2022Decoder : System.Text.DecoderNLS
         {
             internal byte[] bytesLeftOver;

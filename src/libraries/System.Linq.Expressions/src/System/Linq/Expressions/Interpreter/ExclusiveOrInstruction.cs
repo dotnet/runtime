@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private ExclusiveOrInstruction() { }
 
-        internal sealed class ExclusiveOrSByte : ExclusiveOrInstruction
+        private sealed class ExclusiveOrSByte : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -28,12 +28,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((SByte)(((SByte)left) ^ ((SByte)right)));
+                frame.Push((sbyte)(((sbyte)left) ^ ((sbyte)right)));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrInt16 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrInt16 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -44,12 +44,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((Int16)(((Int16)left) ^ ((Int16)right)));
+                frame.Push((short)(((short)left) ^ ((short)right)));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrInt32 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrInt32 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -60,12 +60,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((Int32)left) ^ ((Int32)right));
+                frame.Push(((int)left) ^ ((int)right));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrInt64 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrInt64 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -76,12 +76,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((Int64)left) ^ ((Int64)right));
+                frame.Push(((long)left) ^ ((long)right));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrByte : ExclusiveOrInstruction
+        private sealed class ExclusiveOrByte : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -92,12 +92,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((Byte)(((Byte)left) ^ ((Byte)right)));
+                frame.Push((byte)(((byte)left) ^ ((byte)right)));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrUInt16 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrUInt16 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -108,12 +108,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((UInt16)(((UInt16)left) ^ ((UInt16)right)));
+                frame.Push((ushort)(((ushort)left) ^ ((ushort)right)));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrUInt32 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrUInt32 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -124,12 +124,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((UInt32)left) ^ ((UInt32)right));
+                frame.Push(((uint)left) ^ ((uint)right));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrUInt64 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrUInt64 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -140,12 +140,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((UInt64)left) ^ ((UInt64)right));
+                frame.Push(((ulong)left) ^ ((ulong)right));
                 return +1;
             }
         }
 
-        internal sealed class ExclusiveOrBool : ExclusiveOrInstruction
+        private sealed class ExclusiveOrBool : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((Boolean)left) ^ ((Boolean)right));
+                frame.Push(((bool)left) ^ ((bool)right));
                 return +1;
             }
         }
@@ -165,7 +165,9 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             // Boxed enums can be unboxed as their underlying types:
-            switch (GetTypeCode(type))
+            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+            switch (underlyingType.GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new ExclusiveOrSByte());
                 case TypeCode.Byte: return s_byte ?? (s_byte = new ExclusiveOrByte());
@@ -181,11 +183,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("ExclusiveOr", type);
             }
-        }
-
-        private static TypeCode GetTypeCode(Type type)
-        {
-            return System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type));
         }
     }
 }

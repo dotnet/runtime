@@ -56,10 +56,6 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <!-- TODO: remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>

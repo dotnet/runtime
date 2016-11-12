@@ -23,19 +23,29 @@ namespace System.Net
 
         public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection clientCertificates) : base(socket)
         {
-            _sslStream = new SslStream(stream);
+            _sslStream = new SslStream(stream, false, ServicePointManager.ServerCertificateValidationCallback);
             _host = host;
             _clientCertificates = clientCertificates;
         }
 
         public void AuthenticateAsClient()
         {
-            _sslStream.AuthenticateAsClient(_host, _clientCertificates, SecurityProtocol.DefaultSecurityProtocols, false);
+            _sslStream.AuthenticateAsClient(
+                _host,
+                _clientCertificates,
+                (SslProtocols)ServicePointManager.SecurityProtocol, // enums use same values
+                ServicePointManager.CheckCertificateRevocationList);
         }
 
         public IAsyncResult BeginAuthenticateAsClient(AsyncCallback asyncCallback, object state)
         {
-            return _sslStream.BeginAuthenticateAsClient(_host, _clientCertificates, SecurityProtocol.DefaultSecurityProtocols, false, asyncCallback, state);
+            return _sslStream.BeginAuthenticateAsClient(
+                _host,
+                _clientCertificates,
+                (SslProtocols)ServicePointManager.SecurityProtocol, // enums use same values
+                ServicePointManager.CheckCertificateRevocationList,
+                asyncCallback,
+                state);
         }
 
         public void EndAuthenticateAsClient(IAsyncResult asyncResult)

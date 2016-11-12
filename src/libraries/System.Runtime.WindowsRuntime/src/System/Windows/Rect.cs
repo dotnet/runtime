@@ -228,7 +228,7 @@ namespace Windows.Foundation
                 }
                 else
                 {
-                    //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)                    
+                    //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
                     double maxRight = Math.Max(Right, rect.Right);
                     Width = Math.Max(maxRight - left, 0);
                 }
@@ -313,7 +313,7 @@ namespace Windows.Foundation
         {
             if (IsEmpty)
             {
-                return SR.DirectUI_Empty;
+                return global::System.SR.DirectUI_Empty;
             }
 
             // Helper to get the numeric list separator for a given culture.

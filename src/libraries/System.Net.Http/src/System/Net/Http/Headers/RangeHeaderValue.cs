@@ -18,7 +18,7 @@ namespace System.Net.Http.Headers
             get { return _unit; }
             set
             {
-                HeaderUtilities.CheckValidToken(value, "value");
+                HeaderUtilities.CheckValidToken(value, nameof(value));
                 _unit = value;
             }
         }

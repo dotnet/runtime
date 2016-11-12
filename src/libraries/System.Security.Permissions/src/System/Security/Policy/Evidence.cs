@@ -27,10 +27,10 @@ namespace System.Security.Policy
         public Evidence Clone() { return default(Evidence); }
         [Obsolete("Evidence should not be treated as an ICollection. Please use the GetHostEnumerator and GetAssemblyEnumerator methods rather than using CopyTo.")]
         public void CopyTo(Array array, int index) { }
-        public IEnumerator GetAssemblyEnumerator() { return default(IEnumerator); }
+        public IEnumerator GetAssemblyEnumerator() { return Array.Empty<object>().GetEnumerator(); }
         [Obsolete("GetEnumerator is obsolete. Please use GetAssemblyEnumerator and GetHostEnumerator instead.")]
-        public IEnumerator GetEnumerator() { return default(IEnumerator); }
-        public IEnumerator GetHostEnumerator() { return default(IEnumerator); }
+        public IEnumerator GetEnumerator() { return Array.Empty<object>().GetEnumerator(); }
+        public IEnumerator GetHostEnumerator() { return Array.Empty<object>().GetEnumerator(); }
         public void Merge(Evidence evidence) { }
         public void RemoveType(Type t) { }
     }

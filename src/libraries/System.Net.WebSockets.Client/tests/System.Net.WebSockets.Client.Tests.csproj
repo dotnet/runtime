@@ -37,6 +37,7 @@
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
     <Compile Include="ConnectTest.cs" />
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />

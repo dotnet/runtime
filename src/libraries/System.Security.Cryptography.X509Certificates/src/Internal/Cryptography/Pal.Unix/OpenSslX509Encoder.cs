@@ -15,12 +15,15 @@ namespace Internal.Cryptography.Pal
     {
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
+            if (oid.Value == Oids.Ecc && certificatePal != null)
+            {
+                return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
+            }
+
             switch (oid.Value)
             {
                 case Oids.RsaRsa:
                     return BuildRsaPublicKey(encodedKeyValue);
-                case Oids.Ecc:
-                    return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
             }
 
             // NotSupportedException is what desktop and CoreFx-Windows throw in this situation.
@@ -357,6 +360,7 @@ namespace Internal.Cryptography.Pal
             return reader.ReadOctetString();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
         public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
         {
             // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive

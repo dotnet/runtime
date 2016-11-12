@@ -8,8 +8,8 @@ namespace System.Net.Mail.Tests
 {
     public class ReplyToListTest
     {
-        Message _message = new Message();
-        
+        private Message _message = new Message();
+
         [Fact]
         public void ReplyToList_WithNoReplyToSet_ShouldReturnEmptyList()
         {

@@ -55,7 +55,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, "value");
+                CheckNonNull(value, nameof(value));
                 lock (InternalSyncObject)
                 {
                     // Set the terminal console encoding.
@@ -79,7 +79,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, "value");
+                CheckNonNull(value, nameof(value));
 
                 lock (InternalSyncObject)
                 {
@@ -414,7 +414,7 @@ namespace System
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
             if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             return OpenStandardInput();
         }
@@ -429,7 +429,7 @@ namespace System
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
             if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             return OpenStandardOutput();
         }
@@ -444,14 +444,14 @@ namespace System
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
             if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             return OpenStandardError();
         }
 
         public static void SetIn(TextReader newIn)
         {
-            CheckNonNull(newIn, "newIn");
+            CheckNonNull(newIn, nameof(newIn));
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
             lock (InternalSyncObject)
             {
@@ -461,7 +461,7 @@ namespace System
 
         public static void SetOut(TextWriter newOut)
         {
-            CheckNonNull(newOut, "newOut");
+            CheckNonNull(newOut, nameof(newOut));
             newOut = SyncTextWriter.GetSynchronizedTextWriter(newOut);
             Volatile.Write(ref s_isOutTextWriterRedirected, true);
 
@@ -473,7 +473,7 @@ namespace System
 
         public static void SetError(TextWriter newError)
         {
-            CheckNonNull(newError, "newError");
+            CheckNonNull(newError, nameof(newError));
             newError = SyncTextWriter.GetSynchronizedTextWriter(newError);
             Volatile.Write(ref s_isErrorTextWriterRedirected, true);
 

@@ -196,31 +196,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void BasicTest_GetIPv4InterfaceStatistics_Success()
-        {
-            // This API is not actually IPv4 specific.
-            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                IPv4InterfaceStatistics stats = nic.GetIPv4Statistics();
-
-                _log.WriteLine("- Stats for : " + nic.Name);
-                _log.WriteLine("BytesReceived: " + stats.BytesReceived);
-                _log.WriteLine("BytesSent: " + stats.BytesSent);
-                _log.WriteLine("IncomingPacketsDiscarded: " + stats.IncomingPacketsDiscarded);
-                _log.WriteLine("IncomingPacketsWithErrors: " + stats.IncomingPacketsWithErrors);
-                _log.WriteLine("IncomingUnknownProtocolPackets: " + stats.IncomingUnknownProtocolPackets);
-                _log.WriteLine("NonUnicastPacketsReceived: " + stats.NonUnicastPacketsReceived);
-                _log.WriteLine("NonUnicastPacketsSent: " + stats.NonUnicastPacketsSent);
-                _log.WriteLine("OutgoingPacketsDiscarded: " + stats.OutgoingPacketsDiscarded);
-                _log.WriteLine("OutgoingPacketsWithErrors: " + stats.OutgoingPacketsWithErrors);
-                _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
-                _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
-                _log.WriteLine("UnicastPacketsSent: " + stats.UnicastPacketsSent);
-            }
-        }
-
-        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BasicTest_GetIPInterfaceStatistics_Success_Linux()
         {
@@ -245,62 +220,12 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public void BasicTest_GetIPv4InterfaceStatistics_Success_Linux()
-        {
-            // This API is not actually IPv4 specific.
-            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                IPv4InterfaceStatistics stats = nic.GetIPv4Statistics();
-
-                _log.WriteLine("- Stats for : " + nic.Name);
-                _log.WriteLine("BytesReceived: " + stats.BytesReceived);
-                _log.WriteLine("BytesSent: " + stats.BytesSent);
-                _log.WriteLine("IncomingPacketsDiscarded: " + stats.IncomingPacketsDiscarded);
-                _log.WriteLine("IncomingPacketsWithErrors: " + stats.IncomingPacketsWithErrors);
-                Assert.Throws<PlatformNotSupportedException>(() => stats.IncomingUnknownProtocolPackets);
-                _log.WriteLine("NonUnicastPacketsReceived: " + stats.NonUnicastPacketsReceived);
-                Assert.Throws<PlatformNotSupportedException>(() => stats.NonUnicastPacketsSent);
-                _log.WriteLine("OutgoingPacketsDiscarded: " + stats.OutgoingPacketsDiscarded);
-                _log.WriteLine("OutgoingPacketsWithErrors: " + stats.OutgoingPacketsWithErrors);
-                _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
-                _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
-                _log.WriteLine("UnicastPacketsSent: " + stats.UnicastPacketsSent);
-            }
-        }
-
-        [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
         public void BasicTest_GetIPInterfaceStatistics_Success_OSX()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
                 IPInterfaceStatistics stats = nic.GetIPStatistics();
-
-                _log.WriteLine("- Stats for : " + nic.Name);
-                _log.WriteLine("BytesReceived: " + stats.BytesReceived);
-                _log.WriteLine("BytesSent: " + stats.BytesSent);
-                _log.WriteLine("IncomingPacketsDiscarded: " + stats.IncomingPacketsDiscarded);
-                _log.WriteLine("IncomingPacketsWithErrors: " + stats.IncomingPacketsWithErrors);
-                _log.WriteLine("IncomingUnknownProtocolPackets: " + stats.IncomingUnknownProtocolPackets);
-                _log.WriteLine("NonUnicastPacketsReceived: " + stats.NonUnicastPacketsReceived);
-                _log.WriteLine("NonUnicastPacketsSent: " + stats.NonUnicastPacketsSent);
-                Assert.Throws<PlatformNotSupportedException>(() => stats.OutgoingPacketsDiscarded);
-                _log.WriteLine("OutgoingPacketsWithErrors: " + stats.OutgoingPacketsWithErrors);
-                _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
-                _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
-                _log.WriteLine("UnicastPacketsSent: " + stats.UnicastPacketsSent);
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void BasicTest_GetIPv4InterfaceStatistics_Success_OSX()
-        {
-            // This API is not actually IPv4 specific.
-            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                IPv4InterfaceStatistics stats = nic.GetIPv4Statistics();
 
                 _log.WriteLine("- Stats for : " + nic.Name);
                 _log.WriteLine("BytesReceived: " + stats.BytesReceived);

@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Interpreter
             _index = index;
         }
 
-        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects)
+        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
         {
             return cookie == null ?
                 InstructionName + "(" + _index + ")" :
@@ -451,6 +451,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ProducedStack => 1;
         public override int ConsumedStack => _count;
+        public override string InstructionName => "GetRuntimeVariables";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -463,9 +464,8 @@ namespace System.Linq.Expressions.Interpreter
             return +1;
         }
 
-        public override string InstructionName => "GetRuntimeVariables";
-
         public override string ToString() => "GetRuntimeVariables()";
     }
+
     #endregion
 }

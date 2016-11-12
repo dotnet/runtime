@@ -96,7 +96,7 @@ namespace System.IO.Pipes
         // the pipe is in a connected state already, it should also set the IsConnected (protected) property.
         // This method may also be called to uninitialize a handle, setting it to null.
         [SecuritySafeCritical]
-        internal void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
+        protected void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
         {
             if (isAsync && handle != null)
             {
@@ -109,11 +109,6 @@ namespace System.IO.Pipes
             // track these separately; _isHandleExposed will get updated if accessed though the property
             _isHandleExposed = isExposed;
             _isFromExistingHandle = isExposed;
-        }
-
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
         }
 
         [SecurityCritical]
@@ -164,6 +159,22 @@ namespace System.IO.Pipes
             return ReadAsyncCore(buffer, offset, count, cancellationToken);
         }
 
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            if (_isAsync)
+                return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            else
+                return base.BeginRead(buffer, offset, count, callback, state);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            if (_isAsync)
+                return TaskToApm.End<int>(asyncResult);
+            else
+                return base.EndRead(asyncResult);
+        }
+
         [SecurityCritical]
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -210,6 +221,22 @@ namespace System.IO.Pipes
             }
 
             return WriteAsyncCore(buffer, offset, count, cancellationToken);
+        }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            if (_isAsync)
+                return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            else
+                return base.BeginWrite(buffer, offset, count, callback, state);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            if (_isAsync)
+                TaskToApm.End(asyncResult);
+            else
+                base.EndWrite(asyncResult);
         }
 
         private void CheckReadWriteArgs(byte[] buffer, int offset, int count)
@@ -391,7 +418,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal bool IsHandleExposed
+        protected bool IsHandleExposed
         {
             get
             {
@@ -458,8 +485,7 @@ namespace System.IO.Pipes
 
         // anonymous pipe ends and named pipe server can get/set properties when broken 
         // or connected. Named client overrides
-        [SecurityCritical]
-        internal virtual void CheckPipePropertyOperations()
+        protected internal virtual void CheckPipePropertyOperations()
         {
             if (CheckOperationsRequiresSetHandle && _handle == null)
             {
@@ -475,9 +501,7 @@ namespace System.IO.Pipes
 
         // Reads can be done in Connected and Broken. In the latter,
         // read returns 0 bytes
-        [SecurityCritical]
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]
-        internal void CheckReadOperations()
+        protected internal void CheckReadOperations()
         {
             // Invalid operation
             if (_state == PipeState.WaitingToConnect)
@@ -501,9 +525,7 @@ namespace System.IO.Pipes
         }
 
         // Writes can only be done in connected state
-        [SecurityCritical]
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]
-        internal void CheckWriteOperations()
+        protected internal void CheckWriteOperations()
         {
             // Invalid operation
             if (_state == PipeState.WaitingToConnect)

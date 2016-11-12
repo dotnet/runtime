@@ -3,7 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Text.Encoding.csproj" />
-    
+    <Project Include="System.Text.Encoding.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>uap101aot</TargetGroup>
+    </Project>
     <Project Include="System.Text.Encoding.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>

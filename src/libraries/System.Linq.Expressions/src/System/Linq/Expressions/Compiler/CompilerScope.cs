@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Compiler
     ///   3. Information for resolving closures
     /// 
     /// Instances are produced by VariableBinder, which does a tree walk
-    /// looking for scope nodes: LambdaExpression and BlockExpression.
+    /// looking for scope nodes: LambdaExpression, BlockExpression, and CatchBlock.
     /// </summary>
     internal sealed partial class CompilerScope
     {
@@ -96,10 +96,10 @@ namespace System.Linq.Expressions.Compiler
         {
             Node = node;
             IsMethod = isMethod;
-            IList<ParameterExpression> variables = GetVariables(node);
+            IReadOnlyList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
-            foreach (var v in variables)
+            foreach (ParameterExpression v in variables)
             {
                 Definitions.Add(v, VariableStorageKind.Local);
             }
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Compiler
             return parent;
         }
 
-        #region LocalScopeExpression support
+        #region RuntimeVariablesExpression support
 
         internal void EmitVariableAccess(LambdaCompiler lc, ReadOnlyCollection<ParameterExpression> vars)
         {
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Compiler
                 // Find what array each variable is on & its index
                 var indexes = new ArrayBuilder<long>(vars.Count);
 
-                foreach (var variable in vars)
+                foreach (ParameterExpression variable in vars)
                 {
                     // For each variable, find what array it's defined on
                     ulong parents = 0;
@@ -238,7 +238,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Resolve a local variable in this scope or a closed over scope
-        /// Throws if the variable is defined
+        /// Throws if the variable is not defined
         /// </summary>
         private Storage ResolveVariable(ParameterExpression variable, HoistedLocals hoistedLocals)
         {
@@ -364,7 +364,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            foreach (var refCount in ReferenceCount)
+            foreach (KeyValuePair<ParameterExpression, int> refCount in ReferenceCount)
             {
                 if (ShouldCache(refCount.Key, refCount.Value))
                 {
@@ -470,7 +470,7 @@ namespace System.Linq.Expressions.Compiler
                 yield return param;
             }
 
-            foreach (var scope in MergedScopes)
+            foreach (BlockExpression scope in MergedScopes)
             {
                 foreach (ParameterExpression param in scope.Variables)
                 {
@@ -479,7 +479,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private static IList<ParameterExpression> GetVariables(object scope)
+        private static IReadOnlyList<ParameterExpression> GetVariables(object scope)
         {
             var lambda = scope as LambdaExpression;
             if (lambda != null)

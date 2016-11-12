@@ -9,7 +9,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.IO.FileSystem.DriveInfo.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

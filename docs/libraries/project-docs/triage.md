@@ -24,7 +24,7 @@ Of course, teams aren't hostage to the set of themes and scenarios. But they pro
 
 ## What this means for CoreFx
 
-Our goal is to become a bit more trigger happy when it comes to closing issues. We've currently over 700 open issues on the corefx repo alone. We've noticed that our design review process is a major bottleneck for adding new features, in particular when we're adding APIs to types that are shared with the .NET Framework: we need to think about how we can reconcile that difference in the future so that you can still author libraries that can run on both platforms.
+Our goal is to become a bit more trigger happy when it comes to closing issues. We've currently over 1,400 open issues on the corefx repo alone. We've noticed that our design review process is a major bottleneck for adding new features, in particular when we're adding APIs to types that are shared with the .NET Framework: we need to think about how we can reconcile that difference in the future so that you can still author libraries that can run on both platforms.
 
 We owe our customers -- and this includes our open source community -- that we don't lose track of what's important. We do, however, want to make sure we can continuously improve small things as well. We strongly believe that one of the key reasons open source is so successful is because it encourages a mindset of small changes over time.
 
@@ -66,6 +66,6 @@ Here are some of the factors that are considered:
  
 Generally, all changes are expected to be tracked as GitHub issues. We are going to introduce the following three labels on GitHub to track and report progress around porting:
 
-* **netfx-port-consider**: A given issue should be considered for inclusion in the .NET Framework. Once an issue has this label, the team will consider it for inclusion in the .NET Framework.
-* **netfx-port-approve**: If the proposed change is shown to add value and not introduce unmitigated risk then the issue will be checked in and ship in a future release of the .NET Framework. Marking an issue with this label does not imply that it will ship in the next release or any specific release of the .NET Framework.
-* **netfx-port-decline**: If the proposed change does not align with our business goals or introduces unmitigated risk, the issue will not be included in the .NET Framework. In the event of this scenario, we will add a comment on the issue.
+* [**netfx-port-consider**](https://github.com/dotnet/corefx/labels/netfx-port-consider): A given issue should be considered for inclusion in the .NET Framework. Once an issue has this label, the team will consider it for inclusion in the .NET Framework.
+* [**netfx-port-approved**](https://github.com/dotnet/corefx/labels/netfx-port-approved): If the proposed change is shown to add value and not introduce unmitigated risk then the issue will be checked in and ship in a future release of the .NET Framework. Marking an issue with this label does not imply that it will ship in the next release or any specific release of the .NET Framework.
+* [**netfx-port-declined**](https://github.com/dotnet/corefx/labels/netfx-port-declined): If the proposed change does not align with our business goals or introduces unmitigated risk, the issue will not be included in the .NET Framework. In the event of this scenario, we will add a comment on the issue.

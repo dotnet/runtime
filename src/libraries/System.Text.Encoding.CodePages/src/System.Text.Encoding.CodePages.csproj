@@ -12,12 +12,12 @@
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageTargetFramework Include="netstandard1.3" />
+    <PackageTargetFramework Include="netstandard1.7" />
     <!-- need to support rid-less restore for packages.config -->
-    <PackageTargetFramework Include="net46">
+    <PackageTargetFramework Include="net463">
       <TargetRuntime></TargetRuntime>
     </PackageTargetFramework>
   </ItemGroup>

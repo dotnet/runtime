@@ -2,13 +2,14 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageTargetRuntime>fedora.23-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageRid>fedora.23-$(PackagePlatform)</PackageRid>
+    <IdPrefix>runtime.$(PackageRid).</IdPrefix>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeFile Include="$(Fedora23NativePath)System.Security.Cryptography.Native.OpenSsl.so">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <TargetPath>runtimes/$(PackageRid)/native</TargetPath>
     </NativeFile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -2455,8 +2455,14 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(new int[] { 1, 2, 3, 4 }, new IntegerComparer())); // Arrays have different lengths
 
             Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(123, new IntegerComparer())); // Other is not an array
+        }
 
-            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(new int[] { 1, 2, 3 }, null)); // Comparer is null
+        [Fact]
+        public static void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
+        {
+            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            IStructuralComparable comparable = new int[] { 1, 2, 3 };
+            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(new int[] { 1, 2, 3 }, null));
         }
 
         public static IEnumerable<object[]> IStructuralEquatable_TestData()
@@ -2495,11 +2501,18 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void IStructuralEquatable_Invalid()
+        public static void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
+        {
+            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            IStructuralEquatable equatable = new int[] { 1, 2, 3 };
+            Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null));
+        }
+
+        [Fact]
+        public static void IStructuralEquatable_GetHashCode_NullComparer_ThrowsArgumentNullException()
         {
             IStructuralEquatable equatable = new int[] { 1, 2, 3 };
-            Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null)); // Comparer is null
-            Assert.Throws<ArgumentNullException>("comparer", () => equatable.GetHashCode(null)); // Comparer is null
+            Assert.Throws<ArgumentNullException>("comparer", () => equatable.GetHashCode(null));
         }
 
         [Theory]

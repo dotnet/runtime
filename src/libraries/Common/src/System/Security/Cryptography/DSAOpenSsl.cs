@@ -181,16 +181,16 @@ namespace System.Security.Cryptography
                 return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
             }
 
-            public override byte[] CreateSignature(byte[] hash)
+            public override byte[] CreateSignature(byte[] rgbHash)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
+                if (rgbHash == null)
+                    throw new ArgumentNullException(nameof(rgbHash));
 
                 SafeDsaHandle key = _key.Value;
                 byte[] signature = new byte[Interop.Crypto.DsaEncodedSignatureSize(key)];
 
                 int signatureSize;
-                bool success = Interop.Crypto.DsaSign(key, hash, hash.Length, signature, out signatureSize);
+                bool success = Interop.Crypto.DsaSign(key, rgbHash, rgbHash.Length, signature, out signatureSize);
                 if (!success)
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -208,25 +208,25 @@ namespace System.Security.Cryptography
                 return converted;
             }
 
-            public override bool VerifySignature(byte[] hash, byte[] signature)
+            public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
+                if (rgbHash == null)
+                    throw new ArgumentNullException(nameof(rgbHash));
+                if (rgbSignature == null)
+                    throw new ArgumentNullException(nameof(rgbSignature));
 
                 SafeDsaHandle key = _key.Value;
 
                 int expectedSignatureBytes = Interop.Crypto.DsaSignatureFieldSize(key) * 2;
-                if (signature.Length != expectedSignatureBytes)
+                if (rgbSignature.Length != expectedSignatureBytes)
                 {
                     // The input isn't of the right length (assuming no DER), so we can't sensibly re-encode it with DER.
                     return false;
                 }
 
-                byte[] openSslFormat = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
+                byte[] openSslFormat = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(rgbSignature);
 
-                return Interop.Crypto.DsaVerify(key, hash, hash.Length, openSslFormat, openSslFormat.Length);
+                return Interop.Crypto.DsaVerify(key, rgbHash, rgbHash.Length, openSslFormat, openSslFormat.Length);
             }
 
             private void SetKey(SafeDsaHandle newKey)

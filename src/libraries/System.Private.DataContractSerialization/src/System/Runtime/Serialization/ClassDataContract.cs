@@ -213,6 +213,12 @@ namespace System.Runtime.Serialization
         }
 #endif
 
+        public override bool IsISerializable
+        {
+            get { return _helper.IsISerializable; }
+            set { _helper.IsISerializable = value; }
+        }
+
         internal bool IsNonAttributedType
         {
             /// <SecurityNote>
@@ -268,6 +274,11 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.GetKeyValuePairMethodInfo; }
+        }
+
+        internal ConstructorInfo GetISerializableConstructor()
+        {
+            return _helper.GetISerializableConstructor();
         }
 
         private ConstructorInfo _nonAttributedTypeConstructor;
@@ -499,6 +510,11 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            if (type.IsSerializable)
+                return false;
+
+            if (Globals.TypeOfISerializable.IsAssignableFrom(type))
+                return false;
 
             if (type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false))
                 return false;
@@ -811,11 +827,14 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class ClassDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
+            private static Type[] s_serInfoCtorArgs;
+
             private ClassDataContract _baseContract;
             private List<DataMember> _members;
             private MethodInfo _onSerializing, _onSerialized;
             private MethodInfo _onDeserializing, _onDeserialized;
             private DataContractDictionary _knownDataContracts;
+            private bool _isISerializable;
             private bool _isKnownTypeAttributeChecked;
             private bool _isMethodChecked;
             /// <SecurityNote>
@@ -859,7 +878,15 @@ namespace System.Runtime.Serialization
                     return;
                 }
                 Type baseType = type.GetTypeInfo().BaseType;
+                _isISerializable = (Globals.TypeOfISerializable.IsAssignableFrom(type));
                 SetIsNonAttributedType(type);
+                if (_isISerializable)
+                {
+                    if (HasDataContract)
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.ISerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
+                    if (baseType != null && !(baseType.IsSerializable && Globals.TypeOfISerializable.IsAssignableFrom(baseType)))
+                        baseType = null;
+                }
                 SetKeyValuePairAdapterFlags(type);
                 this.IsValueType = type.GetTypeInfo().IsValueType;
                 if (baseType != null && baseType != Globals.TypeOfObject && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri)
@@ -878,6 +905,12 @@ namespace System.Runtime.Serialization
                 }
                 else
                     this.BaseContract = null;
+
+                if (_isISerializable)
+                {
+                    SetDataContractName(stableName);
+                }
+                else
                 {
                     this.StableName = stableName;
                     ImportDataMembers();
@@ -911,6 +944,7 @@ namespace System.Runtime.Serialization
                         MemberNamespaces[i + baseMemberCount] = Namespace;
                     }
                 }
+
                 EnsureMethodsImported();
                 _isScriptObject = this.IsNonAttributedType &&
                     Globals.TypeOfScriptObject_IsAssignableFrom(this.UnderlyingType);
@@ -1111,17 +1145,30 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        // [Serializible] and [NonSerialized] are deprecated on FxCore
-                        // Try to mimic the behavior by allowing certain known types to go through
-                        // POD types are fine also
-
                         FieldInfo field = member as FieldInfo;
-                        if (CanSerializeMember(field))
+
+                        bool canSerializeMember;
+
+                        // Previously System.SerializableAttribute was not available in NetCore, so we had
+                        // a list of known [Serializable] types for type in the framework. Although now SerializableAttribute
+                        // is available in NetCore, some framework types still do not have [Serializable] 
+                        // yet, e.g. ReadOnlyDictionary<TKey, TValue>. So, we still need to maintain the known serializable
+                        // type list.
+                        if (IsKnownSerializableType(type))
+                        {
+                            canSerializeMember = CanSerializeMember(field);
+                        }
+                        else
+                        {
+                            canSerializeMember = field != null && !field.IsNotSerialized;
+                        }
+
+                        if (canSerializeMember)
                         {
                             DataMember memberContract = new DataMember(member);
 
                             memberContract.Name = DataContract.EncodeLocalName(member.Name);
-                            object[] optionalFields = null; // TODO 11477: Add back optional field support
+                            object[] optionalFields = field.GetCustomAttributes(Globals.TypeOfOptionalFieldAttribute, false);
                             if (optionalFields == null || optionalFields.Length == 0)
                             {
                                 if (this.IsReference)
@@ -1245,7 +1292,7 @@ namespace System.Runtime.Serialization
             /// </SecurityNote>
             private void SetIsNonAttributedType(Type type)
             {
-                _isNonAttributedType = !_hasDataContract && IsNonAttributedTypeValidForSerialization(type);
+                _isNonAttributedType = !type.IsSerializable && !_hasDataContract && IsNonAttributedTypeValidForSerialization(type);
             }
 
             private static bool IsMethodOverriding(MethodInfo method)
@@ -1392,6 +1439,11 @@ namespace System.Runtime.Serialization
                 { _knownDataContracts = value; }
             }
 
+            internal override bool IsISerializable
+            {
+                get { return _isISerializable; }
+                set { _isISerializable = value; }
+            }
 
             internal bool HasDataContract
             {
@@ -1454,6 +1506,18 @@ namespace System.Runtime.Serialization
                 get { return _getKeyValuePairMethodInfo; }
             }
 
+            internal ConstructorInfo GetISerializableConstructor()
+            {
+                if (!IsISerializable)
+                    return null;
+
+                ConstructorInfo ctor = UnderlyingType.GetConstructor(Globals.ScanAllMembers, null, SerInfoCtorArgs, null);
+                if (ctor == null)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.SerializationInfo_ConstructorNotFound, DataContract.GetClrTypeFullName(UnderlyingType))));
+
+                return ctor;
+            }
+
             internal ConstructorInfo GetNonAttributedTypeConstructor()
             {
                 if (!this.IsNonAttributedType)
@@ -1489,6 +1553,15 @@ namespace System.Runtime.Serialization
                 set { _childElementNamespaces = value; }
             }
 
+            private static Type[] SerInfoCtorArgs
+            {
+                get
+                {
+                    if (s_serInfoCtorArgs == null)
+                        s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
+                    return s_serInfoCtorArgs;
+                }
+            }
 
             internal struct Member
             {

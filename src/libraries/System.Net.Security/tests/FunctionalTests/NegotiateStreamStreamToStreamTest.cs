@@ -286,6 +286,6 @@ namespace System.Net.Security.Tests
             Task.Run(() => client.AuthenticateAsClient(credential, targetName));
 
         protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
-            Task.Run(() => server.AuthenticateAsServerAsync());
+            Task.Run(() => server.AuthenticateAsServer());
     }
 }

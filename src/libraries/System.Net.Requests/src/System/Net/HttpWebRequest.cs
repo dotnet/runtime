@@ -9,12 +9,15 @@ using System.Net.Cache;
 using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.Serialization;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
+    public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
+
     [Serializable]
     public class HttpWebRequest : WebRequest, ISerializable
     {
@@ -46,6 +49,7 @@ namespace System.Net
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeaderLen = _defaultMaxResponseHeaderLength;
         private ServicePoint _servicePoint;
+        private HttpContinueDelegate _continueDelegate;
 
         private RequestStream _requestStream;
         private TaskCompletionSource<Stream> _requestStreamOperation = null;
@@ -90,7 +94,7 @@ namespace System.Net
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
 #endif
             _webHeaderCollection = (WebHeaderCollection)serializationInfo.GetValue("_HttpRequestHeaders", typeof(WebHeaderCollection));
             Proxy = (IWebProxy)serializationInfo.GetValue("_Proxy", typeof(IWebProxy));
@@ -135,7 +139,7 @@ namespace System.Net
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
 #endif
             GetObjectData(serializationInfo, streamingContext);
 #if DEBUG
@@ -146,7 +150,7 @@ namespace System.Net
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
 #endif           
             serializationInfo.AddValue("_HttpRequestHeaders", _webHeaderCollection, typeof(WebHeaderCollection));
             serializationInfo.AddValue("_Proxy", _proxy, typeof(IWebProxy));
@@ -359,7 +363,7 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
                 bool fChunked;
                 //
@@ -524,7 +528,7 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
                 bool fKeepAlive;
                 bool fClose;
@@ -583,7 +587,7 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
                 // only remove everything other than 100-cont
                 bool fContinue100;
@@ -699,6 +703,19 @@ namespace System.Net
                 {
                     _Booleans &= ~Booleans.SendChunked;
                 }
+            }
+        }
+     
+        public HttpContinueDelegate ContinueDelegate
+        {
+            // Nop since the underlying API do not expose 100 continue.
+            get
+            {
+                return _continueDelegate;
+            }
+            set
+            {
+                _continueDelegate = value;
             }
         }
 
@@ -1018,6 +1035,11 @@ namespace System.Net
             return Task.FromResult((Stream)_requestStream);
         }
 
+        public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext context)
+        {
+            context = null;
+            return EndGetRequestStream(asyncResult);
+        }
 
         public Stream GetRequestStream(out TransportContext context)
         {
@@ -1139,6 +1161,7 @@ namespace System.Net
                 handler.ClientCertificates.AddRange(ClientCertificates);
 
                 // Set relevant properties from ServicePointManager
+                handler.SslProtocols = (SslProtocols)ServicePointManager.SecurityProtocol;
                 handler.CheckCertificateRevocationList = ServicePointManager.CheckCertificateRevocationList;
                 RemoteCertificateValidationCallback rcvc = ServerCertificateValidationCallback != null ? 
                                                 ServerCertificateValidationCallback :
@@ -1300,7 +1323,7 @@ namespace System.Net
 
             if (rangeSpecifier == null)
             {
-                throw new ArgumentNullException("rangeSpecifier");
+                throw new ArgumentNullException(nameof(rangeSpecifier));
             }
             if ((from < 0) || (to < 0))
             {
@@ -1308,11 +1331,11 @@ namespace System.Net
             }
             if (from > to)
             {
-                throw new ArgumentOutOfRangeException("from", SR.net_fromto);
+                throw new ArgumentOutOfRangeException(nameof(from), SR.net_fromto);
             }
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
-                throw new ArgumentException(SR.net_nottoken, "rangeSpecifier");
+                throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
             }
             if (!AddRange(rangeSpecifier, from.ToString(NumberFormatInfo.InvariantInfo), to.ToString(NumberFormatInfo.InvariantInfo)))
             {
@@ -1329,11 +1352,11 @@ namespace System.Net
         {
             if (rangeSpecifier == null)
             {
-                throw new ArgumentNullException("rangeSpecifier");
+                throw new ArgumentNullException(nameof(rangeSpecifier));
             }
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
-                throw new ArgumentException(SR.net_nottoken, "rangeSpecifier");
+                throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
             }
             if (!AddRange(rangeSpecifier, range.ToString(NumberFormatInfo.InvariantInfo), (range >= 0) ? "" : null))
             {
@@ -1413,7 +1436,7 @@ namespace System.Net
         private DateTime GetDateHeaderHelper(string headerName)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
             string headerValue = _webHeaderCollection[headerName];
 
@@ -1430,7 +1453,7 @@ namespace System.Net
         private void SetDateHeaderHelper(string headerName, DateTime dateTime)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
             if (dateTime == DateTime.MinValue)
                 SetSpecialHeaders(headerName, null); // remove header

@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -75,7 +73,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void Push(bool value)
         {
-            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.Boolean_True : ScriptingRuntimeHelpers.Boolean_False;
         }
 
         public void Push(int value)
@@ -93,12 +91,12 @@ namespace System.Linq.Expressions.Interpreter
             Data[StackIndex++] = value;
         }
 
-        public void Push(Int16 value)
+        public void Push(short value)
         {
             Data[StackIndex++] = value;
         }
 
-        public void Push(UInt16 value)
+        public void Push(ushort value)
         {
             Data[StackIndex++] = value;
         }
@@ -129,10 +127,7 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Stack Trace
 
-        public InterpretedFrame Parent
-        {
-            get { return _parent; }
-        }
+        public InterpretedFrame Parent => _parent;
 
         public static bool IsInterpretedFrame(MethodBase method)
         {

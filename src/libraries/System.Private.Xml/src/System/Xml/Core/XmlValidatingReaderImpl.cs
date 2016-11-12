@@ -9,7 +9,6 @@ using System.Xml.Schema;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
-using System.Security.Policy;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 
@@ -137,7 +136,7 @@ namespace System.Xml
             }
             if (_coreReaderImpl == null)
             {
-                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, "reader");
+                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, nameof(reader));
             }
             _coreReaderImpl.EntityHandling = EntityHandling.ExpandEntities;
             _coreReaderImpl.XmlValidatingReaderCompatibilityMode = true;
@@ -215,7 +214,7 @@ namespace System.Xml
             }
             if (_coreReaderImpl == null)
             {
-                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, "reader");
+                throw new ArgumentException(SR.Arg_ExpectingXmlTextReader, nameof(reader));
             }
             _coreReaderImpl.XmlValidatingReaderCompatibilityMode = true;
             _coreReaderNSResolver = reader as IXmlNamespaceResolver;

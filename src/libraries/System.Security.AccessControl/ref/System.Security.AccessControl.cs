@@ -439,11 +439,12 @@ namespace System.Security.AccessControl
         public virtual void SetAccessRule(System.Security.AccessControl.AccessRule<T> rule) { }
         public virtual void SetAuditRule(System.Security.AccessControl.AuditRule<T> rule) { }
     }
-    public sealed partial class PrivilegeNotHeldException : System.UnauthorizedAccessException
+    public sealed partial class PrivilegeNotHeldException : System.UnauthorizedAccessException, System.Runtime.Serialization.ISerializable
     {
         public PrivilegeNotHeldException() { }
         public PrivilegeNotHeldException(string privilege) { }
         public PrivilegeNotHeldException(string privilege, System.Exception inner) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string PrivilegeName { get { throw null; } }
     }
     [System.FlagsAttribute]

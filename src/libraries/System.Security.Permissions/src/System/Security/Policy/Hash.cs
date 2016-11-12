@@ -11,6 +11,7 @@ namespace System.Security.Policy
     public sealed partial class Hash : EvidenceBase, System.Runtime.Serialization.ISerializable
     {
         public Hash(System.Reflection.Assembly assembly) { }
+        private Hash(SerializationInfo info, StreamingContext context) { }
         public byte[] MD5 { get { return null; } }
         public byte[] SHA1 { get { return null; } }
         public static Hash CreateMD5(byte[] md5) { return default(Hash); }

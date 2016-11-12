@@ -5,7 +5,6 @@
     <RootNamespace>System.Runtime.Serialization.Xml.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Serialization.Xml.Tests</AssemblyName>
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)Utils.cs" />

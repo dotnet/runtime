@@ -38,14 +38,12 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void NonSecureRequest_AddNoCertificates_CertificateContextNotSet()
         {
             using (var handler = new WinHttpHandler())
+            using (HttpResponseMessage response = SendRequestHelper.Send(
+                handler,
+                () => { },
+                TestServer.FakeServerEndpoint))
             {
-                using (HttpResponseMessage response = SendRequestHelper.Send(
-                    handler,
-                    () => { },
-                    TestServer.FakeServerEndpoint))
-                {
-                    Assert.Equal(0, APICallHistory.WinHttpOptionClientCertContext.Count);
-                }
+                Assert.Equal(0, APICallHistory.WinHttpOptionClientCertContext.Count);
             }
         }
 
@@ -69,15 +67,13 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void SecureRequest_AddNoCertificates_NullCertificateContextSet()
         {
             using (var handler = new WinHttpHandler())
+            using (HttpResponseMessage response = SendRequestHelper.Send(
+                handler,
+                () => { },
+                TestServer.FakeSecureServerEndpoint))
             {
-                using (HttpResponseMessage response = SendRequestHelper.Send(
-                    handler,
-                    () => { },
-                    TestServer.FakeSecureServerEndpoint))
-                {
-                    Assert.Equal(1, APICallHistory.WinHttpOptionClientCertContext.Count);
-                    Assert.Equal(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
-                }
+                Assert.Equal(1, APICallHistory.WinHttpOptionClientCertContext.Count);
+                Assert.Equal(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
             }
         }
 

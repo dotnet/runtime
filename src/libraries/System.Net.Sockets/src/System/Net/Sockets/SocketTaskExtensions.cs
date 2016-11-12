@@ -28,12 +28,12 @@ namespace System.Net.Sockets
                 state: socket);
         }
 
-        public static Task ConnectAsync(this Socket socket, EndPoint remoteEndPoint)
+        public static Task ConnectAsync(this Socket socket, EndPoint remoteEP)
         {
             return Task.Factory.FromAsync(
                 (targetEndPoint, callback, state) => ((Socket)state).BeginConnect(targetEndPoint, callback, state),
                 asyncResult => ((Socket)asyncResult.AsyncState).EndConnect(asyncResult),
-                remoteEndPoint,
+                remoteEP,
                 state: socket);
         }
 
@@ -229,7 +229,7 @@ namespace System.Net.Sockets
             this Socket socket,
             ArraySegment<byte> buffer,
             SocketFlags socketFlags,
-            EndPoint remoteEndPoint)
+            EndPoint remoteEP)
         {
             return Task<int>.Factory.FromAsync(
                 (targetBuffer, flags, endPoint, callback, state) => ((Socket)state).BeginSendTo(
@@ -243,7 +243,7 @@ namespace System.Net.Sockets
                 asyncResult => ((Socket)asyncResult.AsyncState).EndSendTo(asyncResult),
                 buffer,
                 socketFlags,
-                remoteEndPoint,
+                remoteEP,
                 state: socket);
         }
     }

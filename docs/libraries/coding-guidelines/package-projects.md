@@ -60,6 +60,92 @@ Sample `System.Collections.Concurrent.pkgproj`
 ### Framework-specific library
 Framework specific libraries are effectively the same as the previous example.  The difference is that the src project reference **must** refer to the `.builds` file which will provide multiple assets from multiple projects.
 
+Sample System.Net.Security.pkgproj
+```
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Net.Security.builds">
+      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Net.Security.builds" />
+  </ItemGroup>
+  <ItemGroup>
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
+
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
+```
+
+Sample \ref .builds file defining a constant used to filter API that were added on top of the netstandard1.7 ones and are available only in netcoreapp1.1: 
+
+```
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Net.Security.cs" />
+    <Compile Include="System.Net.Security.Manual.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
+```
+
+Conditional compilation using the above-mentioned constant (from `ref\System.Net.Security.cs`):
+
+```
+#if netcoreapp11
+        public virtual void AuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection clientCertificates, bool checkCertificateRevocation) { }
+#endif
+```
+
+Sample \src .builds file (in this case the implementation is the same in both netcoreapp1.1 and netstandard1.7):
+
+```
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="System.Net.Security.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.Net.Security.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Net.Security.csproj">
+      <TargetGroup>net463</TargetGroup>
+    </Project>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
+```
+
+Tests can be similarly filtered grouping the compilation directives under:
+```
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+```
+(from `\tests\FunctionalTests\System.Net.Security.Tests.csproj`)
+
 ### Platform-specific library
 These packages need to provide a different platform specific implementation on each platform.  They do this by splitting the implementations into seperate packages and associating those platform specific packages with the primary reference package.  Each platform specific package sets `PackageTargetRuntime` to the specific platform RID that it applies.
 

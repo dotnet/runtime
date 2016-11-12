@@ -6,27 +6,34 @@
        Use the property below to control this behavior
   -->
   <PropertyGroup>
-    <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">true</DisableProjectNTfsAutoUpgrade>
+    <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">false</DisableProjectNTfsAutoUpgrade>
   </PropertyGroup>
 
+  <!-- For detailed explanation of the reference versions see:
+
+        https://github.com/dotnet/buildtools/blob/master/Documentation/project-nuget-dependencies.md
+        https://github.com/dotnet/buildtools/blob/master/Documentation/annotated-dependency-props.md
+
+       These ref versions are pulled from https://github.com/dotnet/versions.
+  -->
   <PropertyGroup>
-    <CoreFxCurrentRef>80ecd400b5e763c9431197187a76088dac600c01</CoreFxCurrentRef>
-    <CoreClrCurrentRef>80ecd400b5e763c9431197187a76088dac600c01</CoreClrCurrentRef>
-    <ExternalCurrentRef>43ba6daa90c341491c7ffb65207e20cec1b66794</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>f981c5e06d00accf1063a87ba2e9791752a4f6b1</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>32a0b0f08800cf5015887ce8ef5d646fe2ca2a91</CoreFxCurrentRef>
+    <CoreClrCurrentRef>9ce367ccebf5c20112d128ab913fc2300257628c</CoreClrCurrentRef>
+    <ExternalCurrentRef>3012bdc3812c4479e5afc0d92e553465887e2454</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>3012bdc3812c4479e5afc0d92e553465887e2454</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24617-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24617-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24617-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24607-01</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24711-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24709-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24711-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24711-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00903-02</AppXRunnerVersion>
+    <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
   </PropertyGroup>
 
@@ -89,20 +96,23 @@
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6" />
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.1" />
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.2" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.Private.WinRT" />
     <StaticDependency Include="@(TargetingPackDependency)">
       <Version>1.0.1</Version>
+    </StaticDependency>
+
+    <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
+      <Version>1.0.2</Version>
     </StaticDependency>
 
     <XUnitDependency Include="xunit"/>
     <XUnitDependency Include="xunit.runner.utility"/>
     <XUnitDependency Include="xunit.runner.console"/>
     <StaticDependency Include="@(XUnitDependency)">
-      <Version>2.1.0</Version>
+      <Version>2.2.0-beta2-build3300</Version>
     </StaticDependency>
-
+   
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00830-02</Version>
+      <Version>1.0.1-prerelease-01001-04</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />

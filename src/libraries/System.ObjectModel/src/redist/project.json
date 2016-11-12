@@ -1,12 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Targets": "1.0.0",
-    "System.ObjectModel": "4.0.10"
+    "Microsoft.NETCore.Targets": "1.0.1",
+    "System.ObjectModel": "4.0.12"
   },
   "frameworks": {
     "netcore50": {}
-  },
-  "runtimes": {
-    "win8": {}
   }
 }

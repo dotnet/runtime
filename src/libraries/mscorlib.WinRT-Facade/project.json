@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20"
+    "System.Runtime": "4.1.0"
   },
   "frameworks": {
     "netcore50": {}

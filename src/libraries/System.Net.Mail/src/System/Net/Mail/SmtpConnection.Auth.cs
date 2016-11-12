@@ -7,7 +7,9 @@ namespace System.Net.Mail
     internal enum SupportedAuth
     {
         None = 0,
-        Login = 1
+        Login = 1,
+        NTLM = 2,
+        GSSAPI = 4
     };
 
     internal partial class SmtpConnection
@@ -15,6 +17,7 @@ namespace System.Net.Mail
         private bool _serverSupportsEai;
         private bool _dsnEnabled;
         private bool _serverSupportsStartTls;
+        private bool _sawNegotiate;
         private SupportedAuth _supportedAuth = SupportedAuth.None;
         private readonly ISmtpAuthenticationModule[] _authenticationModules;
 
@@ -25,6 +28,8 @@ namespace System.Net.Mail
         private static readonly char[] s_authExtensionSplitters = new char[] { ' ', '=' };
         private const string AuthExtension = "auth";
         private const string AuthLogin = "login";
+        private const string AuthNtlm = "ntlm";
+        private const string AuthGssapi = "gssapi";
 
         internal SmtpConnection(ISmtpAuthenticationModule[] authenticationModules)
         {
@@ -54,6 +59,14 @@ namespace System.Net.Mail
                         {
                             _supportedAuth |= SupportedAuth.Login;
                         }
+                        else if (string.Equals(authType, AuthNtlm, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _supportedAuth |= SupportedAuth.NTLM;
+                        }
+                        else if (string.Equals(authType, AuthGssapi, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _supportedAuth |= SupportedAuth.GSSAPI;
+                        }
                     }
                 }
                 else if (string.Compare(extension, 0, "dsn ", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
@@ -73,7 +86,31 @@ namespace System.Net.Mail
 
         internal bool AuthSupported(ISmtpAuthenticationModule module)
         {
-            return module is SmtpLoginAuthenticationModule && (_supportedAuth & SupportedAuth.Login) > 0;
+            if (module is SmtpLoginAuthenticationModule)
+            {
+                if ((_supportedAuth & SupportedAuth.Login) > 0)
+                {
+                    return true;
+                }
+            }
+            else if (module is SmtpNegotiateAuthenticationModule)
+            {
+                if ((_supportedAuth & SupportedAuth.GSSAPI) > 0)
+                {
+                    _sawNegotiate = true;
+                    return true;
+                }
+            }
+            else if (module is SmtpNtlmAuthenticationModule)
+            {
+                // Don't try ntlm if negotiate has been tried
+                if ((!_sawNegotiate && (_supportedAuth & SupportedAuth.NTLM) > 0))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

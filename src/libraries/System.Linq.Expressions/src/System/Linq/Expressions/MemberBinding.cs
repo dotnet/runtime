@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 
 namespace System.Linq.Expressions
@@ -21,7 +20,7 @@ namespace System.Linq.Expressions
         /// </summary>
         MemberBinding,
         /// <summary>
-        /// A binding that represents initializing a member of type <see cref="System.Collections.IList"/> or <see cref="System.Collections.Generic.ICollection{T}"/> from a list of elements.
+        /// A binding that represents initializing a member of type <see cref="Collections.IList"/> or <see cref="Collections.Generic.ICollection{T}"/> from a list of elements.
         /// </summary>
         ListBinding
     }
@@ -31,9 +30,6 @@ namespace System.Linq.Expressions
     /// </summary>
     public abstract class MemberBinding
     {
-        private MemberBindingType _type;
-        private MemberInfo _member;
-
         /// <summary>
         /// Initializes an instance of <see cref="MemberBinding"/> class.
         /// </summary>
@@ -42,30 +38,24 @@ namespace System.Linq.Expressions
         [Obsolete("Do not use this constructor. It will be removed in future releases.")]
         protected MemberBinding(MemberBindingType type, MemberInfo member)
         {
-            _type = type;
-            _member = member;
+            BindingType = type;
+            Member = member;
         }
 
         /// <summary>
         /// Gets the type of binding that is represented.
         /// </summary>
-        public MemberBindingType BindingType
-        {
-            get { return _type; }
-        }
+        public MemberBindingType BindingType { get; }
 
         /// <summary>
         /// Gets the field or property to be initialized.
         /// </summary>
-        public MemberInfo Member
-        {
-            get { return _member; }
-        }
+        public MemberInfo Member { get; }
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
         /// </summary>
-        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
+        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()
         {
             return ExpressionStringBuilder.MemberBindingToString(this);

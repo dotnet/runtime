@@ -505,7 +505,7 @@ namespace System.Transactions.Tests
             Assert.Null(Transaction.Current);
             TransactionAbortedException e = Assert.Throws<TransactionAbortedException>(() =>
             {
-                using (TransactionScope scope = new TransactionScope(TransactionScopeOption.Required, new TimeSpan(0, 0, 30)))
+                using (TransactionScope scope = new TransactionScope(TransactionScopeOption.Required, new TimeSpan(0, 0, 10)))
                 {
                     irm.Value = 2;
                     irm2.Value = 20;

@@ -12,13 +12,13 @@ namespace System.Diagnostics
         private readonly IntPtr[] _ips;
         private readonly bool _needFileInfo;
 
-        public StackTrace(Exception exception, bool needFileInfo)
+        public StackTrace(Exception e, bool needFileInfo)
         {
-            if (exception == null)
+            if (e == null)
             {
-                throw new ArgumentNullException(nameof(exception));
+                throw new ArgumentNullException(nameof(e));
             }
-            _ips = ExceptionExtensions.GetStackIPs(exception);
+            _ips = ExceptionExtensions.GetStackIPs(e);
             _needFileInfo = needFileInfo;
         }
 

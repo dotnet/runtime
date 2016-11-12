@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private OrInstruction() { }
 
-        internal sealed class OrSByte : OrInstruction
+        private sealed class OrSByte : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -28,12 +28,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((SByte)(((SByte)left) | ((SByte)right)));
+                frame.Push((sbyte)(((sbyte)left) | ((sbyte)right)));
                 return +1;
             }
         }
 
-        internal sealed class OrInt16 : OrInstruction
+        private sealed class OrInt16 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -44,12 +44,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((Int16)(((Int16)left) | ((Int16)right)));
+                frame.Push((short)(((short)left) | ((short)right)));
                 return +1;
             }
         }
 
-        internal sealed class OrInt32 : OrInstruction
+        private sealed class OrInt32 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -60,12 +60,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((Int32)left) | ((Int32)right));
+                frame.Push(((int)left) | ((int)right));
                 return +1;
             }
         }
 
-        internal sealed class OrInt64 : OrInstruction
+        private sealed class OrInt64 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -76,12 +76,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((Int64)left) | ((Int64)right));
+                frame.Push(((long)left) | ((long)right));
                 return +1;
             }
         }
 
-        internal sealed class OrByte : OrInstruction
+        private sealed class OrByte : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -92,12 +92,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((Byte)(((Byte)left) | ((Byte)right)));
+                frame.Push((byte)(((byte)left) | ((byte)right)));
                 return +1;
             }
         }
 
-        internal sealed class OrUInt16 : OrInstruction
+        private sealed class OrUInt16 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -108,12 +108,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push((UInt16)(((UInt16)left) | ((UInt16)right)));
+                frame.Push((ushort)(((ushort)left) | ((ushort)right)));
                 return +1;
             }
         }
 
-        internal sealed class OrUInt32 : OrInstruction
+        private sealed class OrUInt32 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -124,12 +124,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((UInt32)left) | ((UInt32)right));
+                frame.Push(((uint)left) | ((uint)right));
                 return +1;
             }
         }
 
-        internal sealed class OrUInt64 : OrInstruction
+        private sealed class OrUInt64 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -140,12 +140,12 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Push(null);
                     return +1;
                 }
-                frame.Push(((UInt64)left) | ((UInt64)right));
+                frame.Push(((ulong)left) | ((ulong)right));
                 return +1;
             }
         }
 
-        internal sealed class OrBool : OrInstruction
+        private sealed class OrBool : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -159,16 +159,16 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        frame.Push((Boolean)right ? ScriptingRuntimeHelpers.True : null);
+                        frame.Push((bool)right ? ScriptingRuntimeHelpers.Boolean_True : null);
                     }
                     return +1;
                 }
                 else if (right == null)
                 {
-                    frame.Push((Boolean)left ? ScriptingRuntimeHelpers.True : null);
+                    frame.Push((bool)left ? ScriptingRuntimeHelpers.Boolean_True : null);
                     return +1;
                 }
-                frame.Push(((Boolean)left) | ((Boolean)right));
+                frame.Push(((bool)left) | ((bool)right));
                 return +1;
             }
         }
@@ -177,7 +177,9 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             // Boxed enums can be unboxed as their underlying types:
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+            switch (underlyingType.GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new OrSByte());
                 case TypeCode.Byte: return s_byte ?? (s_byte = new OrByte());

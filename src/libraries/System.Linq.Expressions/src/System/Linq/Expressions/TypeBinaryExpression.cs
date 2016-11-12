@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
@@ -11,56 +10,40 @@ using static System.Linq.Expressions.CachedReflectionInfo;
 namespace System.Linq.Expressions
 {
     /// <summary>
-    /// Represents an operation between an expression and a type. 
+    /// Represents an operation between an expression and a type.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.TypeBinaryExpressionProxy))]
+    [DebuggerTypeProxy(typeof(TypeBinaryExpressionProxy))]
     public sealed class TypeBinaryExpression : Expression
     {
-        private readonly Expression _expression;
-        private readonly Type _typeOperand;
-        private readonly ExpressionType _nodeKind;
-
-        internal TypeBinaryExpression(Expression expression, Type typeOperand, ExpressionType nodeKind)
+        internal TypeBinaryExpression(Expression expression, Type typeOperand, ExpressionType nodeType)
         {
-            _expression = expression;
-            _typeOperand = typeOperand;
-            _nodeKind = nodeKind;
+            Expression = expression;
+            TypeOperand = typeOperand;
+            NodeType = nodeType;
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return typeof(bool); }
-        }
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
+        public sealed override Type Type => typeof(bool);
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return _nodeKind; }
-        }
+        public sealed override ExpressionType NodeType { get; }
 
         /// <summary>
         /// Gets the expression operand of a type test operation.
         /// </summary>
-        public Expression Expression
-        {
-            get { return _expression; }
-        }
+        public Expression Expression { get; }
 
         /// <summary>
         /// Gets the type operand of a type test operation.
         /// </summary>
-        public Type TypeOperand
-        {
-            get { return _typeOperand; }
-        }
+        public Type TypeOperand { get; }
 
         #region Reduce TypeEqual
 
@@ -75,9 +58,9 @@ namespace System.Linq.Expressions
                     // If the expression type is a a nullable type, it will match if
                     // the value is not null and the type operand
                     // either matches or is its type argument (T to its T?).
-                    if (cType.GetNonNullableType() != _typeOperand.GetNonNullableType())
+                    if (cType.GetNonNullableType() != TypeOperand.GetNonNullableType())
                     {
-                        return Expression.Block(Expression, Expression.Constant(false));
+                        return Expression.Block(Expression, Expression.Constant(value: false));
                     }
                     else
                     {
@@ -88,7 +71,7 @@ namespace System.Linq.Expressions
                 {
                     // For other value types (including Void), we can
                     // determine the result now
-                    return Expression.Block(Expression, Expression.Constant(cType == _typeOperand.GetNonNullableType()));
+                    return Expression.Block(Expression, Expression.Constant(cType == TypeOperand.GetNonNullableType()));
                 }
             }
 
@@ -127,7 +110,7 @@ namespace System.Linq.Expressions
             // causing it to always return false.
             // We workaround this optimization by generating different, less optimal IL
             // if TypeOperand is an interface.
-            if (_typeOperand.GetTypeInfo().IsInterface)
+            if (TypeOperand.GetTypeInfo().IsInterface)
             {
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
                 getType = Expression.Block(new[] { temp }, Expression.Assign(temp, getType), temp);
@@ -137,10 +120,10 @@ namespace System.Linq.Expressions
             // (don't invoke a user defined operator), and reference equality
             // on types for performance (so the JIT can optimize the IL).
             return Expression.AndAlso(
-                Expression.ReferenceNotEqual(value, Expression.Constant(null)),
+                Expression.ReferenceNotEqual(value, Expression.Constant(value: null)),
                 Expression.ReferenceEqual(
                     getType,
-                    Expression.Constant(_typeOperand.GetNonNullableType(), typeof(Type))
+                    Expression.Constant(TypeOperand.GetNonNullableType(), typeof(Type))
                 )
             );
         }
@@ -151,11 +134,11 @@ namespace System.Linq.Expressions
             //TypeEqual(null, T) always returns false.
             if (ce.Value == null)
             {
-                return Expression.Constant(false);
+                return Expression.Constant(value: false);
             }
             else
             {
-                return Expression.Constant(_typeOperand.GetNonNullableType() == ce.Value.GetType());
+                return Expression.Constant(TypeOperand.GetNonNullableType() == ce.Value.GetType());
             }
         }
 
@@ -174,7 +157,7 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="expression">The <see cref="Expression" /> property of the result.</param>
+        /// <param name="expression">The <see cref="Expression"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public TypeBinaryExpression Update(Expression expression)
         {
@@ -197,7 +180,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="expression">An <see cref="Expression"/> to set the <see cref="Expression"/> property equal to.</param>
         /// <param name="type">A <see cref="Type"/> to set the <see cref="TypeBinaryExpression.TypeOperand"/> property equal to.</param>
-        /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="TypeIs"/> and for which the <see cref="Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
+        /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="ExpressionType.TypeIs"/> and for which the <see cref="TypeBinaryExpression.Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
         public static TypeBinaryExpression TypeIs(Expression expression, Type type)
         {
             RequiresCanRead(expression, nameof(expression));
@@ -212,7 +195,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="expression">An <see cref="Expression"/> to set the <see cref="Expression"/> property equal to.</param>
         /// <param name="type">A <see cref="Type"/> to set the <see cref="TypeBinaryExpression.TypeOperand"/> property equal to.</param>
-        /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="TypeEqual"/> and for which the <see cref="Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
+        /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="ExpressionType.TypeEqual"/> and for which the <see cref="TypeBinaryExpression.Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
         public static TypeBinaryExpression TypeEqual(Expression expression, Type type)
         {
             RequiresCanRead(expression, nameof(expression));

@@ -1,15 +1,11 @@
 {
   "dependencies": {
-    "System.Reflection": "4.4.0-beta-24617-03",
-    "System.Reflection.Primitives": "4.4.0-beta-24617-03",
-    "System.Runtime": "4.4.0-beta-24617-03",
-    "System.Runtime.Handles": "4.4.0-beta-24617-03"
+    "System.Reflection": "4.4.0-beta-24711-02",
+    "System.Reflection.Primitives": "4.4.0-beta-24711-02",
+    "System.Runtime": "4.4.0-beta-24711-02",
+    "System.Runtime.Handles": "4.4.0-beta-24711-02"
   },
   "frameworks": {
-    "netstandard1.7": {
-      "imports": [
-        "dotnet5.8"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

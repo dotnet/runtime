@@ -31,9 +31,10 @@ namespace System.Diagnostics.Tests
                     Assert.True(thread.TotalProcessorTime.TotalSeconds >= 0);
                 }
             }
-            catch (Win32Exception)
+            catch (Exception e) when (e is Win32Exception || e is InvalidOperationException)
             {
-                // Win32Exception is thrown when getting threadinfo fails. 
+                // Win32Exception is thrown when getting threadinfo fails, or
+                // InvalidOperationException if it fails because the thread already exited.
             }
         }
 

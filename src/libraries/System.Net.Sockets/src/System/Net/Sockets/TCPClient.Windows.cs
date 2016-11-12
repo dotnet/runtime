@@ -60,6 +60,16 @@ namespace System.Net.Sockets
             }
         }
 
+        private Task ConnectAsyncCore(IPAddress address, int port)
+        {
+            return Task.Factory.FromAsync(
+                (targetAddess, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddess, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                address,
+                port,
+                state: this);
+        }
+
         private Task ConnectAsyncCore(string host, int port)
         {
             return Task.Factory.FromAsync(
@@ -79,6 +89,18 @@ namespace System.Net.Sockets
                 port,
                 state: this);
         }
+
+        private IAsyncResult BeginConnectCore(string host, int port, AsyncCallback requestCallback, object state) =>
+            Client.BeginConnect(host, port, requestCallback, state);
+
+        private IAsyncResult BeginConnectCore(IPAddress address, int port, AsyncCallback requestCallback, object state) =>
+            Client.BeginConnect(address, port, requestCallback, state);
+
+        private IAsyncResult BeginConnectCore(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) =>
+            Client.BeginConnect(addresses, port, requestCallback, state);
+
+        private void EndConnectCore(Socket socket, IAsyncResult asyncResult) =>
+            socket.EndConnect(asyncResult);
 
         // Gets or sets the size of the receive buffer in bytes.
         private int ReceiveBufferSizeCore

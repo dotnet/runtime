@@ -173,6 +173,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "Compat: Used to generate an 8.3 filename.")]
         internal static string GetStrongHashSuitableForObjectName(Stream stream)
         {
             using (SHA1 sha1 = SHA1.Create())

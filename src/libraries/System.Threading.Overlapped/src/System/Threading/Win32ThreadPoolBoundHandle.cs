@@ -54,7 +54,7 @@ namespace System.Threading
                 if (hr == System.HResults.E_INVALIDARG)     // Handle already bound or sync handle
                     throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, nameof(handle));
 
-                throw Marshal.GetExceptionForHR(hr);
+                throw Marshal.GetExceptionForHR(hr, new IntPtr(-1));
             }
 
             return new ThreadPoolBoundHandle(handle, threadPoolHandle);

@@ -82,8 +82,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     return;
                 }
-                Assert.Throws<ArgumentException>("rgbKey", () => aes.CreateEncryptor(key, iv));
-                Assert.Throws<ArgumentException>("rgbKey", () => aes.CreateDecryptor(key, iv));
+                Exception e = Record.Exception(() => aes.CreateEncryptor(key, iv));
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
+                
+                e = Record.Exception(() => aes.CreateDecryptor(key, iv));
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
             }
         }
 
@@ -106,8 +109,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     return;
                 }
-                Assert.Throws<ArgumentException>("rgbIV", () => aes.CreateEncryptor(key, iv));
-                Assert.Throws<ArgumentException>("rgbIV", () => aes.CreateDecryptor(key, iv));
+                Exception e = Record.Exception(() => aes.CreateEncryptor(key, iv));
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
+                
+                e = Record.Exception(() => aes.CreateDecryptor(key, iv));
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
             }
         }
 

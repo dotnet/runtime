@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace System.IO.IsolatedStorage
 {
-    public abstract class IsolatedStorage
+    public abstract class IsolatedStorage : MarshalByRefObject
     {
         private ulong _quota;
         private bool _validQuota;

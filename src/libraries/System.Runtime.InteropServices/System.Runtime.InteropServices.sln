@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.InteropServices", "src\System.Runtime.InteropServices.csproj", "{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}"
 EndProject
@@ -25,10 +25,10 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Debug|Any CPU.ActiveCfg = net462_Debug|Any CPU
-		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Debug|Any CPU.Build.0 = net462_Debug|Any CPU
-		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Release|Any CPU.ActiveCfg = net462_Release|Any CPU
-		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Release|Any CPU.Build.0 = net462_Release|Any CPU
+		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Debug|Any CPU.ActiveCfg = net463_Release|Any CPU
+		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Debug|Any CPU.Build.0 = net463_Release|Any CPU
+		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.net462_Release|Any CPU.Build.0 = Release|Any CPU
 		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B17014F1-D902-417F-89B0-271204695831}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

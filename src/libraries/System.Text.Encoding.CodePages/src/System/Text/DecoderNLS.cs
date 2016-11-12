@@ -6,6 +6,7 @@ using System.Text;
 using System;
 using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -20,8 +21,8 @@ namespace System.Text
     // class are typically obtained through calls to the GetDecoder method
     // of Encoding objects.
     //
-
-    internal class DecoderNLS : Decoder
+    [Serializable]
+    internal class DecoderNLS : Decoder, ISerializable
     {
         // Remember our encoding
         protected EncodingNLS m_encoding;
@@ -43,6 +44,49 @@ namespace System.Text
         {
             m_encoding = null;
             Reset();
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(DecoderNLSSurrogate.EncodingKey, m_encoding);
+            info.AddValue(DecoderNLSSurrogate.DecoderFallbackKey, m_fallback);
+            info.SetType(typeof(DecoderNLSSurrogate));
+        }
+
+        [Serializable]
+        internal sealed class DecoderNLSSurrogate : IObjectReference, ISerializable
+        {
+            internal const string EncodingKey = "Encoding";
+            internal const string DecoderFallbackKey = "DecoderFallback";
+
+            private readonly Encoding _encoding;
+            private readonly DecoderFallback _fallback;
+
+            internal DecoderNLSSurrogate(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+                _encoding = (Encoding)info.GetValue(EncodingKey, typeof(Encoding));
+                _fallback = (DecoderFallback)info.GetValue(DecoderFallbackKey, typeof(DecoderFallback));
+            }
+
+            public object GetRealObject(StreamingContext context)
+            {
+                Decoder decoder = _encoding.GetDecoder();
+                if (_fallback != null)
+                {
+                    decoder.Fallback = _fallback;
+                }
+                return decoder;
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                // This should never be called.  If it is, there's a bug in the formatter being used.
+                throw new NotSupportedException();
+            }
         }
 
         internal new DecoderFallback Fallback
@@ -93,7 +137,7 @@ namespace System.Text
                 throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index): nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -110,7 +154,7 @@ namespace System.Text
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        public unsafe int GetCharCount(byte* bytes, int count, bool flush)
+        public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate parameters
             if (bytes == null)
@@ -140,10 +184,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes): nameof(chars), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex): nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -170,15 +214,15 @@ namespace System.Text
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        public unsafe int GetChars(byte* bytes, int byteCount,
+        public override unsafe int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush)
         {
             // Validate parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((chars == null ? nameof(chars): nameof(bytes)), SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount < 0 ? "byteCount" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // Remember our flush
@@ -198,13 +242,13 @@ namespace System.Text
         {
             // Validate parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException((bytes == null ? "bytes" : "chars"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((bytes == null ? nameof(bytes): nameof(chars)), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex): nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -234,16 +278,16 @@ namespace System.Text
         // This is the version that used pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting chars
         [System.Security.SecurityCritical]  // auto-generated
-        public unsafe void Convert(byte* bytes, int byteCount,
+        public override unsafe void Convert(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
             // Validate input parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? "chars" : "bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(chars == null ? nameof(chars): nameof(bytes), SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount < 0 ? "byteCount" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // We don't want to throw

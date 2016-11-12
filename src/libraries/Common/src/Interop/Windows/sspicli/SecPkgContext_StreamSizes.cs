@@ -33,12 +33,7 @@ namespace System.Net
                 }
                 catch (OverflowException)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("StreamSizes::.ctor", "Negative size.");
-                    }
-
-                    Debug.Fail("StreamSizes::.ctor", "Negative size.");
+                    NetEventSource.Fail(this, "Negative size.");
                     throw;
                 }
             }

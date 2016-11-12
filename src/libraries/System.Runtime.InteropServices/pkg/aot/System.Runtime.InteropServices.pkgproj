@@ -8,7 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- all assets are harvested -->
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

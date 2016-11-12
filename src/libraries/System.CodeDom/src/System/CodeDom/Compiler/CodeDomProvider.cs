@@ -93,7 +93,9 @@ namespace System.CodeDom.Compiler
                 throw new ArgumentNullException(nameof(language));
             }
 
-            return s_compilerLanguages[language.Trim()];
+            CompilerInfo value;
+            s_compilerLanguages.TryGetValue(language.Trim(), out value);
+            return value;
         }
 
         private static CompilerInfo GetCompilerInfoForExtensionNoThrow(string extension)
@@ -103,7 +105,9 @@ namespace System.CodeDom.Compiler
                 throw new ArgumentNullException(nameof(extension));
             }
 
-            return s_compilerExtensions[extension.Trim()];
+            CompilerInfo value;
+            s_compilerExtensions.TryGetValue(extension.Trim(), out value);
+            return value;
         }
 
         public static CompilerInfo[] GetAllCompilerInfo() => s_allCompilerInfo.ToArray();
@@ -207,11 +211,6 @@ namespace System.CodeDom.Compiler
             return parser;
         }
 #pragma warning restore 618
-
-        internal static bool TryGetProbableCoreAssemblyFilePath(CompilerParameters parameters, out string coreAssemblyFilePath)
-        {
-            throw new PlatformNotSupportedException();
-        }
 
         private sealed class ConfigurationErrorsException : SystemException
         {

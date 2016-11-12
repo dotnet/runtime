@@ -31,7 +31,6 @@ namespace System.Net
         private const int StatusCompleted = 1;
         private const int StatusCheckedOnSyncCompletion = 2;
 
-
         public LazyAsyncResult UserAsyncResult;
         public int Result;
         public object AsyncState;
@@ -44,23 +43,37 @@ namespace System.Net
         {
             if (userAsyncResult == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult == null");
-                }
-
-                Debug.Fail("AsyncProtocolRequest()|userAsyncResult == null");
+                NetEventSource.Fail(this, "userAsyncResult == null");
             }
             if (userAsyncResult.InternalPeekCompleted)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult is already completed.");
-                }
-
-                Debug.Fail("AsyncProtocolRequest()|userAsyncResult is already completed.");
+                NetEventSource.Fail(this, "userAsyncResult is already completed.");
             }
             UserAsyncResult = userAsyncResult;
+        }
+
+        public void Reset(LazyAsyncResult userAsyncResult)
+        {
+            if (userAsyncResult == null)
+            {
+                NetEventSource.Fail(this, "userAsyncResult == null");
+            }
+            if (userAsyncResult.InternalPeekCompleted)
+            {
+                NetEventSource.Fail(this, "userAsyncResult is already completed.");
+            }
+            UserAsyncResult = userAsyncResult;
+
+            _callback = null;
+            _completionStatus = 0;
+            Result = 0;
+            AsyncState = null;
+            Buffer = null;
+            Offset = 0;
+            Count = 0;
+#if DEBUG
+            _DebugAsyncChain = 0;
+#endif
         }
 
         public void SetNextRequest(byte[] buffer, int offset, int count, AsyncProtocolCallback callback)
@@ -76,13 +89,7 @@ namespace System.Net
             _callback = callback;
         }
 
-        internal object AsyncObject
-        {
-            get
-            {
-                return UserAsyncResult.AsyncObject;
-            }
-        }
+        internal object AsyncObject => UserAsyncResult.AsyncObject;
 
         //
         // Notify protocol so a next stage could be started.
@@ -125,24 +132,18 @@ namespace System.Net
         //
         // Important: This will abandon _Callback and directly notify UserAsyncResult.
         //
-        internal void CompleteWithError(Exception e)
+        internal void CompleteUserWithError(Exception e) => UserAsyncResult.InvokeCallback(e);
+
+        internal void CompleteUser() => UserAsyncResult.InvokeCallback();
+
+        internal void CompleteUser(int userResult)
         {
-            UserAsyncResult.InvokeCallback(e);
+            Debug.Assert(UserAsyncResult is BufferAsyncResult, "CompleteUser(int) may only be used with a BufferAsyncResult");
+            var bar = (BufferAsyncResult)UserAsyncResult;
+            bar.Int32Result = userResult;
+            bar.InvokeCallback(BufferAsyncResult.ResultSentinal);
         }
 
-        internal void CompleteUser()
-        {
-            UserAsyncResult.InvokeCallback();
-        }
-
-        internal void CompleteUser(object userResult)
-        {
-            UserAsyncResult.InvokeCallback(userResult);
-        }
-
-        internal bool IsUserCompleted
-        {
-            get { return UserAsyncResult.InternalPeekCompleted; }
-        }
+        internal bool IsUserCompleted => UserAsyncResult.InternalPeekCompleted;
     }
 }

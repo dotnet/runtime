@@ -13,7 +13,7 @@ using Xunit.NetCore.Extensions;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessTests : ProcessTestBase
+    public partial class ProcessTests : ProcessTestBase
     {
         private class FinalizingProcess : Process
         {
@@ -545,6 +545,14 @@ namespace System.Diagnostics.Tests
             Process p = Process.GetProcessById(_process.Id);
             Assert.Equal(_process.Id, p.Id);
             Assert.Equal(_process.ProcessName, p.ProcessName);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void TestRootGetProcessById()
+        {
+            Process p = Process.GetProcessById(1);
+            Assert.Equal(1, p.Id);
         }
 
         [Fact]

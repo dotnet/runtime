@@ -563,7 +563,7 @@ namespace System.Xml
             }
             if (url.Length == 0)
             {
-                throw new ArgumentException(SR.Xml_EmptyUrl, "url");
+                throw new ArgumentException(SR.Xml_EmptyUrl, nameof(url));
             }
             _namespaceManager = new XmlNamespaceManager(nt);
 
@@ -8245,19 +8245,19 @@ namespace System.Xml
         {
             if (array == null)
             {
-                throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : "array");
+                throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : nameof(array));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? "count" : "len");
+                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count): "len");
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? "index" : "offset");
+                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(index): "offset");
             }
             if (array.Length - index < count)
             {
-                throw new ArgumentException((_incReadDecoder is IncrementalReadCharsDecoder) ? "count" : "len");
+                throw new ArgumentException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count): "len");
             }
 
             if (count == 0)

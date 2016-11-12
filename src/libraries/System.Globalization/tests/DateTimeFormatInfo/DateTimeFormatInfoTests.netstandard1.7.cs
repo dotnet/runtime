@@ -34,7 +34,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         public void SeparatorsTest()
         {
             DateTimeFormatInfo dtfi = (DateTimeFormatInfo) CultureInfo.InvariantCulture.DateTimeFormat.Clone();
@@ -60,9 +59,8 @@ namespace System.Globalization.Tests
             expectedFormattedString = formattedTime.Replace(timeSep, dtfi.TimeSeparator);
             Assert.Equal(expectedFormattedString, d.ToString("HH:mm:ss", dtfi));
         }
-
+        
         [Theory]
-        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [MemberData(nameof(DateTimeFormatInfo_TestData))]
         public void NativeCalendarNameTest(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
         {
@@ -71,15 +69,22 @@ namespace System.Globalization.Tests
                 dtfi.Calendar = calendar;
                 Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
             }
-            catch 
+            catch
             {
-                // Persian calendar is recently supported as one of the optional calendars for fa-IR
-                Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
+                if (PlatformDetection.IsWindows)
+                {
+                    // Persian calendar is recently supported as one of the optional calendars for fa-IR
+                    Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
+                }
+                else // !PlatformDetection.IsWindows
+                {                 
+                    Assert.True(calendar is HijriCalendar || calendar is UmAlQuraCalendar || calendar is ThaiBuddhistCalendar || 
+                                calendar is HebrewCalendar || calendar is KoreanCalendar, "failed to set the calendar on DTFI");
+                }
             }
         }
 
         [Theory]
-        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [MemberData(nameof(CultureNames_TestData))]
         public void AllDateTimePatternsTest(string cultureName)
         {
@@ -117,7 +122,6 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [MemberData(nameof(CultureNames_TestData))]
         public void ShortestDayNamesTest(string cultureName)
         {

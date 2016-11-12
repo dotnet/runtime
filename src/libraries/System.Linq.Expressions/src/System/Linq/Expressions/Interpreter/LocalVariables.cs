@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString()
         {
-            return String.Format(CultureInfo.InvariantCulture, "{0}: {1} {2}", Index, IsBoxed ? "boxed" : null, InClosure ? "in closure" : null);
+            return string.Format(CultureInfo.InvariantCulture, "{0}: {1} {2}", Index, IsBoxed ? "boxed" : null, InClosure ? "in closure" : null);
         }
     }
 
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public LocalDefinition DefineLocal(ParameterExpression variable, int start)
         {
-            var result = new LocalVariable(_localCount++, false);
+            var result = new LocalVariable(_localCount++, closure: false);
             _maxLocalCount = Math.Max(_localCount, _maxLocalCount);
 
             VariableScope existing, newScope;
@@ -123,7 +123,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                newScope = new VariableScope(result, start, null);
+                newScope = new VariableScope(result, start, parent: null);
             }
 
             _variables[variable] = newScope;
@@ -213,7 +213,7 @@ namespace System.Linq.Expressions.Interpreter
         internal Dictionary<ParameterExpression, LocalVariable> CopyLocals()
         {
             var res = new Dictionary<ParameterExpression, LocalVariable>(_variables.Count);
-            foreach (var keyValue in _variables)
+            foreach (KeyValuePair<ParameterExpression, VariableScope> keyValue in _variables)
             {
                 res[keyValue.Key] = keyValue.Value.Variable;
             }
@@ -245,12 +245,12 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         /// <summary>
-        /// Tracks where a variable is defined and what range of instructions it's used in
+        /// Tracks where a variable is defined and what range of instructions it's used in.
         /// </summary>
         private sealed class VariableScope
         {
             public readonly int Start;
-            public int Stop = Int32.MaxValue;
+            public int Stop = int.MaxValue;
             public readonly LocalVariable Variable;
             public readonly VariableScope Parent;
             public List<VariableScope> ChildScopes;

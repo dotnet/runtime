@@ -22,6 +22,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool CanEncryptEmptyMessage = false;
 
         public static void VerifyPackageInfo()
         {

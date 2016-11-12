@@ -39,10 +39,7 @@ namespace System.Runtime.CompilerServices
 
         private sealed class EmptyRuntimeVariables : IRuntimeVariables
         {
-            int IRuntimeVariables.Count
-            {
-                get { return 0; }
-            }
+            int IRuntimeVariables.Count => 0;
 
             object IRuntimeVariables.this[int index]
             {
@@ -84,10 +81,7 @@ namespace System.Runtime.CompilerServices
                 _indexes = indexes;
             }
 
-            public int Count
-            {
-                get { return _indexes.Length; }
-            }
+            public int Count => _indexes.Length;
 
             public object this[int index]
             {

@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void MultipleProcesses_StartAllKillAllWaitAll()
         {
-            const int Iters = 50;
+            const int Iters = 10;
             Process[] processes = Enumerable.Range(0, Iters).Select(_ => CreateProcessLong()).ToArray();
 
             foreach (Process p in processes) p.Start();
@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void MultipleProcesses_SerialStartKillWait()
         {
-            const int Iters = 50;
+            const int Iters = 10;
             for (int i = 0; i < Iters; i++)
             {
                 Process p = CreateProcessLong();
@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void MultipleProcesses_ParallelStartKillWait()
         {
-            const int Tasks = 4, ItersPerTask = 50;
+            const int Tasks = 4, ItersPerTask = 10;
             Action work = () =>
             {
                 for (int i = 0; i < ItersPerTask; i++)
@@ -202,7 +202,5 @@ namespace System.Diagnostics.Tests
             Assert.True(child.WaitForExit(WaitInMS));
             Assert.NotEqual(SuccessExitCode, child.ExitCode);
         }
-
-
     }
 }

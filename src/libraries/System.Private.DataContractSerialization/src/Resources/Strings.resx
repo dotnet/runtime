@@ -1149,4 +1149,22 @@
   <data name="XmlInvalidStream" xml:space="preserve">
     <value>Stream returned by IStreamProvider cannot be null.</value>
   </data>
+  <data name="ISerializableAssemblyNameSetToZero" xml:space="preserve">
+    <value>Type '{0}' has set its ISerializable assembly name to "0". "0" is an invalid assembly name. Consider using the full name of mscorlib if you would like your type to be deserialized in that assembly.</value>
+  </data>
+  <data name="RequiresClassDataContractToSetIsISerializable" xml:space="preserve">
+    <value>Only classes can be generated as ISerializable.</value>
+  </data>
+  <data name="ISerializableCannotHaveDataContract" xml:space="preserve">
+    <value>Type '{0}' cannot be ISerializable and have DataContractAttribute attribute.</value>
+  </data>
+  <data name="SerializationInfo_ConstructorNotFound" xml:space="preserve">
+    <value>The constructor with parameters (SerializationInfo, StreamingContext) is not found in ISerializable type '{0}'.</value>
+  </data>
+  <data name="PartialTrustISerializableNoPublicConstructor" xml:space="preserve">
+    <value>The ISerializable type '{0}' cannot be deserialized in partial trust because it does not have a public constructor with parameters (SerializationInfo, StreamingContext).</value>
+  </data>
+  <data name="ChangingFullTypeNameNotSupported" xml:space="preserve">
+    <value>DataContractJsonSerializer does not support the setting of the FullTypeName of the object to be serialized to a value other than the default FullTypeName. Attempted to serialize object with full type name '{0}' and default full type name '{1}'.</value>
+  </data>
 </root>

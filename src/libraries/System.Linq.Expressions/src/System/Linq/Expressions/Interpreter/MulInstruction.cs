@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private MulInstruction() { }
 
-        internal sealed class MulInt32 : MulInstruction
+        private sealed class MulInt32 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -29,14 +29,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((Int32)l * (Int32)r));
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l * (int)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulInt16 : MulInstruction
+        private sealed class MulInt16 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -48,14 +48,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = unchecked((Int16)((Int16)l * (Int16)r));
+                    frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l * (short)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulInt64 : MulInstruction
+        private sealed class MulInt64 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -67,14 +67,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = unchecked((Int64)((Int64)l * (Int64)r));
+                    frame.Data[frame.StackIndex - 2] = unchecked((long)((long)l * (long)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulUInt16 : MulInstruction
+        private sealed class MulUInt16 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -86,14 +86,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = unchecked((UInt16)((UInt16)l * (UInt16)r));
+                    frame.Data[frame.StackIndex - 2] = unchecked((ushort)((ushort)l * (ushort)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulUInt32 : MulInstruction
+        private sealed class MulUInt32 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -105,14 +105,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = unchecked((UInt32)((UInt32)l * (UInt32)r));
+                    frame.Data[frame.StackIndex - 2] = unchecked((uint)((uint)l * (uint)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulUInt64 : MulInstruction
+        private sealed class MulUInt64 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -124,14 +124,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = unchecked((UInt64)((UInt64)l * (UInt64)r));
+                    frame.Data[frame.StackIndex - 2] = unchecked((ulong)((ulong)l * (ulong)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulSingle : MulInstruction
+        private sealed class MulSingle : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -143,14 +143,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Single)((Single)l * (Single)r);
+                    frame.Data[frame.StackIndex - 2] = (float)((float)l * (float)r);
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulDouble : MulInstruction
+        private sealed class MulDouble : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Double)l * (Double)r;
+                    frame.Data[frame.StackIndex - 2] = (double)l * (double)r;
                 }
                 frame.StackIndex--;
                 return +1;
@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(TypeUtils.IsArithmetic(type));
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new MulInt32());
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions.Interpreter
         
         private MulOvfInstruction() { }
 
-        internal sealed class MulOvfInt32 : MulOvfInstruction
+        private sealed class MulOvfInt32 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -211,14 +211,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((Int32)l * (Int32)r));
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l * (int)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulOvfInt16 : MulOvfInstruction
+        private sealed class MulOvfInt16 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -230,14 +230,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = checked((Int16)((Int16)l * (Int16)r));
+                    frame.Data[frame.StackIndex - 2] = checked((short)((short)l * (short)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulOvfInt64 : MulOvfInstruction
+        private sealed class MulOvfInt64 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -249,14 +249,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = checked((Int64)((Int64)l * (Int64)r));
+                    frame.Data[frame.StackIndex - 2] = checked((long)((long)l * (long)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulOvfUInt16 : MulOvfInstruction
+        private sealed class MulOvfUInt16 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -268,14 +268,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = checked((UInt16)((UInt16)l * (UInt16)r));
+                    frame.Data[frame.StackIndex - 2] = checked((ushort)((ushort)l * (ushort)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulOvfUInt32 : MulOvfInstruction
+        private sealed class MulOvfUInt32 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -287,14 +287,14 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = checked((UInt32)((UInt32)l * (UInt32)r));
+                    frame.Data[frame.StackIndex - 2] = checked((uint)((uint)l * (uint)r));
                 }
                 frame.StackIndex--;
                 return +1;
             }
         }
 
-        internal sealed class MulOvfUInt64 : MulOvfInstruction
+        private sealed class MulOvfUInt64 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -306,7 +306,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = checked((UInt64)((UInt64)l * (UInt64)r));
+                    frame.Data[frame.StackIndex - 2] = checked((ulong)((ulong)l * (ulong)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(TypeUtils.IsArithmetic(type));
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulOvfInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new MulOvfInt32());

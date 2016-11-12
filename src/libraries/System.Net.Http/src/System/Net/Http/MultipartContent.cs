@@ -196,10 +196,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(SerializeToStreamAsync), ex);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -240,10 +237,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(CreateContentReadStreamAsync), ex);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }

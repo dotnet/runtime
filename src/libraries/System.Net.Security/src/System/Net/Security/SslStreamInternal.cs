@@ -27,6 +27,8 @@ namespace System.Net.Security
         private SslState _sslState;
         private int _nestedWrite;
         private int _nestedRead;
+        private AsyncProtocolRequest _readProtocolRequest; // cached, reusable AsyncProtocolRequest used for read operations
+        private AsyncProtocolRequest _writeProtocolRequest; // cached, reusable AsyncProtocolRequest used for write operations
 
         // Never updated directly, special properties are used.  This is the read buffer.
         private byte[] _internalBuffer;
@@ -131,9 +133,8 @@ namespace System.Net.Security
 
         internal IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
-            BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
-            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
-            ProcessRead(buffer, offset, count, asyncRequest);
+            var bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
+            ProcessRead(buffer, offset, count, bufferResult);
             return bufferResult;
         }
 
@@ -168,14 +169,13 @@ namespace System.Net.Security
                 throw new IOException(SR.net_io_read, (Exception)bufferResult.Result);
             }
 
-            return (int)bufferResult.Result;
+            return bufferResult.Int32Result;
         }
 
         internal IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
-            LazyAsyncResult lazyResult = new LazyAsyncResult(this, asyncState, asyncCallback);
-            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(lazyResult);
-            ProcessWrite(buffer, offset, count, asyncRequest);
+            var lazyResult = new LazyAsyncResult(this, asyncState, asyncCallback);
+            ProcessWrite(buffer, offset, count, lazyResult);
             return lazyResult;
         }
 
@@ -319,10 +319,31 @@ namespace System.Net.Security
             }
         }
 
+        private AsyncProtocolRequest GetOrCreateProtocolRequest(ref AsyncProtocolRequest aprField, LazyAsyncResult asyncResult)
+        {
+            AsyncProtocolRequest request = null;
+            if (asyncResult != null)
+            {
+                // SslStreamInternal supports only a single read and a single write operation at a time.
+                // As such, we can cache and reuse the AsyncProtocolRequest object that's used throughout
+                // the implementation.
+                request = aprField;
+                if (request != null)
+                {
+                    request.Reset(asyncResult);
+                }
+                else
+                {
+                    aprField = request = new AsyncProtocolRequest(asyncResult);
+                }
+            }
+            return request;
+        }
+
         //
         // Sync write method.
         //
-        private void ProcessWrite(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
+        private void ProcessWrite(byte[] buffer, int offset, int count, LazyAsyncResult asyncResult)
         {
             _sslState.CheckThrow(authSuccessCheck:true, shutdownCheck:true);
             ValidateParameters(buffer, offset, count);
@@ -331,6 +352,10 @@ namespace System.Net.Security
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "Write", "write"));
             }
+
+            // If this is an async operation, get the AsyncProtocolRequest to use.
+            // We do this only after we verify we're the sole write operation in flight.
+            AsyncProtocolRequest asyncRequest = GetOrCreateProtocolRequest(ref _writeProtocolRequest, asyncResult);
 
             bool failed = false;
 
@@ -395,6 +420,13 @@ namespace System.Net.Security
 
                 do
                 {
+                    if (count == 0 && !SslStreamPal.CanEncryptEmptyMessage)
+                    {
+                        // If it's an empty message and the PAL doesn't support that,
+                        // we're done.
+                        break;
+                    }
+
                     // Request a write IO slot.
                     if (_sslState.CheckEnqueueWrite(asyncRequest))
                     {
@@ -463,14 +495,18 @@ namespace System.Net.Security
         //
         // Combined sync/async read method. For sync request asyncRequest==null.
         //
-        private int ProcessRead(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
+        private int ProcessRead(byte[] buffer, int offset, int count, BufferAsyncResult asyncResult)
         {
             ValidateParameters(buffer, offset, count);
 
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, (asyncRequest!=null? "BeginRead":"Read"), "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, (asyncResult!=null? "BeginRead":"Read"), "read"));
             }
+
+            // If this is an async operation, get the AsyncProtocolRequest to use.
+            // We do this only after we verify we're the sole write operation in flight.
+            AsyncProtocolRequest asyncRequest = GetOrCreateProtocolRequest(ref _readProtocolRequest, asyncResult);
 
             bool failed = false;
 
@@ -486,9 +522,7 @@ namespace System.Net.Security
                         SkipBytes(copyBytes);
                     }
                     
-                    if (asyncRequest != null) {
-                        asyncRequest.CompleteUser((object) copyBytes);
-                    }
+                    asyncRequest?.CompleteUser(copyBytes);
                     
                     return copyBytes;
                 }
@@ -525,12 +559,7 @@ namespace System.Net.Security
 
             if (InternalBufferCount != 0)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:{0}", InternalBufferCount);
-                }
-
-                Debug.Fail("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:" + InternalBufferCount);
+                NetEventSource.Fail(this, $"Previous frame was not consumed. InternalBufferCount: {InternalBufferCount}");
             }
 
             do
@@ -549,10 +578,7 @@ namespace System.Net.Security
 
                 if (copyBytes != -1)
                 {
-                    if (asyncRequest != null)
-                    {
-                        asyncRequest.CompleteUser((object)copyBytes);
-                    }
+                    asyncRequest?.CompleteUser(copyBytes);
 
                     return copyBytes;
                 }
@@ -602,10 +628,7 @@ namespace System.Net.Security
             {
                 //EOF : Reset the buffer as we did not read anything into it.
                 SkipBytes(InternalBufferCount);
-                if (asyncRequest != null)
-                {
-                    asyncRequest.CompleteUser((object)0);
-                }
+                asyncRequest?.CompleteUser(0);
                 
                 return 0;
             }
@@ -697,10 +720,7 @@ namespace System.Net.Security
             SkipBytes(readBytes);
 
             _sslState.FinishRead(null);
-            if (asyncRequest != null)
-            {
-                asyncRequest.CompleteUser((object)readBytes);
-            }
+            asyncRequest?.CompleteUser(readBytes);
 
             return readBytes;
         }
@@ -708,11 +728,7 @@ namespace System.Net.Security
         private int ProcessReadErrorCode(SecurityStatusPal status, byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest, byte[] extraBuffer)
         {
             ProtocolToken message = new ProtocolToken(null, status);
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::***Processing an error Status = " + message.Status.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
 
             if (message.Renegotiate)
             {
@@ -725,10 +741,7 @@ namespace System.Net.Security
             if (message.CloseConnection)
             {
                 _sslState.FinishRead(null);
-                if (asyncRequest != null)
-                {
-                    asyncRequest.CompleteUser((object)0);
-                }
+                asyncRequest?.CompleteUser(0);
 
                 return 0;
             }
@@ -745,12 +758,7 @@ namespace System.Net.Security
 
             if (!(transportResult.AsyncState is AsyncProtocolRequest))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslStream::WriteCallback | State type is wrong, expected AsyncProtocolRequest.");
-                }
-
-                Debug.Fail("SslStream::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
+                NetEventSource.Fail(transportResult, "State type is wrong, expected AsyncProtocolRequest.");
             }
 
             AsyncProtocolRequest asyncRequest = (AsyncProtocolRequest)transportResult.AsyncState;
@@ -779,7 +787,7 @@ namespace System.Net.Security
                 }
 
                 sslStream._sslState.FinishWrite();
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -801,7 +809,7 @@ namespace System.Net.Security
                 }
 
                 ((SslStreamInternal)request.AsyncObject)._sslState.FinishRead(null);
-                request.CompleteWithError(e);
+                request.CompleteUserWithError(e);
             }
         }
 
@@ -823,7 +831,7 @@ namespace System.Net.Security
                 }
 
                 ((SslStreamInternal)asyncRequest.AsyncObject)._sslState.FinishWrite();
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -847,7 +855,7 @@ namespace System.Net.Security
                     throw;
                 }
 
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -871,7 +879,7 @@ namespace System.Net.Security
                     throw;
                 }
 
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
     }
