@@ -13710,7 +13710,6 @@ ULONG ADUnloadSink::Release()
     if (ulRef == 0)
     {
         delete this;
-        return 0;
     }
     return ulRef;
 };
