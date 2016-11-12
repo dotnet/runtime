@@ -95,6 +95,9 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
       <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
@@ -357,10 +360,6 @@
     <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
