@@ -7,9 +7,9 @@ using System.Collections.Generic;
 
 namespace System.Net
 {
-    internal class ListenerPrefixEnumerator : IEnumerator<string>
+    internal sealed class ListenerPrefixEnumerator : IEnumerator<string>
     {
-        private IEnumerator _enumerator;
+        private readonly IEnumerator _enumerator;
 
         internal ListenerPrefixEnumerator(IEnumerator enumerator)
         {

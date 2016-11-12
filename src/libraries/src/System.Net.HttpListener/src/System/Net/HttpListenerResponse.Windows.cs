@@ -242,13 +242,13 @@ namespace System.Net
         }
 
         // We MUST NOT send message-body when we send responses with these Status codes
-        private static readonly int[] s_NoResponseBody = { 100, 101, 204, 205, 304 };
+        private static readonly int[] s_noResponseBody = { 100, 101, 204, 205, 304 };
 
         private bool CanSendResponseBody(int responseCode)
         {
-            for (int i = 0; i < s_NoResponseBody.Length; i++)
+            for (int i = 0; i < s_noResponseBody.Length; i++)
             {
-                if (responseCode == s_NoResponseBody[i])
+                if (responseCode == s_noResponseBody[i])
                 {
                     return false;
                 }
@@ -634,7 +634,7 @@ namespace System.Net
                                     &bytesSent,
                                     SafeLocalAllocHandle.Zero,
                                     0,
-                                    asyncResult == null ? null : asyncResult.m_pOverlapped,
+                                    asyncResult == null ? null : asyncResult._pOverlapped,
                                     null);
 
                             if (asyncResult != null &&
@@ -661,7 +661,7 @@ namespace System.Net
                                 &bytesSent,
                                 SafeLocalAllocHandle.Zero,
                                 0,
-                                asyncResult == null ? null : asyncResult.m_pOverlapped,
+                                asyncResult == null ? null : asyncResult._pOverlapped,
                                 null);
 
                         if (asyncResult != null &&

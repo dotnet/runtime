@@ -13,7 +13,7 @@ namespace System.Net
     //
     internal sealed class HttpServerSessionHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private ulong _serverSessionId;
+        private readonly ulong _serverSessionId;
 
         internal HttpServerSessionHandle(ulong id) : base(true)
         {

@@ -8,20 +8,12 @@ namespace System.Net
 {
     public class HttpListenerBasicIdentity : GenericIdentity
     {
-        private string _password;
-
         public HttpListenerBasicIdentity(string username, string password) :
             base(username, "Basic")
         {
-            _password = password;
+            Password = password;
         }
 
-        public virtual string Password
-        {
-            get
-            {
-                return _password;
-            }
-        }
+        public virtual string Password { get; }
     }
 }

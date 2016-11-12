@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -56,7 +57,7 @@ namespace System.Net
         private string _realm;
         private SafeHandle _requestQueueHandle;
         private ThreadPoolBoundHandle _requestQueueBoundHandle;
-        private volatile State _state; // m_State is set only within lock blocks, but often read outside locks. 
+        private volatile State _state; // _state is set only within lock blocks, but often read outside locks. 
         private HttpListenerPrefixCollection _prefixes;
         private bool _ignoreWriteExceptions;
         private bool _unsafeConnectionNtlmAuthentication;
@@ -68,10 +69,10 @@ namespace System.Net
         private HttpListenerTimeoutManager _timeoutManager;
         private bool _V2Initialized;
 
-        private Hashtable _disconnectResults;         // ulong -> DisconnectAsyncResult
-        private object _internalLock;
+        private Dictionary<ulong, DisconnectAsyncResult> _disconnectResults;         // ulong -> DisconnectAsyncResult
+        private readonly object _internalLock;
 
-        internal Hashtable m_UriPrefixes = new Hashtable();
+        internal Hashtable _uriPrefixes = new Hashtable();
 
         public HttpListener()
         {
@@ -90,7 +91,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal ICollection PrefixCollection => m_UriPrefixes.Keys;
+        internal ICollection PrefixCollection => _uriPrefixes.Keys;
 
         internal SafeHandle RequestQueueHandle
         {
@@ -124,7 +125,7 @@ namespace System.Net
                 CheckDisposed();
                 if (value == null)
                 {
-                    throw new ArgumentNullException();
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _extendedProtectionSelectorDelegate = value;
@@ -292,7 +293,7 @@ namespace System.Net
                 {
                     return;
                 }
-                lock (DisconnectResults.SyncRoot)
+                lock ((DisconnectResults as ICollection).SyncRoot)
                 {
                     if (_unsafeConnectionNtlmAuthentication == value)
                     {
@@ -310,7 +311,7 @@ namespace System.Net
             }
         }
 
-        private Hashtable DisconnectResults
+        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults
         {
             get
             {
@@ -320,7 +321,7 @@ namespace System.Net
                     {
                         if (_disconnectResults == null)
                         {
-                            _disconnectResults = Hashtable.Synchronized(new Hashtable());
+                            _disconnectResults = new Dictionary<ulong, DisconnectAsyncResult>();
                         }
                     }
                 }
@@ -393,7 +394,7 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, "mapped uriPrefix:" + uriPrefix + " to registeredPrefix:" + registeredPrefix);
                 if (_state == State.Started)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this,"Calling Interop.HttpApi.HttpAddUrl[ToUrlGroup]");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpAddUrl[ToUrlGroup]");
                     uint statusCode = InternalAddPrefix(registeredPrefix);
                     if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
                     {
@@ -403,7 +404,7 @@ namespace System.Net
                             throw new HttpListenerException((int)statusCode);
                     }
                 }
-                m_UriPrefixes[uriPrefix] = registeredPrefix;
+                _uriPrefixes[uriPrefix] = registeredPrefix;
                 _defaultServiceNames.Add(uriPrefix);
             }
             catch (Exception exception)
@@ -417,7 +418,7 @@ namespace System.Net
             }
         }
 
-        internal bool ContainsPrefix(string uriPrefix) => m_UriPrefixes.Contains(uriPrefix);
+        internal bool ContainsPrefix(string uriPrefix) => _uriPrefixes.Contains(uriPrefix);
 
         public HttpListenerPrefixCollection Prefixes
         {
@@ -446,17 +447,17 @@ namespace System.Net
                     throw new ArgumentNullException(nameof(uriPrefix));
                 }
 
-                if (!m_UriPrefixes.Contains(uriPrefix))
+                if (!_uriPrefixes.Contains(uriPrefix))
                 {
                     return false;
                 }
 
                 if (_state == State.Started)
                 {
-                    InternalRemovePrefix((string)m_UriPrefixes[uriPrefix]);
+                    InternalRemovePrefix((string)_uriPrefixes[uriPrefix]);
                 }
 
-                m_UriPrefixes.Remove(uriPrefix);
+                _uriPrefixes.Remove(uriPrefix);
                 _defaultServiceNames.Remove(uriPrefix);
             }
             catch (Exception exception)
@@ -478,11 +479,11 @@ namespace System.Net
             {
                 CheckDisposed();
                 // go through the uri list and unregister for each one of them
-                if (m_UriPrefixes.Count > 0)
+                if (_uriPrefixes.Count > 0)
                 {
                     if (_state == State.Started)
                     {
-                        foreach (string registeredPrefix in m_UriPrefixes.Values)
+                        foreach (string registeredPrefix in _uriPrefixes.Values)
                         {
                             // ignore possible failures
                             InternalRemovePrefix(registeredPrefix);
@@ -491,7 +492,7 @@ namespace System.Net
 
                     if (clear)
                     {
-                        m_UriPrefixes.Clear();
+                        _uriPrefixes.Clear();
                         _defaultServiceNames.Clear();
                     }
                 }
@@ -585,10 +586,8 @@ namespace System.Net
                 //
                 // If Url group or request queue creation failed, close server session before throwing.
                 //
-                if (_serverSessionHandle != null)
-                {
-                    _serverSessionHandle.Dispose();
-                }
+                _serverSessionHandle?.Dispose();
+
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"SetupV2Config {exception}");
                 throw;
             }
@@ -838,15 +837,8 @@ namespace System.Net
             }
         }
 
-        private void Dispose(bool disposing)
+        private void Dispose()
         {
-            Debug.Assert(disposing, "Dispose(bool) does nothing if called from the finalizer.");
-
-            if (!disposing)
-            {
-                return;
-            }
-
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             lock (_internalLock)
@@ -890,27 +882,16 @@ namespace System.Net
 
         private bool InternalRemovePrefix(string uriPrefix)
         {
-            uint statusCode = 0;
-
-            statusCode =
-                Interop.HttpApi.HttpRemoveUrlFromUrlGroup(
-                    _urlGroupId,
-                    uriPrefix,
-                    0);
-
-            if (statusCode == Interop.HttpApi.ERROR_NOT_FOUND)
-            {
-                return false;
-            }
-            return true;
+            uint statusCode = Interop.HttpApi.HttpRemoveUrlFromUrlGroup(_urlGroupId, uriPrefix, 0);
+            return statusCode != Interop.HttpApi.ERROR_NOT_FOUND;
         }
 
         private void AddAllPrefixes()
         {
             // go through the uri list and register for each one of them
-            if (m_UriPrefixes.Count > 0)
+            if (_uriPrefixes.Count > 0)
             {
-                foreach (string registeredPrefix in m_UriPrefixes.Values)
+                foreach (string registeredPrefix in _uriPrefixes.Values)
                 {
                     uint statusCode = InternalAddPrefix(registeredPrefix);
                     if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
@@ -939,7 +920,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "Start()"));
                 }
-                if (m_UriPrefixes.Count == 0)
+                if (_uriPrefixes.Count == 0)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "AddPrefix()"));
                 }
@@ -1125,7 +1106,10 @@ namespace System.Net
 
         public Task<HttpListenerContext> GetContextAsync()
         {
-            return Task<HttpListenerContext>.Factory.FromAsync(BeginGetContext, EndGetContext, null);
+            return Task.Factory.FromAsync(
+                (callback, state) => ((HttpListener)state).BeginGetContext(callback, state),
+                iar => ((HttpListener)iar.AsyncState).EndGetContext(iar),
+                this);
         }
 
         internal HttpListenerContext HandleAuthentication(RequestContextBase memoryBlob, out bool stoleBlob)
@@ -1149,12 +1133,12 @@ namespace System.Net
             // previously authenticated.
             // assurance that we do this only for NTLM/Negotiate is not here, but in the
             // code that caches WindowsIdentity instances in the Dictionary.
-            DisconnectAsyncResult disconnectResult = (DisconnectAsyncResult)DisconnectResults[connectionId];
+            DisconnectAsyncResult disconnectResult = DisconnectResults[connectionId];
             if (UnsafeConnectionNtlmAuthentication)
             {
                 if (authorizationHeader == null)
                 {
-                    WindowsPrincipal principal = disconnectResult == null ? null : disconnectResult.AuthenticatedConnection;
+                    WindowsPrincipal principal = disconnectResult?.AuthenticatedConnection;
                     if (principal != null)
                     {
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Principal: {principal} principal.Identity.Name: {principal.Identity.Name} creating request");
@@ -1263,22 +1247,22 @@ namespace System.Net
                     if (index < authorizationHeader.Length)
                     {
                         if ((authenticationScheme & AuthenticationSchemes.Negotiate) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, "Negotiate", 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthConstants.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Negotiate;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Ntlm) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, "NTLM", 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthConstants.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Ntlm;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Digest) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, "Digest", 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthConstants.Digest, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Digest;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Basic) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, "Basic", 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthConstants.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Basic;
                         }
@@ -1570,12 +1554,12 @@ namespace System.Net
 
             if ((authenticationScheme & AuthenticationSchemes.Negotiate) != 0)
             {
-                AddChallenge(ref challenges, "Negotiate");
+                AddChallenge(ref challenges, AuthConstants.Negotiate);
             }
 
             if ((authenticationScheme & AuthenticationSchemes.Ntlm) != 0)
             {
-                AddChallenge(ref challenges, "NTLM");
+                AddChallenge(ref challenges, AuthConstants.NTLM);
             }
 
             if ((authenticationScheme & AuthenticationSchemes.Digest) != 0)
@@ -1598,7 +1582,7 @@ namespace System.Net
 
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this,"Calling Interop.HttpApi.HttpWaitForDisconnect");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpWaitForDisconnect");
 
                 DisconnectAsyncResult result = new DisconnectAsyncResult(this, connectionId);
 
@@ -1978,8 +1962,6 @@ namespace System.Net
             private WindowsPrincipal _authenticatedConnection;
             private NTAuthentication _session;
 
-            internal const string NTLM = "NTLM";
-
             internal NativeOverlapped* NativeOverlapped
             {
                 get
@@ -2088,7 +2070,7 @@ namespace System.Net
 
                 IDisposable identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
                 if ((identity != null) &&
-                    (_authenticatedConnection.Identity.AuthenticationType == NTLM) &&
+                    (_authenticatedConnection.Identity.AuthenticationType == AuthConstants.NTLM) &&
                     (_httpListener.UnsafeConnectionNtlmAuthentication))
                 {
                     identity.Dispose();

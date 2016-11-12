@@ -15,23 +15,18 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerContext
     {
         private HttpListener _listener;
-        private HttpListenerRequest _request;
         private HttpListenerResponse _response;
         private IPrincipal _user;
         private string _mutualAuthentication;
-        private AuthenticationSchemes _authenticationSchemes;
-        private ExtendedProtectionPolicy _extendedProtectionPolicy;
-
-        internal const string NTLM = "NTLM";
 
         internal HttpListenerContext(HttpListener httpListener, RequestContextBase memoryBlob)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"httpListener {httpListener} requestBlob={((IntPtr)memoryBlob.RequestBlob)}");
             _listener = httpListener;
-            _request = new HttpListenerRequest(this, memoryBlob);
-            _authenticationSchemes = httpListener.AuthenticationSchemes;
-            _extendedProtectionPolicy = httpListener.ExtendedProtectionPolicy;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener} HttpListenerRequest: {_request}");
+            Request = new HttpListenerRequest(this, memoryBlob);
+            AuthenticationSchemes = httpListener.AuthenticationSchemes;
+            ExtendedProtectionPolicy = httpListener.ExtendedProtectionPolicy;
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener} HttpListenerRequest: {Request}");
         }
 
         // Call this right after construction, and only once!  Not after it's been handed to a user.
@@ -42,13 +37,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
 
-        public HttpListenerRequest Request
-        {
-            get
-            {
-                return _request;
-            }
-        }
+        public HttpListenerRequest Request { get; }
 
         public HttpListenerResponse Response
         {
@@ -58,7 +47,7 @@ namespace System.Net
                 if (_response == null)
                 {
                     _response = new HttpListenerResponse(this);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener}, HttpListenerRequest: {_request}, HttpListenerResponse: {_response}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener}, HttpListenerRequest: {Request}, HttpListenerResponse: {_response}");
                 }
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return _response;
@@ -68,82 +57,32 @@ namespace System.Net
         public IPrincipal User => _user;
 
         // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
-        internal AuthenticationSchemes AuthenticationSchemes
-        {
-            get
-            {
-                return _authenticationSchemes;
-            }
-            set
-            {
-                _authenticationSchemes = value;
-            }
-        }
+        internal AuthenticationSchemes AuthenticationSchemes { get; set; }
 
         // This can be used to cache the results of HttpListener.ExtendedProtectionSelectorDelegate.
-        internal ExtendedProtectionPolicy ExtendedProtectionPolicy
-        {
-            get
-            {
-                return _extendedProtectionPolicy;
-            }
-            set
-            {
-                _extendedProtectionPolicy = value;
-            }
-        }
+        internal ExtendedProtectionPolicy ExtendedProtectionPolicy { get; set; }
 
-        internal string MutualAuthentication
-        {
-            get
-            {
-                return _mutualAuthentication;
-            }
-        }
+        internal string MutualAuthentication => _mutualAuthentication;
 
-        internal HttpListener Listener
-        {
-            get
-            {
-                return _listener;
-            }
-        }
+        internal HttpListener Listener => _listener;
 
-        internal SafeHandle RequestQueueHandle
-        {
-            get
-            {
-                return _listener.RequestQueueHandle;
-            }
-        }
+        internal SafeHandle RequestQueueHandle => _listener.RequestQueueHandle;
 
-        internal ThreadPoolBoundHandle RequestQueueBoundHandle
-        {
-            get
-            {
-                return _listener.RequestQueueBoundHandle;
-            }
-        }
+        internal ThreadPoolBoundHandle RequestQueueBoundHandle => _listener.RequestQueueBoundHandle;
 
-        internal ulong RequestId
-        {
-            get
-            {
-                return Request.RequestId;
-            }
-        }
+        internal ulong RequestId => Request.RequestId;
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol)
         {
             return this.AcceptWebSocketAsync(subProtocol,
-                WebSocketHelpers.DefaultReceiveBufferSize,
+                WebSocketValidate.DefaultReceiveBufferSize,
                 WebSocket.DefaultKeepAliveInterval);
         }
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval)
         {
             return this.AcceptWebSocketAsync(subProtocol,
-                WebSocketHelpers.DefaultReceiveBufferSize,
+                WebSocketValidate.DefaultReceiveBufferSize,
                 keepAliveInterval);
         }
 
@@ -151,7 +90,7 @@ namespace System.Net
             int receiveBufferSize,
             TimeSpan keepAliveInterval)
         {
-            WebSocketHelpers.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            WebSocketValidate.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
 
             ArraySegment<byte> internalBuffer = WebSocketBuffer.CreateInternalBufferArraySegment(receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
             return this.AcceptWebSocketAsync(subProtocol,
@@ -166,7 +105,7 @@ namespace System.Net
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            return WebSocketHelpers.AcceptWebSocketAsync(this,
+            return WebSocketValidate.AcceptWebSocketAsync(this,
                 subProtocol,
                 receiveBufferSize,
                 keepAliveInterval,
@@ -179,16 +118,13 @@ namespace System.Net
 
             try
             {
-                if (_response != null)
-                {
-                    _response.Close();
-                }
+                _response?.Close();
             }
             finally
             {
                 try
                 {
-                    _request.Close();
+                    Request.Close();
                 }
                 finally
                 {
@@ -196,7 +132,7 @@ namespace System.Net
 
                     // For unsafe connection ntlm auth we dont dispose this identity as yet since its cached
                     if ((user != null) &&
-                        (_user.Identity.AuthenticationType != NTLM) &&
+                        (_user.Identity.AuthenticationType != AuthConstants.NTLM) &&
                         (!_listener.UnsafeConnectionNtlmAuthentication))
                     {
                         user.Dispose();
@@ -209,18 +145,14 @@ namespace System.Net
         internal void Abort()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            ForceCancelRequest(RequestQueueHandle, _request.RequestId);
+            ForceCancelRequest(RequestQueueHandle, Request.RequestId);
             try
             {
-                _request.Close();
+                Request.Close();
             }
             finally
             {
-                IDisposable user = _user == null ? null : _user.Identity as IDisposable;
-                if (user != null)
-                {
-                    user.Dispose();
-                }
+                (_user?.Identity as IDisposable)?.Dispose();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -236,8 +168,7 @@ namespace System.Net
         internal static void CancelRequest(SafeHandle requestQueueHandle, ulong requestId)
         {
             // It is safe to ignore the return value on a cancel operation because the connection is being closed
-            uint statusCode = Interop.HttpApi.HttpCancelHttpRequest(requestQueueHandle, requestId,
-                IntPtr.Zero);
+            Interop.HttpApi.HttpCancelHttpRequest(requestQueueHandle, requestId, IntPtr.Zero);
         }
 
         // The request is being aborted, but large writes may be in progress. Cancel them.

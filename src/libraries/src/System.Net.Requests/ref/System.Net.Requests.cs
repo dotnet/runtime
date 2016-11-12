@@ -128,7 +128,6 @@ namespace System.Net
         internal HttpWebRequest() { }
         public string Accept { get { throw null; } set { } }
         public virtual bool AllowReadStreamBuffering { get { throw null; } set { } }
-        public string Connection { get { throw null; } set { } }
         public override string ContentType { get { throw null; } set { } }
         public int ContinueTimeout { get { throw null; } set { } }
         public virtual System.Net.CookieContainer CookieContainer { get { throw null; } set { } }

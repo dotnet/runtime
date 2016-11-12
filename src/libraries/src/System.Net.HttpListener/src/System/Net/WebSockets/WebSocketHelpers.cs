@@ -15,13 +15,12 @@ using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
 {
-    internal static class WebSocketHelpers
+    internal static partial class WebSocketValidate
     {
         internal const string SecWebSocketKeyGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
         internal const string WebSocketUpgradeToken = "websocket";
         internal const int DefaultReceiveBufferSize = 16 * 1024;
         internal const int DefaultClientSendBufferSize = 16 * 1024;
-        internal const int MaxControlFramePayloadLength = 123;
 
         // RFC 6455 requests WebSocket clients to let the server initiate the TCP close to avoid that client sockets 
         // end up in TIME_WAIT-state
@@ -32,12 +31,6 @@ namespace System.Net.WebSockets
         // sending and receiving a Close message, e.g., if it has not received a TCP Close from the server in a 
         // reasonable time period.
         internal const int ClientTcpCloseTimeout = 1000; // 1s
-
-        private const int CloseStatusCodeAbort = 1006;
-        private const int CloseStatusCodeFailedTLSHandshake = 1015;
-        private const int InvalidCloseStatusCodesFrom = 0;
-        private const int InvalidCloseStatusCodesTo = 999;
-        private const string Separators = "()<>@,;:\\\"/[]?={} ";
 
         private static readonly ArraySegment<byte> s_EmptyPayload = new ArraySegment<byte>(new byte[] { }, 0, 0);
         private static readonly Random s_KeyGenerator = new Random();
@@ -54,8 +47,8 @@ namespace System.Net.WebSockets
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            WebSocketHelpers.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            WebSocketHelpers.ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
+            ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
             WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
 
             return AcceptWebSocketAsyncCore(context, subProtocol, receiveBufferSize, keepAliveInterval, internalBuffer);
@@ -88,7 +81,7 @@ namespace System.Net.WebSockets
                 List<string> secWebSocketProtocols = new List<string>();
                 string outgoingSecWebSocketProtocolString;
                 bool shouldSendSecWebSocketProtocolHeader =
-                    WebSocketHelpers.ProcessWebSocketProtocolHeader(
+                    ProcessWebSocketProtocolHeader(
                         request.Headers[HttpKnownHeaderNames.SecWebSocketProtocol],
                         subProtocol,
                         out outgoingSecWebSocketProtocolString);
@@ -102,7 +95,7 @@ namespace System.Net.WebSockets
 
                 // negotiate the websocket key return value
                 string secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
-                string secWebSocketAccept = WebSocketHelpers.GetSecWebSocketAcceptString(secWebSocketKey);
+                string secWebSocketAccept = WebSocketValidate.GetSecWebSocketAcceptString(secWebSocketKey);
 
                 response.Headers.Add(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
                 response.Headers.Add(HttpKnownHeaderNames.Upgrade, WebSocketUpgradeToken);
@@ -115,7 +108,7 @@ namespace System.Net.WebSockets
                 {
                     throw new WebSocketException((int)hresult,
                         SR.Format(SR.net_WebSockets_NativeSendResponseHeaders,
-                        WebSocketHelpers.MethodNames.AcceptWebSocketAsync,
+                        nameof(AcceptWebSocketAsync),
                         hresult));
                 }
 
@@ -191,7 +184,7 @@ namespace System.Net.WebSockets
             // SHA1 used only for hashing purposes, not for crypto. Check here for FIPS compat.
             using (SHA1 sha1 = SHA1.Create())
             {
-                string acceptString = string.Concat(secWebSocketKey, WebSocketHelpers.SecWebSocketKeyGuid);
+                string acceptString = string.Concat(secWebSocketKey, WebSocketValidate.SecWebSocketKeyGuid);
                 byte[] toHash = Encoding.UTF8.GetBytes(acceptString);
                 retVal = Convert.ToBase64String(sha1.ComputeHash(toHash));
             }
@@ -310,10 +303,10 @@ namespace System.Net.WebSockets
             {
                 throw new WebSocketException(WebSocketError.NotAWebSocket,
                     SR.Format(SR.net_WebSockets_AcceptNotAWebSocket,
-                    WebSocketHelpers.MethodNames.ValidateWebSocketHeaders,
+                    nameof(ValidateWebSocketHeaders),
                     HttpKnownHeaderNames.Connection,
                     HttpKnownHeaderNames.Upgrade,
-                    WebSocketHelpers.WebSocketUpgradeToken,
+                    WebSocketValidate.WebSocketUpgradeToken,
                     context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
             }
 
@@ -322,7 +315,7 @@ namespace System.Net.WebSockets
             {
                 throw new WebSocketException(WebSocketError.HeaderError,
                     SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
-                    WebSocketHelpers.MethodNames.ValidateWebSocketHeaders,
+                    nameof(ValidateWebSocketHeaders),
                     HttpKnownHeaderNames.SecWebSocketVersion));
             }
 
@@ -330,7 +323,7 @@ namespace System.Net.WebSockets
             {
                 throw new WebSocketException(WebSocketError.UnsupportedVersion,
                     SR.Format(SR.net_WebSockets_AcceptUnsupportedWebSocketVersion,
-                    WebSocketHelpers.MethodNames.ValidateWebSocketHeaders,
+                    nameof(ValidateWebSocketHeaders),
                     secWebSocketVersion,
                     WebSocketProtocolComponent.SupportedVersion));
             }
@@ -339,103 +332,11 @@ namespace System.Net.WebSockets
             {
                 throw new WebSocketException(WebSocketError.HeaderError,
                     SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
-                    WebSocketHelpers.MethodNames.ValidateWebSocketHeaders,
+                    nameof(ValidateWebSocketHeaders),
                     HttpKnownHeaderNames.SecWebSocketKey));
             }
         }
-
-        internal static void PrepareWebRequest(ref HttpWebRequest request)
-        {
-            request.Connection = HttpKnownHeaderNames.Upgrade;
-            request.Headers[HttpKnownHeaderNames.Upgrade] = WebSocketUpgradeToken;
-
-            byte[] keyBlob = new byte[16];
-            lock (s_KeyGenerator)
-            {
-                s_KeyGenerator.NextBytes(keyBlob);
-            }
-
-            request.Headers[HttpKnownHeaderNames.SecWebSocketKey] = Convert.ToBase64String(keyBlob);
-            if (WebSocketProtocolComponent.IsSupported)
-            {
-                request.Headers[HttpKnownHeaderNames.SecWebSocketVersion] = WebSocketProtocolComponent.SupportedVersion;
-            }
-        }
-
-        internal static void ValidateSubprotocol(string subProtocol)
-        {
-            if (string.IsNullOrWhiteSpace(subProtocol))
-            {
-                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
-            }
-
-            char[] chars = subProtocol.ToCharArray();
-            string invalidChar = null;
-            int i = 0;
-            while (i < chars.Length)
-            {
-                char ch = chars[i];
-                if (ch < 0x21 || ch > 0x7e)
-                {
-                    invalidChar = string.Format(CultureInfo.InvariantCulture, "[{0}]", (int)ch);
-                    break;
-                }
-
-                if (!char.IsLetterOrDigit(ch) &&
-                    Separators.IndexOf(ch) >= 0)
-                {
-                    invalidChar = ch.ToString();
-                    break;
-                }
-
-                i++;
-            }
-
-            if (invalidChar != null)
-            {
-                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar),
-                    nameof(subProtocol));
-            }
-        }
-
-        internal static void ValidateCloseStatus(WebSocketCloseStatus closeStatus, string statusDescription)
-        {
-            if (closeStatus == WebSocketCloseStatus.Empty && !string.IsNullOrEmpty(statusDescription))
-            {
-                throw new ArgumentException(SR.Format(SR.net_WebSockets_ReasonNotNull,
-                    statusDescription,
-                    WebSocketCloseStatus.Empty),
-                    nameof(statusDescription));
-            }
-
-            int closeStatusCode = (int)closeStatus;
-
-            if ((closeStatusCode >= InvalidCloseStatusCodesFrom &&
-                closeStatusCode <= InvalidCloseStatusCodesTo) ||
-                closeStatusCode == CloseStatusCodeAbort ||
-                closeStatusCode == CloseStatusCodeFailedTLSHandshake)
-            {
-                // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
-                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,
-                    closeStatusCode),
-                    nameof(closeStatus));
-            }
-
-            int length = 0;
-            if (!string.IsNullOrEmpty(statusDescription))
-            {
-                length = Encoding.UTF8.GetByteCount(statusDescription);
-            }
-
-            if (length > WebSocketHelpers.MaxControlFramePayloadLength)
-            {
-                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusDescription,
-                    statusDescription,
-                    WebSocketHelpers.MaxControlFramePayloadLength),
-                    nameof(statusDescription));
-            }
-        }
-
+        
         internal static void ValidateOptions(string subProtocol,
             int receiveBufferSize,
             int sendBufferSize,
@@ -551,12 +452,6 @@ namespace System.Net.WebSockets
             {
                 ThrowPlatformNotSupportedException_HTTPSYS();
             }
-        }
-
-        internal static class MethodNames
-        {
-            internal const string AcceptWebSocketAsync = "AcceptWebSocketAsync";
-            internal const string ValidateWebSocketHeaders = "ValidateWebSocketHeaders";
         }
     }
 }

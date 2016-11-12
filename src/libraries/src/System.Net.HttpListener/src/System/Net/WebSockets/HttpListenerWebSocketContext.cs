@@ -11,20 +11,20 @@ namespace System.Net.WebSockets
 {
     public class HttpListenerWebSocketContext : WebSocketContext
     {
-        private Uri _requestUri;
-        private NameValueCollection _headers;
-        private CookieCollection _cookieCollection;
-        private IPrincipal _user;
-        private bool _isAuthenticated;
-        private bool _isLocal;
-        private bool _isSecureConnection;
+        private readonly Uri _requestUri;
+        private readonly NameValueCollection _headers;
+        private readonly CookieCollection _cookieCollection;
+        private readonly IPrincipal _user;
+        private readonly bool _isAuthenticated;
+        private readonly bool _isLocal;
+        private readonly bool _isSecureConnection;
 
-        private string _origin;
-        private IEnumerable<string> _secWebSocketProtocols;
-        private string _secWebSocketVersion;
-        private string _secWebSocketKey;
+        private readonly string _origin;
+        private readonly IEnumerable<string> _secWebSocketProtocols;
+        private readonly string _secWebSocketVersion;
+        private readonly string _secWebSocketKey;
 
-        private WebSocket _webSocket;
+        private readonly WebSocket _webSocket;
 
         internal HttpListenerWebSocketContext(
             Uri requestUri,
@@ -63,65 +63,29 @@ namespace System.Net.WebSockets
             _webSocket = webSocket;
         }
 
-        public override Uri RequestUri
-        {
-            get { return _requestUri; }
-        }
+        public override Uri RequestUri => _requestUri;
 
-        public override NameValueCollection Headers
-        {
-            get { return _headers; }
-        }
+        public override NameValueCollection Headers => _headers;
 
-        public override string Origin
-        {
-            get { return _origin; }
-        }
+        public override string Origin => _origin;
 
-        public override IEnumerable<string> SecWebSocketProtocols
-        {
-            get { return _secWebSocketProtocols; }
-        }
+        public override IEnumerable<string> SecWebSocketProtocols => _secWebSocketProtocols;
 
-        public override string SecWebSocketVersion
-        {
-            get { return _secWebSocketVersion; }
-        }
+        public override string SecWebSocketVersion => _secWebSocketVersion;
 
-        public override string SecWebSocketKey
-        {
-            get { return _secWebSocketKey; }
-        }
+        public override string SecWebSocketKey => _secWebSocketKey;
 
-        public override CookieCollection CookieCollection
-        {
-            get { return _cookieCollection; }
-        }
+        public override CookieCollection CookieCollection => _cookieCollection;
 
-        public override IPrincipal User
-        {
-            get { return _user; }
-        }
+        public override IPrincipal User => _user;
 
-        public override bool IsAuthenticated
-        {
-            get { return _isAuthenticated; }
-        }
+        public override bool IsAuthenticated => _isAuthenticated;
 
-        public override bool IsLocal
-        {
-            get { return _isLocal; }
-        }
+        public override bool IsLocal => _isLocal;
 
-        public override bool IsSecureConnection
-        {
-            get { return _isSecureConnection; }
-        }
+        public override bool IsSecureConnection => _isSecureConnection;
 
-        public override WebSocket WebSocket
-        {
-            get { return _webSocket; }
-        }
+        public override WebSocket WebSocket => _webSocket;
 
         private static IPrincipal CopyPrincipal(IPrincipal user)
         {

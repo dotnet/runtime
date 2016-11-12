@@ -565,10 +565,12 @@ internal static partial class Interop
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern uint HttpCloseServerSession(ulong serverSessionId);
 
-        internal class SafeLocalFreeChannelBinding : ChannelBinding
+        internal sealed class SafeLocalFreeChannelBinding : ChannelBinding
         {
             private const int LMEM_FIXED = 0;
             private int _size;
+
+            private SafeLocalFreeChannelBinding() { }
 
             public override int Size
             {
@@ -577,9 +579,7 @@ internal static partial class Interop
 
             public static SafeLocalFreeChannelBinding LocalAlloc(int cb)
             {
-                SafeLocalFreeChannelBinding result;
-
-                result = LocalAllocChannelBinding(LMEM_FIXED, (UIntPtr)cb);
+                SafeLocalFreeChannelBinding result = HttpApi.LocalAlloc(LMEM_FIXED, (UIntPtr)cb);
                 if (result.IsInvalid)
                 {
                     result.SetHandleAsInvalid();
@@ -596,15 +596,15 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Interop.Libraries.Heap, EntryPoint = "LocalAlloc", SetLastError = true)]
-        internal static extern SafeLocalFreeChannelBinding LocalAllocChannelBinding(int uFlags, UIntPtr sizetdwBytes);
+        [DllImport(Libraries.Heap, SetLastError = true)]
+        internal static extern SafeLocalFreeChannelBinding LocalAlloc(int uFlags, UIntPtr sizetdwBytes);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal unsafe static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal unsafe static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
-        
+
         [Flags]
         internal enum FileCompletionNotificationModes : byte
         {
@@ -722,7 +722,7 @@ internal static partial class Interop
                 "WWW-Authenticate",
             };
 
-            private static Dictionary<string, int> s_hashtable = CreateTable();
+            private readonly static Dictionary<string, int> s_hashtable = CreateTable();
 
             private static Dictionary<string, int> CreateTable()
             {
@@ -761,7 +761,7 @@ internal static partial class Interop
             }
 
             // For known headers, when header value is empty, RawValueLength will be 0 and 
-            // pRawValue will point to empty string ("\0")
+            // pRawValue will point to empty string
             if (pKnownHeader->pRawValue != null)
             {
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);

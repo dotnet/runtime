@@ -17,12 +17,12 @@ namespace System.Net.WebSockets
 
         protected override bool ReleaseHandle()
         {
-            if (this.IsInvalid)
+            if (IsInvalid)
             {
                 return true;
             }
 
-            WebSocketProtocolComponent.WebSocketDeleteHandle(this.handle);
+            WebSocketProtocolComponent.WebSocketDeleteHandle(handle);
             return true;
         }
     }

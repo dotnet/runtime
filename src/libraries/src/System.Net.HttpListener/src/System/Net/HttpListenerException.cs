@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Net
 {
@@ -24,5 +25,15 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, NativeErrorCode.ToString() + ":" + Message);
         }
+
+        protected HttpListenerException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, NativeErrorCode.ToString() + ":" + Message);
+        }
+
+        // the base class returns the HResult with this property
+        // we need the Win32 Error Code, hence the override.
+        public override int ErrorCode => NativeErrorCode;
     }
 }

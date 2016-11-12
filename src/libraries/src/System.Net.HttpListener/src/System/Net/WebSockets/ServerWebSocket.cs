@@ -23,12 +23,12 @@ namespace System.Net.WebSockets
         {
             if (!WebSocketProtocolComponent.IsSupported)
             {
-                WebSocketHelpers.ThrowPlatformNotSupportedException_WSPC();
+                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
             }
 
-            WebSocketHelpers.ValidateInnerStream(innerStream);
-            WebSocketHelpers.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            WebSocketHelpers.ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
+            WebSocketValidate.ValidateInnerStream(innerStream);
+            WebSocketValidate.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            WebSocketValidate.ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
             WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
 
             return new ServerWebSocket(innerStream,
@@ -55,7 +55,7 @@ namespace System.Net.WebSockets
 
             if (_sessionHandle == null || _sessionHandle.IsInvalid)
             {
-                WebSocketHelpers.ThrowPlatformNotSupportedException_WSPC();
+                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
             }
 
             StartKeepAliveTimer();
@@ -65,14 +65,14 @@ namespace System.Net.WebSockets
         {
             get
             {
-                Debug.Assert(_sessionHandle != null, "'m_SessionHandle MUST NOT be NULL.");
+                Debug.Assert(_sessionHandle != null, "'_sessionHandle MUST NOT be NULL.");
                 return _sessionHandle;
             }
         }
 
         private SafeHandle CreateWebSocketHandle()
         {
-            Debug.Assert(_properties != null, "'m_Properties' MUST NOT be NULL.");
+            Debug.Assert(_properties != null, "'_properties' MUST NOT be NULL.");
             SafeWebSocketHandle sessionHandle;
             WebSocketProtocolComponent.WebSocketCreateServerHandle(
                 _properties,

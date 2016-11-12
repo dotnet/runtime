@@ -37,7 +37,7 @@ namespace System.Net.WebSockets
         // Indicates the range of the pinned byte[] that can be used by the WSPC (nativeBuffer + pinnedSendBuffer)
         private readonly long _startAddress;
         private readonly long _endAddress;
-        private readonly GCHandle _GCHandle;
+        private readonly GCHandle _gcHandle;
         private readonly ArraySegment<byte> _internalBuffer;
         private readonly ArraySegment<byte> _nativeBuffer;
         private readonly ArraySegment<byte> _payloadBuffer;
@@ -67,7 +67,7 @@ namespace System.Net.WebSockets
             _receiveBufferSize = receiveBufferSize;
             _sendBufferSize = sendBufferSize;
             _internalBuffer = internalBuffer;
-            _GCHandle = GCHandle.Alloc(internalBuffer.Array, GCHandleType.Pinned);
+            _gcHandle = GCHandle.Alloc(internalBuffer.Array, GCHandleType.Pinned);
             // Size of the internal buffer owned exclusively by the WSPC.
             int nativeBufferSize = _receiveBufferSize + _sendBufferSize + NativeOverheadBufferSize;
             _startAddress = Marshal.UnsafeAddrOfPinnedArrayElement(internalBuffer.Array, internalBuffer.Offset).ToInt64();
@@ -122,7 +122,7 @@ namespace System.Net.WebSockets
 
             // serialize marshaled property values in the property segment of the internal buffer
             // m_GCHandle.AddrOfPinnedObject() points to the address of m_InternalBuffer.Array
-            IntPtr internalBufferPtr = _GCHandle.AddrOfPinnedObject();
+            IntPtr internalBufferPtr = _gcHandle.AddrOfPinnedObject();
             int offset = _propertyBuffer.Offset;
             Marshal.WriteInt32(internalBufferPtr, offset, _receiveBufferSize);
             offset += s_SizeOfUInt;
@@ -179,7 +179,7 @@ namespace System.Net.WebSockets
         internal void PinSendBuffer(ArraySegment<byte> payload, out bool bufferHasBeenPinned)
         {
             bufferHasBeenPinned = false;
-            WebSocketHelpers.ValidateBuffer(payload.Array, payload.Offset, payload.Count);
+            WebSocketValidate.ValidateBuffer(payload.Array, payload.Offset, payload.Count);
             int previousState = Interlocked.Exchange(ref _sendBufferState, SendBufferState.SendPayloadSpecified);
 
             if (previousState != SendBufferState.None)
@@ -296,7 +296,7 @@ namespace System.Net.WebSockets
                 _pinnedSendBufferHandle.Free();
             }
 
-            _pinnedSendBuffer = WebSocketHelpers.EmptyPayload;
+            _pinnedSendBuffer = WebSocketValidate.EmptyPayload;
         }
 
         internal void BufferPayload(ArraySegment<byte> payload,
@@ -374,7 +374,7 @@ namespace System.Net.WebSockets
 
             if (bufferData == IntPtr.Zero)
             {
-                return WebSocketHelpers.EmptyPayload;
+                return WebSocketValidate.EmptyPayload;
             }
 
             if (this.IsNativeBuffer(bufferData, bufferLength))
@@ -635,9 +635,9 @@ namespace System.Net.WebSockets
 
         private void CleanUp()
         {
-            if (_GCHandle.IsAllocated)
+            if (_gcHandle.IsAllocated)
             {
-                _GCHandle.Free();
+                _gcHandle.Free();
             }
 
             ReleasePinnedSendBuffer();

@@ -10,6 +10,8 @@ namespace System.Net
 {
     internal class HttpListenerRequestContext : TransportContext
     {
+        private readonly HttpListenerRequest _request;
+
         internal HttpListenerRequestContext(HttpListenerRequest request)
         {
             Debug.Assert(request != null, "HttpListenerRequestContext..ctor(): Not expecting a null request!");
@@ -25,8 +27,6 @@ namespace System.Net
             }
             return _request.GetChannelBinding();
         }
-
-        private HttpListenerRequest _request;
     }
 }
 
