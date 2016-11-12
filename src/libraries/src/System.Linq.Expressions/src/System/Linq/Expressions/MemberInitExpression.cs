@@ -78,7 +78,7 @@ namespace System.Linq.Expressions
             {
                 block[i + 1] = ReduceMemberBinding(objVar, bindings[i]);
             }
-            block[count + 1] = keepOnStack ? (Expression)objVar : Expression.Empty();
+            block[count + 1] = keepOnStack ? (Expression)objVar : Utils.Empty;
             return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
         }
 
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions
                 ElementInit element = initializers[i];
                 block[i + 1] = Expression.Call(listVar, element.AddMethod, element.Arguments);
             }
-            block[count + 1] = keepOnStack ? (Expression)listVar : Expression.Empty();
+            block[count + 1] = keepOnStack ? (Expression)listVar : Utils.Empty;
             return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
         }
 
