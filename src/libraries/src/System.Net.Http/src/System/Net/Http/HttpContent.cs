@@ -660,6 +660,24 @@ namespace System.Net.Http
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                ArraySegment<byte> buffer;
+                if (TryGetBuffer(out buffer))
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+                    long pos = Position;
+                    long length = Length;
+                    Position = length;
+
+                    long bytesToWrite = length - pos;
+                    return destination.WriteAsync(buffer.Array, (int)(buffer.Offset + pos), (int)bytesToWrite, cancellationToken);
+                }
+
+                return base.CopyToAsync(destination, bufferSize, cancellationToken);
+            }
+
             private void CheckSize(int countToAdd)
             {
                 if (_maxSize - Length < countToAdd)
