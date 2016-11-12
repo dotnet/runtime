@@ -283,13 +283,13 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(key, nameof(key));
             // Pass null to the class, which forces lookup.
-            TrySetValue(null, -1, value, key, false, true);
+            TrySetValue(null, -1, value, key, ignoreCase: false, add: true);
         }
 
         private bool TryGetValueForKey(string key, out object value)
         {
             // Pass null to the class, which forces lookup.
-            return TryGetValue(null, -1, key, false, out value);
+            return TryGetValue(null, -1, key, ignoreCase: false, value: out value);
         }
 
         private bool ExpandoContainsKey(string key)
@@ -613,7 +613,7 @@ namespace System.Dynamic
             {
                 ContractUtils.RequiresNotNull(key, nameof(key));
                 // Pass null to the class, which forces lookup.
-                TrySetValue(null, -1, value, key, false, false);
+                TrySetValue(null, -1, value, key, ignoreCase: false, add: false);
             }
         }
 
@@ -635,7 +635,7 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(key, nameof(key));
             // Pass null to the class, which forces lookup.
-            return TryDeleteValue(null, -1, key, false, Uninitialized);
+            return TryDeleteValue(null, -1, key, ignoreCase: false, deleteValue: Uninitialized);
         }
 
         bool IDictionary<string, object>.TryGetValue(string key, out object value)
@@ -709,7 +709,7 @@ namespace System.Dynamic
 
         bool ICollection<KeyValuePair<string, object>>.Remove(KeyValuePair<string, object> item)
         {
-            return TryDeleteValue(null, -1, item.Key, false, item.Value);
+            return TryDeleteValue(null, -1, item.Key, ignoreCase: false, deleteValue: item.Value);
         }
 
         #endregion
