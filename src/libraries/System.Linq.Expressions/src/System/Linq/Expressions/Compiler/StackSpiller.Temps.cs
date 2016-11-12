@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Compiler
                 return _usedTemps != null ? _usedTemps.Count : 0;
             }
 
-            // Free temporaries created since the last marking. 
+            // Free temporaries created since the last marking.
             // This is a performance optimization to lower the overall number of temporaries needed.
             internal void Free(int mark)
             {
@@ -119,8 +119,8 @@ namespace System.Linq.Expressions.Compiler
         /// stack starts in the initial state, and after the first subexpression
         /// is added it is changed to non-empty. This behavior can be overridden
         /// by setting the stack manually between adds.
-        /// 
-        /// When all children have been added, the caller should rewrite the 
+        ///
+        /// When all children have been added, the caller should rewrite the
         /// node if Rewrite is true. Then, it should call Finish with either
         /// the original expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.

@@ -44,7 +44,7 @@ namespace System.Linq.Expressions.Compiler
                 : base(compiler, variable)
             {
                 // ByRef variables are supported. This is used internally by
-                // the compiler when emitting an inlined lambda invoke, to 
+                // the compiler when emitting an inlined lambda invoke, to
                 // handle ByRef parameters. BlockExpression prevents this
                 // from being exposed to user created trees.
                 _local = compiler.GetNamedLocal(variable.IsByRef ? variable.Type.MakeByRefType() : variable.Type, variable);

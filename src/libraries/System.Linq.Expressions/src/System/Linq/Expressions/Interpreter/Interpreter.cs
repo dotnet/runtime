@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Interpreter
     /// off much faster compilation time for a slower execution performance.
     /// For code that is only run a small number of times this can be a
     /// sweet spot.
-    /// 
+    ///
     /// The core loop in the interpreter is the <see cref="Run(InterpretedFrame)"/>  method.
     /// </summary>
     internal sealed class Interpreter

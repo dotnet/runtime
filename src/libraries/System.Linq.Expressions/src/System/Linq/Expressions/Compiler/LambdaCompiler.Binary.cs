@@ -360,7 +360,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.And);
         }
 
-        // Binary/unary operations on 8 and 16 bit operand types will leave a 
+        // Binary/unary operations on 8 and 16 bit operand types will leave a
         // 32-bit value on the stack, because that's how IL works. For these
         // cases, we need to cast it back to the resultType, possibly using a
         // checked conversion if the original operator was convert

@@ -10,7 +10,7 @@ namespace System.Linq.Expressions
 {
     /// <summary>
     /// Emits or clears a sequence point for debug information.
-    /// 
+    ///
     /// This allows the debugger to highlight the correct source code when
     /// debugging.
     /// </summary>

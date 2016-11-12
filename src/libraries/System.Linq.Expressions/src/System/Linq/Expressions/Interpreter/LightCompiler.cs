@@ -757,7 +757,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     // lifting: we need to do the null checks for nullable types and reference types.  If the value
                     // is null we return null, or false for a comparison unless it's not equal, in which case we return
-                    // true.  
+                    // true.
 
                     // INCOMPAT: The DLR binder short circuits on comparisons other than equal and not equal,
                     // but C# doesn't.
@@ -1155,7 +1155,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (typeTo == typeof(object) || typeTo.IsAssignableFrom(typeFrom))
             {
-                // Conversions to a super-class or implemented interfaces are no-op. 
+                // Conversions to a super-class or implemented interfaces are no-op.
                 return;
             }
 
@@ -1556,8 +1556,8 @@ namespace System.Linq.Expressions.Interpreter
             {
                 foreach (Expression val in @case.TestValues)
                 {
-                    //  temp == val ? 
-                    //          goto(Body) doneLabel: 
+                    //  temp == val ?
+                    //          goto(Body) doneLabel:
                     //          {};
                     CompileConditionalExpression(
                         Expression.Condition(
@@ -1778,7 +1778,7 @@ namespace System.Linq.Expressions.Interpreter
             // Anything that is "statement-like" -- e.g. has no associated
             // stack state can be jumped into, with the exception of try-blocks
             // We indicate this by a "Block"
-            // 
+            //
             // Otherwise, we push an "Expression" to indicate that it can't be
             // jumped into
             switch (node.NodeType)
@@ -1959,7 +1959,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.MarkLabel(gotoEnd);
                 _instructions.EmitGoto(end, hasValue, hasValue, hasValue);
 
-                // keep the result on the stack:     
+                // keep the result on the stack:
                 if (node.Handlers.Count > 0)
                 {
                     exHandlers = new List<ExceptionHandler>();
@@ -2063,7 +2063,7 @@ namespace System.Linq.Expressions.Interpreter
             BranchLabel end = _instructions.MakeLabel();
             EnterTryFaultInstruction enterTryInstr = _instructions.EmitEnterTryFault(end);
             Debug.Assert(enterTryInstr == _instructions.GetInstruction(tryStart));
-            
+
             // Emit the try block.
             PushLabelBlock(LabelScopeKind.Try);
             bool hasValue = expr.Type != typeof(void);

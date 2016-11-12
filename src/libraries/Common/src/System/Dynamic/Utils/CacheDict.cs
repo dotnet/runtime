@@ -13,7 +13,7 @@ namespace System.Dynamic.Utils
     /// </summary>
     internal sealed class CacheDict<TKey, TValue>
     {
-        // cache size is always ^2. 
+        // cache size is always ^2.
         // items are placed at [hash ^ mask]
         // new item will displace previous one at the same location.
         private readonly int mask;

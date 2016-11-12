@@ -58,7 +58,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
         public override string InstructionName => "TypeIs";
-        
+
         public override int Run(InterpretedFrame frame)
         {
             frame.Push(ScriptingRuntimeHelpers.BooleanToObject(_type.IsInstanceOfType(frame.Pop())));
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
         public override string InstructionName => "TypeAs";
-        
+
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Pop();
@@ -286,7 +286,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 case "ToString": return s_toString ?? (s_toString = new ToStringClass());
                 default:
-                    // System.Nullable doesn't have other instance methods 
+                    // System.Nullable doesn't have other instance methods
                     throw ContractUtils.Unreachable;
             }
         }

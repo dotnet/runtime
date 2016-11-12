@@ -1442,7 +1442,7 @@ namespace System.Linq.Expressions.Tests
                 /*
                  * needs more thought about what should happen.. these have undefined runtime behavior.
                  * results depend on whether values are in registers or locals, debug or retail etc.
-                 * 
+                 *
                 float fmin = float.MinValue;
                 float fmax = float.MaxValue;
                 double dmin = double.MinValue;
@@ -2205,7 +2205,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<int, T>>(
                     // new T { A = v, B= v + 1, SYP = { B = v + 2 } }
                     Expression.MemberInit(
-                        // new T 
+                        // new T
                         Expression.New(typeof(T).GetConstructor(new Type[0])),
 
                         // { A = v, B= v + 1, SYP = { B = v + 2 } };
@@ -2216,7 +2216,7 @@ namespace System.Linq.Expressions.Tests
                             // B = v + 1
                             Expression.Bind(typeof(T).GetField("B"), Expression.Add(parameterV, Expression.Constant(1, typeof(int)))),
 
-                            // SYP = { B = v + 2 } 
+                            // SYP = { B = v + 2 }
                             Expression.MemberBind(
                                 typeof(T).GetMethod("get_SYP"),
                                 new MemberBinding[] {
@@ -2726,7 +2726,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, 5, null, useInterpreter));
             Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, null, null, useInterpreter));
 
-            // Modulo 
+            // Modulo
             Assert.Equal(3, TestBinary<int, int>(ExpressionType.Modulo, 7, 4, useInterpreter));
             Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Modulo, 7, 4, useInterpreter));
             Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, null, 4, useInterpreter));
