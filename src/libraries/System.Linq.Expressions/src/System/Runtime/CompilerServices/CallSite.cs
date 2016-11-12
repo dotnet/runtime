@@ -477,7 +477,7 @@ namespace System.Runtime.CompilerServices
                     ),
                     Expression.Block(
                         Expression.Assign(count, Expression.ArrayLength(applicable)),
-                        Expression.Assign(index, Expression.Constant(0)),
+                        Expression.Assign(index, Utils.Constant(0)),
                         Expression.Loop(
                             Expression.Block(
                                 breakIfDone,
@@ -567,7 +567,7 @@ namespace System.Runtime.CompilerServices
                 Expression.Assign(rule, Expression.ArrayAccess(applicable, index))
             );
 
-            body.Add(Expression.Assign(index, Expression.Constant(0)));
+            body.Add(Expression.Assign(index, Utils.Constant(0)));
             body.Add(Expression.Assign(count, Expression.ArrayLength(applicable)));
             body.Add(
                 Expression.Loop(

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Dynamic
 {
@@ -774,9 +775,9 @@ namespace System.Dynamic
                     typeof(RuntimeOps).GetMethod("ExpandoTryGetValue"),
                     GetLimitedSelf(),
                     Expression.Constant(klass, typeof(object)),
-                    Expression.Constant(index),
+                    AstUtils.Constant(index),
                     Expression.Constant(name),
-                    Expression.Constant(ignoreCase),
+                    AstUtils.Constant(ignoreCase),
                     value
                 );
 
@@ -845,10 +846,10 @@ namespace System.Dynamic
                             typeof(RuntimeOps).GetMethod("ExpandoTrySetValue"),
                             GetLimitedSelf(),
                             Expression.Constant(klass, typeof(object)),
-                            Expression.Constant(index),
+                            AstUtils.Constant(index),
                             Expression.Convert(value.Expression, typeof(object)),
                             Expression.Constant(binder.Name),
-                            Expression.Constant(binder.IgnoreCase)
+                            AstUtils.Constant(binder.IgnoreCase)
                         ),
                         BindingRestrictions.Empty
                     )
@@ -865,9 +866,9 @@ namespace System.Dynamic
                     typeof(RuntimeOps).GetMethod("ExpandoTryDeleteValue"),
                     GetLimitedSelf(),
                     Expression.Constant(Value.Class, typeof(object)),
-                    Expression.Constant(index),
+                    AstUtils.Constant(index),
                     Expression.Constant(binder.Name),
-                    Expression.Constant(binder.IgnoreCase)
+                    AstUtils.Constant(binder.IgnoreCase)
                 );
                 DynamicMetaObject fallback = binder.FallbackDeleteMember(this);
 
