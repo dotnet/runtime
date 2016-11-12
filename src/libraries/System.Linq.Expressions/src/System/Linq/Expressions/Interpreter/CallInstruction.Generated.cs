@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (t.GetTypeInfo().IsEnum) return SlowCreate(target, pi);
-            switch (TypeExtensions.GetTypeCode(t))
+            switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
                     {
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (t.GetTypeInfo().IsEnum) return SlowCreate(target, pi);
-            switch (TypeExtensions.GetTypeCode(t))
+            switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
                     {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (t.GetTypeInfo().IsEnum) return SlowCreate(target, pi);
-            switch (TypeExtensions.GetTypeCode(t))
+            switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
                     {

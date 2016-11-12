@@ -10,12 +10,11 @@ namespace System.Dynamic.Utils
     // Extensions on System.Type and friends
     internal static partial class TypeExtensions
     {
-        // Returns the matching method if the parameter types are reference
-        // assignable from the provided type arguments, otherwise null.
-        public static MethodInfo GetAnyStaticMethodValidated(
-            this Type type,
-            string name,
-            Type[] types)
+        /// <summary>
+        /// Returns the matching method if the parameter types are reference
+        /// assignable from the provided type arguments, otherwise null.
+        /// </summary>
+        public static MethodInfo GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
         {
             foreach (MethodInfo method in type.GetTypeInfo().DeclaredMethods)
             {
@@ -36,7 +35,6 @@ namespace System.Dynamic.Utils
         /// returns a method with two double parameters, which doesn't match the provided
         /// argument types.
         /// </summary>
-        /// <returns></returns>
         private static bool MatchesArgumentTypes(this MethodInfo mi, Type[] argTypes)
         {
             if (mi == null || argTypes == null)
