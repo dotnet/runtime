@@ -386,7 +386,7 @@ namespace System.Net
                     i = 0;
                     while (pChar[i] != ':')
                     {
-                        pChar[i] = (char)CaseInsensitiveAsciiComparer.AsciiToLower[(byte)pChar[i]];
+                        pChar[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)pChar[i]];
                         i++;
                     }
                 }
