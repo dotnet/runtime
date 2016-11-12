@@ -308,11 +308,13 @@ namespace System.Net.Http.Headers
 
         public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
         {
-            if (_headerStore == null)
-            {
-                yield break;
-            }
+            return _headerStore != null && _headerStore.Count > 0 ?
+                GetEnumeratorCore() :
+                ((IEnumerable<KeyValuePair<string, IEnumerable<string>>>)Array.Empty<KeyValuePair<string, IEnumerable<string>>>()).GetEnumerator();
+        }
 
+        private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
+        {
             List<string> invalidHeaders = null;
 
             foreach (var header in _headerStore)
