@@ -611,7 +611,7 @@ namespace System.Net.Http
             var requestHeadersBuffer = new StringBuilder();
 
             // Manually add cookies.
-            if (cookies != null)
+            if (cookies != null && cookies.Count > 0)
             {
                 string cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
