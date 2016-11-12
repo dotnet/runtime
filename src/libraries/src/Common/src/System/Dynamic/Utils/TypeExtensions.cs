@@ -20,7 +20,7 @@ namespace System.Dynamic.Utils
                 pis = method.GetParameters();
 
                 Type t = method.DeclaringType;
-                if (t != null && TypeUtils.CanCache(t))
+                if (t != null && t.CanCache())
                 {
                     pic[method] = pis;
                 }

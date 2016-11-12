@@ -326,7 +326,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public new static CastInstruction Create(Type t)
             {
-                if (t.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(t))
+                if (t.GetTypeInfo().IsValueType && !t.IsNullableType())
                 {
                     return new Value(t);
                 }
@@ -343,8 +343,8 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     Type valueType = value.GetType();
 
-                    if (!TypeUtils.HasReferenceConversion(valueType, _t) &&
-                        !TypeUtils.HasIdentityPrimitiveOrNullableConversion(valueType, _t))
+                    if (!valueType.HasReferenceConversionTo(_t) &&
+                        !valueType.HasIdentityPrimitiveOrNullableConversionTo(_t))
                     {
                         throw new InvalidCastException();
                     }

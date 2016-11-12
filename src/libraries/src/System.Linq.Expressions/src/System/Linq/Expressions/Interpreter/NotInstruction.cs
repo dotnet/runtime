@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Boolean: return _Bool ?? (_Bool = new BoolNot());
                 case TypeCode.Int64: return _Int64 ?? (_Int64 = new Int64Not());

@@ -232,7 +232,7 @@ namespace System.Linq.Expressions
             {
                 Expression expr = boundsList[i];
                 RequiresCanRead(expr, nameof(bounds), i);
-                if (!TypeUtils.IsInteger(expr.Type))
+                if (!expr.Type.IsInteger())
                 {
                     throw Error.ArgumentMustBeInteger(nameof(bounds), i);
                 }

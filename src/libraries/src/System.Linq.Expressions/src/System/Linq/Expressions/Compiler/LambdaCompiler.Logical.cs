@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Compiler
             BinaryExpression b = (BinaryExpression)expr;
             Debug.Assert(b.Method == null);
 
-            if (TypeUtils.IsNullableType(b.Left.Type))
+            if (b.Left.Type.IsNullableType())
             {
                 EmitNullableCoalesce(b);
             }
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.EmitHasValue(b.Left.Type);
             _ilg.Emit(OpCodes.Brfalse, labIfNull);
 
-            Type nnLeftType = TypeUtils.GetNonNullableType(b.Left.Type);
+            Type nnLeftType = b.Left.Type.GetNonNullableType();
             if (b.Conversion != null)
             {
                 Debug.Assert(b.Conversion.Parameters.Count == 1);
@@ -583,7 +583,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else if (ConstantCheck.IsNull(node.Left))
             {
-                if (TypeUtils.IsNullableType(node.Right.Type))
+                if (node.Right.Type.IsNullableType())
                 {
                     EmitAddress(node.Right, node.Right.Type);
                     _ilg.EmitHasValue(node.Right.Type);
@@ -597,7 +597,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else if (ConstantCheck.IsNull(node.Right))
             {
-                if (TypeUtils.IsNullableType(node.Left.Type))
+                if (node.Left.Type.IsNullableType())
                 {
                     EmitAddress(node.Left, node.Left.Type);
                     _ilg.EmitHasValue(node.Left.Type);
@@ -609,7 +609,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 EmitBranchOp(!branchWhenEqual, label);
             }
-            else if (TypeUtils.IsNullableType(node.Left.Type) || TypeUtils.IsNullableType(node.Right.Type))
+            else if (node.Left.Type.IsNullableType() || node.Right.Type.IsNullableType())
             {
                 EmitBinaryExpression(node);
                 // EmitBinaryExpression takes into account the Equal/NotEqual
