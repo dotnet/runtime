@@ -328,20 +328,41 @@ namespace System.Net.Http
             PrepareRequestMessage(request);
             // PrepareRequestMessage will resolve the request address against the base address.
 
-            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                _pendingRequestsCts.Token);
+            // We need a CancellationTokenSource to use with the request.  We always have the global
+            // _pendingRequestsCts to use, plus we may have a token provided by the caller, and we may
+            // have a timeout.  If we have a timeout or a caller-provided token, we need to create a new
+            // CTS (we can't, for example, timeout the pending requests CTS, as that could cancel other
+            // unrelated operations).  Otherwise, we can use the pending requests CTS directly.
+            CancellationTokenSource cts;
+            bool disposeCts;
+            bool hasTimeout = _timeout != s_infiniteTimeout;
+            if (hasTimeout || cancellationToken.CanBeCanceled)
+            {
+                disposeCts = true;
+                cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
+                if (hasTimeout)
+                {
+                    cts.CancelAfter(_timeout);
+                }
+            }
+            else
+            {
+                disposeCts = false;
+                cts = _pendingRequestsCts;
+            }
 
-            SetTimeout(linkedCts);
-
+            // Initiate the send
             return FinishSendAsync(
-                base.SendAsync(request, linkedCts.Token), 
+                base.SendAsync(request, cts.Token), 
                 request, 
-                linkedCts, 
+                cts,
+                disposeCts,
                 completionOption == HttpCompletionOption.ResponseContentRead);
         }
 
         private async Task<HttpResponseMessage> FinishSendAsync(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource linkedCts, bool bufferResponseContent)
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request,
+            CancellationTokenSource cts, bool disposeCts, bool bufferResponseContent)
         {
             HttpResponseMessage response = null;
             try
@@ -368,14 +389,14 @@ namespace System.Net.Http
 
                 // If the cancellation token was canceled, we consider the exception to be caused by the
                 // cancellation (e.g. WebException when reading from canceled response stream).
-                if (linkedCts.IsCancellationRequested && e is HttpRequestException)
+                if (cts.IsCancellationRequested && e is HttpRequestException)
                 {
-                    LogSendError(request, linkedCts, nameof(SendAsync), null);
-                    throw new OperationCanceledException(linkedCts.Token);
+                    LogSendError(request, cts, nameof(SendAsync), null);
+                    throw new OperationCanceledException(cts.Token);
                 }
                 else
                 {
-                    LogSendError(request, linkedCts, nameof(SendAsync), e);
+                    LogSendError(request, cts, nameof(SendAsync), e);
                     if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                     throw;
                 }
@@ -391,7 +412,10 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    linkedCts.Dispose();
+                    if (disposeCts)
+                    {
+                        cts.Dispose();
+                    }
                 }
             }
         }
@@ -528,16 +552,6 @@ namespace System.Net.Http
             if (!HttpUtilities.IsHttpUri(baseAddress))
             {
                 throw new ArgumentException(SR.net_http_client_http_baseaddress_required, parameterName);
-            }
-        }
-
-        private void SetTimeout(CancellationTokenSource cancellationTokenSource)
-        {
-            Debug.Assert(cancellationTokenSource != null);
-
-            if (_timeout != s_infiniteTimeout)
-            {
-                cancellationTokenSource.CancelAfter(_timeout);
             }
         }
 
