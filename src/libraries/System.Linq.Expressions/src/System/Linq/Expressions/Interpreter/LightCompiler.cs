@@ -1425,7 +1425,7 @@ namespace System.Linq.Expressions.Interpreter
             var node = (ConditionalExpression)expr;
             Compile(node.Test);
 
-            if (node.IfTrue == AstUtils.Empty())
+            if (node.IfTrue == AstUtils.Empty)
             {
                 BranchLabel endOfFalse = _instructions.MakeLabel();
                 _instructions.EmitBranchTrue(endOfFalse);
@@ -1438,7 +1438,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitBranchFalse(endOfTrue);
                 Compile(node.IfTrue, asVoid);
 
-                if (node.IfFalse != AstUtils.Empty())
+                if (node.IfFalse != AstUtils.Empty)
                 {
                     BranchLabel endOfFalse = _instructions.MakeLabel();
                     _instructions.EmitBranch(endOfFalse, false, !asVoid);
@@ -1563,7 +1563,7 @@ namespace System.Linq.Expressions.Interpreter
                         Expression.Condition(
                             Expression.Equal(temp.Parameter, val, false, node.Comparison),
                             Expression.Goto(doneLabel, @case.Body),
-                            AstUtils.Empty()
+                            AstUtils.Empty
                         ),
                         asVoid: true);
                 }

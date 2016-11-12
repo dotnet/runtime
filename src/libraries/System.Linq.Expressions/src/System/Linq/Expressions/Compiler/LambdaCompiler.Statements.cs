@@ -677,14 +677,14 @@ namespace System.Linq.Expressions.Compiler
                 {
                     if (t.Value != null)
                     {
-                        initializers.Add(Expression.ElementInit(add, t, Expression.Constant(i)));
+                        initializers.Add(Expression.ElementInit(add, t, Utils.Constant(i)));
                     }
                     else
                     {
                         nullCase = i;
                     }
                 }
-                cases.UncheckedAdd(Expression.SwitchCase(node.Cases[i].Body, Expression.Constant(i)));
+                cases.UncheckedAdd(Expression.SwitchCase(node.Cases[i].Body, Utils.Constant(i)));
             }
 
             // Create the field to hold the lazily initialized dictionary
@@ -700,7 +700,7 @@ namespace System.Linq.Expressions.Compiler
                     Expression.ListInit(
                         Expression.New(
                             DictionaryOfStringInt32_Ctor_Int32,
-                            Expression.Constant(initializers.Count)
+                            Utils.Constant(initializers.Count)
                         ),
                         initializers
                     )
@@ -736,11 +736,11 @@ namespace System.Linq.Expressions.Compiler
                 Expression.Assign(switchValue, node.SwitchValue),
                 Expression.IfThenElse(
                     Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
-                    Expression.Assign(switchIndex, Expression.Constant(nullCase)),
+                    Expression.Assign(switchIndex, Utils.Constant(nullCase)),
                     Expression.IfThenElse(
                         Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
-                        Utils.Empty(),
-                        Expression.Assign(switchIndex, Expression.Constant(-1))
+                        Utils.Empty,
+                        Expression.Assign(switchIndex, Utils.Constant(-1))
                     )
                 ),
                 Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases.ToReadOnly())
