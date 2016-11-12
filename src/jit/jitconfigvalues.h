@@ -256,6 +256,8 @@ CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
 CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
 CONFIG_INTEGER(JitInlinePolicySize, W("JitInlinePolicySize"), 0)
+CONFIG_INTEGER(JitInlinePolicyRandom, W("JitInlinePolicyRandom"), 0) // nozero enables; value is the external random
+                                                                     // seed
 CONFIG_INTEGER(JitInlinePolicyReplay, W("JitInlinePolicyReplay"), 0)
 CONFIG_STRING(JitNoInlineRange, W("JitNoInlineRange"))
 CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))

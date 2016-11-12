@@ -1913,10 +1913,6 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     SIMDVectorHandle  = nullptr;
 #endif
 
-#ifdef DEBUG
-    inlRNG = nullptr;
-#endif
-
     compUsesThrowHelper = false;
 }
 
