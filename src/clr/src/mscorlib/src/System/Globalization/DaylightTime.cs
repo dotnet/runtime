@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Globalization {
-   
-    using System;
+using System.Runtime.InteropServices;
+
+namespace System.Globalization
+{
     // This class represents a starting/ending time for a period of daylight saving time.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [ComVisible(true)]
     public class DaylightTime
     {
         internal DateTime m_start;
@@ -46,4 +47,18 @@ namespace System.Globalization {
     
     }
 
+    // Value type version of DaylightTime
+    internal struct DaylightTimeStruct
+    {
+        public DaylightTimeStruct(DateTime start, DateTime end, TimeSpan delta)
+        {
+            Start = start;
+            End = end;
+            Delta = delta;
+        }
+
+        public DateTime Start { get; }
+        public DateTime End { get; }
+        public TimeSpan Delta { get; }
+    }
 }
