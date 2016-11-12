@@ -1035,7 +1035,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(typeFrom.IsNullableType());
             // We've got a conversion from nullable to Object, ValueType, Enum, etc.  Just box it so that
-            // we get the nullable semantics.  
+            // we get the nullable semantics.
             il.Emit(OpCodes.Box, typeFrom);
         }
 
@@ -1115,7 +1115,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Emits an array construction code.  
+        /// Emits an array construction code.
         /// The code assumes that bounds for all dimensions
         /// are already emitted.
         /// </summary>

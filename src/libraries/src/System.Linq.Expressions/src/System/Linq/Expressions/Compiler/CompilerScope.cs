@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Compiler
     ///   1. Parent relationship (for resolving variables)
     ///   2. Information about hoisted variables
     ///   3. Information for resolving closures
-    /// 
+    ///
     /// Instances are produced by VariableBinder, which does a tree walk
     /// looking for scope nodes: LambdaExpression, BlockExpression, and CatchBlock.
     /// </summary>
@@ -70,7 +70,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Scopes whose variables were merged into this one
-        /// 
+        ///
         /// Created lazily as we create hundreds of compiler scopes w/o merging scopes when compiling rules.
         /// </summary>
         internal HashSet<BlockExpression> MergedScopes;

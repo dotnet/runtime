@@ -15,7 +15,7 @@ namespace System.Dynamic
     /// Provides a simple class that can be inherited from to create an object with dynamic behavior
     /// at runtime.  Subclasses can override the various binder methods (GetMember, SetMember, Call, etc.)
     /// to provide custom behavior that will be invoked at runtime.
-    /// 
+    ///
     /// If a method is not overridden then the DynamicObject does not directly support that behavior and
     /// the call site will determine how the binding should be performed.
     /// </summary>
@@ -494,7 +494,7 @@ namespace System.Dynamic
             /// <summary>
             /// Helper method for generating a MetaObject which calls a
             /// specific method on DynamicObject that returns a result.
-            /// 
+            ///
             /// args is either an array of arguments to be passed
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.
@@ -616,7 +616,7 @@ namespace System.Dynamic
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic, but uses one of the arguments for
             /// the result.
-            /// 
+            ///
             /// args is either an array of arguments to be passed
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.
@@ -683,7 +683,7 @@ namespace System.Dynamic
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic, but uses one of the arguments for
             /// the result.
-            /// 
+            ///
             /// args is either an array of arguments to be passed
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.

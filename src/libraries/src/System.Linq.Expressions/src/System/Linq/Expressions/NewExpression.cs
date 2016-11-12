@@ -116,7 +116,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, (IEnumerable<Expression>)null);
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
@@ -127,7 +127,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, (IEnumerable<Expression>)arguments);
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions
 
             return new NewExpression(constructor, argList, null);
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified.
         /// </summary>
@@ -176,7 +176,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, arguments, (IEnumerable<MemberInfo>)members);
         }
-        
+
         /// <summary>
         /// Creates a <see cref="NewExpression"/> that represents calling the parameterless constructor of the specified type.
         /// </summary>
@@ -201,7 +201,7 @@ namespace System.Linq.Expressions
             }
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }
-        
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void ValidateNewArgs(ConstructorInfo constructor, ref ReadOnlyCollection<Expression> arguments, ref ReadOnlyCollection<MemberInfo> members)
         {

@@ -15,9 +15,9 @@ namespace System.Dynamic
     /// ArgumentCount - all inclusive number of arguments.
     /// ArgumentNames - names for those arguments that are named.
     ///
-    /// Argument names match to the argument values in left to right order 
+    /// Argument names match to the argument values in left to right order
     /// and last name corresponds to the last argument.
-    /// 
+    ///
     /// Example:
     ///   Foo(arg1, arg2, arg3, name1 = arg4, name2 = arg5, name3 = arg6)
     ///
