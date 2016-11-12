@@ -47,7 +47,7 @@ For Ubuntu 14.04, install the following packages:
 
 `sudo apt-get install libunwind8 libicu52 curl`
 
-For Ubuntu 16.x / Bash on Ubuntu on Windows you may need to replace libicu52 with libicu55:
+For Ubuntu 16.04 LTS / Bash on Ubuntu on Windows you may need to replace libicu52 with libicu55. Ubuntu 16.10 will require libcu57.
 
 `sudo apt-get install libunwind8 libicu55 curl`
 
