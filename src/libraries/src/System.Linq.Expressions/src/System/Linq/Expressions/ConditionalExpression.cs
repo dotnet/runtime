@@ -68,7 +68,7 @@ namespace System.Linq.Expressions
         internal virtual Expression GetFalse()
         {
             // Using a singleton here to ensure a stable object identity for IfFalse, which Update relies on.
-            return AstUtils.Empty();
+            return AstUtils.Empty;
         }
 
         /// <summary>

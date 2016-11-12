@@ -7,6 +7,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Dynamic
 {
@@ -419,7 +420,7 @@ namespace System.Dynamic
                                 Expression.Convert(
                                     Expression.ArrayIndex(
                                         callArgs,
-                                        Expression.Constant(i)
+                                        AstUtils.Constant(i)
                                     ),
                                     args[i].Type
                                 )
@@ -431,7 +432,7 @@ namespace System.Dynamic
                 if (block != null)
                     return Expression.Block(block);
                 else
-                    return Expression.Empty();
+                    return AstUtils.Empty;
             }
 
             /// <summary>
@@ -545,7 +546,7 @@ namespace System.Dynamic
                     else
                     {
                         condition = Expression.OrElse(
-                                        Expression.Equal(resultMO.Expression, Expression.Constant(null)),
+                                        Expression.Equal(resultMO.Expression, AstUtils.Null),
                                         Expression.TypeIs(resultMO.Expression, binder.ReturnType));
                     }
 
@@ -559,7 +560,7 @@ namespace System.Dynamic
                                     Expression.Constant(convertFailed),
                                     Expression.NewArrayInit(typeof(object),
                                         Expression.Condition(
-                                            Expression.Equal(resultMO.Expression, Expression.Constant(null)),
+                                            Expression.Equal(resultMO.Expression, AstUtils.Null),
                                             Expression.Constant("null"),
                                             Expression.Call(
                                                 resultMO.Expression,
@@ -599,7 +600,7 @@ namespace System.Dynamic
                                 )
                             ),
                             Expression.Block(
-                                methodName != nameof(DynamicObject.TryBinaryOperation) ? ReferenceArgAssign(callArgs, args) : Expression.Empty(),
+                                methodName != nameof(DynamicObject.TryBinaryOperation) ? ReferenceArgAssign(callArgs, args) : AstUtils.Empty,
                                 resultMO.Expression
                             ),
                             fallbackResult.Expression,
@@ -719,7 +720,7 @@ namespace System.Dynamic
                             ),
                             Expression.Block(
                                 ReferenceArgAssign(callArgs, args),
-                                Expression.Empty()
+                                AstUtils.Empty
                             ),
                             fallbackResult.Expression,
                             typeof(void)
