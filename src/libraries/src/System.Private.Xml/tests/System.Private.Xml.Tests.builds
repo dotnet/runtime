@@ -77,12 +77,8 @@
       <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
-    <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
+    <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj" />
+    <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
     <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj">
@@ -100,15 +96,10 @@
       <TestTFMs>netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.1</TestTFMs>
     </Project>
-    <Project Include="Xslt\XsltCompiler\XsltCompiler.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
+    <Project Include="Xslt\XsltCompiler\XsltCompiler.Tests.csproj" />
+    <Project Include="Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />
     <Project Include="XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
