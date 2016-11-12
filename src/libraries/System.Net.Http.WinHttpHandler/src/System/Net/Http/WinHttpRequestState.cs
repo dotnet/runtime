@@ -32,7 +32,7 @@ namespace System.Net.Http
         // A GCHandle for this operation object.
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
         private GCHandle _operationHandle;
-
+        private WinHttpTransportContext _transportContext;
         private volatile bool _disposed = false; // To detect redundant calls.
 
         public WinHttpRequestState()
@@ -40,7 +40,6 @@ namespace System.Net.Http
 #if DEBUG
             Interlocked.Increment(ref s_dbg_allocated);
 #endif
-            TransportContext = new WinHttpTransportContext();
         }
 
         public void Pin()
@@ -139,7 +138,11 @@ namespace System.Net.Http
             SslPolicyErrors,
             bool> ServerCertificateValidationCallback { get; set; }
 
-        public WinHttpTransportContext TransportContext { get; private set; }
+        public WinHttpTransportContext TransportContext
+        {
+            get { return _transportContext ?? (_transportContext = new WinHttpTransportContext()); }
+            set { _transportContext = value; }
+        }
 
         public WindowsProxyUsePolicy WindowsProxyUsePolicy { get; set; }
 
