@@ -282,7 +282,7 @@ def osShortName = ['Windows 10': 'win10',
             }
         }
         
-        Utilities.setMachineAffinity('Windows_NT', 'latest-or-auto')
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
