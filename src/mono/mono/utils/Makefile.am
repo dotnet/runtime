@@ -33,13 +33,11 @@ monoutils_sources = \
 	dlmalloc.h      	\
 	dlmalloc.c      	\
 	mono-counters.c		\
-	mono-compiler.h		\
 	mono-complex.h		\
 	mono-dl.c		\
 	mono-dl-windows.c	\
 	mono-dl-darwin.c	\
 	mono-dl-posix.c		\
-	mono-dl.h		\
 	mono-dl-windows-internals.h	\
 	mono-log-windows.c	\
 	mono-log-common.c	\
@@ -261,6 +259,8 @@ libmonoutilsinclude_HEADERS = 	\
 	mono-error.h		\
 	mono-publib.h		\
 	mono-dl-fallback.h	\
-	mono-counters.h
+	mono-dl.h		\
+	mono-counters.h \
+	mono-compiler.h
 
 EXTRA_DIST = mono-embed.h mono-embed.c
