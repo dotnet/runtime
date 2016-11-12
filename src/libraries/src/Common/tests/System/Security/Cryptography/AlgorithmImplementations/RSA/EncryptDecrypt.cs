@@ -214,5 +214,15 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.NotEqual(crypt, output);
             Assert.Equal(TestData.HelloBytes, output);
         }
+
+        [Fact]
+        public static void NotSupportedValueMethods()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
+                Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
+            }
+        }
     }
 }
