@@ -108,6 +108,7 @@
   <ItemGroup>
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src" />
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)pkg" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
     <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)" />
   </ItemGroup>
 
