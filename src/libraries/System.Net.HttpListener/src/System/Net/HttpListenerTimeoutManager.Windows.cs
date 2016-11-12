@@ -10,7 +10,7 @@ namespace System.Net
     // See the native HTTP_TIMEOUT_LIMIT_INFO structure documentation for additional information.
     // http://msdn.microsoft.com/en-us/library/aa364661.aspx
     //
-    public partial class HttpListenerTimeoutManager
+    public class HttpListenerTimeoutManager
     {
         private HttpListener _listener;
         private int[] _timeouts;

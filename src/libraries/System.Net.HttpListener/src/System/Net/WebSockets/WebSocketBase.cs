@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -72,8 +65,8 @@ namespace System.Net.WebSockets
             WebSocketBuffer internalBuffer)
         {
             Debug.Assert(internalBuffer != null, "'internalBuffer' MUST NOT be NULL.");
-            WebSocketHelpers.ValidateInnerStream(innerStream);
-            WebSocketHelpers.ValidateOptions(subProtocol, internalBuffer.ReceiveBufferSize,
+            WebSocketValidate.ValidateInnerStream(innerStream);
+            WebSocketValidate.ValidateOptions(subProtocol, internalBuffer.ReceiveBufferSize,
                 internalBuffer.SendBufferSize, keepAliveInterval);
 
             string parameters = string.Empty;
@@ -195,7 +188,7 @@ namespace System.Net.WebSockets
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
-            WebSocketHelpers.ValidateArraySegment<byte>(buffer, nameof(buffer));
+            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
             return ReceiveAsyncCore(buffer, cancellationToken);
         }
 
@@ -286,7 +279,7 @@ namespace System.Net.WebSockets
                     nameof(messageType));
             }
 
-            WebSocketHelpers.ValidateArraySegment<byte>(buffer, nameof(buffer));
+            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
 
             return SendAsyncCore(buffer, messageType, endOfMessage, cancellationToken);
         }
@@ -483,7 +476,7 @@ namespace System.Net.WebSockets
             string statusDescription,
             CancellationToken cancellationToken)
         {
-            WebSocketHelpers.ValidateCloseStatus(closeStatus, statusDescription);
+            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
             return CloseOutputAsyncCore(closeStatus, statusDescription, cancellationToken);
         }
@@ -722,7 +715,7 @@ namespace System.Net.WebSockets
             string statusDescription,
             CancellationToken cancellationToken)
         {
-            WebSocketHelpers.ValidateCloseStatus(closeStatus, statusDescription);
+            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
             return CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
         }
 
@@ -1703,7 +1696,7 @@ namespace System.Net.WebSockets
                                         ArraySegment<byte> payload = _webSocket._internalBuffer.ConvertNativeBuffer(action, dataBuffers[0], bufferType);
 
                                         ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
-                                        WebSocketHelpers.ThrowIfConnectionAborted(_webSocket._innerStream, true);
+                                        WebSocketValidate.ThrowIfConnectionAborted(_webSocket._innerStream, true);
                                         try
                                         {
                                             Task<int> readTask = _webSocket._innerStream.ReadAsync(payload.Array,
@@ -1787,7 +1780,7 @@ namespace System.Net.WebSockets
                                             }
 
                                             ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
-                                            WebSocketHelpers.ThrowIfConnectionAborted(_webSocket._innerStream, false);
+                                            WebSocketValidate.ThrowIfConnectionAborted(_webSocket._innerStream, false);
                                             await _webSocket.SendFrameAsync(sendBuffers, cancellationToken).SuppressContextFlow();
                                             Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                             _webSocket.ThrowIfPendingException();
@@ -1968,7 +1961,7 @@ namespace System.Net.WebSockets
 
                         if (bufferType == WebSocketProtocolComponent.BufferType.Close)
                         {
-                            payload = WebSocketHelpers.EmptyPayload;
+                            payload = WebSocketValidate.EmptyPayload;
                             string reason;
                             WebSocketCloseStatus closeStatus;
                             _webSocket._internalBuffer.ConvertCloseBuffer(action, dataBuffers[0], out closeStatus, out reason);
@@ -2125,9 +2118,9 @@ namespace System.Net.WebSockets
                     if (CloseReason != null)
                     {
                         byte[] blob = Encoding.UTF8.GetBytes(CloseReason);
-                        Debug.Assert(blob.Length <= WebSocketHelpers.MaxControlFramePayloadLength,
+                        Debug.Assert(blob.Length <= WebSocketValidate.MaxControlFramePayloadLength,
                             "The close reason is too long.");
-                        ArraySegment<byte> closeBuffer = new ArraySegment<byte>(blob, 0, Math.Min(WebSocketHelpers.MaxControlFramePayloadLength, blob.Length));
+                        ArraySegment<byte> closeBuffer = new ArraySegment<byte>(blob, 0, Math.Min(WebSocketValidate.MaxControlFramePayloadLength, blob.Length));
                         _webSocket._internalBuffer.PinSendBuffer(closeBuffer, out _BufferHasBeenPinned);
                         payloadBuffer.CloseStatus.ReasonData = _webSocket._internalBuffer.ConvertPinnedSendPayloadToNative(closeBuffer);
                         payloadBuffer.CloseStatus.ReasonLength = (uint)closeBuffer.Count;

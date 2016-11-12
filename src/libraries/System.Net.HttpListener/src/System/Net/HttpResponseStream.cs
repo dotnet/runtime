@@ -11,9 +11,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
 {
-    internal unsafe class HttpResponseStream : Stream
+    internal sealed unsafe class HttpResponseStream : Stream
     {
-        private HttpListenerContext _httpContext;
+        private readonly HttpListenerContext _httpContext;
         private long _leftToWrite = long.MinValue;
         private bool _closed;
         private bool _inOpaqueMode;
@@ -43,45 +43,15 @@ namespace System.Net
             return flags;
         }
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanSeek => false;
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool CanWrite => true;
 
-        public override bool CanRead
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanRead => false;
 
-        internal bool Closed
-        {
-            get
-            {
-                return _closed;
-            }
-        }
+        internal bool Closed => _closed;
 
-        internal HttpListenerContext InternalHttpContext
-        {
-            get
-            {
-                return _httpContext;
-            }
-        }
+        internal HttpListenerContext InternalHttpContext => _httpContext;
 
         internal void SetClosedFlag()
         {
@@ -190,9 +160,6 @@ namespace System.Net
                         byte* pBuffer = pDataBuffer;
                         if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
                         {
-                            // TODO:
-                            // here we need some heuristics, some time it is definitely better to split this in 3 write calls
-                            // but for small writes it is probably good enough to just copy the data internally.
                             string chunkHeader = size.ToString("x", CultureInfo.InvariantCulture);
                             dataToWrite = dataToWrite + (uint)(chunkHeader.Length + 4);
                             bufferAsIntPtr = SafeLocalAllocHandle.LocalAlloc((int)dataToWrite);
@@ -246,11 +213,8 @@ namespace System.Net
             }
             finally
             {
-                if (bufferAsIntPtr != null)
-                {
-                    // free unmanaged buffer
-                    bufferAsIntPtr.Close();
-                }
+                // free unmanaged buffer
+                bufferAsIntPtr?.Close();
             }
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
@@ -324,7 +288,7 @@ namespace System.Net
                             &bytesSent,
                             SafeLocalAllocHandle.Zero,
                             0,
-                            asyncResult.m_pOverlapped,
+                            asyncResult._pOverlapped,
                             null);
 
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendResponseEntityBody returned:" + statusCode);
@@ -543,7 +507,7 @@ namespace System.Net
             if (asyncState != null && !asyncState.IsCompleted)
             {
                 // It is safe to ignore the return value on a cancel operation because the connection is being closed
-                Interop.mincore.CancelIoEx(requestQueueHandle, asyncState.m_pOverlapped);
+                Interop.mincore.CancelIoEx(requestQueueHandle, asyncState._pOverlapped);
             }
         }
     }

@@ -8,11 +8,11 @@ using System.Threading;
 
 namespace System.Net
 {
-    internal unsafe class AsyncRequestContext : RequestContextBase
+    internal sealed unsafe class AsyncRequestContext : RequestContextBase
     {
         private NativeOverlapped* _nativeOverlapped;
         private ThreadPoolBoundHandle _boundHandle;
-        private ListenerAsyncResult _result;
+        private readonly ListenerAsyncResult _result;
 
         internal AsyncRequestContext(ThreadPoolBoundHandle boundHandle, ListenerAsyncResult result)
         {

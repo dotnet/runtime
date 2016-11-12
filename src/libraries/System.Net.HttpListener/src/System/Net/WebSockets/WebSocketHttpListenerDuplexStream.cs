@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
 {
-    internal class WebSocketHttpListenerDuplexStream : Stream, WebSocketBase.IWebSocketStream
+    internal sealed class WebSocketHttpListenerDuplexStream : Stream, WebSocketBase.IWebSocketStream
     {
         private static readonly EventHandler<HttpListenerAsyncEventArgs> s_OnReadCompleted =
             new EventHandler<HttpListenerAsyncEventArgs>(OnReadCompleted);
@@ -121,7 +121,7 @@ namespace System.Net.WebSockets
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            WebSocketHelpers.ValidateBuffer(buffer, offset, count);
+            WebSocketValidate.ValidateBuffer(buffer, offset, count);
 
             return ReadAsyncCore(buffer, offset, count, cancellationToken);
         }
@@ -130,7 +130,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this, WebSocketHelpers.GetTraceMsgForParameters(offset, count, cancellationToken));
+                NetEventSource.Enter(this, WebSocketValidate.GetTraceMsgForParameters(offset, count, cancellationToken));
             }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
@@ -407,7 +407,7 @@ namespace System.Net.WebSockets
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            WebSocketHelpers.ValidateBuffer(buffer, offset, count);
+            WebSocketValidate.ValidateBuffer(buffer, offset, count);
 
             return WriteAsyncCore(buffer, offset, count, cancellationToken);
         }
@@ -416,7 +416,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this, WebSocketHelpers.GetTraceMsgForParameters(offset, count, cancellationToken));
+                NetEventSource.Enter(this, WebSocketValidate.GetTraceMsgForParameters(offset, count, cancellationToken));
             }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();

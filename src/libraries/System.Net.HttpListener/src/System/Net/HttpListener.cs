@@ -31,7 +31,7 @@ namespace System.Net
 
         void IDisposable.Dispose()
         {
-            Dispose(true);
+            Dispose();
         }
     }
 }

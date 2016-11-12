@@ -29,7 +29,6 @@
     <Compile Include="System\Net\HttpListenerPrefixCollection.cs" />
     <Compile Include="System\Net\HttpListenerRequest.cs" />
     <Compile Include="System\Net\HttpListenerResponse.cs" />
-    <Compile Include="System\Net\HttpListenerTimeoutManager.cs" />
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
@@ -38,6 +37,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net463'">
     <Compile Include="System\Net\BoundaryType.cs" />
+    <Compile Include="System\Net\AuthConstants.cs" />
     <Compile Include="System\Net\ContextFlags.cs" />
     <Compile Include="System\Net\CookieExtensions.cs" />
     <Compile Include="System\Net\HttpRequestQueueV2Handle.cs" />
@@ -59,7 +59,10 @@
     <Compile Include="System\Net\SyncRequestContext.cs" />
     <Compile Include="System\Net\ListenerAsyncResult.cs" />
     <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
-       <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
+      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
@@ -145,10 +148,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Temporary package reference until NuGet packages are updated -->
-    <ProjectReference Include="..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

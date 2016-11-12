@@ -6,19 +6,12 @@ using System.Threading;
 
 namespace System.Net
 {
-    internal unsafe class ListenerAsyncResult : LazyAsyncResult
+    internal sealed unsafe class ListenerAsyncResult : LazyAsyncResult
     {
-        private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
-
-        internal static IOCompletionCallback IOCallback
-        {
-            get
-            {
-                return s_IOCallback;
-            }
-        }
-
+        private static readonly IOCompletionCallback s_ioCallback = new IOCompletionCallback(WaitCallback);
         private AsyncRequestContext _requestContext;
+
+        internal static IOCompletionCallback IOCallback => s_ioCallback;
 
         internal ListenerAsyncResult(HttpListener listener, object userState, AsyncCallback callback) :
             base(listener, userState, callback)

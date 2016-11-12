@@ -4,7 +4,8 @@
 
 namespace System.Net
 {
-    public partial class HttpListenerTimeoutManager
+    // TODO: #13187
+    public class HttpListenerTimeoutManager
     {
         public TimeSpan EntityBody
         {

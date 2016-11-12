@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal unsafe class HttpRequestStream : Stream
+    internal sealed unsafe class HttpRequestStream : Stream
     {
-        private HttpListenerContext _httpContext;
+        private readonly HttpListenerContext _httpContext;
         private uint _dataChunkOffset;
         private int _dataChunkIndex;
         private bool _closed;
@@ -284,10 +284,10 @@ namespace System.Net
                                 _httpContext.RequestQueueHandle,
                                 _httpContext.RequestId,
                                 flags,
-                                asyncResult.m_pPinnedBuffer,
+                                asyncResult._pPinnedBuffer,
                                 (uint)size,
                                 out bytesReturned,
-                                asyncResult.m_pOverlapped);
+                                asyncResult._pOverlapped);
 
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveRequestEntityBody returned:" + statusCode + " dataRead:" + dataRead);
                     }
@@ -368,7 +368,7 @@ namespace System.Net
                 NetEventSource.Exit(this);
             }
 
-            return (int)dataRead + (int)castedAsyncResult.m_dataAlreadyRead;
+            return (int)dataRead + (int)castedAsyncResult._dataAlreadyRead;
         }
 
         public override void Write(byte[] buffer, int offset, int size)
@@ -422,12 +422,12 @@ namespace System.Net
                 size);
         }
 
-        private unsafe class HttpRequestStreamAsyncResult : LazyAsyncResult
+        private sealed unsafe class HttpRequestStreamAsyncResult : LazyAsyncResult
         {
             private ThreadPoolBoundHandle _boundHandle;
-            internal NativeOverlapped* m_pOverlapped;
-            internal void* m_pPinnedBuffer;
-            internal uint m_dataAlreadyRead = 0;
+            internal NativeOverlapped* _pOverlapped;
+            internal void* _pPinnedBuffer;
+            internal uint _dataAlreadyRead = 0;
 
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
 
@@ -437,15 +437,15 @@ namespace System.Net
 
             internal HttpRequestStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback, uint dataAlreadyRead) : base(asyncObject, userState, callback)
             {
-                m_dataAlreadyRead = dataAlreadyRead;
+                _dataAlreadyRead = dataAlreadyRead;
             }
 
             internal HttpRequestStreamAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, uint size, uint dataAlreadyRead) : base(asyncObject, userState, callback)
             {
-                m_dataAlreadyRead = dataAlreadyRead;
+                _dataAlreadyRead = dataAlreadyRead;
                 _boundHandle = boundHandle;
-                m_pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: buffer);
-                m_pPinnedBuffer = (void*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
+                _pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: buffer);
+                _pPinnedBuffer = (void*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
             }
 
             internal void IOCompleted(uint errorCode, uint numBytes)
@@ -467,7 +467,7 @@ namespace System.Net
                     else
                     {
                         result = numBytes;
-                        if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(asyncResult, (IntPtr)asyncResult.m_pPinnedBuffer, (int)numBytes);
+                        if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(asyncResult, (IntPtr)asyncResult._pPinnedBuffer, (int)numBytes);
                     }
                     if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"asyncResult: {asyncResult} calling Complete()");
                 }
@@ -491,9 +491,9 @@ namespace System.Net
             protected override void Cleanup()
             {
                 base.Cleanup();
-                if (m_pOverlapped != null)
+                if (_pOverlapped != null)
                 {
-                    _boundHandle.FreeNativeOverlapped(m_pOverlapped);
+                    _boundHandle.FreeNativeOverlapped(_pOverlapped);
                 }
             }
         }

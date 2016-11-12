@@ -7,12 +7,12 @@ using System.Threading;
 
 namespace System.Net
 {
-    internal unsafe class HttpResponseStreamAsyncResult : LazyAsyncResult
+    internal sealed unsafe class HttpResponseStreamAsyncResult : LazyAsyncResult
     {
         private readonly ThreadPoolBoundHandle _boundHandle;
-        internal NativeOverlapped* m_pOverlapped;
+        internal NativeOverlapped* _pOverlapped;
         private Interop.HttpApi.HTTP_DATA_CHUNK[] _dataChunks;
-        internal bool m_SentHeaders;
+        internal bool _sentHeaders;
 
         private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
 
@@ -117,18 +117,18 @@ namespace System.Net
         internal HttpResponseStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)
         {
             _boundHandle = boundHandle;
-            m_SentHeaders = sentHeaders;
+            _sentHeaders = sentHeaders;
 
             if (size == 0)
             {
                 _dataChunks = null;
-                m_pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
+                _pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
             }
             else
             {
                 _dataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[chunked ? 3 : 1];
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "m_pOverlapped:0x" + ((IntPtr)m_pOverlapped).ToString("x8"));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "m_pOverlapped:0x" + ((IntPtr)_pOverlapped).ToString("x8"));
 
                 object[] objectsToPin = new object[1 + _dataChunks.Length];
                 objectsToPin[_dataChunks.Length] = _dataChunks;
@@ -168,7 +168,7 @@ namespace System.Net
                 }
 
                 // This call will pin needed memory
-                m_pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: objectsToPin);
+                _pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: objectsToPin);
 
                 if (chunked)
                 {
@@ -235,9 +235,9 @@ namespace System.Net
         protected override void Cleanup()
         {
             base.Cleanup();
-            if (m_pOverlapped != null)
+            if (_pOverlapped != null)
             {
-                _boundHandle.FreeNativeOverlapped(m_pOverlapped);
+                _boundHandle.FreeNativeOverlapped(_pOverlapped);
             }
         }
     }
