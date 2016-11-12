@@ -9,6 +9,9 @@
 
 namespace System.Runtime.CompilerServices
 {
+    public static class CompilerMarshalOverride
+    {
+    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvCdecl
     {
