@@ -6,10 +6,10 @@ using System.Collections;
 
 namespace System.Net
 {
-    internal class CaseInsensitiveAsciiComparer : IEqualityComparer, IComparer
+    internal class CaseInsensitiveAscii : IEqualityComparer, IComparer
     {
         // ASCII char ToLower table
-        internal static readonly CaseInsensitiveAsciiComparer StaticInstance = new CaseInsensitiveAsciiComparer();
+        internal static readonly CaseInsensitiveAscii StaticInstance = new CaseInsensitiveAscii();
         internal static readonly byte[] AsciiToLower = new byte[] {
               0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
              10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
