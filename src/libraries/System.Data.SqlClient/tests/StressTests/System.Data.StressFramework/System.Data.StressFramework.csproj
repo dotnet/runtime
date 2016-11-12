@@ -26,6 +26,7 @@
     <Compile Include="TrackedRandom.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="project.json" />
     <None Include="StressTest.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Collections": "4.4.0-beta-24711-02",
+  },
+  "frameworks": {
+    "netstandard1.3": {}
+  }
+}
