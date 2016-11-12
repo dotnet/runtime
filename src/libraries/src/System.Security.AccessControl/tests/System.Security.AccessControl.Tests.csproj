@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.AccessControl.Tests</AssemblyName>
     <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>

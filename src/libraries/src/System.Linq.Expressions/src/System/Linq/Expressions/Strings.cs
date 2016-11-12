@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Linq.Expressions
 {
     /// <summary>
@@ -14,112 +12,52 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "reducible nodes must override Expression.Reduce()"
         /// </summary>
-        internal static string ReducibleMustOverrideReduce
-        {
-            get
-            {
-                return SR.ReducibleMustOverrideReduce;
-            }
-        }
+        internal static string ReducibleMustOverrideReduce => SR.ReducibleMustOverrideReduce;
 
         /// <summary>
         /// A string like "node cannot reduce to itself or null"
         /// </summary>
-        internal static string MustReduceToDifferent
-        {
-            get
-            {
-                return SR.MustReduceToDifferent;
-            }
-        }
+        internal static string MustReduceToDifferent => SR.MustReduceToDifferent;
 
         /// <summary>
         /// A string like "cannot assign from the reduced node type to the original node type"
         /// </summary>
-        internal static string ReducedNotCompatible
-        {
-            get
-            {
-                return SR.ReducedNotCompatible;
-            }
-        }
+        internal static string ReducedNotCompatible => SR.ReducedNotCompatible;
 
         /// <summary>
         /// A string like "Setter must have parameters."
         /// </summary>
-        internal static string SetterHasNoParams
-        {
-            get
-            {
-                return SR.SetterHasNoParams;
-            }
-        }
+        internal static string SetterHasNoParams => SR.SetterHasNoParams;
 
         /// <summary>
         /// A string like "Property cannot have a managed pointer type."
         /// </summary>
-        internal static string PropertyCannotHaveRefType
-        {
-            get
-            {
-                return SR.PropertyCannotHaveRefType;
-            }
-        }
+        internal static string PropertyCannotHaveRefType => SR.PropertyCannotHaveRefType;
 
         /// <summary>
         /// A string like "Indexing parameters of getter and setter must match."
         /// </summary>
-        internal static string IndexesOfSetGetMustMatch
-        {
-            get
-            {
-                return SR.IndexesOfSetGetMustMatch;
-            }
-        }
+        internal static string IndexesOfSetGetMustMatch => SR.IndexesOfSetGetMustMatch;
 
         /// <summary>
         /// A string like "Accessor method should not have VarArgs."
         /// </summary>
-        internal static string AccessorsCannotHaveVarArgs
-        {
-            get
-            {
-                return SR.AccessorsCannotHaveVarArgs;
-            }
-        }
+        internal static string AccessorsCannotHaveVarArgs => SR.AccessorsCannotHaveVarArgs;
 
         /// <summary>
         /// A string like "Accessor indexes cannot be passed ByRef."
         /// </summary>
-        internal static string AccessorsCannotHaveByRefArgs
-        {
-            get
-            {
-                return SR.AccessorsCannotHaveByRefArgs;
-            }
-        }
+        internal static string AccessorsCannotHaveByRefArgs => SR.AccessorsCannotHaveByRefArgs;
 
         /// <summary>
         /// A string like "Bounds count cannot be less than 1"
         /// </summary>
-        internal static string BoundsCannotBeLessThanOne
-        {
-            get
-            {
-                return SR.BoundsCannotBeLessThanOne;
-            }
-        }
+        internal static string BoundsCannotBeLessThanOne => SR.BoundsCannotBeLessThanOne;
 
         /// <summary>
         /// A string like "Type must not be ByRef"
         /// </summary>
-        internal static string TypeMustNotBeByRef
-        {
-            get
-            {
-                return SR.TypeMustNotBeByRef;
-            }
-        }
+        internal static string TypeMustNotBeByRef => SR.TypeMustNotBeByRef;
 
         /// <summary>
         /// A string like "Type must not be a pointer type"
@@ -129,200 +67,97 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Type doesn't have constructor with a given signature"
         /// </summary>
-        internal static string TypeDoesNotHaveConstructorForTheSignature
-        {
-            get
-            {
-                return SR.TypeDoesNotHaveConstructorForTheSignature;
-            }
-        }
+        internal static string TypeDoesNotHaveConstructorForTheSignature => SR.TypeDoesNotHaveConstructorForTheSignature;
 
         /// <summary>
         /// A string like "Setter should have void type."
         /// </summary>
-        internal static string SetterMustBeVoid
-        {
-            get
-            {
-                return SR.SetterMustBeVoid;
-            }
-        }
+        internal static string SetterMustBeVoid => SR.SetterMustBeVoid;
 
         /// <summary>
         /// A string like "Property type must match the value type of setter"
         /// </summary>
-        internal static string PropertyTypeMustMatchSetter
-        {
-            get
-            {
-                return SR.PropertyTypeMustMatchSetter;
-            }
-        }
+        internal static string PropertyTypeMustMatchSetter => SR.PropertyTypeMustMatchSetter;
 
         /// <summary>
         /// A string like "Both accessors must be static."
         /// </summary>
-        internal static string BothAccessorsMustBeStatic
-        {
-            get
-            {
-                return SR.BothAccessorsMustBeStatic;
-            }
-        }
+        internal static string BothAccessorsMustBeStatic => SR.BothAccessorsMustBeStatic;
 
         /// <summary>
         /// A string like "Static field requires null instance, non-static field requires non-null instance."
         /// </summary>
-        internal static string OnlyStaticFieldsHaveNullInstance
-        {
-            get
-            {
-                return SR.OnlyStaticFieldsHaveNullInstance;
-            }
-        }
+        internal static string OnlyStaticFieldsHaveNullInstance => SR.OnlyStaticFieldsHaveNullInstance;
 
         /// <summary>
         /// A string like "Static property requires null instance, non-static property requires non-null instance."
         /// </summary>
-        internal static string OnlyStaticPropertiesHaveNullInstance
-        {
-            get
-            {
-                return SR.OnlyStaticPropertiesHaveNullInstance;
-            }
-        }
+        internal static string OnlyStaticPropertiesHaveNullInstance => SR.OnlyStaticPropertiesHaveNullInstance;
 
         /// <summary>
         /// A string like "Static method requires null instance, non-static method requires non-null instance."
         /// </summary>
-        internal static string OnlyStaticMethodsHaveNullInstance
-        {
-            get
-            {
-                return SR.OnlyStaticMethodsHaveNullInstance;
-            }
-        }
+        internal static string OnlyStaticMethodsHaveNullInstance => SR.OnlyStaticMethodsHaveNullInstance;
 
         /// <summary>
         /// A string like "Property cannot have a void type."
         /// </summary>
-        internal static string PropertyTypeCannotBeVoid
-        {
-            get
-            {
-                return SR.PropertyTypeCannotBeVoid;
-            }
-        }
+        internal static string PropertyTypeCannotBeVoid => SR.PropertyTypeCannotBeVoid;
 
         /// <summary>
         /// A string like "Can only unbox from an object or interface type to a value type."
         /// </summary>
-        internal static string InvalidUnboxType
-        {
-            get
-            {
-                return SR.InvalidUnboxType;
-            }
-        }
+        internal static string InvalidUnboxType => SR.InvalidUnboxType;
 
         /// <summary>
         /// A string like "Expression must be writeable"
         /// </summary>
-        internal static string ExpressionMustBeWriteable
-        {
-            get
-            {
-                return SR.ExpressionMustBeWriteable;
-            }
-        }
+        internal static string ExpressionMustBeWriteable => SR.ExpressionMustBeWriteable;
 
         /// <summary>
         /// A string like "Argument must not have a value type."
         /// </summary>
-        internal static string ArgumentMustNotHaveValueType
-        {
-            get
-            {
-                return SR.ArgumentMustNotHaveValueType;
-            }
-        }
+        internal static string ArgumentMustNotHaveValueType => SR.ArgumentMustNotHaveValueType;
 
         /// <summary>
         /// A string like "must be reducible node"
         /// </summary>
-        internal static string MustBeReducible
-        {
-            get
-            {
-                return SR.MustBeReducible;
-            }
-        }
+        internal static string MustBeReducible => SR.MustBeReducible;
 
         /// <summary>
         /// A string like "All test values must have the same type."
         /// </summary>
-        internal static string AllTestValuesMustHaveSameType
-        {
-            get
-            {
-                return SR.AllTestValuesMustHaveSameType;
-            }
-        }
+        internal static string AllTestValuesMustHaveSameType => SR.AllTestValuesMustHaveSameType;
 
         /// <summary>
         /// A string like "All case bodies and the default body must have the same type."
         /// </summary>
-        internal static string AllCaseBodiesMustHaveSameType
-        {
-            get
-            {
-                return SR.AllCaseBodiesMustHaveSameType;
-            }
-        }
+        internal static string AllCaseBodiesMustHaveSameType => SR.AllCaseBodiesMustHaveSameType;
 
         /// <summary>
         /// A string like "Default body must be supplied if case bodies are not System.Void."
         /// </summary>
-        internal static string DefaultBodyMustBeSupplied
-        {
-            get
-            {
-                return SR.DefaultBodyMustBeSupplied;
-            }
-        }
+        internal static string DefaultBodyMustBeSupplied => SR.DefaultBodyMustBeSupplied;
 
         /// <summary>
         /// A string like "Label type must be System.Void if an expression is not supplied"
         /// </summary>
-        internal static string LabelMustBeVoidOrHaveExpression
-        {
-            get
-            {
-                return SR.LabelMustBeVoidOrHaveExpression;
-            }
-        }
+        internal static string LabelMustBeVoidOrHaveExpression => SR.LabelMustBeVoidOrHaveExpression;
 
         /// <summary>
         /// A string like "Type must be System.Void for this label argument"
         /// </summary>
-        internal static string LabelTypeMustBeVoid
-        {
-            get
-            {
-                return SR.LabelTypeMustBeVoid;
-            }
-        }
+        internal static string LabelTypeMustBeVoid => SR.LabelTypeMustBeVoid;
 
         /// <summary>
         /// A string like "Quoted expression must be a lambda"
         /// </summary>
-        internal static string QuotedExpressionMustBeLambda
-        {
-            get
-            {
-                return SR.QuotedExpressionMustBeLambda;
-            }
-        }
+        internal static string QuotedExpressionMustBeLambda => SR.QuotedExpressionMustBeLambda;
+
+        /// <summary>
+        /// A string like "Collection was modified; enumeration operation may not execute."
+        /// </summary>
+        internal static string CollectionModifiedWhileEnumerating => SR.CollectionModifiedWhileEnumerating;
 
         /// <summary>
         /// A string like "Variable '{0}' uses unsupported type '{1}'. Reference types are not supported for variables."
@@ -333,6 +168,66 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
+        /// A string like "Collection is read-only."
+        /// </summary>
+        internal static string CollectionReadOnly => SR.CollectionReadOnly;
+
+        /// <summary>
+        /// A string like "More than one key matching '{0}' was found in the ExpandoObject."
+        /// </summary>
+        internal static string AmbiguousMatchInExpandoObject(object p0) => SR.Format(SR.AmbiguousMatchInExpandoObject, p0);
+
+        /// <summary>
+        /// A string like "An element with the same key '{0}' already exists in the ExpandoObject."
+        /// </summary>
+        internal static string SameKeyExistsInExpando(object p0) => SR.Format(SR.SameKeyExistsInExpando, p0);
+
+        /// <summary>
+        /// A string like "The specified key '{0}' does not exist in the ExpandoObject."
+        /// </summary>
+        internal static string KeyDoesNotExistInExpando(object p0) => SR.Format(SR.KeyDoesNotExistInExpando, p0);
+
+        /// <summary>
+        /// A string like "Method precondition violated"
+        /// </summary>
+        internal static string MethodPreconditionViolated => SR.MethodPreconditionViolated;
+
+        /// <summary>
+        /// A string like "Argument count must be greater than number of named arguments."
+        /// </summary>
+        internal static string ArgCntMustBeGreaterThanNameCnt => SR.ArgCntMustBeGreaterThanNameCnt;
+
+        /// <summary>
+        /// A string like "An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance."
+        /// </summary>
+        internal static string InvalidMetaObjectCreated(object p0) => SR.Format(SR.InvalidMetaObjectCreated, p0);
+
+        /// <summary>
+        /// A string like "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static string BinderNotCompatibleWithCallSite(object p0, object p1, object p2) => SR.Format(SR.BinderNotCompatibleWithCallSite, p0, p1, p2);
+
+        /// <summary>
+        /// A string like "The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction."
+        /// </summary>
+        internal static string DynamicBindingNeedsRestrictions(object p0, object p1) => SR.Format(SR.DynamicBindingNeedsRestrictions, p0, p1);
+
+        /// <summary>
+        /// A string like "The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site."
+        /// </summary>
+        internal static string DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) => SR.Format(SR.DynamicObjectResultNotAssignable, p0, p1, p2, p3);
+
+        /// <summary>
+        /// A string like "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static string DynamicBinderResultNotAssignable(object p0, object p1, object p2) => SR.Format(SR.DynamicBinderResultNotAssignable, p0, p1, p2);
+
+        /// <summary>
+        /// A string like "Bind cannot return null."
+        /// </summary>
+        internal static string BindingCannotBeNull => SR.BindingCannotBeNull;
+
+        /// <summary>
         /// A string like "Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object."
         /// </summary>
         internal static string DuplicateVariable(object p0)
@@ -341,48 +236,49 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
+        /// A string like "Argument type cannot be void"
+        /// </summary>
+        internal static string ArgumentTypeCannotBeVoid => SR.ArgumentTypeCannotBeVoid;
+
+        /// <summary>
+        /// A string like "Type parameter is {0}. Expected a delegate."
+        /// </summary>
+        internal static string TypeParameterIsNotDelegate(object p0) => SR.Format(SR.TypeParameterIsNotDelegate, p0);
+
+        /// <summary>
+        /// A string like "No or Invalid rule produced"
+        /// </summary>
+        internal static string NoOrInvalidRuleProduced => SR.NoOrInvalidRuleProduced;
+
+        /// <summary>
+        /// A string like "Type must be derived from System.Delegate"
+        /// </summary>
+        internal static string TypeMustBeDerivedFromSystemDelegate => SR.TypeMustBeDerivedFromSystemDelegate;
+
+        /// <summary>
+        /// A string like "First argument of delegate must be CallSite"
+        /// </summary>
+        internal static string FirstArgumentMustBeCallSite => SR.FirstArgumentMustBeCallSite;
+
+        /// <summary>
         /// A string like "Start and End must be well ordered"
         /// </summary>
-        internal static string StartEndMustBeOrdered
-        {
-            get
-            {
-                return SR.StartEndMustBeOrdered;
-            }
-        }
+        internal static string StartEndMustBeOrdered => SR.StartEndMustBeOrdered;
 
         /// <summary>
         /// A string like "fault cannot be used with catch or finally clauses"
         /// </summary>
-        internal static string FaultCannotHaveCatchOrFinally
-        {
-            get
-            {
-                return SR.FaultCannotHaveCatchOrFinally;
-            }
-        }
+        internal static string FaultCannotHaveCatchOrFinally => SR.FaultCannotHaveCatchOrFinally;
 
         /// <summary>
         /// A string like "try must have at least one catch, finally, or fault clause"
         /// </summary>
-        internal static string TryMustHaveCatchFinallyOrFault
-        {
-            get
-            {
-                return SR.TryMustHaveCatchFinallyOrFault;
-            }
-        }
+        internal static string TryMustHaveCatchFinallyOrFault => SR.TryMustHaveCatchFinallyOrFault;
 
         /// <summary>
         /// A string like "Body of catch must have the same type as body of try."
         /// </summary>
-        internal static string BodyOfCatchMustHaveSameTypeAsBodyOfTry
-        {
-            get
-            {
-                return SR.BodyOfCatchMustHaveSameTypeAsBodyOfTry;
-            }
-        }
+        internal static string BodyOfCatchMustHaveSameTypeAsBodyOfTry => SR.BodyOfCatchMustHaveSameTypeAsBodyOfTry;
 
         /// <summary>
         /// A string like "Extension node must override the property {0}."
@@ -459,35 +355,17 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Conversion is not supported for arithmetic types without operator overloading."
         /// </summary>
-        internal static string ConversionIsNotSupportedForArithmeticTypes
-        {
-            get
-            {
-                return SR.ConversionIsNotSupportedForArithmeticTypes;
-            }
-        }
+        internal static string ConversionIsNotSupportedForArithmeticTypes => SR.ConversionIsNotSupportedForArithmeticTypes;
 
         /// <summary>
         /// A string like "Argument must be array"
         /// </summary>
-        internal static string ArgumentMustBeArray
-        {
-            get
-            {
-                return SR.ArgumentMustBeArray;
-            }
-        }
+        internal static string ArgumentMustBeArray => SR.ArgumentMustBeArray;
 
         /// <summary>
         /// A string like "Argument must be boolean"
         /// </summary>
-        internal static string ArgumentMustBeBoolean
-        {
-            get
-            {
-                return SR.ArgumentMustBeBoolean;
-            }
-        }
+        internal static string ArgumentMustBeBoolean => SR.ArgumentMustBeBoolean;
 
         /// <summary>
         /// A string like "The user-defined equality method '{0}' must return a boolean value."
@@ -500,79 +378,37 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Argument must be either a FieldInfo or PropertyInfo"
         /// </summary>
-        internal static string ArgumentMustBeFieldInfoOrPropertyInfo
-        {
-            get
-            {
-                return SR.ArgumentMustBeFieldInfoOrPropertyInfo;
-            }
-        }
+        internal static string ArgumentMustBeFieldInfoOrPropertyInfo => SR.ArgumentMustBeFieldInfoOrPropertyInfo;
 
         /// <summary>
         /// A string like "Argument must be either a FieldInfo, PropertyInfo or MethodInfo"
         /// </summary>
-        internal static string ArgumentMustBeFieldInfoOrPropertyInfoOrMethod
-        {
-            get
-            {
-                return SR.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod;
-            }
-        }
+        internal static string ArgumentMustBeFieldInfoOrPropertyInfoOrMethod => SR.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod;
 
         /// <summary>
         /// A string like "Argument must be an instance member"
         /// </summary>
-        internal static string ArgumentMustBeInstanceMember
-        {
-            get
-            {
-                return SR.ArgumentMustBeInstanceMember;
-            }
-        }
+        internal static string ArgumentMustBeInstanceMember => SR.ArgumentMustBeInstanceMember;
 
         /// <summary>
         /// A string like "Argument must be of an integer type"
         /// </summary>
-        internal static string ArgumentMustBeInteger
-        {
-            get
-            {
-                return SR.ArgumentMustBeInteger;
-            }
-        }
+        internal static string ArgumentMustBeInteger => SR.ArgumentMustBeInteger;
 
         /// <summary>
         /// A string like "Argument for array index must be of type Int32"
         /// </summary>
-        internal static string ArgumentMustBeArrayIndexType
-        {
-            get
-            {
-                return SR.ArgumentMustBeArrayIndexType;
-            }
-        }
+        internal static string ArgumentMustBeArrayIndexType => SR.ArgumentMustBeArrayIndexType;
 
         /// <summary>
         /// A string like "Argument must be single dimensional array type"
         /// </summary>
-        internal static string ArgumentMustBeSingleDimensionalArrayType
-        {
-            get
-            {
-                return SR.ArgumentMustBeSingleDimensionalArrayType;
-            }
-        }
+        internal static string ArgumentMustBeSingleDimensionalArrayType => SR.ArgumentMustBeSingleDimensionalArrayType;
 
         /// <summary>
         /// A string like "Argument types do not match"
         /// </summary>
-        internal static string ArgumentTypesMustMatch
-        {
-            get
-            {
-                return SR.ArgumentTypesMustMatch;
-            }
-        }
+        internal static string ArgumentTypesMustMatch => SR.ArgumentTypesMustMatch;
 
         /// <summary>
         /// A string like "Cannot auto initialize elements of value type through property '{0}', use assignment instead"
@@ -601,13 +437,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Coalesce used with type that cannot be null"
         /// </summary>
-        internal static string CoalesceUsedOnNonNullType
-        {
-            get
-            {
-                return SR.CoalesceUsedOnNonNullType;
-            }
-        }
+        internal static string CoalesceUsedOnNonNullType => SR.CoalesceUsedOnNonNullType;
 
         /// <summary>
         /// A string like "An expression of type '{0}' cannot be used to initialize an array of type '{1}'"
@@ -692,57 +522,27 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Incorrect number of indexes"
         /// </summary>
-        internal static string IncorrectNumberOfIndexes
-        {
-            get
-            {
-                return SR.IncorrectNumberOfIndexes;
-            }
-        }
+        internal static string IncorrectNumberOfIndexes => SR.IncorrectNumberOfIndexes;
 
         /// <summary>
         /// A string like "Incorrect number of parameters supplied for lambda declaration"
         /// </summary>
-        internal static string IncorrectNumberOfLambdaDeclarationParameters
-        {
-            get
-            {
-                return SR.IncorrectNumberOfLambdaDeclarationParameters;
-            }
-        }
+        internal static string IncorrectNumberOfLambdaDeclarationParameters => SR.IncorrectNumberOfLambdaDeclarationParameters;
 
         /// <summary>
         /// A string like " Incorrect number of members for constructor"
         /// </summary>
-        internal static string IncorrectNumberOfMembersForGivenConstructor
-        {
-            get
-            {
-                return SR.IncorrectNumberOfMembersForGivenConstructor;
-            }
-        }
+        internal static string IncorrectNumberOfMembersForGivenConstructor => SR.IncorrectNumberOfMembersForGivenConstructor;
 
         /// <summary>
         /// A string like "Incorrect number of arguments for the given members "
         /// </summary>
-        internal static string IncorrectNumberOfArgumentsForMembers
-        {
-            get
-            {
-                return SR.IncorrectNumberOfArgumentsForMembers;
-            }
-        }
+        internal static string IncorrectNumberOfArgumentsForMembers => SR.IncorrectNumberOfArgumentsForMembers;
 
         /// <summary>
         /// A string like "Lambda type parameter must be derived from System.MulticastDelegate"
         /// </summary>
-        internal static string LambdaTypeMustBeDerivedFromSystemDelegate
-        {
-            get
-            {
-                return SR.LambdaTypeMustBeDerivedFromSystemDelegate;
-            }
-        }
+        internal static string LambdaTypeMustBeDerivedFromSystemDelegate => SR.LambdaTypeMustBeDerivedFromSystemDelegate;
 
         /// <summary>
         /// A string like "Member '{0}' not field or property"
@@ -884,13 +684,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Element initializer method must be named 'Add'"
         /// </summary>
-        internal static string ElementInitializerMethodNotAdd
-        {
-            get
-            {
-                return SR.ElementInitializerMethodNotAdd;
-            }
-        }
+        internal static string ElementInitializerMethodNotAdd => SR.ElementInitializerMethodNotAdd;
 
         /// <summary>
         /// A string like "Parameter '{0}' of element initializer method '{1}' must not be a pass by reference parameter"
@@ -903,24 +697,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Element initializer method must have at least 1 parameter"
         /// </summary>
-        internal static string ElementInitializerMethodWithZeroArgs
-        {
-            get
-            {
-                return SR.ElementInitializerMethodWithZeroArgs;
-            }
-        }
+        internal static string ElementInitializerMethodWithZeroArgs => SR.ElementInitializerMethodWithZeroArgs;
 
         /// <summary>
         /// A string like "Element initializer method must be an instance method"
         /// </summary>
-        internal static string ElementInitializerMethodStatic
-        {
-            get
-            {
-                return SR.ElementInitializerMethodStatic;
-            }
-        }
+        internal static string ElementInitializerMethodStatic => SR.ElementInitializerMethodStatic;
 
         /// <summary>
         /// A string like "Type '{0}' is not IEnumerable"
@@ -933,13 +715,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Unexpected coalesce operator."
         /// </summary>
-        internal static string UnexpectedCoalesceOperator
-        {
-            get
-            {
-                return SR.UnexpectedCoalesceOperator;
-            }
-        }
+        internal static string UnexpectedCoalesceOperator => SR.UnexpectedCoalesceOperator;
 
         /// <summary>
         /// A string like "Cannot cast from type '{0}' to type '{1}"
@@ -960,13 +736,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Unhandled binding "
         /// </summary>
-        internal static string UnhandledBinding
-        {
-            get
-            {
-                return SR.UnhandledBinding;
-            }
-        }
+        internal static string UnhandledBinding => SR.UnhandledBinding;
 
         /// <summary>
         /// A string like "Unhandled Binding Type: {0}"
@@ -995,13 +765,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Unknown binding type"
         /// </summary>
-        internal static string UnknownBindingType
-        {
-            get
-            {
-                return SR.UnknownBindingType;
-            }
-        }
+        internal static string UnknownBindingType => SR.UnknownBindingType;
 
         /// <summary>
         /// A string like "The user-defined operator method '{1}' for operator '{0}' must have identical parameter and return types."
@@ -1070,35 +834,17 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "An incorrect number of type args were specified for the declaration of a Func type."
         /// </summary>
-        internal static string IncorrectNumberOfTypeArgsForFunc
-        {
-            get
-            {
-                return SR.IncorrectNumberOfTypeArgsForFunc;
-            }
-        }
+        internal static string IncorrectNumberOfTypeArgsForFunc => SR.IncorrectNumberOfTypeArgsForFunc;
 
         /// <summary>
         /// A string like "An incorrect number of type args were specified for the declaration of an Action type."
         /// </summary>
-        internal static string IncorrectNumberOfTypeArgsForAction
-        {
-            get
-            {
-                return SR.IncorrectNumberOfTypeArgsForAction;
-            }
-        }
+        internal static string IncorrectNumberOfTypeArgsForAction => SR.IncorrectNumberOfTypeArgsForAction;
 
         /// <summary>
         /// A string like "Argument type cannot be System.Void."
         /// </summary>
-        internal static string ArgumentCannotBeOfTypeVoid
-        {
-            get
-            {
-                return SR.ArgumentCannotBeOfTypeVoid;
-            }
-        }
+        internal static string ArgumentCannotBeOfTypeVoid => SR.ArgumentCannotBeOfTypeVoid;
 
         /// <summary>
         /// A string like "{0} must be greater than or equal to {1}"
@@ -1127,24 +873,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Control cannot leave a finally block."
         /// </summary>
-        internal static string ControlCannotLeaveFinally
-        {
-            get
-            {
-                return SR.ControlCannotLeaveFinally;
-            }
-        }
+        internal static string ControlCannotLeaveFinally => SR.ControlCannotLeaveFinally;
 
         /// <summary>
         /// A string like "Control cannot leave a filter test."
         /// </summary>
-        internal static string ControlCannotLeaveFilterTest
-        {
-            get
-            {
-                return SR.ControlCannotLeaveFilterTest;
-            }
-        }
+        internal static string ControlCannotLeaveFilterTest => SR.ControlCannotLeaveFilterTest;
 
         /// <summary>
         /// A string like "Cannot jump to ambiguous label '{0}'."
@@ -1157,24 +891,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Control cannot enter a try block."
         /// </summary>
-        internal static string ControlCannotEnterTry
-        {
-            get
-            {
-                return SR.ControlCannotEnterTry;
-            }
-        }
+        internal static string ControlCannotEnterTry => SR.ControlCannotEnterTry;
 
         /// <summary>
         /// A string like "Control cannot enter an expression--only statements can be jumped into."
         /// </summary>
-        internal static string ControlCannotEnterExpression
-        {
-            get
-            {
-                return SR.ControlCannotEnterExpression;
-            }
-        }
+        internal static string ControlCannotEnterExpression => SR.ControlCannotEnterExpression;
 
         /// <summary>
         /// A string like "Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values."
@@ -1187,13 +909,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Extension should have been reduced."
         /// </summary>
-        internal static string ExtensionNotReduced
-        {
-            get
-            {
-                return SR.ExtensionNotReduced;
-            }
-        }
+        internal static string ExtensionNotReduced => SR.ExtensionNotReduced;
 
 #if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
@@ -1207,24 +923,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Dynamic expressions are not supported by CompileToMethod. Instead, create an expression tree that uses System.Runtime.CompilerServices.CallSite."
         /// </summary>
-        internal static string CannotCompileDynamic
-        {
-            get
-            {
-                return SR.CannotCompileDynamic;
-            }
-        }
+        internal static string CannotCompileDynamic => SR.CannotCompileDynamic;
 
         /// <summary>
         /// A string like "MethodBuilder does not have a valid TypeBuilder"
         /// </summary>
-        internal static string MethodBuilderDoesNotHaveTypeBuilder
-        {
-            get
-            {
-                return SR.MethodBuilderDoesNotHaveTypeBuilder;
-            }
-        }
+        internal static string MethodBuilderDoesNotHaveTypeBuilder => SR.MethodBuilderDoesNotHaveTypeBuilder;
 #endif
 
         /// <summary>
@@ -1278,24 +982,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Rethrow statement is valid only inside a Catch block."
         /// </summary>
-        internal static string RethrowRequiresCatch
-        {
-            get
-            {
-                return SR.RethrowRequiresCatch;
-            }
-        }
+        internal static string RethrowRequiresCatch => SR.RethrowRequiresCatch;
 
         /// <summary>
         /// A string like "Try expression is not allowed inside a filter body."
         /// </summary>
-        internal static string TryNotAllowedInFilter
-        {
-            get
-            {
-                return SR.TryNotAllowedInFilter;
-            }
-        }
+        internal static string TryNotAllowedInFilter => SR.TryNotAllowedInFilter;
 
         /// <summary>
         /// A string like "When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
@@ -1357,13 +1049,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod."
         /// </summary>
-        internal static string PdbGeneratorNeedsExpressionCompiler
-        {
-            get
-            {
-                return SR.PdbGeneratorNeedsExpressionCompiler;
-            }
-        }
+        internal static string PdbGeneratorNeedsExpressionCompiler => SR.PdbGeneratorNeedsExpressionCompiler;
 #endif
 
 #if FEATURE_COMPILE
@@ -1379,23 +1065,11 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "The constructor should not be static"
         /// </summary>
-        internal static string NonStaticConstructorRequired
-        {
-            get
-            {
-                return SR.NonStaticConstructorRequired;
-            }
-        }
+        internal static string NonStaticConstructorRequired => SR.NonStaticConstructorRequired;
 
         /// <summary>
         /// A string like "The constructor should not be declared on an abstract class"
         /// </summary>
-        internal static string NonAbstractConstructorRequired
-        {
-            get
-            {
-                return SR.NonAbstractConstructorRequired;
-            }
-        }
+        internal static string NonAbstractConstructorRequired => SR.NonAbstractConstructorRequired;
     }
 }

@@ -59,7 +59,7 @@ namespace System.Diagnostics
                 EnsureState(State.HaveId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 double seconds = info.ri_proc_start_abstime / (double)NanoSecondToSecondFactor;
-                
+
                 // Convert timespan from boot to process start datetime.
                 return BootTimeToDateTime(TimeSpan.FromSeconds(seconds));
             }
@@ -197,6 +197,5 @@ namespace System.Diagnostics
         {
             return Interop.libproc.proc_pid_rusage(Interop.Sys.GetPid());
         }
-
     }
 }

@@ -227,7 +227,7 @@ namespace System.Net.Mime.Tests
             var cd = new ContentDisposition(disposition);
 
             Assert.Equal(ValidDateGmtOffset, cd.Parameters["creation-date"]);
-            Assert.Equal(new DateTime(2009, 5, 17, 15 + s_localTimeOffset.Hours, 34, 07, DateTimeKind.Local), cd.CreationDate);
+            Assert.Equal(new DateTime(2009, 5, 17, 15, 34, 07, DateTimeKind.Local) + s_localTimeOffset, cd.CreationDate);
 
             Assert.Equal("inline", cd.DispositionType);
             Assert.Equal(dispositionValue, cd.ToString());
@@ -252,7 +252,7 @@ namespace System.Net.Mime.Tests
             cd.Parameters["creation-date"] = ValidDateGmt;
 
             Assert.Equal(DateTimeKind.Local, cd.CreationDate.Kind);
-            Assert.Equal(new DateTime(2009, 5, 17, 15 + s_localTimeOffset.Hours, 34, 07, DateTimeKind.Local), cd.CreationDate);
+            Assert.Equal(new DateTime(2009, 5, 17, 15, 34, 07, DateTimeKind.Local) + s_localTimeOffset, cd.CreationDate);
         }
 
         [Fact]
@@ -320,7 +320,7 @@ namespace System.Net.Mime.Tests
 
             Assert.Equal("inline", cd.DispositionType);
             Assert.Equal(ValidDateGmtOffset, cd.Parameters["creation-date"]);
-            Assert.Equal(new DateTime(2009, 5, 17, 15 + s_localTimeOffset.Hours, 34, 07, DateTimeKind.Local), cd.CreationDate);
+            Assert.Equal(new DateTime(2009, 5, 17, 15, 34, 07, DateTimeKind.Local) + s_localTimeOffset, cd.CreationDate);
         }
 
         [Fact]

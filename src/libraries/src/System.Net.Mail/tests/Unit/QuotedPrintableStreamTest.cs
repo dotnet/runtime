@@ -70,7 +70,5 @@ namespace System.Net.Mime.Tests
             string results = Encoding.ASCII.GetString(bytesRead, 0, bytesReadCount);
             Assert.Equal(ExpectedOutput, results);
         }
-
-
     }
 }

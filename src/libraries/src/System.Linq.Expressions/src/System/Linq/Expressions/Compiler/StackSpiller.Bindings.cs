@@ -23,10 +23,7 @@ namespace System.Linq.Expressions.Compiler
                 _spiller = spiller;
             }
 
-            internal RewriteAction Action
-            {
-                get { return _action; }
-            }
+            internal RewriteAction Action => _action;
 
             internal abstract MemberBinding AsBinding();
             internal abstract Expression AsExpression(Expression target);

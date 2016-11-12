@@ -14,28 +14,28 @@ namespace System.Linq
         public static IQueryable<TElement> AsQueryable<TElement>(this IEnumerable<TElement> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source as IQueryable<TElement> ?? new EnumerableQuery<TElement>(source);
         }
 
         public static IQueryable AsQueryable(this IEnumerable source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             IQueryable queryable = source as IQueryable;
             if (queryable != null) return queryable;
             Type enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
-                throw Error.ArgumentNotIEnumerableGeneric("source");
+                throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
             return EnumerableQuery.Create(enumType.GetTypeInfo().GenericTypeArguments[0], source);
         }
 
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -49,9 +49,9 @@ namespace System.Linq
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -65,7 +65,7 @@ namespace System.Linq
         public static IQueryable<TResult> OfType<TResult>(this IQueryable source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -78,7 +78,7 @@ namespace System.Linq
         public static IQueryable<TResult> Cast<TResult>(this IQueryable source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -91,9 +91,9 @@ namespace System.Linq
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -107,9 +107,9 @@ namespace System.Linq
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -123,9 +123,9 @@ namespace System.Linq
         public static IQueryable<TResult> SelectMany<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, IEnumerable<TResult>>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -139,9 +139,9 @@ namespace System.Linq
         public static IQueryable<TResult> SelectMany<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, IEnumerable<TResult>>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -155,11 +155,11 @@ namespace System.Linq
         public static IQueryable<TResult> SelectMany<TSource, TCollection, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, IEnumerable<TCollection>>> collectionSelector, Expression<Func<TSource, TCollection, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (collectionSelector == null)
-                throw Error.ArgumentNull("collectionSelector");
+                throw Error.ArgumentNull(nameof(collectionSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -174,11 +174,11 @@ namespace System.Linq
         public static IQueryable<TResult> SelectMany<TSource, TCollection, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, IEnumerable<TCollection>>> collectionSelector, Expression<Func<TSource, TCollection, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (collectionSelector == null)
-                throw Error.ArgumentNull("collectionSelector");
+                throw Error.ArgumentNull(nameof(collectionSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -200,15 +200,15 @@ namespace System.Linq
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -231,15 +231,15 @@ namespace System.Linq
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -264,15 +264,15 @@ namespace System.Linq
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -294,15 +294,15 @@ namespace System.Linq
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -326,9 +326,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -342,9 +342,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -359,9 +359,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -375,9 +375,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -392,9 +392,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -408,9 +408,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -425,9 +425,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -441,9 +441,9 @@ namespace System.Linq
         public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -458,7 +458,7 @@ namespace System.Linq
         public static IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, int count)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -472,9 +472,9 @@ namespace System.Linq
         public static IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -488,9 +488,9 @@ namespace System.Linq
         public static IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -504,7 +504,7 @@ namespace System.Linq
         public static IQueryable<TSource> Skip<TSource>(this IQueryable<TSource> source, int count)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -518,9 +518,9 @@ namespace System.Linq
         public static IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -534,9 +534,9 @@ namespace System.Linq
         public static IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -550,9 +550,9 @@ namespace System.Linq
         public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
                     null,
@@ -566,11 +566,11 @@ namespace System.Linq
         public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
@@ -585,9 +585,9 @@ namespace System.Linq
         public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
                     null,
@@ -602,11 +602,11 @@ namespace System.Linq
         public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
@@ -622,13 +622,13 @@ namespace System.Linq
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -644,11 +644,11 @@ namespace System.Linq
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -663,11 +663,11 @@ namespace System.Linq
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -683,13 +683,13 @@ namespace System.Linq
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -706,7 +706,7 @@ namespace System.Linq
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -719,7 +719,7 @@ namespace System.Linq
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source, IEqualityComparer<TSource> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -733,9 +733,9 @@ namespace System.Linq
         public static IQueryable<TSource> Concat<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -749,11 +749,11 @@ namespace System.Linq
         public static IQueryable<TResult> Zip<TFirst, TSecond, TResult>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, Expression<Func<TFirst, TSecond, TResult>> resultSelector)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source1.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
@@ -768,9 +768,9 @@ namespace System.Linq
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -784,9 +784,9 @@ namespace System.Linq
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -805,9 +805,9 @@ namespace System.Linq
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -821,9 +821,9 @@ namespace System.Linq
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -842,9 +842,9 @@ namespace System.Linq
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -858,9 +858,9 @@ namespace System.Linq
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -879,7 +879,7 @@ namespace System.Linq
         public static TSource First<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -892,9 +892,9 @@ namespace System.Linq
         public static TSource First<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -908,7 +908,7 @@ namespace System.Linq
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -921,9 +921,9 @@ namespace System.Linq
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -937,7 +937,7 @@ namespace System.Linq
         public static TSource Last<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -950,9 +950,9 @@ namespace System.Linq
         public static TSource Last<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -966,7 +966,7 @@ namespace System.Linq
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -979,9 +979,9 @@ namespace System.Linq
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -995,7 +995,7 @@ namespace System.Linq
         public static TSource Single<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1008,9 +1008,9 @@ namespace System.Linq
         public static TSource Single<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1024,7 +1024,7 @@ namespace System.Linq
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1037,9 +1037,9 @@ namespace System.Linq
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1053,9 +1053,9 @@ namespace System.Linq
         public static TSource ElementAt<TSource>(this IQueryable<TSource> source, int index)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (index < 0)
-                throw Error.ArgumentOutOfRange("index");
+                throw Error.ArgumentOutOfRange(nameof(index));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1069,7 +1069,7 @@ namespace System.Linq
         public static TSource ElementAtOrDefault<TSource>(this IQueryable<TSource> source, int index)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1083,7 +1083,7 @@ namespace System.Linq
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -1096,7 +1096,7 @@ namespace System.Linq
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source, TSource defaultValue)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -1110,7 +1110,7 @@ namespace System.Linq
         public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1124,7 +1124,7 @@ namespace System.Linq
         public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item, IEqualityComparer<TSource> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1139,7 +1139,7 @@ namespace System.Linq
         public static IQueryable<TSource> Reverse<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
@@ -1152,9 +1152,9 @@ namespace System.Linq
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1168,9 +1168,9 @@ namespace System.Linq
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1189,7 +1189,7 @@ namespace System.Linq
         public static bool Any<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1202,9 +1202,9 @@ namespace System.Linq
         public static bool Any<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1218,9 +1218,9 @@ namespace System.Linq
         public static bool All<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
@@ -1234,7 +1234,7 @@ namespace System.Linq
         public static int Count<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
@@ -1247,9 +1247,9 @@ namespace System.Linq
         public static int Count<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
@@ -1263,7 +1263,7 @@ namespace System.Linq
         public static long LongCount<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
@@ -1276,9 +1276,9 @@ namespace System.Linq
         public static long LongCount<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
@@ -1292,7 +1292,7 @@ namespace System.Linq
         public static TSource Min<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1305,9 +1305,9 @@ namespace System.Linq
         public static TResult Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
@@ -1321,7 +1321,7 @@ namespace System.Linq
         public static TSource Max<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1334,9 +1334,9 @@ namespace System.Linq
         public static TResult Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
@@ -1350,7 +1350,7 @@ namespace System.Linq
         public static int Sum(this IQueryable<int> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
@@ -1363,7 +1363,7 @@ namespace System.Linq
         public static int? Sum(this IQueryable<int?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
@@ -1376,7 +1376,7 @@ namespace System.Linq
         public static long Sum(this IQueryable<long> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
@@ -1389,7 +1389,7 @@ namespace System.Linq
         public static long? Sum(this IQueryable<long?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
@@ -1402,7 +1402,7 @@ namespace System.Linq
         public static float Sum(this IQueryable<float> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
@@ -1415,7 +1415,7 @@ namespace System.Linq
         public static float? Sum(this IQueryable<float?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
@@ -1428,7 +1428,7 @@ namespace System.Linq
         public static double Sum(this IQueryable<double> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1441,7 +1441,7 @@ namespace System.Linq
         public static double? Sum(this IQueryable<double?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1454,7 +1454,7 @@ namespace System.Linq
         public static decimal Sum(this IQueryable<decimal> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
@@ -1467,7 +1467,7 @@ namespace System.Linq
         public static decimal? Sum(this IQueryable<decimal?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
@@ -1480,9 +1480,9 @@ namespace System.Linq
         public static int Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
@@ -1496,9 +1496,9 @@ namespace System.Linq
         public static int? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
@@ -1512,9 +1512,9 @@ namespace System.Linq
         public static long Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
@@ -1528,9 +1528,9 @@ namespace System.Linq
         public static long? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
@@ -1544,9 +1544,9 @@ namespace System.Linq
         public static float Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
@@ -1560,9 +1560,9 @@ namespace System.Linq
         public static float? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
@@ -1576,9 +1576,9 @@ namespace System.Linq
         public static double Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1592,9 +1592,9 @@ namespace System.Linq
         public static double? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1608,9 +1608,9 @@ namespace System.Linq
         public static decimal Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
@@ -1624,9 +1624,9 @@ namespace System.Linq
         public static decimal? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
@@ -1640,7 +1640,7 @@ namespace System.Linq
         public static double Average(this IQueryable<int> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1653,7 +1653,7 @@ namespace System.Linq
         public static double? Average(this IQueryable<int?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1666,7 +1666,7 @@ namespace System.Linq
         public static double Average(this IQueryable<long> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1679,7 +1679,7 @@ namespace System.Linq
         public static double? Average(this IQueryable<long?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1692,7 +1692,7 @@ namespace System.Linq
         public static float Average(this IQueryable<float> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
@@ -1705,7 +1705,7 @@ namespace System.Linq
         public static float? Average(this IQueryable<float?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
@@ -1718,7 +1718,7 @@ namespace System.Linq
         public static double Average(this IQueryable<double> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1731,7 +1731,7 @@ namespace System.Linq
         public static double? Average(this IQueryable<double?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1744,7 +1744,7 @@ namespace System.Linq
         public static decimal Average(this IQueryable<decimal> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
@@ -1757,7 +1757,7 @@ namespace System.Linq
         public static decimal? Average(this IQueryable<decimal?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
@@ -1770,9 +1770,9 @@ namespace System.Linq
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1786,9 +1786,9 @@ namespace System.Linq
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1802,9 +1802,9 @@ namespace System.Linq
         public static float Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
@@ -1818,9 +1818,9 @@ namespace System.Linq
         public static float? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
@@ -1834,9 +1834,9 @@ namespace System.Linq
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1850,9 +1850,9 @@ namespace System.Linq
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1866,9 +1866,9 @@ namespace System.Linq
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
@@ -1882,9 +1882,9 @@ namespace System.Linq
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
@@ -1898,9 +1898,9 @@ namespace System.Linq
         public static decimal Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
@@ -1914,9 +1914,9 @@ namespace System.Linq
         public static decimal? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
@@ -1930,9 +1930,9 @@ namespace System.Linq
         public static TSource Aggregate<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, TSource, TSource>> func)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (func == null)
-                throw Error.ArgumentNull("func");
+                throw Error.ArgumentNull(nameof(func));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
@@ -1946,9 +1946,9 @@ namespace System.Linq
         public static TAccumulate Aggregate<TSource, TAccumulate>(this IQueryable<TSource> source, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (func == null)
-                throw Error.ArgumentNull("func");
+                throw Error.ArgumentNull(nameof(func));
             return source.Provider.Execute<TAccumulate>(
                 Expression.Call(
                     null,
@@ -1963,11 +1963,11 @@ namespace System.Linq
         public static TResult Aggregate<TSource, TAccumulate, TResult>(this IQueryable<TSource> source, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func, Expression<Func<TAccumulate, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (func == null)
-                throw Error.ArgumentNull("func");
+                throw Error.ArgumentNull(nameof(func));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,

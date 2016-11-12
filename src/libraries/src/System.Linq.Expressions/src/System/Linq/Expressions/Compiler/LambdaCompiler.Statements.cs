@@ -5,9 +5,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Globalization;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
@@ -418,7 +418,7 @@ namespace System.Linq.Expressions.Compiler
             // Sort the keys, and group them into buckets.
             keys.Sort((x, y) => Math.Sign(x.Key - y.Key));
             var buckets = new List<List<SwitchLabel>>();
-            foreach (var key in keys)
+            foreach (SwitchLabel key in keys)
             {
                 AddToBuckets(buckets, key);
             }
@@ -937,7 +937,7 @@ namespace System.Linq.Expressions.Compiler
             // begin the catch, clear the exception, we've 
             // already saved it
             _ilg.MarkLabel(endFilter);
-            _ilg.BeginCatchBlock(null);
+            _ilg.BeginCatchBlock(exceptionType: null);
             _ilg.Emit(OpCodes.Pop);
         }
 

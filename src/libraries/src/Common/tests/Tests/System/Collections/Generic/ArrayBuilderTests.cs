@@ -13,6 +13,22 @@ namespace System.Collections.Generic.Tests
         T Generate(int seed);
     }
 
+    public static class GeneratorExtensions
+    {
+        public static IEnumerable<T> GenerateEnumerable<T>(this IGenerator<T> generator, int count)
+        {
+            Debug.Assert(generator != null);
+            Debug.Assert(count >= 0);
+
+            uint seed = (uint)count;
+            for (int i = 0; i < count; i++)
+            {
+                seed ^= 0x9e3779b9 + (seed << 6) + (seed >> 2);
+                yield return generator.Generate((int)seed);
+            }
+        }
+    }
+
     public abstract class ArrayBuilderTests<T, TGenerator> where TGenerator : IGenerator<T>, new()
     {
         private static readonly TGenerator s_generator = new TGenerator();
@@ -153,20 +169,10 @@ namespace System.Collections.Generic.Tests
 
                 // Test perf: Capture the items into a List here so we
                 // only enumerate the sequence once.
-                data.Add(GenerateEnumerable(count).ToList());
+                data.Add(s_generator.GenerateEnumerable(count).ToList());
             }
 
             return data;
-        }
-        
-        private static IEnumerable<T> GenerateEnumerable(int count)
-        {
-            uint seed = (uint)count;
-            for (int i = 0; i < count; i++)
-            {
-                seed ^= 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                yield return s_generator.Generate((int)seed);
-            }
         }
 
         private static ArrayBuilder<T> CreateBuilderFromSequence(IEnumerable<T> sequence)

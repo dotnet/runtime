@@ -245,6 +245,29 @@ namespace System.Collections.Tests
                     }
                 }
             }
+
+            foreach (int bitArraySize in new[] { BitsPerInt32 - 1, BitsPerInt32 * 2 - 1 })
+            {
+                BitArray allTrue = new BitArray(Enumerable.Repeat(true, bitArraySize).ToArray());
+                BitArray allFalse = new BitArray(Enumerable.Repeat(false, bitArraySize).ToArray());
+                BitArray alternating = new BitArray(Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray());
+
+                foreach (var d in new[] { Tuple.Create(bitArraySize, 0),
+                    Tuple.Create(bitArraySize * 2 + 1, 0),
+                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize + 1),
+                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize / 2 + 1)})
+                {
+                    int arraySize = d.Item1;
+                    int index = d.Item2;
+
+                    if (bitArraySize >= BitsPerInt32)
+                    {
+                        yield return new object[] { allTrue, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xffffffffu >> 1)) }).ToArray(), default(int) };
+                        yield return new object[] { allFalse, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32 + 1).ToArray(), default(int) };
+                        yield return new object[] { alternating, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xaaaaaaaau >> 2)) }).ToArray(), default(int) };
+                    }
+                }
+            }
         }
 
         [Theory]
@@ -306,6 +329,74 @@ namespace System.Collections.Tests
             ICollection bitArray = new BitArray(10);
             Assert.Same(bitArray.SyncRoot, bitArray.SyncRoot);
             Assert.NotSame(bitArray.SyncRoot, ((ICollection)new BitArray(10)).SyncRoot);
+        }
+
+        public static IEnumerable<object> CopyTo_Hidden_Data()
+        {
+            yield return new object[] { "ZeroLength", new BitArray(0) };
+            yield return new object[] { "Constructor", new BitArray(BitsPerInt32 / 2 - 3, true) };
+            yield return new object[] { "Not", new BitArray(BitsPerInt32 / 2 - 3, false).Not() };
+            BitArray setAll = new BitArray(BitsPerInt32 / 2 - 3, false);
+            setAll.SetAll(true);
+            yield return new object[] { "SetAll", setAll };
+            BitArray lengthShort = new BitArray(BitsPerInt32, true);
+            lengthShort.Length = BitsPerInt32 / 2 - 3;
+            yield return new object[] { "Length-Short", lengthShort };
+            BitArray lengthLong = new BitArray(2 * BitsPerInt32, true);
+            lengthLong.Length = BitsPerInt32 - 3;
+            yield return new object[] { "Length-Long < 32", lengthLong };
+            BitArray lengthLong2 = new BitArray(2 * BitsPerInt32, true);
+            lengthLong2.Length = BitsPerInt32 + 3;
+            yield return new object[] { "Length-Long > 32", lengthLong2 };
+            // alligned test cases
+            yield return new object[] { "Aligned-Constructor", new BitArray(BitsPerInt32, true) };
+            yield return new object[] { "Aligned-Not", new BitArray(BitsPerInt32, false).Not() };
+            BitArray alignedSetAll = new BitArray(BitsPerInt32, false);
+            alignedSetAll.SetAll(true);
+            yield return new object[] { "Aligned-SetAll", alignedSetAll };
+            BitArray alignedLengthLong = new BitArray(2 * BitsPerInt32, true);
+            yield return new object[] { "Aligned-Length-Long", alignedLengthLong };
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyTo_Hidden_Data))]
+        public static void CopyTo_Int_Hidden(string label, BitArray bits)
+        {
+            int allBitsSet = unchecked((int)0xffffffff); // 32 bits set to 1 = -1
+            int fullInts = bits.Length / BitsPerInt32;
+            int remainder = bits.Length % BitsPerInt32;
+            int arrayLength = fullInts + (remainder > 0 ? 1 : 0);
+
+            int[] data = new int[arrayLength];
+            ((ICollection)bits).CopyTo(data, 0);
+
+            Assert.All(data.Take(fullInts), d => Assert.Equal(allBitsSet, d));
+
+            if (remainder > 0)
+            {
+                Assert.Equal((1 << remainder) - 1, data[fullInts]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyTo_Hidden_Data))]
+        public static void CopyTo_Byte_Hidden(string label, BitArray bits)
+        {
+            byte allBitsSet = (1 << BitsPerByte) - 1; // 8 bits set to 1 = 255
+            
+            int fullBytes = bits.Length / BitsPerByte;
+            int remainder = bits.Length % BitsPerByte;
+            int arrayLength = fullBytes + (remainder > 0 ? 1 : 0);
+
+            byte[] data = new byte[arrayLength];
+            ((ICollection)bits).CopyTo(data, 0);
+
+            Assert.All(data.Take(fullBytes), d => Assert.Equal(allBitsSet, d));
+
+            if (remainder > 0)
+            {
+                Assert.Equal((byte)((1 << remainder) - 1), data[fullBytes]);
+            }
         }
     }
 }

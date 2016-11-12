@@ -46,8 +46,5 @@ namespace System.Xml.Serialization
             System.Diagnostics.Debug.Assert(false, msg);
             return new NotSupportedException(msg);
         }
-
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Method does validation only without any user input")]
-        internal static bool IsValidLanguageIndependentIdentifier(string ident) { return System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(ident); }
     }
 }

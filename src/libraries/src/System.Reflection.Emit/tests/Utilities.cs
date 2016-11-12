@@ -98,7 +98,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        public static void VerifyConstructor(ConstructorBuilder constructor, TypeBuilder type, MethodAttributes attributes, Type[] parameterTypes)
+        public static void VerifyConstructor(ConstructorBuilder constructor, TypeBuilder type, MethodAttributes attributes, CallingConventions callingConvention, Type[] parameterTypes)
         {
             string expectedName = (attributes & MethodAttributes.Static) != 0 ? ConstructorInfo.TypeConstructorName : ConstructorInfo.ConstructorName;
 
@@ -120,10 +120,15 @@ namespace System.Reflection.Emit.Tests
                 .Single(ctor => ctor.IsStatic == constructor.IsStatic);
 
             CallingConventions expectedCallingConvention = CallingConventions.Standard;
+            if ((callingConvention & CallingConventions.VarArgs) != 0)
+            {
+                expectedCallingConvention = CallingConventions.VarArgs;
+            }
             if ((attributes & MethodAttributes.Static) == 0)
             {
                 expectedCallingConvention |= CallingConventions.HasThis;
             }
+
             MethodAttributes expectedAttributes = attributes | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
             expectedAttributes &= ~MethodAttributes.RequireSecObject;
 

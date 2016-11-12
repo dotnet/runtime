@@ -30,6 +30,7 @@ namespace System.Net.Security.Tests
         private readonly bool _isKrbPreInstalled ;
         public readonly string password;
         private const string NtlmUserFile = "NTLM_USER_FILE";
+        private readonly bool _successfulSetup = true;
 
         public KDCSetup()
         {
@@ -45,8 +46,7 @@ namespace System.Net.Security.Tests
                     {
                         Dispose();
                     }
-
-                    throw new InvalidOperationException("KDC setup failure");
+                    _successfulSetup = false; // TODO: https://github.com/dotnet/corefx/issues/12107
                 }
             }
             else
@@ -67,6 +67,11 @@ namespace System.Net.Security.Tests
         // on the host. Returns true available, false otherwise
         public bool CheckAndClearCredentials(ITestOutputHelper output)
         {
+            if (!_successfulSetup)
+            {
+                return false;
+            }
+
             // Clear the credentials
             var startInfo = new ProcessStartInfo(KDestroyCmd);
             startInfo.UseShellExecute = true;
@@ -82,7 +87,7 @@ namespace System.Net.Security.Tests
 
         public bool CheckAndInitializeNtlm(bool isKrbAvailable)
         {
-            if (!isKrbAvailable)
+            if (!_successfulSetup || !isKrbAvailable)
             {
                 return false;
             }

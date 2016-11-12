@@ -82,6 +82,12 @@
       ],
       "BaselineVersion": "1.6.2"
     },
+    "runtime.alpine.3.4.3-x64.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.alpine.3.4.3-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
     "runtime.any.System.Collections": {
       "StableVersions": [
         "4.0.11"
@@ -687,7 +693,6 @@
       ],
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
       }
     },
@@ -770,7 +775,6 @@
       ],
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
       }
     },
@@ -833,9 +837,10 @@
     },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -845,9 +850,10 @@
     },
     "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x86.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -995,7 +1001,7 @@
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
         "4.1.1.0": "4.3.0",
-        "4.1.2.0": "4.4.0"
+        "4.2.0.0": "4.4.0"
       }
     },
     "System.ComponentModel.EventBasedAsync": {
@@ -1042,9 +1048,8 @@
       ],
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.4.0",
-        "4.1.0.0": "4.4.0"
+        "4.1.0.0": "4.4.0",
+        "4.0.0.0": "4.4.0"
       }
     },
     "System.Data.Common": {
@@ -1220,7 +1225,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.0.11",
-        "4.0.13.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Globalization": {
@@ -1333,7 +1338,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.IO.FileSystem.Primitives": {
@@ -1481,7 +1486,7 @@
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
         "4.1.1.0": "4.3.0",
-        "4.1.2.0": "4.4.0"
+        "4.2.0.0": "4.4.0"
       }
     },
     "System.Net.Http.Rtc": {
@@ -1617,7 +1622,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Net.WebProxy": {
@@ -2008,7 +2013,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Runtime.Serialization.Json": {
@@ -2095,7 +2100,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Security.Claims": {
@@ -2108,7 +2113,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Security.Cryptography.Algorithms": {
@@ -2219,7 +2224,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Security.Principal.Windows": {
@@ -2240,7 +2245,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.ServiceProcess.ServiceController": {
@@ -2251,7 +2256,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.1.0.0": "4.1.0",
         "4.1.1.0": "4.3.0",
-        "4.1.2.0": "4.4.0"
+        "4.2.0.0": "4.4.0"
       }
     },
     "System.Text.Encoding": {
@@ -2278,7 +2283,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Text.Encoding.Extensions": {
@@ -2356,7 +2361,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Threading.Tasks": {
@@ -2429,7 +2434,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.3.0",
-        "4.0.12.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Threading.Timer": {
@@ -2522,7 +2527,7 @@
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Xml.XPath.XmlDocument": {
@@ -2613,7 +2618,7 @@
     "System.Json": {
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.4.0"
+        "2.0.5.0": "4.4.0"
       }
     },
     "System.Private.Xml": {
@@ -2729,7 +2734,13 @@
     },
     "runtime.win10-arm64.runtime.native.System.IO.Compression": {
       "BaselineVersion": "4.4.0"
-    }
+    },
+    "System.Net.ServicePoint": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
+    "Microsoft.Private.CoreFx.NETCoreApp": {}
   },
   "ModulesToPackages": {
     "System.Native": "runtime.native.System",

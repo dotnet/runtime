@@ -38,7 +38,7 @@ namespace System.Net.Http.Headers
 
         public ProductInfoHeaderValue(string comment)
         {
-            HeaderUtilities.CheckValidComment(comment, "comment");
+            HeaderUtilities.CheckValidComment(comment, nameof(comment));
             _comment = comment;
         }
 

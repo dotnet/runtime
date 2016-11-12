@@ -13,9 +13,6 @@ namespace System.Xml.Serialization
     using System.Xml;
     using System.Text;
     using System.ComponentModel;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
-    using System.Xml.Serialization.Advanced;
     using System.Globalization;
     using System.Security.Cryptography;
     using System.Diagnostics;
@@ -87,7 +84,6 @@ namespace System.Xml.Serialization
         private string _formatterName;
         private bool _isXsdType;
         private bool _isMixed;
-        private MappedTypeDesc _extendedType;
         private int _weight;
         private Exception _exception;
 
@@ -149,12 +145,7 @@ namespace System.Xml.Serialization
 
         internal bool IsMappedType
         {
-            get { return _extendedType != null; }
-        }
-
-        internal MappedTypeDesc ExtendedType
-        {
-            get { return _extendedType; }
+            get { return false; }
         }
 
         internal string Name
@@ -428,16 +419,6 @@ namespace System.Xml.Serialization
             if (_arrayTypeDesc == null)
                 _arrayTypeDesc = new TypeDesc(null, _name + "[]", _fullName + "[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
             return _arrayTypeDesc;
-        }
-
-        internal TypeDesc CreateMappedTypeDesc(MappedTypeDesc extension)
-        {
-            TypeDesc newTypeDesc = new TypeDesc(extension.Name, extension.Name, null, _kind, _baseTypeDesc, _flags, null);
-            newTypeDesc._isXsdType = _isXsdType;
-            newTypeDesc._isMixed = _isMixed;
-            newTypeDesc._extendedType = extension;
-            newTypeDesc._dataType = _dataType;
-            return newTypeDesc;
         }
 
         internal TypeDesc BaseTypeDesc

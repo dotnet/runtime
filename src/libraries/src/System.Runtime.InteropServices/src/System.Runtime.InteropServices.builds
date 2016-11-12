@@ -6,10 +6,10 @@
     <Project Include="System.Runtime.InteropServices.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
-    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.Runtime.InteropServices.csproj">
-      <TargetGroup>netcore50aot</TargetGroup>
-    </Project> -->
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>uap101aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

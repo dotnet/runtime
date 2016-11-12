@@ -50,6 +50,7 @@
     <Compile Include="CodeObjects\CodeTypeReferenceTests.cs" />
     <Compile Include="CodeObjects\CodeTypeParameterTests.cs" />
     <Compile Include="CodeObjects\CodeNamespaceTests.cs" />
+    <Compile Include="CodeObjects\CodeNamespaceImportTests.cs" />
     <Compile Include="CodeObjects\CodeSnippetCompileUnitTests.cs" />
     <Compile Include="CodeObjects\CodeCompileUnitTests.cs" />
     <Compile Include="CodeObjects\CodeCommentTests.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="CodeStatements\CodeAssignStatementTests.cs" />
     <Compile Include="CodeStatements\CodeCommentStatementTests.cs" />
     <Compile Include="CodeStatements\CodeSnippetStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeStatementTestBase.cs" />
     <Compile Include="CodeTypeMembers\CodeTypeDelegateTests.cs" />
     <Compile Include="CodeTypeMembers\CodeTypeDeclarationTests.cs" />
     <Compile Include="CodeTypeMembers\CodeTypeConstructorTests.cs" />
@@ -79,11 +81,12 @@
     <Compile Include="CodeTypeMembers\CodeMemberEventTests.cs" />
     <Compile Include="CodeTypeMembers\CodeTypeMemberTestBase.cs" />
     <Compile Include="CodeTypeMembers\CodeMemberPropertyTests.cs" />
-    <Compile Include="CodeObjects\CodeObjectTestBase.cs" />
-    <Compile Include="CodeStatements\CodeStatementTestBase.cs" />
     <Compile Include="CodeObjects\CodeChecksumPragmaTests.cs" />
+    <Compile Include="CodeObjects\CodeObjectTestBase.cs" />
+    <Compile Include="Compiler\CodeDomProviderTests.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeProviderTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeProviderTests.cs" />
     <Compile Include="Other\CodeRegionDirectiveTests.cs" />
-    <Compile Include="CodeObjects\CodeNamespaceImportTests.cs" />
     <Compile Include="Other\CodeLinePragmaTests.cs" />
     <Compile Include="Other\CodeCatchClauseTests.cs" />
     <Compile Include="Other\CodeAttributeDeclarationTests.cs" />

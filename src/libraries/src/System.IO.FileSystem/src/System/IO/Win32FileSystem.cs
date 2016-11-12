@@ -11,6 +11,8 @@ namespace System.IO
 {
     internal sealed partial class Win32FileSystem : FileSystem
     {
+        internal const int GENERIC_READ = unchecked((int)0x80000000);
+
         public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
         public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
 
@@ -21,14 +23,14 @@ namespace System.IO
 
             if (errorCode != Interop.mincore.Errors.ERROR_SUCCESS)
             {
-                String fileName = destFullPath;
+                string fileName = destFullPath;
 
                 if (errorCode != Interop.mincore.Errors.ERROR_FILE_EXISTS)
                 {
                     // For a number of error codes (sharing violation, path 
                     // not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using (SafeFileHandle handle = Interop.mincore.UnsafeCreateFile(sourceFullPath, Win32FileStream.GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
+                    using (SafeFileHandle handle = Interop.mincore.UnsafeCreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
                     {
                         if (handle.IsInvalid)
                             fileName = sourceFullPath;
@@ -443,9 +445,9 @@ namespace System.IO
             }
         }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
+        public override FileStream Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
-            return new Win32FileStream(fullPath, mode, access, share, bufferSize, options, parent);
+            return new FileStream(fullPath, mode, access, share, bufferSize, options);
         }
 
         [System.Security.SecurityCritical]

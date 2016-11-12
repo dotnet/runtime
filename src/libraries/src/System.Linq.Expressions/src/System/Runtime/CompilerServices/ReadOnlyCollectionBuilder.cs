@@ -9,9 +9,10 @@ using System.Dynamic.Utils;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// The builder for read only collection.
+    /// Builder for read only collections.
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
+    [Serializable]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList
     {
@@ -21,10 +22,11 @@ namespace System.Runtime.CompilerServices
         private int _size;
         private int _version;
 
+        [NonSerialized]
         private Object _syncRoot;
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public ReadOnlyCollectionBuilder()
         {
@@ -32,10 +34,11 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder with a given initial capacity.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/> with a given initial capacity.
         /// The contents are empty but builder will have reserved room for the given
         /// number of elements before any reallocations are required.
-        /// </summary> 
+        /// </summary>
+        /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
             ContractUtils.Requires(capacity >= 0, nameof(capacity));
@@ -43,9 +46,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder, copying contents of the given collection.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>, copying contents of the given collection.
         /// </summary>
-        /// <param name="collection"></param>
+        /// <param name="collection">The collection whose elements to copy to the builder.</param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
             ContractUtils.Requires(collection != null, nameof(collection));
@@ -74,7 +77,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Gets and sets the capacity of this ReadOnlyCollectionBuilder
+        /// Gets and sets the capacity of this <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public int Capacity
         {
@@ -103,12 +106,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Returns number of elements in the ReadOnlyCollectionBuilder.
+        /// Returns number of elements in the <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
         #region IList<T> Members
 
@@ -255,10 +255,7 @@ namespace System.Runtime.CompilerServices
             Array.Copy(_items, 0, array, arrayIndex, _size);
         }
 
-        bool ICollection<T>.IsReadOnly
-        {
-            get { return false; }
-        }
+        bool ICollection<T>.IsReadOnly => false;
 
         /// <summary>
         /// Removes the first occurrence of a specific object from the <see cref="ReadOnlyCollectionBuilder{T}"/>.
@@ -305,10 +302,7 @@ namespace System.Runtime.CompilerServices
 
         #region IList Members
 
-        bool System.Collections.IList.IsReadOnly
-        {
-            get { return false; }
-        }
+        bool System.Collections.IList.IsReadOnly => false;
 
         int System.Collections.IList.Add(object value)
         {
@@ -355,10 +349,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        bool System.Collections.IList.IsFixedSize
-        {
-            get { return false; }
-        }
+        bool System.Collections.IList.IsFixedSize => false;
 
         void System.Collections.IList.Remove(object value)
         {
@@ -400,10 +391,7 @@ namespace System.Runtime.CompilerServices
             Array.Copy(_items, 0, array, index, _size);
         }
 
-        bool System.Collections.ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        bool System.Collections.ICollection.IsSynchronized => false;
 
         object System.Collections.ICollection.SyncRoot
         {
@@ -411,7 +399,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), comparand: null);
                 }
                 return _syncRoot;
             }
@@ -512,6 +500,7 @@ namespace System.Runtime.CompilerServices
             throw new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
         }
 
+        [Serializable]
         private class Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private readonly ReadOnlyCollectionBuilder<T> _builder;
@@ -530,10 +519,7 @@ namespace System.Runtime.CompilerServices
 
             #region IEnumerator<T> Members
 
-            public T Current
-            {
-                get { return _current; }
-            }
+            public T Current => _current;
 
             #endregion
 

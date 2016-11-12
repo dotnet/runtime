@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private LeftShiftInstruction() { }
 
-        internal sealed class LeftShiftSByte : LeftShiftInstruction
+        private sealed class LeftShiftSByte : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -29,13 +29,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((SByte)(((SByte)value) << ((int)shift)));
+                    frame.Push((sbyte)(((sbyte)value) << ((int)shift)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftInt16 : LeftShiftInstruction
+        private sealed class LeftShiftInt16 : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -47,13 +47,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((Int16)(((Int16)value) << ((int)shift)));
+                    frame.Push((short)(((short)value) << ((int)shift)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftInt32 : LeftShiftInstruction
+        private sealed class LeftShiftInt32 : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -65,13 +65,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((Int32)value) << ((int)shift));
+                    frame.Push(((int)value) << ((int)shift));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftInt64 : LeftShiftInstruction
+        private sealed class LeftShiftInt64 : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -83,13 +83,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((Int64)value) << ((int)shift));
+                    frame.Push(((long)value) << ((int)shift));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftByte : LeftShiftInstruction
+        private sealed class LeftShiftByte : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -101,13 +101,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((Byte)(((Byte)value) << ((int)shift)));
+                    frame.Push((byte)(((byte)value) << ((int)shift)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftUInt16 : LeftShiftInstruction
+        private sealed class LeftShiftUInt16 : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -119,13 +119,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((UInt16)(((UInt16)value) << ((int)shift)));
+                    frame.Push((ushort)(((ushort)value) << ((int)shift)));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftUInt32 : LeftShiftInstruction
+        private sealed class LeftShiftUInt32 : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -137,13 +137,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((UInt32)value) << ((int)shift));
+                    frame.Push(((uint)value) << ((int)shift));
                 }
                 return +1;
             }
         }
 
-        internal sealed class LeftShiftUInt64 : LeftShiftInstruction
+        private sealed class LeftShiftUInt64 : LeftShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((UInt64)value) << ((int)shift));
+                    frame.Push(((ulong)value) << ((int)shift));
                 }
                 return +1;
             }
@@ -165,7 +165,9 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             // Boxed enums can be unboxed as their underlying types:
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+            switch (underlyingType.GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new LeftShiftSByte());
                 case TypeCode.Byte: return s_byte ?? (s_byte = new LeftShiftByte());

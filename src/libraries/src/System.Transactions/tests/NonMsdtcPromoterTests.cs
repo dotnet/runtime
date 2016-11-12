@@ -1434,9 +1434,9 @@ namespace System.Transactions.Tests
             AutoResetEvent pspeCompleted = new AutoResetEvent(false);
             NonMSDTCPromoterEnlistment pspe = null;
 
-            try
+            Assert.Throws<TransactionAbortedException>(() =>
             {
-                CommittableTransaction tx = new CommittableTransaction(TimeSpan.FromSeconds(3));
+                CommittableTransaction tx = new CommittableTransaction(TimeSpan.FromSeconds(1));
 
                 pspe = (NonMSDTCPromoterEnlistment)CreatePSPEEnlistment(NonMsdtcPromoterTests.PromoterType1,
                     NonMsdtcPromoterTests.PromotedToken1,
@@ -1452,18 +1452,14 @@ namespace System.Transactions.Tests
                     Promote(testCaseDescription, NonMsdtcPromoterTests.PromotedToken1, tx);
                 }
 
-                NoStressTrace(string.Format("There will be a 7 second delay here - {0}", DateTime.Now.ToString()));
+                NoStressTrace(string.Format("There will be a 3 second delay here - {0}", DateTime.Now.ToString()));
 
-                Task.Delay(TimeSpan.FromSeconds(7)).Wait();
+                Task.Delay(TimeSpan.FromSeconds(3)).Wait();
 
                 NoStressTrace(string.Format("Woke up from sleep. Attempting Commit - {0}", DateTime.Now.ToString()));
 
                 tx.Commit();
-            }
-            catch (Exception ex)
-            {
-                Assert.IsType<TransactionAbortedException>(ex);
-            }
+            });
 
             Assert.True(pspeCompleted.WaitOne(TimeSpan.FromSeconds(5)));
 

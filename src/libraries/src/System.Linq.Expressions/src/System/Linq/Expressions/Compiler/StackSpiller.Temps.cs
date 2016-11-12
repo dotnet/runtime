@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Compiler
 {
     internal partial class StackSpiller
     {
-        private class TempMaker
+        private sealed class TempMaker
         {
             /// <summary>
             /// Current temporary variable
@@ -35,10 +35,7 @@ namespace System.Linq.Expressions.Compiler
             /// </summary>
             private List<ParameterExpression> _temps = new List<ParameterExpression>();
 
-            internal List<ParameterExpression> Temps
-            {
-                get { return _temps; }
-            }
+            internal List<ParameterExpression> Temps => _temps;
 
             internal ParameterExpression Temp(Type type)
             {
@@ -128,11 +125,12 @@ namespace System.Linq.Expressions.Compiler
         /// the original expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.
         /// </summary>
-        private class ChildRewriter
+        private sealed class ChildRewriter
         {
             private readonly StackSpiller _self;
             private readonly Expression[] _expressions;
             private int _expressionsCount;
+            private int _lastSpillIndex;
             private List<Expression> _comma;
             private RewriteAction _action;
             private Stack _stack;
@@ -158,6 +156,11 @@ namespace System.Linq.Expressions.Compiler
                 Result exp = _self.RewriteExpression(node, _stack);
                 _action |= exp.Action;
                 _stack = Stack.NonEmpty;
+
+                if (exp.Action == RewriteAction.SpillStack)
+                {
+                    _lastSpillIndex = _expressionsCount;
+                }
 
                 // track items in case we need to copy or spill stack
                 _expressions[_expressionsCount++] = exp.Node;
@@ -189,7 +192,7 @@ namespace System.Linq.Expressions.Compiler
                     if (_action == RewriteAction.SpillStack)
                     {
                         Expression[] clone = _expressions;
-                        int count = clone.Length;
+                        int count = _lastSpillIndex + 1;
                         List<Expression> comma = new List<Expression>(count + 1);
                         for (int i = 0; i < count; i++)
                         {
@@ -267,15 +270,9 @@ namespace System.Linq.Expressions.Compiler
                 return true;
             }
 
-            internal bool Rewrite
-            {
-                get { return _action != RewriteAction.None; }
-            }
+            internal bool Rewrite => _action != RewriteAction.None;
 
-            internal RewriteAction Action
-            {
-                get { return _action; }
-            }
+            internal RewriteAction Action => _action;
 
             internal Result Finish(Expression expr)
             {
@@ -347,7 +344,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         [Conditional("DEBUG")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private void VerifyTemps()
         {
             _tm.VerifyTemps();
@@ -372,7 +369,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private static Expression MakeBlock(params Expression[] expressions)
         {
-            return MakeBlock((IList<Expression>)expressions);
+            return MakeBlock((IReadOnlyList<Expression>)expressions);
         }
 
         /// <summary>
@@ -380,7 +377,7 @@ namespace System.Linq.Expressions.Compiler
         /// This should not be used for rewriting BlockExpression itself, or
         /// anything else that supports jumping.
         /// </summary>
-        private static Expression MakeBlock(IList<Expression> expressions)
+        private static Expression MakeBlock(IReadOnlyList<Expression> expressions)
         {
             return new SpilledExpressionBlock(expressions);
         }
@@ -392,7 +389,7 @@ namespace System.Linq.Expressions.Compiler
     /// </summary>
     internal sealed class SpilledExpressionBlock : BlockN
     {
-        internal SpilledExpressionBlock(IList<Expression> expressions)
+        internal SpilledExpressionBlock(IReadOnlyList<Expression> expressions)
             : base(expressions)
         {
         }

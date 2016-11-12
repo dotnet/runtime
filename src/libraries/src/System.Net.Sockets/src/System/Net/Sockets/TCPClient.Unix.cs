@@ -192,11 +192,43 @@ namespace System.Net.Sockets
             }
         }
 
+        private Task ConnectAsyncCore(IPAddress address, int port)
+        {
+            return Client.ConnectAsync(address, port).ContinueWith((t, s) =>
+            {
+                var thisRef = (TcpClient)s;
+                if (thisRef.Client == null)
+                {
+                    throw new ObjectDisposedException(thisRef.GetType().Name); // Dispose nulls out the client socket field.
+                }
+                t.GetAwaiter().GetResult(); // propagate any exception
+                thisRef._active = true;
+            }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
+
         private Task ConnectAsyncCore(string host, int port)
         {
             StartConnectCore(host, port);
             return ConnectAsyncCorePrivate(host, port, (s, a, p) => s.ConnectAsync(a, p));
         }
+
+        private Task ConnectAsyncCore(IPAddress[] addresses, int port)
+        {
+            StartConnectCore(addresses, port);
+            return ConnectCorePrivate(addresses, port, (s, a, p) => s.ConnectAsync(a, p));
+        }
+
+        private IAsyncResult BeginConnectCore(string host, int port, AsyncCallback requestCallback, object state) =>
+            TaskToApm.Begin(ConnectAsyncCore(host, port), requestCallback, state);
+
+        private IAsyncResult BeginConnectCore(IPAddress address, int port, AsyncCallback requestCallback, object state) =>
+            TaskToApm.Begin(ConnectAsyncCore(address, port), requestCallback, state);
+
+        private IAsyncResult BeginConnectCore(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) =>
+            TaskToApm.Begin(ConnectAsyncCore(addresses, port), requestCallback, state);
+
+        private void EndConnectCore(Socket socket, IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
 
         private void StartConnectCore(string host, int port)
         {
@@ -232,12 +264,6 @@ namespace System.Net.Sockets
             {
                 ExitClientLock();
             }
-        }
-
-        private Task ConnectAsyncCore(IPAddress[] addresses, int port)
-        {
-            StartConnectCore(addresses, port);
-            return ConnectCorePrivate(addresses, port, (s, a, p) => s.ConnectAsync(a, p));
         }
 
         private void StartConnectCore(IPAddress[] addresses, int port)

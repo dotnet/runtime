@@ -10,7 +10,7 @@ using System.Security.Claims;
 namespace System.Security.Principal
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-
+    [Serializable]
     public class GenericPrincipal : ClaimsPrincipal
     {
         private IIdentity m_identity;

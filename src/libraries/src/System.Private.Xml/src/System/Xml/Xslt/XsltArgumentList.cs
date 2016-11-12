@@ -35,9 +35,9 @@ namespace System.Xml.Xsl
 
         public void AddParam(string name, string namespaceUri, object parameter)
         {
-            CheckArgumentNull(name, "name");
-            CheckArgumentNull(namespaceUri, "namespaceUri");
-            CheckArgumentNull(parameter, "parameter");
+            CheckArgumentNull(name, nameof(name));
+            CheckArgumentNull(namespaceUri, nameof(namespaceUri));
+            CheckArgumentNull(parameter, nameof(parameter));
 
             XmlQualifiedName qname = new XmlQualifiedName(name, namespaceUri);
             qname.Verify();
@@ -46,8 +46,8 @@ namespace System.Xml.Xsl
 
         public void AddExtensionObject(string namespaceUri, object extension)
         {
-            CheckArgumentNull(namespaceUri, "namespaceUri");
-            CheckArgumentNull(extension, "extension");
+            CheckArgumentNull(namespaceUri, nameof(namespaceUri));
+            CheckArgumentNull(extension, nameof(extension));
             _extensions.Add(namespaceUri, extension);
         }
 

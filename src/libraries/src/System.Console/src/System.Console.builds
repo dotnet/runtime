@@ -9,22 +9,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Console.csproj">
-      <OSGroup>Unix</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.Console.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.Console.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    <Project Include="System.Console.csproj">
       <TargetGroup>net463</TargetGroup>
-    </Project>
-    <Project Include="System.Console.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

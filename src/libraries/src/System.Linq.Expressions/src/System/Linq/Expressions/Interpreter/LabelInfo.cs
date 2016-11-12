@@ -9,7 +9,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     /// <summary>
     /// Contains compiler state corresponding to a LabelTarget
-    /// See also LabelScopeInfo.
+    /// <seealso cref="LabelScopeInfo"/>
     /// </summary>
     internal sealed class LabelInfo
     {
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
             // Once defined, validate all jumps
             if (HasDefinitions && !HasMultipleDefinitions)
             {
-                foreach (var r in _references)
+                foreach (LabelScopeInfo r in _references)
                 {
                     ValidateJump(r);
                 }
@@ -303,7 +303,6 @@ namespace System.Linq.Expressions.Interpreter
                 return false;
             }
         }
-
 
         internal bool ContainsTarget(LabelTarget target)
         {

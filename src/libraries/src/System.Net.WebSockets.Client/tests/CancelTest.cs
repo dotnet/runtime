@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -125,19 +123,15 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                var cts = new CancellationTokenSource(500);
-
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
 
-                try
-                {
-                    await cws.ReceiveAsync(segment, cts.Token);
-                    Assert.True(false, "Receive should not complete.");
-                }
-                catch (OperationCanceledException) { }
-                catch (ObjectDisposedException) { }
-                catch (WebSocketException) { }
+                var cts = new CancellationTokenSource();
+                // OperationCancelledException is thrown only if the token is canceled before calling ReceiveAsync
+                // Once it returns (with a Task<>), any cancellation that occurs is treated as a WebSocketException
+                Task recieve = cws.ReceiveAsync(segment, cts.Token);
+                cts.Cancel();
+                WebSocketException wse = await Assert.ThrowsAnyAsync<WebSocketException>(() => recieve);
 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ReceiveAsync(segment, CancellationToken.None));

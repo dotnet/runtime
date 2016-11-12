@@ -796,6 +796,10 @@ namespace System.Tests
             VerifyRoundTrip(new DateTime(2003, 8, 4, 12, 0, 0, DateTimeKind.Utc), "UTC", TimeZoneInfo.Local.Id);
             VerifyRoundTrip(new DateTime(1929, 3, 9, 23, 59, 59, DateTimeKind.Utc), "UTC", TimeZoneInfo.Local.Id);
             VerifyRoundTrip(new DateTime(2000, 2, 28, 23, 59, 59, DateTimeKind.Utc), "UTC", TimeZoneInfo.Local.Id);
+
+            // DateTime(2016, 11, 6, 8, 1, 17, DateTimeKind.Utc) is ambiguous time for Pacific Time Zone
+            VerifyRoundTrip(new DateTime(2016, 11, 6, 8, 1, 17, DateTimeKind.Utc), "UTC", TimeZoneInfo.Local.Id);
+
             VerifyRoundTrip(DateTime.UtcNow, "UTC", TimeZoneInfo.Local.Id);
 
             var time1 = new DateTime(2006, 5, 12, 7, 34, 59);
@@ -1927,7 +1931,11 @@ namespace System.Tests
             DateTime dt2 = TimeZoneInfo.ConvertTime(dt1, sourceTzi, destTzi);
             DateTime dt3 = TimeZoneInfo.ConvertTime(dt2, destTzi, sourceTzi);
 
-            Assert.True(dt1.Equals(dt3), string.Format("{0} failed to round trip using source '{1}' and '{2}' zones. wrong result {3}", dt1, sourceTimeZoneId, destinationTimeZoneId, dt3));
+            if (!destTzi.IsAmbiguousTime(dt2))
+            {
+                // the ambiguous time can be mapped to 2 UTC times so it is not guaranteed to round trip
+                Assert.True(dt1.Equals(dt3), string.Format("{0} failed to round trip using source '{1}' and '{2}' zones. wrong result {3}", dt1, sourceTimeZoneId, destinationTimeZoneId, dt3));
+            }
 
             if (sourceTimeZoneId == TimeZoneInfo.Utc.Id)
             {

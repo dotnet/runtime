@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Diagnostics;
 
@@ -14,9 +11,8 @@ namespace System.Dynamic.Utils
     /// Provides a dictionary-like object used for caches which holds onto a maximum
     /// number of elements specified at construction time.
     /// </summary>
-    internal class CacheDict<TKey, TValue>
+    internal sealed class CacheDict<TKey, TValue>
     {
-
         // cache size is always ^2. 
         // items are placed at [hash ^ mask]
         // new item will displace previous one at the same location.

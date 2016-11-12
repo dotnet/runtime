@@ -2,13 +2,14 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageTargetRuntime>osx.10.10-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageRid>osx.10.10-$(PackagePlatform)</PackageRid>
+    <IdPrefix>runtime.$(PackageRid).</IdPrefix>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeFile Include="$(OSXNativePath)System.Security.Cryptography.Native.Apple.dylib">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <TargetPath>runtimes/$(PackageRid)/native</TargetPath>
     </NativeFile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -64,6 +64,13 @@ namespace System.Diagnostics
         private StreamReader _standardError;
         private bool _disposed;
 
+        private bool _haveMainWindow;
+        private IntPtr _mainWindowHandle;
+        private string _mainWindowTitle;
+
+        private bool _haveResponding;
+        private bool _responding;
+
         private static object s_createProcessLock = new object();
 
         private StreamReadMode _outputStreamReadMode;
@@ -128,6 +135,8 @@ namespace System.Diagnostics
                 return OpenProcessHandle();
             }
         }
+
+        public IntPtr Handle => SafeHandle.DangerousGetHandle();
 
         /// <devdoc>
         ///     Returns whether this process component is associated with a real process.
@@ -286,14 +295,7 @@ namespace System.Diagnostics
                 if (_modules == null)
                 {
                     EnsureState(State.HaveId | State.IsLocal);
-                    ModuleInfo[] moduleInfos = ProcessManager.GetModuleInfos(_processId);
-                    ProcessModule[] newModulesArray = new ProcessModule[moduleInfos.Length];
-                    for (int i = 0; i < moduleInfos.Length; i++)
-                    {
-                        newModulesArray[i] = new ProcessModule(moduleInfos[i]);
-                    }
-                    ProcessModuleCollection newModules = new ProcessModuleCollection(newModulesArray);
-                    _modules = newModules;
+                    _modules = ProcessManager.GetModules(_processId);
                 }
                 return _modules;
             }
@@ -308,6 +310,16 @@ namespace System.Diagnostics
             }
         }
 
+        public int NonpagedSystemMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.PoolNonPagedBytes);
+            }
+        }
+
+
         public long PagedMemorySize64
         {
             get
@@ -316,6 +328,16 @@ namespace System.Diagnostics
                 return _processInfo.PageFileBytes;
             }
         }
+
+        public int PagedMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.PageFileBytes);
+            }
+        }
+
 
         public long PagedSystemMemorySize64
         {
@@ -326,12 +348,31 @@ namespace System.Diagnostics
             }
         }
 
+        public int PagedSystemMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.PoolPagedBytes);
+            }
+        }
+
+
         public long PeakPagedMemorySize64
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo.PageFileBytesPeak;
+            }
+        }
+
+        public int PeakPagedMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.PageFileBytesPeak);
             }
         }
 
@@ -344,12 +385,30 @@ namespace System.Diagnostics
             }
         }
 
+        public int PeakWorkingSet
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.WorkingSetPeak);
+            }
+        }
+
         public long PeakVirtualMemorySize64
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo.VirtualBytesPeak;
+            }
+        }
+
+        public int PeakVirtualMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.VirtualBytesPeak);
             }
         }
 
@@ -415,6 +474,15 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo.PrivateBytes;
+            }
+        }
+
+        public int PrivateMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.PrivateBytes);
             }
         }
 
@@ -494,7 +562,7 @@ namespace System.Diagnostics
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                
+
                 if (Associated)
                 {
                     throw new InvalidOperationException(SR.CantSetProcessStartInfo);
@@ -531,12 +599,31 @@ namespace System.Diagnostics
             }
         }
 
+        public int HandleCount
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return _processInfo.HandleCount;
+            }
+        }
+
+
         public long VirtualMemorySize64
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo.VirtualBytes;
+            }
+        }
+
+        public int VirtualMemorySize
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.VirtualBytes);
             }
         }
 
@@ -650,6 +737,15 @@ namespace System.Diagnostics
             }
         }
 
+        public int WorkingSet
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return unchecked((int)_processInfo.WorkingSet);
+            }
+        }
+
         public event EventHandler Exited
         {
             add
@@ -713,12 +809,71 @@ namespace System.Diagnostics
             }
         }
 
+        public bool Responding
+        {
+            get
+            {
+                if (!_haveResponding)
+                {
+                    _responding = IsRespondingCore();
+                    _haveResponding = true;
+                }
+
+                return _responding;
+            }
+        }
+
+        public string MainWindowTitle
+        {
+            get
+            {
+                if (_mainWindowTitle == null)
+                {
+                    _mainWindowTitle = GetMainWindowTitle();
+                }
+
+                return _mainWindowTitle;
+            }
+        }
+
+        public bool CloseMainWindow()
+        {
+            return CloseMainWindowCore();
+        }
+
+        public bool WaitForInputIdle()
+        {
+            return WaitForInputIdle(int.MaxValue);
+        }
+
+        public bool WaitForInputIdle(int milliseconds)
+        {
+            return WaitForInputIdleCore(milliseconds);
+        }
+
+        public IntPtr MainWindowHandle
+        {
+            get
+            {
+                if (!_haveMainWindow)
+                {
+                    EnsureState(State.IsLocal | State.HaveId);
+                    _mainWindowHandle = ProcessManager.GetMainWindowHandle(_processId);
+
+                    _haveMainWindow = true;
+                }
+                return _mainWindowHandle;
+            }
+        }
+
+        public ISynchronizeInvoke SynchronizingObject { get; set; }
+
         /// <devdoc>
         ///    <para>
         ///       Frees any resources associated with this component.
         ///    </para>
         /// </devdoc>
-        internal void Close()
+        public void Close()
         {
             if (Associated)
             {
@@ -1136,8 +1291,8 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(startInfo));
 
             process.StartInfo = startInfo;
-            return process.Start() ? 
-                process : 
+            return process.Start() ?
+                process :
                 null;
         }
 

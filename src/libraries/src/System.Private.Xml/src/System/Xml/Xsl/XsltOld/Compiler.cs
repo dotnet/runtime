@@ -17,11 +17,8 @@ namespace System.Xml.Xsl.XsltOld
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
     using System.Reflection;
     using System.Security;
-    using System.Security.Policy;
     using KeywordsTable = System.Xml.Xsl.Xslt.KeywordsTable;
     using System.Runtime.Versioning;
 
@@ -180,7 +177,6 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(input != null);
             Debug.Assert(xmlResolver != null);
-            //            Debug.Assert(evidence    != null); -- default evidence is null now
             Debug.Assert(_input == null && _atoms == null);
             _xmlResolver = xmlResolver;
 
@@ -799,20 +795,7 @@ namespace System.Xml.Xsl.XsltOld
                 Hashtable typeDecls = _typeDeclsByLang[(int)langTmp];
                 if (lang == langTmp)
                 {
-                    CodeTypeDeclaration scriptClass = (CodeTypeDeclaration)typeDecls[ns];
-                    if (scriptClass == null)
-                    {
-                        scriptClass = new CodeTypeDeclaration(GenerateUniqueClassName());
-                        scriptClass.TypeAttributes = TypeAttributes.Public;
-                        typeDecls.Add(ns, scriptClass);
-                    }
-                    CodeSnippetTypeMember scriptSnippet = new CodeSnippetTypeMember(source);
-                    if (lineNumber > 0)
-                    {
-                        scriptSnippet.LinePragma = new CodeLinePragma(fileName, lineNumber);
-                        _scriptFiles.Add(fileName);
-                    }
-                    scriptClass.Members.Add(scriptSnippet);
+                    throw new PlatformNotSupportedException("Compiling JScript/CSharp scripts is not supported");
                 }
                 else if (typeDecls.Contains(ns))
                 {
@@ -828,18 +811,6 @@ namespace System.Xml.Xsl.XsltOld
                 throw XsltException.Create(SR.Xslt_InvalidExtensionNamespace);
             }
             XmlConvert.ToUri(nsUri);
-        }
-
-        private void FixCompilerError(CompilerError e)
-        {
-            foreach (string scriptFile in _scriptFiles)
-            {
-                if (e.FileName == scriptFile)
-                {
-                    return; // Yes! this error is in our code sippet.
-                }
-            }
-            e.FileName = string.Empty;
         }
 
         public string GetNsAlias(ref string prefix)

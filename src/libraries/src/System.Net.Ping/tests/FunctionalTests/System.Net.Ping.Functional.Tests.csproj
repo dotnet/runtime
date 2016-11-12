@@ -18,6 +18,7 @@
   <!-- Test APIs introduced after 1.0 -->  
   <ItemGroup Condition="'$(TargetGroup)'==''">
      <Compile Include="PingTest.cs" />
+     <Compile Include="LoggingTest.cs" />
   </ItemGroup>
 
   <ItemGroup>

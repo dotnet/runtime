@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    public sealed class WebSocketExceptionTests
+    public sealed partial class WebSocketExceptionTests
     {
         public static object[][] ErrorData = {
             new object[] { WebSocketError.Success },
@@ -31,14 +31,6 @@ namespace System.Net.WebSockets.Tests
         public static object[][] UnrelatedErrorData =
             ErrorData.SelectMany(wse => NativeErrorData.Select(ne => new object[] { wse[0], ne[0], ne[2] })).ToArray();
 
-        [Fact]
-        public void ConstructorTests_DefaultConstructor_MatchesLastError()
-        {
-            int error = Marshal.GetLastWin32Error();
-            var exc = new WebSocketException();
-            Assert.Equal(error, exc.NativeErrorCode);
-            Assert.Equal(error, exc.ErrorCode);
-        }
 
         [Theory, MemberData(nameof(ErrorData))]
         public void ConstructorTests_WebSocketError_Success(WebSocketError error)

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)'=='' AND '$(TargetGroup)' == ''">Windows_Debug</Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -16,6 +16,7 @@
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='netstandard1.1'">true</GeneratePlatformNotSupportedAssembly>
     <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
     <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
@@ -86,7 +87,7 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssembly)' != 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />

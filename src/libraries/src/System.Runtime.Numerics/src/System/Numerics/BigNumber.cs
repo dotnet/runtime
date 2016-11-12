@@ -307,7 +307,7 @@ namespace System.Numerics
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                e = new ArgumentException(SR.Format(SR.Argument_InvalidNumberStyles, "style"));
+                e = new ArgumentException(SR.Format(SR.Argument_InvalidNumberStyles, nameof(style)));
                 return false;
             }
             if ((style & NumberStyles.AllowHexSpecifier) != 0)

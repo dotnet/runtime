@@ -8,6 +8,13 @@
 
 namespace System.ComponentModel
 {
+    public partial interface ISynchronizeInvoke
+    {
+        bool InvokeRequired { get; }
+        System.IAsyncResult BeginInvoke(System.Delegate method, object[] args);
+        object EndInvoke(System.IAsyncResult result);
+        object Invoke(System.Delegate method, object[] args);
+    }
     public sealed partial class BrowsableAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.BrowsableAttribute Default;

@@ -109,7 +109,7 @@ namespace System.Security.AccessControl
                     break;
 
                 case Interop.mincore.Errors.ERROR_INVALID_NAME:
-                    exception = new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, "name"));
+                    exception = new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(name)));
                     break;
 
                 case Interop.mincore.Errors.ERROR_INVALID_HANDLE:

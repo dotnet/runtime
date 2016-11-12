@@ -123,4 +123,7 @@
   <data name="InvalidOperationException_ActorGraphCircular" xml:space="preserve">
     <value>Actor cannot be set so that circular directed graph will exist chaining the subjects together.</value>
   </data>
+  <data name="PlatformNotSupported_Serialization" xml:space="preserve">
+    <value>This instance contains state that cannot be serialized and deserialized on this platform.</value>
+  </data>
 </root>

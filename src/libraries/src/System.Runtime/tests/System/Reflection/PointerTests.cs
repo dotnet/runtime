@@ -215,7 +215,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [ActiveIssue(11980)]
         public void PointerSerializes(int value)
         {
             object pointer = Pointer.Box((void*)value, typeof(int*));

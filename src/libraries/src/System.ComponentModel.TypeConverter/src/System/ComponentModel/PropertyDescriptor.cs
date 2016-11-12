@@ -312,7 +312,6 @@ namespace System.ComponentModel
             //
             if (editor == null)
             {
-#if FEATURE_EDITORATTRIBUTE
                 for (int i = 0; i < attrs.Count; i++)
                 {
                     EditorAttribute attr = attrs[i] as EditorAttribute;
@@ -333,7 +332,6 @@ namespace System.ComponentModel
                         }
                     }
                 }
-#endif
 
                 // Now, if we failed to find it in our own attributes, go to the
                 // component descriptor.

@@ -14,7 +14,6 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.ComponentModel;
     using System.Globalization;
-    using System.CodeDom.Compiler;
     using System.Diagnostics;
     using System.Threading;
     using System.Configuration;
@@ -1016,7 +1015,7 @@ namespace System.Xml.Serialization
 
             if (value.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), "value");
+                throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), nameof(value));
             }
 
             char[] chars = value.ToCharArray();
@@ -1030,7 +1029,7 @@ namespace System.Xml.Serialization
             // Must end with ]
             if (chars[pos] != ']')
             {
-                throw new ArgumentException(SR.XmlInvalidArraySyntax, "value");
+                throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
             }
             pos--;
 
@@ -1038,12 +1037,12 @@ namespace System.Xml.Serialization
             while (pos != -1 && chars[pos] != '[')
             {
                 if (chars[pos] == ',')
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), "value");
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
                 pos--;
             }
             if (pos == -1)
             {
-                throw new ArgumentException(SR.XmlMismatchedArrayBrackets, "value");
+                throw new ArgumentException(SR.XmlMismatchedArrayBrackets, nameof(value));
             }
 
             int len = charsLength - pos - 2;
@@ -1060,7 +1059,7 @@ namespace System.Xml.Serialization
                     {
                         throw;
                     }
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), "value");
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), nameof(value));
                 }
             }
             else
@@ -1075,11 +1074,11 @@ namespace System.Xml.Serialization
             {
                 pos--;
                 if (pos < 0)
-                    throw new ArgumentException(SR.XmlMismatchedArrayBrackets, "value");
+                    throw new ArgumentException(SR.XmlMismatchedArrayBrackets, nameof(value));
                 if (chars[pos] == ',')
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), "value");
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
                 else if (chars[pos] != '[')
-                    throw new ArgumentException(SR.XmlInvalidArraySyntax, "value");
+                    throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
                 pos--;
                 soapArrayInfo.jaggedDimensions++;
             }
@@ -2448,13 +2447,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsReadable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(SR.XmlInternalError, "xmlMapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(SR.XmlInternalError, "xmlMapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
 
         private void WriteIsStartTag(string name, string ns)
@@ -3740,7 +3739,7 @@ namespace System.Xml.Serialization
             TypeDesc td = c.TypeDesc;
             bool useReflection = td.UseReflection;
             string fullTypeName = td.CSharpName;
-            WriteLocalDecl(fullTypeName, "c", "collection", useReflection);
+            WriteLocalDecl(fullTypeName, nameof(c), "collection", useReflection);
 
             WriteCreateCollection(td, "collectionItems");
 

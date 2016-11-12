@@ -5,7 +5,7 @@
     <Project Include="System.Security.Claims.Tests.csproj" />
     <Project Include="System.Security.Claims.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>net463</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

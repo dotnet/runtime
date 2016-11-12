@@ -7,6 +7,9 @@
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
+    <Project Include="System.Buffers.Tests.csproj">
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

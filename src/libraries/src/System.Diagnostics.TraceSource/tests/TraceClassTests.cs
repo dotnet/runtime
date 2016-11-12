@@ -10,6 +10,8 @@ namespace System.Diagnostics.TraceSourceTests
 
     public class TraceClassTests : IDisposable
     {
+        private const string TestRunnerAssemblyName = "xunit.console.netcore";
+
         void IDisposable.Dispose()
         {
             TraceTestHelper.ResetState();
@@ -332,7 +334,7 @@ namespace System.Diagnostics.TraceSourceTests
             var expected =
                 String.Format(
                     "Message start." + newLine + "    This message should be indented.{0} Error: 0 : This error not be indented." + newLine + "    {0} Error: 0 : This error is indented" + newLine + "    {0} Warning: 0 : This warning is indented" + newLine + "    {0} Warning: 0 : This warning is also indented" + newLine + "    {0} Information: 0 : This information in indented" + newLine + "    {0} Information: 0 : This information is also indented" + newLine + "Message end." + newLine + "",
-                    "DEFAULT_APPNAME" //DEFAULT_APPNAME this a bug which needs to be fixed.
+                    TestRunnerAssemblyName
                 );
 
             Assert.Equal(expected, textTL.Output);

@@ -1,13 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.ComponentModel": "4.0.0"
+    "System.Runtime": "4.4.0-beta-24711-02",
+    "System.ComponentModel": "4.4.0-beta-24711-02"
   },
   "frameworks": {
-    "netstandard1.4": {
-      "imports": [
-        "dotnet5.5"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

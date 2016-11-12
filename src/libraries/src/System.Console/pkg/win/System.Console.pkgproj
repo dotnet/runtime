@@ -11,14 +11,6 @@
     <ProjectReference Include="..\..\src\System.Console.csproj" >
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Console.csproj" >
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Console.csproj" >
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
     <ExternalOnTargetFramework Include="net" />
   </ItemGroup>
 

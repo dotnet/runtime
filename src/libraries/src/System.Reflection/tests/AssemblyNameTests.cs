@@ -16,13 +16,13 @@ namespace System.Reflection.Tests
 
         private static IEnumerable<ProcessorArchitecture> ValidProcessorArchitectureValues()
         {
-        	return (ProcessorArchitecture[])Enum.GetValues(typeof(ProcessorArchitecture));
+            return (ProcessorArchitecture[])Enum.GetValues(typeof(ProcessorArchitecture));
         }
 
         public static IEnumerable<object[]> ProcessorArchitectures_TestData()
         {
-         	return ValidProcessorArchitectureValues().Select(arch => new object[] { arch });
-     	}
+            return ValidProcessorArchitectureValues().Select(arch => new object[] { arch });
+        }
 
         public static IEnumerable<object[]> Names_TestData()
         {
@@ -187,7 +187,7 @@ namespace System.Reflection.Tests
         public void FullName(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
-            
+
             string extended = $"{expectedName}, Culture=neutral, PublicKeyToken=null";
             Assert.True(assemblyName.FullName == expectedName || assemblyName.FullName == extended);
         }
@@ -196,7 +196,7 @@ namespace System.Reflection.Tests
         public void FullName_CurrentlyExecutingAssembly()
         {
             AssemblyName assemblyName = typeof(AssemblyNameTests).GetTypeInfo().Assembly.GetName();
-            Assert.True(assemblyName.FullName.StartsWith("System.Reflection.Tests"));
+            Assert.StartsWith("System.Reflection.Tests", assemblyName.FullName);
             Assert.Equal(assemblyName.Name.Length, assemblyName.FullName.IndexOf(','));
         }
 
@@ -225,7 +225,7 @@ namespace System.Reflection.Tests
             assemblyName.SetPublicKeyToken(publicKeyToken);
             Assert.Equal(publicKeyToken, assemblyName.GetPublicKeyToken());
         }
-        
+
         [Fact]
         public void GetPublicKeyToken_CurrentlyExecutingAssembly()
         {
@@ -249,7 +249,7 @@ namespace System.Reflection.Tests
         public void Name_CurrentlyExecutingAssembly()
         {
             AssemblyName assemblyName = typeof(AssemblyNameTests).GetTypeInfo().Assembly.GetName();
-            Assert.True(assemblyName.Name.StartsWith("System.Reflection.Tests"));
+            Assert.StartsWith("System.Reflection.Tests", assemblyName.Name);
         }
 
         public static IEnumerable<object[]> Version_TestData()
@@ -276,7 +276,7 @@ namespace System.Reflection.Tests
         {
             AssemblyName assemblyName = typeof(AssemblyNameTests).GetTypeInfo().Assembly.GetName();
             assemblyName.Version = new Version(255, 1, 2, 3);
-            Assert.True(assemblyName.FullName.Contains("Version=255.1.2.3"));
+            Assert.Contains("Version=255.1.2.3", assemblyName.FullName);
         }
 
         [Theory]
@@ -285,7 +285,7 @@ namespace System.Reflection.Tests
         public void ToString(string name)
         {
             var assemblyName = new AssemblyName(name);
-            Assert.True(assemblyName.ToString().StartsWith(name), string.Format("Assembly name {0} did not start with \"{1}\".", assemblyName, name));
+            Assert.StartsWith(name, assemblyName.ToString());
             Assert.Equal(assemblyName.FullName, assemblyName.ToString());
         }
 

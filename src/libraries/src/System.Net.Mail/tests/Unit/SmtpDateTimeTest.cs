@@ -84,7 +84,7 @@ namespace System.Net.Mime.Tests
         [InlineData(ValidDateStringWithMixedTabsAndSpacesAsWhitespace, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
         public void SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(
             string input,
-            int expectedYear, int expectedMonth, int expectedDay, 
+            int expectedYear, int expectedMonth, int expectedDay,
             int expectedHour, int expectedMinut, int expectedSecond,
             string expectedTimeZoneOffset, DateTimeKind expectedKind)
         {

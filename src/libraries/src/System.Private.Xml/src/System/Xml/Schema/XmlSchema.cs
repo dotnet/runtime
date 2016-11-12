@@ -128,7 +128,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
                 return null;
             }

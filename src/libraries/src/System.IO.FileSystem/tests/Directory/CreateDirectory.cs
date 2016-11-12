@@ -554,7 +554,6 @@ namespace System.IO.Tests
 #if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
         /*
         [Fact]
-        [ActiveIssue(1220)] // SetCurrentDirectory
         public void DotDotAsPath_WhenCurrentDirectoryIsRoot_DoesNotThrow()
         {
             string root = Path.GetPathRoot(Directory.GetCurrentDirectory());

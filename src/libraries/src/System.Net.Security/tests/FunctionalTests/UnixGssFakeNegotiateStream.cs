@@ -54,7 +54,10 @@ namespace System.Net.Security.Tests
                 byte[] outBuf = null;
                 try
                 {
-                    handshakeDone = EstablishSecurityContext(ref thisRef._context, inBuf, out outBuf);
+                    SafeGssContextHandle context = thisRef._context; // workaround warning about a ref to a field on a MarshalByRefObject
+                    handshakeDone = EstablishSecurityContext(ref context, inBuf, out outBuf);
+                    thisRef._context = context;
+
                     thisRef._framer.WriteHandshakeFrame(outBuf, 0, outBuf.Length);
                 }
                 catch (Interop.NetSecurityNative.GssApiException e)

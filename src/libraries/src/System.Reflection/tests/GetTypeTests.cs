@@ -9,7 +9,6 @@ namespace System.Reflection.Tests
 {
     public class GetTypeTests
     {
-
         [Fact]
         public void GetType_EmptyString()
         {
@@ -154,38 +153,44 @@ namespace System.Reflection.Tests
                 Assert.Equal(expectedResult, Type.GetType(typeName, throwOnError: true));
                 Assert.Equal(expectedResult, Type.GetType(aqn, throwOnError: true));
 
+                // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
+                // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
+                // layout of private hash tables.) As a result, we do not expect the same result across desktop and Project N
+                // and so the best we can do is compare the names.
+                string expectedName = expectedResult.AssemblyQualifiedName;
+
                 Assert.Equal(expectedResult, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(typeName, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(typeName, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Equal(expectedResult, Type.GetType(aqn, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(aqn, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(aqn, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
 
                 Assert.Equal(expectedResult, Type.GetType(typeName, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(typeName, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(typeName, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Equal(expectedResult, Type.GetType(aqn, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(aqn, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
 
                 // Assembly.GetType
                 Assert.Equal(expectedResult, a.GetType(typeName));
                 Assert.Null(a.GetType(aqn));
 
                 Assert.Equal(expectedResult, a.GetType(typeName, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, a.GetType(typeName, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, a.GetType(typeName, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: false));
                 Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: true));
 
                 Assert.Equal(expectedResult, a.GetType(typeName, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, a.GetType(typeName, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, a.GetType(typeName, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
                 Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
                 // Module.GetType
                 Assert.Equal(expectedResult, m.GetType(typeName, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, m.GetType(typeName, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: true));
 
                 Assert.Equal(expectedResult, m.GetType(typeName, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, m.GetType(typeName, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
                 Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
             }
@@ -202,38 +207,44 @@ namespace System.Reflection.Tests
                 Assert.Throws<TypeLoadException>(() => Type.GetType(typeName, throwOnError: true));
                 Assert.Throws<TypeLoadException>(() => Type.GetType(aqn, throwOnError: true));
 
+                // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
+                // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
+                // layout of private hash tables.) As a result, we do not expect the same result across desktop and Project N
+                // and so the best we can do is compare the names.
+                string expectedName = expectedResult.AssemblyQualifiedName;
+
                 Assert.Null(Type.GetType(typeName, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(typeName, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(typeName, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Null(Type.GetType(aqn, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(aqn, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(aqn, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
 
                 Assert.Throws<TypeLoadException>(() => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(typeName, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(typeName, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Throws<TypeLoadException>(() => Type.GetType(aqn, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, Type.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, Type.GetType(aqn, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
 
                 // Assembly.GetType
                 Assert.Null(a.GetType(typeName));
                 Assert.Null(a.GetType(aqn));
 
                 Assert.Null(a.GetType(typeName, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, a.GetType(typeName, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, a.GetType(typeName, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: false));
                 Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: true));
 
                 Assert.Throws<TypeLoadException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, a.GetType(typeName, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, a.GetType(typeName, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
                 Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
                 // Module.GetType
                 Assert.Null(m.GetType(typeName, throwOnError: false, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: false, ignoreCase: true));
+                Assert.Equal(expectedName, m.GetType(typeName, throwOnError: false, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: true));
 
                 Assert.Throws<TypeLoadException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: false));
-                AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: true, ignoreCase: true));
+                Assert.Equal(expectedName, m.GetType(typeName, throwOnError: true, ignoreCase: true).AssemblyQualifiedName, StringComparer.OrdinalIgnoreCase);
                 Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
                 Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
             }
@@ -248,15 +259,6 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(typeof(int), Type.GetType("System.Int32", throwOnError: true));
             Assert.Equal(typeof(int), Type.GetType("system.int32", throwOnError: true, ignoreCase: true));
-        }
-
-        private static void AssertCaseInsensitiveMatch(Type expectedResult, Type actualResult)
-        {
-            // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
-            // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-            // layout of private hash tables.) As a result, we do not expect the same result across desktop and Project N
-            // and so the best we can do is compare the names.
-            Assert.True(expectedResult.AssemblyQualifiedName.Equals(actualResult.AssemblyQualifiedName, StringComparison.OrdinalIgnoreCase));
         }
     }
 

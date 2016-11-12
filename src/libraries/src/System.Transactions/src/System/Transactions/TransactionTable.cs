@@ -178,7 +178,16 @@ namespace System.Transactions
                 //       (nearly 300 billion) years.
                 long timeoutTicks = ((timeout.Ticks / TimeSpan.TicksPerMillisecond) >>
                         TransactionTable.timerInternalExponent) + _ticks;
-                return timeoutTicks;
+                // The increment of 2 is necessary to account for the half-second that is
+                // lost due to the right-shift truncation and also for the half-second
+                // that might be lost because the transaction's AbsoluteTimeout is
+                // calculated just before this._ticks is incremented.
+                // This increment by 2 could cause a transaction to last up to 1 second longer than the
+                // specified timeout, but there are no guarantees that the transaction
+                // will timeout exactly at the time specified. But we shouldn't timeout
+                // the transaction earlier than the specified time, which is possible without
+                // this adjustment.
+                return timeoutTicks + 2;
             }
             else
             {

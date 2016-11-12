@@ -195,12 +195,6 @@
   <data name="Serialization_ConstructorNotFound" xml:space="preserve">
     <value>The constructor to deserialize an object of type '{0}' was not found.</value>
   </data>
-  <data name="Serialization_ObjectNotSupplied" xml:space="preserve">
-    <value>The object with ID {0} was referenced in a fixup but does not exist.</value>
-  </data>
-  <data name="Serialization_TypeLoadFailure" xml:space="preserve">
-    <value>Unable to load type {0} required for deserialization.</value>
-  </data>
   <data name="Serialization_IncorrectNumberOfFixups" xml:space="preserve">
     <value>The ObjectManager found an invalid number of fixups. This usually indicates a problem in the Formatter.</value>
   </data>
@@ -257,9 +251,6 @@
   </data>
   <data name="Serialization_AssemblyId" xml:space="preserve">
     <value>No assembly ID for object type '{0}'.</value>
-  </data>
-  <data name="Serialization_ObjectTypeEnum" xml:space="preserve">
-    <value>Invalid ObjectTypeEnum {0}.</value>
   </data>
   <data name="Serialization_ArrayType" xml:space="preserve">
     <value>Invalid array type '{0}'.</value>

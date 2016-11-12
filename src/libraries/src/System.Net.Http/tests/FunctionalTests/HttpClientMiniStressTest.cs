@@ -12,6 +12,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientMiniStress
     {
         private static bool HttpStressEnabled => Configuration.Http.StressEnabled;

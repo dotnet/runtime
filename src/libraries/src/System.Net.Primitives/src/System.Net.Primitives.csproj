@@ -44,21 +44,26 @@
     <Compile Include="System\Net\DnsEndPoint.cs" />
     <Compile Include="System\Net\EndPoint.cs" />
     <Compile Include="System\Net\HttpStatusCode.cs" />
+    <Compile Include="System\Net\HttpVersion.cs" />
     <Compile Include="System\Net\ICredentials.cs" />
     <Compile Include="System\Net\ICredentialsByHost.cs" />
     <Compile Include="System\Net\IPAddress.cs" />
     <Compile Include="System\Net\IPAddressParser.cs" />
     <Compile Include="System\Net\IPEndPoint.cs" />
     <Compile Include="System\Net\IWebProxy.cs" />
+    <Compile Include="System\Net\NetEventSource.Primitives.cs" />
     <Compile Include="System\Net\NetworkCredential.cs" />
     <Compile Include="System\Net\TransportContext.cs" />
     <Compile Include="System\Net\SocketException.cs" />
+    <Compile Include="System\Net\SocketException.netstandard17.cs" Condition="'$(TargetGroup)' == ''" />
     <Compile Include="System\Net\SecureProtocols\NegotiateEnumTypes.cs" />
     <Compile Include="System\Net\SecureProtocols\SslEnumTypes.cs" />
     <Compile Include="System\Net\Security\SslPolicyErrors.cs" />
     <Compile Include="System\Net\Sockets\AddressFamily.cs" />
     <Compile Include="System\Net\Sockets\SocketError.cs" />
     <Compile Include="System\Net\NetworkInformation\IPAddressCollection.cs" />
+    <Compile Include="System\Net\Cache\RequestCacheLevel.cs" />
+    <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBinding.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
@@ -92,14 +97,8 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
@@ -221,10 +220,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj" />
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Threading.Tasks\pkg\System.Threading.Tasks.pkgproj" />
+    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

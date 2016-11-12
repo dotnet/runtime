@@ -11,7 +11,6 @@ namespace System.Xml.Serialization
     using System.Text;
     using System.ComponentModel;
     using System.Xml;
-    using System.CodeDom.Compiler;
 
     // These classes represent a mapping between classes and a particular XML format.
     // There are two class of mapping information: accessors (such as elements and
@@ -1041,15 +1040,6 @@ namespace System.Xml.Serialization
         internal MemberMapping Clone()
         {
             return new MemberMapping(this);
-        }
-
-        internal string GetTypeName(CodeDomProvider codeProvider)
-        {
-            if (IsNeedNullable && codeProvider.Supports(GeneratorSupport.GenericTypeReference))
-            {
-                return GetNullableType(TypeDesc);
-            }
-            return TypeDesc.FullName;
         }
     }
 

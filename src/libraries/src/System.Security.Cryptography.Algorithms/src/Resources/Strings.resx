@@ -249,6 +249,12 @@
   <data name="Cryptography_RC2_EKSKS" xml:space="preserve">
     <value>KeySize value must be at least as large as the EffectiveKeySize value.</value>
   </data>
+  <data name="Cryptography_RC2_EKSKS2" xml:space="preserve">
+    <value>EffectiveKeySize must be the same as KeySize in this implementation.</value>
+  </data>
+  <data name="Cryptography_Rijndael_BlockSize" xml:space="preserve">
+    <value>BlockSize must be 128 in this implementation.</value>
+  </data>
   <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
     <value>Attempt to transform beyond end of buffer.</value>
   </data>

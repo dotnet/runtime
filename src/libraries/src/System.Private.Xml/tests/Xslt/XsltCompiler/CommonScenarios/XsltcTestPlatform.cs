@@ -33,7 +33,7 @@ namespace System.Xml.Tests
         [InlineData("/PLAtforM:AnyCpU pft10.xsl", "", "pft10.dll", "pft10.txt")]
         //[Variation("17", Desc = "Compile an assembly for anycpu and load", Pri = 1, Params = new object[] { "/platform:anycpu pft17.xsl", "pft17", "pft17.dll", "pft17.txt" })]
         //[InlineData("/platform:anycpu pft17.xsl", "pft17", "pft17.dll", "pft17.txt")] //Skipping this, it tries to load System.dll
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2, object param3)
         {
             String cmdLine = param0.ToString();
@@ -63,7 +63,7 @@ namespace System.Xml.Tests
         //[InlineData("/platform:x86,x64 pft15.xsl", "pft15.txt")] //Skipping this, it tries to load System.dll
         //[Variation("16", Desc = "Exercise basic use case, an unsupported option value -6", Pri = 1, Params = new object[] { "/platform:x86;x64 pft16.xsl", "pft16.txt" })]
         [InlineData("/platform:x86;x64 pft16.xsl", "pft16.txt")]
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var2(object param0, object param1)
         {
             String cmdLine = param0.ToString();
@@ -78,7 +78,7 @@ namespace System.Xml.Tests
         [InlineData("pft19.xsl", "pft19.dll", "yes", "", "pft19.pdb", "no", "pft19.txt", "no")]
         //[Variation("20", Desc = "Exercise multiple /platform: flags", Pri = 1, Params = new object[] { "/platform:X64 pft20.xsl" /*+ " /platform:<current>*/, "pft20.dll", "yes", "pft20", "pft20.pdb", "no", "pft20.txt", "yes" })]
         //[InlineData("/platform:X64 pft20.xsl" /*+ " /platform:<current>*/, "pft20.dll", "yes", "pft20", "pft20.pdb", "no", "pft20.txt", "yes")] //Skipping this, it tries to load System.dll
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var3(object param0, object param1, object param2, object param3, object param4, object param5, object param6, object param7)
         {
             String platform = "X86"; //CModInfo.Options["Arc"] as String;

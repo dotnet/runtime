@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Warning: Do not port implementation of GetHashCode to Desktop. See notes in SecureStringHasher
+
 using System.Collections;
 using System.Diagnostics;
 
@@ -64,7 +66,6 @@ namespace System.Xml
         /// </devdoc>
         public override int GetHashCode()
         {
-			// TODO: make sure randomized hashing is enabled by default
             if (_hash == 0)
             {
                 _hash = Name.GetHashCode() /*+ Namespace.GetHashCode()*/; // for perf reasons we are not taking ns's hashcode.

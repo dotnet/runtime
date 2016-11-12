@@ -521,7 +521,8 @@ namespace System.Data.SqlClient
                 // permission to obtain Environment.MachineName is Asserted
                 // since permission to open the connection has been granted
                 // the information is shared with the server, but not directly with the user
-                result = string.Empty;
+                result = ADP.MachineName();
+                ValidateValueLength(result, TdsEnums.MAXLEN_HOSTNAME, KEY.Workstation_Id);
             }
             return result;
         }

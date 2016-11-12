@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.ComponentModel.Annotations.csproj" />
     <Project Include="System.ComponentModel.Annotations.csproj">
-      <TargetGroup>net461</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

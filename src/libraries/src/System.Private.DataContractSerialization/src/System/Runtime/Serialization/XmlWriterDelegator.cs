@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization
 
         public XmlWriterDelegator(XmlWriter writer)
         {
-            XmlObjectSerializer.CheckNull(writer, "writer");
+            XmlObjectSerializer.CheckNull(writer, nameof(writer));
             this.writer = writer;
             this.dictionaryWriter = writer as XmlDictionaryWriter;
         }

@@ -4,16 +4,12 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
         "Microsoft.NETCore.Targets": "1.0.1",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
-        "System.Collections": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Threading": "4.0.10"
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
+        "System.Collections": "4.0.11",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Threading": "4.0.11"
       }
     }
-  },
-  "runtimes": {
-    "win8-x86": {},
-    "win8-x64": {}
   }
 }

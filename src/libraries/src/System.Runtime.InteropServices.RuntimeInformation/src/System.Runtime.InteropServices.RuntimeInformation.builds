@@ -28,6 +28,9 @@
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <TargetGroup>netstandard1.1</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

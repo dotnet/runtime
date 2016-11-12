@@ -8,53 +8,48 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include (GenerateExportHeader)
 
 if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
-set(NATIVECOMPRESSION_SOURCES
-    clrcompression.def
-    zlib-intel/adler32.c
-    zlib-intel/crc_folding.c
-    zlib-intel/crc32.c
-    zlib-intel/deflate_quick.c
-    zlib-intel/deflate.c
-    zlib-intel/fill_window_sse.c
-    zlib-intel/match.c
-    zlib-intel/trees.c
-    zlib-intel/x86.c
-    zlib-intel/zutil.c
-    zlib/compress.c 
-    zlib/inffast.c
-    zlib/inflate.c
-    zlib/inftrees.c
-    #zlib/gzclose.c
-    #zlib/gzlib.c
-    #zlib/gzread.c
-    #zlib/gzwrite.c
-    #zlib/uncompr.c
-    #zlib/infback.c
-    #zlib/uncompr.c
+    set(NATIVECOMPRESSION_SOURCES
+        clrcompression.def
+        zlib-intel/adler32.c
+        zlib-intel/crc_folding.c
+        zlib-intel/crc32.c
+        zlib-intel/deflate_quick.c
+        zlib-intel/deflate.c
+        zlib-intel/fill_window_sse.c
+        zlib-intel/match.c
+        zlib-intel/trees.c
+        zlib-intel/x86.c
+        zlib-intel/zutil.c
+        zlib/compress.c 
+        zlib/inffast.c
+        zlib/inflate.c
+        zlib/inftrees.c
 )
-endif()
-
-if($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
-set(NATIVECOMPRESSION_SOURCES
-    clrcompression.def
-    zlib/adler32.c
-    zlib/compress.c
-    zlib/crc32.c
-    zlib/deflate.c
-    zlib/inffast.c
-    zlib/inflate.c
-    zlib/inftrees.c
-    zlib/trees.c
-    zlib/zutil.c
-    #zlib/gzio.c
-    #zlib/infback.c
-    #zlib/uncompr.c
-)
+elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
+    set(NATIVECOMPRESSION_SOURCES
+        clrcompression.def
+        zlib/adler32.c
+        zlib/compress.c
+        zlib/crc32.c
+        zlib/deflate.c
+        zlib/inffast.c
+        zlib/inflate.c
+        zlib/inftrees.c
+        zlib/trees.c
+        zlib/zutil.c
+    )
 endif()
 
 if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
+
+if(__LinkCustomCRT STREQUAL true)
+    set(NATIVECOMPRESSION_SOURCES
+        ${NATIVECOMPRESSION_SOURCES}
+        crt.cpp
+    )
+endif()
 
 # Include 'bin/obj' dir since it contains _version.h
 include_directories("${CMAKE_BINARY_DIR}/../../")

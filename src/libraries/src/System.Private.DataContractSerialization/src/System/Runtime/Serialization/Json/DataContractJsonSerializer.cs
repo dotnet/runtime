@@ -61,13 +61,13 @@ namespace System.Runtime.Serialization.Json
         }
 
         public DataContractJsonSerializer(Type type, string rootName, IEnumerable<Type> knownTypes)
+            : this(type, new DataContractJsonSerializerSettings() { RootName = rootName, KnownTypes = knownTypes })
         {
-            throw new PlatformNotSupportedException();
         }
 
         public DataContractJsonSerializer(Type type, XmlDictionaryString rootName, IEnumerable<Type> knownTypes)
         {
-            throw new PlatformNotSupportedException();
+            _serializer = new DataContractJsonSerializerImpl(type, rootName, knownTypes);
         }
 
         public DataContractJsonSerializer(Type type, DataContractJsonSerializerSettings settings)
@@ -473,19 +473,26 @@ namespace System.Runtime.Serialization.Json
         }
 
         public DataContractJsonSerializerImpl(Type type, IEnumerable<Type> knownTypes)
-            : this(type, knownTypes, int.MaxValue, false, false)
+            : this(type, null, knownTypes, int.MaxValue, false, false)
         {
         }
 
-        internal DataContractJsonSerializerImpl(Type type,
+        public DataContractJsonSerializerImpl(Type type, XmlDictionaryString rootName, IEnumerable<Type> knownTypes)
+            : this(type, rootName, knownTypes, int.MaxValue, false, false)
+        {
+        }
+
+        internal DataContractJsonSerializerImpl(Type type, 
+            XmlDictionaryString rootName,
             IEnumerable<Type> knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
             bool alwaysEmitTypeInformation)
         {
             EmitTypeInformation emitTypeInformation = alwaysEmitTypeInformation ? EmitTypeInformation.Always : EmitTypeInformation.AsNeeded;
-            Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
+            Initialize(type, rootName, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
         }
+
         public DataContractJsonSerializerImpl(Type type, DataContractJsonSerializerSettings settings)
         {
             if (settings == null)
@@ -613,7 +620,7 @@ namespace System.Runtime.Serialization.Json
 
         public override object ReadObject(Stream stream)
         {
-            CheckNull(stream, "stream");
+            CheckNull(stream, nameof(stream));
             return ReadObject(JsonReaderWriterFactory.CreateJsonReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
@@ -652,7 +659,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteObject(Stream stream, object graph)
         {
-            CheckNull(stream, "stream");
+            CheckNull(stream, nameof(stream));
             XmlDictionaryWriter jsonWriter = JsonReaderWriterFactory.CreateJsonWriter(stream, Encoding.UTF8, false); //  ownsStream 
             WriteObject(jsonWriter, graph);
             jsonWriter.Flush();
@@ -910,7 +917,7 @@ namespace System.Runtime.Serialization.Json
             DateTimeFormat dateTimeFormat,
             bool useSimpleDictionaryFormat)
         {
-            CheckNull(type, "type");
+            CheckNull(type, nameof(type));
             _rootType = type;
 
             if (knownTypes != null)

@@ -23,21 +23,17 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
-    <Compile Include="System\Net\BindIPEndPoint.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />
     <Compile Include="System\Net\FileWebResponse.cs" />
+    <Compile Include="System\Net\GlobalProxySelection.cs" />
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HttpWebRequest.cs" />
     <Compile Include="System\Net\HttpWebResponse.cs" />
     <Compile Include="System\Net\IAuthenticationModule.cs" />
-    <Compile Include="System\Net\ICertificatePolicy.cs" />
     <Compile Include="System\Net\ICredentialPolicy.cs" />
     <Compile Include="System\Net\IWebRequestCreate.cs" />
     <Compile Include="System\Net\ProtocolViolationException.cs" />
     <Compile Include="System\Net\RequestStream.cs" />
-    <Compile Include="System\Net\SecurityProtocolType.cs" />
-    <Compile Include="System\Net\ServicePoint.cs" />
-    <Compile Include="System\Net\ServicePointManager.cs" />
     <Compile Include="System\Net\SystemWebProxy.cs" />
     <Compile Include="System\Net\TaskExtensions.cs" />
     <Compile Include="System\Net\WebException.cs" />
@@ -46,28 +42,34 @@
     <Compile Include="System\Net\WebRequest.cs" />
     <Compile Include="System\Net\WebRequestMethods.cs" />
     <Compile Include="System\Net\WebResponse.cs" />
+    <Compile Include="System\Net\ExceptionHelper.cs" />
+    <Compile Include="System\Net\FtpStatusCode.cs" />
+    <Compile Include="System\Net\FtpWebRequest.cs" />
+    <Compile Include="System\Net\FtpWebResponse.cs" />
+    <Compile Include="System\Net\TriState.cs" />
+    <Compile Include="System\Net\CommandStream.cs" />
+    <Compile Include="System\Net\FtpControlStream.cs" />
+    <Compile Include="System\Net\FtpDataStream.cs" />
+    <Compile Include="System\Net\ICloseEx.cs" />
+    <Compile Include="System\Net\NetRes.cs" />
+    <Compile Include="System\Net\NetworkStreamWrapper.cs" />
+    <Compile Include="System\Net\TimerThread.cs" />
     <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
-    <Compile Include="System\Net\Cache\RequestCacheLevel.cs" />
-    <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
     <Compile Include="System\Net\HttpDateParse.cs" />
-    <Compile Include="System\Net\HttpVersion.cs" />
-
+    <Compile Include="System\Net\NetEventSource.Requests.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
-      <Link>System\Net\InternalException.cs</Link>
+      <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
+      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
@@ -75,11 +77,20 @@
     <Compile Include="$(CommonPath)\System\Net\HttpValidationHelpers.cs">
       <Link>Common\System\Net\HttpValidationHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
+      <Link>Common\System\Net\ContextAwareResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
+      <Link>Common\System\Net\ExceptionCheck.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\TlsStream.cs">
+      <Link>Common\System\Net\TlsStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+      <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
@@ -92,11 +103,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
       <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+    </Compile>
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
+      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>
@@ -105,6 +122,8 @@
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

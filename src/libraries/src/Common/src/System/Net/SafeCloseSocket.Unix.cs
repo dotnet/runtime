@@ -123,10 +123,7 @@ namespace System.Net.Sockets
                 // case we need to do some recovery.
                 if (_blockable)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") Following 'blockable' branch.");
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'blockable' branch.");
 
                     errorCode = Interop.Sys.Close(handle);
                     if (errorCode == -1)
@@ -134,10 +131,7 @@ namespace System.Net.Sockets
                         errorCode = (int)Interop.Sys.GetLastError();
                     }
 
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#1:" + errorCode.ToString());
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close()#1:{errorCode}");
 #if DEBUG
                     _closeSocketHandle = handle;
                     _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -157,10 +151,7 @@ namespace System.Net.Sockets
                         // The socket successfully made blocking; retry the close().
                         errorCode = Interop.Sys.Close(handle);
 
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#2:" + errorCode.ToString());
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close()#2:{errorCode}");
 #if DEBUG
                         _closeSocketHandle = handle;
                         _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -181,10 +172,7 @@ namespace System.Net.Sockets
 #if DEBUG
                 _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") setsockopt():" + errorCode.ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
                 if (errorCode != 0 && errorCode != (int)Interop.Error.EINVAL && errorCode != (int)Interop.Error.ENOPROTOOPT)
                 {
@@ -197,10 +185,7 @@ namespace System.Net.Sockets
                 _closeSocketHandle = handle;
                 _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close#3():" + (errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode).ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close#3():{(errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode)}");
 
                 return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
             }

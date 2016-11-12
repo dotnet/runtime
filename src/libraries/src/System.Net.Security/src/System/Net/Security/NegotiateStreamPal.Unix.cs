@@ -321,30 +321,55 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'offset' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'offset' out of range.");
-
+                NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'count' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'count' out of range.");
-
+                NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             newOffset = offset;
             return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer, offset, count);
+        }
+
+        internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
+        {
+            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            {
+                NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
+            {
+                NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer, offset, count);
+        }
+
+        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, ref byte[] output)
+        {
+            SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
+            byte[] tempOutput = GssWrap(gssContext.GssContext, false, buffer, offset, count);
+            // Create space for prefixing with the length
+            const int prefixLength = 4;
+            output = new byte[tempOutput.Length + prefixLength];
+            Array.Copy(tempOutput, 0, output, prefixLength, tempOutput.Length);
+            int resultSize = tempOutput.Length;
+            unchecked
+            {
+                output[0] = (byte)((resultSize) & 0xFF);
+                output[1] = (byte)(((resultSize) >> 8) & 0xFF);
+                output[2] = (byte)(((resultSize) >> 16) & 0xFF);
+                output[3] = (byte)(((resultSize) >> 24) & 0xFF);
+            }
+
+            return resultSize + 4;
         }
 
         private static SecurityStatusPal EstablishSecurityContext(
@@ -408,11 +433,7 @@ namespace System.Net.Security
             }
             catch(Exception ex)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("Exception Caught. - " + ex);
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }

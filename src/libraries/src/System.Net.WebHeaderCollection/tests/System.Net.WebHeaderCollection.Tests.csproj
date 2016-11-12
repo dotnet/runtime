@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{F8C21EE8-B271-4014-B9D9-B2C31520AF3F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -13,6 +13,14 @@
 
   <ItemGroup>
     <Compile Include="WebHeaderCollectionTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="WebHeaderCollectionTest.netstandard17.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

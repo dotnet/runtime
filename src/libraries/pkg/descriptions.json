@@ -111,6 +111,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Private.CoreFx.NETCoreApp",
+    "Description": "Package used to represent the portions of NETCoreApp that come from CoreFx.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.TargetingPack.NETFramework.v4.6",
     "Description": "Contains the .NET Framework v4.6 targeting pack.",
     "CommonTypes": []
@@ -945,6 +950,14 @@
     ]
   },
   {
+    "Name": "System.Net.ServicePoint",
+    "Description": "Provides types related to the management of network connections.",
+    "CommonTypes": [
+      "System.Net.ServicePoint",
+      "System.Net.ServicePointManager"
+    ]
+  },
+  {
     "Name": "System.Net.Sockets",
     "Description": "Provides classes such as Socket, TcpClient and UdpClient, which enable developers to send and receive data over the network.",
     "CommonTypes": [
@@ -1243,6 +1256,7 @@
     "Description": "Provides commonly-used classes for performing mathematical functions, conversions, string comparisons and querying environment information.",
     "CommonTypes": [
       "System.Math",
+      "System.MathF",
       "System.Environment",
       "System.Random",
       "System.Progress<T>",

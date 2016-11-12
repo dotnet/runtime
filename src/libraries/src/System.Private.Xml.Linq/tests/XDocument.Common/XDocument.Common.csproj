@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>cXDocument.Common</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

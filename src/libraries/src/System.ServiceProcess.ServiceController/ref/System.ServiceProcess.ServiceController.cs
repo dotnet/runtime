@@ -73,5 +73,6 @@ namespace System.ServiceProcess
         public TimeoutException() { }
         public TimeoutException(string message) { }
         public TimeoutException(string message, System.Exception innerException) { }
+        protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

@@ -10,11 +10,7 @@
     </Project>
     <Project Include="System.Threading.Overlapped.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    <Project Include="System.Threading.Overlapped.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

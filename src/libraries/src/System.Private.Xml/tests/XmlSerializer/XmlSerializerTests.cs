@@ -19,7 +19,7 @@ using System.Xml.Serialization;
 using Xunit;
 
 public static partial class XmlSerializerTests
-{ 
+{
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -1514,7 +1514,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
 #if NET_NATIVE
-    [ActiveIssue(7991)]
 #endif
     [Fact]
     public static void Xml_ConstructorWithXmlRootAttr()
@@ -1532,7 +1531,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
 #if NET_NATIVE
-    [ActiveIssue(7991)]
 #endif
     [Fact]
     public static void Xml_ConstructorWithXmlAttributeOverrides()
@@ -1541,7 +1539,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         {
             Instruments = new Music.Instrument[]
             {
-                new Music.Brass() { Name = "Trumpet", IsValved = true }, 
+                new Music.Brass() { Name = "Trumpet", IsValved = true },
                 new Music.Brass() { Name = "Cornet", IsValved = true }
             }
         };
@@ -2031,7 +2029,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actualStringArray = (string[])actual.StringArrayValue;
         Assert.NotNull(actualStringArray);
         Assert.True(Enumerable.SequenceEqual(stringArray, actualStringArray));
-        Assert.Equal(stringArray.Length, actualStringArray.Length);      
+        Assert.Equal(stringArray.Length, actualStringArray.Length);
     }
 
     [Fact]
@@ -2499,6 +2497,47 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         stream.Position = 0;
         return stream;
     }
+
+    [Fact]
+    public static void  SoapAttributeTests()
+    {
+        SoapAttributes soapAttrs = new SoapAttributes();
+        SoapAttributeOverrides soapOverrides = new SoapAttributeOverrides();
+        SoapElementAttribute soapElement1 = new SoapElementAttribute("Truck");
+        soapAttrs.SoapElement = soapElement1;
+        soapOverrides.Add(typeof(Transportation), "Vehicle", soapAttrs);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void XmlTypeMappingTest()
+    {
+        SoapAttributes soapAttrs = new SoapAttributes();
+        SoapAttributeOverrides soapOverrides = new SoapAttributeOverrides();
+        SoapElementAttribute soapElement1 = new SoapElementAttribute("Truck");
+        soapAttrs.SoapElement = soapElement1;
+        soapOverrides.Add(typeof(Transportation), "Vehicle", soapAttrs);
+        XmlTypeMapping myTypeMapping = (new SoapReflectionImporter(soapOverrides)).ImportTypeMapping(typeof(Transportation));
+        XmlSerializer ser = new XmlSerializer(myTypeMapping);
+        Transportation myTransportation = new Transportation();
+        myTransportation.Vehicle = "MyCar";
+        myTransportation.CreationDate = DateTime.Now;
+        myTransportation.thing = new Thing();
+        using (MemoryStream ms = new MemoryStream())
+        {
+            ser.Serialize(ms, myTransportation);
+        }
+    }
+
+    [Fact]
+    public static void XmlSerializationReaderWriterTest()
+    {
+        string s = "XmlSerializationReaderWriterTest";
+        byte[] original = System.Text.Encoding.Default.GetBytes(s);
+        byte[] converted = MyReader.HexToBytes(MyWriter.BytesToHex(original));
+        Assert.Equal(original, converted);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {

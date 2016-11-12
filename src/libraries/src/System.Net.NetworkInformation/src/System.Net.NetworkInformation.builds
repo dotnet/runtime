@@ -12,11 +12,11 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Net.NetworkInformation.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
     <Project Include="System.Net.NetworkInformation.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>uap101</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

@@ -2,15 +2,11 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.1",
     "Microsoft.NETCore.Targets": "1.0.1",
-    "System.ObjectModel": "4.0.10",
-    "System.Numerics.Vectors": "4.1.0",
-    "System.Runtime.WindowsRuntime": "4.0.10"
+    "System.ObjectModel": "4.0.12",
+    "System.Numerics.Vectors": "4.1.1",
+    "System.Runtime.WindowsRuntime": "4.0.11"
   },
   "frameworks": {
     "uap10.0": {}
-  },
-  "runtimes": {
-    "win8-x86": {},
-    "win8-x64": {}
   }
 }

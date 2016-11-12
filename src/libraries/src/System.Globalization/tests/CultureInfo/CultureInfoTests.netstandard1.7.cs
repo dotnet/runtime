@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Linq;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -12,20 +14,19 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> CultureInfo_TestData()
         {
-            yield return new object[] { "en"    , 0x0009, "en-US", "eng", "ENU" };
-            yield return new object[] { "ar"    , 0x0001, "ar-SA", "ara", "ARA" };
-            yield return new object[] { "en-US" , 0x0409, "en-US", "eng", "ENU" };
-            yield return new object[] { "ar-SA" , 0x0401, "ar-SA", "ara", "ARA" };
-            yield return new object[] { "ja-JP" , 0x0411, "ja-JP", "jpn", "JPN" };
-            yield return new object[] { "zh-CN" , 0x0804, "zh-CN", "zho", "CHS" };
-            yield return new object[] { "en-GB" , 0x0809, "en-GB", "eng", "ENG" };
-            yield return new object[] { "tr-TR" , 0x041f, "tr-TR", "tur", "TRK" };
+            yield return new object[] { "en"    , 0x0009, "en-US", "eng", "ENU", "en"         , "en-US" };
+            yield return new object[] { "ar"    , 0x0001, "ar-SA", "ara", "ARA", "ar"         , "en-US" };
+            yield return new object[] { "en-US" , 0x0409, "en-US", "eng", "ENU", "en-US"      , "en-US" };
+            yield return new object[] { "ar-SA" , 0x0401, "ar-SA", "ara", "ARA", "ar-SA"      , "en-US" };
+            yield return new object[] { "ja-JP" , 0x0411, "ja-JP", "jpn", "JPN", "ja-JP"      , "ja-JP" };
+            yield return new object[] { "zh-CN" , 0x0804, "zh-CN", "zho", "CHS", "zh-Hans-CN" , "zh-CN" };
+            yield return new object[] { "en-GB" , 0x0809, "en-GB", "eng", "ENG", "en-GB"      , "en-GB" };
+            yield return new object[] { "tr-TR" , 0x041f, "tr-TR", "tur", "TRK", "tr-TR"      , "tr-TR" };
         }
-
+        
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
-        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
-        public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName)
+        public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
             CultureInfo ci = new CultureInfo(lcid);
             Assert.Equal(cultureName, ci.Name);
@@ -72,29 +73,39 @@ namespace System.Globalization.Tests
 
             ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureName);            
             Assert.Equal(cultureName, ci.Name);
+            Assert.Equal(ci.Name, ci.IetfLanguageTag);
+            Assert.Equal(lcid, ci.KeyboardLayoutId);
+            
+            Assert.Equal(consoleUICultureName, ci.GetConsoleFallbackUICulture().Name);
         }
 
         [Fact]
-        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void InstalledUICultureTest()
         {
             // as we didn't change current UI culture, Installed UI culture should match current UI culture
             Assert.Equal(CultureInfo.CurrentUICulture, CultureInfo.InstalledUICulture);
         }
-
-        [Fact]
-        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
-        public void GetCulturesTest()
+        
+        [Theory]
+        [MemberData(nameof(CultureInfo_TestData))]
+        public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
-            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.NeutralCultures))
-                Assert.True(ci.IsNeutralCulture || ci.Equals(CultureInfo.InvariantCulture), "Expected Neutral Cultures or invariant");
-
-            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.SpecificCultures))
-                Assert.False(ci.IsNeutralCulture, "Expected specific cultures only");
+            bool found = false;
+            Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures), 
+                       c => Assert.True( (c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.NeutralCultures) != 0)) || c.Equals(CultureInfo.InvariantCulture)));
+            found = CultureInfo.GetCultures(CultureTypes.NeutralCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
+                                                                                   c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
+            Assert.All(CultureInfo.GetCultures(CultureTypes.SpecificCultures), c => Assert.True(!c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.SpecificCultures) != 0)));
+            if (!found)
+            {
+                found = CultureInfo.GetCultures(CultureTypes.SpecificCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
+                                                                                       c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            Assert.True(found, $"Expected to find the culture {cultureName} in the enumerated list");
         }
 
         [Fact]
-        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void ClearCachedDataTest()
         {
             CultureInfo ci = CultureInfo.GetCultureInfo("ja-JP");
@@ -104,7 +115,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void CultureNotFoundExceptionTest()
         {
             Assert.Throws<CultureNotFoundException>("name", () => new CultureInfo("!@#$%^&*()"));

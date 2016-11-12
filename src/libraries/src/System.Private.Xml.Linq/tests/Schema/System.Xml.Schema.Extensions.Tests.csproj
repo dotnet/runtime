@@ -18,7 +18,7 @@
     <Compile Include="ExtensionTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\System.Xml.XDocument\pkg\System.Xml.XDocument.pkgproj" />
+    <ProjectReference Include="..\..\pkg\System.Private.Xml.Linq.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

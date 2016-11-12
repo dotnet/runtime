@@ -16,7 +16,7 @@ namespace Internal.Cryptography
         private byte[] _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
                                     // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
 
-        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, byte[] iv, bool encrypting)
+        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, byte[] iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
         {
             Debug.Assert(algorithm != null);
@@ -29,6 +29,12 @@ namespace Internal.Cryptography
             }
 
             _hKey = algorithm.BCryptImportKey(key);
+
+            if (effectiveKeyLength != 0)
+            {
+                Cng.SetEffectiveKeyLength(_hKey, effectiveKeyLength);
+            }
+
             Reset();
         }
 

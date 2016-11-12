@@ -105,8 +105,14 @@ namespace System.Net.Security
         //
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, AsyncCallback asyncCallback, object asyncState)
         {
-            return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.DefaultSecurityProtocols, false,
+            return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.SystemDefaultSecurityProtocols, false,
                                            asyncCallback, asyncState);
+        }
+
+        public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates,
+                                                            bool checkCertificateRevocation, AsyncCallback asyncCallback, object asyncState)
+        {
+            return BeginAuthenticateAsClient(targetHost, clientCertificates, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation, asyncCallback, asyncState);
         }
 
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates,
@@ -132,9 +138,15 @@ namespace System.Net.Security
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, AsyncCallback asyncCallback, object asyncState)
 
         {
-            return BeginAuthenticateAsServer(serverCertificate, false, SecurityProtocol.DefaultSecurityProtocols, false,
+            return BeginAuthenticateAsServer(serverCertificate, false, SecurityProtocol.SystemDefaultSecurityProtocols, false,
                                                           asyncCallback,
                                                             asyncState);
+        }
+
+        public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
+                                                            bool checkCertificateRevocation, AsyncCallback asyncCallback, object asyncState)
+        {
+            return BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation, asyncCallback, asyncState);
         }
 
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
@@ -180,7 +192,12 @@ namespace System.Net.Security
         #region Synchronous methods
         public virtual void AuthenticateAsClient(string targetHost)
         {
-            AuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.DefaultSecurityProtocols, false);
+            AuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.SystemDefaultSecurityProtocols, false);
+        }
+
+        public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation)
+        {
+            AuthenticateAsClient(targetHost, clientCertificates, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
         }
 
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
@@ -192,7 +209,12 @@ namespace System.Net.Security
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
         {
-            AuthenticateAsServer(serverCertificate, false, SecurityProtocol.DefaultSecurityProtocols, false);
+            AuthenticateAsServer(serverCertificate, false, SecurityProtocol.SystemDefaultSecurityProtocols, false);
+        }
+
+        public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
+        {
+            AuthenticateAsServer(serverCertificate, clientCertificateRequired, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
@@ -209,6 +231,11 @@ namespace System.Net.Security
             return Task.Factory.FromAsync(BeginAuthenticateAsClient, EndAuthenticateAsClient, targetHost, null);
         }
 
+        public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation)
+        {
+            return AuthenticateAsClientAsync(targetHost, clientCertificates, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
+        }
+
         public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
             return Task.Factory.FromAsync((callback, state) => BeginAuthenticateAsClient(targetHost, clientCertificates, enabledSslProtocols, checkCertificateRevocation, callback, state), EndAuthenticateAsClient, null);
@@ -217,6 +244,11 @@ namespace System.Net.Security
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate)
         {
             return Task.Factory.FromAsync(BeginAuthenticateAsServer, EndAuthenticateAsServer, serverCertificate, null);
+        }
+
+        public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
+        {
+            return AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
@@ -508,68 +540,6 @@ namespace System.Net.Security
         public override void EndWrite(IAsyncResult asyncResult)
         {
             _sslState.SecureStream.EndWrite(asyncResult);
-        }
-
-        // ReadAsync - provide async read functionality.
-        // 
-        // This method provides async read functionality. All we do is
-        // call through to the Begin/EndRead methods.
-        // 
-        // Input:
-        // 
-        //     buffer            - Buffer to read into.
-        //     offset            - Offset into the buffer where we're to read.
-        //     size              - Number of bytes to read.
-        //     cancellationToken - Token used to request cancellation of the operation
-        // 
-        // Returns:
-        // 
-        //     A Task<int> representing the read.
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((SslStream)iar.AsyncState).EndRead(iar),
-                buffer,
-                offset,
-                size,
-                this);
-        }
-
-        // WriteAsync - provide async write functionality.
-        // 
-        // This method provides async write functionality. All we do is
-        // call through to the Begin/EndWrite methods.
-        // 
-        // Input:
-        // 
-        //     buffer  - Buffer to write into.
-        //     offset  - Offset into the buffer where we're to write.
-        //     size    - Number of bytes to write.
-        //     cancellationToken - Token used to request cancellation of the operation
-        // 
-        // Returns:
-        // 
-        //     A Task representing the write.
-        public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((SslStream)iar.AsyncState).EndWrite(iar),
-                buffer,
-                offset,
-                size,
-                this);
         }
     }
 }

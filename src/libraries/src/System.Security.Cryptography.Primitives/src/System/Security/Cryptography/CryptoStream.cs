@@ -44,11 +44,11 @@ namespace System.Security.Cryptography
             switch (_transformMode)
             {
                 case CryptoStreamMode.Read:
-                    if (!(_stream.CanRead)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, "stream"));
+                    if (!(_stream.CanRead)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, nameof(stream)));
                     _canRead = true;
                     break;
                 case CryptoStreamMode.Write:
-                    if (!(_stream.CanWrite)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, "stream"));
+                    if (!(_stream.CanWrite)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, nameof(stream)));
                     _canWrite = true;
                     break;
                 default:

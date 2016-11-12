@@ -4,7 +4,9 @@
 
 #include "pal_config.h"
 #include "pal_networking.h"
+#include "pal_io.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 
 #include <stdlib.h>
 #include <pthread.h>
@@ -158,13 +160,13 @@ static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int
 {
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8), buffer, UnsignedCast(bufferLength));
 #elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8), buffer, UnsignedCast(bufferLength));
 #else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(addr.s6_addr, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.s6_addr, ARRAY_SIZE(addr.s6_addr), buffer, UnsignedCast(bufferLength));
 #endif
 }
 
@@ -172,13 +174,13 @@ static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, con
 {
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(buffer, addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8));
 #elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
 #else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(buffer, addr.s6_addr, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.s6_addr, ARRAY_SIZE(addr.s6_addr));
 #endif
 }
 
@@ -548,8 +550,10 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
 
     for (;;)
     {
-        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-        if (buffer == nullptr)
+        size_t bufferSize;
+        uint8_t* buffer;
+        if (!add_s(sizeof(hostent), scratchLen, &bufferSize) ||
+            (buffer = reinterpret_cast<uint8_t*>(malloc(bufferSize))) == nullptr)
         {
             return PAL_NO_MEM;
         }
@@ -558,8 +562,7 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
         char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
 
         int getHostErrno;
-        int err =
-            gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
+        int err = gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
         switch (err)
         {
             case 0:
@@ -568,7 +571,13 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
 
             case ERANGE:
                 free(buffer);
-                scratchLen *= 2;
+                size_t tmpScratchLen;
+                if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
+                {
+                    *entry = nullptr;
+                    return PAL_NO_MEM;
+                }
+                scratchLen = tmpScratchLen;
                 break;
 
             default:
@@ -620,8 +629,10 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
 
     for (;;)
     {
-        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-        if (buffer == nullptr)
+        size_t bufferSize;
+        uint8_t* buffer;
+        if (!add_s(sizeof(hostent), scratchLen, &bufferSize) ||
+            (buffer = reinterpret_cast<uint8_t*>(malloc(bufferSize))) == nullptr)
         {
             return PAL_NO_MEM;
         }
@@ -639,7 +650,13 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
 
             case ERANGE:
                 free(buffer);
-                scratchLen *= 2;
+                size_t tmpScratchLen;
+                if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
+                {
+                    *entry = nullptr;
+                    return PAL_NO_MEM;
+                }
+                scratchLen = tmpScratchLen;
                 break;
 
             default:
@@ -1645,13 +1662,14 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
     ssize_t res;
     while (CheckInterrupted(res = recvmsg(fd, &header, socketFlags)));
 
+    assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
+    assert(header.msg_control == messageHeader->ControlBuffer);
+
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
-    memcpy(messageHeader->SocketAddress, header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
-
+    
     assert(header.msg_controllen <= static_cast<size_t>(messageHeader->ControlBufferLen));
     messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
-    memcpy(messageHeader->ControlBuffer, header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
 
@@ -2415,7 +2433,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     if (sizeof(epoll_event) < sizeof(SocketEvent))
     {
@@ -2574,7 +2592,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     for (int i = 0; i < numEvents; i++)
     {
@@ -2616,8 +2634,10 @@ extern "C" Error SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent
         return PAL_EFAULT;
     }
 
-    void* b = malloc(SocketEventBufferElementSize * static_cast<size_t>(count));
-    if (b == nullptr)
+    void* b;
+    size_t bufferSize;
+    if (!multiply_s(SocketEventBufferElementSize, static_cast<size_t>(count), &bufferSize) ||
+        (b = malloc(bufferSize)) == nullptr)
     {
         *buffer = nullptr;
         return PAL_ENOMEM;
@@ -2704,36 +2724,21 @@ static char* GetNameFromUid(uid_t uid)
         }
 
         free(buffer);
-        if (errno == ERANGE)
-        {
-            bufferLength *= 2;
-        }
-        else
+        size_t tmpBufferLength;
+        if (errno != ERANGE || !multiply_s(bufferLength, static_cast<size_t>(2), &tmpBufferLength))
         {
             return nullptr;
         }
+        bufferLength = tmpBufferLength;
     }
 }
 
 extern "C" char* SystemNative_GetPeerUserName(intptr_t socket)
 {
-    int fd = ToFileDescriptor(socket);
-#ifdef SO_PEERCRED
-    struct ucred creds;
-    socklen_t len = sizeof(creds);
-    return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0 ?
-        GetNameFromUid(creds.uid) :
-        nullptr;
-#elif HAVE_GETPEEREID
-    uid_t euid, egid;
-    return getpeereid(fd, &euid, &egid) == 0 ?
+    uid_t euid;
+    return SystemNative_GetPeerID(socket, &euid) == 0 ?
         GetNameFromUid(euid) :
         nullptr;
-#else
-    (void)fd;
-    errno = ENOTSUP;
-    return nullptr;
-#endif
 }
 
 extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)

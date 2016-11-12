@@ -355,14 +355,14 @@ namespace System.Security.Cryptography
             if (IsPublic(keyBlob))
             {
                 SafeProvHandle safeProvHandleTemp = AcquireSafeProviderHandle();
-                CapiHelper.ImportKeyBlob(safeProvHandleTemp, (CspProviderFlags)0, keyBlob, out safeKeyHandle);
+                CapiHelper.ImportKeyBlob(safeProvHandleTemp, (CspProviderFlags)0, false, keyBlob, out safeKeyHandle);
 
                 // The property set will take care of releasing any already-existing resources.
                 SafeProvHandle = safeProvHandleTemp;
             }
             else
             {
-                CapiHelper.ImportKeyBlob(SafeProvHandle, _parameters.Flags, keyBlob, out safeKeyHandle);
+                CapiHelper.ImportKeyBlob(SafeProvHandle, _parameters.Flags, false, keyBlob, out safeKeyHandle);
             }
 
             // The property set will take care of releasing any already-existing resources.
@@ -564,6 +564,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
         private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithm)
         {
             switch (hashAlgorithm.Name)

@@ -135,6 +135,15 @@
             <param name="bytesOffset">The offset to subtract.</param>
             <returns>A new reference that reflects the subraction of byte offset from pointer.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.ByteOffset``1(``0@,``0@)">
+            <summary>
+            Determines the byte offset from origin to target from the given references.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="origin">The reference to origin.</param>
+            <param name="target">The reference to target.</param>
+            <returns>Byte offset from origin to target i.e. <paramref name="target"/> - <paramref name="origin"/>.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.AreSame``1(``0@,``0@)">
             <summary>
             Determines whether the specified references point to the same location.

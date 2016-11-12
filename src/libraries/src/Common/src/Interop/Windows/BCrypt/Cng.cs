@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
 using static Interop;
+using static Interop.BCrypt;
 
 namespace Internal.NativeCrypto
 {
@@ -68,6 +69,8 @@ namespace Internal.NativeCrypto
 
         public const string BCRYPT_3DES_ALGORITHM = "3DES";
         public const string BCRYPT_AES_ALGORITHM = "AES";
+        public const string BCRYPT_DES_ALGORITHM = "DES";
+        public const string BCRYPT_RC2_ALGORITHM = "RC2";
 
         public const string BCRYPT_CHAIN_MODE_CBC = "ChainingModeCBC";
         public const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
@@ -118,7 +121,17 @@ namespace Internal.NativeCrypto
 
         public static void SetCipherMode(this SafeAlgorithmHandle hAlg, string cipherMode)
         {
-            NTSTATUS ntStatus = Interop.BCryptSetProperty(hAlg, "ChainingMode", cipherMode, (cipherMode.Length + 1) * 2, 0);
+            NTSTATUS ntStatus = Interop.BCryptSetProperty(hAlg, BCryptPropertyStrings.BCRYPT_CHAINING_MODE, cipherMode, (cipherMode.Length + 1) * 2, 0);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw CreateCryptographicException(ntStatus);
+            }
+        }
+
+        public static void SetEffectiveKeyLength(this SafeKeyHandle hAlg, int effectiveKeyLength)
+        {
+            NTSTATUS ntStatus = Interop.BCryptSetIntProperty(hAlg, BCryptPropertyStrings.BCRYPT_EFFECTIVE_KEY_LENGTH, ref effectiveKeyLength, 0);
 
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
@@ -228,6 +241,14 @@ namespace Internal.NativeCrypto
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
+
+            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode, EntryPoint = "BCryptSetProperty")]
+            private static extern unsafe NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
+
+            public static unsafe NTSTATUS BCryptSetIntProperty(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int dwFlags)
+            {
+                return BCryptSetIntPropertyPrivate(hObject, pszProperty, ref pdwInput, sizeof(int), dwFlags);
+            }
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);

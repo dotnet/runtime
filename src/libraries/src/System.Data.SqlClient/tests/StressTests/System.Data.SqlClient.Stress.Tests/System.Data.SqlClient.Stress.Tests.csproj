@@ -6,7 +6,6 @@
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
     <OutputType>Library</OutputType>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -28,9 +27,6 @@
   <!--Import the targets-->
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
-
-    <!-- TODO: Remove Common reference once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Data.Common\pkg\System.Data.Common.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

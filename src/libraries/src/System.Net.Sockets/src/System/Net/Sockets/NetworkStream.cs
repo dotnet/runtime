@@ -51,7 +51,7 @@ namespace System.Net.Sockets
         public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 if (socket == null)
@@ -216,7 +216,7 @@ namespace System.Net.Sockets
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout);
@@ -232,7 +232,7 @@ namespace System.Net.Sockets
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     if (value <= 0 && value != System.Threading.Timeout.Infinite)
@@ -253,7 +253,7 @@ namespace System.Net.Sockets
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout);
@@ -269,7 +269,7 @@ namespace System.Net.Sockets
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     if (value <= 0 && value != System.Threading.Timeout.Infinite)
@@ -290,7 +290,7 @@ namespace System.Net.Sockets
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     if (_cleanedUp)
@@ -391,7 +391,7 @@ namespace System.Net.Sockets
         public override int Read(byte[] buffer, int offset, int size)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 bool canRead = CanRead;  // Prevent race with Dispose.
@@ -464,7 +464,7 @@ namespace System.Net.Sockets
         public override void Write(byte[] buffer, int offset, int size)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 bool canWrite = CanWrite; // Prevent race with Dispose.
@@ -524,7 +524,7 @@ namespace System.Net.Sockets
         public void Close(int timeout)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 if (timeout < -1)
@@ -541,7 +541,7 @@ namespace System.Net.Sockets
         protected override void Dispose(bool disposing)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 // Mark this as disposed before changing anything else.
@@ -581,7 +581,7 @@ namespace System.Net.Sockets
         ~NetworkStream()
         {
 #if DEBUG
-            GlobalLog.SetThreadSource(ThreadKinds.Finalization);
+            DebugThreadTracking.SetThreadSource(ThreadKinds.Finalization);
 #endif
             Dispose(false);
         }
@@ -623,7 +623,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 bool canRead = CanRead; // Prevent race with Dispose.
@@ -739,7 +739,7 @@ namespace System.Net.Sockets
         public int EndRead(IAsyncResult asyncResult)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 if (_cleanedUp)
@@ -800,7 +800,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 bool canWrite = CanWrite; // Prevent race with Dispose.
@@ -866,7 +866,7 @@ namespace System.Net.Sockets
         internal virtual IAsyncResult UnsafeBeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 bool canWrite = CanWrite; // Prevent race with Dispose.
@@ -926,7 +926,7 @@ namespace System.Net.Sockets
         public void EndWrite(IAsyncResult asyncResult)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 if (_cleanedUp)
@@ -983,6 +983,7 @@ namespace System.Net.Sockets
         //     A Task<int> representing the read.
         public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
+#if netcore50
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
@@ -991,10 +992,15 @@ namespace System.Net.Sockets
             return Task.Factory.FromAsync(
                 (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
                 iar => ((NetworkStream)iar.AsyncState).EndRead(iar),
-                buffer, 
-                offset, 
-                size, 
+                buffer,
+                offset,
+                size,
                 this);
+#else
+            // Use optimized Stream.ReadAsync that's more efficient than
+            // Task.Factory.FromAsync when NetworkStream overrides Begin/EndRead.
+            return base.ReadAsync(buffer, offset, size, cancellationToken);
+#endif
         }
 
         // WriteAsync - provide async write functionality.
@@ -1014,6 +1020,7 @@ namespace System.Net.Sockets
         //     A Task representing the write.
         public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
+#if netcore50
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
@@ -1022,10 +1029,15 @@ namespace System.Net.Sockets
             return Task.Factory.FromAsync(
                 (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
                 iar => ((NetworkStream)iar.AsyncState).EndWrite(iar),
-                buffer, 
-                offset, 
-                size, 
+                buffer,
+                offset,
+                size,
                 this);
+#else
+            // Use optimized Stream.WriteAsync that's more efficient than
+            // Task.Factory.FromAsync when NetworkStream overrides Begin/EndWrite.
+            return base.WriteAsync(buffer, offset, size, cancellationToken);
+#endif
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
@@ -1105,11 +1117,8 @@ namespace System.Net.Sockets
         private int _currentWriteTimeout = -1;
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("NetworkStream#" + LoggingHash.HashString(this) + "::SetSocketTimeoutOption() mode:" + mode + " silent:" + silent + " timeout:" + timeout + " m_CurrentReadTimeout:" + _currentReadTimeout + " m_CurrentWriteTimeout:" + _currentWriteTimeout);
-            }
-            GlobalLog.ThreadContract(ThreadKinds.Unknown, "NetworkStream#" + LoggingHash.HashString(this) + "::SetSocketTimeoutOption");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, mode, timeout, silent);
+            DebugThreadTracking.ThreadContract(ThreadKinds.Unknown, $"NetworkStream#{NetEventSource.IdOf(this)}");
 
             if (timeout < 0)
             {
@@ -1144,11 +1153,7 @@ namespace System.Net.Sockets
         {
             if (_streamSocket != null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("_streamSocket:");
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, _streamSocket);
                 _streamSocket.DebugMembers();
             }
         }
