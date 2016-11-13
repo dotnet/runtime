@@ -3609,6 +3609,91 @@ void Lowering::LowerUnsignedDivOrMod(GenTree* node)
 }
 
 //------------------------------------------------------------------------
+// GetSignedMagicNumberForDivide: Generates a magic number and shift amount for
+// the magic number division optimization.
+//
+// Arguments:
+//    denom - The denominator
+//    shift - Pointer to the shift value to be returned
+//
+// Returns:
+//    The magic number.
+//
+// Notes:
+//    This code is previously from UTC where it notes it was taken from
+//   _The_PowerPC_Compiler_Writer's_Guide_, pages 57-58. The paper is is based on
+//   is "Division by invariant integers using multiplication" by Torbjorn Granlund
+//   and Peter L. Montgomery in PLDI 94
+
+template <typename T>
+T GetSignedMagicNumberForDivide(T denom, int* shift /*out*/)
+{
+    // static SMAG smag;
+    const int bits         = sizeof(T) * 8;
+    const int bits_minus_1 = bits - 1;
+
+    typedef typename jitstd::make_unsigned<T>::type UT;
+
+    const UT two_nminus1 = UT(1) << bits_minus_1;
+
+    int p;
+    UT  absDenom;
+    UT  absNc;
+    UT  delta;
+    UT  q1;
+    UT  r1;
+    UT  r2;
+    UT  q2;
+    UT  t;
+    T   result_magic;
+    int result_shift;
+    int iters = 0;
+
+    absDenom = abs(denom);
+    t        = two_nminus1 + ((unsigned int)denom >> 31);
+    absNc    = t - 1 - (t % absDenom);        // absolute value of nc
+    p        = bits_minus_1;                  // initialize p
+    q1       = two_nminus1 / absNc;           // initialize q1 = 2^p / abs(nc)
+    r1       = two_nminus1 - (q1 * absNc);    // initialize r1 = rem(2^p, abs(nc))
+    q2       = two_nminus1 / absDenom;        // initialize q1 = 2^p / abs(denom)
+    r2       = two_nminus1 - (q2 * absDenom); // initialize r1 = rem(2^p, abs(denom))
+
+    do
+    {
+        iters++;
+        p++;
+        q1 *= 2; // update q1 = 2^p / abs(nc)
+        r1 *= 2; // update r1 = rem(2^p / abs(nc))
+
+        if (r1 >= absNc)
+        { // must be unsigned comparison
+            q1++;
+            r1 -= absNc;
+        }
+
+        q2 *= 2; // update q2 = 2^p / abs(denom)
+        r2 *= 2; // update r2 = rem(2^p / abs(denom))
+
+        if (r2 >= absDenom)
+        { // must be unsigned comparison
+            q2++;
+            r2 -= absDenom;
+        }
+
+        delta = absDenom - r2;
+    } while (q1 < delta || (q1 == delta && r1 == 0));
+
+    result_magic = q2 + 1; // resulting magic number
+    if (denom < 0)
+    {
+        result_magic = -result_magic;
+    }
+    *shift = p - bits; // resulting shift
+
+    return result_magic;
+}
+
+//------------------------------------------------------------------------
 // LowerSignedDivOrMod: transform integer GT_DIV/GT_MOD nodes with a power of 2
 // const divisor into equivalent but faster sequences.
 //
