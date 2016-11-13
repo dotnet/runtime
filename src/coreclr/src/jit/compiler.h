@@ -4574,12 +4574,9 @@ private:
     GenTreePtr fgMorphForRegisterFP(GenTreePtr tree);
     GenTreePtr fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac = nullptr);
     GenTreePtr fgMorphSmpOpPre(GenTreePtr tree);
-    GenTreePtr fgMorphDivByConst(GenTreeOp* tree);
-    GenTreePtr fgMorphModByConst(GenTreeOp* tree);
     GenTreePtr fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTreePtr fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTreePtr fgMorphRecognizeBoxNullable(GenTree* compare);
-    bool fgShouldUseMagicNumberDivide(GenTreeOp* tree);
 
     GenTreePtr fgMorphToEmulatedFP(GenTreePtr tree);
     GenTreePtr fgMorphConst(GenTreePtr tree);

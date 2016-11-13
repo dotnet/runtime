@@ -2081,7 +2081,7 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
             case GT_ARR_LENGTH:
                 return false;
             case GT_MULHI:
-                // should be rare, not worth the complexity and risk of getting it wrong
+                assert(false && "Unexpected GT_MULHI node encountered before lowering");
                 return false;
             default:
                 return true;
