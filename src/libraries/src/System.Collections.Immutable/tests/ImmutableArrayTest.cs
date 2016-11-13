@@ -810,6 +810,13 @@ namespace System.Collections.Immutable.Tests
             yield return new object[] { s_oneElement, s_oneElement, 0, s_empty };
         }
 
+        public static IEnumerable<object[]> InsertRangeDifferentUnderlyingType()
+        {
+            yield return new object[] { new int[] { 1, 2, 3 }, s_empty, 0, (int[])(object)new uint[] { 1, 2, 3 } };
+            yield return new object[] { new int[] { 4, 5, 6, 1, 2, 3 }, s_manyElements, 0, (int[])(object)new uint[] { 4, 5, 6 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6 }, s_manyElements, 3, (int[])(object)new uint[] { 4, 5, 6 } };
+        }
+
         [Theory]
         [MemberData(nameof(InsertRangeLeft))]
         [MemberData(nameof(InsertRangeMiddle))]

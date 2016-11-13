@@ -106,20 +106,10 @@ namespace System.Collections.Immutable
         /// </remarks>
         internal static bool TryCopyTo<T>(this IEnumerable<T> sequence, T[] array, int arrayIndex)
         {
-            // IList is the GCD of what the following 3 types implement.
+            // IList is the GCD of what the following 2 types implement.
             var listInterface = sequence as IList<T>;
             if (listInterface != null)
             {
-                var sourceArray = sequence as T[];
-                if (sourceArray != null)
-                {
-                    // Note: This can have issues if T is a value type, but the underlying type
-                    // of the T[] is not typeof(T[]).
-                    // More discussion here: https://github.com/dotnet/corefx/issues/2241
-                    Array.Copy(sourceArray, 0, array, arrayIndex, sourceArray.Length);
-                    return true;
-                }
-
                 var list = sequence as List<T>;
                 if (list != null)
                 {
