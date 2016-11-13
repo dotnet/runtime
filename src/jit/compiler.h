@@ -4558,7 +4558,7 @@ private:
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
     void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result);
 #if DEBUG
-    void fgNoteNonInlineCandidate(GenTreePtr tree, GenTreeCall* call);
+    void fgNoteNonInlineCandidate(GenTreeStmt* stmt, GenTreeCall* call);
     static fgWalkPreFn fgFindNonInlineCandidate;
 #endif
     GenTreePtr fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_CONTEXT_HANDLE* ExactContextHnd);
@@ -4593,7 +4593,7 @@ private:
 #endif
     void fgMorphTreeDone(GenTreePtr tree, GenTreePtr oldTree = nullptr DEBUGARG(int morphNum = 0));
 
-    GenTreePtr fgMorphStmt;
+    GenTreeStmt* fgMorphStmt;
 
     unsigned fgGetBigOffsetMorphingTemp(var_types type); // We cache one temp per type to be
                                                          // used when morphing big offset.
