@@ -7230,6 +7230,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { get { throw null; } }
         public virtual System.Reflection.MethodInfo EntryPoint { get { throw null; } }
+        public virtual string EscapedCodeBase { [System.Security.SecurityCriticalAttribute]get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { get { throw null; } }
         public virtual string FullName { get { throw null; } }
         public virtual bool GlobalAssemblyCache { get { throw null; } }
@@ -7436,6 +7437,7 @@ namespace System.Reflection
         public System.Globalization.CultureInfo CultureInfo { get { throw null; } set { } }
         public string CultureName { [System.Security.SecurityCriticalAttribute]get { throw null; } [System.Security.SecurityCriticalAttribute]set { } }
         public string CodeBase { get { throw null; } set { } }
+        public string EscapedCodeBase { get { throw null; } }
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }

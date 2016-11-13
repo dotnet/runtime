@@ -3958,6 +3958,7 @@
       <Member Name="get_IsFullyTrusted" />
       <Member Name="get_IsDynamic" />
       <Member Name="get_CodeBase" />
+      <Member Name="get_EscapedCodeBase" />
       <Member Name="get_Location" />
       <Member Name="get_ManifestModule" />
       <Member Name="get_CustomAttributes" />
@@ -4019,6 +4020,7 @@
       <Member MemberType="Property" Name="GlobalAssemblyCache" />
       <Member MemberType="Property" Name="HostContext" />
       <Member MemberType="Property" Name="CodeBase" />
+      <Member MemberType="Property" Name="EscapedCodeBase" />
       <Member MemberType="Property" Name="ImageRuntimeVersion" />
       <Member MemberType="Property" Name="IsFullyTrusted" />
       <Member MemberType="Property" Name="Location" />
@@ -4158,6 +4160,7 @@
       <Member Name="get_CultureInfo" />
       <Member Name="get_CultureName" />
       <Member Name="get_CodeBase" />
+      <Member Name="get_EscapedCodeBase" />
       <Member Name="get_ContentType" />
       <Member Name="get_Flags" />
       <Member Name="get_FullName" />
@@ -4191,6 +4194,7 @@
       <Member MemberType="Property" Name="CultureInfo" />
       <Member MemberType="Property" Name="CultureName" />
       <Member MemberType="Property" Name="ContentType" />
+      <Member MemberType="Property" Name="EscapedCodeBase" />
       <Member MemberType="Property" Name="Flags" />
       <Member MemberType="Property" Name="FullName" />
       <Member MemberType="Property" Name="HashAlgorithm" />
