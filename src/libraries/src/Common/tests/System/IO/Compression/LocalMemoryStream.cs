@@ -18,7 +18,7 @@ public class LocalMemoryStream : MemoryStream
         return local;
     }
 
-    public static async Task<LocalMemoryStream> readAppFileAsync(String testFile)
+    public static async Task<LocalMemoryStream> readAppFileAsync(string testFile)
     {
         var baseStream = await StreamHelpers.CreateTempCopyStream(testFile);
         var ms = new LocalMemoryStream();

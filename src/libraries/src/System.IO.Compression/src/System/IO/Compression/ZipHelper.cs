@@ -8,21 +8,21 @@ namespace System.IO.Compression
 {
     internal static class ZipHelper
     {
-        internal const UInt32 Mask32Bit = 0xFFFFFFFF;
-        internal const UInt16 Mask16Bit = 0xFFFF;
+        internal const uint Mask32Bit = 0xFFFFFFFF;
+        internal const ushort Mask16Bit = 0xFFFF;
 
-        private const Int32 BackwardsSeekingBufferSize = 32;
+        private const int BackwardsSeekingBufferSize = 32;
 
-        internal const Int32 ValidZipDate_YearMin = 1980;
-        internal const Int32 ValidZipDate_YearMax = 2107;
+        internal const int ValidZipDate_YearMin = 1980;
+        internal const int ValidZipDate_YearMax = 2107;
 
         private static readonly DateTime s_invalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
 
-        internal static Boolean RequiresUnicode(String test)
+        internal static bool RequiresUnicode(string test)
         {
             Debug.Assert(test != null);
 
-            foreach (Char c in test)
+            foreach (char c in test)
             {
                 // The Zip Format uses code page 437 when the Unicode bit is not set. This format
                 // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit 
@@ -35,15 +35,15 @@ namespace System.IO.Compression
         }
 
         //reads exactly bytesToRead out of stream, unless it is out of bytes
-        internal static void ReadBytes(Stream stream, Byte[] buffer, Int32 bytesToRead)
+        internal static void ReadBytes(Stream stream, byte[] buffer, int bytesToRead)
         {
-            Int32 bytesLeftToRead = bytesToRead;
+            int bytesLeftToRead = bytesToRead;
 
-            Int32 totalBytesRead = 0;
+            int totalBytesRead = 0;
 
             while (bytesLeftToRead > 0)
             {
-                Int32 bytesRead = stream.Read(buffer, totalBytesRead, bytesLeftToRead);
+                int bytesRead = stream.Read(buffer, totalBytesRead, bytesLeftToRead);
                 if (bytesRead == 0) throw new IOException(SR.UnexpectedEndOfStream);
 
                 totalBytesRead += bytesRead;
@@ -60,17 +60,17 @@ namespace System.IO.Compression
         //Second: 5 bits
         */
 
-        //will silently return InvalidDateIndicator if the UInt32 is not a valid Dos DateTime
-        internal static DateTime DosTimeToDateTime(UInt32 dateTime)
+        //will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
+        internal static DateTime DosTimeToDateTime(uint dateTime)
         {
             // do the bit shift as unsigned because the fields are unsigned, but
-            // we can safely convert to Int32, because they won't be too big
-            Int32 year = (Int32)(ValidZipDate_YearMin + (dateTime >> 25));
-            Int32 month = (Int32)((dateTime >> 21) & 0xF);
-            Int32 day = (Int32)((dateTime >> 16) & 0x1F);
-            Int32 hour = (Int32)((dateTime >> 11) & 0x1F);
-            Int32 minute = (Int32)((dateTime >> 5) & 0x3F);
-            Int32 second = (Int32)((dateTime & 0x001F) * 2);       // only 5 bits for second, so we only have a granularity of 2 sec. 
+            // we can safely convert to int, because they won't be too big
+            int year = (int)(ValidZipDate_YearMin + (dateTime >> 25));
+            int month = (int)((dateTime >> 21) & 0xF);
+            int day = (int)((dateTime >> 16) & 0x1F);
+            int hour = (int)((dateTime >> 11) & 0x1F);
+            int minute = (int)((dateTime >> 5) & 0x3F);
+            int second = (int)((dateTime & 0x001F) * 2);       // only 5 bits for second, so we only have a granularity of 2 sec. 
 
             try
             {
@@ -88,7 +88,7 @@ namespace System.IO.Compression
 
 
         //assume date time has passed IsConvertibleToDosTime
-        internal static UInt32 DateTimeToDosTime(DateTime dateTime)
+        internal static uint DateTimeToDosTime(DateTime dateTime)
         {
             // DateTime must be Convertible to DosTime:
             Debug.Assert(ValidZipDate_YearMin <= dateTime.Year && dateTime.Year <= ValidZipDate_YearMax);
@@ -106,14 +106,14 @@ namespace System.IO.Compression
         //assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
         //if the signature is found then returns true and positions stream at first byte of signature
         //if the signature is not found, returns false
-        internal static Boolean SeekBackwardsToSignature(Stream stream, UInt32 signatureToFind)
+        internal static bool SeekBackwardsToSignature(Stream stream, uint signatureToFind)
         {
-            Int32 bufferPointer = 0;
-            UInt32 currentSignature = 0;
+            int bufferPointer = 0;
+            uint currentSignature = 0;
             byte[] buffer = new byte[BackwardsSeekingBufferSize];
 
-            Boolean outOfBytes = false;
-            Boolean signatureFound = false;
+            bool outOfBytes = false;
+            bool signatureFound = false;
 
             while (!signatureFound && !outOfBytes)
             {
@@ -123,7 +123,7 @@ namespace System.IO.Compression
 
                 while (bufferPointer >= 0 && !signatureFound)
                 {
-                    currentSignature = (currentSignature << 8) | ((UInt32)buffer[bufferPointer]);
+                    currentSignature = (currentSignature << 8) | ((uint)buffer[bufferPointer]);
                     if (currentSignature == signatureToFind)
                     {
                         signatureFound = true;
@@ -163,7 +163,7 @@ namespace System.IO.Compression
         }
 
         //Returns true if we are out of bytes
-        private static Boolean SeekBackwardsAndRead(Stream stream, Byte[] buffer, out Int32 bufferPointer)
+        private static bool SeekBackwardsAndRead(Stream stream, byte[] buffer, out int bufferPointer)
         {
             if (stream.Position >= buffer.Length)
             {
@@ -175,7 +175,7 @@ namespace System.IO.Compression
             }
             else
             {
-                Int32 bytesToRead = (Int32)stream.Position;
+                int bytesToRead = (int)stream.Position;
                 stream.Seek(0, SeekOrigin.Begin);
                 ZipHelper.ReadBytes(stream, buffer, bytesToRead);
                 stream.Seek(0, SeekOrigin.Begin);
