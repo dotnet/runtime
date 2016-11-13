@@ -45,6 +45,7 @@ if /i "%1" == "-help" goto Usage
 
 if /i "%1" == "x64"                   (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&goto Arg_Loop)
 if /i "%1" == "x86"                   (set __BuildArch=x86&set __MSBuildBuildArch=x86&shift&goto Arg_Loop)
+if /i "%1" == "arm"                   (set __BuildArch=arm&set __MSBuildBuildArch=arm&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                 (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"               (set __BuildType=Release&shift&goto Arg_Loop)
