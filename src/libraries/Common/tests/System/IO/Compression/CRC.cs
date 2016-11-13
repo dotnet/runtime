@@ -52,13 +52,13 @@ public class CRC
         return c;
     }
 
-    internal static String CalculateCRC(byte[] buf)
+    internal static string CalculateCRC(byte[] buf)
     {
         return CalculateCRC(buf, buf.Length);
     }
 
     /* Return the CRC of the bytes buf[0..len-1]. */
-    internal static String CalculateCRC(byte[] buf, int len)
+    internal static string CalculateCRC(byte[] buf, int len)
     {
         return (update_crc(0xffffffffL, buf, len) ^ 0xffffffffL).ToString();
     }
