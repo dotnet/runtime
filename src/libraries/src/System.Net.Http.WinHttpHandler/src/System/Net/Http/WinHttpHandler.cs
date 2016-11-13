@@ -851,14 +851,14 @@ namespace System.Net.Http
                     {
                         _authHelper.PreAuthenticateRequest(state, proxyAuthScheme);
 
-                        await InternalSendRequestAsync(state).ConfigureAwait(false);
+                        await InternalSendRequestAsync(state);
 
                         if (state.RequestMessage.Content != null)
                         {
                             await InternalSendRequestBodyAsync(state, chunkedModeForSend).ConfigureAwait(false);
                         }
 
-                        bool receivedResponse = await InternalReceiveResponseHeadersAsync(state).ConfigureAwait(false);
+                        bool receivedResponse = await InternalReceiveResponseHeadersAsync(state) != 0;
                         if (receivedResponse)
                         {
                             // If we're manually handling cookies, we need to add them to the container after
@@ -1338,10 +1338,8 @@ namespace System.Net.Http
             }
         }
         
-        private Task<bool> InternalSendRequestAsync(WinHttpRequestState state)
+        private RendezvousAwaitable<int> InternalSendRequestAsync(WinHttpRequestState state)
         {
-            state.TcsSendRequest = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
             lock (state.Lock)
             {
                 state.Pin();
@@ -1362,7 +1360,7 @@ namespace System.Net.Http
                 }
             }
 
-            return state.TcsSendRequest.Task;
+            return state.LifecycleAwaitable;
         }
         
         private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, bool chunkedModeForSend)
@@ -1376,11 +1374,8 @@ namespace System.Net.Http
             }
         }
         
-        private Task<bool> InternalReceiveResponseHeadersAsync(WinHttpRequestState state)
+        private RendezvousAwaitable<int> InternalReceiveResponseHeadersAsync(WinHttpRequestState state)
         {
-            state.TcsReceiveResponseHeaders =
-                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            
             lock (state.Lock)
             {
                 if (!Interop.WinHttp.WinHttpReceiveResponse(state.RequestHandle, IntPtr.Zero))
@@ -1389,7 +1384,7 @@ namespace System.Net.Http
                 }
             }
 
-            return state.TcsReceiveResponseHeaders.Task;
+            return state.LifecycleAwaitable;
         }
     }
 }
