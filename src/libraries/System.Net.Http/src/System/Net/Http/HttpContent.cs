@@ -124,7 +124,7 @@ namespace System.Net.Http
             {
                 if (_headers == null)
                 {
-                    _headers = new HttpContentHeaders(GetComputedOrBufferLength);
+                    _headers = new HttpContentHeaders(this);
                 }
                 return _headers;
             }
@@ -391,7 +391,7 @@ namespace System.Net.Http
         // that case (send chunked, buffer first, etc.).
         protected internal abstract bool TryComputeLength(out long length);
 
-        private long? GetComputedOrBufferLength()
+        internal long? GetComputedOrBufferLength()
         {
             CheckDisposed();
 
