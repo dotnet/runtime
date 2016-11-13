@@ -101,9 +101,6 @@
     <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
       <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
-      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
       <Link>Common\System\Net\Mail\MailAddress.cs</Link>
     </Compile>

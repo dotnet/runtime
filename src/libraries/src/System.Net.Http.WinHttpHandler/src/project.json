@@ -2,6 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.1",
     "Microsoft.Win32.Primitives": "4.0.1",
+    "System.Buffers": "4.0.0",
     "System.Collections": "4.0.11",
     "System.Diagnostics.DiagnosticSource": "4.0.0",
     "System.Diagnostics.Debug": "4.0.11",

@@ -50,6 +50,9 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs">
       <Link>Common\System\Diagnostics\ExceptionExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
@@ -77,8 +80,14 @@
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs">
       <Link>Common\System\Net\Http\HttpHandlerLoggingStrings.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
+      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
+      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>
