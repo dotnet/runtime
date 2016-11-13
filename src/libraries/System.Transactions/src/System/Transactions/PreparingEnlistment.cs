@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Transactions.Diagnostics;
-
 namespace System.Transactions
 {
     public class PreparingEnlistment : Enlistment
@@ -16,11 +14,11 @@ namespace System.Transactions
 
         public void Prepared()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.Prepared");
-                EnlistmentCallbackPositiveTraceRecord.Trace(SR.TraceSourceLtm,
-                    _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.Prepared);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.EnlistmentPrepared(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -28,23 +26,19 @@ namespace System.Transactions
                 _internalEnlistment.State.Prepared(_internalEnlistment);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.Prepared");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
         public void ForceRollback()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.ForceRollback");
-            }
-
-            if (DiagnosticTrace.Warning)
-            {
-                EnlistmentCallbackNegativeTraceRecord.Trace(SR.TraceSourceLtm,
-                    _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.ForceRollback);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -52,40 +46,38 @@ namespace System.Transactions
                 _internalEnlistment.State.ForceRollback(_internalEnlistment, null);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.ForceRollback");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
         public void ForceRollback(Exception e)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.ForceRollback");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
-
-            if (DiagnosticTrace.Warning)
-            {
-                EnlistmentCallbackNegativeTraceRecord.Trace(SR.TraceSourceLtm, _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.ForceRollback);
-            }
-
+ 
             lock (_internalEnlistment.SyncRoot)
             {
                 _internalEnlistment.State.ForceRollback(_internalEnlistment, e);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.ForceRollback");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
         public byte[] RecoveryInformation()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "PreparingEnlistment.RecoveryInformation");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             try
@@ -97,11 +89,9 @@ namespace System.Transactions
             }
             finally
             {
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm,
-                        "PreparingEnlistment.RecoveryInformation"
-                        );
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
             }
         }
