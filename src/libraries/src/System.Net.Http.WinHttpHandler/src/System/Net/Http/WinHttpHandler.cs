@@ -56,6 +56,9 @@ namespace System.Net.Http
 #endif
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
+        [ThreadStatic]
+        private static StringBuilder t_requestHeadersBuilder;
+
         private object _lockObject = new object();
         private bool _doManualDecompressionCheck = false;
         private WinInetProxyHelper _proxyHelper = null;
@@ -608,7 +611,17 @@ namespace System.Net.Http
             HttpRequestMessage requestMessage,
             CookieContainer cookies)
         {
-            var requestHeadersBuffer = new StringBuilder();
+            // Get a StringBuilder to use for creating the request headers.
+            // We cache one in TLS to avoid creating a new one for each request.
+            StringBuilder requestHeadersBuffer = t_requestHeadersBuilder;
+            if (requestHeadersBuffer != null)
+            {
+                requestHeadersBuffer.Clear();
+            }
+            else
+            {
+                t_requestHeadersBuilder = requestHeadersBuffer = new StringBuilder();
+            }
 
             // Manually add cookies.
             if (cookies != null && cookies.Count > 0)
