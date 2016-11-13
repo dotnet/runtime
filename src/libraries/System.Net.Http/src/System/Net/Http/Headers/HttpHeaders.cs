@@ -225,6 +225,11 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            if (_headerStore == null || _headerStore.Count == 0)
+            {
+                return string.Empty;
+            }
+
             // Return all headers as string similar to: 
             // HeaderName1: Value1, Value2
             // HeaderName2: Value1
