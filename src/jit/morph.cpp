@@ -10872,6 +10872,28 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
                 op1  = tree->gtOp.gtOp1;
                 op2  = tree->gtOp.gtOp2;
+#else  //_TARGET_ARM64_
+                // If b is not a power of 2 constant then lowering replaces a % b
+                // with a - (a / b) * b and applies magic division optimization to
+                // a / b. The code may already contain an a / b expression (e.g.
+                // x = a / 10; y = a % 10;) and then we end up with redundant code.
+                // If we convert % to / here we give CSE the opportunity to eliminate
+                // the redundant division. If there's no redundant division then
+                // nothing is lost, lowering would have done this transform anyway.
+
+                if ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst())
+                {
+                    ssize_t divisorValue    = op2->AsIntCon()->IconValue();
+                    size_t  absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue)
+                                                                           : static_cast<size_t>(abs(divisorValue));
+
+                    if (!isPow2(absDivisorValue))
+                    {
+                        tree = fgMorphModToSubMulDiv(tree->AsOp());
+                        op1  = tree->gtOp.gtOp1;
+                        op2  = tree->gtOp.gtOp2;
+                    }
+                }
 #endif //_TARGET_ARM64_
 #endif // !LEGACY_BACKEND
                 break;
@@ -13832,23 +13854,29 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
     return tree;
 }
 
-// For ARM64 we don't have a remainder instruction,
-// The architecture manual suggests the following transformation to
-// generate code for such operator:
+//------------------------------------------------------------------------
+// fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b
+// (see ECMA III 3.55 and III.3.56).
 //
-// a % b = a - (a / b) * b;
+// Arguments:
+//    tree - The GT_MOD/GT_UMOD tree to morph
 //
-// This method will produce the above expression in 'a' and 'b' are
-// leaf nodes, otherwise, if any of them is not a leaf it will spill
-// its value into a temporary variable, an example:
-// (x * 2 - 1) % (y + 1) ->  t1 - (t2 * ( comma(t1 = x * 2 - 1, t1) / comma(t2 = y + 1, t2) ) )
+// Returns:
+//    The morphed tree
+//
+// Notes:
+//    For ARM64 we don't have a remainder instruction so this transform is
+//    always done. For XARCH this transform is done if we know that magic
+//    division will be used, in that case this transform allows CSE to
+//    eliminate the redundant div from code like "x = a / 3; y = a % 3;".
+//
+//    This method will produce the above expression in 'a' and 'b' are
+//    leaf nodes, otherwise, if any of them is not a leaf it will spill
+//    its value into a temporary variable, an example:
+//    (x * 2 - 1) % (y + 1) ->  t1 - (t2 * ( comma(t1 = x * 2 - 1, t1) / comma(t2 = y + 1, t2) ) )
 //
 GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 {
-#ifndef _TARGET_ARM64_
-    assert(!"This should only be called for ARM64");
-#endif
-
     if (tree->OperGet() == GT_MOD)
     {
         tree->SetOper(GT_DIV);
