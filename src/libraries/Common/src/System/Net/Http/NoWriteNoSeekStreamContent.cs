@@ -38,12 +38,29 @@ namespace System.Net.Http
             }
             _contentConsumed = true;
 
-            // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
             const int BufferSize = 8192;
-            return StreamToStreamCopy.CopyAsync(_content, stream, BufferSize, disposeSource: true, cancellationToken: _cancellationToken);
+            Task copyTask = _content.CopyToAsync(stream, BufferSize, _cancellationToken);
+            if (copyTask.IsCompleted)
+            {
+                try { _content.Dispose(); } catch { } // same as StreamToStreamCopy behavior
+            }
+            else
+            {
+                copyTask = copyTask.ContinueWith((t, s) =>
+                {
+                    try { ((Stream)s).Dispose(); } catch { }
+                    t.GetAwaiter().GetResult();
+                }, _content, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+            return copyTask;
         }
 
-        protected internal override bool TryComputeLength(out long length)
+#if HTTP_DLL
+        protected internal
+#else
+        protected
+#endif
+            override bool TryComputeLength(out long length)
         {
             length = 0;
             return false;
