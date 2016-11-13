@@ -19,8 +19,6 @@ namespace System.Net.Http
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
         private const HttpCompletionOption defaultCompletionOption = HttpCompletionOption.ResponseContentRead;
 
-        private static readonly Task<Stream> s_nullStreamTask = Task.FromResult(Stream.Null);
-
         private volatile bool _operationStarted;
         private volatile bool _disposed;
 
@@ -127,30 +125,31 @@ namespace System.Net.Http
 
         #region Simple Get Overloads
 
-        public Task<string> GetStringAsync(string requestUri)
-        {
-            return GetStringAsync(CreateUri(requestUri));
-        }
+        public Task<string> GetStringAsync(string requestUri) => GetStringAsync(CreateUri(requestUri));
 
         public Task<string> GetStringAsync(Uri requestUri)
         {
-            return GetContentAsync(
-                GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
-                content => content != null ? content.ReadBufferedContentAsString() : string.Empty);
+            return GetAsync(requestUri, HttpCompletionOption.ResponseContentRead).ContinueWith(t =>
+            {
+                HttpResponseMessage r = t.GetAwaiter().GetResult();
+                r.EnsureSuccessStatusCode();
+                HttpContent c = r.Content;
+                return c != null ? c.ReadBufferedContentAsString() : string.Empty;
+            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public Task<byte[]> GetByteArrayAsync(string requestUri)
-        {
-            return GetByteArrayAsync(CreateUri(requestUri));
-        }
+        public Task<byte[]> GetByteArrayAsync(string requestUri) => GetByteArrayAsync(CreateUri(requestUri));
 
         public Task<byte[]> GetByteArrayAsync(Uri requestUri)
         {
-            return GetContentAsync(
-                GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
-                content => content != null ? content.ReadBufferedContentAsByteArray() : Array.Empty<byte>());
+            return GetAsync(requestUri, HttpCompletionOption.ResponseContentRead).ContinueWith(t =>
+            {
+                HttpResponseMessage r = t.GetAwaiter().GetResult();
+                r.EnsureSuccessStatusCode();
+                HttpContent c = r.Content;
+                return c != null ? c.ReadBufferedContentAsByteArray() : Array.Empty<byte>();
+            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
-
 
         // Unbuffered by default
         public Task<Stream> GetStreamAsync(string requestUri)
@@ -161,23 +160,15 @@ namespace System.Net.Http
         // Unbuffered by default
         public Task<Stream> GetStreamAsync(Uri requestUri)
         {
-            return GetContentAsync(
-                GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead), 
-                content => content != null ? content.ReadAsStreamAsync() : s_nullStreamTask);
+            return FinishGetStreamAsync(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
         }
 
-        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, T> readAs)
+        private async Task<Stream> FinishGetStreamAsync(Task<HttpResponseMessage> getTask)
         {
             HttpResponseMessage response = await getTask.ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            return readAs(response.Content);
-        }
-
-        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, Task<T>> readAsAsync)
-        {
-            HttpResponseMessage response = await getTask.ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            return await readAsAsync(response.Content).ConfigureAwait(false);
+            HttpContent c = response.Content;
+            return c != null ? await c.ReadAsStreamAsync().ConfigureAwait(false) : Stream.Null;
         }
 
         #endregion Simple Get Overloads
