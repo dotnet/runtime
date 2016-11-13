@@ -6,7 +6,7 @@ using System.Runtime.ConstrainedExecution;
 
 namespace System.Threading
 {
-    public sealed partial class Thread : CriticalFinalizerObject
+    public sealed partial class Thread
     {
         public ApartmentState GetApartmentState()
         {
