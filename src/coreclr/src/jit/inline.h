@@ -570,7 +570,7 @@ struct InlineInfo
 #endif // FEATURE_SIMD
 
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
-    GenTree*     iciStmt;  // The statement iciCall is in.
+    GenTreeStmt* iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
 };
 
@@ -703,7 +703,7 @@ public:
     InlineContext* NewSuccess(InlineInfo* inlineInfo);
 
     // Create context for a failing inline.
-    InlineContext* NewFailure(GenTree* stmt, InlineResult* inlineResult);
+    InlineContext* NewFailure(GenTreeStmt* stmt, InlineResult* inlineResult);
 
     // Compiler associated with this strategy
     Compiler* GetCompiler() const
