@@ -4763,7 +4763,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
         case GT_MOD:
         case GT_UDIV:
         case GT_UMOD:
-        case GT_MULHI:
         case GT_EQ:
         case GT_NE:
         case GT_LT:
@@ -4780,6 +4779,10 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
         case GT_CHS:
         case GT_CAST:
         case GT_INTRINSIC:
+            break;
+
+        case GT_MULHI:
+            assert(false && "Unexpected GT_MULHI node encountered before lowering");
             break;
 
         case GT_JTRUE:
