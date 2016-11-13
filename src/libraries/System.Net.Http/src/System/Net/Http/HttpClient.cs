@@ -352,17 +352,14 @@ namespace System.Net.Http
             }
 
             // Initiate the send
-            return FinishSendAsync(
-                base.SendAsync(request, cts.Token), 
-                request, 
-                cts,
-                disposeCts,
-                completionOption == HttpCompletionOption.ResponseContentRead);
+            Task<HttpResponseMessage> sendTask = base.SendAsync(request, cts.Token);
+            return completionOption == HttpCompletionOption.ResponseContentRead ?
+                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts) :
+                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts);
         }
 
-        private async Task<HttpResponseMessage> FinishSendAsync(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request,
-            CancellationTokenSource cts, bool disposeCts, bool bufferResponseContent)
+        private async Task<HttpResponseMessage> FinishSendAsyncBuffered(
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
         {
             HttpResponseMessage response = null;
             try
@@ -375,7 +372,7 @@ namespace System.Net.Http
                 }
 
                 // Buffer the response content if we've been asked to and we have a Content to buffer.
-                if (bufferResponseContent && response.Content != null)
+                if (response.Content != null)
                 {
                     await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize).ConfigureAwait(false);
                 }
@@ -386,36 +383,67 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 response?.Dispose();
-
-                // If the cancellation token was canceled, we consider the exception to be caused by the
-                // cancellation (e.g. WebException when reading from canceled response stream).
-                if (cts.IsCancellationRequested && e is HttpRequestException)
-                {
-                    LogSendError(request, cts, nameof(SendAsync), null);
-                    throw new OperationCanceledException(cts.Token);
-                }
-                else
-                {
-                    LogSendError(request, cts, nameof(SendAsync), e);
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
-                    throw;
-                }
+                HandleFinishSendAsyncError(e, cts);
+                throw;
             }
             finally
             {
-                try
+                HandleFinishSendAsyncCleanup(request, cts, disposeCts);
+            }
+        }
+
+        private async Task<HttpResponseMessage> FinishSendAsyncUnbuffered(
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+        {
+            try
+            {
+                HttpResponseMessage response = await sendTask.ConfigureAwait(false);
+                if (response == null)
                 {
-                    // When a request completes, dispose the request content so the user doesn't have to. This also
-                    // helps ensure that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
-                    // that can also be sent only once).
-                    request.Content?.Dispose();
+                    throw new InvalidOperationException(SR.net_http_handler_noresponse);
                 }
-                finally
+
+                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
+                return response;
+            }
+            catch (Exception e)
+            {
+                HandleFinishSendAsyncError(e, cts);
+                throw;
+            }
+            finally
+            {
+                HandleFinishSendAsyncCleanup(request, cts, disposeCts);
+            }
+        }
+
+        private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+
+            // If the cancellation token was canceled, we consider the exception to be caused by the
+            // cancellation (e.g. WebException when reading from canceled response stream).
+            if (cts.IsCancellationRequested && e is HttpRequestException)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Canceled");
+                throw new OperationCanceledException(cts.Token);
+            }
+        }
+
+        private void HandleFinishSendAsyncCleanup(HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+        {
+            try
+            {
+                // When a request completes, dispose the request content so the user doesn't have to. This also
+                // helps ensure that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
+                // that can also be sent only once).
+                request.Content?.Dispose();
+            }
+            finally
+            {
+                if (disposeCts)
                 {
-                    if (disposeCts)
-                    {
-                        cts.Dispose();
-                    }
+                    cts.Dispose();
                 }
             }
         }
@@ -552,24 +580,6 @@ namespace System.Net.Http
             if (!HttpUtilities.IsHttpUri(baseAddress))
             {
                 throw new ArgumentException(SR.net_http_client_http_baseaddress_required, parameterName);
-            }
-        }
-
-        private void LogSendError(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
-            string method, Exception e)
-        {
-            Debug.Assert(request != null);
-            if (NetEventSource.IsEnabled)
-            {
-                if (cancellationTokenSource.IsCancellationRequested)
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_canceled, NetEventSource.GetHashCode(request))}");
-                }
-                else
-                {
-                    Debug.Assert(e != null);
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_error, NetEventSource.GetHashCode(request), e)}");
-                }
             }
         }
 
