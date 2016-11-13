@@ -4365,16 +4365,21 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
         info->setDstCandidates(m_lsra, RBM_RAX);
         hasImpliedFirstOperand = true;
     }
-    else if (tree->gtOper == GT_MULHI
+    else if (tree->OperGet() == GT_MULHI)
+    {
+        // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
+        // upper 32 bits of the result set the destination candidate to REG_RDX.
+        info->setDstCandidates(m_lsra, RBM_RDX);
+        hasImpliedFirstOperand = true;
+    }
 #if defined(_TARGET_X86_)
-             || tree->OperGet() == GT_MUL_LONG
-#endif
-             )
+    else if (tree->OperGet() == GT_MUL_LONG)
     {
         // have to use the encoding:RDX:RAX = RAX * rm
         info->setDstCandidates(m_lsra, RBM_RAX);
         hasImpliedFirstOperand = true;
     }
+#endif
     else if (IsContainableImmed(tree, op2) || IsContainableImmed(tree, op1))
     {
         if (IsContainableImmed(tree, op2))
