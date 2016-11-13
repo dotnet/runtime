@@ -224,7 +224,6 @@ namespace Microsoft.DotNet.Cli.Build
                 ExecSilent(_crossGenPath, crossgenArgs, env);
 
                 File.Copy(tempPathName, file, overwrite: true);
-                File.Delete(tempPathName);
             }
         }
     }
