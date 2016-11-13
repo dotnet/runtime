@@ -3731,8 +3731,10 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTreePtr node)
 
     ssize_t divisorValue = divisor->gtIntCon.IconValue();
 
-    if (divisorValue == -1)
+    if (divisorValue == -1 || divisorValue == 0)
     {
+        // x / 0 and x % 0 can't be optimized because they are required to throw an exception.
+
         // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
 
         // x % -1 is always 0 and the IL spec says that the rem instruction "can" throw an exception if x is
@@ -3761,7 +3763,116 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTreePtr node)
 
     if (!isPow2(absDivisorValue))
     {
+#ifdef _TARGET_XARCH_
+        ssize_t magic;
+        int     shift;
+
+        if (type == TYP_INT)
+        {
+            magic = GetSignedMagicNumberForDivide<int32_t>(static_cast<int32_t>(divisorValue), &shift);
+        }
+        else
+        {
+#ifdef _TARGET_64BIT_
+            magic = GetSignedMagicNumberForDivide<int64_t>(static_cast<int64_t>(divisorValue), &shift);
+#else
+            unreached();
+#endif
+        }
+
+        divisor->gtIntConCommon.SetIconValue(magic);
+
+        // Insert a new GT_MULHI node in front of the existing GT_DIV/GT_MOD node.
+        // The existing node will later be transformed into a GT_ADD/GT_SUB that
+        // computes the final result. This way don't need to find and change the
+        // use of the existing node.
+        GenTree* mulhi = comp->gtNewOperNode(GT_MULHI, type, divisor, dividend);
+        BlockRange().InsertBefore(divMod, mulhi);
+
+        // mulhi was the easy part. Now we need to generate different code depending
+        // on the divisor value:
+        // For 3 we need:
+        //     div = signbit(mulhi) + mulhi
+        // For 5 we need:
+        //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
+        // For 7 we need:
+        //     mulhi += dividend                    ; requires add adjust
+        //     div = signbit(mulhi) + sar(mulhi, 2) ; requires shift adjust
+        // For -3 we need:
+        //     mulhi -= dividend                    ; requires sub adjust
+        //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
+        bool     requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
+        bool     requiresShiftAdjust      = shift != 0;
+        bool     requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
+        unsigned curBBWeight              = comp->compCurBB->getBBWeight(comp);
+        unsigned dividendLclNum           = BAD_VAR_NUM;
+
+        if (requiresDividendMultiuse)
+        {
+            LIR::Use dividendUse(BlockRange(), &mulhi->gtOp.gtOp2, mulhi);
+            dividendLclNum = dividendUse.ReplaceWithLclVar(comp, curBBWeight);
+        }
+
+        GenTree* adjusted;
+
+        if (requiresAddSubAdjust)
+        {
+            dividend = comp->gtNewLclvNode(dividendLclNum, type);
+            comp->lvaTable[dividendLclNum].incRefCnts(curBBWeight, comp);
+
+            adjusted = comp->gtNewOperNode(divisorValue > 0 ? GT_ADD : GT_SUB, type, mulhi, dividend);
+            BlockRange().InsertBefore(divMod, dividend, adjusted);
+        }
+        else
+        {
+            adjusted = mulhi;
+        }
+
+        GenTree* shiftBy = comp->gtNewIconNode(genTypeSize(type) * 8 - 1, type);
+        GenTree* signBit = comp->gtNewOperNode(GT_RSZ, type, adjusted, shiftBy);
+        BlockRange().InsertBefore(divMod, shiftBy, signBit);
+
+        LIR::Use adjustedUse(BlockRange(), &signBit->gtOp.gtOp1, signBit);
+        unsigned adjustedLclNum = adjustedUse.ReplaceWithLclVar(comp, curBBWeight);
+        adjusted                = comp->gtNewLclvNode(adjustedLclNum, type);
+        comp->lvaTable[adjustedLclNum].incRefCnts(curBBWeight, comp);
+        BlockRange().InsertBefore(divMod, adjusted);
+
+        if (requiresShiftAdjust)
+        {
+            shiftBy  = comp->gtNewIconNode(shift, TYP_INT);
+            adjusted = comp->gtNewOperNode(GT_RSH, type, adjusted, shiftBy);
+            BlockRange().InsertBefore(divMod, shiftBy, adjusted);
+        }
+
+        if (isDiv)
+        {
+            divMod->SetOperRaw(GT_ADD);
+            divMod->gtOp.gtOp1 = adjusted;
+            divMod->gtOp.gtOp2 = signBit;
+        }
+        else
+        {
+            GenTree* div = comp->gtNewOperNode(GT_ADD, type, adjusted, signBit);
+
+            dividend = comp->gtNewLclvNode(dividendLclNum, type);
+            comp->lvaTable[dividendLclNum].incRefCnts(curBBWeight, comp);
+
+            // divisor % dividend = dividend - divisor x div
+            GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
+            GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
+            BlockRange().InsertBefore(divMod, dividend, div, divisor, mul);
+
+            divMod->SetOperRaw(GT_SUB);
+            divMod->gtOp.gtOp1 = dividend;
+            divMod->gtOp.gtOp2 = mul;
+        }
+
+        return mulhi;
+#else
+        // Currently there's no GT_MULHI for ARM32/64
         return next;
+#endif
     }
 
     // We're committed to the conversion now. Go find the use.
