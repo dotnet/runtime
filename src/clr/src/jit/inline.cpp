@@ -1163,10 +1163,10 @@ InlineContext* InlineStrategy::NewRoot()
 InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 {
     InlineContext* calleeContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
-    GenTree*       stmt          = inlineInfo->iciStmt;
+    GenTreeStmt*   stmt          = inlineInfo->iciStmt;
     BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
-    InlineContext* parentContext = stmt->gtStmt.gtInlineContext;
+    InlineContext* parentContext = stmt->gtInlineContext;
 
     noway_assert(parentContext != nullptr);
 
@@ -1221,35 +1221,22 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 //    A new InlineContext for diagnostic purposes, or nullptr if
 //    the desired context could not be created.
 
-InlineContext* InlineStrategy::NewFailure(GenTree* stmt, InlineResult* inlineResult)
+InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlineResult)
 {
-    // Check for a parent context first. We may insert new statements
-    // between the caller and callee that do not pick up either's
-    // context, and these statements may have calls that we later
-    // examine and fail to inline.
-    //
-    // See fgInlinePrependStatements for examples.
-
-    InlineContext* parentContext = stmt->gtStmt.gtInlineContext;
-
-    if (parentContext == nullptr)
-    {
-        // Assume for now this is a failure to inline a call in a
-        // statement inserted between caller and callee. Just ignore
-        // it for the time being.
-
-        return nullptr;
-    }
-
+    // Check for a parent context first. We should now have a parent
+    // context for all statements.
+    InlineContext* parentContext = stmt->gtInlineContext;
+    assert(parentContext != nullptr);
     InlineContext* failedContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
-    failedContext->m_Parent = parentContext;
-    // Push on front here will put siblings in reverse lexical
-    // order which we undo in the dumper
+    // Pushing the new context on the front of the parent child list
+    // will put siblings in reverse lexical order which we undo in the
+    // dumper.
+    failedContext->m_Parent      = parentContext;
     failedContext->m_Sibling     = parentContext->m_Child;
     parentContext->m_Child       = failedContext;
     failedContext->m_Child       = nullptr;
-    failedContext->m_Offset      = stmt->AsStmt()->gtStmtILoffsx;
+    failedContext->m_Offset      = stmt->gtStmtILoffsx;
     failedContext->m_Observation = inlineResult->GetObservation();
     failedContext->m_Callee      = inlineResult->GetCallee();
     failedContext->m_Success     = false;
