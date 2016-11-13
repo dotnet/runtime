@@ -554,7 +554,10 @@ namespace System.Net.Http
             state.PreAuthenticate = _preAuthenticate;
 
             Task.Factory.StartNew(
-                s => ((WinHttpRequestState)s).Handler.StartRequest(s),
+                s => {
+                    var whrs = (WinHttpRequestState)s;
+                    whrs.Handler.StartRequest(whrs);
+                },
                 state,
                 CancellationToken.None,
                 TaskCreationOptions.DenyChildAttach,
@@ -765,14 +768,8 @@ namespace System.Net.Http
             }
         }
 
-        private async void StartRequest(object obj)
+        private async void StartRequest(WinHttpRequestState state)
         {
-            WinHttpRequestState state = (WinHttpRequestState)obj;
-            bool secureConnection = false;
-            HttpResponseMessage responseMessage = null;
-            Exception savedException = null;
-            SafeWinHttpHandle connectHandle = null;
-
             if (state.CancellationToken.IsCancellationRequested)
             {
                 state.Tcs.TrySetCanceled(state.CancellationToken);
@@ -780,6 +777,7 @@ namespace System.Net.Http
                 return;
             }
 
+            SafeWinHttpHandle connectHandle = null;
             try
             {
                 EnsureSessionHandleExists(state);
@@ -792,15 +790,6 @@ namespace System.Net.Http
                     0);
                 ThrowOnInvalidHandle(connectHandle);
                 connectHandle.SetParentHandle(_sessionHandle);
-
-                if (state.RequestMessage.RequestUri.Scheme == UriScheme.Https)
-                {
-                    secureConnection = true;
-                }
-                else
-                {
-                    secureConnection = false;
-                }
 
                 // Try to use the requested version if a known/supported version was explicitly requested.
                 // Otherwise, we simply use winhttp's default.
@@ -818,7 +807,7 @@ namespace System.Net.Http
                 // .NET Framework behavior. System.Uri establishes the baseline rules for percent-encoding
                 // of reserved characters.
                 uint flags = Interop.WinHttp.WINHTTP_FLAG_ESCAPE_DISABLE;
-                if (secureConnection)
+                if (state.RequestMessage.RequestUri.Scheme == UriScheme.Https)
                 {
                     flags |= Interop.WinHttp.WINHTTP_FLAG_SECURE;
                 }
@@ -897,33 +886,16 @@ namespace System.Net.Http
                 uint optionData = (uint)_receiveDataTimeout.TotalMilliseconds;
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
-                responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);
+                HttpResponseMessage responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);
+                state.Tcs.TrySetResult(responseMessage);
             }
             catch (Exception ex)
             {
-                if (state.SavedException != null)
-                {
-                    savedException = state.SavedException;
-                }
-                else
-                {
-                    savedException = ex;
-                }
+                HandleAsyncException(state, state.SavedException ?? ex);
             }
             finally
             {
                 SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
-
-                // Move the main task to a terminal state. This releases any callers of SendAsync() that are awaiting.
-                if (responseMessage != null)
-                {
-                    state.Tcs.TrySetResult(responseMessage);
-                }
-                else
-                {
-                    HandleAsyncException(state, savedException);
-                }
-                
                 state.ClearSendRequestState();
             }
         }
