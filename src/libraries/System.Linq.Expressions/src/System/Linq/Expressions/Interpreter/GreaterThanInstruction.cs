@@ -303,17 +303,17 @@ namespace System.Linq.Expressions.Interpreter
             {
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanSByte(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new GreaterThanByte(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Char: return s_char ?? (s_char = new GreaterThanChar(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new GreaterThanInt16(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new GreaterThanInt32(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new GreaterThanInt64(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new GreaterThanUInt16(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new GreaterThanUInt32(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new GreaterThanUInt64(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Single: return s_single ?? (s_single = new GreaterThanSingle(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Double: return s_double ?? (s_double = new GreaterThanDouble(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanSByte(Utils.BoxedFalse));
+                    case TypeCode.Byte: return s_byte ?? (s_byte = new GreaterThanByte(Utils.BoxedFalse));
+                    case TypeCode.Char: return s_char ?? (s_char = new GreaterThanChar(Utils.BoxedFalse));
+                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new GreaterThanInt16(Utils.BoxedFalse));
+                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new GreaterThanInt32(Utils.BoxedFalse));
+                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new GreaterThanInt64(Utils.BoxedFalse));
+                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new GreaterThanUInt16(Utils.BoxedFalse));
+                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new GreaterThanUInt32(Utils.BoxedFalse));
+                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new GreaterThanUInt64(Utils.BoxedFalse));
+                    case TypeCode.Single: return s_single ?? (s_single = new GreaterThanSingle(Utils.BoxedFalse));
+                    case TypeCode.Double: return s_double ?? (s_double = new GreaterThanDouble(Utils.BoxedFalse));
 
                     default:
                         throw Error.ExpressionNotSupportedForType("GreaterThan", type);
@@ -619,17 +619,17 @@ namespace System.Linq.Expressions.Interpreter
             {
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanOrEqualSByte(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new GreaterThanOrEqualByte(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Char: return s_char ?? (s_char = new GreaterThanOrEqualChar(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new GreaterThanOrEqualInt16(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new GreaterThanOrEqualInt32(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new GreaterThanOrEqualInt64(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new GreaterThanOrEqualUInt16(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new GreaterThanOrEqualUInt32(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new GreaterThanOrEqualUInt64(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Single: return s_single ?? (s_single = new GreaterThanOrEqualSingle(ScriptingRuntimeHelpers.Boolean_False));
-                    case TypeCode.Double: return s_double ?? (s_double = new GreaterThanOrEqualDouble(ScriptingRuntimeHelpers.Boolean_False));
+                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanOrEqualSByte(Utils.BoxedFalse));
+                    case TypeCode.Byte: return s_byte ?? (s_byte = new GreaterThanOrEqualByte(Utils.BoxedFalse));
+                    case TypeCode.Char: return s_char ?? (s_char = new GreaterThanOrEqualChar(Utils.BoxedFalse));
+                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new GreaterThanOrEqualInt16(Utils.BoxedFalse));
+                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new GreaterThanOrEqualInt32(Utils.BoxedFalse));
+                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new GreaterThanOrEqualInt64(Utils.BoxedFalse));
+                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new GreaterThanOrEqualUInt16(Utils.BoxedFalse));
+                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new GreaterThanOrEqualUInt32(Utils.BoxedFalse));
+                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new GreaterThanOrEqualUInt64(Utils.BoxedFalse));
+                    case TypeCode.Single: return s_single ?? (s_single = new GreaterThanOrEqualSingle(Utils.BoxedFalse));
+                    case TypeCode.Double: return s_double ?? (s_double = new GreaterThanOrEqualDouble(Utils.BoxedFalse));
 
                     default:
                         throw Error.ExpressionNotSupportedForType("GreaterThanOrEqual", type);
