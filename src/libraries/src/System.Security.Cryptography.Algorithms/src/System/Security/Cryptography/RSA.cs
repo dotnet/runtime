@@ -22,12 +22,12 @@ namespace System.Security.Cryptography
 
         public virtual byte[] DecryptValue(byte[] rgb) 
         {
-           throw new NotSupportedException(); // Same as Desktop
+            throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
         }
 
         public virtual byte[] EncryptValue(byte[] rgb) 
         {
-           throw new NotSupportedException(); // Same as Desktop
+            throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
         }
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
