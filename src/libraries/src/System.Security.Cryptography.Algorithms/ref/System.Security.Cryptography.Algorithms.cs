@@ -262,6 +262,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
+        public bool ProduceLegacyHmacValues { get; set; }
         public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
@@ -273,6 +274,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
+        public bool ProduceLegacyHmacValues { get; set; }
         public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
