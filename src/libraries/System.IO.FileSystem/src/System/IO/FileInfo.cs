@@ -125,20 +125,17 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StreamReader OpenText()
         {
-            Stream stream = FileStream.InternalOpen(FullPath);
-            return new StreamReader(stream, Encoding.UTF8, true);
+            return new StreamReader(FullPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         }
 
         public StreamWriter CreateText()
         {
-            Stream stream = FileStream.InternalCreate(FullPath);
-            return new StreamWriter(stream);
+            return new StreamWriter(FullPath, append: false);
         }
 
         public StreamWriter AppendText()
         {
-            Stream stream = FileStream.InternalAppend(FullPath);
-            return new StreamWriter(stream);
+            return new StreamWriter(FullPath, append: true);
         }
 
 
@@ -297,6 +294,17 @@ namespace System.IO
             DisplayPath = GetDisplayPath(destFileName);
             // Flush any cached information about the file.
             Invalidate();
+        }
+
+        public FileInfo Replace(String destinationFileName, String destinationBackupFileName)
+        {
+            return Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
+        }
+
+        public FileInfo Replace(String destinationFileName, String destinationBackupFileName, bool ignoreMetadataErrors)
+        {
+            File.Replace(FullPath, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
+            return new FileInfo(destinationFileName);
         }
 
         // Returns the display path

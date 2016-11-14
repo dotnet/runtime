@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -46,8 +46,9 @@
     <Compile Include="SQL\AsyncTest\AsyncTest.cs" />
     <Compile Include="SQL\CommandCancelTest\CommandCancelTest.cs" />
     <Compile Include="SQL\ConnectionPoolTest\ConnectionPoolTest.cs" />
-    <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
+    <Compile Include="SQL\ConnectivityTests\ConnectivityTest.cs" />
     <Compile Include="SQL\ExceptionTest\ExceptionTest.cs" />
+    <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
     <Compile Include="SQL\DateTimeTest\DateTimeTest.cs" />
     <Compile Include="SQL\InstanceNameTest\InstanceNameTest.cs" />
     <Compile Include="SQL\MARSSessionPoolingTest\MARSSessionPoolingTest.cs" />

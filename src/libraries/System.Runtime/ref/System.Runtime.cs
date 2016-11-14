@@ -20,6 +20,14 @@ namespace Microsoft.Win32.SafeHandles
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
     [System.Security.SecurityCriticalAttribute]
+    public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
+        protected override bool ReleaseHandle() { throw null; }
+    }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
         protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(System.IntPtr.Zero, ownsHandle) { }
@@ -83,7 +91,7 @@ namespace System
     {
         public EntryPointNotFoundException() { }
         public EntryPointNotFoundException(string message) { }
-        public EntryPointNotFoundException(string message, Exception innerException) { }
+        public EntryPointNotFoundException(string message, Exception inner) { }
         protected EntryPointNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
@@ -1070,7 +1078,7 @@ namespace System
         public DuplicateWaitObjectException() { }
         public DuplicateWaitObjectException(string parameterName) { }
         public DuplicateWaitObjectException(string parameterName, string message) { }
-        public DuplicateWaitObjectException(string message, System.Exception inner) { }
+        public DuplicateWaitObjectException(string message, System.Exception innerException) { }
         protected DuplicateWaitObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.IFormattable
@@ -2654,7 +2662,7 @@ namespace System
     {
         public TypeUnloadedException() { }
         public TypeUnloadedException(string message) { }
-        public TypeUnloadedException(string message, System.Exception inner) { }
+        public TypeUnloadedException(string message, System.Exception innerException) { }
         protected TypeUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4136,6 +4144,7 @@ namespace System.Globalization
         public virtual int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { throw null; }
+        public SortVersion Version { get { throw null; } }
     }
     public sealed partial class DateTimeFormatInfo : System.ICloneable, System.IFormatProvider
     {
@@ -4267,6 +4276,7 @@ namespace System.Globalization
         public CultureInfo(string name, bool useUserOverride) { }
         public virtual System.Globalization.Calendar Calendar { get { throw null; } }
         public virtual System.Globalization.CompareInfo CompareInfo { get { throw null; } }
+        public System.Globalization.CultureTypes CultureTypes { get { throw null; } }
         public static System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
         public static System.Globalization.CultureInfo CurrentUICulture { get { throw null; } set { } }
         public virtual System.Globalization.DateTimeFormatInfo DateTimeFormat { get { throw null; } set { } }
@@ -4274,10 +4284,12 @@ namespace System.Globalization
         public static System.Globalization.CultureInfo DefaultThreadCurrentUICulture { get { throw null; } set { } }
         public virtual string DisplayName { get { throw null; } }
         public virtual string EnglishName { get { throw null; } }
+        public string IetfLanguageTag { get { throw null; } }
         public static System.Globalization.CultureInfo InstalledUICulture { get { throw null; } }
         public static System.Globalization.CultureInfo InvariantCulture { get { throw null; } }
         public virtual bool IsNeutralCulture { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
+        public virtual int KeyboardLayoutId { get { throw null; } }
         public virtual int LCID { get { throw null; } }
         public virtual string Name { get { throw null; } }
         public virtual string NativeName { get { throw null; } }
@@ -4293,6 +4305,7 @@ namespace System.Globalization
         public virtual object Clone() { throw null; }
         public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { throw null; }
         public override bool Equals(object value) { throw null; }
+        public System.Globalization.CultureInfo GetConsoleFallbackUICulture() { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { throw null; }
@@ -4449,6 +4462,45 @@ namespace System.IO
         ReadWrite = 3,
         Write = 2,
     }
+    public enum FileMode
+    {
+        Append = 6,
+        Create = 2,
+        CreateNew = 1,
+        Open = 3,
+        OpenOrCreate = 4,
+        Truncate = 5,
+    }
+    [System.FlagsAttribute]
+    public enum FileShare
+    {
+        Delete = 4,
+        Inheritable = 16,
+        None = 0,
+        Read = 1,
+        ReadWrite = 3,
+        Write = 2,
+    }
+    [System.FlagsAttribute]
+    public enum FileAttributes
+    {
+        Archive = 32,
+        Compressed = 2048,
+        Device = 64,
+        Directory = 16,
+        Encrypted = 16384,
+        Hidden = 2,
+        IntegrityStream = 32768,
+        Normal = 128,
+        NoScrubData = 131072,
+        NotContentIndexed = 8192,
+        Offline = 4096,
+        ReadOnly = 1,
+        ReparsePoint = 1024,
+        SparseFile = 512,
+        System = 4,
+        Temporary = 256,
+    }
     public partial class FileLoadException : System.IO.IOException
     {
         public FileLoadException() { }
@@ -4548,6 +4600,58 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual void WriteByte(byte value) { }
     }
+    public partial class FileStream : System.IO.Stream
+    {
+        public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access) { }
+        public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize) { }
+        public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize, bool isAsync) { }
+        public FileStream(string path, System.IO.FileMode mode) { }
+        public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access) { }
+        public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { }
+        public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize) { }
+        public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize, bool useAsync) { }
+        public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize, System.IO.FileOptions options) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public virtual System.IntPtr Handle { get { throw null; } }
+        public virtual bool IsAsync { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public string Name { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public virtual Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
+        protected override void Dispose(bool disposing) { }
+        ~FileStream() { }
+        public override void Flush() { }
+        public virtual void Flush(bool flushToDisk) { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int Read(byte[] array, int offset, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) { throw null; }
+        public override int EndRead(IAsyncResult asyncResult) { throw null; }
+        public virtual void Lock(long position, long length) { }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] array, int offset, int count) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) { throw null; }
+        public override void EndWrite(IAsyncResult asyncResult) { }
+        public override void WriteByte(byte value) { }
+        public virtual void Unlock(long position, long length) { }
+    }
+    [System.FlagsAttribute]
+    public enum FileOptions
+    {
+        Asynchronous = 1073741824,
+        DeleteOnClose = 67108864,
+        Encrypted = 16384,
+        None = 0,
+        RandomAccess = 268435456,
+        SequentialScan = 134217728,
+        WriteThrough = -2147483648,
+    }
 }
 namespace System.Reflection
 {
@@ -4597,7 +4701,7 @@ namespace System.Reflection
         public static System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
         public static System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public static System.Reflection.Assembly LoadFile(String path) { throw null; }
-        public static System.Reflection.Assembly LoadFrom(String path) { throw null; }
+        public static System.Reflection.Assembly LoadFrom(String assemblyFile) { throw null; }
         public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
@@ -6141,6 +6245,8 @@ namespace System.Runtime.Serialization
     {
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter) { }
+        [CLSCompliant(false)]
+        public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust) { }
         public string AssemblyName { get { throw null; } set { } }
         public string FullTypeName { get { throw null; } set { } }
         public int MemberCount { get { throw null; } }
@@ -6245,6 +6351,19 @@ namespace System.Runtime.Versioning
         public string FrameworkName { get { throw null; } }
     }
 }
+namespace System.Security.Cryptography
+{
+    public partial class CryptographicException : System.SystemException
+    {
+        public CryptographicException() { }
+        public CryptographicException(int hr) { }
+        protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public CryptographicException(string message) { }
+        public CryptographicException(string message, System.Exception inner) { }
+        public CryptographicException(string format, string insert) { }
+    }
+}
+
 namespace System.Security
 {
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]

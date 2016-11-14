@@ -171,8 +171,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(TypeUtils.IsArithmetic(type));
-            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+            Debug.Assert(type.IsArithmetic());
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new MulInt32());
@@ -196,7 +196,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
         public override string InstructionName => "MulOvf";
-        
+
         private MulOvfInstruction() { }
 
         private sealed class MulOvfInt32 : MulOvfInstruction
@@ -315,8 +315,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(TypeUtils.IsArithmetic(type));
-            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+            Debug.Assert(type.IsArithmetic());
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulOvfInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new MulOvfInt32());

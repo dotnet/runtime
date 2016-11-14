@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((bool)value ? ScriptingRuntimeHelpers.Boolean_False : ScriptingRuntimeHelpers.Boolean_True);
+                    frame.Push(!(bool)value);
                 }
                 return +1;
             }
@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Boolean: return _Bool ?? (_Bool = new BoolNot());
                 case TypeCode.Int64: return _Int64 ?? (_Int64 = new Int64Not());

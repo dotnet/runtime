@@ -13,10 +13,8 @@ namespace System.Xml.Serialization
     using System.Threading;
     using System.Globalization;
     using System.Security;
-    using System.Security.Policy;
     using System.Xml.Serialization.Configuration;
     using System.Diagnostics;
-    using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Runtime.Versioning;
 
@@ -294,18 +292,11 @@ namespace System.Xml.Serialization
 #endif
         }
 
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
-#pragma warning disable 618 // Passing through null evidence to keep the .ctor code centralized
-            : this(type, overrides, extraTypes, root, defaultNamespace, location, null)
-        {
-#pragma warning restore 618
-        }
-
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer7"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        internal XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location, Evidence evidence)
+        public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -319,13 +310,13 @@ namespace System.Xml.Serialization
                     importer.IncludeType(extraTypes[i]);
             }
             _mapping = importer.ImportTypeMapping(type, root, defaultNamespace);
-            if (location != null || evidence != null)
+            if (location != null)
             {
                 DemandForUserLocationOrEvidence();
             }
 
 #if !NET_NATIVE
-            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location, evidence);
+            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
 #endif
         }
 
@@ -343,12 +334,12 @@ namespace System.Xml.Serialization
         {
             if (xmlMapping == null)
                 throw new ArgumentNullException(nameof(xmlMapping));
-            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, null, null);
+            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, null);
         }
 
-        internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace, string location, Evidence evidence)
+        internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace, string location)
         {
-            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, location, evidence);
+            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, location);
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize"]/*' />
@@ -745,7 +736,7 @@ namespace System.Xml.Serialization
                 {
                     if (type == null)
                     {
-                        tempAssembly = new TempAssembly(mappings, new Type[] { type }, null, null, null);
+                        tempAssembly = new TempAssembly(mappings, new Type[] { type }, null, null);
                         XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
 
                         contract = tempAssembly.Contract;
@@ -810,7 +801,7 @@ namespace System.Xml.Serialization
                         pendingMappings[index++] = mappingKey.Mapping;
                     }
 
-                    TempAssembly tempAssembly = new TempAssembly(pendingMappings, new Type[] { type }, null, null, null);
+                    TempAssembly tempAssembly = new TempAssembly(pendingMappings, new Type[] { type }, null, null);
                     XmlSerializerImplementation contract = tempAssembly.Contract;
 
                     foreach (XmlSerializerMappingKey mappingKey in pendingKeys.Keys)
@@ -825,56 +816,6 @@ namespace System.Xml.Serialization
             }
 
             return serializers;
-        }
-
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.GenerateSerializer"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public static Assembly GenerateSerializer(Type[] types, XmlMapping[] mappings)
-        {
-            CompilerParameters parameters = new CompilerParameters();
-            parameters.TempFiles = new TempFileCollection();
-            parameters.GenerateInMemory = false;
-            parameters.IncludeDebugInformation = false;
-            return GenerateSerializer(types, mappings, parameters);
-        }
-
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.GenerateSerializer1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        // SxS: This method does not take any resource name and does not expose any resources to the caller.
-        // It's OK to suppress the SxS warning.
-        internal static Assembly GenerateSerializer(Type[] types, XmlMapping[] mappings, CompilerParameters parameters)
-        {
-            if (types == null || types.Length == 0)
-                return null;
-
-            if (mappings == null)
-                throw new ArgumentNullException(nameof(mappings));
-
-            if (XmlMapping.IsShallow(mappings))
-            {
-                throw new InvalidOperationException(SR.XmlMelformMapping);
-            }
-
-            Assembly assembly = null;
-            for (int i = 0; i < types.Length; i++)
-            {
-                Type type = types[i];
-                if (DynamicAssemblies.IsTypeDynamic(type))
-                {
-                    throw new InvalidOperationException(SR.Format(SR.XmlPregenTypeDynamic, type.FullName));
-                }
-                if (assembly == null)
-                    assembly = type.GetTypeInfo().Assembly;
-                else if (type.GetTypeInfo().Assembly != assembly)
-                {
-                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName/*, assembly.Location*/), nameof(types));
-                }
-            }
-            return TempAssembly.GenerateAssembly(mappings, types, null, null, XmlSerializerCompilerParameters.Create(parameters, /* needTempDirAccess = */ true), assembly, new Hashtable());
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromTypes"]/*' />

@@ -288,7 +288,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
 
-            XmlSchema Schema1 = sc.Add(null, TestData._Root + "import_v1_a.xsd");
+            XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, "import_v1_a.xsd"));
             CError.Compare(sc.Count, 2, "Count after add");
             CError.Compare(sc.Contains(Schema1), true, "Contains after add");
 
@@ -334,7 +334,7 @@ namespace System.Xml.Tests
 
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
 
-            XmlSchema Schema1 = sc.Add(null, TestData._Root + "reprocess_v9_a.xsd");
+            XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, "reprocess_v9_a.xsd"));
             CError.Compare(sc.Count, 2, "Count after add");
             CError.Compare(sc.Contains(Schema1), true, "Contains after add");
 
@@ -376,7 +376,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
 
-            XmlSchema Schema1 = sc.Add(null, TestData._Root + "reprocess_v9_a.xsd");
+            XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, "reprocess_v9_a.xsd"));
             CError.Compare(sc.Count, 2, "Count after add");
             CError.Compare(sc.Contains(Schema1), true, "Contains after add");
 
@@ -417,7 +417,7 @@ namespace System.Xml.Tests
 
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
 
-            XmlSchema Schema1 = sc.Add(null, TestData._Root + "include_v1_a.xsd");
+            XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, "include_v1_a.xsd"));
             CError.Compare(sc.Count, 1, "Count after add");
             CError.Compare(sc.Contains(Schema1), true, "Contains after add");
 
@@ -457,7 +457,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
 
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlSchema Schema1 = sc.Add(null, TestData._Root + "include_v1_a.xsd");
+            XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, "include_v1_a.xsd"));
             CError.Compare(sc.Count, 1, "Count after add");
             CError.Compare(sc.Contains(Schema1), true, "Contains after add");
 
@@ -553,10 +553,10 @@ namespace System.Xml.Tests
             bWarningCallback = false;
             bErrorCallback = false;
 
-            string mainFile = TestData._Root + param0.ToString();
-            string include1 = TestData._Root + param1.ToString();
-            string include2 = TestData._Root + param2.ToString();
-            string xmlFile = TestData._Root + "bug382119.xml";
+            string mainFile = Path.Combine(TestData._Root, param0.ToString());
+            string include1 = Path.Combine(TestData._Root, param1.ToString());
+            string include2 = Path.Combine(TestData._Root, param2.ToString());
+            string xmlFile = Path.Combine(TestData._Root, "bug382119.xml");
             bool IsImport = (bool)param3;
 
             XmlSchemaSet set1 = new XmlSchemaSet();

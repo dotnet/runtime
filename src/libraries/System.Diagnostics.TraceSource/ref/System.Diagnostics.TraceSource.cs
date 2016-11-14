@@ -53,6 +53,8 @@ namespace System.Diagnostics
         Information = 15,
         Off = 0,
         Verbose = 31,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
+        ActivityTracing = 0xFF00,
         Warning = 7,
     }
     public partial class SourceSwitch : System.Diagnostics.Switch
@@ -73,6 +75,8 @@ namespace System.Diagnostics
         protected string Value { get { throw null; } set { } }
         protected virtual void OnSwitchSettingChanged() { }
         protected virtual void OnValueChanged() { }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        protected internal virtual string[] GetSupportedAttributes() { throw null; }
     }
     public sealed partial class Trace
     {

@@ -199,7 +199,7 @@ namespace System.Linq.Expressions
                 {
                     throw Error.IncorrectNumberOfMethodCallArguments(comparison, nameof(comparison));
                 }
-                // Validate that the switch value's type matches the comparison method's 
+                // Validate that the switch value's type matches the comparison method's
                 // left hand side parameter type.
                 ParameterInfo leftParam = pms[0];
                 bool liftedCall = false;

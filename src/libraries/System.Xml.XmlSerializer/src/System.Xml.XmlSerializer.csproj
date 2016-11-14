@@ -16,7 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj">
+      <OSGroup>$(InputOSGroup)</OSGroup>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <EmbeddedResource Include="..\..\System.Private.Xml\src\Resources\System.Private.Xml.rd.xml" />

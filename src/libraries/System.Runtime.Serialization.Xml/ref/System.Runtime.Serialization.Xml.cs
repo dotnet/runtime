@@ -23,6 +23,7 @@ namespace System.Runtime.Serialization
         public DataContractSerializer(System.Type type, string rootName, string rootNamespace, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
         public DataContractSerializer(System.Type type, System.Xml.XmlDictionaryString rootName, System.Xml.XmlDictionaryString rootNamespace) { }
         public DataContractSerializer(System.Type type, System.Xml.XmlDictionaryString rootName, System.Xml.XmlDictionaryString rootNamespace, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
+        public System.Runtime.Serialization.DataContractResolver DataContractResolver { get { throw null; } }
         public bool IgnoreExtensionDataObject { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Type> KnownTypes { get { throw null; } }
         public int MaxItemsInObjectGraph { get { throw null; } }
@@ -31,10 +32,12 @@ namespace System.Runtime.Serialization
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { throw null; }
         public override bool IsStartObject(System.Xml.XmlReader reader) { throw null; }
         public override object ReadObject(System.Xml.XmlDictionaryReader reader, bool verifyObjectName) { throw null; }
+        public object ReadObject(System.Xml.XmlDictionaryReader reader, bool verifyObjectName, System.Runtime.Serialization.DataContractResolver dataContractResolver) { throw null; }
         public override object ReadObject(System.Xml.XmlReader reader) { throw null; }
         public override object ReadObject(System.Xml.XmlReader reader, bool verifyObjectName) { throw null; }
         public override void WriteEndObject(System.Xml.XmlDictionaryWriter writer) { }
         public override void WriteEndObject(System.Xml.XmlWriter writer) { }
+        public void WriteObject(System.Xml.XmlDictionaryWriter writer, object graph, System.Runtime.Serialization.DataContractResolver dataContractResolver) { }
         public override void WriteObject(System.Xml.XmlWriter writer, object graph) { }
         public override void WriteObjectContent(System.Xml.XmlDictionaryWriter writer, object graph) { }
         public override void WriteObjectContent(System.Xml.XmlWriter writer, object graph) { }

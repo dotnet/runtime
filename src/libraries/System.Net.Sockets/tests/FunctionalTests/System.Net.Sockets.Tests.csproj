@@ -7,7 +7,6 @@
     <ProjectGuid>{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
-    <RuntimeTargetMonikers>.NETCoreApp,Version=v1.1</RuntimeTargetMonikers>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

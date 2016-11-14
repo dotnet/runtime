@@ -2,15 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="System.Security.SecureString.csproj" />
     <Project Include="System.Security.SecureString.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="System.Security.SecureString.csproj">
+      <TargetGroup>net463</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Security.SecureString.csproj">
-      <TargetGroup>net46</TargetGroup>
-      <OSGroup>Windows_NT</OSGroup>     
+        <OSGroup>Unix</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

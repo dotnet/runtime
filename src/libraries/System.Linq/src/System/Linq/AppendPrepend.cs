@@ -166,12 +166,33 @@ namespace System.Linq
                 }
             }
 
+            private TSource[] LazyToArray()
+            {
+                Debug.Assert(GetCount(onlyIfCheap: true) == -1);
+
+                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                
+                if (!_appending)
+                {
+                    builder.SlowAdd(_item);
+                }
+
+                builder.AddRange(_source);
+
+                if (_appending)
+                {
+                    builder.SlowAdd(_item);
+                }
+
+                return builder.ToArray();
+            }
+
             public override TSource[] ToArray()
             {
                 int count = GetCount(onlyIfCheap: true);
                 if (count == -1)
                 {
-                    return EnumerableHelpers.ToArray(this);
+                    return LazyToArray();
                 }
 
                 TSource[] array = new TSource[count];
@@ -272,6 +293,11 @@ namespace System.Linq
 
             public IEnumerator<TSource> GetEnumerator()
             {
+                return ((IEnumerable<TSource>)ToArray()).GetEnumerator();
+            }
+
+            public TSource[] ToArray()
+            {
                 TSource[] array = new TSource[Count];
                 int index = Count;
                 for (SingleLinkedNode<TSource> node = this; node != null; node = node.Linked)
@@ -281,7 +307,7 @@ namespace System.Linq
                 }
 
                 Debug.Assert(index == 0);
-                return ((IEnumerable<TSource>)array).GetEnumerator();
+                return array;
             }
         }
 
@@ -352,12 +378,36 @@ namespace System.Linq
                 return new AppendPrependN<TSource>(_source, _prepended != null ? _prepended.Add(item) : new SingleLinkedNode<TSource>(item), _appended);
             }
 
+            private TSource[] LazyToArray()
+            {
+                Debug.Assert(GetCount(onlyIfCheap: true) == -1);
+
+                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+
+                for (SingleLinkedNode<TSource> node = _prepended; node != null; node = node.Linked)
+                {
+                    builder.Add(node.Item);
+                }
+
+                builder.AddRange(_source);
+
+                if (_appended != null)
+                {
+                    foreach (TSource item in _appended.ToArray())
+                    {
+                        builder.Add(item);
+                    }
+                }
+
+                return builder.ToArray();
+            }
+
             public override TSource[] ToArray()
             {
                 int count = GetCount(onlyIfCheap: true);
                 if (count == -1)
                 {
-                    return EnumerableHelpers.ToArray(this);
+                    return LazyToArray();
                 }
 
                 TSource[] array = new TSource[count];

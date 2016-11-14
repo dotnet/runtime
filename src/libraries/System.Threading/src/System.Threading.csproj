@@ -23,6 +23,15 @@
     <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Threading\LockCookie.cs" />
+    <Compile Include="System\Threading\ReaderWriterLock.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <OSGroup>$(InputOSGroup)</OSGroup>

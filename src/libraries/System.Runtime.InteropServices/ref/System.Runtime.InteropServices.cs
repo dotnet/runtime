@@ -721,6 +721,16 @@ namespace System.Runtime.InteropServices
         public static int Release(System.IntPtr pUnk) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public static int ReleaseComObject(object o) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToBSTR(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public static int SizeOf(object structure) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -1757,5 +1767,32 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_DISPATCH = 3,
         VAR_PERINSTANCE = 0,
         VAR_STATIC = 1,
+    }
+}
+
+namespace System.Security
+{
+    [System.CLSCompliant(false)]
+    public sealed class SecureString : IDisposable {
+        public SecureString() { }
+        public unsafe SecureString(char* value, int length) { }
+        public int Length { get { throw null; } }
+        public void AppendChar(char c) { }
+        public void Clear() { }
+        public SecureString Copy() { throw null; }
+        public void Dispose() { }
+        public void InsertAt(int index, char c) { }
+        public bool IsReadOnly() { throw null; }
+        public void MakeReadOnly() { }
+        public void RemoveAt(int index) { }
+        public void SetAt(int index, char c) { }
+    }
+
+    [System.CLSCompliant(false)]
+    public static class SecureStringMarshal {
+        public static IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
     }
 }

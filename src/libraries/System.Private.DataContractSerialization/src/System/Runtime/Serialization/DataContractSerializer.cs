@@ -283,6 +283,11 @@ namespace System.Runtime.Serialization
             WriteEndObjectHandleExceptions(new XmlWriterDelegator(writer));
         }
 
+        public void WriteObject(XmlDictionaryWriter writer, object graph, DataContractResolver dataContractResolver)
+        {
+            WriteObjectHandleExceptions(new XmlWriterDelegator(writer), graph, dataContractResolver);
+        }
+
         public override object ReadObject(XmlReader reader)
         {
             return ReadObjectHandleExceptions(new XmlReaderDelegator(reader), true /*verifyObjectName*/);
@@ -306,6 +311,11 @@ namespace System.Runtime.Serialization
         public override bool IsStartObject(XmlDictionaryReader reader)
         {
             return IsStartObjectHandleExceptions(new XmlReaderDelegator(reader));
+        }
+
+        public object ReadObject(XmlDictionaryReader reader, bool verifyObjectName, DataContractResolver dataContractResolver)
+        {
+            return ReadObjectHandleExceptions(new XmlReaderDelegator(reader), verifyObjectName, dataContractResolver);
         }
 
         internal override void InternalWriteStartObject(XmlWriterDelegator writer, object graph)

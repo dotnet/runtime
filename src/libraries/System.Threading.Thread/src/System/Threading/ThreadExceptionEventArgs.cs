@@ -8,9 +8,9 @@ namespace System.Threading
     {
         private Exception m_exception;
 
-        public ThreadExceptionEventArgs(Exception exception)
+        public ThreadExceptionEventArgs(Exception t)
         {
-            m_exception = exception;
+            m_exception = t;
         }
 
         public Exception Exception

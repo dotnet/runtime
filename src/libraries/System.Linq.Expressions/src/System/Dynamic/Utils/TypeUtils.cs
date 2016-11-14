@@ -19,7 +19,7 @@ namespace System.Dynamic.Utils
             return type;
         }
 
-        public static Type GetNullableType(Type type)
+        public static Type GetNullableType(this Type type)
         {
             Debug.Assert(type != null, "type cannot be null");
             if (type.GetTypeInfo().IsValueType && !IsNullableType(type))
@@ -39,12 +39,12 @@ namespace System.Dynamic.Utils
             return !type.GetTypeInfo().IsValueType || IsNullableType(type);
         }
 
-        public static bool IsBool(Type type)
+        public static bool IsBool(this Type type)
         {
             return GetNonNullableType(type) == typeof(bool);
         }
 
-        public static bool IsNumeric(Type type)
+        public static bool IsNumeric(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -68,7 +68,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsInteger(Type type)
+        public static bool IsInteger(this Type type)
         {
             type = GetNonNullableType(type);
             if (type.GetTypeInfo().IsEnum)
@@ -91,7 +91,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static bool IsInteger64(Type type)
+        public static bool IsInteger64(this Type type)
         {
             type = GetNonNullableType(type);
             if (type.GetTypeInfo().IsEnum)
@@ -108,7 +108,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static bool IsArithmetic(Type type)
+        public static bool IsArithmetic(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -129,7 +129,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsUnsignedInt(Type type)
+        public static bool IsUnsignedInt(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -145,7 +145,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsIntegerOrBool(Type type)
+        public static bool IsIntegerOrBool(this Type type)
         {
             type = GetNonNullableType(type);
             if (!type.GetTypeInfo().IsEnum)
@@ -167,7 +167,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsNumericOrBool(Type type)
+        public static bool IsNumericOrBool(this Type type)
         {
             return IsNumeric(type) || IsBool(type);
         }
@@ -182,15 +182,15 @@ namespace System.Dynamic.Utils
             }
             if (instanceType.GetTypeInfo().IsValueType)
             {
-                if (AreReferenceAssignable(targetType, typeof(System.Object)))
+                if (AreReferenceAssignable(targetType, typeof(object)))
                 {
                     return true;
                 }
-                if (AreReferenceAssignable(targetType, typeof(System.ValueType)))
+                if (AreReferenceAssignable(targetType, typeof(ValueType)))
                 {
                     return true;
                 }
-                if (instanceType.GetTypeInfo().IsEnum && AreReferenceAssignable(targetType, typeof(System.Enum)))
+                if (instanceType.GetTypeInfo().IsEnum && AreReferenceAssignable(targetType, typeof(Enum)))
                 {
                     return true;
                 }
@@ -210,7 +210,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool HasIdentityPrimitiveOrNullableConversion(Type source, Type dest)
+        public static bool HasIdentityPrimitiveOrNullableConversionTo(this Type source, Type dest)
         {
             Debug.Assert(source != null && dest != null);
 
@@ -242,7 +242,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool HasReferenceConversion(Type source, Type dest)
+        public static bool HasReferenceConversionTo(this Type source, Type dest)
         {
             Debug.Assert(source != null && dest != null);
 
@@ -254,8 +254,8 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            Type nnSourceType = TypeUtils.GetNonNullableType(source);
-            Type nnDestType = TypeUtils.GetNonNullableType(dest);
+            Type nnSourceType = GetNonNullableType(source);
+            Type nnDestType = GetNonNullableType(dest);
 
             // Down conversion
             if (nnSourceType.GetTypeInfo().IsAssignableFrom(nnDestType.GetTypeInfo()))
@@ -305,21 +305,21 @@ namespace System.Dynamic.Utils
         private static bool IsDelegate(Type t)
         {
             Debug.Assert(t != null);
-            return t.GetTypeInfo().IsSubclassOf(typeof(System.MulticastDelegate));
+            return t.GetTypeInfo().IsSubclassOf(typeof(MulticastDelegate));
         }
 
         public static bool IsLegalExplicitVariantDelegateConversion(Type source, Type dest)
         {
             Debug.Assert(source != null && dest != null);
 
-            // There *might* be a legal conversion from a generic delegate type S to generic delegate type  T, 
+            // There *might* be a legal conversion from a generic delegate type S to generic delegate type  T,
             // provided all of the follow are true:
             //   o Both types are constructed generic types of the same generic delegate type, D<X1,... Xk>.
             //     That is, S = D<S1...>, T = D<T1...>.
             //   o If type parameter Xi is declared to be invariant then Si must be identical to Ti.
             //   o If type parameter Xi is declared to be covariant ("out") then Si must be convertible
             //     to Ti via an identify conversion,  implicit reference conversion, or explicit reference conversion.
-            //   o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti, 
+            //   o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti,
             //     or Si and Ti must both be reference types.
 
             if (!IsDelegate(source) || !IsDelegate(dest) || !source.GetTypeInfo().IsGenericType || !dest.GetTypeInfo().IsGenericType)
@@ -364,7 +364,7 @@ namespace System.Dynamic.Utils
 
                 if (IsCovariant(genericParameter))
                 {
-                    if (!HasReferenceConversion(sourceArgument, destArgument))
+                    if (!sourceArgument.HasReferenceConversionTo(destArgument))
                     {
                         return false;
                     }
@@ -380,7 +380,7 @@ namespace System.Dynamic.Utils
             return true;
         }
 
-        public static bool IsConvertible(Type type)
+        public static bool IsConvertible(this Type type)
         {
             type = GetNonNullableType(type);
             if (type.GetTypeInfo().IsEnum)
@@ -414,7 +414,7 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            // If we have an interface and a reference type then we can do 
+            // If we have an interface and a reference type then we can do
             // reference equality.
 
             // If we have two reference types and one is assignable to the
@@ -427,7 +427,7 @@ namespace System.Dynamic.Utils
 
         public static bool HasBuiltInEqualityOperator(Type left, Type right)
         {
-            // If we have an interface and a reference type then we can do 
+            // If we have an interface and a reference type then we can do
             // reference equality.
             if (left.GetTypeInfo().IsInterface && !right.GetTypeInfo().IsValueType)
             {
@@ -446,13 +446,13 @@ namespace System.Dynamic.Utils
                     return true;
                 }
             }
-            // Otherwise, if the types are not the same then we definitely 
+            // Otherwise, if the types are not the same then we definitely
             // do not have a built-in equality operator.
             if (!AreEquivalent(left, right))
             {
                 return false;
             }
-            // We have two identical value types, modulo nullability.  (If they were both the 
+            // We have two identical value types, modulo nullability.  (If they were both the
             // same reference type then we would have returned true earlier.)
             Debug.Assert(left.GetTypeInfo().IsValueType);
             // Equality between struct types is only defined for numerics, bools, enums,
@@ -465,7 +465,7 @@ namespace System.Dynamic.Utils
             return false;
         }
 
-        public static bool IsImplicitlyConvertible(Type source, Type destination)
+        public static bool IsImplicitlyConvertibleTo(this Type source, Type destination)
         {
             return AreEquivalent(source, destination) ||                // identity conversion
                 IsImplicitNumericConversion(source, destination) ||
@@ -477,8 +477,8 @@ namespace System.Dynamic.Utils
         public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType, bool implicitOnly)
         {
             // check for implicit coercions first
-            Type nnExprType = TypeUtils.GetNonNullableType(convertFrom);
-            Type nnConvType = TypeUtils.GetNonNullableType(convertToType);
+            Type nnExprType = GetNonNullableType(convertFrom);
+            Type nnConvType = GetNonNullableType(convertToType);
 
             bool retryForLifted = !AreEquivalent(nnExprType, convertFrom) || !AreEquivalent(nnConvType, convertToType);
 
@@ -655,9 +655,9 @@ namespace System.Dynamic.Utils
 
         private static bool IsImplicitBoxingConversion(Type source, Type destination)
         {
-            if (source.GetTypeInfo().IsValueType && (destination == typeof(object) || destination == typeof(System.ValueType)))
+            if (source.GetTypeInfo().IsValueType && (destination == typeof(object) || destination == typeof(ValueType)))
                 return true;
-            if (source.GetTypeInfo().IsEnum && destination == typeof(System.Enum))
+            if (source.GetTypeInfo().IsEnum && destination == typeof(Enum))
                 return true;
             return false;
         }
@@ -665,7 +665,7 @@ namespace System.Dynamic.Utils
         private static bool IsImplicitNullableConversion(Type source, Type destination)
         {
             if (IsNullableType(destination))
-                return IsImplicitlyConvertible(GetNonNullableType(source), GetNonNullableType(destination));
+                return IsImplicitlyConvertibleTo(GetNonNullableType(source), GetNonNullableType(destination));
             return false;
         }
 
@@ -695,7 +695,7 @@ namespace System.Dynamic.Utils
         /// Searches for an operator method on the type. The method must have
         /// the specified signature, no generic arguments, and have the
         /// SpecialName bit set. Also searches inherited operator methods.
-        /// 
+        ///
         /// NOTE: This was designed to satisfy the needs of op_True and
         /// op_False, because we have to do runtime lookup for those. It may
         /// not work right for unary operators in general.
@@ -720,7 +720,7 @@ namespace System.Dynamic.Utils
         }
 
 #if FEATURE_COMPILE
-        internal static bool IsUnsigned(Type type)
+        internal static bool IsUnsigned(this Type type)
         {
             type = GetNonNullableType(type);
             switch (type.GetTypeCode())
@@ -736,7 +736,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        internal static bool IsFloatingPoint(Type type)
+        internal static bool IsFloatingPoint(this Type type)
         {
             type = GetNonNullableType(type);
             switch (type.GetTypeCode())
@@ -748,7 +748,7 @@ namespace System.Dynamic.Utils
                     return false;
             }
         }
-#endif 
+#endif
 
         public static bool IsVector(this Type type)
         {

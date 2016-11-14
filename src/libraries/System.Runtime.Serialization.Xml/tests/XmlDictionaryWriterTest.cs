@@ -166,29 +166,12 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [ActiveIssue(12840)]
-    public static void CreateMtomReaderWriterTest()
+    public static void CreateMtomReaderWriter_Throw_PNSE()
     {
-        using (MemoryStream stream = new MemoryStream())
+        using (var stream = new MemoryStream())
         {
             string startInfo = "application/soap+xml";
-
-            using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateMtomWriter(stream, Encoding.UTF8, int.MaxValue, startInfo))
-            {
-                writer.WriteElementString("localName", "the value");
-                writer.Flush();
-                byte[] bytes = stream.ToArray();
-                StreamReader reader = new StreamReader(stream);
-                stream.Position = 0;
-                string content = reader.ReadToEnd();
-                reader.Close();
-
-                using (XmlDictionaryReader xreader = XmlDictionaryReader.CreateMtomReader(bytes, 0, bytes.Length, Encoding.UTF8, new XmlDictionaryReaderQuotas()))
-                {
-                    xreader.Read();
-                    xreader.ReadOuterXml();
-                }
-            }
+            Assert.Throws<PlatformNotSupportedException>(() => XmlDictionaryWriter.CreateMtomWriter(stream, Encoding.UTF8, int.MaxValue, startInfo));
         }
     }
 

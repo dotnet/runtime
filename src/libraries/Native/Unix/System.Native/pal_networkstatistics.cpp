@@ -18,6 +18,7 @@
 #include "pal_safecrt.h"
 
 #include <errno.h>
+#include <memory>
 #include <net/route.h>
 
 #include <sys/types.h>
@@ -248,15 +249,27 @@ extern "C" int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionI
     assert(infoCount != nullptr);
 
     size_t estimatedSize = GetEstimatedTcpPcbSize();
-    uint8_t* buffer = new uint8_t[estimatedSize];
+    uint8_t* buffer = new (std::nothrow) uint8_t[estimatedSize];
+    if (buffer == nullptr)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
     void* newp = nullptr;
     size_t newlen = 0;
 
     while (sysctlbyname("net.inet.tcp.pcblist", buffer, &estimatedSize, newp, newlen) != 0)
     {
         delete[] buffer;
-        estimatedSize = estimatedSize * 2;
-        buffer = new uint8_t[estimatedSize];
+        size_t tmpEstimatedSize;
+        if (!multiply_s(estimatedSize, static_cast<size_t>(2), &tmpEstimatedSize) ||
+            (buffer = new (std::nothrow) uint8_t[estimatedSize]) == nullptr)
+        {
+            errno = ENOMEM;
+            return -1;
+        }
+        estimatedSize = tmpEstimatedSize;
     }
 
     int32_t count = static_cast<int32_t>(estimatedSize / sizeof(xtcpcb));
@@ -336,15 +349,27 @@ extern "C" int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int
     assert(infoCount != nullptr);
 
     size_t estimatedSize = GetEstimatedUdpPcbSize();
-    uint8_t* buffer = new uint8_t[estimatedSize];
+    uint8_t* buffer = new (std::nothrow) uint8_t[estimatedSize];
+    if (buffer == nullptr)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
     void* newp = nullptr;
     size_t newlen = 0;
 
     while (sysctlbyname("net.inet.udp.pcblist", buffer, &estimatedSize, newp, newlen) != 0)
     {
         delete[] buffer;
-        estimatedSize = estimatedSize * 2;
-        buffer = new uint8_t[estimatedSize];
+        size_t tmpEstimatedSize;
+        if (!multiply_s(estimatedSize, static_cast<size_t>(2), &tmpEstimatedSize) ||
+            (buffer = new (std::nothrow) uint8_t[estimatedSize]) == nullptr)
+        {
+            errno = ENOMEM;
+            return -1;
+        }
+        estimatedSize = tmpEstimatedSize;
     }
     int32_t count = static_cast<int32_t>(estimatedSize / sizeof(xtcpcb));
     if (count > *infoCount)
@@ -409,7 +434,13 @@ extern "C" int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceNa
         return -1;
     }
 
-    uint8_t* buffer = new uint8_t[len];
+    uint8_t* buffer = new (std::nothrow) uint8_t[len];
+    if (buffer == nullptr)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
     if (sysctl(statisticsMib, 6, buffer, &len, nullptr, 0) == -1)
     {
         // Not enough space.
@@ -461,7 +492,13 @@ extern "C" int32_t SystemNative_GetNumRoutes()
         return -1;
     }
 
-    uint8_t* buffer = new uint8_t[len];
+    uint8_t* buffer = new (std::nothrow) uint8_t[len];
+    if (buffer == nullptr)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
     if (sysctl(routeDumpMib, 6, buffer, &len, nullptr, 0) == -1)
     {
         delete[] buffer;

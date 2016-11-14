@@ -10,7 +10,7 @@ namespace System.IO.Compression.Tests
 {
     public class GZipStreamTests
     {
-        static String gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
+        static string gzTestFile(string fileName) { return Path.Combine("GZTestData", fileName); }
 
         [Fact]
         public void BaseStream1()
@@ -39,7 +39,7 @@ namespace System.IO.Compression.Tests
 
             var zip = new GZipStream(ms, CompressionMode.Decompress);
             int size = 1024;
-            Byte[] bytes = new Byte[size];
+            byte[] bytes = new byte[size];
             zip.BaseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writable as expected
         }
 
@@ -96,7 +96,7 @@ namespace System.IO.Compression.Tests
             zip.Dispose();
 
             int size = 1024;
-            Byte[] bytes = new Byte[size];
+            byte[] bytes = new byte[size];
             baseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writable as expected
         }
 
@@ -267,7 +267,7 @@ namespace System.IO.Compression.Tests
         {
             //Create the GZipStream
             int _bufferSize = 1024;
-            var bytes = new Byte[_bufferSize];
+            var bytes = new byte[_bufferSize];
             var baseStream = new MemoryStream(bytes, true);
             GZipStream ds;
 
@@ -281,9 +281,9 @@ namespace System.IO.Compression.Tests
             }
 
             //Write some data and Close the stream
-            String strData = "Test Data";
+            string strData = "Test Data";
             var encoding = Encoding.UTF8;
-            Byte[] data = encoding.GetBytes(strData);
+            byte[] data = encoding.GetBytes(strData);
             ds.Write(data, 0, data.Length);
             ds.Flush();
             ds.Dispose();
@@ -295,7 +295,7 @@ namespace System.IO.Compression.Tests
             }
 
             //Read the data
-            Byte[] data2 = new Byte[_bufferSize];
+            byte[] data2 = new byte[_bufferSize];
             baseStream = new MemoryStream(bytes, false);
             ds = new GZipStream(baseStream, CompressionMode.Decompress);
             int size = ds.Read(data2, 0, _bufferSize - 5);

@@ -82,7 +82,7 @@ namespace System.Diagnostics
                     int bufCount;
                     int i = 0;
 
-                    using (SafeFileHandle fileHandle = SafeFileHandle.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)))
+                    using (SafeFileHandle fileHandle = SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)))
                     {
                         while (i < message.Length)
                         {

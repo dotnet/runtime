@@ -9,19 +9,26 @@
     <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">false</DisableProjectNTfsAutoUpgrade>
   </PropertyGroup>
 
+  <!-- For detailed explanation of the reference versions see:
+
+        https://github.com/dotnet/buildtools/blob/master/Documentation/project-nuget-dependencies.md
+        https://github.com/dotnet/buildtools/blob/master/Documentation/annotated-dependency-props.md
+
+       These ref versions are pulled from https://github.com/dotnet/versions.
+  -->
   <PropertyGroup>
-    <CoreFxCurrentRef>89b9717752e9dcd09d85279f9be54f6ac160d229</CoreFxCurrentRef>
-    <CoreClrCurrentRef>38d1c7fcb04d14a4d5935c1eadc3157e259e8bb6</CoreClrCurrentRef>
-    <ExternalCurrentRef>8b682a386109c5934bcc6d21b40fb86f6782521b</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>0e12effd3cb1b542b73855cc9b58b68a3bc3ac76</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>a54bbfff41602704bb7b08ed9874bab84a903ed1</CoreFxCurrentRef>
+    <CoreClrCurrentRef>9ce367ccebf5c20112d128ab913fc2300257628c</CoreClrCurrentRef>
+    <ExternalCurrentRef>3012bdc3812c4479e5afc0d92e553465887e2454</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>a54bbfff41602704bb7b08ed9874bab84a903ed1</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24703-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24628-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24628-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24701-00</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24714-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24709-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24711-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24714-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->

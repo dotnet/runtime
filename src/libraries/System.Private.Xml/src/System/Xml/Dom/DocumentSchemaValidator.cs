@@ -12,7 +12,6 @@ using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Globalization;
 using System.Security;
-using System.Security.Policy;
 using System.Reflection;
 using System.Runtime.Versioning;
 

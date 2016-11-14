@@ -30,9 +30,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <PropertyGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
+    <StringResourcesPath>Resources\Strings.netcore50aot.resx</StringResourcesPath>
+    <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <ContractProject Include="..\ref\System.Runtime.Extensions.csproj">
@@ -53,7 +56,17 @@
     <Compile Include="System\EnvironmentVariableTarget.cs" />
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
+    <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="System\IO\Path.cs" />
+    <Compile Include="System\IO\EncodingCache.cs" />
+    <Compile Include="System\IO\StreamReader.cs" />
+    <Compile Include="System\IO\StreamWriter.cs" />
+    <Compile Include="System\IO\StringReader.cs" />
+    <Compile Include="System\IO\StringWriter.cs" />
+    <Compile Include="System\IO\TextReader.cs" />
+    <Compile Include="System\IO\TextWriter.cs" />
+    <Compile Include="System\IO\BufferedStream.cs" />
+    <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
@@ -63,6 +76,28 @@
     <Compile Include="System\Runtime\Versioning\ResourceExposureAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\ResourceScope.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.cs" />
+    <Compile Include="System\Collections\ArrayList.cs" />
+    <Compile Include="System\Collections\Comparer.cs" />
+    <Compile Include="System\Collections\Hashtable.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\CompatibleComparer.cs">
+      <Link>Common\System\Collections\CompatibleComparer.cs</Link>
+    </Compile>
+    <Compile Include="System\Collections\IHashCodeProvider.cs" />
+    <Compile Include="System\Collections\KeyValuePairs.cs" />
+    <Compile Include="System\Security\IPermission.cs" />
+    <Compile Include="System\Security\ISecurityEncodable.cs" />
+    <Compile Include="System\Security\SecurityElement.cs" />
+    <Compile Include="System\Security\Permissions\CodeAccessSecurityAttribute.cs" />
+    <Compile Include="System\Security\Permissions\SecurityAction.cs" />
+    <Compile Include="System\Security\Permissions\SecurityAttribute.cs" />
+    <Compile Include="System\Security\Permissions\SecurityPermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\SecurityPermissionFlag.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
@@ -90,6 +125,11 @@
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
+    <Compile Include="System\IO\TextReader.netstandard17.cs" />
+    <Compile Include="System\IO\TextWriter.netstandard17.cs" />
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
@@ -374,8 +414,11 @@
   <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <Compile Include="System\Environment.Uap.cs" />
     <Compile Include="System\IO\Path.Uap.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+    <Compile Include="System\IO\BinaryReader.cs" />
+    <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\EndOfStreamException.cs" />
+    <Compile Include="System\IO\MemoryStream.cs" />
+    <Compile Include="$(CommonPath)\System\SystemException.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
@@ -401,7 +444,7 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' Or '$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <TargetingPackReference Include="System.Private.Interop" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.depproj">

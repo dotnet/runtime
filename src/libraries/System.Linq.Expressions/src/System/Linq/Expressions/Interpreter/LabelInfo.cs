@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Interpreter
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
         // If there's only 1 block (the common case) it's stored here, if there's multiple blocks it's stored
-        // as a HashSet<LabelScopeInfo> 
+        // as a HashSet<LabelScopeInfo>
         private object _definitions;
 
         // Blocks that jump to this block

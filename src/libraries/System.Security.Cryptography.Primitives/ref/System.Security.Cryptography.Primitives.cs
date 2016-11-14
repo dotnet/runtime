@@ -5,6 +5,7 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CryptographicException))]
 
 namespace System.Security.Cryptography
 {
@@ -28,15 +29,6 @@ namespace System.Security.Cryptography
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         OFB = 3,
     }
-    public partial class CryptographicException : System.SystemException
-    {
-        public CryptographicException() { }
-        public CryptographicException(int hr) { }
-        protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public CryptographicException(string message) { }
-        public CryptographicException(string message, System.Exception inner) { }
-        public CryptographicException(string format, string insert) { }
-    }
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
         public CryptographicUnexpectedOperationException() { }
@@ -54,6 +46,7 @@ namespace System.Security.Cryptography
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
+        public void Clear() { }
         public bool HasFlushedFinalBlock { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
@@ -85,6 +78,7 @@ namespace System.Security.Cryptography
         public virtual int HashSize { get { throw null; } }
         public virtual int InputBlockSize { get { throw null; } }
         public virtual int OutputBlockSize { get { throw null; } }
+        public void Clear() { }
         public byte[] ComputeHash(byte[] buffer) { throw null; }
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
@@ -175,6 +169,7 @@ namespace System.Security.Cryptography
         public abstract System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
         public virtual System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
         public abstract System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
+        public void Clear() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();

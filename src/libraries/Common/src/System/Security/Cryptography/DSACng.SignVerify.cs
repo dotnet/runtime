@@ -16,37 +16,37 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class DSACng : DSA
         {
-            public override byte[] CreateSignature(byte[] hash)
+            public override byte[] CreateSignature(byte[] rgbHash)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
+                if (rgbHash == null)
+                    throw new ArgumentNullException(nameof(rgbHash));
 
-                hash = AdjustHashSizeIfNecessary(hash);
+                rgbHash = AdjustHashSizeIfNecessary(rgbHash);
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
                     unsafe
                     {
-                        byte[] signature = CngCommon.SignHash(keyHandle, hash, AsymmetricPaddingMode.None, null, hash.Length * 2);
+                        byte[] signature = CngCommon.SignHash(keyHandle, rgbHash, AsymmetricPaddingMode.None, null, rgbHash.Length * 2);
                         return signature;
                     }
                 }
             }
 
-            public override bool VerifySignature(byte[] hash, byte[] signature)
+            public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
+                if (rgbHash == null)
+                    throw new ArgumentNullException(nameof(rgbHash));
 
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
+                if (rgbSignature == null)
+                    throw new ArgumentNullException(nameof(rgbSignature));
 
-                hash = AdjustHashSizeIfNecessary(hash);
+                rgbHash = AdjustHashSizeIfNecessary(rgbHash);
 
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
                     unsafe
                     {
-                        bool verified = CngCommon.VerifyHash(keyHandle, hash, signature, AsymmetricPaddingMode.None, null);
+                        bool verified = CngCommon.VerifyHash(keyHandle, rgbHash, rgbSignature, AsymmetricPaddingMode.None, null);
                         return verified;
                     }
                 }

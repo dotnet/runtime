@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{DF73E985-E143-4BF5-9FA4-E199E7D36235}</ProjectGuid>
     <AssemblyName>System.Security.Cryptography.Primitives</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
@@ -20,7 +20,6 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
-    <Compile Include="System\Security\Cryptography\CryptographicException.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStreamMode.cs" />
@@ -39,6 +38,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TODO: Remove this when the package reference is ready -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

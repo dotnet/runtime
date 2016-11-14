@@ -5,7 +5,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -383,7 +382,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal int[] _indexMap;
         internal object _header = null;
         internal object _memberObject;
-        internal static volatile MemberInfo _valueInfo;
         internal ReadObjectInfo _objectInfo;
         internal string _memberName;
 
@@ -410,19 +408,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case ValueFixupEnum.Array:
                     _arrayObj.SetValue(obj, _indexMap);
                     break;
-                case ValueFixupEnum.Header:
-                    Type type = typeof(Header);
-                    if (_valueInfo == null)
-                    {
-                        MemberInfo[] valueInfos = type.GetMember("Value");
-                        if (valueInfos.Length != 1)
-                        {
-                            throw new SerializationException(SR.Format(SR.Serialization_HeaderReflection, valueInfos.Length));
-                        }
-                        _valueInfo = valueInfos[0];
-                    }
-                    FormatterServices.SerializationSetValue(_valueInfo, _header, obj);
-                    break;
+                case ValueFixupEnum.Header:  
+                    throw new PlatformNotSupportedException();
                 case ValueFixupEnum.Member:
                     if (_objectInfo._isSi)
                     {

@@ -228,7 +228,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static Exception PropertyTypeMustMatchSetter(string paramName)
         {
-            return new ArgumentException(Strings.PropertyTypeMustMatchSetter);
+            return new ArgumentException(Strings.PropertyTypeMustMatchSetter, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Both accessors must be static."
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions
         internal static Exception OnlyStaticPropertiesHaveNullInstance(string paramName)
         {
             return new ArgumentException(Strings.OnlyStaticPropertiesHaveNullInstance, paramName);
-        }   
+        }
         /// <summary>
         /// ArgumentException with message like "Static method requires null instance, non-static method requires non-null instance."
         /// </summary>
@@ -1284,7 +1284,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// The exception that is thrown when an invoked method is not supported, or when there is an attempt to read, seek, or write to a stream that does not support the invoked functionality. 
+        /// The exception that is thrown when an invoked method is not supported, or when there is an attempt to read, seek, or write to a stream that does not support the invoked functionality.
         /// </summary>
         internal static Exception NotSupported()
         {

@@ -25,9 +25,9 @@ namespace System.Linq.Expressions.Compiler
     ///   1. Parent relationship (for resolving variables)
     ///   2. Information about hoisted variables
     ///   3. Information for resolving closures
-    /// 
+    ///
     /// Instances are produced by VariableBinder, which does a tree walk
-    /// looking for scope nodes: LambdaExpression and BlockExpression.
+    /// looking for scope nodes: LambdaExpression, BlockExpression, and CatchBlock.
     /// </summary>
     internal sealed partial class CompilerScope
     {
@@ -70,7 +70,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Scopes whose variables were merged into this one
-        /// 
+        ///
         /// Created lazily as we create hundreds of compiler scopes w/o merging scopes when compiling rules.
         /// </summary>
         internal HashSet<BlockExpression> MergedScopes;
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Compiler
             return parent;
         }
 
-        #region LocalScopeExpression support
+        #region RuntimeVariablesExpression support
 
         internal void EmitVariableAccess(LambdaCompiler lc, ReadOnlyCollection<ParameterExpression> vars)
         {
@@ -238,7 +238,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Resolve a local variable in this scope or a closed over scope
-        /// Throws if the variable is defined
+        /// Throws if the variable is not defined
         /// </summary>
         private Storage ResolveVariable(ParameterExpression variable, HoistedLocals hoistedLocals)
         {

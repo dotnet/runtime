@@ -151,7 +151,7 @@ function mount_with_checking {
 function mount_emulator {
     #Check if the mount path exists and create if neccessary
     if [ ! -d "$__ARMRootfsMountPath" ]; then
-        sudo mkdir "$__ARMRootfsMountPath"
+        sudo mkdir -p "$__ARMRootfsMountPath"
     fi
 
     set +x
@@ -165,13 +165,16 @@ function mount_emulator {
 
 #Cross builds corefx
 function cross_build_corefx {
-#Export the needed environment variables
-    (set +x; echo 'Exporting LINUX_ARM_* environment variable')
-    source "$__ARMRootfsMountPath"/dotnet/setenv/setenv_incpath.sh "$__ARMRootfsMountPath"
+    #Apply fixes for softfp 
+    if [ "$__buildArch" == "arm-softfp" ]; then
+        #Export the needed environment variables
+        (set +x; echo 'Exporting LINUX_ARM_* environment variable')
+        source "$__ARMRootfsMountPath"/dotnet/setenv/setenv_incpath.sh "$__ARMRootfsMountPath"
 
-    #Apply the changes needed to build for the emulator rootfs
-    (set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
-    git am < "$__ARMRootfsMountPath"/dotnet/setenv/corefx_cross.patch
+        #Apply the changes needed to build for the emulator rootfs
+        (set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
+        git am < "$__ARMRootfsMountPath"/dotnet/setenv/corefx_cross.patch
+    fi
 
     #Cross building for emulator rootfs
     ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag
@@ -236,6 +239,8 @@ exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not prov
 exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
 exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
 exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
+
+__ARMRootfsMountPath="${__ARMRootfsMountPath}_${__buildArch}"
 
 set -x
 set -e

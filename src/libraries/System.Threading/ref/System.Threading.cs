@@ -149,6 +149,14 @@ namespace System.Threading
         public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock, System.Func<T> valueFactory) { throw null; }
         public static T EnsureInitialized<T>(ref T target, System.Func<T> valueFactory) where T : class { throw null; }
     }
+    public partial struct LockCookie
+    {
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Threading.LockCookie obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
+        public static bool operator !=(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
+    }
     public partial class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }
@@ -217,6 +225,26 @@ namespace System.Threading
         public void ReleaseMutex() { }
         [System.Security.SecurityCriticalAttribute]
         public static bool TryOpenExisting(string name, out System.Threading.Mutex result) { throw null; }
+    }
+    public sealed partial class ReaderWriterLock : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
+    {
+        public ReaderWriterLock() { }
+        public bool IsReaderLockHeld { get { throw null; } }
+        public bool IsWriterLockHeld { get { throw null; } }
+        public int WriterSeqNum { get { throw null; } }
+        public void AcquireReaderLock(int millisecondsTimeout) { }
+        public void AcquireReaderLock(System.TimeSpan timeout) { }
+        public void AcquireWriterLock(int millisecondsTimeout) { }
+        public void AcquireWriterLock(System.TimeSpan timeout) { }
+        public bool AnyWritersSince(int seqNum) { throw null; }
+        public void DowngradeFromWriterLock(ref System.Threading.LockCookie lockCookie) { }
+        ~ReaderWriterLock() { }
+        public System.Threading.LockCookie ReleaseLock() { throw null; }
+        public void ReleaseReaderLock() { }
+        public void ReleaseWriterLock() { }
+        public void RestoreLock(ref System.Threading.LockCookie lockCookie) { }
+        public System.Threading.LockCookie UpgradeToWriterLock(int millisecondsTimeout) { throw null; }
+        public System.Threading.LockCookie UpgradeToWriterLock(System.TimeSpan timeout) { throw null; }
     }
     public partial class ReaderWriterLockSlim : System.IDisposable
     {
