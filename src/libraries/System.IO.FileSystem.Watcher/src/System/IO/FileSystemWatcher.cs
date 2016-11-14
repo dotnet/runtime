@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -15,7 +16,7 @@ namespace System.IO
     ///    raises events when a directory or file within a directory changes.
     /// </devdoc>
 
-    public partial class FileSystemWatcher : Component
+    public partial class FileSystemWatcher : Component, ISupportInitialize
     {
         /// <devdoc>
         ///     Private instance variables
@@ -36,11 +37,15 @@ namespace System.IO
         // Flag to note whether we are attached to the thread pool and responding to changes
         private bool _enabled = false;
 
+        // Are we in init?
+        private bool _initializing = false;
+
         // Buffer size
         private int _internalBufferSize = 8192;
 
         // Used for synchronization
         private bool _disposed;
+        private ISynchronizeInvoke _synchronizingObject;
 
         // Event handlers
         private FileSystemEventHandler _onChangedHandler = null;
@@ -146,14 +151,21 @@ namespace System.IO
                 {
                     return;
                 }
-
-                if (value)
+                
+                if (IsSuspended())
                 {
-                    StartRaisingEventsIfNotDisposed(); // will set _enabled to true once successfully started
+                    _enabled = value; // Alert the Component to start watching for events when EndInit is called.
                 }
                 else
-                {
-                    StopRaisingEvents(); // will set _enabled to false
+                { 
+                    if (value)
+                    {
+                        StartRaisingEventsIfNotDisposed(); // will set _enabled to true once successfully started
+                    }
+                    else
+                    {
+                        StopRaisingEvents(); // will set _enabled to false
+                    }
                 }
             }
         }
@@ -371,6 +383,7 @@ namespace System.IO
             finally
             {
                 _disposed = true;
+                base.Dispose(disposing);
             }
         }
 
@@ -446,7 +459,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
-            _onChangedHandler?.Invoke(this, e);
+            InvokeOn(e, _onChangedHandler);
         }
 
         /// <devdoc>
@@ -455,7 +468,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
-            _onCreatedHandler?.Invoke(this, e);
+            InvokeOn(e, _onCreatedHandler);
         }
 
         /// <devdoc>
@@ -464,7 +477,19 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
-            _onDeletedHandler?.Invoke(this, e);
+            InvokeOn(e, _onDeletedHandler);
+        }
+
+        private void InvokeOn(FileSystemEventArgs e, FileSystemEventHandler handler)
+        {
+            if (handler != null)
+            {
+                ISynchronizeInvoke syncObj = SynchronizingObject;
+                if (syncObj != null && syncObj.InvokeRequired)
+                    syncObj.BeginInvoke(handler, new object[] { this, e });
+                else
+                    handler(this, e);
+            }
         }
 
         /// <devdoc>
@@ -473,7 +498,15 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
-            _onErrorHandler?.Invoke(this, e);
+            ErrorEventHandler handler = _onErrorHandler;
+            if (handler != null)
+            {
+                ISynchronizeInvoke syncObj = SynchronizingObject;
+                if (syncObj != null && syncObj.InvokeRequired)
+                    syncObj.BeginInvoke(handler, new object[] { this, e });
+                else
+                    handler(this, e);
+            }
         }
 
         /// <devdoc>
@@ -482,7 +515,15 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnRenamed(RenamedEventArgs e)
         {
-            _onRenamedHandler?.Invoke(this, e);
+            RenamedEventHandler handler = _onRenamedHandler;
+            if (handler != null)
+            {
+                ISynchronizeInvoke syncObj = SynchronizingObject;
+                if (syncObj != null && syncObj.InvokeRequired)
+                    syncObj.BeginInvoke(handler, new object[] { this, e });
+                else
+                    handler(this, e);
+            }
         }
 
         public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType) => 
@@ -566,7 +607,7 @@ namespace System.IO
         /// <internalonly/>
         private void Restart()
         {
-            if (_enabled)
+            if ((!IsSuspended()) && _enabled)
             {
                 StopRaisingEvents();
                 StartRaisingEventsIfNotDisposed();
@@ -579,6 +620,68 @@ namespace System.IO
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
             StartRaisingEvents();
+        }
+
+        public override ISite Site
+        {
+            get
+            {
+                return base.Site;
+            }
+            set
+            {
+                base.Site = value;
+
+                // set EnableRaisingEvents to true at design time so the user
+                // doesn't have to manually. 
+                if (Site != null && Site.DesignMode)
+                    EnableRaisingEvents = true;
+            }
+        }
+
+        public ISynchronizeInvoke SynchronizingObject
+        {
+            get
+            {
+                if (_synchronizingObject == null && DesignMode)
+                {
+                    IDesignerHost host = (IDesignerHost)GetService(typeof(IDesignerHost));
+                    if (host != null)
+                    {
+                        object baseComponent = host.RootComponent;
+                        if (baseComponent != null && baseComponent is ISynchronizeInvoke)
+                            _synchronizingObject = (ISynchronizeInvoke)baseComponent;
+                    }
+                }
+
+                return _synchronizingObject;
+            }
+
+            set
+            {
+                _synchronizingObject = value;
+            }
+        }
+
+        public void BeginInit()
+        {
+            bool oldEnabled = _enabled;
+            StopRaisingEvents();
+            _enabled = oldEnabled;
+            _initializing = true;
+        }
+
+        public void EndInit()
+        {
+            _initializing = false;
+            // Start listening to events if _enabled was set to true at some point.
+            if (_directory.Length != 0 && _enabled)
+                StartRaisingEvents();
+        }
+
+        private bool IsSuspended()
+        {
+            return _initializing || DesignMode;
         }
     }
 }
