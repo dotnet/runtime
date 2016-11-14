@@ -94,7 +94,10 @@ void genSIMDCheck(GenTree* treeNode);
 void genStoreIndTypeSIMD12(GenTree* treeNode);
 void genStoreLclFldTypeSIMD12(GenTree* treeNode);
 void genLoadIndTypeSIMD12(GenTree* treeNode);
-void genLoadLclFldTypeSIMD12(GenTree* treeNode);
+void genLoadLclTypeSIMD12(GenTree* treeNode);
+#ifdef _TARGET_X86_
+void genPutArgStkSIMD12(GenTree* treeNode);
+#endif // _TARGET_X86_
 #endif // FEATURE_SIMD
 
 #if !defined(_TARGET_64BIT_)
