@@ -112,7 +112,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             string name = elemType;
 
-            schemas.Add("", TestData + XSDFILE_VALIDATE_TEXT);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_VALIDATE_TEXT));
             schemas.Compile();
             val = CreateValidator(schemas);
 
@@ -142,7 +142,7 @@ namespace System.Xml.Tests
             XmlSchemaSet schemas = new XmlSchemaSet();
             XmlSchemaInfo info = new XmlSchemaInfo();
 
-            schemas.Add("", TestData + XSDFILE_VALIDATE_END_ELEMENT);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_VALIDATE_END_ELEMENT));
             schemas.Compile();
             val = CreateValidator(schemas);
 
@@ -188,7 +188,7 @@ namespace System.Xml.Tests
             ns.AddNamespace("t", "uri:tempuri");
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "t:type1", null, "uri:tempuri " + TestData + XSDFILE_TARGET_NAMESPACE, null);
+            val.ValidateElement("root", "", info, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
 
             if ((int)allFlags == (int)AllFlags)
             {
@@ -223,7 +223,7 @@ namespace System.Xml.Tests
             val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("root", "", info, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
 
             if ((int)allFlags == (int)AllFlags)
             {
@@ -294,7 +294,7 @@ namespace System.Xml.Tests
             XmlNamespaceManager ns = new XmlNamespaceManager(new NameTable());
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas, ns, 0);
             ns.AddNamespace("t", "uri:tempuri");
 
@@ -312,7 +312,7 @@ namespace System.Xml.Tests
             XmlNamespaceManager ns = new XmlNamespaceManager(new NameTable());
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas, ns, 0);
             ns.AddNamespace("t", "uri:tempuri");
 
@@ -352,7 +352,7 @@ namespace System.Xml.Tests
             ns.AddNamespace("t", "uri:tempuri");
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "t:rootType", null, "uri:tempuri " + TestData + "__NonExistingFile__.xsd", null);
+            val.ValidateElement("root", "", info, "t:rootType", null, "uri:tempuri " + Path.Combine(TestData, "__NonExistingFile__.xsd"), null);
 
             Assert.True(holder.IsCalledA);
             Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
@@ -380,7 +380,7 @@ namespace System.Xml.Tests
             val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "rootType", null, null, TestData + "__NonExistingFile__.xsd");
+            val.ValidateElement("root", "", info, "rootType", null, null, Path.Combine(TestData, "__NonExistingFile__.xsd"));
 
             Assert.True(holder.IsCalledA);
             Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
@@ -438,7 +438,7 @@ namespace System.Xml.Tests
             XmlSchemaParticle[] actualParticles;
             string[] expectedParticles = { "eleA", "eleB", "eleC" };
 
-            schemas.Add("", TestData + @"\Bug342447.xsd");
+            schemas.Add("", Path.Combine(TestData, "Bug342447.xsd"));
             schemas.Compile();
             val = CreateValidator(schemas);
             val.Initialize();

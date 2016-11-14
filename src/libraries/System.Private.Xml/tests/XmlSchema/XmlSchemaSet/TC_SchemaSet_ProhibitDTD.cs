@@ -138,7 +138,7 @@ namespace System.Xml.Tests
             xss.ValidationEventHandler += ValidationCallback;
             try
             {
-                xss.Add(null, TestData._Root + "bug356711_a.xsd");
+                xss.Add(null, Path.Combine(TestData._Root, "bug356711_a.xsd"));
             }
             catch (XmlException e)
             {
@@ -156,7 +156,7 @@ namespace System.Xml.Tests
             Initialize();
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.ValidationEventHandler += ValidationCallback;
-            XmlReader r = CreateReader(TestData._Root + "bug356711_a.xsd");
+            XmlReader r = CreateReader(Path.Combine(TestData._Root, "bug356711_a.xsd"));
             try
             {
                 xss.Add(null, r);
@@ -180,7 +180,7 @@ namespace System.Xml.Tests
             xss.ValidationEventHandler += ValidationCallback;
             try
             {
-                xss.Add(null, TestData._Root + "bug356711.xsd");
+                xss.Add(null, Path.Combine(TestData._Root, "bug356711.xsd"));
             }
             catch (XmlException)
             {
@@ -199,7 +199,7 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            XmlReader r = CreateReader(TestData._Root + "bug356711.xsd");
+            XmlReader r = CreateReader(Path.Combine(TestData._Root, "bug356711.xsd"));
             try
             {
                 xss.Add(null, r);
@@ -222,7 +222,7 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            XmlSchema schema = XmlSchema.Read(new StreamReader(new FileStream(TestData._Root + param0.ToString(), FileMode.Open, FileAccess.Read)), ValidationCallback);
+            XmlSchema schema = XmlSchema.Read(new StreamReader(new FileStream(Path.Combine(TestData._Root, param0.ToString()), FileMode.Open, FileAccess.Read)), ValidationCallback);
 #pragma warning disable 0618
             schema.Compile(ValidationCallback, new XmlUrlResolver());
 #pragma warning restore 0618
@@ -249,7 +249,7 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            var reader = new XmlTextReader(TestData._Root + param0.ToString());
+            var reader = new XmlTextReader(Path.Combine(TestData._Root, param0.ToString()));
             reader.XmlResolver = new XmlUrlResolver();
             XmlSchema schema = XmlSchema.Read(reader, ValidationCallback);
 #pragma warning disable 0618
@@ -273,7 +273,7 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema schema = XmlSchema.Read(CreateReader(TestData._Root + param0.ToString()), ValidationCallback);
+                XmlSchema schema = XmlSchema.Read(CreateReader(Path.Combine(TestData._Root, param0.ToString())), ValidationCallback);
 #pragma warning disable 0618
                 schema.Compile(ValidationCallback);
 #pragma warning restore 0618
@@ -296,7 +296,7 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema schema = XmlSchema.Read(CreateReader(TestData._Root + param0.ToString()), ValidationCallback);
+                XmlSchema schema = XmlSchema.Read(CreateReader(Path.Combine(TestData._Root, param0.ToString())), ValidationCallback);
 #pragma warning disable 0618
                 schema.Compile(ValidationCallback);
 #pragma warning restore 0618
@@ -323,7 +323,7 @@ namespace System.Xml.Tests
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
 
-            XmlReader r = CreateReader(TestData._Root + param0.ToString(), false);
+            XmlReader r = CreateReader(Path.Combine(TestData._Root, param0.ToString()), false);
             try
             {
                 xss.Add(null, r);
@@ -348,7 +348,7 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema schema = XmlSchema.Read(CreateReader(TestData._Root + param0.ToString(), false), ValidationCallback);
+                XmlSchema schema = XmlSchema.Read(CreateReader(Path.Combine(TestData._Root, param0.ToString()), false), ValidationCallback);
 #pragma warning disable 0618
                 schema.Compile(ValidationCallback);
 #pragma warning restore 0618
@@ -372,7 +372,7 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.ValidationEventHandler += ValidationCallback;
 
-            XmlReader r = CreateReader(TestData._Root + param0.ToString(), false);
+            XmlReader r = CreateReader(Path.Combine(TestData._Root, param0.ToString()), false);
             XmlReader r2 = CreateReader(r, true);
             try
             {
@@ -396,7 +396,7 @@ namespace System.Xml.Tests
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
 
-            XmlReader r = CreateReader(TestData._Root + param0.ToString(), false);
+            XmlReader r = CreateReader(Path.Combine(TestData._Root, param0.ToString()), false);
             XmlReader r2 = CreateReader(r, true);
 
             try
@@ -423,13 +423,13 @@ namespace System.Xml.Tests
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
 
-            XmlReader r = CreateReader(TestData._Root + "bug356711.xsd", false);
+            XmlReader r = CreateReader(Path.Combine(TestData._Root, "bug356711.xsd"), false);
 
             try
             {
                 xss.Add(null, r);
                 CError.Compare(xss.Count, 2, "SchemaSet count mismatch!");
-                xss.Add(null, TestData._Root + "bug356711_b.xsd");
+                xss.Add(null, Path.Combine(TestData._Root, "bug356711_b.xsd"));
             }
             catch (XmlException e)
             {
@@ -448,8 +448,8 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.ValidationEventHandler += ValidationCallback;
 
-            XmlReader r1 = CreateReader(TestData._Root + "bug356711_a.xsd");
-            XmlReader r2 = CreateReader(TestData._Root + "bug356711_b.xsd", false);
+            XmlReader r1 = CreateReader(Path.Combine(TestData._Root, "bug356711_a.xsd"));
+            XmlReader r2 = CreateReader(Path.Combine(TestData._Root, "bug356711_b.xsd"), false);
 
             try
             {
@@ -489,11 +489,11 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            xss.Add(null, TestData._Root + "bug356711_root.xsd");
+            xss.Add(null, Path.Combine(TestData._Root, "bug356711_root.xsd"));
 
             try
             {
-                XmlReader reader = CreateReader(TestData._Root + param0.ToString(), xss, true);
+                XmlReader reader = CreateReader(Path.Combine(TestData._Root, param0.ToString()), xss, true);
                 while (reader.Read()) ;
             }
             catch (XmlException)
@@ -513,11 +513,11 @@ namespace System.Xml.Tests
             var xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            xss.Add(null, TestData._Root + "bug356711_root.xsd");
+            xss.Add(null, Path.Combine(TestData._Root, "bug356711_root.xsd"));
 
             try
             {
-                using (var r1 = CreateReader(TestData._Root + "bug356711_1.xml", false))
+                using (var r1 = CreateReader(Path.Combine(TestData._Root, "bug356711_1.xml"), false))
                 using (var r2 = CreateReader(r1, xss, true))
                 {
                     while (r2.Read()) { }
@@ -547,11 +547,11 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            xss.Add(null, TestData._Root + "bug356711_root.xsd");
+            xss.Add(null, Path.Combine(TestData._Root, "bug356711_root.xsd"));
 
             try
             {
-                XmlReader reader = CreateReader(TestData._Root + param0.ToString(), xss, false);
+                XmlReader reader = CreateReader(Path.Combine(TestData._Root, param0.ToString()), xss, false);
                 while (reader.Read()) ;
             }
             catch (XmlException)
@@ -570,11 +570,11 @@ namespace System.Xml.Tests
             Initialize();
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.ValidationEventHandler += ValidationCallback;
-            xss.Add(null, TestData._Root + "bug356711_root.xsd");
+            xss.Add(null, Path.Combine(TestData._Root, "bug356711_root.xsd"));
 
             try
             {
-                XmlReader r1 = CreateReader(TestData._Root + "bug356711_1.xml", true);
+                XmlReader r1 = CreateReader(Path.Combine(TestData._Root, "bug356711_1.xml"), true);
                 XmlReader r2 = CreateReader(r1, xss, false);
                 while (r2.Read()) ;
             }

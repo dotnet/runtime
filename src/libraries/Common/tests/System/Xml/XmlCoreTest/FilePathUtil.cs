@@ -35,12 +35,12 @@ namespace XmlCoreTest.Common
 
         public static string GetFileStandardPath()
         {
-            return GetFileDataPath() + "/" + "StandardTests";
+            return Path.Combine(GetFileDataPath(), "StandardTests");
         }
 
         public static string GetHttpStandardPath()
         {
-            return GetHttpDataPath() + "/" + "StandardTests";
+            return Path.Combine(GetHttpDataPath(), "StandardTests");
         }
 
         public static string GetTestDataPath()
@@ -50,12 +50,12 @@ namespace XmlCoreTest.Common
 
         public static string GetFileTestDataPath()
         {
-            return GetFileDataPath() + "/" + "TestData";
+            return Path.Combine(GetFileDataPath(), "TestData");
         }
 
         public static string GetHttpTestDataPath()
         {
-            return GetHttpDataPath() + "/" + "TestData";
+            return Path.Combine(GetHttpDataPath(), "TestData");
         }
 
         public static string GetVariableValue(string name)
