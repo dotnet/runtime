@@ -3146,7 +3146,8 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
        We need to relax the assert as our estimation won't include code-gen
        stack changes (which we know don't affect fgAddCodeRef()) */
     noway_assert(getEmitter()->emitMaxStackDepth <=
-                 (compiler->fgPtrArgCntMax + compiler->compHndBBtabCount + // Return address for locally-called finallys
+                 (compiler->fgPtrArgCntMax +              // Max number of pointer-sized stack arguments.
+                  compiler->compHndBBtabCount +           // Return address for locally-called finallys
                   genTypeStSz(TYP_LONG) +                 // longs/doubles may be transferred via stack, etc
                   (compiler->compTailCallUsed ? 4 : 0))); // CORINFO_HELP_TAILCALL args
 #endif
