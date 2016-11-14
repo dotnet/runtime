@@ -22,6 +22,7 @@
     <Compile Include="MessageTests\MessageEncodeHeadersTest.cs" />
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
+    <Compile Include="NTAuthenticationStubTests.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
     <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" />
     <Compile Include="SmtpDateTimeTest.cs" />
@@ -54,6 +55,15 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs">
       <Link>ProductionCode\SmtpLoginAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs">
+      <Link>ProductionCode\SmtpNegotiateAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\NTAuthenticationStub.cs">
+      <Link>ProductionCode\NTAuthenticationStub.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs">
+      <Link>ProductionCode\SmtpNtlmAuthenticationModule.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Mail\MailAddressCollection.cs">
       <Link>ProductionCode\MailAddressCollection.cs</Link>

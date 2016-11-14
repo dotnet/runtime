@@ -85,7 +85,7 @@ namespace System.Net
         Warning = 9,
         WwwAuthenticate = 29,
     }
-    
+
     public partial class WebHeaderCollection : System.Collections.Specialized.NameValueCollection,
                                                System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable
     {
@@ -118,5 +118,6 @@ namespace System.Net
         public void Add(string header) { }
         public override void Add(string name, string value) { }
         protected void AddWithoutValidate(string headerName, string headerValue) { }
+        public override System.Collections.Specialized.NameObjectCollectionBase.KeysCollection Keys { get { throw null; } }
     }
 }

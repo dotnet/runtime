@@ -159,6 +159,14 @@ namespace System.Diagnostics
         public string UserName { get { throw null; } set { } }
         public bool UseShellExecute { get { throw null; } set { } }
         public string WorkingDirectory { get { throw null; } set { } }
+        public bool ErrorDialog { get { throw null; } set { } }
+        public System.IntPtr ErrorDialogParentHandle { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(null)]
+        public string Verb { get { throw null; } set { } }
+        public string[] Verbs { get { throw null; } }
+        [System.ComponentModel.DefaultValueAttribute(null)]
+        public System.Diagnostics.ProcessWindowStyle WindowStyle { get { throw null ; } set { } }
+        public System.Collections.Specialized.StringDictionary EnvironmentVariables { get { throw null; } }
     }
     public partial class ProcessThread : System.ComponentModel.Component
     {

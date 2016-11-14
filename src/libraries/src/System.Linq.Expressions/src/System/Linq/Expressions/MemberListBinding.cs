@@ -11,7 +11,7 @@ using System.Reflection;
 namespace System.Linq.Expressions
 {
     /// <summary>
-    /// Represents initializing the elements of a collection member of a newly created object. 
+    /// Represents initializing the elements of a collection member of a newly created object.
     /// </summary>
     public sealed class MemberListBinding : MemberBinding
     {

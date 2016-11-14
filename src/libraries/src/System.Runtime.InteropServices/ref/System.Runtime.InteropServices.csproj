@@ -14,6 +14,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.cs" />
+
+    <!-- TODO: Remove this when the package reference is ready -->
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

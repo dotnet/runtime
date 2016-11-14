@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
@@ -14,7 +13,7 @@ namespace System.Linq.Expressions.Interpreter
     /// off much faster compilation time for a slower execution performance.
     /// For code that is only run a small number of times this can be a
     /// sweet spot.
-    /// 
+    ///
     /// The core loop in the interpreter is the <see cref="Run(InterpretedFrame)"/>  method.
     /// </summary>
     internal sealed class Interpreter
@@ -27,12 +26,10 @@ namespace System.Linq.Expressions.Interpreter
         internal readonly RuntimeLabel[] _labels;
         internal readonly DebugInfo[] _debugInfos;
 
-        internal Interpreter(string name, LocalVariables locals, HybridReferenceDictionary<LabelTarget, BranchLabel> labelMapping,
-            InstructionArray instructions, DebugInfo[] debugInfos)
+        internal Interpreter(string name, LocalVariables locals, InstructionArray instructions, DebugInfo[] debugInfos)
         {
             Name = name;
             LocalCount = locals.LocalCount;
-            LabelMapping = labelMapping;
             ClosureVariables = locals.ClosureVariables;
 
             _instructions = instructions;
@@ -46,7 +43,6 @@ namespace System.Linq.Expressions.Interpreter
         internal int ClosureSize => ClosureVariables?.Count ?? 0;
         internal InstructionArray Instructions => _instructions;
         internal Dictionary<ParameterExpression, LocalVariable> ClosureVariables { get; }
-        internal HybridReferenceDictionary<LabelTarget, BranchLabel> LabelMapping { get; }
 
         /// <summary>
         /// Runs instructions within the given frame.
@@ -66,16 +62,6 @@ namespace System.Linq.Expressions.Interpreter
             {
                 index += instructions[index].Run(frame);
                 frame.InstructionIndex = index;
-            }
-        }
-
-        internal int ReturnAndRethrowLabelIndex
-        {
-            get
-            {
-                // the last label is "return and rethrow" label:
-                Debug.Assert(_labels[_labels.Length - 1].Index == RethrowOnReturn);
-                return _labels.Length - 1;
             }
         }
     }

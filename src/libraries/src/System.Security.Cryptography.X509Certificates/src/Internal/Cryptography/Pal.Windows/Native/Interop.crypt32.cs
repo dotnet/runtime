@@ -92,6 +92,12 @@ internal static partial class Interop
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeCertContextHandle CertDuplicateCertificateContext(IntPtr pCertContext);
 
+        [DllImport(Libraries.Crypt32, SetLastError = true)]
+        public static extern SafeX509ChainHandle CertDuplicateCertificateChain(IntPtr pChainContext);
+
+        [DllImport(Libraries.Crypt32, SetLastError = true)]
+        internal static extern SafeCertStoreHandle CertDuplicateStore(IntPtr hCertStore);
+
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertDuplicateCertificateContext")]
         public static extern SafeCertContextHandleWithKeyContainerDeletion CertDuplicateCertificateContextWithKeyContainerDeletion(IntPtr pCertContext);
 

@@ -144,6 +144,12 @@ namespace System.Net
                 CheckDisposed();
                 return _cookies;
             }
+
+            set
+            {
+                CheckDisposed();
+                _cookies = value;
+            }
         }
       
         public DateTime LastModified
@@ -352,6 +358,11 @@ namespace System.Net
             CheckDisposed();
             string headerValue = Headers[headerName];
             return ((headerValue == null) ? String.Empty : headerValue);
+        }
+
+        public override void Close()
+        {
+            Dispose(true);
         }
 
         protected override void Dispose(bool disposing)

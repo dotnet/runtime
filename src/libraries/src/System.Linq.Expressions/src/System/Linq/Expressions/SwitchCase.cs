@@ -32,7 +32,7 @@ namespace System.Linq.Expressions
         public Expression Body { get; }
 
         /// <summary>
-        /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
+        /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>.
         /// </summary>
         /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()

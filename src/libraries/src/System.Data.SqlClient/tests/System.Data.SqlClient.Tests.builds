@@ -12,6 +12,7 @@
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>net46</TestTFMs>
     </Project>
+    <Project Include="StressTests\System.Data.SqlClient.Stress.Tests\System.Data.SqlClient.Stress.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

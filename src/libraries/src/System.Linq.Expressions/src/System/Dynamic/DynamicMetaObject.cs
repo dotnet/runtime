@@ -14,11 +14,6 @@ namespace System.Dynamic
     /// </summary>
     public class DynamicMetaObject
     {
-        private readonly Expression _expression;
-        private readonly BindingRestrictions _restrictions;
-        private readonly object _value;
-        private readonly bool _hasValue;
-
         /// <summary>
         /// Represents an empty array of type <see cref="DynamicMetaObject"/>. This field is read only.
         /// </summary>
@@ -35,8 +30,8 @@ namespace System.Dynamic
             ContractUtils.RequiresNotNull(expression, nameof(expression));
             ContractUtils.RequiresNotNull(restrictions, nameof(restrictions));
 
-            _expression = expression;
-            _restrictions = restrictions;
+            Expression = expression;
+            Restrictions = restrictions;
         }
 
         /// <summary>
@@ -48,54 +43,29 @@ namespace System.Dynamic
         public DynamicMetaObject(Expression expression, BindingRestrictions restrictions, object value)
             : this(expression, restrictions)
         {
-            _value = value;
-            _hasValue = true;
+            Value = value;
+            HasValue = true;
         }
 
         /// <summary>
         /// The expression representing the <see cref="DynamicMetaObject"/> during the dynamic binding process.
         /// </summary>
-        public Expression Expression
-        {
-            get
-            {
-                return _expression;
-            }
-        }
+        public Expression Expression { get; }
 
         /// <summary>
         /// The set of binding restrictions under which the binding is valid.
         /// </summary>
-        public BindingRestrictions Restrictions
-        {
-            get
-            {
-                return _restrictions;
-            }
-        }
+        public BindingRestrictions Restrictions { get; }
 
         /// <summary>
         /// The runtime value represented by this <see cref="DynamicMetaObject"/>.
         /// </summary>
-        public object Value
-        {
-            get
-            {
-                return _value;
-            }
-        }
+        public object Value { get; }
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="DynamicMetaObject"/> has the runtime value.
         /// </summary>
-        public bool HasValue
-        {
-            get
-            {
-                return _hasValue;
-            }
-        }
-
+        public bool HasValue { get; }
 
         /// <summary>
         /// Gets the <see cref="Type"/> of the runtime value or null if the <see cref="DynamicMetaObject"/> has no value associated with it.
@@ -104,7 +74,7 @@ namespace System.Dynamic
         {
             get
             {
-                if (_hasValue)
+                if (HasValue)
                 {
                     Type ct = Expression.Type;
                     // valuetype at compile time, type cannot change.
@@ -112,9 +82,9 @@ namespace System.Dynamic
                     {
                         return ct;
                     }
-                    if (_value != null)
+                    if (Value != null)
                     {
-                        return _value.GetType();
+                        return Value.GetType();
                     }
                     else
                     {
@@ -132,13 +102,7 @@ namespace System.Dynamic
         /// Gets the limit type of the <see cref="DynamicMetaObject"/>.
         /// </summary>
         /// <remarks>Represents the most specific type known about the object represented by the <see cref="DynamicMetaObject"/>. <see cref="RuntimeType"/> if runtime value is available, a type of the <see cref="Expression"/> otherwise.</remarks>
-        public Type LimitType
-        {
-            get
-            {
-                return RuntimeType ?? Expression.Type;
-            }
-        }
+        public Type LimitType => RuntimeType ?? Expression.Type;
 
         /// <summary>
         /// Performs the binding of the dynamic conversion operation.
@@ -163,7 +127,7 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Performs the binding of the dynamic set member operation. 
+        /// Performs the binding of the dynamic set member operation.
         /// </summary>
         /// <param name="binder">An instance of the <see cref="SetMemberBinder"/> that represents the details of the dynamic operation.</param>
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set member operation.</param>
@@ -314,13 +278,13 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Creates a meta-object for the specified object. 
+        /// Creates a meta-object for the specified object.
         /// </summary>
         /// <param name="value">The object to get a meta-object for.</param>
         /// <param name="expression">The expression representing this <see cref="DynamicMetaObject"/> during the dynamic binding process.</param>
         /// <returns>
         /// If the given object implements <see cref="IDynamicMetaObjectProvider"/> and is not a remote object from outside the current AppDomain,
-        /// returns the object's specific meta-object returned by <see cref="IDynamicMetaObjectProvider.GetMetaObject"/>. Otherwise a plain new meta-object 
+        /// returns the object's specific meta-object returned by <see cref="IDynamicMetaObjectProvider.GetMetaObject"/>. Otherwise a plain new meta-object
         /// with no restrictions is created and returned.
         /// </returns>
         public static DynamicMetaObject Create(object value, Expression expression)

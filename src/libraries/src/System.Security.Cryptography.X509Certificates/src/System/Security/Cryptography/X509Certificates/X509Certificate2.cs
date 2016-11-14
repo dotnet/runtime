@@ -7,6 +7,7 @@ using Internal.Cryptography.Pal;
 using System;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -14,6 +15,29 @@ namespace System.Security.Cryptography.X509Certificates
     [Serializable]
     public class X509Certificate2 : X509Certificate
     {
+        private volatile byte[] _lazyRawData;
+        private volatile Oid _lazySignatureAlgorithm;
+        private volatile int _lazyVersion;
+        private volatile X500DistinguishedName _lazySubjectName;
+        private volatile X500DistinguishedName _lazyIssuerName;
+        private volatile PublicKey _lazyPublicKey;
+        private volatile AsymmetricAlgorithm _lazyPrivateKey;
+        private volatile X509ExtensionCollection _lazyExtensions;
+
+        public override void Reset()
+        {
+            _lazyRawData = null;
+            _lazySignatureAlgorithm = null;
+            _lazyVersion = 0;
+            _lazySubjectName = null;
+            _lazyIssuerName = null;
+            _lazyPublicKey = null;
+            _lazyPrivateKey = null;
+            _lazyExtensions = null;
+
+            base.Reset();
+        }
+
         public X509Certificate2()
             : base()
         {
@@ -29,6 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString password)
             : base(rawData, password)
         {
@@ -39,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
@@ -64,6 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString password)
             : base(fileName, password)
         {
@@ -75,13 +102,14 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
-        public X509Certificate2(X509Certificate cert)
-            : base(cert)
+        public X509Certificate2(X509Certificate certificate)
+            : base(certificate)
         {
         }
 
@@ -167,6 +195,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
+                ThrowIfInvalid();
+
                 if (_lazyPrivateKey == null)
                 {
                     _lazyPrivateKey = Pal.GetPrivateKey();
@@ -185,9 +215,9 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                X500DistinguishedName issuerName = _lazyIssuer;
+                X500DistinguishedName issuerName = _lazyIssuerName;
                 if (issuerName == null)
-                    issuerName = _lazyIssuer = Pal.IssuerName;
+                    issuerName = _lazyIssuerName = Pal.IssuerName;
                 return issuerName;
             }
         }
@@ -530,6 +560,56 @@ namespace System.Security.Cryptography.X509Certificates
             return sb.ToString();
         }
 
+        public override void Import(byte[] rawData)
+        {
+            base.Import(rawData);
+        }
+
+        public override void Import(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        {
+            base.Import(rawData, password, keyStorageFlags);
+        }
+
+        [System.CLSCompliantAttribute(false)]
+        public override void Import(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        {
+            base.Import(rawData, password, keyStorageFlags);
+        }
+
+        public override void Import(string fileName)
+        {
+            base.Import(fileName);
+        }
+
+        public override void Import(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        {
+            base.Import(fileName, password, keyStorageFlags);
+        }
+
+        [System.CLSCompliantAttribute(false)]
+        public override void Import(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        {
+            base.Import(fileName, password, keyStorageFlags);
+        }
+
+        public bool Verify()
+        {
+            ThrowIfInvalid();
+
+            using (var chain = new X509Chain())
+            {
+                // Use the default vales of chain.ChainPolicy including:
+                //  RevocationMode = X509RevocationMode.Online
+                //  RevocationFlag = X509RevocationFlag.ExcludeRoot
+                //  VerificationFlags = X509VerificationFlags.NoFlag
+                //  VerificationTime = DateTime.Now
+                //  UrlRetrievalTimeout = new TimeSpan(0, 0, 0)
+
+                bool verified = chain.Build(this, throwOnException: false);
+                return verified;
+            }
+        }
+
         private static X509Extension CreateCustomExtensionIfAny(Oid oid)
         {
             string oidValue = oid.Value;
@@ -556,14 +636,5 @@ namespace System.Security.Cryptography.X509Certificates
                     return null;
             }
         }
-
-        private volatile byte[] _lazyRawData;
-        private volatile Oid _lazySignatureAlgorithm;
-        private volatile int _lazyVersion;
-        private volatile X500DistinguishedName _lazySubjectName;
-        private volatile X500DistinguishedName _lazyIssuer;
-        private volatile PublicKey _lazyPublicKey;
-        private volatile AsymmetricAlgorithm _lazyPrivateKey;
-        private volatile X509ExtensionCollection _lazyExtensions;
     }
 }

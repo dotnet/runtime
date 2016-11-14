@@ -161,7 +161,7 @@ internal static partial class Interop
                 {
                     continue;
                 }
-                string pathname = parser.ExtractCurrent();
+                string pathname = parser.ExtractCurrentToEnd();
 
                 // We only get here if a we have a non-empty pathname and
                 // the permissions included both readability and executability.

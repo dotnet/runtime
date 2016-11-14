@@ -1,51 +1,23 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.props))\dir.props" />
 
-  <!-- coalesce RIDs into the correct build output directory -->
-  <PropertyGroup>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('windows', StringComparison.OrdinalIgnoreCase))">Windows_NT</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('debian'))">Linux</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('fedora'))">Linux</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('osx'))">OSX</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('rhel'))">Linux</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('ubuntu'))">Linux</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('opensuse'))">Linux</OSGroupPath>
-    <OSGroupPath Condition="$(OSGroup.StartsWith('alpine'))">Linux</OSGroupPath>
-  </PropertyGroup>
-
-  <!-- Determine extensions of binary and symbol files on this OS. -->
-  <PropertyGroup>
-    <LibraryFileExtension Condition="'$(OSGroupPath)'=='Linux'">.so</LibraryFileExtension>
-    <LibraryFileExtension Condition="'$(OSGroupPath)'=='OSX'">.dylib</LibraryFileExtension>
-
-    <SymbolFileExtension>.pdb</SymbolFileExtension>
-    <SymbolFileExtension Condition="'$(OSGroupPath)'=='Linux'">.dbg</SymbolFileExtension>
-    <SymbolFileExtension Condition="'$(OSGroupPath)'=='OSX'">.dwarf</SymbolFileExtension>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- common properties that point to output of native build.  Can be overriden in case of 
          a coordinating build that produces all packages from OS-specific native builds -->
-    <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native\</BuildNativePath>
-    <WinNativeAOTPath Condition="'$(WinNativeAOTPath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native_aot\</WinNativeAOTPath>
-    <WinNativePath Condition="'$(WinNativePath)' == ''">$(BuildNativePath)</WinNativePath>
-    <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
-    <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
-    <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(BuildNativePath)</Fedora23NativePath>
-    <Fedora24NativePath Condition="'$(Fedora24NativePath)' == ''">$(BuildNativePath)</Fedora24NativePath>
-    <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
-    <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(BuildNativePath)</OpenSuse132NativePath>
-    <OpenSuse421NativePath Condition="'$(OpenSuse421NativePath)' == ''">$(BuildNativePath)</OpenSuse421NativePath>
-    <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(BuildNativePath)</Ubuntu1404NativePath>
-    <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(BuildNativePath)</Ubuntu1604NativePath>
-    <Ubuntu1610NativePath Condition="'$(Ubuntu1610NativePath)' == ''">$(BuildNativePath)</Ubuntu1610NativePath>
-    <Alpine343NativePath Condition="'$(Alpine343NativePath)' == ''">$(BuildNativePath)</Alpine343NativePath>
+    <LinuxNativePath Condition="'$(LinuxNativePath)' == ''">$(BinDir)Linux.$(PackagePlatform).$(ConfigurationGroup)\Native\</LinuxNativePath>
+    <WinNativeAOTPath Condition="'$(WinNativeAOTPath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\Native_aot\</WinNativeAOTPath>
+    <WinNativePath Condition="'$(WinNativePath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\Native\</WinNativePath>
+    <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(LinuxNativePath)</RHELNativePath>
+    <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(LinuxNativePath)</DebianNativePath>
+    <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(LinuxNativePath)</Fedora23NativePath>
+    <Fedora24NativePath Condition="'$(Fedora24NativePath)' == ''">$(LinuxNativePath)</Fedora24NativePath>
+    <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BinDir)OSX.$(PackagePlatform).$(ConfigurationGroup)\Native\</OSXNativePath>
+    <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(LinuxNativePath)</OpenSuse132NativePath>
+    <OpenSuse421NativePath Condition="'$(OpenSuse421NativePath)' == ''">$(LinuxNativePath)</OpenSuse421NativePath>
+    <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(LinuxNativePath)</Ubuntu1404NativePath>
+    <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(LinuxNativePath)</Ubuntu1604NativePath>
+    <Ubuntu1610NativePath Condition="'$(Ubuntu1610NativePath)' == ''">$(LinuxNativePath)</Ubuntu1610NativePath>
+    <Alpine343NativePath Condition="'$(Alpine343NativePath)' == ''">$(LinuxNativePath)</Alpine343NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
-
-  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
-  <ItemGroup Condition="'$(OSGroupPath)'=='Linux' OR '$(OSGroupPath)'=='OSX'">
-    <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolFileExtension)" />
-    <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
-  </ItemGroup>
 </Project>

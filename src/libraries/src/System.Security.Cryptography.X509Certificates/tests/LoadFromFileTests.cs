@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     issuer);
 #if netstandard17
 #pragma warning disable 0618
-                    Assert.Equal(c.Issuer, c.GetIssuerName());
+                Assert.Equal(c.Issuer, c.GetIssuerName());
 #pragma warning restore 0618
 #endif
 
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     subject);
 #if netstandard17
 #pragma warning disable 0618
-                    Assert.Equal(subject, c.GetName());
+                Assert.Equal(subject, c.GetName());
 #pragma warning restore 0618
 #endif
 

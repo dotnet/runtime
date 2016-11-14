@@ -207,7 +207,7 @@ namespace System.Xml.Tests
             // FullFilePath and FullHttpPath attempt to normalize file paths, however
             // as an extra step we can normalize them here, when they are first read
             // from the LTM file.
-            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApi\");
+            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
             _httpPath = FilePathUtil.GetHttpTestDataPath() + @"/XsltApi/";
 
             return;
@@ -216,7 +216,7 @@ namespace System.Xml.Tests
         // Returns the full path of a file, based on LTM parameters
         public String FullFilePath(String szFile)
         {
-            return FullFilePath(szFile, true);
+            return FullFilePath(szFile, false);
         }
 
         // Returns the full, lower-cased path of a file, based on LTM parameters
@@ -228,7 +228,7 @@ namespace System.Xml.Tests
             if (szFile.Length > 5)
             {
                 if (szFile.Substring(0, 5) != "http:")
-                    szFile = _strPath + szFile;
+                    szFile = Path.Combine(_strPath, szFile);
             }
             if (normalizeToLower)
                 return szFile.ToLower();
@@ -252,7 +252,7 @@ namespace System.Xml.Tests
         //  -------------------------------------------------------------------------------------------------------------
         public void CheckExpectedError(Exception ex, string assembly, string res, string[] strParams)
         {
-            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "exceptions.xml"), assembly, _output);
+            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "Exceptions.xml"), assembly, _output);
             if (!handler.VerifyException(ex, res, strParams))
             {
                 Assert.True(false);
@@ -265,7 +265,7 @@ namespace System.Xml.Tests
         //  -------------------------------------------------------------------------------------------------------------
         public void CheckExpectedError(Exception ex, string assembly, string res, string[] strParams, LineInfo lInfo)
         {
-            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "exceptions.xml"), assembly, _output);
+            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "Exceptions.xml"), assembly, _output);
             if (!handler.VerifyException(ex, res, strParams, lInfo))
             {
                 Assert.True(false);

@@ -220,10 +220,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj" />
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Threading.Tasks\pkg\System.Threading.Tasks.pkgproj" />
+    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

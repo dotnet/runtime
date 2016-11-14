@@ -1128,7 +1128,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<InvalidOperationException>(() => ((IList<int>)s_emptyDefault)[0]);
             Assert.Throws<InvalidOperationException>(() => ((IReadOnlyList<int>)s_emptyDefault)[0]);
         }
-        
+
         [Fact]
         public void Sort()
         {
@@ -1257,6 +1257,28 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IStructuralEquatable_Equals_NullComparerNonNullUnderlyingArray_ThrowsNullReferenceException()
+        {
+            // This was not fixed for compatability reasons. See #13410
+            IStructuralEquatable equatable = ImmutableArray.Create(1, 2, 3);
+
+            Assert.True(equatable.Equals(equatable, null));
+            Assert.Throws<NullReferenceException>(() => equatable.Equals(ImmutableArray.Create(1, 2, 3), null));
+            Assert.False(equatable.Equals(new ImmutableArray<int>(), null));
+            Assert.False(equatable.Equals(null, null));
+        }
+
+        [Fact]
+        public void IStructuralEquatable_Equals_NullComparerNullUnderlyingArray_Works()
+        {
+            IStructuralEquatable equatable = new ImmutableArray<int>();
+            Assert.True(equatable.Equals(equatable, null));
+            Assert.False(equatable.Equals(ImmutableArray.Create(1, 2, 3), null));
+            Assert.True(equatable.Equals(new ImmutableArray<int>(), null));
+            Assert.Throws<NullReferenceException>(() => equatable.Equals(null, null));
+        }
+
+        [Fact]
         public void StructuralEquatableGetHashCodeDefault()
         {
             IStructuralEquatable defaultImmArray = s_emptyDefault;
@@ -1274,6 +1296,20 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(emptyArray.GetHashCode(EqualityComparer<int>.Default), emptyImmArray.GetHashCode(EqualityComparer<int>.Default));
             Assert.Equal(array.GetHashCode(EqualityComparer<int>.Default), immArray.GetHashCode(EqualityComparer<int>.Default));
             Assert.Equal(array.GetHashCode(EverythingEqual<int>.Default), immArray.GetHashCode(EverythingEqual<int>.Default));
+        }
+
+        [Fact]
+        public void IStructuralEquatable_GetHashCode_NullComparerNonNullUnderlyingArray_ThrowsArgumentNullException()
+        {
+            IStructuralEquatable equatable = ImmutableArray.Create(1, 2, 3);
+            Assert.Throws<ArgumentNullException>(() => equatable.GetHashCode(null));
+        }
+
+        [Fact]
+        public void IStructuralEquatable_GetHashCode_NullComparerNullUnderlyingArray_Works()
+        {
+            IStructuralEquatable equatable = new ImmutableArray<int>();
+            Assert.Equal(0, equatable.GetHashCode(null));
         }
 
         [Fact]
@@ -1321,6 +1357,26 @@ namespace System.Collections.Immutable.Tests
             IStructuralComparable equalImmArray = ImmutableArray.Create((int[])equalArray);
 
             Assert.Equal(array.CompareTo(equalArray, Comparer<int>.Default), immArray.CompareTo(equalArray, Comparer<int>.Default));
+        }
+
+        [Fact]
+        public void IStructuralComparable_NullComparerNonNullUnderlyingArray_ThrowsNullReferenceException()
+        {
+            // This was not fixed for compatability reasons. See #13410
+            IStructuralComparable comparable = ImmutableArray.Create(1, 2, 3);
+            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(comparable, null));
+            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(ImmutableArray.Create(1, 2, 3), null));
+            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(new ImmutableArray<int>(), null));
+        }
+
+        [Fact]
+        public void IStructuralComparable_NullComparerNullUnderlyingArray_Works()
+        {
+            IStructuralComparable comparable = new ImmutableArray<int>();
+            Assert.Equal(0, comparable.CompareTo(comparable, null));
+            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(null, null));
+            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(ImmutableArray.Create(1, 2, 3), null));
+            Assert.Equal(0, comparable.CompareTo(new ImmutableArray<int>(), null));
         }
 
         [Theory]

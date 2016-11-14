@@ -148,5 +148,18 @@ namespace Tests.System.IO
             Assert.Equal("fter brace", sp.MoveAndExtractNext());
             Assert.Equal("", sp.MoveAndExtractNext());
         }
+
+        [Fact]
+        public void TestExtractCurrentToEnd()
+        {
+            string buffer = "This has a /path/to my favorite file/with a space";
+            char separator = ' ';
+            StringParser sp = new StringParser(buffer, separator);
+            Assert.Equal("This", sp.MoveAndExtractNext());
+            Assert.Equal("has", sp.MoveAndExtractNext());
+            Assert.Equal("a", sp.MoveAndExtractNext());
+            Assert.True(sp.MoveNext());
+            Assert.Equal("/path/to my favorite file/with a space", sp.ExtractCurrentToEnd());
+        }
     }
 }

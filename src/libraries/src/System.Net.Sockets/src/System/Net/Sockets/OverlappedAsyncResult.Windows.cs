@@ -16,7 +16,7 @@ namespace System.Net.Sockets
     //
     // This class is used to take care of storage for async Socket operation
     // from the BeginSend, BeginSendTo, BeginReceive, BeginReceiveFrom calls.
-    internal partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal sealed partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         internal WSABuffer _singleBuffer;
         internal WSABuffer[] _wsaBuffers;
@@ -109,7 +109,7 @@ namespace System.Net.Sockets
                 LogBuffer(numBytes);
             }
 
-            return numBytes;
+            return base.PostCompletion(numBytes);
         }
 
         private void LogBuffer(int size)

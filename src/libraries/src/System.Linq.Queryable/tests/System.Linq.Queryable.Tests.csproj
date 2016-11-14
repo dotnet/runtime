@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Linq.Queryable.Tests</AssemblyName>
     <RootNamespace>System.Linq.Queryable.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -85,7 +85,7 @@
 
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
-    <!-- Example to consume local CoreCLR package: 
+    <!-- Example to consume local CoreCLR package:
          /t:BatchRestorePackages /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
     -->
     <DnuSourceList Include="$(OverridePackageSource)" />
@@ -108,6 +108,7 @@
   <ItemGroup>
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src" />
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)pkg" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
     <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)" />
   </ItemGroup>
 
@@ -139,8 +140,7 @@
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <!-- dotnet/corefx#8899 tracks fixing this -->
-    <RunApiCompat Condition="'$(OSEnvironment)' == 'Windows_NT'">true</RunApiCompat>
+    <RunApiCompat>true</RunApiCompat>
   </PropertyGroup>
 
   <!--
@@ -246,14 +246,12 @@
     <When Condition="'$(OSGroup)'=='Windows_NT'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
-        <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
         <PackageTargetRuntime>win</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Unix'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
         <PackageTargetRuntime>unix</PackageTargetRuntime>
       </PropertyGroup>
     </When>
@@ -261,7 +259,6 @@
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
         <PackageTargetRuntime>linux</PackageTargetRuntime>
       </PropertyGroup>
     </When>
@@ -269,7 +266,6 @@
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.10-x64</TestNugetRuntimeId>
         <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>
@@ -277,14 +273,12 @@
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='NetBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsNetBSD>true</TargetsNetBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>   <!-- TODO -->
       </PropertyGroup>
     </When>
     <Otherwise>

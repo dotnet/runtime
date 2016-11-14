@@ -280,9 +280,9 @@ def osShortName = ['Windows 10': 'win10',
             steps {
                 helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
             }
-            // perf tests can be built on any Windows
-            label("windows10 || windows7 || windows")
         }
+        
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
@@ -422,7 +422,7 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { osName ->
-            (isPR ? ['SoftFP'] : ['HardFP', 'SoftFP']).each { abi ->
+            ['HardFP', 'SoftFP'].each { abi ->
                 def osGroup = osGroupMap[osName]
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
@@ -457,9 +457,7 @@ def osShortName = ['Windows 10': 'win10',
 
                 // Set up triggers
                 if (isPR) {
-                    if (osName == 'LinuxARMEmulator') {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build")
-                    }
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+linuxarmemulator\\W+${abi}\\W+${configurationGroup}.*")
                 }
                 else {
                     // Set a push trigger

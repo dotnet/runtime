@@ -141,8 +141,6 @@ namespace System.Xml.Xsl.Xslt
             _gloVars = _f.GlobalVariableList();
             _nsVars = _f.GlobalVariableList();
 
-            compiler.Scripts.CompileScripts();
-
             // Refactor huge templates into smaller ones (more JIT friendly)
             (new XslAstRewriter()).Rewrite(compiler);
 

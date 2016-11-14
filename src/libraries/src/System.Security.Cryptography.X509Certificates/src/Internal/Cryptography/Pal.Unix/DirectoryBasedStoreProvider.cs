@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -217,6 +218,11 @@ namespace Internal.Cryptography.Pal
                     }
                 } while (currentFilename != null);
             }
+        }
+
+        SafeHandle IStorePal.SafeHandle
+        {
+            get { return null; }
         }
 
         private static string FindExistingFilename(X509Certificate2 cert, string storePath, out bool hadCandidates)

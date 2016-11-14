@@ -381,9 +381,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <!-- remove once we have a package update https://github.com/dotnet/corefx/issues/12838 -->
-    <ProjectReference Include="$(SourceDir)/Microsoft.Win32.Primitives/ref/Microsoft.Win32.Primitives.csproj" />
-    <ProjectReference Include="$(SourceDir)/System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj" />
+    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

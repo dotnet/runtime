@@ -13,6 +13,8 @@ namespace System.IO
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
     internal sealed partial class UnixFileSystem : FileSystem
     {
+        internal const int DefaultBufferSize = 4096;
+
         public override int MaxPath { get { return Interop.Sys.MaxPath; } }
 
         public override int MaxDirectoryPath { get { return Interop.Sys.MaxPath; } }
@@ -32,8 +34,8 @@ namespace System.IO
             }
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
-            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, FileOptions.None))
-            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileStream.DefaultBufferSize, FileOptions.None))
+            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.None))
+            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, DefaultBufferSize, FileOptions.None))
             {
                 Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
@@ -41,17 +43,39 @@ namespace System.IO
 
         public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {
-            // Copy the destination file to a backup.
             if (destBackupFullPath != null)
             {
-                CopyFile(destFullPath, destBackupFullPath, overwrite: true);
+                // We're backing up the destination file to the backup file, so we need to first delete the backup
+                // file, if it exists.  If deletion fails for a reason other than the file not existing, fail.
+                if (Interop.Sys.Unlink(destBackupFullPath) != 0)
+                {
+                    Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
+                    if (errno.Error != Interop.Error.ENOENT)
+                    {
+                        throw Interop.GetExceptionForIoErrno(errno, destBackupFullPath);
+                    }
+                }
+
+                // Now that the backup is gone, link the backup to point to the same file as destination.
+                // This way, we don't lose any data in the destination file, no copy is necessary, etc.
+                Interop.CheckIo(Interop.Sys.Link(destFullPath, destBackupFullPath), destFullPath);
+            }
+            else
+            {
+                // There is no backup file.  Just make sure the destination file exists, throwing if it doesn't.
+                Interop.Sys.FileStatus ignored;
+                if (Interop.Sys.Stat(destFullPath, out ignored) != 0)
+                {
+                    Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
+                    if (errno.Error == Interop.Error.ENOENT)
+                    {
+                        throw Interop.GetExceptionForIoErrno(errno, destBackupFullPath);
+                    }
+                }
             }
 
-            // Then copy the contents of the source file to the destination file.
-            CopyFile(sourceFullPath, destFullPath, overwrite: true);
-
-            // Finally, delete the source file.
-            DeleteFile(sourceFullPath);
+            // Finally, rename the source to the destination, overwriting the destination.
+            Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
         }
 
         public override void MoveFile(string sourceFullPath, string destFullPath)

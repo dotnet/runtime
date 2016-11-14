@@ -21,7 +21,7 @@ namespace System.IO.Compression
 
         // This is the NULL pointer for using with ZLib pointers;
         // we prefer it to IntPtr.Zero to mimic the definition of Z_NULL in zlib.h:
-        internal static readonly IntPtr ZNullPtr = (IntPtr)((Int32)0);
+        internal static readonly IntPtr ZNullPtr = IntPtr.Zero;
 
         public enum FlushCode : int
         {
@@ -53,20 +53,20 @@ namespace System.IO.Compression
         /// ZLib definitions, which map to our public NoCompression, Fastest, and Optimal respectively.
         /// <p><em>Optimal Compression:</em></p>
         /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;</code> <br />
-        ///    <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///    <code>Int32 memLevel = 8;</code> <br />
+        ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
+        ///    <code>int memLevel = 8;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         /// 
         ///<p><em>Fastest compression:</em></p>
         ///<p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestSpeed;</code> <br />
-        ///   <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///   <code>Int32 memLevel = 8; </code> <br />
+        ///   <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
+        ///   <code>int memLevel = 8; </code> <br />
         ///   <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         ///
         /// <p><em>No compression (even faster, useful for data that cannot be compressed such some image formats):</em></p>
         /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.NoCompression;</code> <br />
-        ///    <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///    <code>Int32 memLevel = 7;</code> <br />
+        ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
+        ///    <code>int memLevel = 7;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         /// </summary>
         public enum CompressionLevel : int
@@ -241,7 +241,7 @@ namespace System.IO.Compression
                 [SecurityCritical] set { _zStream.nextIn = value; }
             }
 
-            public UInt32 AvailIn
+            public uint AvailIn
             {
                 [SecurityCritical] get { return _zStream.availIn; }
                 [SecurityCritical] set { _zStream.availIn = value; }
@@ -253,7 +253,7 @@ namespace System.IO.Compression
                 [SecurityCritical] set { _zStream.nextOut = value; }
             }
 
-            public UInt32 AvailOut
+            public uint AvailOut
             {
                 [SecurityCritical] get { return _zStream.availOut; }
                 [SecurityCritical] set { _zStream.availOut = value; }

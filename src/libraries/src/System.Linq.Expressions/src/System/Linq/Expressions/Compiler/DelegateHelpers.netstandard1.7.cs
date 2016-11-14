@@ -11,9 +11,9 @@ namespace System.Linq.Expressions.Compiler
     internal static partial class DelegateHelpers
     {
         /// <summary>
-        /// Finds a delegate type for a CallSite using the types in the ReadOnlyCollection of Expression. 
-        /// 
-        /// We take the readonly collection of Expression explicitly to avoid allocating memory (an array 
+        /// Finds a delegate type for a CallSite using the types in the ReadOnlyCollection of Expression.
+        ///
+        /// We take the readonly collection of Expression explicitly to avoid allocating memory (an array
         /// of types) on lookup of delegate types.
         /// </summary>
         internal static Type MakeCallSiteDelegate(ReadOnlyCollection<Expression> types, Type returnType)
@@ -45,8 +45,8 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Finds a delegate type for a CallSite using the MetaObject array. 
-        /// 
+        /// Finds a delegate type for a CallSite using the MetaObject array.
+        ///
         /// We take the array of MetaObject explicitly to avoid allocating memory (an array of types) on
         /// lookup of delegate types.
         /// </summary>
@@ -55,10 +55,10 @@ namespace System.Linq.Expressions.Compiler
             lock (_DelegateCache)
             {
                 TypeInfo curTypeInfo = _DelegateCache;
- 
+
                 // CallSite
                 curTypeInfo = NextTypeInfo(typeof(CallSite), curTypeInfo);
- 
+
                 // arguments
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -70,10 +70,10 @@ namespace System.Linq.Expressions.Compiler
                     }
                     curTypeInfo = NextTypeInfo(paramType, curTypeInfo);
                 }
- 
+
                 // return type
                 curTypeInfo = NextTypeInfo(returnType, curTypeInfo);
- 
+
                 // see if we have the delegate already
                 if (curTypeInfo.DelegateType == null)
                 {
@@ -92,10 +92,10 @@ namespace System.Linq.Expressions.Compiler
                         }
                         paramTypes[i + 1] = paramType;
                     }
- 
+
                     curTypeInfo.DelegateType = MakeNewDelegate(paramTypes);
                 }
- 
+
                 return curTypeInfo.DelegateType;
             }
         }

@@ -39,6 +39,9 @@
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot'">
+    <Compile Include="System\Security\SecureStringMarshal.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\Attributes.cs" />

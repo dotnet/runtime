@@ -11,9 +11,8 @@ using Microsoft.Win32;
 namespace System.Net.Sockets
 {
     // AcceptOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
-    internal partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
-        private int _localBytesTransferred;
         private Socket _listenSocket;
         private byte[] _buffer;
 
@@ -35,7 +34,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _localBytesTransferred;
+                return _numBytes;
             }
         }
     }

@@ -4,8 +4,6 @@
 
 using System.Reflection;
 using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
 
 
 namespace System.Xml.Serialization

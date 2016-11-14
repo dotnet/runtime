@@ -368,7 +368,7 @@ namespace System.IO.Compression
             TaskToApm.End<int>(asyncResult);
 #endif
 
-        public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             EnsureDecompressionMode();
 
@@ -619,7 +619,7 @@ namespace System.IO.Compression
             TaskToApm.End(asyncResult);
 #endif
 
-        public override Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             EnsureCompressionMode();
 
@@ -636,7 +636,7 @@ namespace System.IO.Compression
             return WriteAsyncCore(array, offset, count, cancellationToken);
         }
 
-        private async Task WriteAsyncCore(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private async Task WriteAsyncCore(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             IncrementAsyncOperations();
             try

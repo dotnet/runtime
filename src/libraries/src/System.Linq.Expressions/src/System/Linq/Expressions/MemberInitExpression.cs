@@ -29,7 +29,7 @@ namespace System.Linq.Expressions
         public sealed override Type Type => NewExpression.Type;
 
         /// <summary>
-        /// Gets a value that indicates whether the expression tree node can be reduced. 
+        /// Gets a value that indicates whether the expression tree node can be reduced.
         /// </summary>
         public override bool CanReduce => true;
 
@@ -57,9 +57,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Reduces the <see cref="MemberInitExpression"/> to a simpler expression. 
+        /// Reduces the <see cref="MemberInitExpression"/> to a simpler expression.
         /// If CanReduce returns true, this should return a valid expression.
-        /// This method is allowed to return another node which itself 
+        /// This method is allowed to return another node which itself
         /// must be reduced.
         /// </summary>
         /// <returns>The reduced expression.</returns>
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions
             {
                 block[i + 1] = ReduceMemberBinding(objVar, bindings[i]);
             }
-            block[count + 1] = keepOnStack ? (Expression)objVar : Expression.Empty();
+            block[count + 1] = keepOnStack ? (Expression)objVar : Utils.Empty;
             return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
         }
 
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions
                 ElementInit element = initializers[i];
                 block[i + 1] = Expression.Call(listVar, element.AddMethod, element.Arguments);
             }
-            block[count + 1] = keepOnStack ? (Expression)listVar : Expression.Empty();
+            block[count + 1] = keepOnStack ? (Expression)listVar : Utils.Empty;
             return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
         }
 

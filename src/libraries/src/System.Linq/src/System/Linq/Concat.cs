@@ -442,7 +442,20 @@ namespace System.Linq
 
             public virtual TSource[] ToArray()
             {
-                return EnumerableHelpers.ToArray(this);
+                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+
+                for (int i = 0; ; i++)
+                {
+                    IEnumerable<TSource> source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
+
+                    builder.AddRange(source);
+                }
+
+                return builder.ToArray();
             }
 
             public List<TSource> ToList()

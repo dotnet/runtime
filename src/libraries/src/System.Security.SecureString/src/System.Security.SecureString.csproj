@@ -8,55 +8,21 @@
     <ProjectGuid>{A958BBDD-3238-4E58-AB7F-390AB6D88233}</ProjectGuid>
     <RootNamespace>System.Security.SecureString</RootNamespace>
     <AssemblyName>System.Security.SecureString</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <Compile Include="System\Security\SecureStringMarshal.net46.cs" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="System\Security\SecureString.cs" />
-    <Compile Include="System\Security\SecureStringMarshal.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == '' ">
-    <Compile Include="System\Security\SecureString.Windows.cs" />
-    <Compile Include="System\Security\SafeBSTRHandle.cs" />
-    <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
-      <Link>Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
-      <Link>Common\Interop\Windows\Interop.CryptProtectMemory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\Interop.FormatMessage.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.ZeroMemory.cs">
-      <Link>Common\Interop\Windows\Interop.ZeroMemory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs">
-      <Link>Common\Interop\Windows\Interop.SysAllocStringLen.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\oleaut32\Interop.SysStringLen.cs">
-      <Link>Common\Interop\Windows\Interop.SysStringLen.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WideCharToMultiByte.cs">
-      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Security\SecureString.Unix.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
