@@ -558,15 +558,13 @@ namespace System
                 throw new ArgumentNullException(nameof(values));
             Contract.EndContractBlock();
 
-            if (values.Length == 0 || values[0] == null)
+            if (values.Length == 0)
                 return string.Empty;
 
-            string firstString = values[0].ToString();
+            string firstString = values[0]?.ToString();
 
             if (values.Length == 1)
-            {
                 return firstString ?? string.Empty;
-            }
 
             StringBuilder result = StringBuilderCache.Acquire();
             result.Append(firstString);
