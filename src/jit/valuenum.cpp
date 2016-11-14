@@ -2656,7 +2656,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTreePtr opA, GenTreePtr opB)
     if (opB->OperGet() == GT_CNS_INT)
     {
         FieldSeqNode* fldSeq = opB->gtIntCon.gtFieldSeq;
-        if ((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()))
+        if (fldSeq != nullptr)
         {
             return ExtendPtrVN(opA, opB->gtIntCon.gtFieldSeq);
         }
@@ -2666,8 +2666,9 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTreePtr opA, GenTreePtr opB)
 
 ValueNum ValueNumStore::ExtendPtrVN(GenTreePtr opA, FieldSeqNode* fldSeq)
 {
+    assert(fldSeq != nullptr);
+
     ValueNum res = NoVN;
-    assert(fldSeq != FieldSeqStore::NotAField());
 
     ValueNum opAvnWx = opA->gtVNPair.GetLiberal();
     assert(VNIsValid(opAvnWx));
@@ -4982,17 +4983,21 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                         assert(lhs->OperGet() == GT_IND);
                         lhsAddr = lhs->gtOp.gtOp1;
                     }
+
                     // For addr-of-local expressions, lib/cons shouldn't matter.
                     assert(lhsAddr->gtVNPair.BothEqual());
                     ValueNum lhsAddrVN = lhsAddr->GetVN(VNK_Liberal);
 
                     // Unpack the PtrToLoc value number of the address.
                     assert(vnStore->IsVNFunc(lhsAddrVN));
+
                     VNFuncApp lhsAddrFuncApp;
                     vnStore->GetVNFunc(lhsAddrVN, &lhsAddrFuncApp);
+
                     assert(lhsAddrFuncApp.m_func == VNF_PtrToLoc);
                     assert(vnStore->IsVNConstant(lhsAddrFuncApp.m_args[0]) &&
                            vnStore->ConstantValue<unsigned>(lhsAddrFuncApp.m_args[0]) == lhsLclNum);
+
                     lhsFldSeq = vnStore->FieldSeqVNToFieldSeq(lhsAddrFuncApp.m_args[1]);
                 }
 
