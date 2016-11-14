@@ -3175,6 +3175,16 @@ var_types Compiler::tmpNormalizeType(var_types type)
 
     type = genActualType(type);
 
+#if defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
+    // For SIMD on 32-bit platforms, we always spill SIMD12 to a 16-byte SIMD16 temp.
+    // This is because we don't have a single instruction to store 12 bytes. We also
+    // allocate non-argument locals as 16 bytes; see lvSize().
+    if (type == TYP_SIMD12)
+    {
+        type = TYP_SIMD16;
+    }
+#endif // defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
+
 #else  // LEGACY_BACKEND
     if (!varTypeIsGC(type))
     {
