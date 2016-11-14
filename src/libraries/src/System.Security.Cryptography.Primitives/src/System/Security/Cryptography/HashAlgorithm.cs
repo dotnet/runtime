@@ -92,6 +92,11 @@ namespace System.Security.Cryptography
             GC.SuppressFinalize(this);
         }
 
+        public void Clear() 
+        {
+            (this as IDisposable).Dispose();
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
