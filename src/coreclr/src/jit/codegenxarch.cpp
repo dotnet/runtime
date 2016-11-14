@@ -4533,6 +4533,22 @@ void CodeGen::genStoreInd(GenTreePtr node)
                     assert(rmwSrc == data->gtGetOp2());
                     genCodeForShiftRMW(storeInd);
                 }
+                else if (data->OperGet() == GT_ADD && rmwSrc->IsIntegralConst(1))
+                {
+                    // Generate inc [mem] instead of "add [mem], 1".
+                    // Note that we don't need to check for GT_SUB of -1 because
+                    // global morph would transform it to GT_ADD of 1.
+                    assert(rmwSrc->isContainedIntOrIImmed());
+                    getEmitter()->emitInsRMW(INS_inc, emitTypeSize(storeInd), storeInd);
+                }
+                else if (data->OperGet() == GT_ADD && rmwSrc->IsIntegralConst(-1))
+                {
+                    // Generate dec [mem] instead of "add [mem], -1".
+                    // Note that we don't need to check for GT_SUB of 1 because
+                    // global morph would transform it to GT_ADD of -1.
+                    assert(rmwSrc->isContainedIntOrIImmed());
+                    getEmitter()->emitInsRMW(INS_dec, emitTypeSize(storeInd), storeInd);
+                }
                 else
                 {
                     // generate code for remaining binary RMW memory ops like add/sub/and/or/xor
