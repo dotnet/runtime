@@ -112,7 +112,7 @@ class PInvokeTest
             // Expected return value = 1 + 2 + 3 + 10 + 11 + 12 = 39
             if (nativeCall_PInvoke_Vector3Arg(iv, v1, str, v2) != 39) 
             {
-                Console.Write("PInvoke Vector3Arg test failed\n");
+                Console.WriteLine("PInvoke Vector3Arg test failed");
                 return false;            
             }
         }
@@ -130,7 +130,7 @@ class PInvokeTest
                 f6, v2,  // stack
                 f7, f8); // stack
             if (sum != 1002) {
-                Console.Write("PInvoke Vector3Arg_Unix test failed\n");
+                Console.WriteLine("PInvoke Vector3Arg_Unix test failed");
                 return false;            
             }
         }
@@ -151,7 +151,7 @@ class PInvokeTest
                 v3,      // stack
                 f9);     // stack
             if (sum != 1090) {
-                Console.Write("PInvoke Vector3Arg_Unix2 test failed\n");
+                Console.WriteLine("PInvoke Vector3Arg_Unix2 test failed");
                 return false;            
             }
         }        
