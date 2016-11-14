@@ -796,10 +796,9 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         currentSP = dac_cast<TADDR>(pThread->GetCachedStackLimit()) + sizeof(TADDR);
 
         // exhaust the frames using DAC api
-        bool frameHadContext;
         for (; status == S_OK; )
         {
-            frameHadContext = false;
+            bool frameHadContext = false;
             status = pStackWalk->GetFrame(&pFrame);
             PCODE addr = NULL;
             if (status == S_OK && pFrame != NULL)
