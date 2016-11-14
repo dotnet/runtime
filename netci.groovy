@@ -1916,8 +1916,13 @@ combinedScenarios.each { scenario ->
                                     // Set time out
                                     setTestJobTimeOut(newJob, scenario)
 
-                                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture}"
-                                    
+                                    if ( lowerConfiguration == "debug" ) {
+                                        // For Debug builds, we will do a P1 test build
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} -priority=1"
+                                    }
+                                    else {
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture}"
+                                    }
                                     // Add archival.
                                     Utilities.addArchival(newJob, "bin/Product/**")
                                     break
