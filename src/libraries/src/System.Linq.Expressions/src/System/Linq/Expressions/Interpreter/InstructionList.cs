@@ -656,12 +656,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitGetArrayItem()
         {
-            Emit(GetArrayItemInstruction.Instruction);
+            Emit(GetArrayItemInstruction.Instance);
         }
 
         public void EmitSetArrayItem()
         {
-            Emit(new SetArrayItemInstruction());
+            Emit(SetArrayItemInstruction.Instance);
         }
 
         public void EmitNewArray(Type elementType)
