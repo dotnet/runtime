@@ -3928,8 +3928,60 @@ namespace System
                     return ParsingError.BadScheme;
                 }
             }
-            // A not well-known scheme, needs string creation
-            // Note it is already in the lower case as required.
+
+            // Special-case common and known schemes to avoid allocations and dictionary lookups in these cases.
+            switch (length)
+            {
+                case 2:
+                    if (ptr[0] == 'w' && ptr[1] == 's')
+                    {
+                        syntax = UriParser.WsUri;
+                        return ParsingError.None;
+                    }
+                    break;
+                case 3:
+                    const int ftpMask = 'f' << 16 | 't' << 8 | 'p';
+                    const int wssMask = 'w' << 16 | 's' << 8 | 's';
+                    switch (ptr[0] << 16 | ptr[1] << 8 | ptr[2])
+                    {
+                        case ftpMask:
+                            syntax = UriParser.FtpUri;
+                            return ParsingError.None;
+                        case wssMask:
+                            syntax = UriParser.WssUri;
+                            return ParsingError.None;
+                    }
+                    break;
+                case 4:
+                    const int httpMask = 'h' << 24 | 't' << 16 | 't' << 8 | 'p';
+                    const int fileMask = 'f' << 24 | 'i' << 16 | 'l' << 8 | 'e';
+                    switch (ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3])
+                    {
+                        case httpMask:
+                            syntax = UriParser.HttpUri;
+                            return ParsingError.None;
+                        case fileMask:
+                            syntax = UriParser.FileUri;
+                            return ParsingError.None;
+                    }
+                    break;
+                case 5:
+                    if (ptr[0] == 'h' && ptr[1] == 't' && ptr[2] == 't' && ptr[3] == 'p' && ptr[4] == 's')
+                    {
+                        syntax = UriParser.HttpsUri;
+                        return ParsingError.None;
+                    }
+                    break;
+                case 6:
+                    if (ptr[0] == 'm' && ptr[1] == 'a' && ptr[2] == 'i' && ptr[3] == 'l' && ptr[4] == 't' && ptr[5] == 'o')
+                    {
+                        syntax = UriParser.MailToUri;
+                        return ParsingError.None;
+                    }
+                    break;
+            }
+
+            // Not special-cased scheme.  Look up the syntax based on the substring.
             string str = new string(ptr, 0, length);
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
