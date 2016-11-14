@@ -5815,7 +5815,7 @@ handle_enum:
 				*conv = MONO_MARSHAL_CONV_STR_TBSTR;
 				return MONO_NATIVE_TBSTR;
 			case MONO_NATIVE_UTF8STR:
-				*conv = MONO_MARSHAL_CONV_STR_LPTSTR;
+				*conv = MONO_MARSHAL_CONV_STR_UTF8STR;
 				return MONO_NATIVE_UTF8STR;
 			case MONO_NATIVE_BYVALTSTR:
 				if (unicode)

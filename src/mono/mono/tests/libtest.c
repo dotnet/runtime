@@ -7250,7 +7250,7 @@ build_return_string(const char* pReturn)
 		return ret;
 
 	size_t strLength = strlen(pReturn);
-	ret = (char *)(malloc(sizeof(char)* (strLength + 1)));
+	ret = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
 	memset(ret, '\0', strLength + 1);
 	strncpy(ret, pReturn, strLength);
 	return ret;
@@ -7268,7 +7268,7 @@ StringParameterRefOut(/*out*/ char **s, int index)
 {
 	char *pszTextutf8 = (char*)utf8Strings[index];
 	size_t strLength = strlen(pszTextutf8);
-	*s = (char *)(malloc(sizeof(char)* (strLength + 1)));
+	*s = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
 	memcpy(*s, pszTextutf8, strLength);
 	(*s)[strLength] = '\0';
 }
@@ -7291,10 +7291,10 @@ StringParameterRef(/*ref*/ char **s, int index)
 
     if (*s)
     {
-       free(*s);
+       marshal_free (*s);
     }
     // overwrite the orginal 
-    *s = (char *)(malloc(sizeof(char)* (strLength + 1)));
+    *s = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
     memcpy(*s, pszTextutf8, strLength);
     (*s)[strLength] = '\0';
 }
@@ -7401,7 +7401,7 @@ StringBuilderParameterReturn(int index)
 {
     char *pszTextutf8 = (char*)utf8Strings[index];
     size_t strLength = strlen(pszTextutf8);
-    char * ret = (char *)(malloc(sizeof(char)* (strLength + 1)));
+    char * ret = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
     memcpy(ret, pszTextutf8, strLength);
     ret[strLength] = '\0';
 
