@@ -158,8 +158,8 @@ namespace System.Net.Http
                 ArrayPool<byte>.Shared.Return(buffer);
             }
 
-            // TODO: ReadAsync wasn't/isn't unpinning the buffer.  Is that a bug?
-            // Should it be unpinned there and here?
+            // Leaving buffer pinned as it is in ReadAsync.  It'll get unpinned when another read
+            // request is made with a different buffer or when the state is cleared.
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
