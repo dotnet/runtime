@@ -22,7 +22,7 @@ namespace System.Data.SqlClient.SNI
         private readonly string _targetServer;
         private readonly object _callbackObject;
         private readonly Socket _socket;
-        private readonly NetworkStream _tcpStream;
+        private NetworkStream _tcpStream;
         private readonly TaskScheduler _writeScheduler;
         private readonly TaskFactory _writeTaskFactory;
 
@@ -56,6 +56,12 @@ namespace System.Data.SqlClient.SNI
                 {
                     _sslStream.Dispose();
                     _sslStream = null;
+                }
+
+                if (_tcpStream != null)
+                {
+                    _tcpStream.Dispose();
+                    _tcpStream = null;
                 }
             }
         }
