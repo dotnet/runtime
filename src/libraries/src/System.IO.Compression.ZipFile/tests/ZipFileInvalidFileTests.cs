@@ -100,7 +100,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("LZMA.zip", true)]
         [InlineData("invalidDeflate.zip", false)]
-        public void UnsupportedCompressionRoutine(string zipName, Boolean throwsOnOpen)
+        public void UnsupportedCompressionRoutine(string zipName, bool throwsOnOpen)
         {
             string filename = bad(zipName);
             using (ZipArchive archive = ZipFile.OpenRead(filename))
@@ -122,7 +122,7 @@ namespace System.IO.Compression.Tests
             using (TempFile updatedCopy = CreateTempCopyFile(filename, GetTestFilePath()))
             {
                 string name;
-                Int64 length, compressedLength;
+                long length, compressedLength;
                 DateTimeOffset lastWriteTime;
                 using (ZipArchive archive = ZipFile.Open(updatedCopy.Path, ZipArchiveMode.Update))
                 {
