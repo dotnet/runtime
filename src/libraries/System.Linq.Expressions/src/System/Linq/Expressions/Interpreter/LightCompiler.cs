@@ -821,12 +821,12 @@ namespace System.Linq.Expressions.Interpreter
                             if (node.NodeType == ExpressionType.Equal)
                             {
                                 // right null, left not, false
-                                _instructions.EmitLoad(ScriptingRuntimeHelpers.Boolean_False, typeof(bool));
+                                _instructions.EmitLoad(AstUtils.BoxedFalse, typeof(bool));
                             }
                             else
                             {
                                 // right null, left not, true
-                                _instructions.EmitLoad(ScriptingRuntimeHelpers.Boolean_True, typeof(bool));
+                                _instructions.EmitLoad(AstUtils.BoxedTrue, typeof(bool));
                             }
                             _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
@@ -871,7 +871,7 @@ namespace System.Linq.Expressions.Interpreter
                                     {
                                         goto default;
                                     }
-                                    _instructions.EmitLoad(ScriptingRuntimeHelpers.Boolean_False, typeof(object));
+                                    _instructions.EmitLoad(AstUtils.BoxedFalse, typeof(object));
                                     break;
                                 default:
                                     _instructions.EmitLoad(null, typeof(object));
@@ -1376,13 +1376,13 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitBranchTrue(returnNull);
 
             // return true
-            _instructions.EmitLoad(andAlso ? ScriptingRuntimeHelpers.Boolean_True : ScriptingRuntimeHelpers.Boolean_False, typeof(object));
+            _instructions.EmitLoad(andAlso ? AstUtils.BoxedTrue : AstUtils.BoxedFalse, typeof(object));
             _instructions.EmitStoreLocal(result.Index);
             _instructions.EmitBranch(returnValue);
 
             // return false
             _instructions.MarkLabel(returnFalse);
-            _instructions.EmitLoad(andAlso ? ScriptingRuntimeHelpers.Boolean_False : ScriptingRuntimeHelpers.Boolean_True, typeof(object));
+            _instructions.EmitLoad(andAlso ? AstUtils.BoxedFalse : AstUtils.BoxedTrue, typeof(object));
             _instructions.EmitStoreLocal(result.Index);
             _instructions.EmitBranch(returnValue);
 
@@ -2871,10 +2871,7 @@ namespace System.Linq.Expressions.Interpreter
                     _instructions.EmitPop();
                 }
 
-                _instructions.EmitLoad(
-                    ScriptingRuntimeHelpers.BooleanToObject(result == AnalyzeTypeIsResult.KnownTrue),
-                    typeof(bool)
-                );
+                _instructions.EmitLoad(result == AnalyzeTypeIsResult.KnownTrue);
                 return;
             }
 
