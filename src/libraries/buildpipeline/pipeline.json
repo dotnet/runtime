@@ -5,9 +5,15 @@
     "Type": "VSTS",
     "BaseUrl":  "https://devdiv.visualstudio.com/DefaultCollection"
   },
-  "DefinitionGroups": [
+  "Pipelines": [
     {
-      "Name": "Product-Build",
+      "Name": "Trusted-All-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Release"
+      },
       "Definitions": [
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Native",
@@ -17,7 +23,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Debian 8.2",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -28,7 +35,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Fedora 2.3",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -39,7 +47,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Fedora 24",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },        
         {
@@ -50,7 +59,8 @@
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 13.2",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -61,7 +71,8 @@
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 42.1",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -72,7 +83,8 @@
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -83,7 +95,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -94,7 +107,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -105,7 +119,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.10",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -116,7 +131,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Alpine 3.4.3",
             "SubType": "native",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },        
         {
@@ -124,7 +140,8 @@
           "ReportingParameters": {
             "SubType": "native",
             "OperatingSystem": "OSX",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -132,7 +149,8 @@
           "ReportingParameters": {
             "SubType": "managed",
             "OperatingSystem": "All (Managed)",
-            "Type": "build/product/"
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -144,7 +162,8 @@
             "SubType": "native",
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Platform": "arm"
+            "Platform": "arm",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -156,7 +175,8 @@
             "SubType": "native",
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Platform": "arm64"
+            "Platform": "arm64",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -168,7 +188,8 @@
             "SubType": "native",
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Platform": "x64"
+            "Platform": "x64",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -180,23 +201,10 @@
             "SubType": "native",
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Platform": "x86"
+            "Platform": "x86",
+            "ConfigurationGroup": "Release"
           }
         }
-      ]
-    }
-  ],
-  "Pipelines": [
-    {
-      "Name": "Trusted-All-Release",
-      "Parameters": {
-        "TreatWarningsAsErrors": "false"
-      },
-      "BuildParameters": {
-        "ConfigurationGroup": "Release"
-      },
-      "DefinitionGroupRefs": [
-        "Product-Build"
       ]
     },
     {
@@ -207,8 +215,197 @@
       "BuildParameters": {
         "ConfigurationGroup": "Debug"
       },
-      "DefinitionGroupRefs": [
-        "Product-Build"
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "debian82_prereqs_2"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "fedora23_prereqs"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Fedora 2.3",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "fedora24_prereqs_v4"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Fedora 24",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },        
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "opensuse132_prereqs_v4"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "openSUSE 13.2",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "opensuse421_prereqs_v3"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "openSUSE 42.1",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "rhel7_prereqs_2"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat 7",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "ubuntu1404_prereqs_v3"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "ubuntu1604_prereqs"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.04",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "ubuntu1610_prereqs_v2"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.10",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "alpine_prereqs"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Alpine 3.4.3",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },        
+        {
+          "Name": "DotNet-CoreFx-Trusted-Mac-Native",
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows",
+          "ReportingParameters": {
+            "SubType": "managed",
+            "OperatingSystem": "All (Managed)",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Native",
+          "Parameters": {
+            "Platform": "arm"
+          },
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Native",
+          "Parameters": {
+            "Platform": "arm64"
+          },
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm64",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Native",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x64",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Native",
+          "Parameters": {
+            "Platform": "x86"
+          },
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x86",
+            "ConfigurationGroup": "Debug"
+          }
+        }
       ]
     },
     {
@@ -244,7 +441,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10",
-            "TargetTestCategory": "Core Tests"
+            "TargetTestCategory": "Core Tests",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -255,7 +453,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Core.Amd64",
-            "TestContainerSuffix": "windows10core"
+            "TestContainerSuffix": "windows10core",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -272,7 +471,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10ilc",
-            "TargetTestCategory": "UWP ILC"
+            "TargetTestCategory": "UWP ILC",
+            "ConfigurationGroup": "Release"
           }            
         },
         {
@@ -288,7 +488,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10uwp",
-            "TargetTestCategory": "UWP"
+            "TargetTestCategory": "UWP",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -304,7 +505,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10desktop",
-            "TargetTestCategory": "Full Framework"
+            "TargetTestCategory": "Full Framework",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -315,7 +517,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": "Windows.7.Amd64",
-            "TestContainerSuffix": "windows7"
+            "TestContainerSuffix": "windows7",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -326,7 +529,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": "Windows.81.Amd64",
-            "TestContainerSuffix": "windows81"
+            "TestContainerSuffix": "windows81",
+            "ConfigurationGroup": "Release"
           }
         }
       ],
@@ -392,7 +596,8 @@
             "TargetQueue": "Centos.71.Amd64",
             "TestContainerSuffix": "centos71",
             "TestNugetRuntimeId": "centos.7-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -406,7 +611,8 @@
             "TargetQueue": "Debian.82.Amd64",
             "TestContainerSuffix": "debian82",
             "TestNugetRuntimeId": "debian.8-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -420,7 +626,8 @@
             "TargetQueue": "Redhat.72.Amd64",
             "TestContainerSuffix": "redhat72",
             "TestNugetRuntimeId": "rhel.7-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -434,7 +641,8 @@
             "TargetQueue": "Ubuntu.1404.Amd64",
             "TestContainerSuffix": "ubuntu1404",
             "TestNugetRuntimeId": "ubuntu.14.04-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -448,7 +656,8 @@
             "TargetQueue": "Ubuntu.1604.Amd64",
             "TestContainerSuffix": "ubuntu1604",
             "TestNugetRuntimeId": "ubuntu.16.04-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -462,7 +671,8 @@
             "TargetQueue": "Fedora.23.Amd64",
             "TestContainerSuffix": "fedora23",
             "TestNugetRuntimeId": "fedora.23-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         },
         {
@@ -476,7 +686,8 @@
             "TargetQueue": "Suse.132.Amd64",
             "TestContainerSuffix": "suse132",
             "TestNugetRuntimeId": "opensuse.13.2-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         }
       ],
@@ -508,7 +719,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": "OSX.1011.Amd64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
           }
         }
       ],
@@ -550,7 +762,8 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10",
             "TargetTestCategory": "Core Tests",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -562,7 +775,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Core.Amd64",
             "TestContainerSuffix": "windows10core",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -580,7 +794,8 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10ilc",
             "TargetTestCategory": "UWP ILC",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }         
         },
         {
@@ -597,7 +812,8 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10uwp",
             "TargetTestCategory": "UWP",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -614,7 +830,8 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10desktop",
             "TargetTestCategory": "Full Framework",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -626,7 +843,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.7.Amd64",
             "TestContainerSuffix": "windows7",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -638,7 +856,8 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.81.Amd64",
             "TestContainerSuffix": "windows81",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         }
       ],
@@ -674,7 +893,8 @@
             "TargetQueue": "Centos.71.Amd64",
             "TestContainerSuffix": "centos71",
             "TestNugetRuntimeId": "centos.7-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -688,7 +908,8 @@
             "TargetQueue": "Debian.82.Amd64",
             "TestContainerSuffix": "debian82",
             "TestNugetRuntimeId": "debian.8-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -702,7 +923,8 @@
             "TargetQueue": "Redhat.72.Amd64",
             "TestContainerSuffix": "redhat72",
             "TestNugetRuntimeId": "rhel.7-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -716,7 +938,8 @@
             "TargetQueue": "Ubuntu.1404.Amd64",
             "TestContainerSuffix": "ubuntu1404",
             "TestNugetRuntimeId": "ubuntu.14.04-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -730,7 +953,8 @@
             "TargetQueue": "Ubuntu.1604.Amd64",
             "TestContainerSuffix": "ubuntu1604",
             "TestNugetRuntimeId": "ubuntu.16.04-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -744,7 +968,8 @@
             "TargetQueue": "Fedora.23.Amd64",
             "TestContainerSuffix": "fedora23",
             "TestNugetRuntimeId": "fedora.23-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         },
         {
@@ -758,7 +983,8 @@
             "TargetQueue": "Suse.132.Amd64",
             "TestContainerSuffix": "suse132",
             "TestNugetRuntimeId": "opensuse.13.2-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         }
       ],
@@ -792,7 +1018,8 @@
             "TargetQueue": "OSX.1011.Amd64",
             "TestContainerSuffix": "osx1011",
             "TestNugetRuntimeId": "osx.10.10-x64",
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
           }
         }
       ],
