@@ -341,5 +341,270 @@ namespace System.Linq.Expressions.Tests
             yield return Tuple.Create(ExpressionType.ExclusiveOrAssign, "^=", typeof(int));
             yield return Tuple.Create(ExpressionType.ExclusiveOrAssign, "^=", typeof(bool));
         }
+
+        private static IEnumerable<ExpressionType> AssignExpressionTypes
+        {
+            get
+            {
+                yield return ExpressionType.AddAssign;
+                yield return ExpressionType.SubtractAssign;
+                yield return ExpressionType.MultiplyAssign;
+                yield return ExpressionType.AddAssignChecked;
+                yield return ExpressionType.SubtractAssignChecked;
+                yield return ExpressionType.MultiplyAssignChecked;
+                yield return ExpressionType.DivideAssign;
+                yield return ExpressionType.ModuloAssign;
+                yield return ExpressionType.PowerAssign;
+                yield return ExpressionType.AndAssign;
+                yield return ExpressionType.OrAssign;
+                yield return ExpressionType.RightShiftAssign;
+                yield return ExpressionType.LeftShiftAssign;
+                yield return ExpressionType.ExclusiveOrAssign;
+            }
+        }
+
+        private static IEnumerable<Func<Expression, Expression, MethodInfo, BinaryExpression>> AssignExpressionMethodInfoUsingFactories
+        {
+            get
+            {
+                yield return Expression.AddAssign;
+                yield return Expression.SubtractAssign;
+                yield return Expression.MultiplyAssign;
+                yield return Expression.AddAssignChecked;
+                yield return Expression.SubtractAssignChecked;
+                yield return Expression.MultiplyAssignChecked;
+                yield return Expression.DivideAssign;
+                yield return Expression.ModuloAssign;
+                yield return Expression.PowerAssign;
+                yield return Expression.AndAssign;
+                yield return Expression.OrAssign;
+                yield return Expression.RightShiftAssign;
+                yield return Expression.LeftShiftAssign;
+                yield return Expression.ExclusiveOrAssign;
+            }
+        }
+
+        public static IEnumerable<object[]> AssignExpressionTypesArguments
+            => AssignExpressionTypes.Select(t => new object[] {t});
+
+        public static IEnumerable<object[]> AssignExpressionMethodInfoUsingFactoriesArguments =
+            AssignExpressionMethodInfoUsingFactories.Select(f => new object[] {f});
+
+        private static IEnumerable<LambdaExpression> NonUnaryLambdas
+        {
+            get
+            {
+                yield return Expression.Lambda<Action>(Expression.Empty());
+                Expression<Func<int, int, int>> exp = (x, y) => x + y;
+                yield return exp;
+            }
+        }
+
+        public static IEnumerable<object[]> AssignExpressionTypesAndNonUnaryLambdas =>
+            AssignExpressionTypes.SelectMany(t => NonUnaryLambdas, (t, l) => new object[] {t, l});
+
+        private static IEnumerable<LambdaExpression> NonIntegerReturnUnaryIntegerLambdas
+        {
+            get
+            {
+                ParameterExpression param = Expression.Parameter(typeof(int));
+                yield return Expression.Lambda<Action<int>>(Expression.Empty(), param);
+                Expression<Func<int, long>> convL = x => x;
+                yield return convL;
+                Expression<Func<int, string>> toString = x => x.ToString();
+                yield return toString;
+            }
+        }
+
+        public static IEnumerable<object[]> AssignExpressionTypesAndNonIntegerReturnUnaryIntegerLambdas
+            => AssignExpressionTypes.SelectMany(t => NonIntegerReturnUnaryIntegerLambdas, (t, l) => new object[] {t, l});
+
+        private static IEnumerable<LambdaExpression> NonIntegerTakingUnaryIntegerReturningLambda
+        {
+            get
+            {
+                Expression<Func<long, int>> fromL = x => (int)x;
+                yield return fromL;
+                Expression<Func<string, int>> fromS = x => x.Length;
+                yield return fromS;
+            }
+        }
+
+        public static IEnumerable<object[]> AssignExpressionTypesAndNonIntegerTakingUnaryIntegerReturningLambda
+            =>
+                AssignExpressionTypes.SelectMany(
+                    t => NonIntegerTakingUnaryIntegerReturningLambda, (t, l) => new object[] {t, l});
+
+        [Theory, MemberData(nameof(AssignExpressionTypesArguments))]
+        public void CannotHaveConversionOnAssignWithoutMethod(ExpressionType type)
+        {
+            var lhs = Expression.Variable(typeof(int));
+            var rhs = Expression.Constant(0);
+            Expression<Func<int, int>> identity = x => x;
+            Assert.Throws<InvalidOperationException>(() => Expression.MakeBinary(type, lhs, rhs, false, null, identity));
+            Assert.Throws<InvalidOperationException>(() => Expression.MakeBinary(type, lhs, rhs, true, null, identity));
+        }
+
+        public static int FiftyNinthBear(int x, int y)
+        {
+            // Ensure numbers add up to 40. Then ignore that and return 59.
+            if (x + y != 40) throw new ArgumentException();
+            return 59;
+        }
+
+        [Theory, PerCompilationType(nameof(AssignExpressionTypesArguments))]
+        public void ConvertAssignment(ExpressionType type, bool useInterpreter)
+        {
+            var lhs = Expression.Parameter(typeof(int));
+            var rhs = Expression.Constant(25);
+            Expression<Func<int, int>> doubleIt = x => 2 * x;
+            var lambda = Expression.Lambda<Func<int, int>>(
+                Expression.MakeBinary(type, lhs, rhs, false, GetType().GetMethod(nameof(FiftyNinthBear)), doubleIt),
+                lhs
+                );
+            var func = lambda.Compile(useInterpreter);
+            Assert.Equal(118, func(15));
+        }
+
+        [Theory, MemberData(nameof(AssignExpressionTypesAndNonUnaryLambdas))]
+        public void ConversionMustBeUnary(ExpressionType type, LambdaExpression conversion)
+        {
+            var lhs = Expression.Parameter(typeof(int));
+            var rhs = Expression.Constant(25);
+            MethodInfo meth = GetType().GetMethod(nameof(FiftyNinthBear));
+            Assert.Throws<ArgumentException>(
+                "conversion", () => Expression.MakeBinary(type, lhs, rhs, false, meth, conversion));
+        }
+
+        [Theory, MemberData(nameof(AssignExpressionTypesAndNonIntegerReturnUnaryIntegerLambdas))]
+        public void ConversionMustConvertToLHSType(ExpressionType type, LambdaExpression conversion)
+        {
+            var lhs = Expression.Parameter(typeof(int));
+            var rhs = Expression.Constant(25);
+            MethodInfo meth = GetType().GetMethod(nameof(FiftyNinthBear));
+            Assert.Throws<InvalidOperationException>(() => Expression.MakeBinary(type, lhs, rhs, false, meth, conversion));
+        }
+
+        [Theory, MemberData(nameof(AssignExpressionTypesAndNonIntegerTakingUnaryIntegerReturningLambda))]
+        public void ConversionMustConvertFromRHSType(ExpressionType type, LambdaExpression conversion)
+        {
+            var lhs = Expression.Parameter(typeof(int));
+            var rhs = Expression.Constant(25);
+            MethodInfo meth = GetType().GetMethod(nameof(FiftyNinthBear));
+            Assert.Throws<InvalidOperationException>(() => Expression.MakeBinary(type, lhs, rhs, false, meth, conversion));
+        }
+
+        private class AddsToSomethingElse : IEquatable<AddsToSomethingElse>
+        {
+            public int Value { get; }
+
+            public AddsToSomethingElse(int value)
+            {
+                Value = value;
+            }
+
+            public static int operator +(AddsToSomethingElse x, AddsToSomethingElse y) => x.Value + y.Value;
+
+            public bool Equals(AddsToSomethingElse other) => Value == other?.Value;
+
+            public override bool Equals(object obj) => Equals(obj as AddsToSomethingElse);
+
+            public override int GetHashCode() => Value;
+        }
+
+        private static string StringAddition(int x, int y) => (x + y).ToString();
+
+        [Fact]
+        public void CannotAssignOpIfOpReturnNotAssignable()
+        {
+            var lhs = Expression.Parameter(typeof(AddsToSomethingElse));
+            var rhs = Expression.Constant(new AddsToSomethingElse(3));
+            Assert.Throws<ArgumentException>(null, () => Expression.AddAssign(lhs, rhs));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CanAssignOpIfOpReturnNotAssignableButConversionFixes(bool useInterpreter)
+        {
+            var lhs = Expression.Parameter(typeof(AddsToSomethingElse));
+            var rhs = Expression.Constant(new AddsToSomethingElse(3));
+            Expression<Func<int, AddsToSomethingElse>> conversion = x => new AddsToSomethingElse(x);
+            var exp = Expression.Lambda<Func<AddsToSomethingElse, AddsToSomethingElse>>(
+                Expression.AddAssign(lhs, rhs, null, conversion),
+                lhs
+                );
+            var func = exp.Compile(useInterpreter);
+            Assert.Equal(new AddsToSomethingElse(10), func(new AddsToSomethingElse(7)));
+        }
+
+        [Theory, PerCompilationType(nameof(AssignExpressionTypesArguments))]
+        public void ConvertOpAssignToMember(ExpressionType type, bool useInterpreter)
+        {
+            Box<int> box = new Box<int>(25);
+            Expression<Func<int, int>> doubleIt = x => x * 2;
+            var exp = Expression.Lambda<Func<int>>(
+                Expression.MakeBinary(
+                    type,
+                    Expression.Property(Expression.Constant(box), "Value"),
+                    Expression.Constant(15),
+                    false,
+                    GetType().GetMethod(nameof(FiftyNinthBear)),
+                    doubleIt
+                    )
+                );
+            var act = exp.Compile(useInterpreter);
+            Assert.Equal(118, act());
+            Assert.Equal(118, box.Value);
+        }
+
+        [Theory, PerCompilationType(nameof(AssignExpressionTypesArguments))]
+        public void ConvertOpAssignToArrayIndex(ExpressionType type, bool useInterpreter)
+        {
+            int[] array = {0, 0, 25, 0};
+            Expression<Func<int, int>> doubleIt = x => x * 2;
+            var exp = Expression.Lambda<Func<int>>(
+                Expression.MakeBinary(
+                    type,
+                    Expression.ArrayAccess(Expression.Constant(array), Expression.Constant(2)),
+                    Expression.Constant(15),
+                    false,
+                    GetType().GetMethod(nameof(FiftyNinthBear)),
+                    doubleIt
+                    )
+                );
+            var act = exp.Compile(useInterpreter);
+            Assert.Equal(118, act());
+            Assert.Equal(118, array[2]);
+        }
+
+        private delegate int ByRefInts(ref int x, int y);
+
+        private delegate int BothByRefInts(ref int x, ref int y);
+
+        [Theory, PerCompilationType(nameof(AssignExpressionMethodInfoUsingFactoriesArguments))]
+        public void MethodNoConvertOpWriteByRefParameter(Func<Expression, Expression, MethodInfo, BinaryExpression> factory, bool useInterpreter)
+        {
+            var pX = Expression.Parameter(typeof(int).MakeByRefType());
+            var pY = Expression.Parameter(typeof(int));
+            var exp = Expression.Lambda<ByRefInts>(factory(pX, pY, GetType().GetMethod(nameof(FiftyNinthBear))), pX, pY);
+            var del = exp.Compile(useInterpreter);
+            int arg = 5;
+            Assert.Equal(59, del(ref arg, 35));
+            Assert.Equal(59, arg);
+        }
+
+        private delegate AddsToSomethingElse ByRefSomeElse(ref AddsToSomethingElse x, AddsToSomethingElse y);
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ConvertOpWriteByRefParameterOverloadedOperator(bool useInterpreter)
+        {
+            var pX = Expression.Parameter(typeof(AddsToSomethingElse).MakeByRefType());
+            var pY = Expression.Parameter(typeof(AddsToSomethingElse));
+            Expression<Func<int, AddsToSomethingElse>> conv = x => new AddsToSomethingElse(x);
+            var exp = Expression.Lambda<ByRefSomeElse>(Expression.AddAssign(pX, pY, null, conv), pX, pY);
+            var del = exp.Compile(useInterpreter);
+            AddsToSomethingElse arg = new AddsToSomethingElse(5);
+            AddsToSomethingElse result = del(ref arg, new AddsToSomethingElse(35));
+            Assert.Equal(result, arg);
+        }
     }
 }
