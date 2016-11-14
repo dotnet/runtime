@@ -42,19 +42,19 @@ namespace System.Diagnostics.Tests
             RemoteInvoke(() =>
             {
                 Process p = Process.GetCurrentProcess();
-                int firstHandleCount = p.HandleCount;
-                var fs1 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate);
-                var fs2 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate);
-                var fs3 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate);
-                p.Refresh();
-                int secondHandleCount = p.HandleCount;
-                Assert.True(firstHandleCount < secondHandleCount);
-                fs1.Dispose();
-                fs2.Dispose();
-                fs3.Dispose();
+                int handleCount = p.HandleCount;
+                using (var fs1 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                using (var fs2 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                using (var fs3 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                {
+                    p.Refresh();
+                    int secondHandleCount = p.HandleCount;
+                    Assert.True(handleCount < secondHandleCount);
+                    handleCount = secondHandleCount;
+                }
                 p.Refresh();
                 int thirdHandleCount = p.HandleCount;
-                Assert.True(thirdHandleCount < secondHandleCount);
+                Assert.True(thirdHandleCount < handleCount);
                 return SuccessExitCode;
             }).Dispose();
         }

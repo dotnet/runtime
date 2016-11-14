@@ -87,10 +87,16 @@ namespace System.Diagnostics
         {
             if (_processInfo.HandleCount <= 0 && _haveProcessId)
             {
-                string path = "/proc/" + _processId.ToString() + "/fd";
+                string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(_processId);
                 if (Directory.Exists(path))
                 {
-                    _processInfo.HandleCount = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly).Length;
+                    try
+                    {
+                        _processInfo.HandleCount = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly).Length;
+                    }
+                    catch (DirectoryNotFoundException) // Occurs when the process is deleted between the Exists check and the GetFiles call.
+                    {
+                    }
                 }
             }
         }
