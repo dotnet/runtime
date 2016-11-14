@@ -224,7 +224,7 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentNullException>("right", () => Expression.Assign(Expression.Variable(typeof(int)), null));
         }
-        
+
         [Theory]
         [InlineData(typeof(int), "Hello", typeof(string))]
         [InlineData(typeof(long), 1, typeof(int))]
@@ -267,7 +267,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [ClassData(typeof(InvalidTypes))]
+        [ClassData(typeof(InvalidTypesData))]
         public static void Left_InvalidType_ThrowsArgumentException(Type type)
         {
             Expression left = new FakeExpression(ExpressionType.Parameter, type);
@@ -275,7 +275,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [ClassData(typeof(InvalidTypes))]
+        [ClassData(typeof(InvalidTypesData))]
         public static void Right_InvalidType_ThrowsArgumentException(Type type)
         {
             Expression right = new FakeExpression(ExpressionType.Parameter, type);

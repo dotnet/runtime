@@ -558,6 +558,48 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
+        public SerializationInfo ReadSerializationInfo(XmlReaderDelegator xmlReader, Type type)
+        {
+            var serInfo = new SerializationInfo(type, XmlObjectSerializer.FormatterConverter);
+            XmlNodeType nodeType;
+            while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
+            {
+                if (nodeType != XmlNodeType.Element)
+                {
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                }
+
+                if (xmlReader.NamespaceURI.Length != 0)
+                {
+                    SkipUnknownElement(xmlReader);
+                    continue;
+                }
+
+                string name = XmlConvert.DecodeName(xmlReader.LocalName);
+
+                IncrementItemCount(1);
+                ReadAttributes(xmlReader);
+                object value;
+                if (attributes.Ref != Globals.NewObjectId)
+                {
+                    xmlReader.Skip();
+                    value = GetExistingObject(attributes.Ref, null, name, String.Empty);
+                }
+                else if (attributes.XsiNil)
+                {
+                    xmlReader.Skip();
+                    value = null;
+                }
+                else
+                {
+                    value = InternalDeserialize(xmlReader, Globals.TypeOfObject, name, String.Empty);
+                }
+
+                serInfo.AddValue(name, value);
+            }
+
+            return serInfo;
+        }
 
         protected virtual DataContract ResolveDataContractFromTypeName()
         {

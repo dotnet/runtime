@@ -11,23 +11,14 @@ using System.Net;
 namespace System.Security.Authentication.ExtendedProtection
 {
     [Serializable]
-    public class ServiceNameCollection : ICollection
+    public class ServiceNameCollection : ReadOnlyCollectionBase
     {
-        // Ideally this would be List<string>, but we want the behavior of members like
-        // CopyTo(Array, int) to behave the same as ArrayList to match the behavior of
-        // the full framework (e.g. throw InvalidCastException for mismatched array types
-        // instead of ArgumentException). Thus, List<object> is used so that the backing
-        // array is typed as object[] like ArrayList.
-        private readonly List<object> _list;
-
         public ServiceNameCollection(ICollection items)
         {
             if (items == null)
             {
                 throw new ArgumentNullException(nameof(items));
             }
-
-            _list = new List<object>(items.Count);
 
             // Normalize and filter for duplicates.
             AddIfNew(items, expectStrings: true);
@@ -36,7 +27,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// <summary>
         /// Merges <paramref name="list"/> and <paramref name="serviceName"/> into a new collection.
         /// </summary>
-        private ServiceNameCollection(List<object> list, string serviceName)
+        private ServiceNameCollection(IList list, string serviceName)
             : this(list, additionalCapacity: 1)
         {
             AddIfNew(serviceName);
@@ -45,7 +36,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// <summary>
         /// Merges <paramref name="list"/> and <paramref name="serviceNames"/> into a new collection.
         /// </summary>
-        private ServiceNameCollection(List<object> list, IEnumerable serviceNames)
+        private ServiceNameCollection(IList list, IEnumerable serviceNames)
             : this(list, additionalCapacity: GetCountOrOne(serviceNames))
         {
             // We have a pretty bad performance here: O(n^2), but since service name lists should
@@ -53,26 +44,22 @@ namespace System.Security.Authentication.ExtendedProtection
             AddIfNew(serviceNames, expectStrings: false);
         }
 
-        private ServiceNameCollection(List<object> list, int additionalCapacity)
+        private ServiceNameCollection(IList list, int additionalCapacity)
         {
             Debug.Assert(list != null);
             Debug.Assert(additionalCapacity >= 0);
 
-            _list = new List<object>(list.Count + additionalCapacity);
-
             foreach (string item in list)
             {
-                _list.Add(item);
+                InnerList.Add(item);
             }
         }
-
-        public int Count => _list.Count;
 
         public bool Contains(string searchServiceName)
         {
             string searchName = NormalizeServiceName(searchServiceName);
 
-            foreach (string serviceName in _list)
+            foreach (string serviceName in InnerList)
             {
                 if (string.Equals(serviceName, searchName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -83,11 +70,9 @@ namespace System.Security.Authentication.ExtendedProtection
             return false;
         }
 
-        public IEnumerator GetEnumerator() => _list.GetEnumerator();
+        public ServiceNameCollection Merge(string serviceName) => new ServiceNameCollection(InnerList, serviceName);
 
-        public ServiceNameCollection Merge(string serviceName) => new ServiceNameCollection(_list, serviceName);
-
-        public ServiceNameCollection Merge(IEnumerable serviceNames) => new ServiceNameCollection(_list, serviceNames);
+        public ServiceNameCollection Merge(IEnumerable serviceNames) => new ServiceNameCollection(InnerList, serviceNames);
 
         /// <summary>
         /// Normalize, check for duplicates, and add each unique value.
@@ -104,7 +89,7 @@ namespace System.Security.Authentication.ExtendedProtection
             ServiceNameCollection snc = serviceNames as ServiceNameCollection;
             if (snc != null)
             {
-                AddIfNew(snc._list);
+                AddIfNew(snc.InnerList);
                 return;
             }
 
@@ -136,7 +121,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// <summary>
         /// Normalize, check for duplicates, and add each unique value.
         /// </summary>
-        private void AddIfNew(List<object> serviceNames)
+        private void AddIfNew(IList serviceNames)
         {
             Debug.Assert(serviceNames != null);
 
@@ -160,7 +145,7 @@ namespace System.Security.Authentication.ExtendedProtection
 
             if (!Contains(serviceName))
             {
-                _list.Add(serviceName);
+                InnerList.Add(serviceName);
             }
         }
 
@@ -277,13 +262,5 @@ namespace System.Security.Authentication.ExtendedProtection
 
             return normalizedServiceName;
         }
-
-        bool ICollection.IsSynchronized => false;
-
-        object ICollection.SyncRoot => NonGenericList.SyncRoot;
-
-        void ICollection.CopyTo(Array array, int index) => NonGenericList.CopyTo(array, index);
-
-        private IList NonGenericList => _list;
     }
 }

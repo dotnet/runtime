@@ -24,7 +24,7 @@ namespace System.Xml.Serialization
         {
             string s = obj as string;
             if (s == null)
-                throw new ArgumentException(null, "obj");
+                throw new ArgumentException(null, nameof(obj));
 
             return CultureInfo.CurrentCulture.TextInfo.ToUpper(s).GetHashCode();
         }

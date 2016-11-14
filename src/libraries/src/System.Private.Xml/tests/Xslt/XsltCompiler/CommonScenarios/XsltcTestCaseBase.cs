@@ -43,6 +43,20 @@ namespace System.Xml.Tests
             s_output = output;
         }
 
+        public static bool xsltcExeFound()
+        {
+            try
+            {
+                // Verify xsltc.exe is available
+                XmlCoreTest.Common.XsltVerificationLibrary.SearchPath("xsltc.exe");
+            }
+            catch (FileNotFoundException)
+            {
+                return false;
+            }
+            return true;
+        }
+
         public override int Init(object objParam)
         {
             // initialize whether this run is in proc or not

@@ -31,12 +31,8 @@ namespace System.Net.Sockets
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError.</summary>
         internal SocketException(SocketError socketError) : base(GetNativeErrorForSocketError(socketError))
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, socketError, Message);
             _errorCode = socketError;
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print($"SocketException::.ctor(SocketError={socketError}):{Message}");
-            }
         }
 
         public override string Message => base.Message;

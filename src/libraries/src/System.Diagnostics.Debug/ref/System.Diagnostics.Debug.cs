@@ -10,6 +10,9 @@ namespace System.Diagnostics
 {
     public static partial class Debug
     {
+        public static bool AutoFlush { get { throw null; } set { } }
+        public static int IndentLevel { get { throw null; } set { } }
+        public static int IndentSize { get { throw null; } set { } }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert(bool condition) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -19,9 +22,21 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert(bool condition, string message, string detailMessageFormat, params object[] args) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Close() { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Fail(string message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Fail(string message, string detailMessage) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Flush() { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Indent() { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Print(string message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Print(string format, params object[] args) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Unindent() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Write(object value) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]

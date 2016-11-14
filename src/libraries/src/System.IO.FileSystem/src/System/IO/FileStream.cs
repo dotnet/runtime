@@ -127,11 +127,11 @@ namespace System.IO
             string badArg = null;
 
             if (mode < FileMode.CreateNew || mode > FileMode.Append)
-                badArg = "mode";
+                badArg = nameof(mode);
             else if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                badArg = "access";
+                badArg = nameof(access);
             else if (tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete))
-                badArg = "share";
+                badArg = nameof(share);
 
             if (badArg != null)
                 throw new ArgumentOutOfRangeException(badArg, SR.ArgumentOutOfRange_Enum);

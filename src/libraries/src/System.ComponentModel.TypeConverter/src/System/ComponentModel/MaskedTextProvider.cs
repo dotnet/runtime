@@ -233,7 +233,7 @@ namespace System.ComponentModel
         {
             if (string.IsNullOrEmpty(mask))
             {
-                throw new ArgumentException(SR.Format(SR.MaskedTextProviderMaskNullOrEmpty), "mask");
+                throw new ArgumentException(SR.Format(SR.MaskedTextProviderMaskNullOrEmpty), nameof(mask));
             }
 
             foreach (char c in mask)
@@ -959,7 +959,7 @@ namespace System.ComponentModel
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             testPosition = LastAssignedPosition + 1;
@@ -1339,7 +1339,7 @@ namespace System.ComponentModel
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             if (position < 0 || position >= _testString.Length)
@@ -1908,7 +1908,7 @@ namespace System.ComponentModel
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             if (position < 0 || position >= _testString.Length)
@@ -1947,7 +1947,7 @@ namespace System.ComponentModel
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             if (endPosition >= _testString.Length)
@@ -2136,7 +2136,7 @@ namespace System.ComponentModel
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             resultHint = MaskedTextResultHint.Unknown;

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -161,8 +162,9 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 {
                     try
                     {
-                        TestException ex = Assert.Throws<TestException>(() => e.Result);
-                        Assert.Equal(expectedExceptionMsg, ex.Message);
+                        TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => e.Result);
+                        Assert.True(ex.InnerException is TestException);
+                        Assert.Equal(expectedExceptionMsg, ex.InnerException.Message);
                     }
                     finally
                     {

@@ -84,7 +84,6 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
-    <Project Include="XmlSerializer\Performance\System.Xml.XmlSerializer.Performance.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
@@ -115,6 +114,10 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj" />
+    <Project Include="Misc\System.Xml.Misc.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0;netcore50</TestTFMs>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

@@ -15,7 +15,7 @@ We intend to bring dotnet/corefx into full conformance with the style guidelines
 API Changes
 -----------
 
-* **DO NOT** submit to the *master* branch API additions to any type that has shipped in the full .NET framework. Instead, use the *future* branch. See [Branching Guide](branching-guide.md). Further, do not submit such PRs until the APIs have been approved via the [API Review Process](api-review-process.md).
+* **DO NOT** submit such PRs until the APIs have been approved via the [API Review Process](api-review-process.md).
 
 Pull Requests
 -------------

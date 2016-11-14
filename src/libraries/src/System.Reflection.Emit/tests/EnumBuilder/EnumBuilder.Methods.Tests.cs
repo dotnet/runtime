@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -9,15 +10,129 @@ namespace System.Reflection.Emit.Tests
 {
     public class EnumBuilderMethodTests
     {
+        public static IEnumerable<object[]> DefineLiteral_TestData()
+        {
+            yield return new object[] { typeof(byte), (byte)0 };
+            yield return new object[] { typeof(byte), (byte)1 };
+
+            yield return new object[] { typeof(sbyte), (sbyte)0 };
+            yield return new object[] { typeof(sbyte), (sbyte)1 };
+
+            yield return new object[] { typeof(ushort), (ushort)0 };
+            yield return new object[] { typeof(ushort), (ushort)1 };
+
+            yield return new object[] { typeof(short), (short)0 };
+            yield return new object[] { typeof(short), (short)1 };
+
+            yield return new object[] { typeof(uint), (uint)0 };
+            yield return new object[] { typeof(uint), (uint)1 };
+
+            yield return new object[] { typeof(int), 0 };
+            yield return new object[] { typeof(int), 1 };
+
+            yield return new object[] { typeof(ulong), (ulong)0 };
+            yield return new object[] { typeof(ulong), (ulong)1 };
+
+            yield return new object[] { typeof(long), (long)0 };
+            yield return new object[] { typeof(long), (long)1 };
+
+            yield return new object[] { typeof(char), (char)0 };
+            yield return new object[] { typeof(char), (char)1 };
+
+            yield return new object[] { typeof(bool), true };
+            yield return new object[] { typeof(bool), false };
+
+            yield return new object[] { typeof(float), 0f };
+            yield return new object[] { typeof(float), 1.1f };
+
+            yield return new object[] { typeof(double), 0d };
+            yield return new object[] { typeof(double), 1.1d };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefineLiteral_TestData))]
+        public void DefineLiteral(Type underlyingType, object literalValue)
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, underlyingType);
+            FieldBuilder literal = enumBuilder.DefineLiteral("FieldOne", literalValue);
+
+            Assert.Equal("FieldOne", literal.Name);
+            Assert.Equal(enumBuilder.Name, literal.DeclaringType.Name);
+            Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal, literal.Attributes);
+            Assert.Equal(enumBuilder.AsType(), literal.FieldType);
+
+            Type createdEnum = enumBuilder.CreateTypeInfo().AsType();
+            FieldInfo createdLiteral = createdEnum.GetField("FieldOne");
+            Assert.Equal(createdEnum, createdLiteral.FieldType);
+
+            if (literalValue is bool || literalValue is float || literalValue is double)
+            {
+                // EnumBuilder generates invalid data for non-integer enums
+                Assert.Throws<FormatException>(() => createdLiteral.GetValue(null));
+            }
+            else
+            {
+                Assert.Equal(Enum.ToObject(createdEnum, literalValue), createdLiteral.GetValue(null));
+            }
+        }
+
         [Fact]
-        public void DefineLiteral()
+        public void DefineLiteral_NullLiteralName_ThrowsArgumentNullException()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            FieldBuilder field = enumBuilder.DefineLiteral("FieldOne", 1);
-            enumBuilder.AsType();
-            Assert.True(field.IsLiteral);
-            Assert.True(field.IsPublic);
-            Assert.True(field.IsStatic);
+            Assert.Throws<ArgumentNullException>("fieldName", () => enumBuilder.DefineLiteral(null, 1));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("\0")]
+        [InlineData("\0abc")]
+        public void DefineLiteral_EmptyLiteralName_ThrowsArgumentException(string literalName)
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            Assert.Throws<ArgumentException>("fieldName", () => enumBuilder.DefineLiteral(literalName, 1));
+        }
+
+        public static IEnumerable<object[]> DefineLiteral_InvalidLiteralValue_ThrowsArgumentException_TestData()
+        {
+            yield return new object[] { typeof(int), null };
+            yield return new object[] { typeof(int), (short)1 };
+            yield return new object[] { typeof(short), 1 };
+            yield return new object[] { typeof(float), 1d };
+            yield return new object[] { typeof(double), 1f };
+
+            yield return new object[] { typeof(IntPtr), (IntPtr)1 };
+            yield return new object[] { typeof(UIntPtr), (UIntPtr)1 };
+
+            yield return new object[] { typeof(int).MakePointerType(), 1 };
+            yield return new object[] { typeof(int).MakeByRefType(), 1 };
+            yield return new object[] { typeof(int[]), new int[] { 1 } };
+            yield return new object[] { typeof(int?), 1 };
+            yield return new object[] { typeof(int?), null };
+            yield return new object[] { typeof(string), null };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefineLiteral_InvalidLiteralValue_ThrowsArgumentException_TestData))]
+        public void DefineLiteral_InvalidLiteralValue_ThrowsArgumentException(Type underlyingType, object literalValue)
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, underlyingType);
+            Assert.Throws<ArgumentException>(null, () => enumBuilder.DefineLiteral("LiteralName", literalValue));
+        }
+
+        public static IEnumerable<object[]> DefineLiteral_InvalidLiteralValue_ThrowsTypeLoadExceptionOnCreation_TestData()
+        {
+            yield return new object[] { typeof(DateTime), DateTime.Now };
+            yield return new object[] { typeof(string), "" }; ;
+        }
+
+        [Theory]
+        [MemberData(nameof(DefineLiteral_InvalidLiteralValue_ThrowsTypeLoadExceptionOnCreation_TestData))]
+        public void DefineLiteral_InvalidLiteralValue_ThrowsTypeLoadExceptionOnCreation(Type underlyingType, object literalValue)
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, underlyingType);
+            FieldBuilder literal = enumBuilder.DefineLiteral("LiteralName", literalValue);
+            Assert.Throws<TypeLoadException>(() => enumBuilder.CreateTypeInfo());
         }
 
         [Fact]
@@ -101,10 +216,8 @@ namespace System.Reflection.Emit.Tests
             enumBuilder.SetCustomAttribute(attributeConstructor, new byte[] { 01, 00, 01 });
 
             Attribute[] objVals = enumBuilder.GetCustomAttributes(true).ToArray();
-            Assert.Equal(1, objVals.Length);
             Assert.Equal(new BoolAttribute(true), objVals[0]);
         }
-
 
         [Fact]
         public void SetCustomAttribute_CustomAttributeBuilder()
@@ -113,12 +226,11 @@ namespace System.Reflection.Emit.Tests
             enumBuilder.CreateTypeInfo().AsType();
 
             ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
-            CustomAttributeBuilder myCustomAttribute = new CustomAttributeBuilder(attributeConstructor, new object[] { true });
-            enumBuilder.SetCustomAttribute(myCustomAttribute);
+            CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, new object[] { true });
+            enumBuilder.SetCustomAttribute(attributeBuilder);
 
             object[] objVals = enumBuilder.GetCustomAttributes(true).ToArray();
-            Assert.Equal(1, objVals.Length);
-            Assert.True(objVals[0].Equals(new BoolAttribute(true)));
+            Assert.Equal(new BoolAttribute(true), objVals[0]);
         }
 
         public class BoolAttribute : Attribute

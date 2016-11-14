@@ -752,7 +752,7 @@ namespace System.Net
             {
                 // only set by HttpListenerRequest::Cookies_get()
 #if !NETNative_SystemNetHttp
-                GlobalLog.Assert(value == CookieVariant.Rfc2965, "Cookie#{0}::set_Variant()|value:{1}", Logging.HashString(this), value);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"value:{value}");
 #endif
                 m_cookieVariant = value;
             }
@@ -961,7 +961,9 @@ namespace System.Net
         internal void Dump()
         {
 #if !NETNative_SystemNetHttp
-            GlobalLog.Print("Cookie: " + ToString() + "->\n"
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Info(this, 
+                              "Cookie: " + ToString() + "->\n"
                             + "\tComment    = " + Comment + "\n"
                             + "\tCommentUri = " + CommentUri + "\n"
                             + "\tDiscard    = " + Discard + "\n"

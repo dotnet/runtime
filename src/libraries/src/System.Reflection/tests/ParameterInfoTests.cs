@@ -142,14 +142,12 @@ namespace System.Reflection.Tests
 
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithOptionalDefaultOutInMarshalParam", 0,
-            new ParameterAttributes[] { ParameterAttributes.Optional, ParameterAttributes.HasDefault, ParameterAttributes.HasFieldMarshal, ParameterAttributes.Out, ParameterAttributes.In })]
-        public void Attributes(Type type, string name, int index, ParameterAttributes[] expected)
+             ParameterAttributes.Optional | ParameterAttributes.HasDefault | ParameterAttributes.HasFieldMarshal | ParameterAttributes.Out | ParameterAttributes.In)]
+        public void Attributes(Type type, string name, int index, ParameterAttributes expected)
         {
             ParameterInfo parameterInfo = GetParameterInfo(type, name, index);
-            foreach (ParameterAttributes attribute in expected)
-            {
-                Assert.True((parameterInfo.Attributes & attribute) == attribute);
-            }
+
+            Assert.Equal(expected, parameterInfo.Attributes);
         }
 
         [Theory]

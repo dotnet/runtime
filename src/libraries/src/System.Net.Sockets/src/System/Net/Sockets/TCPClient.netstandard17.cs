@@ -9,10 +9,7 @@ namespace System.Net.Sockets
         // Initializes a new instance of the System.Net.Sockets.TcpClient class with the specified end point.
         public TcpClient(IPEndPoint localEP)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), localEP);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
 
             if (localEP == null)
             {
@@ -25,20 +22,14 @@ namespace System.Net.Sockets
             InitializeClientSocket();
             Client.Bind(localEP);
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), "");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on 
         // the specified host.
         public TcpClient(string hostname, int port)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), hostname);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
 
             if (hostname == null)
             {
@@ -68,19 +59,13 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), null);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Connect), hostname);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
             if (_cleanedUp)
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
@@ -106,19 +91,13 @@ namespace System.Net.Sockets
 
             ConnectCore(hostname, port);
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Connect), null);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Connect), address);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
             if (_cleanedUp)
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
@@ -135,19 +114,13 @@ namespace System.Net.Sockets
             IPEndPoint remoteEP = new IPEndPoint(address, port);
             Connect(remoteEP);
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Connect), null);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Connect), remoteEP);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
             if (_cleanedUp)
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
@@ -160,25 +133,16 @@ namespace System.Net.Sockets
             Client.Connect(remoteEP);
             _active = true;
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Connect), null);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public void Connect(IPAddress[] ipAddresses, int port)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Connect), ipAddresses);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, ipAddresses);
 
             ConnectCore(ipAddresses, port);
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Connect), null);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public void Close()

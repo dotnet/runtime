@@ -14,6 +14,7 @@ namespace System.Security.Permissions.Tests
             HostProtectionException hpe = new HostProtectionException();
             hpe.ToString();
         }
+
         [Fact]
         public static void HostProtectionAttributeCallMethods()
         {

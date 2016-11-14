@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Dynamic.Runtime.cs" />
-    <Compile Include="System.Dynamic.Runtime.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

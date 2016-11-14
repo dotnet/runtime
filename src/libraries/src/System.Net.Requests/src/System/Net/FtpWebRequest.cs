@@ -106,7 +106,7 @@ namespace System.Net
                 if (method == methodInfo.Method)
                     return methodInfo;
             // We don't support generic methods
-            throw new ArgumentException(SR.net_ftp_unsupported_method, "method");
+            throw new ArgumentException(SR.net_ftp_unsupported_method, nameof(method));
         }
 
         private static readonly FtpMethodInfo[] s_knownMethodInfo =
@@ -276,7 +276,7 @@ namespace System.Net
             {
                 if (String.IsNullOrEmpty(value))
                 {
-                    throw new ArgumentException(SR.net_ftp_invalid_method_name, "value");
+                    throw new ArgumentException(SR.net_ftp_invalid_method_name, nameof(value));
                 }
                 if (InUse)
                 {
@@ -288,7 +288,7 @@ namespace System.Net
                 }
                 catch (ArgumentException)
                 {
-                    throw new ArgumentException(SR.net_ftp_unsupported_method, "value");
+                    throw new ArgumentException(SR.net_ftp_unsupported_method, nameof(value));
                 }
             }
         }
@@ -314,7 +314,7 @@ namespace System.Net
 
                 if (String.IsNullOrEmpty(value))
                 {
-                    throw new ArgumentException(SR.net_ftp_invalid_renameto, "value");
+                    throw new ArgumentException(SR.net_ftp_invalid_renameto, nameof(value));
                 }
 
                 _renameTo = value;
@@ -338,11 +338,11 @@ namespace System.Net
                 }
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value == CredentialCache.DefaultNetworkCredentials)
                 {
-                    throw new ArgumentException(SR.net_ftp_no_defaultcreds, "value");
+                    throw new ArgumentException(SR.net_ftp_no_defaultcreds, nameof(value));
                 }
                 _authInfo = value;
             }
@@ -376,7 +376,7 @@ namespace System.Net
                 }
                 if (value < 0 && value != System.Threading.Timeout.Infinite)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_ge_zero);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
                 }
                 if (_timeout != value)
                 {
@@ -414,7 +414,7 @@ namespace System.Net
                 }
                 if (value <= 0 && value != System.Threading.Timeout.Infinite)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_gt_zero);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
                 }
                 _readWriteTimeout = value;
             }
@@ -437,7 +437,7 @@ namespace System.Net
                 }
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _contentOffset = value;
             }
@@ -513,11 +513,10 @@ namespace System.Net
 
         internal FtpWebRequest(Uri uri)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, ".ctor", uri.ToString());
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, uri);
 
             if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
-                throw new ArgumentOutOfRangeException("uri");
+                throw new ArgumentOutOfRangeException(nameof(uri));
 
             _timerCallback = new TimerThread.Callback(TimerCallback);
             _syncObject = new object();
@@ -551,15 +550,10 @@ namespace System.Net
         //
         public override WebResponse GetResponse()
         {
-            if (NetEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "GetResponse", "");
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "GetResponse", string.Format("Method: {0}", _methodInfo.Method));
-            }
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::GetResponse");
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
             }
 
             try
@@ -623,28 +617,14 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "GetResponse", exception);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
 
                 // if _exception == null, we are about to throw an exception to the user
                 // and we haven't saved the exception, which also means we haven't dealt
                 // with it. So just release the connection and log this for investigation.
                 if (_exception == null)
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.PrintWarning(NetEventSource.ComponentType.Web, "Unexpected exception in GetResponse()");
-
-                    if (!ExceptionCheck.IsFatal(exception))
-                    {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Assert("Find out why we are getting an unexpected exception.");
-                        }
-
-                        Debug.Fail("Find out why we are getting an unexpected exception.");
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                     SetException(exception);
                     FinishRequestStage(RequestStage.CheckForError);
                 }
@@ -652,12 +632,7 @@ namespace System.Net
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::GetResponse", "returns #" + LoggingHash.HashString(_ftpWebResponse));
-                }
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "GetResponse", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _ftpWebResponse);
             }
             return _ftpWebResponse;
         }
@@ -667,14 +642,10 @@ namespace System.Net
         /// </summary>
         public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
         {
-            if (NetEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "BeginGetResponse", "");
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "BeginGetResponse", string.Format("Method: {0}", _methodInfo.Method));
-            }
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::BeginGetResponse");
+                NetEventSource.Enter(this);
+                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
             }
 
             ContextAwareResult asyncResult;
@@ -738,19 +709,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "BeginGetResponse", exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::BeginGetResponse");
-                }
-
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "BeginGetResponse", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -761,25 +725,18 @@ namespace System.Net
         /// </summary>
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "EndGetResponse", "");
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::EndGetResponse");
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 // parameter validation
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
                 LazyAsyncResult castedAsyncResult = asyncResult as LazyAsyncResult;
                 if (castedAsyncResult == null)
                 {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
                 if (castedAsyncResult.EndCalled)
                 {
@@ -792,18 +749,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "EndGetResponse", exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::EndGetResponse");
-                }
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "EndGetResponse", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return _ftpWebResponse;
@@ -814,16 +765,12 @@ namespace System.Net
         /// </summary>
         public override Stream GetRequestStream()
         {
-            if (NetEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "GetRequestStream", "");
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "GetRequestStream", string.Format("Method: {0}", _methodInfo.Method));
+                NetEventSource.Enter(this);
+                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::GetRequestStream");
-            }
             try
             {
                 if (_getRequestStreamStarted)
@@ -863,18 +810,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "GetRequestStream", exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::GetRequestStream");
-                }
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "GetRequestStream", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return _stream;
         }
@@ -884,14 +825,10 @@ namespace System.Net
         /// </summary>
         public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
         {
-            if (NetEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "BeginGetRequestStream", "");
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "BeginGetRequestStream", string.Format("Method: {0}", _methodInfo.Method));
-            }
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::BeginGetRequestStream");
+                NetEventSource.Enter(this);
+                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
             }
 
             ContextAwareResult asyncResult = null;
@@ -920,18 +857,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "BeginGetRequestStream", exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::BeginGetRequestStream");
-                }
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "BeginGetRequestStream", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -939,27 +870,20 @@ namespace System.Net
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "EndGetRequestStream", "");
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::EndGetRequestStream");
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             Stream requestStream = null;
             try
             {
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 LazyAsyncResult castedAsyncResult = asyncResult as LazyAsyncResult;
 
                 if (castedAsyncResult == null)
                 {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
 
                 if (castedAsyncResult.EndCalled)
@@ -981,18 +905,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "EndGetRequestStream", exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::EndGetRequestStream");
-                }
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "EndGetRequestStream", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return requestStream;
         }
@@ -1041,10 +959,7 @@ namespace System.Net
                         }
                     }
 
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("Request being submitted" + LoggingHash.HashString(this));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Request being submitted");
 
                     connection.SetSocketTimeoutOption(RemainingTimeout);
 
@@ -1214,18 +1129,12 @@ namespace System.Net
         /// </summary>
         private void TimerCallback(TimerThread.Timer timer, int timeNoticed, object context)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("FtpWebRequest#" + LoggingHash.HashString(this) + "::TimerCallback");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             FtpControlStream connection = _connection;
             if (connection != null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("FtpWebRequest#" + LoggingHash.HashString(this) + "::TimerCallback aborting connection");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "aborting connection");
                 connection.AbortConnect();
             }
         }
@@ -1264,8 +1173,7 @@ namespace System.Net
                 if (_connection != null)
                 {
                     _connection.CloseSocket();
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "", string.Format("Releasing connection: {0}", LoggingHash.HashString(_connection)));
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing connection: {_connection}");
                     _connection = null;
                 }
                 else
@@ -1281,10 +1189,7 @@ namespace System.Net
         /// </summary>
         private void SetException(Exception exception)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("FtpWebRequest#" + LoggingHash.HashString(this) + "::SetException");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             if (exception is OutOfMemoryException)
             {
@@ -1343,10 +1248,7 @@ namespace System.Net
         //
         private void SyncRequestCallback(object obj)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::SyncRequestCallback", "#" + LoggingHash.HashString(obj));
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, obj);
 
             RequestStage stageMode = RequestStage.CheckForError;
             try
@@ -1354,10 +1256,7 @@ namespace System.Net
                 bool completedRequest = obj == null;
                 Exception exception = obj as Exception;
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("SyncRequestCallback() exp:" + LoggingHash.HashString(exception) + " completedRequest:" + LoggingHash.HashString(completedRequest));
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"exp:{exception} completedRequest:{completedRequest}");
 
                 if (exception != null)
                 {
@@ -1390,10 +1289,7 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::SyncRequestCallback");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 CheckError(); //will throw on error
             }
         }
@@ -1403,10 +1299,7 @@ namespace System.Net
         //
         private void AsyncRequestCallback(object obj)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("FtpWebRequest#" + LoggingHash.HashString(this) + "::AsyncRequestCallback", "#" + LoggingHash.HashString(obj));
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, obj);
             RequestStage stageMode = RequestStage.CheckForError;
 
             try
@@ -1418,10 +1311,7 @@ namespace System.Net
 
                 bool completedRequest = (obj == null);
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("AsyncRequestCallback()  stream:" + LoggingHash.HashString(stream) + " conn:" + LoggingHash.HashString(connection) + " exp:" + LoggingHash.HashString(exception) + " completedRequest:" + LoggingHash.HashString(completedRequest));
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"stream:{stream} conn:{connection} exp:{exception} completedRequest:{completedRequest}");
                 while (true)
                 {
                     if (exception != null)
@@ -1447,14 +1337,12 @@ namespace System.Net
                         {
                             if (_aborted)
                             {
-                                if (NetEventSource.Log.IsEnabled())
-                                    NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "", string.Format("Releasing connection: {0}", LoggingHash.HashString(connection)));
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing connect:{connection}");
                                 connection.CloseSocket();
                                 break;
                             }
                             _connection = connection;
-                            if (NetEventSource.Log.IsEnabled())
-                                NetEventSource.Associate(NetEventSource.ComponentType.Web, this, _connection);
+                            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
                         }
 
                         try
@@ -1514,10 +1402,7 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("FtpWebRequest#" + LoggingHash.HashString(this) + "::AsyncRequestCallback");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -1535,10 +1420,8 @@ namespace System.Net
         //
         private RequestStage FinishRequestStage(RequestStage stage)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("FtpWebRequest#" + LoggingHash.HashString(this) + "::FinishRequestStage : stage=" + stage);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"state:{stage}");
+
             if (_exception != null)
                 stage = RequestStage.ReleaseConnection;
 
@@ -1601,8 +1484,7 @@ namespace System.Net
                     }
                     finally
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.PrintInfo(NetEventSource.ComponentType.Web, this, "", string.Format("Releasing connection: {0}", LoggingHash.HashString(connection)));
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing connection: {connection}");
                         connection.CloseSocket();
                         if (_async)
                             if (_requestCompleteAsyncResult != null)
@@ -1649,16 +1531,10 @@ namespace System.Net
             if (_aborted)
                 return;
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "Abort", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             try
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("FtpWebRequest#" + LoggingHash.HashString(this) + "::Abort()");
-                }
-
                 Stream stream;
                 FtpControlStream connection;
                 lock (_syncObject)
@@ -1675,12 +1551,7 @@ namespace System.Net
                 {
                     if (!(stream is ICloseEx))
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Assert("FtpWebRequest.Abort()|The _stream member is not CloseEx hence the risk of connection been orphaned.");
-                        }
-
-                        Debug.Fail("FtpWebRequest.Abort()|The _stream member is not CloseEx hence the risk of connection been orphaned.");
+                        NetEventSource.Fail(this, "The _stream member is not CloseEx hence the risk of connection been orphaned.");
                     }
 
                     ((ICloseEx)stream).CloseEx(CloseExState.Abort | CloseExState.Silent);
@@ -1690,14 +1561,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exception(NetEventSource.ComponentType.Web, this, "Abort", exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "Abort", "");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -1790,7 +1659,7 @@ namespace System.Net
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _clientCertificates = value;
             }
@@ -1941,10 +1810,7 @@ namespace System.Net
                 }
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("FtpWebRequest#" + LoggingHash.HashString(this) + "::EnsureFtpWebResponse returns #" + LoggingHash.HashString(_ftpWebResponse) + " with stream#" + LoggingHash.HashString(_ftpWebResponse._responseStream));
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Returns {_ftpWebResponse} with stream {_ftpWebResponse._responseStream}");
 
             return;
         }

@@ -134,7 +134,7 @@ namespace System.Threading
                     // that IAsyncInfo, because there's nothing Post can do with it (since Post returns void).
                     // So, to avoid these exceptions being lost forever, we post them to the ThreadPool.
                     //
-                    if (!(ex is ThreadAbortException) && !(ex is AppDomainUnloadedException))
+                    if (!(ex is ThreadAbortException) && !(ex.GetType().Name.EndsWith("AppDomainUnloadedException")))
                     {
                         if (!WindowsRuntimeMarshal.ReportUnhandledError(ex))
                         {

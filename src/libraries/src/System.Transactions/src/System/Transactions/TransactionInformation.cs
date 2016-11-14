@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Transactions.Diagnostics;
-
 namespace System.Transactions
 {
     public class TransactionInformation
@@ -19,20 +17,21 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "TransactionInformation.get_LocalIdentifier");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
-
+ 
                 try
                 {
                     return _internalTransaction.TransactionTraceId.TransactionIdentifier;
                 }
                 finally
                 {
-                    if (DiagnosticTrace.Verbose)
+                    if (etwLog.IsEnabled())
                     {
-                        MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "TransactionInformation.get_LocalIdentifier");
+                        etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                     }
                 }
             }
@@ -43,9 +42,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "TransactionInformation.get_DistributedIdentifier");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 try
@@ -60,9 +60,9 @@ namespace System.Transactions
                 }
                 finally
                 {
-                    if (DiagnosticTrace.Verbose)
+                    if (etwLog.IsEnabled())
                     {
-                        MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "TransactionInformation.get_DistributedIdentifier");
+                        etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                     }
                 }
             }
@@ -75,9 +75,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "TransactionInformation.get_Status");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 try
@@ -86,9 +87,9 @@ namespace System.Transactions
                 }
                 finally
                 {
-                    if (DiagnosticTrace.Verbose)
+                    if (etwLog.IsEnabled())
                     {
-                        MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "TransactionInformation.get_Status");
+                        etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                     }
                 }
             }

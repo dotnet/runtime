@@ -128,6 +128,7 @@
     <Compile Include="System\CodeDom\FieldDirection.cs" />
     <Compile Include="System\CodeDom\MemberAttributes.cs" />
     <Compile Include="System\Collections\Specialized\FixedStringLookup.cs" />
+    <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="System" />

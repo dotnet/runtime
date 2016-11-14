@@ -685,11 +685,7 @@ namespace System.Net
 #if !NETNative_SystemNetHttp
                 if (value != CookieVariant.Rfc2965)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("Cookie#{0}::set_Variant()|value:{1}", LoggingHash.HashString(this), value);
-                    }
-                    Debug.Fail("Cookie#" + LoggingHash.HashString(this) + "::set_Variant()|value:" + value);
+                    NetEventSource.Fail(this, $"value != Rfc2965:{value}");
                 }
 #endif
                 _cookieVariant = value;
@@ -857,9 +853,10 @@ namespace System.Net
         internal void Dump()
         {
 #if !NETNative_SystemNetHttp
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Print("Cookie: " + ToString() + "->\n"
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
+                                  "Cookie: "        + ToString() + "->\n"
                                 + "\tComment    = " + Comment + "\n"
                                 + "\tCommentUri = " + CommentUri + "\n"
                                 + "\tDiscard    = " + Discard + "\n"

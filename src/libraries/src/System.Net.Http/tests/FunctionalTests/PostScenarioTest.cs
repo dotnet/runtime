@@ -217,8 +217,7 @@ namespace System.Net.Http.Functional.Tests
                 // Send HEAD request to help bypass the 401 auth challenge for the latter POST assuming
                 // that the authentication will be cached and re-used later when PreAuthenticate is true.
                 var request = new HttpRequestMessage(HttpMethod.Head, serverUri);
-                HttpResponseMessage response;
-                using (response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -229,7 +228,7 @@ namespace System.Net.Http.Functional.Tests
                 requestContent.Headers.ContentLength = null;
                 request.Headers.TransferEncodingChunked = true;
 
-                using (response = await client.PostAsync(serverUri, requestContent))
+                using (HttpResponseMessage response = await client.PostAsync(serverUri, requestContent))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string responseContent = await response.Content.ReadAsStringAsync();

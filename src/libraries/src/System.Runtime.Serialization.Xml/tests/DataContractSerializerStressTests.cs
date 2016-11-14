@@ -9,7 +9,6 @@ using Xunit;
 
 public static partial class DataContractSerializerTests
 {
-#if FALSE
     [Fact]
     public static void DCS_MyPersonSurrogate_Stress()
     {
@@ -63,5 +62,4 @@ public static partial class DataContractSerializerTests
             }
         }
     }
-#endif
 }

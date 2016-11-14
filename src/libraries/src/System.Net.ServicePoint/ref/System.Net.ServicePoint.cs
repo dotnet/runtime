@@ -54,6 +54,9 @@ namespace System.Net
     [Flags]
     public enum SecurityProtocolType
     {
+#if netcoreapp11
+        SystemDefault = 0,
+#endif
 #pragma warning disable CS0618
         Ssl3 = System.Security.Authentication.SslProtocols.Ssl3,
 #pragma warning restore CS0618

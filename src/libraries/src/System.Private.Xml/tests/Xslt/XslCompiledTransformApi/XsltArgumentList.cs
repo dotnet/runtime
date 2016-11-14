@@ -2456,11 +2456,11 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        [ActiveIssue(9997)]
         //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
+        [PlatformSpecific(TestPlatforms.Windows)] // Non Windows is not supported yet
         [InlineData("sort.xsl", "sort.txt")]
         [Theory]
-        public void AddExtObject33_ActiveIssue9877(object param0, object param1)
+        public void AddExtObject33_ActiveIssue9997(object param0, object param1)
         {
             AddExtObject33(param0, param1);
         }

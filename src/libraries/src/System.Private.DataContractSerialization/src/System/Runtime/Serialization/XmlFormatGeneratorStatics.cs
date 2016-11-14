@@ -641,6 +641,18 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo s_readSerializationInfoMethod;
+        internal static MethodInfo ReadSerializationInfoMethod
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_readSerializationInfoMethod == null)
+                    s_readSerializationInfoMethod = typeof(XmlObjectSerializerReadContext).GetMethod("ReadSerializationInfo", Globals.ScanAllMembers);
+                return s_readSerializationInfoMethod;
+            }
+        }
+
         [SecurityCritical]
         private static MethodInfo s_createUnexpectedStateExceptionMethod;
         internal static MethodInfo CreateUnexpectedStateExceptionMethod
@@ -822,6 +834,17 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo s_writeISerializableMethod;
+        internal static MethodInfo WriteISerializableMethod
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_writeISerializableMethod == null)
+                    s_writeISerializableMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("WriteISerializable", Globals.ScanAllMembers);
+                return s_writeISerializableMethod;
+            }
+        }
 
 
         [SecurityCritical]

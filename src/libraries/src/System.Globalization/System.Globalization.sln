@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Globalization.Tests", "tests\System.Globalization.Tests.csproj", "{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}"
 EndProject
@@ -36,14 +36,14 @@ Global
 		{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}.Release|Any CPU.Build.0 = Release|Any CPU
 		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Debug|Any CPU.Build.0 = net46_Debug|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Release|Any CPU.ActiveCfg = net46_Release|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Release|Any CPU.Build.0 = net46_Release|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Debug|Any CPU.ActiveCfg = netcore50aot_Debug|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Debug|Any CPU.Build.0 = netcore50aot_Debug|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Release|Any CPU.ActiveCfg = netcore50aot_Release|Any CPU
-		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Release|Any CPU.Build.0 = netcore50aot_Release|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Debug|Any CPU.ActiveCfg = net463_Release|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Debug|Any CPU.Build.0 = net463_Release|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.net46_Release|Any CPU.Build.0 = Release|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.netcore50aot_Release|Any CPU.Build.0 = Release|Any CPU
 		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{441A7D3B-EE09-449C-9FCD-EBEBDFDD78C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

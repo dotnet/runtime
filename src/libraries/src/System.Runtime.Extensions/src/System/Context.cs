@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 
 namespace System
 {
+    [Serializable]
     public abstract class ContextBoundObject : System.MarshalByRefObject
     {
         protected ContextBoundObject() { }
@@ -35,6 +36,7 @@ namespace System
         }
     }
 
+    [Serializable]
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public partial class ContextStaticAttribute : System.Attribute

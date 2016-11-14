@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
+
 namespace System.Threading
 {
     /// <summary>
@@ -11,12 +13,12 @@ namespace System.Threading
     {
         internal static void Sleep(int milliseconds)
         {
-            Thread.Sleep(milliseconds);
+            RuntimeThread.Sleep(milliseconds);
         }
 
         internal static void Spin(int iterations)
         {
-            Thread.SpinWait(iterations);
+            RuntimeThread.SpinWait(iterations);
         }
     }
 }

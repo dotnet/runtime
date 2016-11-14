@@ -33,15 +33,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static bool operator ==(IPPacketInformation left, IPPacketInformation right)
+        public static bool operator ==(IPPacketInformation packetInformation1, IPPacketInformation packetInformation2)
         {
-            return left._networkInterface == right._networkInterface &&
-                (left._address == null && right._address == null || left._address.Equals(right._address));
+            return packetInformation1._networkInterface == packetInformation2._networkInterface &&
+                (packetInformation1._address == null && packetInformation2._address == null || packetInformation1._address.Equals(packetInformation2._address));
         }
 
-        public static bool operator !=(IPPacketInformation left, IPPacketInformation right)
+        public static bool operator !=(IPPacketInformation packetInformation1, IPPacketInformation packetInformation2)
         {
-            return !(left == right);
+            return !(packetInformation1 == packetInformation2);
         }
 
         public override bool Equals(object comparand)

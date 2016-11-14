@@ -111,11 +111,6 @@ namespace System.IO.Pipes
             _isFromExistingHandle = isExposed;
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
-        }
-
         [SecurityCritical]
         public override int Read(byte[] buffer, int offset, int count)
         {

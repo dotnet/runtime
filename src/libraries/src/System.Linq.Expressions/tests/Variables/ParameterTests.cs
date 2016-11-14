@@ -45,6 +45,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("type", () => Expression.Parameter(typeof(void), "var"));
         }
 
+        [Theory]
+        [ClassData(typeof(InvalidTypesData))]
+        public void OpenGenericType_ThrowsArgumentException(Type type)
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.Parameter(type));
+            Assert.Throws<ArgumentException>("type", () => Expression.Parameter(type, "name"));
+        }
+
         [Fact]
         public void NullType()
         {
@@ -274,7 +282,7 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression @ref = Expression.Parameter(typeof(T).MakeByRefType());
             ParameterExpression val = Expression.Parameter(typeof(T));
 
-            ByRefWriteAction<T> f = 
+            ByRefWriteAction<T> f =
                 Expression.Lambda<ByRefWriteAction<T>>(
                     Expression.Assign(@ref, val),
                     @ref, val

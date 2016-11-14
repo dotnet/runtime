@@ -312,12 +312,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestNullConstructorArguments()
         {
-            Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (String)null));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2(new byte[0], (String)null));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (String)null, X509KeyStorageFlags.DefaultKeySet));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2(new byte[0], (String)null, X509KeyStorageFlags.DefaultKeySet));
+            Assert.Throws<ArgumentNullException>(() => new X509Certificate2((string)null));
+            Assert.Throws<ArgumentException>(() => new X509Certificate2(IntPtr.Zero));
+            Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (string)null));
+            Assert.Throws<ArgumentException>(() => new X509Certificate2(Array.Empty<byte>(), (string)null));
+            Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (string)null, X509KeyStorageFlags.DefaultKeySet));
+            Assert.Throws<ArgumentException>(() => new X509Certificate2(Array.Empty<byte>(), (string)null, X509KeyStorageFlags.DefaultKeySet));
+
+            // A null string password does not throw
+            using (new X509Certificate2(TestData.MsCertificate, (string)null)) { }
+            using (new X509Certificate2(TestData.MsCertificate, (string)null, X509KeyStorageFlags.DefaultKeySet)) { }
+
 #if netstandard17
-            Assert.Throws<ArgumentNullException>(() => new X509Certificate2((X509Certificate2)null));
+            Assert.Throws<ArgumentNullException>(() => X509Certificate.CreateFromCertFile(null));
+            Assert.Throws<ArgumentNullException>(() => X509Certificate.CreateFromSignedFile(null));
+            Assert.Throws<ArgumentNullException>("cert", () => new X509Certificate2((X509Certificate2)null));
+            Assert.Throws<ArgumentException>("handle", () => new X509Certificate2(IntPtr.Zero));
+
+            // A null SecureString password does not throw
+            using (new X509Certificate2(TestData.MsCertificate, (SecureString)null)) { }
+            using (new X509Certificate2(TestData.MsCertificate, (SecureString)null, X509KeyStorageFlags.DefaultKeySet)) { }
 #endif
 
             // For compat reasons, the (byte[]) constructor (and only that constructor) treats a null or 0-length array as the same
@@ -332,7 +346,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             {
-                using (X509Certificate2 c = new X509Certificate2(new byte[0]))
+                using (X509Certificate2 c = new X509Certificate2(Array.Empty<byte>()))
                 {
                     IntPtr h = c.Handle;
                     Assert.Equal(IntPtr.Zero, h);

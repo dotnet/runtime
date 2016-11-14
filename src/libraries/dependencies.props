@@ -9,19 +9,26 @@
     <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">false</DisableProjectNTfsAutoUpgrade>
   </PropertyGroup>
 
+  <!-- For detailed explanation of the reference versions see:
+
+        https://github.com/dotnet/buildtools/blob/master/Documentation/project-nuget-dependencies.md
+        https://github.com/dotnet/buildtools/blob/master/Documentation/annotated-dependency-props.md
+
+       These ref versions are pulled from https://github.com/dotnet/versions.
+  -->
   <PropertyGroup>
-    <CoreFxCurrentRef>58cdc2159211f1d39e83f4f2d5fef88a7ded0696</CoreFxCurrentRef>
-    <CoreClrCurrentRef>6035f827e7467e0590b2b3f722bd44121101b2a4</CoreClrCurrentRef>
-    <ExternalCurrentRef>6035f827e7467e0590b2b3f722bd44121101b2a4</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>6035f827e7467e0590b2b3f722bd44121101b2a4</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>32a0b0f08800cf5015887ce8ef5d646fe2ca2a91</CoreFxCurrentRef>
+    <CoreClrCurrentRef>9ce367ccebf5c20112d128ab913fc2300257628c</CoreClrCurrentRef>
+    <ExternalCurrentRef>3012bdc3812c4479e5afc0d92e553465887e2454</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>3012bdc3812c4479e5afc0d92e553465887e2454</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24626-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24626-02</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24626-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24626-00</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24711-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24709-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24711-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24711-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -105,7 +112,7 @@
     </StaticDependency>
    
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00925-01</Version>
+      <Version>1.0.1-prerelease-01001-04</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />

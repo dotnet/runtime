@@ -6,28 +6,25 @@
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.1;net46</TestTFMs>
     </Project>
-    <!-- ToDo: Add netcoreapp1.1 to the TestTFMs once issue is fixed https://github.com/dotnet/corefx/issues/13085 -->
     <Project Include="events\System.Xml.Linq.Events.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="misc\System.Xml.Linq.Misc.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
-    <!-- ToDo: Add netcoreapp1.1 to the TestTFMs once issue is fixed https://github.com/dotnet/corefx/issues/13085 -->
     <Project Include="Properties\System.Xml.Linq.Properties.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="SDMSample\System.Xml.Linq.SDMSample.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
-    <!-- ToDo: Add netcoreapp1.1 to the TestTFMs once issue is fixed https://github.com/dotnet/corefx/issues/13085 -->
     <Project Include="Streaming\System.Xml.Linq.Streaming.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="TreeManipulation\System.Xml.Linq.TreeManipulation.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
@@ -41,15 +38,13 @@
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
-    <!-- ToDo: Add netcoreapp1.1 to the TestTFMs once issue is fixed https://github.com/dotnet/corefx/issues/13085 -->
     <Project Include="xNodeBuilder\System.Xml.Linq.xNodeBuilder.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
-    <!-- ToDo: Add netcoreapp1.1 to the TestTFMs once issue is fixed https://github.com/dotnet/corefx/issues/13085 -->
     <Project Include="xNodeReader\System.Xml.Linq.xNodeReader.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>netcoreapp1.1;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XPath\XDocument\System.Xml.XPath.XDocument.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>

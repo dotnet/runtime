@@ -3,101 +3,92 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Reflection;
-using System.Collections.Generic;
-
-#pragma warning disable 0414
 
 namespace System.Reflection.Tests
 {
-    public class ExceptionTests
+    public static class ExceptionTests
     {
-
+        [Fact]
         public static void TargetException()
         {
-            Exception ex = new TargetException();
-            Assert.NotNull(ex);
-            Assert.Equal(ex.GetType(), typeof(TargetException));
+            TargetException ex = new TargetException();
 
-            string s = "My exception";
-            ex = new TargetException();
-            Assert.NotNull(ex);
-            Assert.Equal(ex.GetType(), typeof(TargetException));
-            Assert.Equal(s, ex.Message);
+            Assert.NotEmpty(ex.Message);
+            Assert.Null(ex.InnerException);
 
-            s = "My exception";
-            Exception innerException = new Exception();
-            ex = new TargetException(s, innerException);
-            Assert.NotNull(ex);
-            Assert.Equal(ex.GetType(), typeof(TargetException));
-            Assert.Equal(innerException, ex.InnerException);
-            Assert.Equal(s, ex.Message);
-
-            // Throw the exception from a method.
-            try
-            {
-                ThrowTargetException(s, innerException);
-                Assert.True(false);
-            }
-            catch (TargetException tex)
-            {
-                Assert.Equal(innerException, tex.InnerException);
-                Assert.Equal(s, tex.Message);
-            }
-            catch (Exception)
-            {
-                Assert.True(false);
-            }
+            TargetException caught = Assert.Throws<TargetException>(() => ThrowGivenException(ex));
+            Assert.Same(ex, caught);
         }
 
-        private static void ThrowTargetException(string s, Exception innerException)
+        [Fact]
+        public static void TargetException_Message()
         {
-            throw new TargetException(s, innerException);
+            string message = "message";
+            TargetException ex = new TargetException(message);
+
+            Assert.Equal(message, ex.Message);
+            Assert.Null(ex.InnerException);
+
+            TargetException caught = Assert.Throws<TargetException>(() => ThrowGivenException(ex));
+            Assert.Same(ex, caught);
         }
 
-        private static void ThrowInvalidFilterCriteriaException(string s, Exception innerException)
+        [Fact]
+        public static void TargetException_Message_InnerException()
         {
-            throw new InvalidFilterCriteriaException(s, innerException);
+            string message = "message";
+            Exception inner = new Exception();
+            TargetException ex = new TargetException(message, inner);
+
+            Assert.Equal(message, ex.Message);
+            Assert.Same(inner, ex.InnerException);
+
+            TargetException caught = Assert.Throws<TargetException>(() => ThrowGivenException(ex));
+            Assert.Same(ex, caught);
         }
 
-
-
+        [Fact]
         public static void InvalidFilterCriteriaException()
         {
-            Exception ex = new InvalidFilterCriteriaException();
-            Assert.NotNull(ex);
-            Assert.Equal(ex.GetType(), typeof(InvalidFilterCriteriaException));
+            InvalidFilterCriteriaException ex = new InvalidFilterCriteriaException();
 
-            string s = "My exception";
-            ex = new InvalidFilterCriteriaException();
-            Assert.NotNull(ex);
-            Assert.Equal(ex.GetType(), typeof(InvalidFilterCriteriaException));
-            Assert.Equal(s, ex.Message);
+            Assert.NotEmpty(ex.Message);
+            Assert.Null(ex.InnerException);
 
-            s = "My exception";
-            Exception innerException = new Exception();
-            ex = new InvalidFilterCriteriaException(s, innerException);
-            Assert.NotNull(ex);
-            Assert.Equal(ex.GetType(), typeof(InvalidFilterCriteriaException));
-            Assert.Equal(innerException, ex.InnerException);
-            Assert.Equal(s, ex.Message);
+            InvalidFilterCriteriaException caught = Assert.Throws<InvalidFilterCriteriaException>(() => ThrowGivenException(ex));
+            Assert.Same(ex, caught);
+        }
 
-            // Throw the exception from a method.
-            try
-            {
-                ThrowInvalidFilterCriteriaException(s, innerException);
-                Assert.True(false);
-            }
-            catch (InvalidFilterCriteriaException tex)
-            {
-                Assert.Equal(innerException, tex.InnerException);
-                Assert.Equal(s, tex.Message);
-            }
-            catch (Exception)
-            {
-                Assert.True(false);
-            }
+        [Fact]
+        public static void InvalidFilterCriteriaException_Message()
+        {
+            string message = "message";
+            InvalidFilterCriteriaException ex = new InvalidFilterCriteriaException(message);
+
+            Assert.Equal(message, ex.Message);
+            Assert.Null(ex.InnerException);
+
+            InvalidFilterCriteriaException caught = Assert.Throws<InvalidFilterCriteriaException>(() => ThrowGivenException(ex));
+            Assert.Same(ex, caught);
+        }
+
+        [Fact]
+        public static void InvalidFilterCriteriaException_Message_InnerException()
+        {
+            string message = "message";
+            Exception inner = new Exception();
+            InvalidFilterCriteriaException ex = new InvalidFilterCriteriaException(message, inner);
+
+            Assert.Equal(message, ex.Message);
+            Assert.Same(inner, ex.InnerException);
+
+            InvalidFilterCriteriaException caught = Assert.Throws<InvalidFilterCriteriaException>(() => ThrowGivenException(ex));
+            Assert.Same(ex, caught);
+        }
+
+        private static void ThrowGivenException(Exception ex)
+        {
+            throw ex;
         }
     }
 }

@@ -13,6 +13,7 @@ using System.Xml;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using System.Security;
+using System.Runtime.CompilerServices;
 #if !NET_NATIVE
 using ExtensionDataObject = System.Object;
 #endif
@@ -298,6 +299,11 @@ namespace System.Runtime.Serialization
             return false;
         }
 
+        internal virtual bool WriteClrTypeInfo(XmlWriterDelegator xmlWriter, Type dataContractType, SerializationInfo serInfo)
+        {
+            return false;
+        }
+
 #if USE_REFEMIT || NET_NATIVE
         public virtual void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
 #else
@@ -409,6 +415,11 @@ namespace System.Runtime.Serialization
         internal void HandleGraphAtTopLevel(XmlWriterDelegator writer, object obj, DataContract contract)
         {
             writer.WriteXmlnsAttribute(Globals.XsiPrefix, DictionaryGlobals.SchemaInstanceNamespace);
+            if (contract.IsISerializable)
+            {
+                writer.WriteXmlnsAttribute(Globals.XsdPrefix, DictionaryGlobals.SchemaNamespace);
+            }
+
             OnHandleReference(writer, obj, true /*canContainReferences*/);
         }
 
@@ -574,7 +585,66 @@ namespace System.Runtime.Serialization
             xmlSerializableWriter.EndWrite();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void GetObjectData(ISerializable obj, SerializationInfo serInfo, StreamingContext context)
+        {
+            obj.GetObjectData(serInfo, context);
+        }
 
+        public void WriteISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
+        {
+            Type objType = obj.GetType();
+            var serInfo = new SerializationInfo(objType, XmlObjectSerializer.FormatterConverter /*!UnsafeTypeForwardingEnabled is always false*/);
+            GetObjectData(obj, serInfo, GetStreamingContext());
+
+            if (!UnsafeTypeForwardingEnabled && serInfo.AssemblyName == Globals.MscorlibAssemblyName)
+            {
+                // Throw if a malicious type tries to set its assembly name to "0" to get deserialized in mscorlib
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ISerializableAssemblyNameSetToZero, DataContract.GetClrTypeFullName(obj.GetType()))));
+            }
+
+            WriteSerializationInfo(xmlWriter, objType, serInfo);
+        }
+
+        internal void WriteSerializationInfo(XmlWriterDelegator xmlWriter, Type objType, SerializationInfo serInfo)
+        {
+            if (DataContract.GetClrTypeFullName(objType) != serInfo.FullTypeName)
+            {
+                if (DataContractResolver != null)
+                {
+                    XmlDictionaryString typeName, typeNs;
+                    if (ResolveType(serInfo.ObjectType, objType, out typeName, out typeNs))
+                    {
+                        xmlWriter.WriteAttributeQualifiedName(Globals.SerPrefix, DictionaryGlobals.ISerializableFactoryTypeLocalName, DictionaryGlobals.SerializationNamespace, typeName, typeNs);
+                    }
+                }
+                else
+                {
+                    string typeName, typeNs;
+                    DataContract.GetDefaultStableName(serInfo.FullTypeName, out typeName, out typeNs);
+                    xmlWriter.WriteAttributeQualifiedName(Globals.SerPrefix, DictionaryGlobals.ISerializableFactoryTypeLocalName, DictionaryGlobals.SerializationNamespace, DataContract.GetClrTypeString(typeName), DataContract.GetClrTypeString(typeNs));
+                }
+            }
+
+            WriteClrTypeInfo(xmlWriter, objType, serInfo);
+            IncrementItemCount(serInfo.MemberCount);
+            foreach (SerializationEntry serEntry in serInfo)
+            {
+                XmlDictionaryString name = DataContract.GetClrTypeString(DataContract.EncodeLocalName(serEntry.Name));
+                xmlWriter.WriteStartElement(name, DictionaryGlobals.EmptyString);
+                object obj = serEntry.Value;
+                if (obj == null)
+                {
+                    WriteNull(xmlWriter);
+                }
+                else
+                {
+                    InternalSerializeReference(xmlWriter, obj, false /*isDeclaredType*/, false /*writeXsiType*/, -1, Globals.TypeOfObject.TypeHandle);
+                }
+
+                xmlWriter.WriteEndElement();
+            }
+        }
 
         protected virtual void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {

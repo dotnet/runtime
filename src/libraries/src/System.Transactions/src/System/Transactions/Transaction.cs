@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Diagnostics;
 using System.Transactions.Distributed;
 
 namespace System.Transactions
@@ -53,6 +52,7 @@ namespace System.Transactions
 
     // When we serialize a Transaction, we specify the type DistributedTransaction, so a Transaction never
     // actually gets deserialized.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Serialization not yet supported and will be done using DistributedTransaction")]
     [Serializable]
     public class Transaction : IDisposable, ISerializable
     {
@@ -153,9 +153,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "Transaction.get_Current");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
                 Transaction current = null;
@@ -171,9 +172,9 @@ namespace System.Transactions
                     }
                 }
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "Transaction.get_Current");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
                 return current;
@@ -181,18 +182,19 @@ namespace System.Transactions
 
             set
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "Transaction.set_Current");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.set_Current");
                 }
 
                 // Bring your own Transaction(BYOT) is supported only for legacy scenarios. 
                 // This transaction won't be flown across thread continuations.
                 if (InteropMode(ContextData.TLSCurrentData.CurrentScope) != EnterpriseServicesInteropOption.None)
                 {
-                    if (DiagnosticTrace.Error)
+                    if (etwLog.IsEnabled())
                     {
-                        InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.CannotSetCurrent);
+                        etwLog.InvalidOperation("Transaction", "Transaction.set_Current");
                     }
 
                     throw new InvalidOperationException(SR.CannotSetCurrent);
@@ -203,9 +205,9 @@ namespace System.Transactions
                 // Clear CallContext data.
                 CallContextCurrentData.ClearCurrentData(null, false);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "Transaction.set_Current");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "Transaction.set_Current");
                 }
             }
         }
@@ -358,9 +360,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.get_TransactionInformation");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 if (Disposed)
@@ -376,9 +379,9 @@ namespace System.Transactions
                     _internalTransaction._transactionInformation = txInfo;
                 }
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.get_TransactionInformation");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 return txInfo;
@@ -392,18 +395,20 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.get_IsolationLevel");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
+
                 if (Disposed)
                 {
                     throw new ObjectDisposedException(nameof(Transaction));
                 }
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.get_IsolationLevel");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return _isoLevel;
             }
@@ -425,9 +430,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.get_PromoterType");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
                 if (Disposed)
@@ -463,9 +469,10 @@ namespace System.Transactions
         {
             // We need to ask the current transaction state for the PromotedToken because depending on the state
             // we may need to induce a promotion.
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.GetPromotedToken");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -490,9 +497,10 @@ namespace System.Transactions
             IEnlistmentNotification enlistmentNotification,
             EnlistmentOptions enlistmentOptions)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistDurable( IEnlistmentNotification )");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -517,7 +525,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -525,10 +533,11 @@ namespace System.Transactions
                 Enlistment enlistment = _internalTransaction.State.EnlistDurable(_internalTransaction,
                     resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, this);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistDurable( IEnlistmentNotification )");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
+
                 return enlistment;
             }
         }
@@ -541,9 +550,10 @@ namespace System.Transactions
             ISinglePhaseNotification singlePhaseNotification,
             EnlistmentOptions enlistmentOptions)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistDurable( ISinglePhaseNotification )");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -568,7 +578,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -576,9 +586,9 @@ namespace System.Transactions
                 Enlistment enlistment = _internalTransaction.State.EnlistDurable(_internalTransaction,
                     resourceManagerIdentifier, singlePhaseNotification, enlistmentOptions, this);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistDurable( ISinglePhaseNotification )");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return enlistment;
             }
@@ -587,14 +597,11 @@ namespace System.Transactions
 
         public void Rollback()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.Rollback");
-            }
-
-            if (DiagnosticTrace.Warning)
-            {
-                TransactionRollbackCalledTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.TransactionRollback(this, "Transaction");
             }
 
             if (Disposed)
@@ -608,23 +615,20 @@ namespace System.Transactions
                 _internalTransaction.State.Rollback(_internalTransaction, null);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.Rollback");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
 
         public void Rollback(Exception e)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.Rollback");
-            }
-
-            if (DiagnosticTrace.Warning)
-            {
-                TransactionRollbackCalledTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.TransactionRollback(this, "Transaction");
             }
 
             if (Disposed)
@@ -638,9 +642,9 @@ namespace System.Transactions
                 _internalTransaction.State.Rollback(_internalTransaction, e);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.Rollback");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -649,11 +653,12 @@ namespace System.Transactions
         //
         public Enlistment EnlistVolatile(IEnlistmentNotification enlistmentNotification, EnlistmentOptions enlistmentOptions)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistVolatile( IEnlistmentNotification )");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
-
+ 
             if (Disposed)
             {
                 throw new ObjectDisposedException(nameof(Transaction));
@@ -671,7 +676,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -679,11 +684,9 @@ namespace System.Transactions
                 Enlistment enlistment = _internalTransaction.State.EnlistVolatile(_internalTransaction,
                     enlistmentNotification, enlistmentOptions, this);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm,
-                        "Transaction.EnlistVolatile( IEnlistmentNotification )"
-                        );
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return enlistment;
             }
@@ -694,9 +697,10 @@ namespace System.Transactions
         //
         public Enlistment EnlistVolatile(ISinglePhaseNotification singlePhaseNotification, EnlistmentOptions enlistmentOptions)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistVolatile( ISinglePhaseNotification )");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -716,7 +720,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -724,11 +728,9 @@ namespace System.Transactions
                 Enlistment enlistment = _internalTransaction.State.EnlistVolatile(_internalTransaction,
                     singlePhaseNotification, enlistmentOptions, this);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm,
-                        "Transaction.EnlistVolatile( ISinglePhaseNotification )"
-                        );
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return enlistment;
             }
@@ -738,9 +740,10 @@ namespace System.Transactions
         //
         public Transaction Clone()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.Clone");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -750,14 +753,14 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             Transaction clone = InternalClone();
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.Clone");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
             return clone;
         }
@@ -766,9 +769,10 @@ namespace System.Transactions
         {
             Transaction clone = new Transaction(_isoLevel, _internalTransaction);
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                CloneCreatedTraceRecord.Trace(SR.TraceSourceLtm, clone.TransactionTraceId);
+                etwLog.TransactionCloneCreate(clone, "Transaction");
             }
 
             return clone;
@@ -781,9 +785,10 @@ namespace System.Transactions
             DependentCloneOption cloneOption
             )
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.DependentClone");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (cloneOption != DependentCloneOption.BlockCommitUntilComplete
@@ -799,19 +804,16 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             DependentTransaction clone = new DependentTransaction(
                 _isoLevel, _internalTransaction, cloneOption == DependentCloneOption.BlockCommitUntilComplete);
 
-            if (DiagnosticTrace.Information)
+            if (etwLog.IsEnabled())
             {
-                DependentCloneCreatedTraceRecord.Trace(SR.TraceSourceLtm, clone.TransactionTraceId, cloneOption);
-            }
-            if (DiagnosticTrace.Verbose)
-            {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.DependentClone");
+                etwLog.TransactionCloneCreate(clone, "DependentTransaction");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
             return clone;
         }
@@ -876,9 +878,10 @@ namespace System.Transactions
         //
         internal virtual void InternalDispose()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "IDisposable.Dispose");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Interlocked.Exchange(ref _disposed, Transaction._disposedTrueValue) == Transaction._disposedTrueValue)
@@ -893,9 +896,9 @@ namespace System.Transactions
                 _internalTransaction.Dispose();
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "IDisposable.Dispose");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -905,9 +908,10 @@ namespace System.Transactions
             SerializationInfo serializationInfo,
             StreamingContext context)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "ISerializable.GetObjectData");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -922,7 +926,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -930,14 +934,10 @@ namespace System.Transactions
                 _internalTransaction.State.GetObjectData(_internalTransaction, serializationInfo, context);
             }
 
-            if (DiagnosticTrace.Information)
+            if (etwLog.IsEnabled())
             {
-                TransactionSerializedTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
-            }
-
-            if (DiagnosticTrace.Verbose)
-            {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "ISerializable.GetObjectData");
+                etwLog.TransactionSerialized(this, "Transaction");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
@@ -981,9 +981,10 @@ namespace System.Transactions
         /// </returns>
         public bool EnlistPromotableSinglePhase(IPromotableSinglePhaseNotification promotableSinglePhaseNotification, Guid promoterType)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistPromotableSinglePhase");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -1003,7 +1004,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             bool succeeded = false;
@@ -1013,9 +1014,9 @@ namespace System.Transactions
                 succeeded = _internalTransaction.State.EnlistPromotableSinglePhase(_internalTransaction, promotableSinglePhaseNotification, this, promoterType);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.EnlistPromotableSinglePhase");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
 
             return succeeded;
@@ -1026,9 +1027,10 @@ namespace System.Transactions
                                                   ISinglePhaseNotification enlistmentNotification,
                                                   EnlistmentOptions enlistmentOptions)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "Transaction.PromoteAndEnlistDurable");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, this);
             }
 
             if (Disposed)
@@ -1058,7 +1060,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -1066,10 +1068,11 @@ namespace System.Transactions
                 Enlistment enlistment = _internalTransaction.State.PromoteAndEnlistDurable(_internalTransaction,
                     resourceManagerIdentifier, promotableNotification, enlistmentNotification, enlistmentOptions, this);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "Transaction.PromoteAndEnlistDurable");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, this);
                 }
+
                 return enlistment;
             }
         }
@@ -1077,9 +1080,10 @@ namespace System.Transactions
         public void SetDistributedTransactionIdentifier(IPromotableSinglePhaseNotification promotableNotification,
                                                         Guid distributedTransactionIdentifier)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Transaction.SetDistributedTransactionIdentifier");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Disposed)
@@ -1099,7 +1103,7 @@ namespace System.Transactions
 
             if (_complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
             lock (_internalTransaction)
@@ -1108,11 +1112,9 @@ namespace System.Transactions
                     promotableNotification,
                     distributedTransactionIdentifier);
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceLtm,
-                        "Transaction.SetDistributedTransactionIdentifier"
-                        );
+                    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
                 }
                 return;
             }

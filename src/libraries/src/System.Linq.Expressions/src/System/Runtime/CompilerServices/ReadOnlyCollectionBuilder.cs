@@ -12,6 +12,7 @@ namespace System.Runtime.CompilerServices
     /// Builder for read only collections.
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
+    [Serializable]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList
     {
@@ -21,6 +22,7 @@ namespace System.Runtime.CompilerServices
         private int _size;
         private int _version;
 
+        [NonSerialized]
         private Object _syncRoot;
 
         /// <summary>
@@ -498,6 +500,7 @@ namespace System.Runtime.CompilerServices
             throw new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
         }
 
+        [Serializable]
         private class Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private readonly ReadOnlyCollectionBuilder<T> _builder;

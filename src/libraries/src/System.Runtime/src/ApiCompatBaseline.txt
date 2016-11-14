@@ -6,4 +6,4 @@ MembersMustExist : Member 'System.Type.IsContextful.get()' does not exist in the
 MembersMustExist : Member 'System.Type.IsContextfulImpl()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.add_ModuleResolve(System.Reflection.ModuleResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.remove_ModuleResolve(System.Reflection.ModuleResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 7
+Total Issues: 8

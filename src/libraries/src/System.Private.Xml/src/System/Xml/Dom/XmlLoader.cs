@@ -986,13 +986,13 @@ namespace System.Xml
             {
                 tempreader.Read();
                 //get version info.
-                if (tempreader.MoveToAttribute("version"))
+                if (tempreader.MoveToAttribute(nameof(version)))
                     version = tempreader.Value;
                 //get encoding info
-                if (tempreader.MoveToAttribute("encoding"))
+                if (tempreader.MoveToAttribute(nameof(encoding)))
                     encoding = tempreader.Value;
                 //get standalone info
-                if (tempreader.MoveToAttribute("standalone"))
+                if (tempreader.MoveToAttribute(nameof(standalone)))
                     standalone = tempreader.Value;
             }
             finally

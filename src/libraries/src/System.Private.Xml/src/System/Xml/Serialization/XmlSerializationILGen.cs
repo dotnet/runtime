@@ -529,7 +529,7 @@ namespace System.Xml.Serialization
             ilg.New(ctor);
             ilg.EndMethod();
 
-            FieldBuilder readMethodsField = GeneratePublicMethods("readMethods", "ReadMethods", readMethods, xmlMappings, serializerContractTypeBuilder);
+            FieldBuilder readMethodsField = GeneratePublicMethods(nameof(readMethods), "ReadMethods", readMethods, xmlMappings, serializerContractTypeBuilder);
             FieldBuilder writeMethodsField = GeneratePublicMethods("writeMethods", "WriteMethods", writerMethods, xmlMappings, serializerContractTypeBuilder);
             FieldBuilder typedSerializersField = GenerateTypedSerializers(serializers, serializerContractTypeBuilder);
             GenerateSupportedTypes(types, serializerContractTypeBuilder);

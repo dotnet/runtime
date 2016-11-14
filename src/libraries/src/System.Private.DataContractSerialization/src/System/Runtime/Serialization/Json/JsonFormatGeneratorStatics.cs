@@ -62,6 +62,8 @@ namespace System.Runtime.Serialization
         [SecurityCritical]
         private static ConstructorInfo s_serializationExceptionCtor;
 
+        private static Type[] s_serInfoCtorArgs;
+
         [SecurityCritical]
         private static MethodInfo s_throwDuplicateMemberExceptionMethod;
 
@@ -82,6 +84,8 @@ namespace System.Runtime.Serialization
 
         [SecurityCritical]
         private static MethodInfo s_writeEndElementMethod;
+
+        private static MethodInfo s_writeJsonISerializableMethod;
 
         [SecurityCritical]
         private static MethodInfo s_writeJsonNameWithMappingMethod;
@@ -310,6 +314,18 @@ namespace System.Runtime.Serialization
                 return s_serializationExceptionCtor;
             }
         }
+        public static Type[] SerInfoCtorArgs
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_serInfoCtorArgs == null)
+                {
+                    s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
+                }
+                return s_serInfoCtorArgs;
+            }
+        }
         public static MethodInfo ThrowDuplicateMemberExceptionMethod
         {
             [SecuritySafeCritical]
@@ -399,6 +415,18 @@ namespace System.Runtime.Serialization
                     Debug.Assert(s_writeEndElementMethod != null);
                 }
                 return s_writeEndElementMethod;
+            }
+        }
+        public static MethodInfo WriteJsonISerializableMethod
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_writeJsonISerializableMethod == null)
+                {
+                    s_writeJsonISerializableMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("WriteJsonISerializable", Globals.ScanAllMembers);
+                }
+                return s_writeJsonISerializableMethod;
             }
         }
         public static MethodInfo WriteJsonNameWithMappingMethod

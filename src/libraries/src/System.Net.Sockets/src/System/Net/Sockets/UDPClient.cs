@@ -233,11 +233,7 @@ namespace System.Net.Sockets
         {
             if (disposing)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("UdpClient::Dispose()");
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
                 FreeResources();
                 GC.SuppressFinalize(this);
             }

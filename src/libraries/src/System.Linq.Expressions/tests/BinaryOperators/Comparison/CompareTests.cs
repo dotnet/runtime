@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Tests
                 }
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(TestData))]
         public static void GreaterThan(Array array, bool useInterpreter)
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Tests
                 }
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(TestData))]
         public static void LessThanOrEqual(Array array, bool useInterpreter)
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(exp, exp.Reduce());
             Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
-        
+
         [Fact]
         public static void LessThanOrEqual_CannotReduce()
         {

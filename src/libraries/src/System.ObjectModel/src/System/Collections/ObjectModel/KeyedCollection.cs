@@ -8,6 +8,7 @@ using System.Diagnostics;
 
 namespace System.Collections.ObjectModel
 {
+    [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public abstract class KeyedCollection<TKey, TItem> : Collection<TItem>

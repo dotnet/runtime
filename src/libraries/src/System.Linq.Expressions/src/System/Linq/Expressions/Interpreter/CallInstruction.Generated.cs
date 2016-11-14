@@ -13,21 +13,24 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal partial class CallInstruction
     {
+#if FEATURE_DLG_INVOKE
         private const int MaxHelpers = 3;
-        private const int MaxArgs = 3;
+#endif
 
 #if FEATURE_FAST_CREATE
+        private const int MaxArgs = 3;
+
         /// <summary>
         /// Fast creation works if we have a known primitive types for the entire
         /// method signature.  If we have any non-primitive types then FastCreate
         /// falls back to SlowCreate which works for all types.
-        /// 
+        ///
         /// Fast creation is fast because it avoids using reflection (MakeGenericType
         /// and Activator.CreateInstance) to create the types.  It does this through
         /// calling a series of generic methods picking up each strong type of the
-        /// signature along the way.  When it runs out of types it news up the 
+        /// signature along the way.  When it runs out of types it news up the
         /// appropriate CallInstruction with the strong-types that have been built up.
-        /// 
+        ///
         /// One relaxation is that for return types which are non-primitive types
         /// we can fall back to object due to relaxed delegates.
         /// </summary>
@@ -40,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (t.GetTypeInfo().IsEnum) return SlowCreate(target, pi);
-            switch (TypeExtensions.GetTypeCode(t))
+            switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
                     {
@@ -83,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (t.GetTypeInfo().IsEnum) return SlowCreate(target, pi);
-            switch (TypeExtensions.GetTypeCode(t))
+            switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
                     {
@@ -126,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (t.GetTypeInfo().IsEnum) return SlowCreate(target, pi);
-            switch (TypeExtensions.GetTypeCode(t))
+            switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
                     {

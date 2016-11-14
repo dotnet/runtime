@@ -25,10 +25,7 @@ namespace System.Net
 
         internal FtpDataStream(NetworkStream networkStream, FtpWebRequest request, TriState writeOnly)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("FtpDataStream#" + LoggingHash.HashString(this) + "::FtpDataStream");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             _readable = true;
             _writeable = true;
@@ -61,10 +58,7 @@ namespace System.Net
 
         void ICloseEx.CloseEx(CloseExState closeState)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("FtpDataStream#" + LoggingHash.HashString(this) + "::CloseEx, state = " + closeState.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"state = {closeState}");
 
             lock (this)
             {

@@ -264,6 +264,16 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfISerializable;
+        internal static Type TypeOfISerializable
+        {
+            get
+            {
+                if (s_typeOfISerializable == null)
+                    s_typeOfISerializable = typeof(ISerializable);
+                return s_typeOfISerializable;
+            }
+        }
 
         [SecurityCritical]
         private static Type s_typeOfXmlFormatClassWriterDelegate;
@@ -399,6 +409,20 @@ namespace System.Runtime.Serialization
                 if (s_typeOfCollectionDataContractAttribute == null)
                     s_typeOfCollectionDataContractAttribute = typeof(CollectionDataContractAttribute);
                 return s_typeOfCollectionDataContractAttribute;
+            }
+        }
+
+        private static Type s_typeOfOptionalFieldAttribute;
+        internal static Type TypeOfOptionalFieldAttribute
+        {
+            get
+            {
+                if (s_typeOfOptionalFieldAttribute == null)
+                {
+                    s_typeOfOptionalFieldAttribute = typeof(OptionalFieldAttribute);
+                }
+
+                return s_typeOfOptionalFieldAttribute;
             }
         }
 

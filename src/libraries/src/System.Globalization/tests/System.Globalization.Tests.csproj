@@ -147,7 +147,7 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-	<ProjectReference Include="..\pkg\System.Globalization.pkgproj">
+    <ProjectReference Include="..\pkg\System.Globalization.pkgproj">
       <Name>System.Globalization</Name>
     </ProjectReference>
   </ItemGroup>
@@ -166,6 +166,12 @@
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
       <Name>System.Runtime</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="System" />

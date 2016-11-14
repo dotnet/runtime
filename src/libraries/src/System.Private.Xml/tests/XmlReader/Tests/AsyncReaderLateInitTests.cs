@@ -68,6 +68,7 @@ namespace System.Xml.Tests
 
         [Fact]
         [Trait("a", "b")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp)]  //[ActiveIssue(13121)]  // Path cannot be resolved in UWP
         public static void ReadAsyncAfterInitializationWithUriThrows()
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
@@ -77,6 +78,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp)]  //[ActiveIssue(13121)]  // Path cannot be resolved in UWP
         public static void ReadAfterInitializationWithUriOnAsyncReaderTrows()
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))

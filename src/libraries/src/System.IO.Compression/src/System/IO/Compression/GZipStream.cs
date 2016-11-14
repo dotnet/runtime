@@ -175,13 +175,13 @@ namespace System.IO.Compression
             }
         }
 
-        public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
             return _deflateStream.ReadAsync(array, offset, count, cancellationToken);
         }
 
-        public override Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
             return _deflateStream.WriteAsync(array, offset, count, cancellationToken);

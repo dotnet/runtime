@@ -311,12 +311,7 @@ namespace System.Net.Mail
 #if DEBUG
                 if (context != null && !context.IdentityRequested)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("SmtpConnection#{0}::SetContextAndTryAuthenticate|Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)", LoggingHash.HashString(this));
-                    }
-
-                    Debug.Fail("SmtpConnection#" + LoggingHash.HashString(this) + "::SetContextAndTryAuthenticate|Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
+                    NetEventSource.Fail(this, "Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
                 }
 #endif
 
@@ -421,10 +416,7 @@ namespace System.Net.Mail
 
             private static void ConnectionCreatedCallback(object request, object state)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Enter("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(request) + "::ConnectionCreatedCallback");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(null, request);
                 ConnectAndHandshakeAsyncResult ConnectAndHandshakeAsyncResult = (ConnectAndHandshakeAsyncResult)request;
                 if (state is Exception)
                 {
@@ -440,10 +432,7 @@ namespace System.Net.Mail
                         if (ConnectAndHandshakeAsyncResult._connection._isClosed)
                         {
                             ConnectAndHandshakeAsyncResult._connection.ReleaseConnection();
-                            if (GlobalLog.IsEnabled)
-                            {
-                                GlobalLog.Print("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(request) + "::ConnectionCreatedCallback Connect was aborted ");
-                            }
+                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect was aborted: {request}");
                             ConnectAndHandshakeAsyncResult.InvokeCallback(null);
                             return;
                         }
@@ -456,10 +445,7 @@ namespace System.Net.Mail
                     ConnectAndHandshakeAsyncResult.InvokeCallback(e);
                 }
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(request) + "::ConnectionCreatedCallback");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, request);
             }
 
 
@@ -475,10 +461,7 @@ namespace System.Net.Mail
 
             internal void GetConnection()
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Enter("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(this) + "::Connect:");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 if (_connection._isConnected)
                 {
                     throw new InvalidOperationException(SR.SmtpAlreadyConnected);
@@ -493,10 +476,7 @@ namespace System.Net.Mail
                 if (result.CompletedSynchronously)
                 {
                     _connection.EndInitializeConnection(result);
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(this) + "::Connect returned" + LoggingHash.HashString(this));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Connect returned");
 
                     try
                     {
@@ -515,10 +495,7 @@ namespace System.Net.Mail
                 {
                     ConnectAndHandshakeAsyncResult thisPtr = (ConnectAndHandshakeAsyncResult)result.AsyncState;
                     thisPtr._connection.EndInitializeConnection(result);
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(thisPtr) + "::Connect returned" + LoggingHash.HashString(thisPtr));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect returned {thisPtr}");
 
                     try
                     {

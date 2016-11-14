@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineDefaultConstructor(attributes);
-            Helpers.VerifyConstructor(constructor, type, attributes, new Type[0]);
+            Helpers.VerifyConstructor(constructor, type, attributes, CallingConventions.Standard, new Type[0]);
         }
 
         public static bool s_ranConstructor = false;

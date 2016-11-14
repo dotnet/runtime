@@ -29,7 +29,7 @@ namespace System.Security
         public void Deny() { throw new NotSupportedException(); }
         public override bool Equals(object o) => base.Equals(o);
         public virtual void FromXml(SecurityElement et) { }
-        public IEnumerator GetEnumerator() { return default(IEnumerator); }
+        public IEnumerator GetEnumerator() { return Array.Empty<object>().GetEnumerator(); }
         public override int GetHashCode() => base.GetHashCode();
         public IPermission GetPermission(Type permClass) { return default(IPermission); }
         public PermissionSet Intersect(PermissionSet other) { return default(PermissionSet); }

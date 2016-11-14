@@ -91,5 +91,16 @@ namespace System.Net.Tests
             }
         }
 
+        [Theory, MemberData(nameof(EchoServers))]
+        public void HttpWebRequest_EndGetRequestStreamContext_Null(Uri remoteServer)
+        {
+            System.Net.TransportContext context;
+            HttpWebRequest httpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            httpWebRequest.Method = "POST";
+            using (httpWebRequest.EndGetRequestStream(httpWebRequest.BeginGetRequestStream(null, null), out context))
+            {
+                Assert.Equal(null, context);
+            }
+        }
     }
 }

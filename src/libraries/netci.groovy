@@ -18,6 +18,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.10':'Linux',
                   'Debian8.4':'Linux',
                   'Fedora23':'Linux',
+                  'Fedora24':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
@@ -32,6 +33,7 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu16.04' : 'ubuntu.16.04-x64',
                              'Ubuntu16.10' : 'ubuntu.16.10-x64',
                              'Fedora23' : 'fedora.23-x64',
+                             'Fedora24' : 'fedora.24-x64',
                              'Debian8.4' : 'debian.8-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'opensuse.13.2-x64',
@@ -51,6 +53,7 @@ def osShortName = ['Windows 10': 'win10',
                    'OpenSUSE13.2' : 'opensuse13.2',
                    'OpenSUSE42.1' : 'opensuse42.1',
                    'Fedora23' : 'fedora23',
+                   'Fedora24' : 'fedora24',
                    'RHEL7.2' : 'rhel7.2']
 
 // **************************
@@ -213,7 +216,7 @@ def osShortName = ['Windows 10': 'win10',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
@@ -277,9 +280,9 @@ def osShortName = ['Windows 10': 'win10',
             steps {
                 helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
             }
-            // perf tests can be built on any Windows
-            label("windows10 || windows7 || windows")
         }
+        
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
@@ -348,7 +351,7 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'RHEL7.2', 'OSX'].each { osName ->
+        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX'].each { osName ->
             def osGroup = osGroupMap[osName]
             def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
@@ -419,7 +422,7 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { osName ->
-            (isPR ? ['SoftFP'] : ['HardFP', 'SoftFP']).each { abi ->
+            ['HardFP', 'SoftFP'].each { abi ->
                 def osGroup = osGroupMap[osName]
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
@@ -454,9 +457,7 @@ def osShortName = ['Windows 10': 'win10',
 
                 // Set up triggers
                 if (isPR) {
-                    if (osName == 'LinuxARMEmulator') {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build")
-                    }
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+linuxarmemulator\\W+${abi}\\W+${configurationGroup}.*")
                 }
                 else {
                     // Set a push trigger

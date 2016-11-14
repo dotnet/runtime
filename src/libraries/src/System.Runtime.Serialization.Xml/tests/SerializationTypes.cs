@@ -3905,3 +3905,95 @@ public class TestData
     [DataMember]
     public String TestString;
 }
+
+[Serializable]
+public class MyISerializableType : ISerializable
+{
+    public MyISerializableType()
+    {
+    }
+
+    private string _stringValue;
+
+    public string StringValue
+    {
+        get { return _stringValue; }
+        set { _stringValue = value; }
+    }
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        info.AddValue(nameof(_stringValue), _stringValue, typeof(string));
+
+    }
+
+    public MyISerializableType(SerializationInfo info, StreamingContext context)
+    {
+        _stringValue = (string)info.GetValue(nameof(_stringValue), typeof(string));
+    }
+}
+
+[DataContract]
+public class TypeForRootNameTest
+{
+    [DataMember]
+    public string StringProperty { get; set; }
+}
+
+[Serializable]
+public class TypeWithSerializableAttributeAndNonSerializedField
+{
+    public int Member1;
+    private string _member2;
+    private int _member3;
+
+    [NonSerialized()]
+    public string Member4;
+
+    public string Member2
+    {
+        get
+        {
+            return _member2;
+        }
+
+        set
+        {
+            _member2 = value;
+        }
+    }
+
+    public int Member3
+    {
+        get
+        {
+            return _member3;
+        }
+    }
+
+    public void SetMember3(int value)
+    {
+        _member3 = value;
+    }
+}
+
+[Serializable]
+public class TypeWithOptionalField
+{
+    public int Member1;
+    [OptionalField]
+    public int Member2;
+}
+
+[Serializable]
+public enum SerializableEnumWithNonSerializedValue
+{
+    One = 1,
+    [NonSerialized]
+    Two = 2,
+}
+
+public class TypeWithSerializableEnum
+{
+    public SerializableEnumWithNonSerializedValue EnumField;
+}

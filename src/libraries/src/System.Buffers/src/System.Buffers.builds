@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Buffers.csproj" />
     <Project Include="System.Buffers.csproj">
-      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TargetGroup>netstandard1.1</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
