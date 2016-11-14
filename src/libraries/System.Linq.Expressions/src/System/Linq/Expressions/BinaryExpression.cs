@@ -1596,13 +1596,11 @@ namespace System.Linq.Expressions
             {
                 throw Error.OperandTypesDoNotMatchParameters(nodeType, conversion.ToString());
             }
-            if (method != null)
+            Debug.Assert(method != null);
+            // The parameter type of conversion lambda must be the same as the return type of the overload method
+            if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
             {
-                // The parameter type of conversion lambda must be the same as the return type of the overload method
-                if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
-                {
-                    throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
-                }
+                throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
             }
         }
 

@@ -23,6 +23,36 @@ namespace System.Linq.Expressions.Tests
             ExpressionType.AddAssignChecked, ExpressionType.SubtractAssignChecked, ExpressionType.MultiplyAssignChecked
         };
 
+        public static IEnumerable<object[]> NonConversionBinaryTypesAndValues
+        {
+            get
+            {
+                yield return new object[] {ExpressionType.Add, 0, 0};
+                yield return new object[] {ExpressionType.AddChecked, 0, 0};
+                yield return new object[] {ExpressionType.Subtract, 0, 0};
+                yield return new object[] {ExpressionType.SubtractChecked, 0, 0};
+                yield return new object[] {ExpressionType.Multiply, 0, 0};
+                yield return new object[] {ExpressionType.MultiplyChecked, 0, 0};
+                yield return new object[] {ExpressionType.Divide, 0, 1};
+                yield return new object[] {ExpressionType.Modulo, 0, 2};
+                yield return new object[] {ExpressionType.Power, 1.0, 1.0};
+                yield return new object[] {ExpressionType.And, 0, 0};
+                yield return new object[] {ExpressionType.AndAlso, false, false};
+                yield return new object[] {ExpressionType.Or, 0, 0};
+                yield return new object[] {ExpressionType.OrElse, false, false};
+                yield return new object[] {ExpressionType.LessThan, 0, 0};
+                yield return new object[] {ExpressionType.LessThanOrEqual, 0, 0};
+                yield return new object[] {ExpressionType.GreaterThan, 0, 0};
+                yield return new object[] {ExpressionType.GreaterThanOrEqual, 0, 0};
+                yield return new object[] {ExpressionType.Equal, 0, 0};
+                yield return new object[] {ExpressionType.NotEqual, 0, 0};
+                yield return new object[] {ExpressionType.ExclusiveOr, false, false};
+                yield return new object[] {ExpressionType.ArrayIndex, new int[1], 0};
+                yield return new object[] {ExpressionType.RightShift, 0, 0};
+                yield return new object[] {ExpressionType.LeftShift, 0, 0};
+            }
+        }
+
         public static IEnumerable<object[]> BinaryTypesData()
         {
             return BinaryTypes.Select(i => new object[] { i });
@@ -160,5 +190,20 @@ namespace System.Linq.Expressions.Tests
         }
 
         public static bool BothNotNull(object a, object b) => a != null && b != null;
+
+        [Theory, PerCompilationType(nameof(NonConversionBinaryTypesAndValues))]
+        public static void ConversionIgnoredWhenIrrelevant(
+            ExpressionType type, object lhs, object rhs, bool useInterpreter)
+        {
+            // The types of binary expression that can't have a converter just ignore any lambda
+            // passed in. This probably shouldn't be the case (an ArgumentException would be
+            // appropriate, but it would be a breaking change to stop this now.
+
+            Expression<Action> sillyLambda =
+                Expression.Lambda<Action>(Expression.Throw(Expression.Constant(new Exception())));
+            BinaryExpression op = Expression.MakeBinary(
+                type, Expression.Constant(lhs), Expression.Constant(rhs), false, null, sillyLambda);
+            Expression.Lambda(op).Compile(useInterpreter).DynamicInvoke();
+        }
     }
 }

@@ -205,6 +205,92 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("(a != b)", e.ToString());
         }
 
+        [Fact]
+        public static void CannotPreformEqualityOnValueTypesWithoutOperators()
+        {
+            var uvConst = Expression.Constant(new UselessValue());
+            Assert.Throws<InvalidOperationException>(() => Expression.Equal(uvConst, uvConst));
+            Assert.Throws<InvalidOperationException>(() => Expression.NotEqual(uvConst, uvConst));
+        }
+
+        [Theory, InlineData(false)]
+        public static void CanPerformEqualityOnNullableWithoutOperatorsToConstantNull(bool useInterpreter)
+        {
+            var nullConst = Expression.Constant(null, typeof(UselessValue?));
+            var uvConst = Expression.Constant(new UselessValue(), typeof(UselessValue?));
+            var exp = Expression.Lambda<Func<bool>>(Expression.Equal(nullConst, uvConst));
+            var func = exp.Compile(useInterpreter);
+            Assert.False(func());
+
+            exp = Expression.Lambda<Func<bool>>(Expression.Equal(uvConst, nullConst));
+            func = exp.Compile(useInterpreter);
+            Assert.False(func());
+        }
+
+        [Fact, ActiveIssue(13670)]
+        public static void CanPerformEqualityOnNullableWithoutOperatorsToConstantNullInterpreter()
+        {
+            CanPerformEqualityOnNullableWithoutOperatorsToConstantNull(true);
+        }
+
+        [Theory, InlineData(false)]
+        public static void CanPerformInequalityOnNullableWithoutOperatorsToConstantNull(bool useInterpreter)
+        {
+            var nullConst = Expression.Constant(null, typeof(UselessValue?));
+            var uvConst = Expression.Constant(new UselessValue(), typeof(UselessValue?));
+            var exp = Expression.Lambda<Func<bool>>(Expression.NotEqual(nullConst, uvConst));
+            var func = exp.Compile(useInterpreter);
+            Assert.True(func());
+
+            exp = Expression.Lambda<Func<bool>>(Expression.NotEqual(uvConst, nullConst));
+            func = exp.Compile(useInterpreter);
+            Assert.True(func());
+        }
+
+        [Fact, ActiveIssue(13670)]
+        public static void CanPerformInequalityOnNullableWithoutOperatorsToConstantNullInterpreter()
+        {
+            CanPerformInequalityOnNullableWithoutOperatorsToConstantNull(true);
+        }
+
+        [Fact]
+        public static void CannotDoNullComparisonWithoutOperatorIfBothNullConstants()
+        {
+            var typedNullConst = Expression.Constant(null, typeof(UselessValue?));
+            Assert.Throws<InvalidOperationException>(() => Expression.Equal(typedNullConst, typedNullConst));
+        }
+
+        // DBNull having a different type code to other objects could result in bugs surrounding it if
+        // that type code got incorrectly used.
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CanCompareDBNullEqual(bool useInterpreter)
+        {
+            var x = Expression.Parameter(typeof(DBNull));
+            var y = Expression.Parameter(typeof(DBNull));
+            var lambda = Expression.Lambda<Func<DBNull, DBNull, bool>>(Expression.Equal(x, y), x, y);
+            var func = lambda.Compile(useInterpreter);
+            foreach(var xVal in new[] { DBNull.Value, null})
+                foreach(var yVal in new[] { DBNull.Value, null})
+                    Assert.Equal(xVal == yVal, func(xVal, yVal));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CanCompareDBNullNotEqual(bool useInterpreter)
+        {
+            var x = Expression.Parameter(typeof(DBNull));
+            var y = Expression.Parameter(typeof(DBNull));
+            var lambda = Expression.Lambda<Func<DBNull, DBNull, bool>>(Expression.NotEqual(x, y), x, y);
+            var func = lambda.Compile(useInterpreter);
+            foreach(var xVal in new[] { DBNull.Value, null})
+                foreach(var yVal in new[] { DBNull.Value, null})
+                    Assert.Equal(xVal != yVal, func(xVal, yVal));
+        }
+
+        private struct UselessValue
+        {
+        }
+
         public class TestClass { }
         public enum TestEnum { }
     }
