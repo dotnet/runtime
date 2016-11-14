@@ -841,41 +841,37 @@ ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArray *array, MonoClassField *field_handle)
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArrayHandle array, MonoClassField *field_handle, MonoError *error)
 {
-	MonoClass *klass = array->obj.vtable->klass;
+	mono_error_init (error);
+
+	MonoClass *klass = mono_handle_class (array);
 	guint32 size = mono_array_element_size (klass);
 	MonoType *type = mono_type_get_underlying_type (&klass->element_class->byval_arg);
 	int align;
 	const char *field_data;
 
 	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
-		MonoException *exc = mono_get_exception_argument("array",
-			"Cannot initialize array of non-primitive type.");
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return;
 	}
 
 	if (!(field_handle->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
-		MonoException *exc = mono_get_exception_argument("field_handle",
-			"Field doesn't have an RVA");
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "field_handle", "Field '%s' doesn't have an RVA", mono_field_get_name (field_handle));
 		return;
 	}
 
-	size *= array->max_length;
+	size *= MONO_HANDLE_GETVAL(array, max_length);
 	field_data = mono_field_get_data (field_handle);
 
 	if (size > mono_type_size (field_handle->type, &align)) {
-		MonoException *exc = mono_get_exception_argument("field_handle",
-			"Field not large enough to fill array");
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "field_handle", "Field not large enough to fill array");
 		return;
 	}
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP(n) {								\
-	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); 	\
+	guint ## n *data = (guint ## n *) mono_array_addr (MONO_HANDLE_RAW(array), char, 0); \
 	guint ## n *src = (guint ## n *) field_data; 				\
 	int i,									\
 	    nEnt = (size / sizeof(guint ## n));					\
@@ -904,11 +900,11 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 		SWAP (64);
 		break;
 	default:
-		memcpy (mono_array_addr (array, char, 0), field_data, size);
+		memcpy (mono_array_addr (MONO_HANDLE_RAW(array), char, 0), field_data, size);
 		break;
 	}
 #else
-	memcpy (mono_array_addr (array, char, 0), field_data, size);
+	memcpy (mono_array_addr (MONO_HANDLE_RAW(array), char, 0), field_data, size);
 #endif
 }
 
