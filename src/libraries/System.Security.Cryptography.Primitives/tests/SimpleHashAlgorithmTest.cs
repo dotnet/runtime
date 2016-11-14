@@ -146,6 +146,22 @@ namespace System.Security.Cryptography.Hashing.Tests
             }
         }
 
+#if netstandard17 
+        [Fact]
+        public void ClearIsDispose()
+        {
+            using (var stream = new PositionValueStream(0))
+            using (HashAlgorithm hash = new Length32Hash())
+            {
+                Assert.Throws<NullReferenceException>(() => hash.ComputeHash((Stream)null));
+
+                hash.Clear();
+
+                Assert.Throws<ObjectDisposedException>(() => hash.ComputeHash(stream));
+            }
+        }
+#endif
+
         private void ArrayHash(byte[] array)
         {
             // Do not call ArrayHash(byte[], int, int).
