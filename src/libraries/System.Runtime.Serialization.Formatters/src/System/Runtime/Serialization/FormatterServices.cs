@@ -67,12 +67,13 @@ namespace System.Runtime.Serialization
             // nop
         }
 
-        // TODO #8133: Fix this to avoid reflection
+#if !netcoreapp11
         private static readonly Func<Type, object> s_getUninitializedObjectDelegate = (Func<Type, object>)
             typeof(string).Assembly
             .GetType("System.Runtime.Serialization.FormatterServices")
             .GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
             .CreateDelegate(typeof(Func<Type, object>));
+#endif // netcoreapp11
 
         public static object GetUninitializedObject(Type type)
         {
@@ -80,8 +81,11 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(type));
             }
-
+#if netcoreapp11
+            return RuntimeHelpers.GetUninitializedObject(type);
+#else
             return s_getUninitializedObjectDelegate(type);
+#endif // netcoreapp11
         }
 
         public static object GetSafeUninitializedObject(Type type) => GetUninitializedObject(type);
