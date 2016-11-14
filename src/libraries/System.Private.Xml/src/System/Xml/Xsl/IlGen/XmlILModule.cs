@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.IlGen
 
         private TypeBuilder _typeBldr;
         private Hashtable _methods, _urlToSymWriter;
-        private bool _persistAsm, _useLRE, _emitSymbols;
+        private bool _useLRE, _emitSymbols;
 
         private static readonly Guid s_languageGuid = new Guid(0x462d4a3e, 0xb257, 0x4aee, 0x97, 0xcd, 0x59, 0x18, 0xc7, 0x53, 0x17, 0x58);
         private static readonly Guid s_vendorGuid = new Guid(0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
@@ -66,9 +66,8 @@ namespace System.Xml.Xsl.IlGen
         {
             _typeBldr = typeBldr;
 
-            _emitSymbols = false; //((ModuleBuilder) this.typeBldr.Module).GetSymWriter() != null; //BinCompat TODO
+            _emitSymbols = false;
             _useLRE = false;
-            _persistAsm = false;
 
             // Index all methods added to this module by unique name
             _methods = new Hashtable();
@@ -101,7 +100,6 @@ namespace System.Xml.Xsl.IlGen
 
             _useLRE = useLRE;
             _emitSymbols = emitSymbols;
-            _persistAsm = false;
 
             // Index all methods added to this module by unique name
             _methods = new Hashtable();
@@ -116,7 +114,6 @@ namespace System.Xml.Xsl.IlGen
 #if DEBUG
                 if (XmlILTrace.IsEnabled) {
                     this.modFile = "System.Xml.Xsl.CompiledQuery";
-                    this.persistAsm = true;
                 }
 #endif
 
@@ -138,10 +135,7 @@ namespace System.Xml.Xsl.IlGen
                 }
 
                 // Create ModuleBuilder
-                if (_persistAsm)
-                    modBldr = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
-                else
-                    modBldr = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery"); //, this.modFile + ".dll", emitSymbols); //BinCompat TODO
+                modBldr = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
 
                 _typeBldr = modBldr.DefineType("System.Xml.Xsl.CompiledQuery.Query", TypeAttributes.Public);
             }
@@ -208,15 +202,6 @@ namespace System.Xml.Xsl.IlGen
                 DynamicMethod methDyn = new DynamicMethod(name, returnType, paramTypes, s_LREModule);
                 methDyn.InitLocals = true;
 
-                //BinCompat TODO
-                //if (!isRaw)
-                //    methDyn.DefineParameter(1, ParameterAttributes.None, RuntimeName);
-
-                //for (int i = 0; i < paramNames.Length; i++) {
-                //    if (paramNames[i] != null && paramNames[i].Length != 0)
-                //        methDyn.DefineParameter(i + (isRaw ? 1 : 2), ParameterAttributes.None, paramNames[i]);
-                //}
-
                 methResult = methDyn;
             }
 
@@ -280,9 +265,6 @@ namespace System.Xml.Xsl.IlGen
         /// Once all methods have been defined, CreateModule must be called in order to "bake" the methods within
         /// this module.
         /// </summary>
-        // SxS note: AssemblyBuilder.Save() below is using name which is not SxS safe. This file is written only for 
-        // internal tracing/debugging purposes. In retail builds persistAsm will be always false and the file should 
-        // never be written. As a result it's fine just to supress the the SxS warning.
         public void BakeMethods()
         {
             Type typBaked;
@@ -291,12 +273,6 @@ namespace System.Xml.Xsl.IlGen
             if (!_useLRE)
             {
                 typBaked = _typeBldr.CreateTypeInfo().AsType();
-
-                //BinCompat TODO:
-                //if (this.persistAsm) {
-                //    // Persist the assembly to disk
-                //    ((AssemblyBuilder) this.typeBldr.Module.Assembly).Save(this.modFile + ".dll");
-                //}
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);
