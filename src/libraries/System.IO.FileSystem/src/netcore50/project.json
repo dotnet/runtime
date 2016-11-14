@@ -25,7 +25,7 @@
     "netcore50": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24714-00",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.3",
         "System.Globalization": "4.0.11",
         "System.Reflection": "4.1.0",
         "System.Reflection.Primitives": "4.0.1",
