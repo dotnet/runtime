@@ -9,6 +9,7 @@ namespace System.Net
     [Flags]
     public enum SecurityProtocolType
     {
+        SystemDefault = 0,
 #pragma warning disable CS0618
         Ssl3 = SslProtocols.Ssl3,
 #pragma warning restore CS0618

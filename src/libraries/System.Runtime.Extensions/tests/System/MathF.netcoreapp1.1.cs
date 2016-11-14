@@ -26,6 +26,8 @@ namespace System.Tests
        // use CrossPlatformMachineEpsilon * 10.
         public const float CrossPlatformMachineEpsilon = 4.76837158e-07f;
 
+        private static bool Is64Bit => IntPtr.Size == 8;
+
         /// <summary>
         /// Verifies that two <see cref="float"/> values are equal, within the <paramref name="allowedVariance"/>.
         /// </summary>
@@ -90,7 +92,7 @@ namespace System.Tests
             AssertEqual(-MathF.PI / 2.0f, MathF.Atan(float.NegativeInfinity), CrossPlatformMachineEpsilon * 10);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(Is64Bit))]
         public static void Atan2()
         {
             AssertEqual(-MathF.PI, MathF.Atan2(-0.0f, -0.0f), CrossPlatformMachineEpsilon * 10);
@@ -238,7 +240,7 @@ namespace System.Tests
             Assert.Equal(float.NaN, MathF.Min(float.NaN, float.NaN));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(Is64Bit))]
         public static void Pow()
         {
             Assert.Equal(1.0f, MathF.Pow(0.0f, 0.0f));

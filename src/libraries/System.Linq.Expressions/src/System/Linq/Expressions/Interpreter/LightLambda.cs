@@ -258,7 +258,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-#if FEATURE_MAKE_RUN_METHODS    
+#if FEATURE_MAKE_RUN_METHODS
                 if (DelegateHelpers.MakeDelegate(paramTypes) == delegateType)
                 {
                     name = "Make" + name + paramInfos.Length;
@@ -324,7 +324,6 @@ namespace System.Linq.Expressions.Interpreter
                 body = Expression.Convert(Expression.Invoke(dlgExpr, argsParam), method.ReturnType);
             }
 
-
             if (hasByRef)
             {
                 List<Expression> updates = new List<Expression>();
@@ -385,7 +384,6 @@ namespace System.Linq.Expressions.Interpreter
             }
 #endif
         }
-
 
         private InterpretedFrame MakeFrame()
         {

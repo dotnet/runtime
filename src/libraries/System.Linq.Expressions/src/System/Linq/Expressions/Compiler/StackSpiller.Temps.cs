@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Compiler
                 return _usedTemps != null ? _usedTemps.Count : 0;
             }
 
-            // Free temporaries created since the last marking. 
+            // Free temporaries created since the last marking.
             // This is a performance optimization to lower the overall number of temporaries needed.
             internal void Free(int mark)
             {
@@ -119,8 +119,8 @@ namespace System.Linq.Expressions.Compiler
         /// stack starts in the initial state, and after the first subexpression
         /// is added it is changed to non-empty. This behavior can be overridden
         /// by setting the stack manually between adds.
-        /// 
-        /// When all children have been added, the caller should rewrite the 
+        ///
+        /// When all children have been added, the caller should rewrite the
         /// node if Rewrite is true. Then, it should call Finish with either
         /// the original expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.
@@ -130,6 +130,7 @@ namespace System.Linq.Expressions.Compiler
             private readonly StackSpiller _self;
             private readonly Expression[] _expressions;
             private int _expressionsCount;
+            private int _lastSpillIndex;
             private List<Expression> _comma;
             private RewriteAction _action;
             private Stack _stack;
@@ -156,6 +157,11 @@ namespace System.Linq.Expressions.Compiler
                 Result exp = _self.RewriteExpression(node, _stack);
                 _action |= exp.Action;
                 _stack = Stack.NonEmpty;
+
+                if (exp.Action == RewriteAction.SpillStack)
+                {
+                    _lastSpillIndex = _expressionsCount;
+                }
 
                 // track items in case we need to copy or spill stack
                 _expressions[_expressionsCount++] = exp.Node;
@@ -187,7 +193,7 @@ namespace System.Linq.Expressions.Compiler
                     if (_action == RewriteAction.SpillStack)
                     {
                         Expression[] clone = _expressions;
-                        int count = clone.Length;
+                        int count = _lastSpillIndex + 1;
                         List<Expression> comma = new List<Expression>(count + 1);
                         for (int i = 0; i < count; i++)
                         {

@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Tests
                     .locals 1
                     .maxstack 2
                     .maxcontinuation 0
-                  
+
                     IP_0000: InitParameter(0)
                     IP_0001: LoadLocal(0)
                     IP_0002: LoadObject(null)
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Tests
                     .locals 2
                     .maxstack 3
                     .maxcontinuation 1
-                  
+
                     IP_0000: InitParameter(0)
                     .try
                     {

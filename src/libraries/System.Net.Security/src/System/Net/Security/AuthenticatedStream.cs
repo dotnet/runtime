@@ -47,7 +47,7 @@ namespace System.Net.Security
         protected override void Dispose(bool disposing)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 try

@@ -17,7 +17,7 @@ namespace System.Linq.Expressions
     /// classes whose functionality requires traversing, examining or copying
     /// an expression tree.
     /// </remarks>
-    public abstract class ExpressionVisitor
+    public abstract partial class ExpressionVisitor
     {
         /// <summary>
         /// Initializes a new instance of <see cref="ExpressionVisitor"/>.

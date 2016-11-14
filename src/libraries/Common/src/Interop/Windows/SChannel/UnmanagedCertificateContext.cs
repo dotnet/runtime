@@ -38,12 +38,7 @@ namespace System.Net
                     }
 
                     var cert = new X509Certificate2(new IntPtr(next));
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print(
-                            "UnmanagedCertificateContext::GetRemoteCertificatesFromStoreContext " +
-                            "adding remote certificate:" + cert.Subject + cert.Thumbprint);
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
 
                     result.Add(cert);
                     last = next;

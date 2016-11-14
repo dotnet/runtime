@@ -10,10 +10,12 @@
     <ProjectGuid>{BC2E1649-291D-412E-9529-EDDA94FA7AD6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.Compression.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.IO.Compression.pkgproj">
       <Project>{5471BFE8-8071-466f-838E-5ADAA779E742}</Project>
@@ -23,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeflateStreamTests.cs" />
+    <Compile Include="DeflateStreamTests.netstandard1.7.cs" Condition="'$(TargetGroup)'==''" />
     <Compile Include="GZipStreamTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />

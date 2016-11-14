@@ -390,7 +390,7 @@ namespace System.Xml.Serialization
             _writer.Write(writerType);
             _writer.WriteLine("(); } }");
 
-            GeneratePublicMethods("readMethods", "ReadMethods", readMethods, xmlMappings);
+            GeneratePublicMethods(nameof(readMethods), "ReadMethods", readMethods, xmlMappings);
             GeneratePublicMethods("writeMethods", "WriteMethods", writerMethods, xmlMappings);
             GenerateTypedSerializers(serializers);
             GenerateSupportedTypes(types);

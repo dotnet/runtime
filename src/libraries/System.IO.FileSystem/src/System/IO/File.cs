@@ -21,14 +21,15 @@ namespace System.IO
     // routines such as Delete, etc.
     public static class File
     {
+        internal const int DefaultBufferSize = 4096;
+
         public static StreamReader OpenText(String path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalOpen(path);
-            return new StreamReader(stream);
+            return new StreamReader(path);
         }
 
         public static StreamWriter CreateText(String path)
@@ -37,8 +38,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path);
-            return new StreamWriter(stream);
+            return new StreamWriter(path, append: false);
         }
 
         public static StreamWriter AppendText(String path)
@@ -47,8 +47,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path);
-            return new StreamWriter(stream);
+            return new StreamWriter(path, append: true);
         }
 
 
@@ -128,9 +127,9 @@ namespace System.IO
         // Your application must have Create, Read, and Write permissions to
         // the file.
         // 
-        public static FileStream Create(String path)
+        public static FileStream Create(string path)
         {
-            return Create(path, FileStream.DefaultBufferSize);
+            return Create(path, DefaultBufferSize);
         }
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
@@ -245,16 +244,16 @@ namespace System.IO
             return dateTime.ToUniversalTime();
         }
 
-        public static void SetCreationTime(String path, DateTime creationTimeUtc)
+        public static void SetCreationTime(String path, DateTime creationTime)
         {
             String fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetCreationTime(fullPath, creationTimeUtc, asDirectory: false);
+            FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: false);
         }
 
-        public static void SetCreationTimeUtc(String path, DateTime creationTime)
+        public static void SetCreationTimeUtc(String path, DateTime creationTimeUtc)
         {
             String fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTime), asDirectory: false);
+            FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -383,9 +382,7 @@ namespace System.IO
             Debug.Assert(encoding != null);
             Debug.Assert(path.Length > 0);
 
-            Stream stream = FileStream.InternalOpen(path, useAsync: false);
-
-            using (StreamReader sr = new StreamReader(stream, encoding, true))
+            using (StreamReader sr = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true))
                 return sr.ReadToEnd();
         }
 
@@ -398,7 +395,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalWriteAllText(path, contents, UTF8NoBOM);
+            using (StreamWriter sw = new StreamWriter(path))
+            {
+                sw.Write(contents);
+            }
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -412,20 +412,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalWriteAllText(path, contents, encoding);
-        }
-
-        [System.Security.SecurityCritical]
-        private static void InternalWriteAllText(String path, String contents, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length > 0);
-
-            Stream stream = FileStream.InternalCreate(path, useAsync: false);
-
-            using (StreamWriter sw = new StreamWriter(stream, encoding))
+            using (StreamWriter sw = new StreamWriter(path, false, encoding))
+            {
                 sw.Write(contents);
+            }
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -438,7 +428,7 @@ namespace System.IO
         private static byte[] InternalReadAllBytes(String path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = FileStream.InternalOpen(path, bufferSize: 1, useAsync: false))
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
             {
                 long fileLength = fs.Length;
                 if (fileLength > Int32.MaxValue)
@@ -480,7 +470,7 @@ namespace System.IO
             Debug.Assert(path.Length != 0);
             Debug.Assert(bytes != null);
 
-            using (FileStream fs = FileStream.InternalCreate(path, useAsync: false))
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
                 fs.Write(bytes, 0, bytes.Length);
             }
@@ -518,9 +508,7 @@ namespace System.IO
             String line;
             List<String> lines = new List<String>();
 
-            Stream stream = FileStream.InternalOpen(path, useAsync: false);
-
-            using (StreamReader sr = new StreamReader(stream, encoding))
+            using (StreamReader sr = new StreamReader(path, encoding))
                 while ((line = sr.ReadLine()) != null)
                     lines.Add(line);
 
@@ -566,9 +554,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path, useAsync: false);
-
-            InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
+            InternalWriteAllLines(new StreamWriter(path), contents);
         }
 
         public static void WriteAllLines(String path, String[] contents, Encoding encoding)
@@ -588,9 +574,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path, useAsync: false);
-
-            InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
+            InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
         private static void InternalWriteAllLines(TextWriter writer, IEnumerable<String> contents)
@@ -607,7 +591,6 @@ namespace System.IO
             }
         }
 
-
         public static void AppendAllText(String path, String contents)
         {
             if (path == null)
@@ -616,7 +599,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalAppendAllText(path, contents, UTF8NoBOM);
+            using (StreamWriter sw = new StreamWriter(path, append: true))
+            {
+                sw.Write(contents);
+            }
         }
 
         public static void AppendAllText(String path, String contents, Encoding encoding)
@@ -629,19 +615,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            InternalAppendAllText(path, contents, encoding);
-        }
-
-        private static void InternalAppendAllText(String path, String contents, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length > 0);
-
-            Stream stream = FileStream.InternalAppend(path, useAsync: false);
-
-            using (StreamWriter sw = new StreamWriter(stream, encoding))
+            using (StreamWriter sw = new StreamWriter(path, true, encoding))
+            {
                 sw.Write(contents);
+            }
         }
 
         public static void AppendAllLines(String path, IEnumerable<String> contents)
@@ -654,9 +631,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path, useAsync: false);
-
-            InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
+            InternalWriteAllLines(new StreamWriter(path, append: true), contents);
         }
 
         public static void AppendAllLines(String path, IEnumerable<String> contents, Encoding encoding)
@@ -671,9 +646,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path, useAsync: false);
-
-            InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
+            InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
         public static void Replace(String sourceFileName, String destinationFileName, String destinationBackupFileName)
@@ -751,24 +724,6 @@ namespace System.IO
             // properly for Win32.
 
             throw new PlatformNotSupportedException();
-        }
-
-        private static volatile Encoding _UTF8NoBOM;
-
-        private static Encoding UTF8NoBOM
-        {
-            get
-            {
-                if (_UTF8NoBOM == null)
-                {
-                    // No need for double lock - we just want to avoid extra
-                    // allocations in the common case.
-                    UTF8Encoding noBOM = new UTF8Encoding(false, true);
-                    Interlocked.MemoryBarrier();
-                    _UTF8NoBOM = noBOM;
-                }
-                return _UTF8NoBOM;
-            }
         }
     }
 }

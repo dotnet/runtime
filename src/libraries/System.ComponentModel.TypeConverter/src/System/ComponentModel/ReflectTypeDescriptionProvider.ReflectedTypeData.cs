@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -22,11 +23,9 @@ namespace System.ComponentModel
             private EventDescriptorCollection _events;
             private PropertyDescriptorCollection _properties;
             private TypeConverter _converter;
-#if FEATURE_EDITORATTRIBUTE
             private object[] _editors;
             private Type[] _editorTypes;
             private int _editorCount;
-#endif
 
             internal ReflectedTypeData(Type type)
             {
@@ -179,14 +178,12 @@ namespace System.ComponentModel
                     ISite site = comp.Site;
                     if (site != null)
                     {
-#if FEATURE_NESTED_SITE
                         INestedSite nestedSite = site as INestedSite;
                         if (nestedSite != null)
                         {
                             return nestedSite.FullName;
                         }
                         else
-#endif
                         {
                             return site.Name;
                         }
@@ -321,7 +318,6 @@ namespace System.ComponentModel
                 return null;
             }
 
-#if FEATURE_EDITORATTRIBUTE
             /// <summary>
             ///     Retrieves the editor for the given base type.
             /// </summary>
@@ -446,7 +442,6 @@ namespace System.ComponentModel
 
                 return null;
             }
-#endif
 
             /// <summary>
             ///     Retrieves the events for this type.
@@ -577,11 +572,9 @@ namespace System.ComponentModel
                 _events = null;
                 _properties = null;
                 _converter = null;
-#if FEATURE_EDITORATTRIBUTE
                 _editors = null;
                 _editorTypes = null;
                 _editorCount = 0;
-#endif
 
             }
         }

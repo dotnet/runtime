@@ -55,7 +55,10 @@ namespace System.Net.Http.Functional.Tests
                 handler.DefaultProxyCredentials = wrongCreds;
 
                 Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
-                Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
+                Task<string> responseStringTask = responseTask.ContinueWith(t =>
+                {
+                    using (t.Result) return t.Result.Content.ReadAsStringAsync();
+                }, TaskScheduler.Default).Unwrap();
                 Task.WaitAll(proxyTask, responseTask, responseStringTask);
 
                 TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
@@ -91,7 +94,10 @@ namespace System.Net.Http.Functional.Tests
                     handler.DefaultProxyCredentials = creds;
 
                     Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
-                    Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
+                    Task<string> responseStringTask = responseTask.ContinueWith(t =>
+                    {
+                        using (t.Result) return t.Result.Content.ReadAsStringAsync();
+                    }, TaskScheduler.Default).Unwrap();
                     Task.WaitAll(responseTask, responseStringTask);
 
                     TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);

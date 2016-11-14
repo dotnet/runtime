@@ -37,6 +37,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcore50)]  // Switch to throw expception was introduced in NetStandard1.7
         public static void XmlWriterChecksUpperBoundOfLowerSurrogate_newBehavior()
         {
             // Turn the switch off to get the new behavior in case the platform has it on by default

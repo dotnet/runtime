@@ -3,10 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
     <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.7'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetGroup)' == ''">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Extensions.cs" />
@@ -14,6 +14,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Temporary till we publish System.Security.Principal updated package -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

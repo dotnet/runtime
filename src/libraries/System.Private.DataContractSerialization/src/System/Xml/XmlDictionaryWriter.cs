@@ -66,15 +66,13 @@ namespace System.Xml
 
         public static XmlDictionaryWriter CreateMtomWriter(Stream stream, Encoding encoding, int maxSizeInBytes, string startInfo, string boundary, string startUri, bool writeMessageHeaders, bool ownsStream)
         {
-            XmlMtomWriter writer = new XmlMtomWriter();
-            writer.SetOutput(stream, encoding, maxSizeInBytes, startInfo, boundary, startUri, writeMessageHeaders, ownsStream);
-            return writer;
+            throw new PlatformNotSupportedException();
         }
 
         public static XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)
         {
             if (writer == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
 
             XmlDictionaryWriter dictionaryWriter = writer as XmlDictionaryWriter;
 
@@ -114,7 +112,7 @@ namespace System.Xml
         public virtual void WriteXmlnsAttribute(string prefix, string namespaceUri)
         {
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             if (prefix == null)
             {
                 if (LookupPrefix(namespaceUri) != null)
@@ -183,7 +181,7 @@ namespace System.Xml
         public virtual void WriteValue(UniqueId value)
         {
             if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             WriteString(value.ToString());
         }
@@ -851,7 +849,7 @@ namespace System.Xml
             public override void WriteXmlnsAttribute(string prefix, string namespaceUri)
             {
                 if (namespaceUri == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
                 if (prefix == null)
                 {
                     if (LookupPrefix(namespaceUri) != null)

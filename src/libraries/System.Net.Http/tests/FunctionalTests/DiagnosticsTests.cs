@@ -18,6 +18,18 @@ namespace System.Net.Http.Functional.Tests
 
     public class DiagnosticsTest : RemoteExecutorTestBase
     {
+        [Fact]
+        public static void EventSource_ExistsWithCorrectId()
+        {
+            Type esType = typeof(HttpClient).GetTypeInfo().Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
+            Assert.NotNull(esType);
+
+            Assert.Equal("Microsoft-System-Net-Http", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("bdd9a83e-1929-5482-0d73-2fe5e1c0e16d"), EventSource.GetGuid(esType));
+
+            Assert.NotEmpty(EventSource.GenerateManifest(esType, "assemblyPathToIncludeInManifest"));
+        }
+
         // Diagnostic tests are each invoked in their own process as they enable/disable
         // process-wide EventSource-based tracing, and other tests in the same process
         // could interfere with the tests, as well as the enabling of tracing interfering
@@ -153,6 +165,7 @@ namespace System.Net.Http.Functional.Tests
                     // We don't validate receiving specific events, but rather that we do at least
                     // receive some events, and that enabling tracing doesn't cause other failures
                     // in processing.
+                    Assert.DoesNotContain(events, ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
 

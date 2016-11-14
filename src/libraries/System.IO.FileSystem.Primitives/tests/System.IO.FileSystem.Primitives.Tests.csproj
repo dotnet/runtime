@@ -20,6 +20,8 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
     <ProjectReference Include="..\pkg\System.IO.FileSystem.Primitives.pkgproj">
       <Project>{6c05678e-394c-4cff-b453-a18e28c8f2c3}</Project>
       <Name>System.IO.FileSystem.Primitives</Name>

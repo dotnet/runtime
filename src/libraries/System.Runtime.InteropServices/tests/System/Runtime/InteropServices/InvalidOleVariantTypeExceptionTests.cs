@@ -11,7 +11,6 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class InvalidOleVariantTypeExceptionTests
     {
-        [ActiveIssue(12467)]
         [Fact]
         public void SerializationRoundTrip()
         {

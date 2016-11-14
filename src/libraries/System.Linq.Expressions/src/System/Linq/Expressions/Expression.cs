@@ -110,7 +110,7 @@ comparand: null
         }
 
         /// <summary>
-        /// Indicates that the node can be reduced to a simpler node. If this 
+        /// Indicates that the node can be reduced to a simpler node. If this
         /// returns true, Reduce() can be called to produce the reduced form.
         /// </summary>
         public virtual bool CanReduce => false;
@@ -134,7 +134,7 @@ comparand: null
         /// <param name="visitor">An instance of <see cref="ExpressionVisitor"/>.</param>
         /// <returns>The expression being visited, or an expression which should replace it in the tree.</returns>
         /// <remarks>
-        /// Override this method to provide logic to walk the node's children. 
+        /// Override this method to provide logic to walk the node's children.
         /// A typical implementation will call visitor.Visit on each of its
         /// children, and if any of them change, should return a new copy of
         /// itself with the modified children.
@@ -231,12 +231,12 @@ comparand: null
 
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
-        /// 
+        ///
         /// This is called from various methods where we internally hold onto an IList of T
-        /// or a readonly collection of T.  We check to see if we've already returned a 
-        /// readonly collection of T and if so simply return the other one.  Otherwise we do 
+        /// or a readonly collection of T.  We check to see if we've already returned a
+        /// readonly collection of T and if so simply return the other one.  Otherwise we do
         /// a thread-safe replacement of the list w/ a readonly collection which wraps it.
-        /// 
+        ///
         /// Ultimately this saves us from having to allocate a ReadOnlyCollection for our
         /// data types because the compiler is capable of going directly to the IList of T.
         /// </summary>
@@ -247,16 +247,16 @@ comparand: null
 
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
-        /// 
-        /// This is similar to the ReturnReadOnly of T. This version supports nodes which hold 
+        ///
+        /// This is similar to the ReturnReadOnly of T. This version supports nodes which hold
         /// onto multiple Expressions where one is typed to object.  That object field holds either
         /// an expression or a ReadOnlyCollection of Expressions.  When it holds a ReadOnlyCollection
         /// the IList which backs it is a ListArgumentProvider which uses the Expression which
-        /// implements IArgumentProvider to get 2nd and additional values.  The ListArgumentProvider 
-        /// continues to hold onto the 1st expression.  
-        /// 
-        /// This enables users to get the ReadOnlyCollection w/o it consuming more memory than if 
-        /// it was just an array.  Meanwhile The DLR internally avoids accessing  which would force 
+        /// implements IArgumentProvider to get 2nd and additional values.  The ListArgumentProvider
+        /// continues to hold onto the 1st expression.
+        ///
+        /// This enables users to get the ReadOnlyCollection w/o it consuming more memory than if
+        /// it was just an array.  Meanwhile The DLR internally avoids accessing  which would force
         /// the readonly collection to be created resulting in a typical memory savings.
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnly(IArgumentProvider provider, ref object collection)
@@ -265,9 +265,9 @@ comparand: null
         }
 
         /// <summary>
-        /// Helper which is used for specialized subtypes which use ReturnReadOnly(ref object, ...). 
+        /// Helper which is used for specialized subtypes which use ReturnReadOnly(ref object, ...).
         /// This is the reverse version of ReturnReadOnly which takes an IArgumentProvider.
-        /// 
+        ///
         /// This is used to return the 1st argument.  The 1st argument is typed as object and either
         /// contains a ReadOnlyCollection or the Expression.  We check for the Expression and if it's
         /// present we return that, otherwise we return the 1st element of the ReadOnlyCollection.

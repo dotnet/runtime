@@ -11,9 +11,6 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Configuration;
     using System.Xml.Serialization.Configuration;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
-    using System.Xml.Serialization.Advanced;
 
 #if DEBUG
     using System.Diagnostics;
@@ -29,15 +26,13 @@ namespace System.Xml.Serialization
         private XmlSchemas _schemas;
         private StructMapping _root;
         private CodeGenerationOptions _options;
-        private CodeDomProvider _codeProvider;
         private TypeScope _scope;
         private ImportContext _context;
         private bool _rootImported;
         private NameTable _typesInUse;
         private NameTable _groupsInUse;
-        private SchemaImporterExtensionCollection _extensions;
 
-        internal SchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, CodeDomProvider codeProvider, ImportContext context)
+        internal SchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, ImportContext context)
         {
             if (!schemas.Contains(XmlSchema.Namespace))
             {
@@ -51,15 +46,8 @@ namespace System.Xml.Serialization
             }
             _schemas = schemas;
             _options = options;
-            _codeProvider = codeProvider;
             _context = context;
             Schemas.SetCache(Context.Cache, Context.ShareTypes);
-
-            SchemaImporterExtensionsSection section = PrivilegedConfigurationManager.GetSection(ConfigurationStrings.SchemaImporterExtensionsSectionPath) as SchemaImporterExtensionsSection;
-            if (section != null)
-                _extensions = section.SchemaImporterExtensionsInternal;
-            else
-                _extensions = new SchemaImporterExtensionCollection();
         }
 
         internal ImportContext Context
@@ -69,26 +57,6 @@ namespace System.Xml.Serialization
                 if (_context == null)
                     _context = new ImportContext();
                 return _context;
-            }
-        }
-
-        internal CodeDomProvider CodeProvider
-        {
-            get
-            {
-                if (_codeProvider == null)
-                    _codeProvider = new Microsoft.CSharp.CSharpCodeProvider();
-                return _codeProvider;
-            }
-        }
-
-        public SchemaImporterExtensionCollection Extensions
-        {
-            get
-            {
-                if (_extensions == null)
-                    _extensions = new SchemaImporterExtensionCollection();
-                return _extensions;
             }
         }
 
@@ -234,8 +202,8 @@ namespace System.Xml.Serialization
         {
             if ((_options & CodeGenerationOptions.EnableDataBinding) != 0)
             {
-                scope.AddReserved(CodeExporter.PropertyChangedEvent.Name);
-                scope.AddReserved(CodeExporter.RaisePropertyChangedEventMethod.Name);
+                scope.AddReserved("PropertyChanged");
+                scope.AddReserved("RaisePropertyChanged");
             }
         }
     }

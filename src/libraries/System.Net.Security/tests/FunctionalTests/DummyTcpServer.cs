@@ -22,6 +22,7 @@ namespace System.Net.Security.Tests
     // specified by a callback method.
     public class DummyTcpServer : IDisposable
     {
+        private readonly string _creationStack = Environment.StackTrace;
         private VerboseTestLogging _log;
         private TcpListener _listener;
         private bool _useSsl;
@@ -108,14 +109,12 @@ namespace System.Net.Security.Tests
                 _log.WriteLine(
                     "Server disconnecting from client during authentication.  No shared SSL/TLS algorithm. ({0})",
                     authEx);
+                state.Dispose();
             }
             catch (Exception ex)
             {
                 _log.WriteLine("Server disconnecting from client during authentication.  Exception: {0}",
                     ex.Message);
-            }
-            finally
-            {
                 state.Dispose();
             }
         }
@@ -233,6 +232,12 @@ namespace System.Net.Security.Tests
             {
                 state.Dispose();
                 return;
+            }
+            catch (InvalidOperationException e)
+            {
+                throw new InvalidOperationException(
+                    $"Exception in {nameof(DummyTcpServer)} created with stack: {_creationStack}",
+                    e);
             }
         }
 

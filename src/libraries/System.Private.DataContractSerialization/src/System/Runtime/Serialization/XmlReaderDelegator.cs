@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization
 
         public XmlReaderDelegator(XmlReader reader)
         {
-            XmlObjectSerializer.CheckNull(reader, "reader");
+            XmlObjectSerializer.CheckNull(reader, nameof(reader));
             this.reader = reader;
             this.dictionaryReader = reader as XmlDictionaryReader;
         }

@@ -5,17 +5,16 @@
     <ProjectGuid>{07390899-C8F6-4E83-A3A9-6867B8CB46A0}</ProjectGuid>
     <RootNamespace>System.Security.Permissions</RootNamespace>
     <AssemblyName>System.Security.Permissions</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageAsRefAndLib Condition="'$(TargetGroup)' == 'net463'">true</PackageAsRefAndLib>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Net\NetworkInformation\NetworkInformationAccess.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationPermission.cs" />
@@ -32,6 +31,7 @@
     <Compile Include="System\Security\Permissions\UrlIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\UrlIdentityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\ZoneIdentityPermission.cs" />
+    <Compile Include="System\Security\Permissions\IDRole.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermission.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\PublisherIdentityPermission.cs" />
@@ -42,18 +42,13 @@
     <Compile Include="System\Security\Permissions\RegistryPermission.cs" />
     <Compile Include="System\Security\Permissions\RegistryPermissionAccess.cs" />
     <Compile Include="System\Security\Permissions\RegistryPermissionAttribute.cs" />
-    <Compile Include="System\Security\Permissions\SecurityAction.cs" />
-    <Compile Include="System\Security\Permissions\SecurityAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermission.cs" />
-    <Compile Include="System\Security\Permissions\SecurityPermissionAttribute.cs" />
-    <Compile Include="System\Security\Permissions\SecurityPermissionFlag.cs" />
     <Compile Include="System\Security\Permissions\SiteIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\SiteIdentityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\StrongNameIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\StrongNameIdentityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\StrongNamePublicKeyBlob.cs" />
     <Compile Include="System\Security\Permissions\ZoneIdentityPermissionAttribute.cs" />
-    <Compile Include="System\Security\Permissions\CodeAccessSecurityAttribute.cs" />
     <Compile Include="System\Security\Permissions\EnvironmentPermission.cs" />
     <Compile Include="System\Security\Permissions\EnvironmentPermissionAccess.cs" />
     <Compile Include="System\Security\Permissions\EnvironmentPermissionAttribute.cs" />
@@ -106,7 +101,6 @@
     <Compile Include="System\Security\Policy\IMembershipCondition.cs" />
     <Compile Include="System\Security\Policy\NetCodeGroup.cs" />
     <Compile Include="System\Security\Policy\PermissionRequestEvidence.cs" />
-    <Compile Include="System\Security\SecurityElement.cs" />
     <Compile Include="System\Security\SecurityManager.cs" />
     <Compile Include="System\Security\SecurityState.cs" />
     <Compile Include="System\Security\SecurityZone.cs" />
@@ -116,12 +110,13 @@
     <Compile Include="System\Security\SecurityContextSource.cs" />
     <Compile Include="System\Security\PermissionSet.cs" />
     <Compile Include="System\Security\NamedPermissionSet.cs" />
-    <Compile Include="System\Security\ISecurityEncodable.cs" />
-    <Compile Include="System\Security\IPermission.cs" />
     <Compile Include="System\Security\IEvidenceFactory.cs" />
     <Compile Include="System\Security\HostSecurityManagerOptions.cs" />
     <Compile Include="System\Security\HostSecurityManager.cs" />
     <Compile Include="System\Security\HostProtectionException.cs" />
+    <!-- Remove these P2P references once packages are updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\pkg\System.Collections.NonGeneric.pkgproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />

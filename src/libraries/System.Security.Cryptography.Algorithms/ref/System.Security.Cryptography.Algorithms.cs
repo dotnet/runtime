@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
     {
         protected DSA() { }
         public static System.Security.Cryptography.DSA Create() { throw null; }
-        public abstract byte[] CreateSignature(byte[] hash);
+        public abstract byte[] CreateSignature(byte[] rgbHash);
         public abstract System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters);
         protected virtual byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected virtual byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
         public bool VerifyData(byte[] data, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public virtual bool VerifyData(System.IO.Stream data, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-        public abstract bool VerifySignature(byte[] hash, byte[] signature);
+        public abstract bool VerifySignature(byte[] rgbHash, byte[] rgbSignature);
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct DSAParameters

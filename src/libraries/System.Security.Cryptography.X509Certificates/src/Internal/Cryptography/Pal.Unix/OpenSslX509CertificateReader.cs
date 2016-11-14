@@ -255,6 +255,21 @@ namespace Internal.Cryptography.Pal
             get { return _privateKey; }
         }
 
+        public AsymmetricAlgorithm GetPrivateKey()
+        {
+            switch (KeyAlgorithm)
+            {
+                case Oids.RsaRsa:
+                    return GetRSAPrivateKey();
+                case Oids.DsaDsa:
+                    return GetDSAPrivateKey();
+                case Oids.Ecc:
+                    return GetECDsaPrivateKey();
+            }
+
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
         public RSA GetRSAPrivateKey()
         {
             if (_privateKey == null || _privateKey.IsInvalid)
@@ -263,6 +278,16 @@ namespace Internal.Cryptography.Pal
             }
 
             return new RSAOpenSsl(_privateKey);
+        }
+
+        public DSA GetDSAPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new DSAOpenSsl(_privateKey);
         }
 
         public ECDsa GetECDsaPublicKey()

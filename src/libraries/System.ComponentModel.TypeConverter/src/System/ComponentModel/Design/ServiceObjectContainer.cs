@@ -111,8 +111,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally.  Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException("serviceType");
-            if (serviceInstance == null) throw new ArgumentNullException("serviceInstance");
+            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
+            if (serviceInstance == null) throw new ArgumentNullException(nameof(serviceInstance));
             if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsAssignableFrom(serviceInstance.GetType()))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidServiceInstance, serviceType.FullName));
@@ -120,7 +120,7 @@ namespace System.ComponentModel.Design
 
             if (Services.ContainsKey(serviceType))
             {
-                throw new ArgumentException(SR.Format(SR.ErrorServiceExists, serviceType.FullName), "serviceType");
+                throw new ArgumentException(SR.Format(SR.ErrorServiceExists, serviceType.FullName), nameof(serviceType));
             }
 
             Services[serviceType] = serviceInstance;
@@ -154,12 +154,12 @@ namespace System.ComponentModel.Design
             // We're going to add this locally.  Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException("serviceType");
-            if (callback == null) throw new ArgumentNullException("callback");
+            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
+            if (callback == null) throw new ArgumentNullException(nameof(callback));
 
             if (Services.ContainsKey(serviceType))
             {
-                throw new ArgumentException(SR.Format(SR.ErrorServiceExists, serviceType.FullName), "serviceType");
+                throw new ArgumentException(SR.Format(SR.ErrorServiceExists, serviceType.FullName), nameof(serviceType));
             }
 
             Services[serviceType] = callback;
@@ -291,7 +291,7 @@ namespace System.ComponentModel.Design
 
             // We're going to remove this from our local list.
             //
-            if (serviceType == null) throw new ArgumentNullException("serviceType");
+            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
             Services.Remove(serviceType);
         }
 

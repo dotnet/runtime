@@ -10,11 +10,10 @@ namespace System.IO.Tests
     public static class PathTooLongExceptionInteropTests
     {
         [Fact]
-        [ActiveIssue(13025)]        
         public static void From_HR()
         {
             int hr = HResults.COR_E_PATHTOOLONG;
-            PathTooLongException exception = Assert.IsAssignableFrom<PathTooLongException>(Marshal.GetExceptionForHR(hr));
+            PathTooLongException exception = Assert.IsAssignableFrom<PathTooLongException>(Marshal.GetExceptionForHR(hr, new IntPtr(-1)));
             ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
         }
     }

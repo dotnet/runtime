@@ -8,6 +8,8 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSAImportExport
     {
+        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
+
         [Fact]
         public static void ExportAutoKey()
         {
@@ -35,6 +37,50 @@ namespace System.Security.Cryptography.Dsa.Tests
 
             Assert.Equal(privateParams.G, publicParams.G);
             Assert.Equal(privateParams.Y, publicParams.Y);
+        }
+
+        [Fact]
+        public static void Import_512()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.Dsa512Parameters);
+
+                Assert.Equal(512, dsa.KeySize);
+            }
+        }
+
+        [Fact]
+        public static void Import_576()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.Dsa576Parameters);
+
+                Assert.Equal(576, dsa.KeySize);
+            }
+        }
+
+        [Fact]
+        public static void Import_1024()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.GetDSA1024Params());
+
+                Assert.Equal(1024, dsa.KeySize);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsFips186_3))]
+        public static void Import_2048()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.GetDSA2048Params());
+
+                Assert.Equal(2048, dsa.KeySize);
+            }
         }
 
         [Fact]

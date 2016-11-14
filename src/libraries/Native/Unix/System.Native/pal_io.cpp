@@ -6,6 +6,7 @@
 #include "pal_errno.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -383,7 +384,7 @@ extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferS
     }
 
     assert(result->d_reclen <= bufferSize);
-    memcpy(entry, result, static_cast<size_t>(result->d_reclen));
+    memcpy_s(entry, sizeof(dirent), result, static_cast<size_t>(result->d_reclen));
 #endif
     ConvertDirent(*entry, outputEntry);
     return 0;
@@ -806,9 +807,18 @@ extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, i
         return PAL_EINVAL;
     }
 
-    size_t bufferSize = sizeof(pollfd) * static_cast<size_t>(eventCount);
+    size_t bufferSize;
+    if (!multiply_s(sizeof(pollfd), static_cast<size_t>(eventCount), &bufferSize))
+    {
+        return SystemNative_ConvertErrorPlatformToPal(EOVERFLOW);        
+    }
+
     bool useStackBuffer = bufferSize <= 2048;
     pollfd* pollfds = reinterpret_cast<pollfd*>(useStackBuffer ? alloca(bufferSize) : malloc(bufferSize));
+    if (pollfds == nullptr)
+    {
+        return PAL_ENOMEM;
+    }
 
     for (uint32_t i = 0; i < eventCount; i++)
     {

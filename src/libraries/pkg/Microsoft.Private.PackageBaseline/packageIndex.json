@@ -837,9 +837,10 @@
     },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -849,9 +850,10 @@
     },
     "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x86.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -2243,7 +2245,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.ServiceProcess.ServiceController": {
@@ -2359,7 +2361,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Threading.Tasks": {
@@ -2525,7 +2527,7 @@
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Xml.XPath.XmlDocument": {
@@ -2616,7 +2618,7 @@
     "System.Json": {
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.4.0"
+        "2.0.5.0": "4.4.0"
       }
     },
     "System.Private.Xml": {
@@ -2737,7 +2739,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
-    }
+    },
+    "Microsoft.Private.CoreFx.NETCoreApp": {}
   },
   "ModulesToPackages": {
     "System.Native": "runtime.native.System",

@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using System.Security.Permissions;
+using System.Security;
+using System.Diagnostics;
 
 namespace System
 {
@@ -56,7 +59,6 @@ namespace System
 
 
     // from Misc/SecurityUtils.cs
-
     internal static class SecurityUtils
     {
         /// <summary>
@@ -76,15 +78,55 @@ namespace System
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             return Activator.CreateInstance(type, args);
+        }
+
+        internal static object MethodInfoInvoke(MethodInfo method, object target, object[] args) {
+            Type type = method.DeclaringType;
+            return method.Invoke(target, args);
         }
     }
 
     internal static class HResults
     {
         internal const int License = unchecked((int)0x80131901);
+    }
+}
+
+namespace System.ComponentModel
+{
+    [HostProtection(SharedState = true)]
+    internal static class CompModSwitches
+    {
+        private static volatile BooleanSwitch commonDesignerServices;
+        private static volatile TraceSwitch eventLog;
+                
+        public static BooleanSwitch CommonDesignerServices 
+        {
+            get 
+            {
+                if (commonDesignerServices == null) 
+                {
+                    commonDesignerServices = new BooleanSwitch("CommonDesignerServices", "Assert if any common designer service is not found.");
+                }
+                return commonDesignerServices;
+            }
+        }   
+        
+        public static TraceSwitch EventLog 
+        {
+            get 
+            {
+                if (eventLog == null) 
+                {
+                    eventLog = new TraceSwitch("EventLog", "Enable tracing for the EventLog component.");
+                }
+                return eventLog;
+            }
+        }
+                                                                                                                                                                               
     }
 }

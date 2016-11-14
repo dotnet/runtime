@@ -20,6 +20,14 @@
       <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
       <Name>System.Security.Cryptography.Encoding</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsnEncodedData.cs" />

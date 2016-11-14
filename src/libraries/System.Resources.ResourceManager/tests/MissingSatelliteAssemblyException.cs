@@ -45,7 +45,6 @@ namespace System.Resources.Tests
         }
 
         [Fact]
-        [ActiveIssue(12467)]
         public void Serialization()
         {
             const string cultureName = "fr-FR";

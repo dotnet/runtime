@@ -76,6 +76,30 @@ namespace System.IO.Tests
 
             Assert.Equal(data, dst.ToArray());
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CopyToAsyncTest_ReadBeforeCopy_CopiesAllData(bool wrappedStreamCanSeek)
+        {
+            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
+
+            var wrapped = new ManuallyReleaseAsyncOperationsStream();
+            wrapped.Release();
+            wrapped.Write(data, 0, data.Length);
+            wrapped.Position = 0;
+            wrapped.SetCanSeek(wrappedStreamCanSeek);
+            var src = new BufferedStream(wrapped, 100);
+
+            src.ReadByte();
+
+            var dst = new MemoryStream();
+            await src.CopyToAsync(dst);
+
+            var expected = new byte[data.Length - 1];
+            Array.Copy(data, 1, expected, 0, expected.Length);
+            Assert.Equal(expected, dst.ToArray());
+        }
     }
 
     public class BufferedStream_StreamMethods : StreamMethods
@@ -210,6 +234,11 @@ namespace System.IO.Tests
     internal sealed class ManuallyReleaseAsyncOperationsStream : MemoryStream
     {
         private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool _canSeek = true;
+
+        public override bool CanSeek => _canSeek;
+
+        public void SetCanSeek(bool canSeek) => _canSeek = canSeek;
 
         public void Release() { _tcs.SetResult(true); }
 

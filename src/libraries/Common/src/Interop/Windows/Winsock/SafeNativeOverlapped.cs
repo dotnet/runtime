@@ -15,10 +15,7 @@ namespace System.Net.Sockets
         private SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ctor(null)");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
         }
 
         private SafeNativeOverlapped(IntPtr handle)
@@ -32,10 +29,7 @@ namespace System.Net.Sockets
         {
             SocketHandle = socketHandle;
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ctor(socket#" + LoggingHash.HashString(socketHandle) + ")");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"socketHandle:{socketHandle}");
 
 #if DEBUG
             SocketHandle.AddRef();
@@ -57,10 +51,7 @@ namespace System.Net.Sockets
 
         protected override bool ReleaseHandle()
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ReleaseHandle()");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             FreeNativeOverlapped();
 

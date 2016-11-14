@@ -29,7 +29,7 @@
     <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj" />
+    <ProjectReference Include="..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -61,7 +61,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         // Returns the matching method if the parameter types are reference
-        // assignable from the provided type arguments, otherwise null. 
+        // assignable from the provided type arguments, otherwise null.
         internal static MethodInfo GetAnyStaticMethodValidated(
             this Type type,
             string name,
@@ -80,8 +80,8 @@ namespace System.Linq.Expressions.Tests
         /// <summary>
         /// Returns true if the method's parameter types are reference assignable from
         /// the argument types, otherwise false.
-        /// 
-        /// An example that can make the method return false is that 
+        ///
+        /// An example that can make the method return false is that
         /// typeof(double).GetMethod("op_Equality", ..., new[] { typeof(double), typeof(int) })
         /// returns a method with two double parameters, which doesn't match the provided
         /// argument types.

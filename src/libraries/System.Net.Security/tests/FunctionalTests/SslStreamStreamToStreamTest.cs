@@ -81,13 +81,21 @@ namespace System.Net.Security.Tests
 
                 clientSslStream.Write(_sampleMsg);
 
-                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
+                int bytesRead = 0;
+                while (bytesRead < _sampleMsg.Length)
+                {
+                    bytesRead += serverSslStream.Read(recvBuf, bytesRead, _sampleMsg.Length - bytesRead);
+                }
 
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
                 clientSslStream.Write(_sampleMsg);
 
-                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
+                bytesRead = 0;
+                while (bytesRead < _sampleMsg.Length)
+                {
+                    bytesRead += serverSslStream.Read(recvBuf, bytesRead, _sampleMsg.Length - bytesRead);
+                }
 
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
             }
@@ -95,7 +103,7 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public void SslStream_StreamToStream_Successive_ClientWrite_Sync_WithZeroBytes_Success()
+        public void SslStream_StreamToStream_Successive_ClientWrite_WithZeroBytes_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
@@ -110,17 +118,26 @@ namespace System.Net.Security.Tests
                 Assert.True(result, "Handshake completed.");
 
                 clientSslStream.Write(Array.Empty<byte>());
+                clientSslStream.WriteAsync(Array.Empty<byte>(), 0, 0).Wait();
                 clientSslStream.Write(_sampleMsg);
 
-                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
+                int bytesRead = 0;
+                while (bytesRead < _sampleMsg.Length)
+                {
+                    bytesRead += serverSslStream.Read(recvBuf, bytesRead, _sampleMsg.Length - bytesRead);
+                }
 
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
                 clientSslStream.Write(_sampleMsg);
+                clientSslStream.WriteAsync(Array.Empty<byte>(), 0, 0).Wait();
                 clientSslStream.Write(Array.Empty<byte>());
 
-                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
-
+                bytesRead = 0;
+                while (bytesRead < _sampleMsg.Length)
+                {
+                    bytesRead += serverSslStream.Read(recvBuf, bytesRead, _sampleMsg.Length - bytesRead);
+                }
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
             }
         }
@@ -176,7 +193,7 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public void SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
+        public async Task SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
@@ -190,18 +207,28 @@ namespace System.Net.Security.Tests
 
                 Assert.True(result, "Handshake completed.");
 
-                Task[] tasks = new Task[2];
+                await clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length)
+                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
-                tasks[0] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
-                tasks[1] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
-                bool finished = Task.WaitAll(tasks, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Send/receive completed in the allotted time");
+                int bytesRead = 0;
+                while (bytesRead < _sampleMsg.Length)
+                {
+                    bytesRead += await serverSslStream.ReadAsync(recvBuf, bytesRead, _sampleMsg.Length - bytesRead)
+                        .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                }
+
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
-                tasks[0] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
-                tasks[1] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
-                finished = Task.WaitAll(tasks, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Send/receive completed in the allotted time");
+                await clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length)
+                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+
+                bytesRead = 0;
+                while (bytesRead < _sampleMsg.Length)
+                {
+                    bytesRead += await serverSslStream.ReadAsync(recvBuf, bytesRead, _sampleMsg.Length - bytesRead)
+                        .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                }
+
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
             }
         }

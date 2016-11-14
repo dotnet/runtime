@@ -48,8 +48,6 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction[] s_cache;
 
-        public override string InstructionName => "BranchFalse";
-
         public override Instruction[] Cache
         {
             get
@@ -64,6 +62,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal BranchFalseInstruction() { }
 
+        public override string InstructionName => "BranchFalse";
         public override int ConsumedStack => 1;
 
         public override int Run(InterpretedFrame frame)
@@ -83,8 +82,6 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction[] s_cache;
 
-        public override string InstructionName => "BranchTrue";
-
         public override Instruction[] Cache
         {
             get
@@ -99,6 +96,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal BranchTrueInstruction() { }
 
+        public override string InstructionName => "BranchTrue";
         public override int ConsumedStack => 1;
 
         public override int Run(InterpretedFrame frame)
@@ -118,8 +116,6 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction[] s_cache;
 
-        public override string InstructionName => "CoalescingBranch";
-
         public override Instruction[] Cache
         {
             get
@@ -134,6 +130,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal CoalescingBranchInstruction() { }
 
+        public override string InstructionName => "CoalescingBranch";
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
 
@@ -153,8 +150,6 @@ namespace System.Linq.Expressions.Interpreter
     internal class BranchInstruction : OffsetInstruction
     {
         private static Instruction[][][] s_caches;
-
-        public override string InstructionName => "Branch";
 
         public override Instruction[] Cache
         {
@@ -182,6 +177,7 @@ namespace System.Linq.Expressions.Interpreter
             _hasValue = hasValue;
         }
 
+        public override string InstructionName => "Branch";
         public override int ConsumedStack => _hasValue ? 1 : 0;
         public override int ProducedStack => _hasResult ? 1 : 0;
 
@@ -224,27 +220,27 @@ namespace System.Linq.Expressions.Interpreter
     }
 
     /// <summary>
-    /// This instruction implements a goto expression that can jump out of any expression. 
-    /// It pops values (arguments) from the evaluation stack that the expression tree nodes in between 
-    /// the goto expression and the target label node pushed and not consumed yet. 
-    /// A goto expression can jump into a node that evaluates arguments only if it carries 
-    /// a value and jumps right after the first argument (the carried value will be used as the first argument). 
-    /// Goto can jump into an arbitrary child of a BlockExpression since the block doesn't accumulate values 
+    /// This instruction implements a goto expression that can jump out of any expression.
+    /// It pops values (arguments) from the evaluation stack that the expression tree nodes in between
+    /// the goto expression and the target label node pushed and not consumed yet.
+    /// A goto expression can jump into a node that evaluates arguments only if it carries
+    /// a value and jumps right after the first argument (the carried value will be used as the first argument).
+    /// Goto can jump into an arbitrary child of a BlockExpression since the block doesn't accumulate values
     /// on evaluation stack as its child expressions are being evaluated.
-    /// 
+    ///
     /// Goto needs to execute any finally blocks on the way to the target label.
     /// <example>
-    /// { 
+    /// {
     ///     f(1, 2, try { g(3, 4, try { goto L } finally { ... }, 6) } finally { ... }, 7, 8)
-    ///     L: ... 
+    ///     L: ...
     /// }
     /// </example>
-    /// The goto expression here jumps to label L while having 4 items on evaluation stack (1, 2, 3 and 4). 
-    /// The jump needs to execute both finally blocks, the first one on stack level 4 the 
-    /// second one on stack level 2. So, it needs to jump the first finally block, pop 2 items from the stack, 
+    /// The goto expression here jumps to label L while having 4 items on evaluation stack (1, 2, 3 and 4).
+    /// The jump needs to execute both finally blocks, the first one on stack level 4 the
+    /// second one on stack level 2. So, it needs to jump the first finally block, pop 2 items from the stack,
     /// run second finally block and pop another 2 items from the stack and set instruction pointer to label L.
-    /// 
-    /// Goto also needs to rethrow ThreadAbortException iff it jumps out of a catch handler and 
+    ///
+    /// Goto also needs to rethrow ThreadAbortException iff it jumps out of a catch handler and
     /// the current thread is in "abort requested" state.
     /// </summary>
     internal sealed class GotoInstruction : IndexedBranchInstruction
@@ -253,15 +249,15 @@ namespace System.Linq.Expressions.Interpreter
         private static readonly GotoInstruction[] s_cache = new GotoInstruction[Variants * CacheSize];
 
         public override string InstructionName => "Goto";
-        
+
         private readonly bool _hasResult;
 
         private readonly bool _hasValue;
         private readonly bool _labelTargetGetsValue;
 
-        // The values should technically be Consumed = 1, Produced = 1 for gotos that target a label whose continuation depth 
+        // The values should technically be Consumed = 1, Produced = 1 for gotos that target a label whose continuation depth
         // is different from the current continuation depth. This is because we will consume one continuation from the _continuations
-        // and at meantime produce a new _pendingContinuation. However, in case of forward gotos, we don't not know that is the 
+        // and at meantime produce a new _pendingContinuation. However, in case of forward gotos, we don't not know that is the
         // case until the label is emitted. By then the consumed and produced stack information is useless.
         // The important thing here is that the stack balance is 0.
         public override int ConsumedContinuations => 0;
@@ -326,6 +322,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             return new EnterTryCatchFinallyInstruction(labelIndex, true);
         }
+
         internal static EnterTryCatchFinallyInstruction CreateTryCatch()
         {
             return new EnterTryCatchFinallyInstruction(UnknownInstrIndex, false);
@@ -337,7 +334,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (_hasFinally)
             {
-                // Push finally. 
+                // Push finally.
                 frame.PushContinuation(_labelIndex);
             }
             int prevInstrIndex = frame.InstructionIndex;
@@ -444,6 +441,16 @@ namespace System.Linq.Expressions.Interpreter
     {
         private TryFaultHandler _tryHandler;
 
+        internal EnterTryFaultInstruction(int targetIndex)
+            : base(targetIndex)
+        {
+        }
+
+        public override string InstructionName => "EnterTryFault";
+        public override int ProducedContinuations => 1;
+
+        internal TryFaultHandler Handler => _tryHandler;
+
         internal void SetTryHandler(TryFaultHandler tryHandler)
         {
             Debug.Assert(tryHandler != null);
@@ -451,20 +458,11 @@ namespace System.Linq.Expressions.Interpreter
             _tryHandler = tryHandler;
         }
 
-        internal TryFaultHandler Handler => _tryHandler;
-
-        public override int ProducedContinuations => 1;
-
-        internal EnterTryFaultInstruction(int targetIndex)
-            : base(targetIndex)
-        {
-        }
-
         public override int Run(InterpretedFrame frame)
         {
             Debug.Assert(_tryHandler != null, "the tryHandler must be set already");
 
-            // Push fault. 
+            // Push fault.
             frame.PushContinuation(_labelIndex);
 
             int prevInstrIndex = frame.InstructionIndex;
@@ -516,10 +514,8 @@ namespace System.Linq.Expressions.Interpreter
 
             return frame.InstructionIndex - prevInstrIndex;
         }
-
-        public override string InstructionName => "EnterTryFault";
     }
-    
+
     /// <summary>
     /// The first instruction of finally block.
     /// </summary>
@@ -527,14 +523,14 @@ namespace System.Linq.Expressions.Interpreter
     {
         private readonly static EnterFinallyInstruction[] s_cache = new EnterFinallyInstruction[CacheSize];
 
-        public override string InstructionName => "EnterFinally";
-        public override int ProducedStack => 2;
-        public override int ConsumedContinuations => 1;
-
         private EnterFinallyInstruction(int labelIndex)
             : base(labelIndex)
         {
         }
+
+        public override string InstructionName => "EnterFinally";
+        public override int ProducedStack => 2;
+        public override int ConsumedContinuations => 1;
 
         internal static EnterFinallyInstruction Create(int labelIndex)
         {
@@ -568,10 +564,10 @@ namespace System.Linq.Expressions.Interpreter
     {
         internal static readonly Instruction Instance = new LeaveFinallyInstruction();
 
+        private LeaveFinallyInstruction() { }
+
         public override int ConsumedStack => 2;
         public override string InstructionName => "LeaveFinally";
-
-        private LeaveFinallyInstruction() { }
 
         public override int Run(InterpretedFrame frame)
         {
@@ -589,14 +585,13 @@ namespace System.Linq.Expressions.Interpreter
     {
         private readonly static EnterFaultInstruction[] s_cache = new EnterFaultInstruction[CacheSize];
 
-        public override string InstructionName => "EnterFault";
-
-        public override int ProducedStack => 2;
-
         private EnterFaultInstruction(int labelIndex)
             : base(labelIndex)
         {
         }
+
+        public override string InstructionName => "EnterFault";
+        public override int ProducedStack => 2;
 
         internal static EnterFaultInstruction Create(int labelIndex)
         {
@@ -623,13 +618,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         internal static readonly Instruction Instance = new LeaveFaultInstruction();
 
-        public override int ConsumedStack => 2;
-
-        public override int ConsumedContinuations => 1;
-
-        public override string InstructionName => "LeaveFault";
-
         private LeaveFaultInstruction() { }
+
+        public override int ConsumedStack => 2;
+        public override int ConsumedContinuations => 1;
+        public override string InstructionName => "LeaveFault";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -685,17 +678,18 @@ namespace System.Linq.Expressions.Interpreter
 
         // True if try-expression is non-void.
         private readonly bool _hasValue;
-        public override string InstructionName => "EnterExceptionHandler";
 
         private EnterExceptionHandlerInstruction(bool hasValue)
         {
             _hasValue = hasValue;
         }
 
-        // If an exception is throws in try-body the expression result of try-body is not evaluated and loaded to the stack. 
+        public override string InstructionName => "EnterExceptionHandler";
+
+        // If an exception is throws in try-body the expression result of try-body is not evaluated and loaded to the stack.
         // So the stack doesn't contain the try-body's value when we start executing the handler.
-        // However, while emitting instructions try block falls thru the catch block with a value on stack. 
-        // We need to declare it consumed so that the stack state upon entry to the handler corresponds to the real 
+        // However, while emitting instructions try block falls thru the catch block with a value on stack.
+        // We need to declare it consumed so that the stack state upon entry to the handler corresponds to the real
         // stack depth after throw jumped to this catch block.
         public override int ConsumedStack => _hasValue ? 1 : 0;
 
@@ -719,17 +713,18 @@ namespace System.Linq.Expressions.Interpreter
         private static LeaveExceptionHandlerInstruction[] s_cache = new LeaveExceptionHandlerInstruction[2 * CacheSize];
 
         private readonly bool _hasValue;
-        public override string InstructionName => "LeaveExceptionHandler";
-
-        // The catch block yields a value if the body is non-void. This value is left on the stack. 
-        public override int ConsumedStack => _hasValue ? 1 : 0;
-        public override int ProducedStack => _hasValue ? 1 : 0;
 
         private LeaveExceptionHandlerInstruction(int labelIndex, bool hasValue)
             : base(labelIndex)
         {
             _hasValue = hasValue;
         }
+
+        public override string InstructionName => "LeaveExceptionHandler";
+
+        // The catch block yields a value if the body is non-void. This value is left on the stack.
+        public override int ConsumedStack => _hasValue ? 1 : 0;
+        public override int ProducedStack => _hasValue ? 1 : 0;
 
         internal static LeaveExceptionHandlerInstruction Create(int labelIndex, bool hasValue)
         {
@@ -759,7 +754,6 @@ namespace System.Linq.Expressions.Interpreter
         internal static readonly ThrowInstruction VoidRethrow = new ThrowInstruction(false, true);
 
         private readonly bool _hasResult, _rethrow;
-        public override string InstructionName => "Throw";
 
         private ThrowInstruction(bool hasResult, bool isRethrow)
         {
@@ -767,6 +761,7 @@ namespace System.Linq.Expressions.Interpreter
             _rethrow = isRethrow;
         }
 
+        public override string InstructionName => "Throw";
         public override int ProducedStack => _hasResult ? 1 : 0;
         public override int ConsumedStack => 1;
 
@@ -785,14 +780,13 @@ namespace System.Linq.Expressions.Interpreter
     {
         private readonly Dictionary<T, int> _cases;
 
-        public override string InstructionName => "IntSwitch";
-
         internal IntSwitchInstruction(Dictionary<T, int> cases)
         {
             Assert.NotNull(cases);
             _cases = cases;
         }
 
+        public override string InstructionName => "IntSwitch";
         public override int ConsumedStack => 1;
         public override int ProducedStack => 0;
 
@@ -808,8 +802,6 @@ namespace System.Linq.Expressions.Interpreter
         private readonly Dictionary<string, int> _cases;
         private readonly StrongBox<int> _nullCase;
 
-        public override string InstructionName => "StringSwitch";
-
         internal StringSwitchInstruction(Dictionary<string, int> cases, StrongBox<int> nullCase)
         {
             Assert.NotNull(cases);
@@ -818,6 +810,7 @@ namespace System.Linq.Expressions.Interpreter
             _nullCase = nullCase;
         }
 
+        public override string InstructionName => "StringSwitch";
         public override int ConsumedStack => 1;
         public override int ProducedStack => 0;
 

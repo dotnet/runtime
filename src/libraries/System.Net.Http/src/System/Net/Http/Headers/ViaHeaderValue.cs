@@ -46,18 +46,18 @@ namespace System.Net.Http.Headers
 
         public ViaHeaderValue(string protocolVersion, string receivedBy, string protocolName, string comment)
         {
-            HeaderUtilities.CheckValidToken(protocolVersion, "protocolVersion");
+            HeaderUtilities.CheckValidToken(protocolVersion, nameof(protocolVersion));
             CheckReceivedBy(receivedBy);
 
             if (!string.IsNullOrEmpty(protocolName))
             {
-                HeaderUtilities.CheckValidToken(protocolName, "protocolName");
+                HeaderUtilities.CheckValidToken(protocolName, nameof(protocolName));
                 _protocolName = protocolName;
             }
 
             if (!string.IsNullOrEmpty(comment))
             {
-                HeaderUtilities.CheckValidComment(comment, "comment");
+                HeaderUtilities.CheckValidComment(comment, nameof(comment));
                 _comment = comment;
             }
 

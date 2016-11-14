@@ -9,7 +9,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     /// <summary>
     /// Contains compiler state corresponding to a LabelTarget
-    /// See also LabelScopeInfo.
+    /// <seealso cref="LabelScopeInfo"/>
     /// </summary>
     internal sealed class LabelInfo
     {
@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Interpreter
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
         // If there's only 1 block (the common case) it's stored here, if there's multiple blocks it's stored
-        // as a HashSet<LabelScopeInfo> 
+        // as a HashSet<LabelScopeInfo>
         private object _definitions;
 
         // Blocks that jump to this block
@@ -303,7 +303,6 @@ namespace System.Linq.Expressions.Interpreter
                 return false;
             }
         }
-
 
         internal bool ContainsTarget(LabelTarget target)
         {

@@ -696,12 +696,7 @@ namespace System.Net.Security
         {
             if (!(transportResult.AsyncState is LazyAsyncResult))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("WriteCallback|State type is wrong, expected LazyAsyncResult.");
-                }
-
-                Debug.Fail("WriteCallback|State type is wrong, expected LazyAsyncResult.");
+                NetEventSource.Fail(transportResult, "State type is wrong, expected LazyAsyncResult.");
             }
 
             if (transportResult.CompletedSynchronously)
@@ -742,12 +737,7 @@ namespace System.Net.Security
         {
             if (!(transportResult.AsyncState is LazyAsyncResult))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("ReadCallback|State type is wrong, expected LazyAsyncResult.");
-                }
-
-                Debug.Fail("ReadCallback|State type is wrong, expected LazyAsyncResult.");
+                NetEventSource.Fail(transportResult, "State type is wrong, expected LazyAsyncResult.");
             }
 
             if (transportResult.CompletedSynchronously)

@@ -185,6 +185,8 @@ namespace System.Xml.Linq
         public void Save(System.IO.TextWriter textWriter) { }
         public void Save(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.Xml.XmlWriter writer) { }
+        public void Save(System.String fileName) { }
+        public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
     }
     public partial class XDocumentType : System.Xml.Linq.XNode
@@ -296,6 +298,8 @@ namespace System.Xml.Linq
         public void Save(System.IO.TextWriter textWriter) { }
         public void Save(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.Xml.XmlWriter writer) { }
+        public void Save(System.String fileName) { }
+        public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
         public void SetAttributeValue(System.Xml.Linq.XName name, object value) { }
         public void SetElementValue(System.Xml.Linq.XName name, object value) { }
         public void SetValue(object value) { }
@@ -445,6 +449,8 @@ namespace System.Xml.Linq
         public void Save(System.IO.TextWriter textWriter) { }
         public void Save(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.Xml.XmlWriter writer) { }
+        public void Save(System.String fileName) { }
+        public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
         public override string ToString() { throw null; }
         public string ToString(System.Xml.Linq.SaveOptions options) { throw null; }
         public void WriteTo(System.Xml.XmlWriter writer) { }
@@ -462,8 +468,8 @@ namespace System.Xml.Schema
 {
     public static partial class Extensions
     {
-        public static System.Xml.Schema.IXmlSchemaInfo GetSchemaInfo(this System.Xml.Linq.XAttribute source) { return default(System.Xml.Schema.IXmlSchemaInfo); }
-        public static System.Xml.Schema.IXmlSchemaInfo GetSchemaInfo(this System.Xml.Linq.XElement source) { return default(System.Xml.Schema.IXmlSchemaInfo); }
+        public static System.Xml.Schema.IXmlSchemaInfo GetSchemaInfo(this System.Xml.Linq.XAttribute source) { throw null; }
+        public static System.Xml.Schema.IXmlSchemaInfo GetSchemaInfo(this System.Xml.Linq.XElement source) { throw null; }
         public static void Validate(this System.Xml.Linq.XAttribute source, System.Xml.Schema.XmlSchemaObject partialValidationType, System.Xml.Schema.XmlSchemaSet schemas, System.Xml.Schema.ValidationEventHandler validationEventHandler) { }
         public static void Validate(this System.Xml.Linq.XAttribute source, System.Xml.Schema.XmlSchemaObject partialValidationType, System.Xml.Schema.XmlSchemaSet schemas, System.Xml.Schema.ValidationEventHandler validationEventHandler, bool addSchemaInfo) { }
         public static void Validate(this System.Xml.Linq.XDocument source, System.Xml.Schema.XmlSchemaSet schemas, System.Xml.Schema.ValidationEventHandler validationEventHandler) { }

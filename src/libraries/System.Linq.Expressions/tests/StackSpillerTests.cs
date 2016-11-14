@@ -288,7 +288,7 @@ namespace System.Linq.Expressions.Tests
                             Expression.MemberInit(
                                 Expression.New(typeof(BarHolder)),
                                 Expression.MemberBind(
-                                    bar, 
+                                    bar,
                                     Expression.Bind(baz, a),
                                     Expression.Bind(foo, b),
                                     Expression.Bind(qux, c)
@@ -1182,7 +1182,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Assign(Expression.ArrayAccess(xs, i), v),
                     xs
                 );
-            
+
             e.VerifyIL(@"
                 .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32[])
                 {
@@ -1194,36 +1194,36 @@ namespace System.Linq.Expressions.Tests
                   )
 
                   // Save instance (`xs`) into V_0
-                  IL_0000: ldarg.1    
-                  IL_0001: stloc.0    
+                  IL_0000: ldarg.1
+                  IL_0001: stloc.0
 
                   // Save rhs (`try { 1 } finally {}`) into V_1
                   .try
                   {
-                    IL_0002: ldc.i4.1   
-                    IL_0003: stloc.2    
+                    IL_0002: ldc.i4.1
+                    IL_0003: stloc.2
                     IL_0004: leave      IL_000a
                   }
                   finally
                   {
-                    IL_0009: endfinally 
+                    IL_0009: endfinally
                   }
-                  IL_000a: ldloc.2    
-                  IL_000b: stloc.1    
+                  IL_000a: ldloc.2
+                  IL_000b: stloc.1
 
                   // Load instance from V_0
-                  IL_000c: ldloc.0    
+                  IL_000c: ldloc.0
 
                   // <OPTIMIZATION> Evaluate index (`0`) </OPTIMIZATION>
-                  IL_000d: ldc.i4.0   
+                  IL_000d: ldc.i4.0
 
                   // Load rhs from V_1
-                  IL_000e: ldloc.1    
+                  IL_000e: ldloc.1
 
                   // Evaluate `instance[index] = rhs` index assignment
-                  IL_000f: stelem.i4  
+                  IL_000f: stelem.i4
 
-                  IL_0010: ret        
+                  IL_0010: ret
                 }"
             );
         }
@@ -1252,36 +1252,36 @@ namespace System.Linq.Expressions.Tests
                   )
 
                   // Save instance (`xs`) into V_0
-                  IL_0000: ldarg.1    
-                  IL_0001: stloc.0    
+                  IL_0000: ldarg.1
+                  IL_0001: stloc.0
 
                   // Save rhs (`try { 1 } finally {}`) into V_1
                   .try
                   {
-                    IL_0002: ldc.i4.1   
-                    IL_0003: stloc.2    
+                    IL_0002: ldc.i4.1
+                    IL_0003: stloc.2
                     IL_0004: leave      IL_000a
                   }
                   finally
                   {
-                    IL_0009: endfinally 
+                    IL_0009: endfinally
                   }
-                  IL_000a: ldloc.2    
-                  IL_000b: stloc.1  
+                  IL_000a: ldloc.2
+                  IL_000b: stloc.1
 
-                  // Load instance from V_0  
-                  IL_000c: ldloc.0    
+                  // Load instance from V_0
+                  IL_000c: ldloc.0
 
                   // <OPTIMIZATION> Evaluate index (`0`) </OPTIMIZATION>
-                  IL_000d: ldc.i4.0   
+                  IL_000d: ldc.i4.0
 
                   // Load rhs from V_1
-                  IL_000e: ldloc.1    
+                  IL_000e: ldloc.1
 
                   // Evaluate `instance[index] = rhs` index assignment
-                  IL_000f: stelem.i4  
+                  IL_000f: stelem.i4
 
-                  IL_0010: ret        
+                  IL_0010: ret
                 }"
             );
         }
@@ -1310,26 +1310,26 @@ namespace System.Linq.Expressions.Tests
                   .try
                   {
                     IL_0000: ldc.r8     0
-                    IL_0009: stloc.1    
+                    IL_0009: stloc.1
                     IL_000a: leave      IL_0010
                   }
                   finally
                   {
-                    IL_000f: endfinally 
+                    IL_000f: endfinally
                   }
-                  IL_0010: ldloc.1    
-                  IL_0011: stloc.0    
+                  IL_0010: ldloc.1
+                  IL_0011: stloc.0
 
                   // <OPTIMIZATION> Evaluate lhs (`Math.PI` gets inlined) </OPTIMIZATION>
                   IL_0012: ldc.r8     3.14159265358979
 
-                  // Load rhs from V_0  
-                  IL_001b: ldloc.0    
+                  // Load rhs from V_0
+                  IL_001b: ldloc.0
 
                   // Evaluate `lhs + rhs`
-                  IL_001c: add        
+                  IL_001c: add
 
-                  IL_001d: ret        
+                  IL_001d: ret
                 }"
             );
         }
@@ -1366,14 +1366,14 @@ namespace System.Linq.Expressions.Tests
                   {
                     IL_000b: endfinally
                   }
-                  IL_000c: ldloc.1    
-                  IL_000d: stloc.0    
+                  IL_000c: ldloc.1
+                  IL_000d: stloc.0
 
                   // <OPTIMIZATION> Evaluate arg0 (`bool::TrueString`) </OPTIMIZATION>
                   IL_000e: ldsfld     bool::TrueString
 
                   // Load arg1 from V_0
-                  IL_0013: ldloc.0    
+                  IL_0013: ldloc.0
 
                   // Evaluate `string.Concat(arg0, arg1)` call
                   IL_0014: call       string string::Concat(string,string)
@@ -1408,36 +1408,36 @@ namespace System.Linq.Expressions.Tests
                   )
 
                   // Save target (`f`) into V_0
-                  IL_0000: ldarg.1    
-                  IL_0001: stloc.0    
+                  IL_0000: ldarg.1
+                  IL_0001: stloc.0
 
                   // Save arg1 (`try { 2 } finally {}`) into V_1
                   .try
                   {
-                    IL_0002: ldc.i4.2   
-                    IL_0003: stloc.2    
+                    IL_0002: ldc.i4.2
+                    IL_0003: stloc.2
                     IL_0004: leave      IL_000a
                   }
                   finally
                   {
-                    IL_0009: endfinally 
+                    IL_0009: endfinally
                   }
-                  IL_000a: ldloc.2    
-                  IL_000b: stloc.1   
+                  IL_000a: ldloc.2
+                  IL_000b: stloc.1
 
                   // Load target from V_0
-                  IL_000c: ldloc.0    
+                  IL_000c: ldloc.0
 
                   // <OPTIMIZATION> Load arg0 (`RuntimeVariables`) by calling RuntimeOps.CreateRuntimeVariables </OPTIMIZATION>
                   IL_000d: call       class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables class [System.Linq.Expressions]System.Runtime.CompilerServices.RuntimeOps::CreateRuntimeVariables()
 
                   // Load arg1 from V_1
-                  IL_0012: ldloc.1    
+                  IL_0012: ldloc.1
 
                   // Evaluate `target(arg0, arg1)` delegate invocation
                   IL_0013: callvirt   instance void class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>::Invoke(class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32)
 
-                  IL_0018: ret        
+                  IL_0018: ret
                 }"
             );
         }
@@ -1470,54 +1470,213 @@ namespace System.Linq.Expressions.Tests
                   )
 
                   // Hoist `x` to a closure in V_0
-                  IL_0000: ldc.i4.1   
+                  IL_0000: ldc.i4.1
                   IL_0001: newarr     object
-                  IL_0006: dup        
-                  IL_0007: ldc.i4.0   
-                  IL_0008: ldarg.2    
+                  IL_0006: dup
+                  IL_0007: ldc.i4.0
+                  IL_0008: ldarg.2
                   IL_0009: newobj     instance void class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
-                  IL_000e: stelem.ref 
-                  IL_000f: stloc.0    
+                  IL_000e: stelem.ref
+                  IL_000f: stloc.0
 
                   // Save target (`f`) into V_1
-                  IL_0010: ldarg.1    
-                  IL_0011: stloc.1    
+                  IL_0010: ldarg.1
+                  IL_0011: stloc.1
 
                   // Save arg1 (`try { 2 } finally {}`) into V_2
                   .try
                   {
-                    IL_0012: ldc.i4.2   
-                    IL_0013: stloc.3    
+                    IL_0012: ldc.i4.2
+                    IL_0013: stloc.3
                     IL_0014: leave      IL_001a
                   }
                   finally
                   {
-                    IL_0019: endfinally 
+                    IL_0019: endfinally
                   }
-                  IL_001a: ldloc.3    
-                  IL_001b: stloc.2   
+                  IL_001a: ldloc.3
+                  IL_001b: stloc.2
 
-                  // Load target from V_1 
-                  IL_001c: ldloc.1    
+                  // Load target from V_1
+                  IL_001c: ldloc.1
 
                   // <OPTIMIZATION> Load arg0 (`RuntimeVariables`) by calling RuntimeOps.CreateRuntimeVariables </OPTIMIZATION>
-                  IL_001d: ldloc.0    
-                  IL_001e: ldarg.0    
+                  IL_001d: ldloc.0
+                  IL_001e: ldarg.0
                   IL_001f: ldfld      class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure::Constants
-                  IL_0024: ldc.i4.0   
-                  IL_0025: ldelem.ref 
+                  IL_0024: ldc.i4.0
+                  IL_0025: ldelem.ref
                   IL_0026: castclass  int64[]
                   IL_002b: call       class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables class [System.Linq.Expressions]System.Runtime.CompilerServices.RuntimeOps::CreateRuntimeVariables(object[],int64[])
 
                   // Load arg1 from V_2
-                  IL_0030: ldloc.2    
+                  IL_0030: ldloc.2
 
                   // Evaluate `target(arg0, arg1)` delegate invocation
                   IL_0031: callvirt   instance void class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>::Invoke(class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32)
 
-                  IL_0036: ret        
+                  IL_0036: ret
                 }"
             );
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_NoSpillBeyondSpillSite1()
+        {
+            var f = Expression.Parameter(typeof(Func<int, int, int, int>));
+            var x = Expression.Parameter(typeof(int));
+            var y = Expression.Parameter(typeof(int));
+            var z = Expression.Parameter(typeof(int));
+
+            var e =
+                Expression.Lambda<Func<Func<int, int, int, int>, int, int, int, int>>(
+                    Expression.Invoke(
+                        f,
+                        Expression.TryFinally(
+                            x,
+                            Expression.Empty()
+                        ),
+                        y,  // NB: These occur after the spill site and don't have
+                        z   //     to be stored in temporaries.
+                    ),
+                    f,
+                    x,
+                    y,
+                    z
+                );
+
+            var d = e.Compile();
+            Assert.Equal(7, d((a, b, c) => a + b * c, 1, 2, 3));
+
+            e.VerifyIL(@"
+                .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>,int32,int32,int32)
+                {
+                  .maxstack 5
+                  .locals init (
+                    [0] class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>,
+                    [1] int32,
+                    [2] int32
+                  )
+
+                  // Save invocation target (`f`) into V_0
+                  IL_0000: ldarg.1
+                  IL_0001: stloc.0
+
+                  // Save arg0 (`try { x } finally {}`) into V_1
+                  .try
+                  {
+                    IL_0002: ldarg.2
+                    IL_0003: stloc.2
+                    IL_0004: leave      IL_000a
+                  }
+                  finally
+                  {
+                    IL_0009: endfinally
+                  }
+                  IL_000a: ldloc.2
+                  IL_000b: stloc.1
+
+                  // Load invocation target from V_0
+                  IL_000c: ldloc.0
+
+                  // Load arg0 from V_1
+                  IL_000d: ldloc.1
+
+                  // <OPTIMIZATION> Load arguments beyond spill site </OPTIMIZATION>
+                  IL_000e: ldarg.3
+                  IL_000f: ldarg.s    V_4
+
+                  // Evaluate `f(try { x } finally {}, y, z)`
+                  IL_0011: callvirt   instance int32 class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>::Invoke(int32,int32,int32)
+
+                  IL_0016: ret
+                }");
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_NoSpillBeyondSpillSite2()
+        {
+            var f = Expression.Parameter(typeof(Func<int, int, int, int>));
+            var x1 = Expression.Parameter(typeof(int));
+            var x2 = Expression.Parameter(typeof(int));
+            var x3 = Expression.Parameter(typeof(int));
+            var x4 = Expression.Parameter(typeof(int));
+
+            var e =
+                Expression.Lambda<Func<int, int, int, int, int>>(
+                    Expression.Add(
+                        Expression.Add(
+                            Expression.Add(
+                                x1, // NB: Occurs before spill site; needs to be saved.
+                                Expression.TryFinally(
+                                    x2,
+                                    Expression.Empty()
+                                )
+                            ),
+                            x3  // NB: Occurs beyond spill site; does not need to be saved.
+                        ),
+                        x4 // NB: Occurs beyond spill site; does not need to be saved.
+                    ),
+                    x1,
+                    x2,
+                    x3,
+                    x4
+                );
+
+            var d = e.Compile();
+            Assert.Equal(10, d(1, 2, 3, 4));
+
+            e.VerifyIL(@"
+                .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32,int32,int32,int32)
+                {
+                  .maxstack 3
+                  .locals init (
+                    [0] int32,
+                    [1] int32,
+                    [2] int32,
+                    [3] int32,
+                    [4] int32
+                  )
+
+                  // Save `x1` into V_0
+                  IL_0000: ldarg.1
+                  IL_0001: stloc.0
+
+                  // Save `try { x2 } finally {}` into V_1
+                  .try
+                  {
+                    IL_0002: ldarg.2
+                    IL_0003: stloc.s    V_4
+                    IL_0005: leave      IL_000b
+                  }
+                  finally
+                  {
+                    IL_000a: endfinally
+                  }
+                  IL_000b: ldloc.s    V_4
+                  IL_000d: stloc.1
+
+                  // Eval `x1 + x2` and store into V_2
+                  IL_000e: ldloc.0
+                  IL_000f: ldloc.1
+                  IL_0010: add
+                  IL_0011: stloc.2
+
+                  // Eval `(x1 + x2) + x3` and save into V_3
+                  // <OPTIMIZATION> `x3` does not get stored in a temporary </OPTIMIZATION>
+                  IL_0012: ldloc.2
+                  IL_0013: ldarg.3
+                  IL_0014: add
+                  IL_0015: stloc.3
+
+                  // Eval `((x1 + x2) + x3) + x4`
+                  // <OPTIMIZATION> `x4` does not get stored in a temporary </OPTIMIZATION>
+                  IL_0016: ldloc.3
+                  IL_0017: ldarg.s    V_4
+                  IL_0019: add
+
+                  IL_001a: ret
+                }");
         }
 
         private static void NotSupported(Expression expression)

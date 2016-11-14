@@ -190,7 +190,7 @@ namespace System.IO
         public static string Combine(string path1, string path2)
         {
             if (path1 == null || path2 == null)
-                throw new ArgumentNullException((path1 == null) ? "path1" : "path2");
+                throw new ArgumentNullException((path1 == null) ? nameof(path1): nameof(path2));
             Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
@@ -202,7 +202,7 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3)
         {
             if (path1 == null || path2 == null || path3 == null)
-                throw new ArgumentNullException((path1 == null) ? "path1" : (path2 == null) ? "path2" : "path3");
+                throw new ArgumentNullException((path1 == null) ? nameof(path1): (path2 == null) ? nameof(path2): nameof(path3));
             Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
@@ -215,7 +215,7 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3, string path4)
         {
             if (path1 == null || path2 == null || path3 == null || path4 == null)
-                throw new ArgumentNullException((path1 == null) ? "path1" : (path2 == null) ? "path2" : (path3 == null) ? "path3" : "path4");
+                throw new ArgumentNullException((path1 == null) ? nameof(path1): (path2 == null) ? nameof(path2): (path3 == null) ? nameof(path3): nameof(path4));
             Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);

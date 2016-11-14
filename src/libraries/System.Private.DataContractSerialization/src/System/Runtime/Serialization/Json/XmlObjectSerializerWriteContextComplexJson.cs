@@ -345,6 +345,21 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        internal void WriteJsonISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
+        {
+            Type objType = obj.GetType();
+            var serInfo = new SerializationInfo(objType, XmlObjectSerializer.FormatterConverter);
+            GetObjectData(obj, serInfo, GetStreamingContext());
+            if (DataContract.GetClrTypeFullName(objType) != serInfo.FullTypeName)
+            {
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ChangingFullTypeNameNotSupported, serInfo.FullTypeName, DataContract.GetClrTypeFullName(objType))));
+            }
+            else
+            {
+                base.WriteSerializationInfo(xmlWriter, objType, serInfo);
+            }
+        }
+
         internal static DataContract GetRevisedItemContract(DataContract oldItemContract)
         {
             if ((oldItemContract != null) &&

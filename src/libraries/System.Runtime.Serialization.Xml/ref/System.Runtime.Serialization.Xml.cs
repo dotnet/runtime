@@ -23,6 +23,7 @@ namespace System.Runtime.Serialization
         public DataContractSerializer(System.Type type, string rootName, string rootNamespace, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
         public DataContractSerializer(System.Type type, System.Xml.XmlDictionaryString rootName, System.Xml.XmlDictionaryString rootNamespace) { }
         public DataContractSerializer(System.Type type, System.Xml.XmlDictionaryString rootName, System.Xml.XmlDictionaryString rootNamespace, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
+        public System.Runtime.Serialization.DataContractResolver DataContractResolver { get { throw null; } }
         public bool IgnoreExtensionDataObject { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Type> KnownTypes { get { throw null; } }
         public int MaxItemsInObjectGraph { get { throw null; } }
@@ -31,10 +32,12 @@ namespace System.Runtime.Serialization
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { throw null; }
         public override bool IsStartObject(System.Xml.XmlReader reader) { throw null; }
         public override object ReadObject(System.Xml.XmlDictionaryReader reader, bool verifyObjectName) { throw null; }
+        public object ReadObject(System.Xml.XmlDictionaryReader reader, bool verifyObjectName, System.Runtime.Serialization.DataContractResolver dataContractResolver) { throw null; }
         public override object ReadObject(System.Xml.XmlReader reader) { throw null; }
         public override object ReadObject(System.Xml.XmlReader reader, bool verifyObjectName) { throw null; }
         public override void WriteEndObject(System.Xml.XmlDictionaryWriter writer) { }
         public override void WriteEndObject(System.Xml.XmlWriter writer) { }
+        public void WriteObject(System.Xml.XmlDictionaryWriter writer, object graph, System.Runtime.Serialization.DataContractResolver dataContractResolver) { }
         public override void WriteObject(System.Xml.XmlWriter writer, object graph) { }
         public override void WriteObjectContent(System.Xml.XmlDictionaryWriter writer, object graph) { }
         public override void WriteObjectContent(System.Xml.XmlWriter writer, object graph) { }
@@ -67,8 +70,8 @@ namespace System.Runtime.Serialization
     }
     public static partial class XPathQueryGenerator
     {
-        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, System.Text.StringBuilder rootElementXpath, out System.Xml.XmlNamespaceManager namespaces) { namespaces = default(System.Xml.XmlNamespaceManager); throw null; }
-        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, out System.Xml.XmlNamespaceManager namespaces) { namespaces = default(System.Xml.XmlNamespaceManager); throw null; }
+        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, System.Text.StringBuilder rootElementXpath, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
+        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
     }
     public partial class XsdDataContractExporter
     {
@@ -149,15 +152,6 @@ namespace System.Xml
         bool TryLookup(int key, out System.Xml.XmlDictionaryString result);
         bool TryLookup(string value, out System.Xml.XmlDictionaryString result);
         bool TryLookup(System.Xml.XmlDictionaryString value, out System.Xml.XmlDictionaryString result);
-    }
-    public partial interface IXmlMtomReaderInitializer
-    {
-        void SetInput(byte[] buffer, int offset, int count, System.Text.Encoding[] encodings, string contentType, System.Xml.XmlDictionaryReaderQuotas quotas, int maxBufferSize, System.Xml.OnXmlDictionaryReaderClose onClose);
-        void SetInput(System.IO.Stream stream, System.Text.Encoding[] encodings, string contentType, System.Xml.XmlDictionaryReaderQuotas quotas, int maxBufferSize, System.Xml.OnXmlDictionaryReaderClose onClose);
-    }
-    public partial interface IXmlMtomWriterInitializer
-    {
-        void SetOutput(System.IO.Stream stream, System.Text.Encoding encoding, int maxSizeInBytes, string startInfo, string boundary, string startUri, bool writeMessageHeaders, bool ownsStream);
     }
     public partial interface IXmlTextReaderInitializer
     {
@@ -243,14 +237,14 @@ namespace System.Xml
         public static System.Xml.XmlDictionaryReader CreateTextReader(System.IO.Stream stream, System.Xml.XmlDictionaryReaderQuotas quotas) { throw null; }
         public virtual void EndCanonicalization() { }
         public virtual string GetAttribute(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString namespaceUri) { throw null; }
-        public virtual void GetNonAtomizedNames(out string localName, out string namespaceUri) { localName = default(string); namespaceUri = default(string); }
+        public virtual void GetNonAtomizedNames(out string localName, out string namespaceUri) { throw null; }
         public virtual int IndexOfLocalName(string[] localNames, string namespaceUri) { throw null; }
         public virtual int IndexOfLocalName(System.Xml.XmlDictionaryString[] localNames, System.Xml.XmlDictionaryString namespaceUri) { throw null; }
         public virtual bool IsLocalName(string localName) { throw null; }
         public virtual bool IsLocalName(System.Xml.XmlDictionaryString localName) { throw null; }
         public virtual bool IsNamespaceUri(string namespaceUri) { throw null; }
         public virtual bool IsNamespaceUri(System.Xml.XmlDictionaryString namespaceUri) { throw null; }
-        public virtual bool IsStartArray(out System.Type type) { type = default(System.Type); throw null; }
+        public virtual bool IsStartArray(out System.Type type) { throw null; }
         public virtual bool IsStartElement(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString namespaceUri) { throw null; }
         protected bool IsTextNode(System.Xml.XmlNodeType nodeType) { throw null; }
         public virtual void MoveToStartElement() { }
@@ -287,11 +281,11 @@ namespace System.Xml
         public override decimal ReadContentAsDecimal() { throw null; }
         public override float ReadContentAsFloat() { throw null; }
         public virtual System.Guid ReadContentAsGuid() { throw null; }
-        public virtual void ReadContentAsQualifiedName(out string localName, out string namespaceUri) { localName = default(string); namespaceUri = default(string); }
+        public virtual void ReadContentAsQualifiedName(out string localName, out string namespaceUri) { throw null; }
         public override string ReadContentAsString() { throw null; }
         protected string ReadContentAsString(int maxStringContentLength) { throw null; }
-        public virtual string ReadContentAsString(string[] strings, out int index) { index = default(int); throw null; }
-        public virtual string ReadContentAsString(System.Xml.XmlDictionaryString[] strings, out int index) { index = default(int); throw null; }
+        public virtual string ReadContentAsString(string[] strings, out int index) { throw null; }
+        public virtual string ReadContentAsString(System.Xml.XmlDictionaryString[] strings, out int index) { throw null; }
         public virtual System.TimeSpan ReadContentAsTimeSpan() { throw null; }
         public virtual System.Xml.UniqueId ReadContentAsUniqueId() { throw null; }
         public virtual System.DateTime[] ReadDateTimeArray(string localName, string namespaceUri) { throw null; }
@@ -334,11 +328,11 @@ namespace System.Xml
         public virtual System.TimeSpan[] ReadTimeSpanArray(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString namespaceUri) { throw null; }
         public virtual int ReadValueAsBase64(byte[] buffer, int offset, int count) { throw null; }
         public virtual void StartCanonicalization(System.IO.Stream stream, bool includeComments, string[] inclusivePrefixes) { }
-        public virtual bool TryGetArrayLength(out int count) { count = default(int); throw null; }
-        public virtual bool TryGetBase64ContentLength(out int length) { length = default(int); throw null; }
-        public virtual bool TryGetLocalNameAsDictionaryString(out System.Xml.XmlDictionaryString localName) { localName = default(System.Xml.XmlDictionaryString); throw null; }
-        public virtual bool TryGetNamespaceUriAsDictionaryString(out System.Xml.XmlDictionaryString namespaceUri) { namespaceUri = default(System.Xml.XmlDictionaryString); throw null; }
-        public virtual bool TryGetValueAsDictionaryString(out System.Xml.XmlDictionaryString value) { value = default(System.Xml.XmlDictionaryString); throw null; }
+        public virtual bool TryGetArrayLength(out int count) { throw null; }
+        public virtual bool TryGetBase64ContentLength(out int length) { throw null; }
+        public virtual bool TryGetLocalNameAsDictionaryString(out System.Xml.XmlDictionaryString localName) { throw null; }
+        public virtual bool TryGetNamespaceUriAsDictionaryString(out System.Xml.XmlDictionaryString namespaceUri) { throw null; }
+        public virtual bool TryGetValueAsDictionaryString(out System.Xml.XmlDictionaryString value) { throw null; }
     }
     public sealed partial class XmlDictionaryReaderQuotas
     {

@@ -261,13 +261,13 @@ namespace System.Security.Cryptography
         public DSACng(System.Security.Cryptography.CngKey key) { }
         public System.Security.Cryptography.CngKey Key { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
-        public override byte[] CreateSignature(byte[] hash) { throw null; }
+        public override byte[] CreateSignature(byte[] rgbHash) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
-        public override bool VerifySignature(byte[] hash, byte[] signature) { throw null; }
+        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
     public sealed partial class ECDsaCng : System.Security.Cryptography.ECDsa
     {

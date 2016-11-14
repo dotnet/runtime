@@ -2741,12 +2741,6 @@ namespace Microsoft.CSharp
             }
         }
 
-        private static bool IsKeyword(string value) => FixedStringLookup.Contains(s_keywords, value, false);
-
-        private static bool IsPrefixTwoUnderscore(string value) =>
-            value.Length < 3 ? false :
-            ((value[0] == '_') && (value[1] == '_') && (value[2] != '_'));
-
         public bool Supports(GeneratorSupport support) => (support & LanguageSupport) == support;
 
         public bool IsValidIdentifier(string value)
@@ -2767,7 +2761,7 @@ namespace Microsoft.CSharp
             //
             if (value[0] != '@')
             {
-                if (IsKeyword(value))
+                if (CSharpHelpers.IsKeyword(value))
                 {
                     return false;
                 }
@@ -2790,12 +2784,12 @@ namespace Microsoft.CSharp
 
         public string CreateValidIdentifier(string name)
         {
-            if (IsPrefixTwoUnderscore(name))
+            if (CSharpHelpers.IsPrefixTwoUnderscore(name))
             {
                 name = "_" + name;
             }
 
-            while (IsKeyword(name))
+            while (CSharpHelpers.IsKeyword(name))
             {
                 name = "_" + name;
             }
@@ -2805,13 +2799,7 @@ namespace Microsoft.CSharp
 
         public string CreateEscapedIdentifier(string name)
         {
-            // Any identifier started with two consecutive underscores are 
-            // reserved by CSharp.
-            if (IsKeyword(name) || IsPrefixTwoUnderscore(name))
-            {
-                return "@" + name;
-            }
-            return name;
+            return CSharpHelpers.CreateEscapedIdentifier(name);
         }
 
         // returns the type name without any array declaration.

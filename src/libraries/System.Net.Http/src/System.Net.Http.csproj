@@ -12,7 +12,7 @@
     <AssemblyName>System.Net.Http</AssemblyName>
     <WindowsRID>win</WindowsRID>
     <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
-    <NoWarn>0436</NoWarn>
+    <NoWarn>$(NoWarn);0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -50,6 +50,7 @@
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
     <Compile Include="System\Net\Http\MultipartFormDataContent.cs" />
+    <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -94,6 +95,9 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
+      <Link>Common\System\Net\HttpVersionInternal.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
       <Link>Common\System\Net\Mail\MailAddress.cs</Link>
     </Compile>
@@ -121,14 +125,8 @@
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
       <Link>Common\System\IO\DelegatingStream.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\HttpEventSource.cs">
-      <Link>Common\System\Net\Logging\HttpEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
@@ -243,9 +241,6 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
-      <Link>Common\System\Net\HttpVersion.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
@@ -340,9 +335,6 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
-      <Link>Common\System\Net\HttpVersion.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
@@ -353,16 +345,8 @@
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Globalization.Extensions\ref\System.Globalization.Extensions.csproj">
+    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
       <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
     </ProjectReference>
   </ItemGroup>
@@ -373,6 +357,10 @@
     <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

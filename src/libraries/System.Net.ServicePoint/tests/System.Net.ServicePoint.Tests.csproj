@@ -3,13 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
     <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="ServicePointManagerTest.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+    <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.6.3.-->
+    <Compile Include="TlsSystemDefault.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Net.ServicePoint.pkgproj">

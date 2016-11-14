@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
-using System.Transactions.Diagnostics;
 
 namespace System.Transactions
 {
@@ -514,13 +513,11 @@ namespace System.Transactions
 
         public void Done()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "Enlistment.Done");
-                EnlistmentCallbackPositiveTraceRecord.Trace(SR.TraceSourceLtm,
-                    _internalEnlistment.EnlistmentTraceId,
-                    EnlistmentCallback.Done
-                    );
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.EnlistmentDone(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -528,9 +525,9 @@ namespace System.Transactions
                 _internalEnlistment.State.EnlistmentDone(_internalEnlistment);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "Enlistment.Done");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 

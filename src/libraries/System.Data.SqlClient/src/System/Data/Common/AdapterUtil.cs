@@ -892,6 +892,10 @@ namespace System.Data.Common
             return result;
         }
 
+        static internal string MachineName() 
+        {
+            return Environment.MachineName;
+        }
 
         static internal string BuildQuotedString(string quotePrefix, string quoteSuffix, string unQuotedString)
         {

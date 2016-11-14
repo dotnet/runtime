@@ -6,102 +6,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Security.Principal;
+using System.Threading.Tests;
 using Xunit;
 
 namespace System.Threading.Threads.Tests
 {
     public static class ThreadTests
     {
-        private const int ExpectedTimeoutMilliseconds = 500;
-        private const int UnexpectedTimeoutMilliseconds = 30000;
-
-        private static Thread CreateGuardedThread(out Action waitForThread, Action start)
-        {
-            Exception backgroundEx = null;
-            var t =
-                new Thread(() =>
-                {
-                    try
-                    {
-                        start();
-                    }
-                    catch (Exception ex)
-                    {
-                        backgroundEx = ex;
-                    }
-                });
-            waitForThread =
-                () =>
-                {
-                    Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
-                    if (backgroundEx != null)
-                    {
-                        throw new TargetInvocationException(backgroundEx);
-                    }
-                };
-            return t;
-        }
-
-        private static Thread CreateGuardedThread(out Action waitForThread, Action<object> start)
-        {
-            Exception backgroundEx = null;
-            var t =
-                new Thread(parameter =>
-                {
-                    try
-                    {
-                        start(parameter);
-                    }
-                    catch (Exception ex)
-                    {
-                        backgroundEx = ex;
-                    }
-                });
-            waitForThread =
-                () =>
-                {
-                    Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
-                    if (backgroundEx != null)
-                    {
-                        throw new TargetInvocationException(backgroundEx);
-                    }
-                };
-            return t;
-        }
-
-        private static void RunTestInBackgroundThread(Action test)
-        {
-            Action waitForThread;
-            var t = CreateGuardedThread(out waitForThread, test);
-            t.IsBackground = true;
-            t.Start();
-            waitForThread();
-        }
-
-        private static void CheckedWait(this WaitHandle wh)
-        {
-            Assert.True(wh.WaitOne(UnexpectedTimeoutMilliseconds));
-        }
-
-        private static void WaitForCondition(Func<bool> condition)
-        {
-            WaitForConditionWithCustomDelay(condition, () => Thread.Sleep(1));
-        }
-
-        private static void WaitForConditionWithoutBlocking(Func<bool> condition)
-        {
-            WaitForConditionWithCustomDelay(condition, () => Thread.Yield());
-        }
-
-        private static void WaitForConditionWithCustomDelay(Func<bool> condition, Action delay)
-        {
-            var startTime = DateTime.Now;
-            while (!condition())
-            {
-                Assert.True((DateTime.Now - startTime).TotalMilliseconds < UnexpectedTimeoutMilliseconds);
-                delay();
-            }
-        }
+        private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
+        private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
         [Fact]
         public static void ConstructorTest()
@@ -208,7 +121,7 @@ namespace System.Threading.Threads.Tests
             Func<Thread, ApartmentState, int> setApartmentState,
             int setType /* 0 = ApartmentState setter, 1 = SetApartmentState, 2 = TrySetApartmentState */)
         {
-            RunTestInBackgroundThread(() =>
+            ThreadTestHelpers.RunTestInBackgroundThread(() =>
             {
                 var t = Thread.CurrentThread;
                 Assert.Equal(1, setApartmentState(t, ApartmentState.STA - 1));
@@ -285,7 +198,7 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void CurrentCultureTest()
         {
-            RunTestInBackgroundThread(() =>
+            ThreadTestHelpers.RunTestInBackgroundThread(() =>
             {
                 var t = Thread.CurrentThread;
                 var originalCulture = CultureInfo.CurrentCulture;
@@ -328,13 +241,13 @@ namespace System.Threading.Threads.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void CurrentPrincipalTest_SkipOnDesktopFramework()
         {
-            RunTestInBackgroundThread(() => Assert.Null(Thread.CurrentPrincipal));
+            ThreadTestHelpers.RunTestInBackgroundThread(() => Assert.Null(Thread.CurrentPrincipal));
         }
 
         [Fact]
         public static void CurrentPrincipalTest()
         {
-            RunTestInBackgroundThread(() =>
+            ThreadTestHelpers.RunTestInBackgroundThread(() =>
             {
                 var originalPrincipal = Thread.CurrentPrincipal;
                 var otherPrincipal =
@@ -368,7 +281,8 @@ namespace System.Threading.Threads.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ExecutionContextTest()
         {
-            RunTestInBackgroundThread(() => Assert.Equal(ExecutionContext.Capture(), Thread.CurrentThread.ExecutionContext));
+            ThreadTestHelpers.RunTestInBackgroundThread(
+                () => Assert.Equal(ExecutionContext.Capture(), Thread.CurrentThread.ExecutionContext));
         }
 
         [Fact]
@@ -436,7 +350,7 @@ namespace System.Threading.Threads.Tests
         {
             var e = new ManualResetEvent(false);
             Action waitForThread;
-            var t = CreateGuardedThread(out waitForThread, e.CheckedWait);
+            var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
             t.Start();
             Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, t.ManagedThreadId);
@@ -460,7 +374,7 @@ namespace System.Threading.Threads.Tests
         {
             var e = new ManualResetEvent(false);
             Action waitForThread;
-            var t = CreateGuardedThread(out waitForThread, e.CheckedWait);
+            var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
             Assert.Equal(ThreadPriority.Normal, t.Priority);
             t.Priority = ThreadPriority.AboveNormal;
@@ -480,28 +394,30 @@ namespace System.Threading.Threads.Tests
             var e1 = new AutoResetEvent(false);
             Action waitForThread;
             var t =
-                CreateGuardedThread(out waitForThread, () =>
+                ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
                 {
                     e0.CheckedWait();
-                    WaitForConditionWithoutBlocking(() => e1.WaitOne(0));
+                    ThreadTestHelpers.WaitForConditionWithoutBlocking(() => e1.WaitOne(0));
                 });
             Assert.Equal(ThreadState.Unstarted, t.ThreadState);
             t.IsBackground = true;
             Assert.Equal(ThreadState.Unstarted | ThreadState.Background, t.ThreadState);
 
             t.Start();
-            WaitForCondition(() => t.ThreadState == (ThreadState.WaitSleepJoin | ThreadState.Background));
+            ThreadTestHelpers.WaitForCondition(() => t.ThreadState == (ThreadState.WaitSleepJoin | ThreadState.Background));
 
             e0.Set();
-            WaitForCondition(() => t.ThreadState == (ThreadState.Running | ThreadState.Background));
+            ThreadTestHelpers.WaitForCondition(() => t.ThreadState == (ThreadState.Running | ThreadState.Background));
 
             e1.Set();
             waitForThread();
             Assert.Equal(ThreadState.Stopped, t.ThreadState);
 
-            t = CreateGuardedThread(out waitForThread, () => WaitForConditionWithoutBlocking(() => e1.WaitOne(0)));
+            t = ThreadTestHelpers.CreateGuardedThread(
+                    out waitForThread,
+                    () => ThreadTestHelpers.WaitForConditionWithoutBlocking(() => e1.WaitOne(0)));
             t.Start();
-            WaitForCondition(() => t.ThreadState == ThreadState.Running);
+            ThreadTestHelpers.WaitForCondition(() => t.ThreadState == ThreadState.Running);
 
             e1.Set();
             waitForThread();
@@ -514,7 +430,7 @@ namespace System.Threading.Threads.Tests
         {
             var e = new ManualResetEvent(false);
             Action waitForThread;
-            var t = CreateGuardedThread(out waitForThread, e.CheckedWait);
+            var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
 
             Action verify = () =>
@@ -618,7 +534,7 @@ namespace System.Threading.Threads.Tests
 
             for (int i = 0; i < threadArray.Length; ++i)
             {
-                threadArray[i] = CreateGuardedThread(out waitForThreadArray[i], () => threadMain(i));
+                threadArray[i] = ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i], () => threadMain(i));
                 threadArray[i].IsBackground = true;
                 threadArray[i].Start();
             }
@@ -709,10 +625,10 @@ namespace System.Threading.Threads.Tests
             bool continueThreadBool = false;
             Action waitForThread;
             var t =
-                CreateGuardedThread(out waitForThread, () =>
+                ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
                 {
                     threadReady.Set();
-                    WaitForConditionWithoutBlocking(() => Volatile.Read(ref continueThreadBool));
+                    ThreadTestHelpers.WaitForConditionWithoutBlocking(() => Volatile.Read(ref continueThreadBool));
                     threadReady.Set();
                     Assert.Throws<ThreadInterruptedException>(() => continueThread.CheckedWait());
                 });
@@ -728,7 +644,7 @@ namespace System.Threading.Threads.Tests
             t.Interrupt();
 
             // Interrupting an unstarted thread causes the thread to be interrupted after it is started and starts blocking
-            t = CreateGuardedThread(out waitForThread, () =>
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
                     Assert.Throws<ThreadInterruptedException>(() => continueThread.CheckedWait()));
             t.IsBackground = true;
             t.Interrupt();
@@ -737,11 +653,11 @@ namespace System.Threading.Threads.Tests
 
             // A thread that is already blocked on a synchronization primitive unblocks immediately
             continueThread.Reset();
-            t = CreateGuardedThread(out waitForThread, () =>
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
                     Assert.Throws<ThreadInterruptedException>(() => continueThread.CheckedWait()));
             t.IsBackground = true;
             t.Start();
-            WaitForCondition(() => (t.ThreadState & ThreadState.WaitSleepJoin) != 0);
+            ThreadTestHelpers.WaitForCondition(() => (t.ThreadState & ThreadState.WaitSleepJoin) != 0);
             t.Interrupt();
             waitForThread();
         }
@@ -753,12 +669,12 @@ namespace System.Threading.Threads.Tests
             var continueThread = new ManualResetEvent(false);
             Action waitForThread;
             var t =
-                CreateGuardedThread(out waitForThread, () =>
-                    {
-                        threadReady.Set();
-                        continueThread.CheckedWait();
-                        Thread.Sleep(ExpectedTimeoutMilliseconds);
-                    });
+                ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
+                {
+                    threadReady.Set();
+                    continueThread.CheckedWait();
+                    Thread.Sleep(ExpectedTimeoutMilliseconds);
+                });
             t.IsBackground = true;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => t.Join(-2));
@@ -797,7 +713,7 @@ namespace System.Threading.Threads.Tests
         {
             var e = new AutoResetEvent(false);
             Action waitForThread;
-            var t = CreateGuardedThread(out waitForThread, e.CheckedWait);
+            var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
             Assert.Throws<InvalidOperationException>(() => t.Start(null));
             Assert.Throws<InvalidOperationException>(() => t.Start(t));
@@ -807,7 +723,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
             Assert.Throws<ThreadStateException>(() => t.Start());
 
-            t = CreateGuardedThread(out waitForThread, parameter => e.CheckedWait());
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => e.CheckedWait());
             t.IsBackground = true;
             t.Start();
             Assert.Throws<ThreadStateException>(() => t.Start());
@@ -819,17 +735,17 @@ namespace System.Threading.Threads.Tests
             Assert.Throws<ThreadStateException>(() => t.Start(null));
             Assert.Throws<ThreadStateException>(() => t.Start(t));
 
-            t = CreateGuardedThread(out waitForThread, parameter => Assert.Null(parameter));
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => Assert.Null(parameter));
             t.IsBackground = true;
             t.Start();
             waitForThread();
 
-            t = CreateGuardedThread(out waitForThread, parameter => Assert.Null(parameter));
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => Assert.Null(parameter));
             t.IsBackground = true;
             t.Start(null);
             waitForThread();
 
-            t = CreateGuardedThread(out waitForThread, parameter => Assert.Equal(t, parameter));
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => Assert.Equal(t, parameter));
             t.IsBackground = true;
             t.Start(t);
             waitForThread();

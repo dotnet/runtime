@@ -8,9 +8,10 @@ using System.Security.Cryptography;
 namespace System.Security.Policy
 {
     [Serializable]
-    public sealed partial class HashMembershipCondition : IDeserializationCallback, System.Runtime.Serialization.ISerializable, ISecurityEncodable, ISecurityPolicyEncodable, IMembershipCondition
+    public sealed partial class HashMembershipCondition : IDeserializationCallback, ISerializable, ISecurityEncodable, ISecurityPolicyEncodable, IMembershipCondition
     {
         public HashMembershipCondition(HashAlgorithm hashAlg, byte[] value) { }
+        private HashMembershipCondition(SerializationInfo info, StreamingContext context) { }
         public HashAlgorithm HashAlgorithm { get; set; }
         public byte[] HashValue { get; set; }
         public bool Check(Evidence evidence) { return false; }

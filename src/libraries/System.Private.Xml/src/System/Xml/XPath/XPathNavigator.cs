@@ -11,7 +11,6 @@ using System.Xml.Schema;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security;
-using System.Security.Policy;
 using System.Text;
 using System.Xml;
 using MS.Internal.Xml.Cache;

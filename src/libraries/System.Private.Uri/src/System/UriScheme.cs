@@ -145,19 +145,19 @@ namespace System
         public static void Register(UriParser uriParser, string schemeName, int defaultPort)
         {
             if (uriParser == null)
-                throw new ArgumentNullException("uriParser");
+                throw new ArgumentNullException(nameof(uriParser));
  
             if (schemeName == null)
-                throw new ArgumentNullException("schemeName");
+                throw new ArgumentNullException(nameof(schemeName));
  
             if (schemeName.Length == 1)
-                throw new ArgumentOutOfRangeException("schemeName");
+                throw new ArgumentOutOfRangeException(nameof(schemeName));
  
             if (!Uri.CheckSchemeName(schemeName))
-                throw new ArgumentOutOfRangeException("schemeName");
+                throw new ArgumentOutOfRangeException(nameof(schemeName));
  
             if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
-                throw new ArgumentOutOfRangeException("defaultPort");
+                throw new ArgumentOutOfRangeException(nameof(defaultPort));
  
             schemeName = schemeName.ToLower();
             FetchSyntax(uriParser, schemeName, defaultPort);

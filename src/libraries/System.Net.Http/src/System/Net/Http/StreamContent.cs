@@ -52,7 +52,7 @@ namespace System.Net.Http
             {
                 _start = content.Position;
             }
-            if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Associate(this, content);
+            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
