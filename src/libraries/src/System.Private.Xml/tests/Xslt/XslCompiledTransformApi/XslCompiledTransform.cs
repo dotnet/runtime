@@ -278,7 +278,7 @@ namespace System.Xml.Tests
         // Q>       In CompileToType when scriptAssemblyPath is null, should we really throw ArgumentNullExc
         //          if the stylesheet does not have any scripts (but the settings are enabled)?
         //
-        // Anton>   Sergey and I think it’s acceptable behavior. Implementing the other way will require extra
+        // Anton>   Sergey and I think it\92s acceptable behavior. Implementing the other way will require extra
         //          code churn in 3 files, which we tried to avoid.
 
         //BinCompat TODO: Add this test back
@@ -479,11 +479,11 @@ namespace System.Xml.Tests
             //{
             //    /*
             //     * Anton> If staticData array is malformed, you end up with weird exceptions.
-            //     * We didn’t expect this method to be public and didn’t implement any range/sanity
+            //     * We didn\92t expect this method to be public and didn\92t implement any range/sanity
             //     * checks in deserialization code path, besides CLR implicit range checks for array indices.
             //     * You have found one such place, but there are dozens of them. Fixing all of them will cause
             //     * code churn in many files and another round of [code review/test sign-off/approval] process.
-            //     * Right now it works according to the “Garbage In, Garbage Out” principle.
+            //     * Right now it works according to the \93Garbage In, Garbage Out\94 principle.
             //     *
             //     */
             //    _output.WriteLine(e.ToString());
@@ -2150,7 +2150,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load with \"\\\\\"")]
-        [PlatformSpecific(TestPlatforms.Windows)] //Not a valid path on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] //Not an invalid path on Unix
         [InlineData()]
         [Theory]
         public void LoadUrl5()

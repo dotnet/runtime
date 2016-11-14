@@ -438,7 +438,7 @@ namespace System.Xml.Tests
             XmlSchemaParticle[] actualParticles;
             string[] expectedParticles = { "eleA", "eleB", "eleC" };
 
-            schemas.Add("", Path.Combine(TestData, @"\Bug342447.xsd"));
+            schemas.Add("", Path.Combine(TestData, "Bug342447.xsd"));
             schemas.Compile();
             val = CreateValidator(schemas);
             val.Initialize();
