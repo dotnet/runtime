@@ -356,28 +356,28 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [InlineData(null, "YY")]
-        [InlineData("abc", "abcdef")]
-        public static void Conversion_String(string parameter, string expected)
+        [InlinePerCompilationType(null, "YY")]
+        [InlinePerCompilationType("abc", "abcdef")]
+        public static void Conversion_String(string parameter, string expected, bool useInterpreter)
         {
             Expression<Func<string, string>> conversion = x => x + "def";
             ParameterExpression parameterExpression = Expression.Parameter(typeof(string));
             BinaryExpression coalescion = Expression.Coalesce(parameterExpression, Expression.Constant("YY"), conversion);
 
-            Func<string, string> result = Expression.Lambda<Func<string, string>>(coalescion, parameterExpression).Compile();
+            Func<string, string> result = Expression.Lambda<Func<string, string>>(coalescion, parameterExpression).Compile(useInterpreter);
             Assert.Equal(expected, result(parameter));
         }
 
         [Theory]
-        [InlineData(null, 5)]
-        [InlineData(5, 10)]
-        public static void Conversion_NullableInt(int? parameter, int? expected)
+        [InlinePerCompilationType(null, 5)]
+        [InlinePerCompilationType(5, 10)]
+        public static void Conversion_NullableInt(int? parameter, int? expected, bool useInterpreter)
         {
             Expression<Func<int?, int?>> conversion = x => x * 2;
             ParameterExpression parameterExpression = Expression.Parameter(typeof(int?));
             BinaryExpression coalescion = Expression.Coalesce(parameterExpression, Expression.Constant(5, typeof(int?)), conversion);
 
-            Func<int?, int?> result = Expression.Lambda<Func<int?, int?>>(coalescion, parameterExpression).Compile();
+            Func<int?, int?> result = Expression.Lambda<Func<int?, int?>>(coalescion, parameterExpression).Compile(useInterpreter);
             Assert.Equal(expected, result(parameter));
         }
 
