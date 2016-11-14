@@ -691,6 +691,17 @@ public:
         // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
 
         assert(varTypeIsStruct(lvType) || (lvType == TYP_BLK) || (lvPromoted && lvUnusedStruct));
+
+#if defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
+        // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
+        // this for arguments, which must be passed according the defined ABI.
+        if ((lvType == TYP_SIMD12) && !lvIsParam)
+        {
+            assert(lvExactSize == 12);
+            return 16;
+        }
+#endif // defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
+
         return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
     }
 
@@ -2497,7 +2508,6 @@ public:
 
     void lvaInit();
 
-    unsigned lvaArgSize(const void* argTok);
     unsigned lvaLclSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
 
@@ -7327,6 +7337,16 @@ private:
 
     // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
+    //
+    // As per the Intel manual, the preferred alignment for AVX vectors is 32-bytes. On Amd64,
+    // RSP/EBP is aligned at 16-bytes, therefore to align SIMD types at 32-bytes we need even
+    // RSP/EBP to be 32-byte aligned. It is not clear whether additional stack space used in
+    // aligning stack is worth the benefit and for now will use 16-byte alignment for AVX
+    // 256-bit vectors with unaligned load/stores to/from memory. On x86, the stack frame
+    // is aligned to 4 bytes. We need to extend existing support for double (8-byte) alignment
+    // to 16 or 32 byte alignment for frames with local SIMD vars, if that is determined to be
+    // profitable.
+    //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
@@ -7336,8 +7356,7 @@ private:
             int  off = lvaFrameAddress(varNum, &ebpBased);
             // TODO-Cleanup: Can't this use the lvExactSize on the varDsc?
             int  alignment = getSIMDTypeAlignment(lvaTable[varNum].lvType);
-            bool isAligned = ((off % alignment) == 0);
-            noway_assert(isAligned || lvaTable[varNum].lvIsParam);
+            bool isAligned = (alignment <= STACK_ALIGN) && ((off % alignment) == 0);
             return isAligned;
         }
 #endif // FEATURE_SIMD
