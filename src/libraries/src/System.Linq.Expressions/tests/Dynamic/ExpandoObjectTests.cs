@@ -48,7 +48,7 @@ namespace System.Dynamic.Tests
         {
             IDictionary<string, object> eo = new ExpandoObject();
             eo.Add("The test key to add.", "value");
-            var ae = Assert.Throws<ArgumentException>(() => eo.Add("The test key to add.", "value"));
+            var ae = Assert.Throws<ArgumentException>("key", () => eo.Add("The test key to add.", "value"));
             Assert.Contains("The test key to add.", ae.Message);
         }
 
