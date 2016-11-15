@@ -1932,8 +1932,8 @@ combinedScenarios.each { scenario ->
                                     else {
                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                                        // Test build and run are launched together.
-                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostLauncher.cmd %WORKSPACE% ${architecture} ${lowerConfiguration} ${scenario}"
-                                       Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
+                                       buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -key_location C:\\tools\\key.txt"
+                                       //Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                                     }
 
                                     // Add archival.
