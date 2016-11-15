@@ -12,6 +12,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchF
+{
 public static class Bisect
 {
 #if DEBUG
@@ -160,4 +162,5 @@ public static class Bisect
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

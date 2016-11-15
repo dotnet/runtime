@@ -11,6 +11,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class AddArray
 {
 
@@ -48,14 +50,14 @@ public static class AddArray
             m = j;
             flags4[m] = flags3[l] + m + m + m + m;
         }
-        
+
         for (j = 0; j <= Size; j++) {
             k = j;
             l = j;
             m = j;
             flags1[j] = flags1[j] + flags2[k] + flags3[l] + flags4[m] - flags2[k - j + l];
         }
-        
+
         // Escape each flags array so that their elements will appear live-out
         Escape(flags1);
         Escape(flags2);
@@ -83,9 +85,10 @@ public static class AddArray
         }
         return result;
     }
-    
+
     public static int Main() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

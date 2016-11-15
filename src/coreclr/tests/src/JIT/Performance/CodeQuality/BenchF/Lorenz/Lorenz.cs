@@ -12,6 +12,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchF
+{
 public static class Lorenz
 {
 #if DEBUG
@@ -131,4 +133,5 @@ public static class Lorenz
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

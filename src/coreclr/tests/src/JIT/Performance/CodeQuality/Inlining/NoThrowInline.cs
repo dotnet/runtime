@@ -13,6 +13,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Inlining
+{
 public static class NoThrowInline
 {
 #if DEBUG
@@ -34,7 +36,7 @@ public static class NoThrowInline
 
     //
     // We expect ThrowArgumentNullException to not be inlined into Bench, the throw code is pretty
-    // large and throws are extremly slow. However, we need to be careful not to degrade the 
+    // large and throws are extremly slow. However, we need to be careful not to degrade the
     // non-exception path performance by preserving registers across the call. For this the compiler
     // will have to understand that ThrowArgumentNullException never returns and omit the register
     // preservation code.
@@ -72,4 +74,5 @@ public static class NoThrowInline
     {
         return (Bench("a", "bc", "def", "ghij") == 10) ? 100 : -1;
     }
+}
 }

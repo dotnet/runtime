@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
- 
-   contributed by Isaac Gouy 
+
+   contributed by Isaac Gouy
 
    modified for use with xunit-performance
 */
@@ -15,6 +15,8 @@ using System;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace BenchmarksGame
+{
 public class SpectralNorm
 {
 #if DEBUG
@@ -78,7 +80,7 @@ public class SpectralNorm
         }
 
         // B=AtA         A multiplied by A transposed
-        // v.Bv /(v.v)   eigenvalue of v 
+        // v.Bv /(v.v)   eigenvalue of v
         double vBv = 0, vv = 0;
         for (int i = 0; i < n; i++)
         {
@@ -123,4 +125,5 @@ public class SpectralNorm
         MultiplyAv(n, v, u);
         MultiplyAtv(n, u, AtAv);
     }
+}
 }

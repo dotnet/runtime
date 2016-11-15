@@ -13,6 +13,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Inlining
+{
 public static class ConstantArgsInt
 {
 
@@ -927,4 +929,5 @@ public static class ConstantArgsInt
 
         return (result ? 100 : -1);
     }
+}
 }

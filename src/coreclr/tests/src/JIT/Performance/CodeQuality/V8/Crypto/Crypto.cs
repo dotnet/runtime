@@ -46,7 +46,7 @@ using System.Globalization;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
-namespace Crypto
+namespace V8.Crypto
 {
     public class Support
     {

@@ -18,6 +18,8 @@ using System.Text;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace BenchmarksGame
+{
 public class Fasta
 {
 #if DEBUG
@@ -217,4 +219,5 @@ public class Fasta
         if (s_index != 0)
             s.Write(s_buf, 0, s_index);
     }
+}
 }
