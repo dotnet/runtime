@@ -15,14 +15,48 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]
         public void TestHandleCount()
         {
             using (Process p = Process.GetCurrentProcess())
             {
                 Assert.True(p.HandleCount > 0);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void TestHandleCount_OSX()
+        {
+            using (Process p = Process.GetCurrentProcess())
+            {
+                Assert.Equal(0, p.HandleCount);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]
+        public void HandleCountChanges()
+        {
+            RemoteInvoke(() =>
+            {
+                Process p = Process.GetCurrentProcess();
+                int handleCount = p.HandleCount;
+                using (var fs1 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                using (var fs2 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                using (var fs3 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                {
+                    p.Refresh();
+                    int secondHandleCount = p.HandleCount;
+                    Assert.True(handleCount < secondHandleCount);
+                    handleCount = secondHandleCount;
+                }
+                p.Refresh();
+                int thirdHandleCount = p.HandleCount;
+                Assert.True(thirdHandleCount < handleCount);
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]

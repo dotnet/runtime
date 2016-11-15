@@ -83,6 +83,24 @@ namespace System.Diagnostics
             }
         }
 
+        partial void EnsureHandleCountPopulated()
+        {
+            if (_processInfo.HandleCount <= 0 && _haveProcessId)
+            {
+                string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(_processId);
+                if (Directory.Exists(path))
+                {
+                    try
+                    {
+                        _processInfo.HandleCount = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly).Length;
+                    }
+                    catch (DirectoryNotFoundException) // Occurs when the process is deleted between the Exists check and the GetFiles call.
+                    {
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
