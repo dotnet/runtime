@@ -10,7 +10,7 @@ namespace System.Threading.Tasks
 {
     /// <summary>Provides a reusable object that can be awaited by a consumer and manually completed by a producer.</summary>
     /// <typeparam name="TResult">The type of data being passed from producer to consumer.</typeparam>
-    internal sealed class RendezvousAwaitable<TResult> : ICriticalNotifyCompletion
+    internal class RendezvousAwaitable<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>Sentinel object indicating that the operation has completed prior to OnCompleted being called.</summary>
         private static readonly Action s_completionSentinel = () => Debug.Fail("Completion sentinel should never be invoked");
