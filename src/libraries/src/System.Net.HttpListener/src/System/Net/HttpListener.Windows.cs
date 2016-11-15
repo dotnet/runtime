@@ -1133,7 +1133,8 @@ namespace System.Net
             // previously authenticated.
             // assurance that we do this only for NTLM/Negotiate is not here, but in the
             // code that caches WindowsIdentity instances in the Dictionary.
-            DisconnectAsyncResult disconnectResult = DisconnectResults[connectionId];
+            DisconnectAsyncResult disconnectResult;
+            DisconnectResults.TryGetValue(connectionId, out disconnectResult);
             if (UnsafeConnectionNtlmAuthentication)
             {
                 if (authorizationHeader == null)
