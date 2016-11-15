@@ -11886,22 +11886,8 @@ void Compiler::gtDispLIRNode(GenTree* node)
 
     const bool nodeIsCall = node->IsCall();
 
-    int numCallEarlyArgs = 0;
-    if (nodeIsCall)
-    {
-        GenTreeCall* call = node->AsCall();
-        for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
-        {
-            if (!args->Current()->IsArgPlaceHolderNode() && args->Current()->IsValue())
-            {
-                numCallEarlyArgs++;
-            }
-        }
-    }
-
     // Visit operands
-    IndentInfo operandArc    = IIArcTop;
-    int        callArgNumber = 0;
+    IndentInfo operandArc = IIArcTop;
     for (GenTree* operand : node->Operands())
     {
         if (operand->IsArgPlaceHolderNode() || !operand->IsValue())
@@ -11932,20 +11918,22 @@ void Compiler::gtDispLIRNode(GenTree* node)
             }
             else
             {
-                int callLateArgNumber = callArgNumber - numCallEarlyArgs;
+                fgArgTabEntryPtr curArgTabEntry = gtArgEntryByNode(call, operand);
+                assert(curArgTabEntry);
+
                 if (operand->OperGet() == GT_LIST)
                 {
                     int listIndex = 0;
                     for (GenTreeArgList* element = operand->AsArgList(); element != nullptr; element = element->Rest())
                     {
                         operand = element->Current();
-                        if (callLateArgNumber < 0)
+                        if (curArgTabEntry->lateArgInx == (unsigned)-1)
                         {
-                            gtGetArgMsg(call, operand, callArgNumber, listIndex, buf, sizeof(buf));
+                            gtGetArgMsg(call, operand, curArgTabEntry->argNum, listIndex, buf, sizeof(buf));
                         }
                         else
                         {
-                            gtGetLateArgMsg(call, operand, callLateArgNumber, listIndex, buf, sizeof(buf));
+                            gtGetLateArgMsg(call, operand, curArgTabEntry->lateArgInx, listIndex, buf, sizeof(buf));
                         }
 
                         displayOperand(operand, buf, operandArc, indentStack);
@@ -11954,19 +11942,17 @@ void Compiler::gtDispLIRNode(GenTree* node)
                 }
                 else
                 {
-                    if (callLateArgNumber < 0)
+                    if (curArgTabEntry->lateArgInx == (unsigned)-1)
                     {
-                        gtGetArgMsg(call, operand, callArgNumber, -1, buf, sizeof(buf));
+                        gtGetArgMsg(call, operand, curArgTabEntry->argNum, -1, buf, sizeof(buf));
                     }
                     else
                     {
-                        gtGetLateArgMsg(call, operand, callLateArgNumber, -1, buf, sizeof(buf));
+                        gtGetLateArgMsg(call, operand, curArgTabEntry->lateArgInx, -1, buf, sizeof(buf));
                     }
 
                     displayOperand(operand, buf, operandArc, indentStack);
                 }
-
-                callArgNumber++;
             }
         }
         else if (node->OperIsDynBlkOp())
