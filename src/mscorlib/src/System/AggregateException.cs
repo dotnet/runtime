@@ -379,7 +379,8 @@ namespace System
 
 
         /// <summary>
-        /// Flattens an <see cref="AggregateException"/> instances into a single, new instance.
+        /// Flattens the inner instances of <see cref="AggregateException"/> by expanding its contained <see cref="Exception"/> instances
+        /// into a new <see cref="AggregateException"/>
         /// </summary>
         /// <returns>A new, flattened <see cref="AggregateException"/>.</returns>
         /// <remarks>
