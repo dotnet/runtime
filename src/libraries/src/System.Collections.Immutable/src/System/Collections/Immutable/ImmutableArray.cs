@@ -121,18 +121,10 @@ namespace System.Collections.Immutable
             int count;
             if (items.TryGetCount(out count))
             {
-                if (count == 0)
-                {
-                    // Return a wrapper around the singleton empty array.
-                    return Create<T>();
-                }
-                else
-                {
-                    // We know how long the sequence is. Linq's built-in ToArray extension method
-                    // isn't as comprehensive in finding the length as we are, so call our own method
-                    // to avoid reallocating arrays as the sequence is enumerated.
-                    return new ImmutableArray<T>(items.ToArray(count));
-                }
+                // We know how long the sequence is. Linq's built-in ToArray extension method
+                // isn't as comprehensive in finding the length as we are, so call our own method
+                // to avoid reallocating arrays as the sequence is enumerated.
+                return new ImmutableArray<T>(items.ToArray(count));
             }
             else
             {
