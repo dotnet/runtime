@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <Import Project="$(MSBuildProjectName).props" />
+
+  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))"/>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <ProjectReference Include="@(Project)" />
+    
+    <!-- Include refs -->
+    <File Include="$(PackageLayoutDir)ref/$(TargetFramework)/*.*">
+      <TargetPath>ref/$(TargetFramework)</TargetPath>
+    </File>
+
+    <FilePackageDependency Include="Microsoft.NETCore.Platforms">
+      <Version>$(PlatformPackageVersion)</Version>
+    </FilePackageDependency>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <!-- Include lib -->
+    <File Include="$(PackageLayoutDir)runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)/*.*">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</TargetPath>
+    </File>
+    
+    <!-- Include native -->
+    <File Include="$(PackageLayoutDir)runtimes/$(PackageTargetRuntime)/native/*.*">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+    
+    <IgnoredReference Include="System.Private.CoreLib" />
+  </ItemGroup>
+
+  <Target Name="VerifyClosure" AfterTargets="Build">
+    <VerifyClosure Sources="@(File)"
+                   IgnoredReferences="@(IgnoredReference)" />
+  </Target>
+
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <File>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -9,7 +9,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Transactions.Configuration;
-using System.Transactions.Diagnostics;
 using System.Transactions.Distributed;
 
 namespace System.Transactions
@@ -154,14 +153,11 @@ namespace System.Transactions
                 throw new ArgumentNullException(nameof(enlistmentNotification));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.Reenlist");
-            }
-
-            if (DiagnosticTrace.Information)
-            {
-                ReenlistTraceRecord.Trace(SR.TraceSourceBase, resourceManagerIdentifier);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.Reenlist");
+                etwLog.TransactionManagerReenlist(resourceManagerIdentifier);
             }
 
             // Put the recovery information into a stream.
@@ -183,26 +179,27 @@ namespace System.Transactions
                 }
                 else
                 {
-                    if (DiagnosticTrace.Error)
+                    if (etwLog.IsEnabled())
                     {
-                        TransactionExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.UnrecognizedRecoveryInformation);
+                        etwLog.TransactionExceptionTrace(TraceSourceType.TraceSourceBase, TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), string.Empty);
                     }
+
                     throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation));
                 }
             }
             catch (EndOfStreamException e)
             {
-                if (DiagnosticTrace.Error)
+                if (etwLog.IsEnabled())
                 {
-                    TransactionExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.UnrecognizedRecoveryInformation);
+                    etwLog.TransactionExceptionTrace(TraceSourceType.TraceSourceBase, TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
                 }
                 throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
             catch (FormatException e)
             {
-                if (DiagnosticTrace.Error)
+                if (etwLog.IsEnabled())
                 {
-                    TransactionExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.UnrecognizedRecoveryInformation);
+                    etwLog.TransactionExceptionTrace(TraceSourceType.TraceSourceBase, TransactionExceptionType.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e.ToString());
                 }
                 throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
@@ -225,11 +222,9 @@ namespace System.Transactions
                     (RecoveringInternalEnlistment)returnValue.InternalEnlistment
                     );
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceBase,
-                    "TransactionManager.Reenlist"
-                    );
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.Reenlist");
             }
 
             return returnValue;
@@ -254,21 +249,18 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.RecoveryComplete");
-            }
-
-            if (DiagnosticTrace.Information)
-            {
-                RecoveryCompleteTraceRecord.Trace(SR.TraceSourceBase, resourceManagerIdentifier);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.RecoveryComplete");
+                etwLog.TransactionManagerRecoveryComplete(resourceManagerIdentifier);
             }
 
             DistributedTransactionManager.ResourceManagerRecoveryComplete(resourceManagerIdentifier);
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.RecoveryComplete");
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.RecoveryComplete");
             }
         }
 
@@ -294,10 +286,11 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.get_DefaultIsolationLevel");
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.get_DefaultIsolationLevel");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultIsolationLevel");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultIsolationLevel");
                 }
 
                 return IsolationLevel.Serializable;
@@ -340,9 +333,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
                 }
 
                 if (!s_defaultTimeoutValidated)
@@ -351,17 +345,17 @@ namespace System.Transactions
                     // If the timeout value got adjusted, it must have been greater than MaximumTimeout.
                     if (s_defaultTimeout != DefaultSettings.Timeout)
                     {
-                        if (DiagnosticTrace.Warning)
+                        if (etwLog.IsEnabled())
                         {
-                            ConfiguredDefaultTimeoutAdjustedTraceRecord.Trace(SR.TraceSourceBase);
+                            etwLog.ConfiguredDefaultTimeoutAdjusted();
                         }
                     }
                     s_defaultTimeoutValidated = true;
                 }
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
                 }
                 return s_defaultTimeout;
             }
@@ -375,9 +369,10 @@ namespace System.Transactions
         {
             get
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
                 if (!s_cachedMaxTimeout)
@@ -393,9 +388,9 @@ namespace System.Transactions
                     }
                 }
 
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
                 return s_maximumTimeout;
@@ -409,9 +404,10 @@ namespace System.Transactions
         // manager object with the right parameters in order to do a ReenlistTransaction call.
         internal static byte[] GetRecoveryInformation(string startupInfo, byte[] resourceManagerRecoveryInformation)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
             }
 
             MemoryStream stream = new MemoryStream();
@@ -440,11 +436,9 @@ namespace System.Transactions
                 stream.Dispose();
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceBase,
-                    "TransactionManager.GetRecoveryInformation"
-                    );
+                etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
             }
 
             return returnValue;

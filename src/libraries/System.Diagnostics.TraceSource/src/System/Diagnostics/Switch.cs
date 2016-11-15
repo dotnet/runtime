@@ -7,6 +7,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 
@@ -29,6 +30,7 @@ namespace System.Diagnostics
 
         private static List<WeakReference> s_switches = new List<WeakReference>();
         private static int s_LastCollectionCount;
+        private StringDictionary _attributes;
 
         private object IntializedLock
         {
@@ -120,6 +122,17 @@ namespace System.Diagnostics
             }
         }
 
+        public StringDictionary Attributes 
+        {
+            get 
+            {
+                Initialize();
+                if (_attributes == null)
+                    _attributes = new StringDictionary();
+                return _attributes;
+            }
+        }
+
         /// <devdoc>
         ///    <para>
         ///     Indicates the current setting for this switch.
@@ -157,6 +170,8 @@ namespace System.Diagnostics
                 }
             }
         }
+
+        protected internal virtual string[] GetSupportedAttributes() => null;
 
         protected string Value
         {

@@ -30,6 +30,9 @@
     <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
+       <Aliases>System_Runtime_Extensions</Aliases>
+    </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
@@ -63,9 +66,6 @@
     <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
     <ProjectReference Include="..\..\System.IO\src\System.IO.csproj">
-      <TargetGroup>uap101aot</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj">

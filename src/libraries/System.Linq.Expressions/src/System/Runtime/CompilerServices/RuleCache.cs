@@ -32,7 +32,7 @@ namespace System.Runtime.CompilerServices
         // this is called on every successful rule.
         internal void MoveRule(T rule, int i)
         {
-            // limit search to MaxSearch elements. 
+            // limit search to MaxSearch elements.
             // Rule should not get too far unless it has been already moved up.
             // need a lock to make sure we are moving the right rule and not loosing any.
             lock (_cacheLock)

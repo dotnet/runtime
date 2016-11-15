@@ -9,8 +9,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using AstUtils = System.Linq.Expressions.Utils;
-
 namespace System.Linq.Expressions.Interpreter
 {
 #if FEATURE_MAKE_RUN_METHODS
@@ -92,30 +90,19 @@ namespace System.Linq.Expressions.Interpreter
             switch (i)
             {
                 case -1:
-                    return Int32_M1;
+                    return Utils.BoxedIntM1;
                 case 0:
-                    return Int32_0;
+                    return Utils.BoxedInt0;
                 case 1:
-                    return Int32_1;
+                    return Utils.BoxedInt1;
                 case 2:
-                    return Int32_2;
+                    return Utils.BoxedInt2;
+                case 3:
+                    return Utils.BoxedInt3;
             }
 
             return i;
         }
-
-        private static readonly object Int32_M1 = -1;
-        private static readonly object Int32_0 = 0;
-        private static readonly object Int32_1 = 1;
-        private static readonly object Int32_2 = 2;
-
-        public static object BooleanToObject(bool b)
-        {
-            return b ? Boolean_True : Boolean_False;
-        }
-
-        internal static readonly object Boolean_True = true;
-        internal static readonly object Boolean_False = false;
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {
@@ -124,7 +111,7 @@ namespace System.Linq.Expressions.Interpreter
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    result = Boolean_False;
+                    result = Utils.BoxedFalse;
                     break;
                 case TypeCode.SByte:
                     result = default(sbyte);
@@ -139,7 +126,7 @@ namespace System.Linq.Expressions.Interpreter
                     result = default(short);
                     break;
                 case TypeCode.Int32:
-                    result = Int32_0;
+                    result = Utils.BoxedInt0;
                     break;
                 case TypeCode.Int64:
                     result = default(long);
@@ -157,8 +144,8 @@ namespace System.Linq.Expressions.Interpreter
                     return default(float);
                 case TypeCode.Double:
                     return default(double);
-                //case TypeCode.DBNull: 
-                //    return default(DBNull); 
+                //case TypeCode.DBNull:
+                //    return default(DBNull);
                 case TypeCode.DateTime:
                     return default(DateTime);
                 case TypeCode.Decimal:

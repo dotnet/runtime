@@ -4,6 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
+using System.IO;
 using System.Net;
 using System.Xml.Schema;
 
@@ -58,7 +59,7 @@ namespace System.Xml.Tests
                 XmlSchemaSet sc = new XmlSchemaSet();
                 sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
                 sc.XmlResolver = null;
-                XmlSchema Schema = sc.Add(null, TestData._Root + @"XmlResolver/File/simpledtd.xml");
+                XmlSchema Schema = sc.Add(null, Path.Combine(TestData._Root, "XmlResolver", "File", "simpledtd.xml"));
             }
             catch (Exception)
             {
@@ -76,7 +77,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             sc.XmlResolver = null;
-            sc.Add(null, TestData._Root + "xmlresolver_v2.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v2.xsd"));
             CError.Compare(sc.Count, 1, "SchemaSet count");
             return;
         }
@@ -88,7 +89,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            sc.Add(null, TestData._Root + "xmlresolver_v2.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v2.xsd"));
             CError.Compare(sc.Count, 1, "SchemaSet count");
             return;
         }

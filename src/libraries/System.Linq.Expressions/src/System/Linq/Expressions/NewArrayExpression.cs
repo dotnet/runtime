@@ -42,7 +42,7 @@ namespace System.Linq.Expressions
         public sealed override Type Type { get; }
 
         /// <summary>
-        /// Gets the bounds of the array if the value of the <see cref="ExpressionType"/> property is NewArrayBounds, or the values to initialize the elements of the new array if the value of the <see cref="Expression.NodeType"/> property is NewArrayInit. 
+        /// Gets the bounds of the array if the value of the <see cref="ExpressionType"/> property is NewArrayBounds, or the values to initialize the elements of the new array if the value of the <see cref="Expression.NodeType"/> property is NewArrayInit.
         /// </summary>
         public ReadOnlyCollection<Expression> Expressions { get; }
 
@@ -232,7 +232,7 @@ namespace System.Linq.Expressions
             {
                 Expression expr = boundsList[i];
                 RequiresCanRead(expr, nameof(bounds), i);
-                if (!TypeUtils.IsInteger(expr.Type))
+                if (!expr.Type.IsInteger())
                 {
                     throw Error.ArgumentMustBeInteger(nameof(bounds), i);
                 }
@@ -241,7 +241,7 @@ namespace System.Linq.Expressions
             Type arrayType;
             if (dimensions == 1)
             {
-                //To get a vector, need call Type.MakeArrayType(). 
+                //To get a vector, need call Type.MakeArrayType().
                 //Type.MakeArrayType(1) gives a non-vector array, which will cause type check error.
                 arrayType = type.MakeArrayType();
             }

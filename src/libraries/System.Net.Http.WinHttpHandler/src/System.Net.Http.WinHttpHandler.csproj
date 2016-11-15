@@ -17,11 +17,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <Import Project="System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true'" />
-  <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
-      <Link>Common\System\Net\HttpVersionInternal.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <!-- Need to compile it here since the NET46 target here is building against System.Runtime whereas the
          the list of other files in System.Net.Http.WinHttpHandler.msbuild is also used by System.Net.Http
@@ -34,6 +29,12 @@
          up item called CompileItem and then just include it here. -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="@(CompileItem)" />
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
+      <Link>Common\System\Net\HttpVersionInternal.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

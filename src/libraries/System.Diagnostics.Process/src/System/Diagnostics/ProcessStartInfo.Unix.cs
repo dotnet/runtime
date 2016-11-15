@@ -36,5 +36,7 @@ namespace System.Diagnostics
         }
 
         public bool UseShellExecute { get; set; }
+
+        public string[] Verbs => Array.Empty<string>();
     }
 }

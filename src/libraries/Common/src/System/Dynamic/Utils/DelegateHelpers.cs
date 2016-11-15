@@ -25,7 +25,7 @@ namespace System.Dynamic.Utils
 #if !FEATURE_DYNAMIC_DELEGATE
 
         // We will generate the following code:
-        //  
+        //
         // object ret;
         // object[] args = new object[parameterCount];
         // args[0] = param0;
@@ -133,7 +133,7 @@ namespace System.Dynamic.Utils
 
             ilgen.Emit(OpCodes.Ret);
 
-            // TODO: we need to cache these. 
+            // TODO: we need to cache these.
             return thunkMethod.CreateDelegate(delegateType, handler);
         }
 

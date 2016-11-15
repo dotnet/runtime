@@ -2748,6 +2748,59 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.StringValue, actual.StringValue);
     }
 
+    [Fact]
+    public static void DCS_TypeWithNonSerializedField()
+    {
+        var value = new TypeWithSerializableAttributeAndNonSerializedField();
+        value.Member1 = 11;
+        value.Member2 = "22";
+        value.SetMember3(33);
+        value.Member4 = "44";
+
+        var actual = SerializeAndDeserialize(
+            value, 
+            "<TypeWithSerializableAttributeAndNonSerializedField xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Member1>11</Member1><_member2>22</_member2><_member3>33</_member3></TypeWithSerializableAttributeAndNonSerializedField>",
+            skipStringCompare: false);
+        Assert.NotNull(actual);
+        Assert.Equal(value.Member1, actual.Member1);
+        Assert.Equal(value.Member2, actual.Member2);
+        Assert.Equal(value.Member3, actual.Member3);
+        Assert.Null(actual.Member4);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithOptionalField()
+    {
+        var value = new TypeWithOptionalField();
+        value.Member1 = 11;
+        value.Member2 = 22;
+
+        var actual = SerializeAndDeserialize(value, "<TypeWithOptionalField xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Member1>11</Member1><Member2>22</Member2></TypeWithOptionalField>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Member1, actual.Member1);
+        Assert.Equal(value.Member2, actual.Member2);
+
+        int member1Value = 11;
+        string payloadMissingOptionalField = $"<TypeWithOptionalField xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Member1>{member1Value}</Member1></TypeWithOptionalField>";
+        var deserialized = DeserializeString<TypeWithOptionalField>(payloadMissingOptionalField);
+        Assert.Equal(member1Value, deserialized.Member1);
+        Assert.Equal(0, deserialized.Member2);
+    }
+
+    [Fact]
+    public static void DCS_SerializableEnumWithNonSerializedValue()
+    {
+        var value1 = new TypeWithSerializableEnum();
+        value1.EnumField = SerializableEnumWithNonSerializedValue.One;
+        var actual1 = SerializeAndDeserialize(value1, "<TypeWithSerializableEnum xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><EnumField>One</EnumField></TypeWithSerializableEnum>");
+        Assert.NotNull(actual1);
+        Assert.Equal(value1.EnumField, actual1.EnumField);
+
+        var value2 = new TypeWithSerializableEnum();
+        value2.EnumField = SerializableEnumWithNonSerializedValue.Two;
+        Assert.Throws<SerializationException>(() => SerializeAndDeserialize(value2, ""));
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;

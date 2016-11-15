@@ -11,7 +11,7 @@ namespace System.Linq.Expressions
 {
     /// <summary>
     /// Represents a try/catch/finally/fault block.
-    /// 
+    ///
     /// The body is protected by the try block.
     /// The handlers consist of a set of <see cref="CatchBlock"/>s that can either be catch or filters.
     /// The fault runs if an exception is thrown.

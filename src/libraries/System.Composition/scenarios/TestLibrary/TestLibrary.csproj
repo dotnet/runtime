@@ -5,6 +5,7 @@
     <ProjectGuid>{DA6841A5-0344-4CC7-98B0-89CBEE18DEE3}</ProjectGuid>
     <RootNamespace>TestLibrary</RootNamespace>
     <AssemblyName>TestLibrary</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

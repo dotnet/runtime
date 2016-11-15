@@ -46,6 +46,7 @@ namespace System.Security.Cryptography
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
+        public void Clear() { }
         public bool HasFlushedFinalBlock { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
@@ -77,6 +78,7 @@ namespace System.Security.Cryptography
         public virtual int HashSize { get { throw null; } }
         public virtual int InputBlockSize { get { throw null; } }
         public virtual int OutputBlockSize { get { throw null; } }
+        public void Clear() { }
         public byte[] ComputeHash(byte[] buffer) { throw null; }
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
@@ -167,6 +169,7 @@ namespace System.Security.Cryptography
         public abstract System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
         public virtual System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
         public abstract System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
+        public void Clear() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();

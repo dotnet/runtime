@@ -4,10 +4,10 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Security.cs" />
-    <Compile Include="System.Net.Security.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

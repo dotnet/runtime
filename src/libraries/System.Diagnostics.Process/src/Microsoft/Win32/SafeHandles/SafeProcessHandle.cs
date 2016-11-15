@@ -33,10 +33,10 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        public SafeProcessHandle(IntPtr handle, bool ownsHandle)
+        public SafeProcessHandle(IntPtr existingHandle, bool ownsHandle)
             : base(ownsHandle)
         {
-            SetHandle(handle);
+            SetHandle(existingHandle);
         }
 
         internal void InitialSetHandle(IntPtr h)

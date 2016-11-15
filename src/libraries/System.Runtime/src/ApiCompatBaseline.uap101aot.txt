@@ -639,4 +639,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 640
+MembersMustExist : Member 'System.GC.GetAllocatedBytesForCurrentThread()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(System.Type)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 642

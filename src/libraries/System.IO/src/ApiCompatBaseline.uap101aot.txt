@@ -14,4 +14,6 @@ MembersMustExist : Member 'System.IO.Stream.ObjectInvariant()' does not exist in
 MembersMustExist : Member 'System.IO.Stream.Synchronized(System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.TextReader.Synchronized(System.IO.TextReader)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.TextWriter.Synchronized(System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 15
+MembersMustExist : Member 'System.IO.BufferedStream.BufferSize.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.BufferedStream.UnderlyingStream.get()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'System.IO.Stream.CopyTo(System.IO.Stream, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
