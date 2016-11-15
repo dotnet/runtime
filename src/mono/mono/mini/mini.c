@@ -3315,6 +3315,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
 	cfg->disable_direct_icalls = disable_direct_icalls;
+	cfg->direct_pinvoke = (flags & JIT_FLAG_DIRECT_PINVOKE) != 0;
 	if (try_generic_shared)
 		cfg->gshared = TRUE;
 	cfg->compile_llvm = try_llvm;
