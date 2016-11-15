@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -17,20 +12,20 @@ namespace System.Net.WebSockets
 {
     internal static class WebSocketProtocolComponent
     {
-        private static readonly string s_DummyWebsocketKeyBase64 = Convert.ToBase64String(new byte[16]);
-        private static readonly SafeLibraryHandle s_WebSocketDllHandle;
-        private static readonly string s_SupportedVersion;
+        private static readonly string s_dummyWebsocketKeyBase64 = Convert.ToBase64String(new byte[16]);
+        private static readonly SafeLibraryHandle s_webSocketDllHandle;
+        private static readonly string s_supportedVersion;
 
-        private static readonly HttpHeader[] s_InitialClientRequestHeaders = new HttpHeader[]
+        private static readonly Interop.WebSocket.HttpHeader[] s_initialClientRequestHeaders = new Interop.WebSocket.HttpHeader[]
             {
-                new HttpHeader()
+                new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Connection,
                     NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
                     Value = HttpKnownHeaderNames.Upgrade,
                     ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
                 },
-                new HttpHeader()
+                new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Upgrade,
                     NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
@@ -39,7 +34,7 @@ namespace System.Net.WebSockets
                 }
             };
 
-        private static readonly HttpHeader[] s_ServerFakeRequestHeaders;
+        private static readonly Interop.WebSocket.HttpHeader[] s_ServerFakeRequestHeaders;
 
         internal enum Action
         {
@@ -49,7 +44,6 @@ namespace System.Net.WebSockets
             ReceiveFromNetwork = 3,
             IndicateReceiveComplete = 4,
         }
-
         internal enum BufferType : uint
         {
             None = 0x00000000,
@@ -78,94 +72,51 @@ namespace System.Net.WebSockets
             Receive = 2,
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct Property
-        {
-            internal PropertyType Type;
-            internal IntPtr PropertyData;
-            internal uint PropertySize;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        internal struct Buffer
-        {
-            [FieldOffset(0)]
-            internal DataBuffer Data;
-            [FieldOffset(0)]
-            internal CloseBuffer CloseStatus;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct DataBuffer
-        {
-            internal IntPtr BufferData;
-            internal uint BufferLength;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct CloseBuffer
-        {
-            internal IntPtr ReasonData;
-            internal uint ReasonLength;
-            internal ushort CloseStatus;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct HttpHeader
-        {
-            [MarshalAs(UnmanagedType.LPStr)]
-            internal string Name;
-            internal uint NameLength;
-            [MarshalAs(UnmanagedType.LPStr)]
-            internal string Value;
-            internal uint ValueLength;
-        }
-
         [SecuritySafeCritical]
         static WebSocketProtocolComponent()
         {
-            s_WebSocketDllHandle = Interop.mincore.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
+            s_webSocketDllHandle = Interop.mincore.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
 
-            if (!s_WebSocketDllHandle.IsInvalid)
+            if (!s_webSocketDllHandle.IsInvalid)
             {
-                s_SupportedVersion = GetSupportedVersion();
+                s_supportedVersion = GetSupportedVersion();
 
-                s_ServerFakeRequestHeaders = new HttpHeader[]
+                s_ServerFakeRequestHeaders = new Interop.WebSocket.HttpHeader[]
                 {
-                    new HttpHeader()
+                    new Interop.WebSocket.HttpHeader()
                     {
                         Name = HttpKnownHeaderNames.Connection,
                         NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
                         Value = HttpKnownHeaderNames.Upgrade,
                         ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
                     },
-                    new HttpHeader()
+                    new Interop.WebSocket.HttpHeader()
                     {
                         Name = HttpKnownHeaderNames.Upgrade,
                         NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
                         Value = WebSocketValidate.WebSocketUpgradeToken,
                         ValueLength = (uint)WebSocketValidate.WebSocketUpgradeToken.Length
                     },
-                    new HttpHeader()
+                    new Interop.WebSocket.HttpHeader()
                     {
                         Name = HttpKnownHeaderNames.Host,
                         NameLength = (uint)HttpKnownHeaderNames.Host.Length,
                         Value = string.Empty,
                         ValueLength = 0
                     },
-                    new HttpHeader()
+                    new Interop.WebSocket.HttpHeader()
                     {
                         Name = HttpKnownHeaderNames.SecWebSocketVersion,
                         NameLength = (uint)HttpKnownHeaderNames.SecWebSocketVersion.Length,
-                        Value = s_SupportedVersion,
-                        ValueLength = (uint)s_SupportedVersion.Length
+                        Value = s_supportedVersion,
+                        ValueLength = (uint)s_supportedVersion.Length
                     },
-                    new HttpHeader()
+                    new Interop.WebSocket.HttpHeader()
                     {
                         Name = HttpKnownHeaderNames.SecWebSocketKey,
                         NameLength = (uint)HttpKnownHeaderNames.SecWebSocketKey.Length,
-                        Value = s_DummyWebsocketKeyBase64,
-                        ValueLength = (uint)s_DummyWebsocketKeyBase64.Length
+                        Value = s_dummyWebsocketKeyBase64,
+                        ValueLength = (uint)s_dummyWebsocketKeyBase64.Length
                     }
                 };
             }
@@ -175,12 +126,12 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (s_WebSocketDllHandle.IsInvalid)
+                if (s_webSocketDllHandle.IsInvalid)
                 {
                     WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
                 }
 
-                return s_SupportedVersion;
+                return s_supportedVersion;
             }
         }
 
@@ -188,108 +139,13 @@ namespace System.Net.WebSockets
         {
             get
             {
-                return !s_WebSocketDllHandle.IsInvalid;
+                return !s_webSocketDllHandle.IsInvalid;
             }
         }
 
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketCreateClientHandle", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketCreateClientHandle_Raw(
-            [In]Property[] properties,
-            [In] uint propertyCount,
-            [Out] out SafeWebSocketHandle webSocketHandle);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketBeginClientHandshake", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketBeginClientHandshake_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] IntPtr subProtocols,
-            [In] uint subProtocolCount,
-            [In] IntPtr extensions,
-            [In] uint extensionCount,
-            [In] HttpHeader[] initialHeaders,
-            [In] uint initialHeaderCount,
-            [Out] out IntPtr additionalHeadersPtr,
-            [Out] out uint additionalHeaderCount);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketBeginServerHandshake", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketBeginServerHandshake_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] IntPtr subProtocol,
-            [In] IntPtr extensions,
-            [In] uint extensionCount,
-            [In] HttpHeader[] requestHeaders,
-            [In] uint requestHeaderCount,
-            [Out] out IntPtr responseHeadersPtr,
-            [Out] out uint responseHeaderCount);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketEndServerHandshake", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketEndServerHandshake_Raw([In] SafeHandle webSocketHandle);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketCreateServerHandle", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketCreateServerHandle_Raw(
-            [In]Property[] properties,
-            [In] uint propertyCount,
-            [Out] out SafeWebSocketHandle webSocketHandle);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketAbortHandle", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void WebSocketAbortHandle_Raw(
-            [In] SafeHandle webSocketHandle);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketDeleteHandle", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void WebSocketDeleteHandle_Raw(
-            [In] IntPtr webSocketHandle);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketSend_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] BufferType bufferType,
-            [In] ref Buffer buffer,
-            [In] IntPtr applicationContext);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketSendWithoutBody_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] BufferType bufferType,
-            [In] IntPtr buffer,
-            [In] IntPtr applicationContext);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketReceive", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketReceive_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] IntPtr buffers,
-            [In] IntPtr applicationContext);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketGetAction", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern int WebSocketGetAction_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] ActionQueue actionQueue,
-            [In, Out] Buffer[] dataBuffers,
-            [In, Out] ref uint dataBufferCount,
-            [Out] out Action action,
-            [Out] out BufferType bufferType,
-            [Out] out IntPtr applicationContext,
-            [Out] out IntPtr actionContext);
-
-        [DllImport(Interop.Libraries.WebSocket, EntryPoint = "WebSocketCompleteAction", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void WebSocketCompleteAction_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] IntPtr actionContext,
-            [In] uint bytesTransferred);
-
         internal static string GetSupportedVersion()
         {
-            if (s_WebSocketDllHandle.IsInvalid)
+            if (s_webSocketDllHandle.IsInvalid)
             {
                 WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
             }
@@ -297,7 +153,7 @@ namespace System.Net.WebSockets
             SafeWebSocketHandle webSocketHandle = null;
             try
             {
-                int errorCode = WebSocketCreateClientHandle_Raw(null, 0, out webSocketHandle);
+                int errorCode = Interop.WebSocket.WebSocketCreateClientHandle(null, 0, out webSocketHandle);
                 ThrowOnError(errorCode);
 
                 if (webSocketHandle == null ||
@@ -309,21 +165,21 @@ namespace System.Net.WebSockets
                 IntPtr additionalHeadersPtr;
                 uint additionalHeaderCount;
 
-                errorCode = WebSocketBeginClientHandshake_Raw(webSocketHandle,
+                errorCode = Interop.WebSocket.WebSocketBeginClientHandshake(webSocketHandle,
                     IntPtr.Zero,
                     0,
                     IntPtr.Zero,
                     0,
-                    s_InitialClientRequestHeaders,
-                    (uint)s_InitialClientRequestHeaders.Length,
+                    s_initialClientRequestHeaders,
+                    (uint)s_initialClientRequestHeaders.Length,
                     out additionalHeadersPtr,
                     out additionalHeaderCount);
                 ThrowOnError(errorCode);
 
-                HttpHeader[] additionalHeaders = MarshalHttpHeaders(additionalHeadersPtr, (int)additionalHeaderCount);
+                Interop.WebSocket.HttpHeader[] additionalHeaders = MarshalHttpHeaders(additionalHeadersPtr, (int)additionalHeaderCount);
 
                 string version = null;
-                foreach (HttpHeader header in additionalHeaders)
+                foreach (Interop.WebSocket.HttpHeader header in additionalHeaders)
                 {
                     if (string.Compare(header.Name,
                             HttpKnownHeaderNames.SecWebSocketVersion,
@@ -346,7 +202,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static void WebSocketCreateServerHandle(Property[] properties,
+        internal static void WebSocketCreateServerHandle(Interop.WebSocket.Property[] properties,
             int propertyCount,
             out SafeWebSocketHandle webSocketHandle)
         {
@@ -355,12 +211,12 @@ namespace System.Net.WebSockets
                 (properties != null && propertyCount == properties.Length),
                 "'propertyCount' MUST MATCH 'properties.Length'.");
 
-            if (s_WebSocketDllHandle.IsInvalid)
+            if (s_webSocketDllHandle.IsInvalid)
             {
                 WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
             }
 
-            int errorCode = WebSocketCreateServerHandle_Raw(properties, (uint)propertyCount, out webSocketHandle);
+            int errorCode = Interop.WebSocket.WebSocketCreateServerHandle(properties, (uint)propertyCount, out webSocketHandle);
             ThrowOnError(errorCode);
 
             if (webSocketHandle == null ||
@@ -381,7 +237,7 @@ namespace System.Net.WebSockets
             // just fake an HTTP handshake for the WSPC calling
             // WebSocketBeginServerHandshake and WebSocketEndServerHandshake
             // with statically defined dummy headers.
-            errorCode = WebSocketBeginServerHandshake_Raw(webSocketHandle,
+            errorCode = Interop.WebSocket.WebSocketBeginServerHandshake(webSocketHandle,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 0,
@@ -392,8 +248,8 @@ namespace System.Net.WebSockets
 
             ThrowOnError(errorCode);
 
-            HttpHeader[] responseHeaders = MarshalHttpHeaders(responseHeadersPtr, (int)responseHeaderCount);
-            errorCode = WebSocketEndServerHandshake_Raw(webSocketHandle);
+            Interop.WebSocket.HttpHeader[] responseHeaders = MarshalHttpHeaders(responseHeadersPtr, (int)responseHeaderCount);
+            errorCode = Interop.WebSocket.WebSocketEndServerHandshake(webSocketHandle);
 
             ThrowOnError(errorCode);
 
@@ -405,7 +261,7 @@ namespace System.Net.WebSockets
             Debug.Assert(webSocketHandle != null && !webSocketHandle.IsInvalid,
                 "'webSocketHandle' MUST NOT be NULL or INVALID.");
 
-            WebSocketAbortHandle_Raw(webSocketHandle);
+            Interop.WebSocket.WebSocketAbortHandle(webSocketHandle);
 
             DrainActionQueue(webSocketHandle, ActionQueue.Send);
             DrainActionQueue(webSocketHandle, ActionQueue.Receive);
@@ -414,12 +270,12 @@ namespace System.Net.WebSockets
         internal static void WebSocketDeleteHandle(IntPtr webSocketPtr)
         {
             Debug.Assert(webSocketPtr != IntPtr.Zero, "'webSocketPtr' MUST NOT be IntPtr.Zero.");
-            WebSocketDeleteHandle_Raw(webSocketPtr);
+            Interop.WebSocket.WebSocketDeleteHandle(webSocketPtr);
         }
 
         internal static void WebSocketSend(WebSocketBase webSocket,
             BufferType bufferType,
-            Buffer buffer)
+            Interop.WebSocket.Buffer buffer)
         {
             Debug.Assert(webSocket != null,
                 "'webSocket' MUST NOT be NULL or INVALID.");
@@ -431,7 +287,7 @@ namespace System.Net.WebSockets
             int errorCode;
             try
             {
-                errorCode = WebSocketSend_Raw(webSocket.SessionHandle, bufferType, ref buffer, IntPtr.Zero);
+                errorCode = Interop.WebSocket.WebSocketSend_Raw(webSocket.SessionHandle, bufferType, ref buffer, IntPtr.Zero);
             }
             catch (ObjectDisposedException innerException)
             {
@@ -454,7 +310,7 @@ namespace System.Net.WebSockets
             int errorCode;
             try
             {
-                errorCode = WebSocketSendWithoutBody_Raw(webSocket.SessionHandle, bufferType, IntPtr.Zero, IntPtr.Zero);
+                errorCode = Interop.WebSocket.WebSocketSendWithoutBody_Raw(webSocket.SessionHandle, bufferType, IntPtr.Zero, IntPtr.Zero);
             }
             catch (ObjectDisposedException innerException)
             {
@@ -476,7 +332,7 @@ namespace System.Net.WebSockets
             int errorCode;
             try
             {
-                errorCode = WebSocketReceive_Raw(webSocket.SessionHandle, IntPtr.Zero, IntPtr.Zero);
+                errorCode = Interop.WebSocket.WebSocketReceive(webSocket.SessionHandle, IntPtr.Zero, IntPtr.Zero);
             }
             catch (ObjectDisposedException innerException)
             {
@@ -488,7 +344,7 @@ namespace System.Net.WebSockets
 
         internal static void WebSocketGetAction(WebSocketBase webSocket,
             ActionQueue actionQueue,
-            Buffer[] dataBuffers,
+            Interop.WebSocket.Buffer[] dataBuffers,
             ref uint dataBufferCount,
             out Action action,
             out BufferType bufferType,
@@ -513,7 +369,7 @@ namespace System.Net.WebSockets
             int errorCode;
             try
             {
-                errorCode = WebSocketGetAction_Raw(webSocket.SessionHandle,
+                errorCode = Interop.WebSocket.WebSocketGetAction(webSocket.SessionHandle,
                     actionQueue,
                     dataBuffers,
                     ref dataBufferCount,
@@ -553,7 +409,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                WebSocketCompleteAction_Raw(webSocket.SessionHandle, actionContext, (uint)bytesTransferred);
+                Interop.WebSocket.WebSocketCompleteAction(webSocket.SessionHandle, actionContext, (uint)bytesTransferred);
             }
             catch (ObjectDisposedException)
             {
@@ -572,9 +428,9 @@ namespace System.Net.WebSockets
 
             while (true)
             {
-                Buffer[] dataBuffers = new Buffer[1];
+                Interop.WebSocket.Buffer[] dataBuffers = new Interop.WebSocket.Buffer[1];
                 uint dataBufferCount = 1;
-                int errorCode = WebSocketGetAction_Raw(webSocketHandle,
+                int errorCode = Interop.WebSocket.WebSocketGetAction(webSocketHandle,
                     actionQueue,
                     dataBuffers,
                     ref dataBufferCount,
@@ -594,12 +450,12 @@ namespace System.Net.WebSockets
                     return;
                 }
 
-                WebSocketCompleteAction_Raw(webSocketHandle, actionContext, 0);
+                Interop.WebSocket.WebSocketCompleteAction(webSocketHandle, actionContext, 0);
             }
         }
 
         private static void MarshalAndVerifyHttpHeader(IntPtr httpHeaderPtr,
-            ref HttpHeader httpHeader)
+            ref Interop.WebSocket.HttpHeader httpHeader)
         {
             Debug.Assert(httpHeaderPtr != IntPtr.Zero, "'currentHttpHeaderPtr' MUST NOT be IntPtr.Zero.");
 
@@ -620,7 +476,7 @@ namespace System.Net.WebSockets
                 throw new AccessViolationException();
             }
 
-            // structure of HttpHeader:
+            // structure of Interop.WebSocket.HttpHeader:
             //   Name = string*
             //   NameLength = uint*
             //   Value = string*
@@ -644,16 +500,16 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static HttpHeader[] MarshalHttpHeaders(IntPtr nativeHeadersPtr,
+        private static Interop.WebSocket.HttpHeader[] MarshalHttpHeaders(IntPtr nativeHeadersPtr,
             int nativeHeaderCount)
         {
             Debug.Assert(nativeHeaderCount >= 0, "'nativeHeaderCount' MUST NOT be negative.");
             Debug.Assert(nativeHeadersPtr != IntPtr.Zero || nativeHeaderCount == 0,
                 "'nativeHeaderCount' MUST be 0.");
 
-            HttpHeader[] httpHeaders = new HttpHeader[nativeHeaderCount];
+            Interop.WebSocket.HttpHeader[] httpHeaders = new Interop.WebSocket.HttpHeader[nativeHeaderCount];
 
-            // structure of HttpHeader:
+            // structure of Interop.WebSocket.HttpHeader:
             //   Name = string*
             //   NameLength = uint*
             //   Value = string*

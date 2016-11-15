@@ -116,7 +116,7 @@ namespace System.Net.WebSockets
             this.Dispose(WebSocketState.None);
         }
 
-        internal WebSocketProtocolComponent.Property[] CreateProperties(bool useZeroMaskingKey)
+        internal Interop.WebSocket.Property[] CreateProperties(bool useZeroMaskingKey)
         {
             ThrowIfDisposed();
 
@@ -133,12 +133,12 @@ namespace System.Net.WebSockets
             Marshal.WriteInt32(internalBufferPtr, offset, useZeroMaskingKey ? (int)1 : (int)0);
 
             int propertyCount = useZeroMaskingKey ? 4 : 3;
-            WebSocketProtocolComponent.Property[] properties =
-                new WebSocketProtocolComponent.Property[propertyCount];
+            Interop.WebSocket.Property[] properties =
+                new Interop.WebSocket.Property[propertyCount];
 
             // Calculate the pointers to the positions of the properties within the internal buffer
             offset = _propertyBuffer.Offset;
-            properties[0] = new WebSocketProtocolComponent.Property()
+            properties[0] = new Interop.WebSocket.Property()
             {
                 Type = WebSocketProtocolComponent.PropertyType.ReceiveBufferSize,
                 PropertySize = (uint)s_SizeOfUInt,
@@ -146,7 +146,7 @@ namespace System.Net.WebSockets
             };
             offset += s_SizeOfUInt;
 
-            properties[1] = new WebSocketProtocolComponent.Property()
+            properties[1] = new Interop.WebSocket.Property()
             {
                 Type = WebSocketProtocolComponent.PropertyType.SendBufferSize,
                 PropertySize = (uint)s_SizeOfUInt,
@@ -154,7 +154,7 @@ namespace System.Net.WebSockets
             };
             offset += s_SizeOfUInt;
 
-            properties[2] = new WebSocketProtocolComponent.Property()
+            properties[2] = new Interop.WebSocket.Property()
             {
                 Type = WebSocketProtocolComponent.PropertyType.AllocatedBuffer,
                 PropertySize = (uint)_nativeBuffer.Count,
@@ -164,7 +164,7 @@ namespace System.Net.WebSockets
 
             if (useZeroMaskingKey)
             {
-                properties[3] = new WebSocketProtocolComponent.Property()
+                properties[3] = new Interop.WebSocket.Property()
                 {
                     Type = WebSocketProtocolComponent.PropertyType.DisableMasking,
                     PropertySize = (uint)s_SizeOfBool,
@@ -221,7 +221,7 @@ namespace System.Net.WebSockets
         }
 
         // This method is not thread safe. It must only be called after enforcing at most 1 outstanding send operation
-        internal ArraySegment<byte> ConvertPinnedSendPayloadFromNative(WebSocketProtocolComponent.Buffer buffer,
+        internal ArraySegment<byte> ConvertPinnedSendPayloadFromNative(Interop.WebSocket.Buffer buffer,
             WebSocketProtocolComponent.BufferType bufferType)
         {
             if (!IsPinnedSendPayloadBuffer(buffer, bufferType))
@@ -259,7 +259,7 @@ namespace System.Net.WebSockets
         }
 
         // This method is not thread safe. It must only be called after enforcing at most 1 outstanding send operation
-        internal bool IsPinnedSendPayloadBuffer(WebSocketProtocolComponent.Buffer buffer,
+        internal bool IsPinnedSendPayloadBuffer(Interop.WebSocket.Buffer buffer,
             WebSocketProtocolComponent.BufferType bufferType)
         {
             if (_sendBufferState != SendBufferState.SendPayloadSpecified)
@@ -362,7 +362,7 @@ namespace System.Net.WebSockets
         }
 
         internal ArraySegment<byte> ConvertNativeBuffer(WebSocketProtocolComponent.Action action,
-            WebSocketProtocolComponent.Buffer buffer,
+            Interop.WebSocket.Buffer buffer,
             WebSocketProtocolComponent.BufferType bufferType)
         {
             ThrowIfDisposed();
@@ -391,7 +391,7 @@ namespace System.Net.WebSockets
         }
 
         internal void ConvertCloseBuffer(WebSocketProtocolComponent.Action action,
-            WebSocketProtocolComponent.Buffer buffer,
+            Interop.WebSocket.Buffer buffer,
             out WebSocketCloseStatus closeStatus,
             out string reason)
         {
@@ -432,7 +432,7 @@ namespace System.Net.WebSockets
 
         internal void ValidateNativeBuffers(WebSocketProtocolComponent.Action action,
             WebSocketProtocolComponent.BufferType bufferType,
-            WebSocketProtocolComponent.Buffer[] dataBuffers,
+            Interop.WebSocket.Buffer[] dataBuffers,
             uint dataBufferCount)
         {
             Debug.Assert(dataBufferCount <= (uint)int.MaxValue,
@@ -460,7 +460,7 @@ namespace System.Net.WebSockets
             bool nonZeroBufferFound = false;
             for (int i = 0; i < count; i++)
             {
-                WebSocketProtocolComponent.Buffer dataBuffer = dataBuffers[i];
+                Interop.WebSocket.Buffer dataBuffer = dataBuffers[i];
 
                 IntPtr bufferData;
                 uint bufferLength;
@@ -511,7 +511,7 @@ namespace System.Net.WebSockets
             return isServerBuffer ? MinSendBufferSize : sendBufferSize;
         }
 
-        internal static void UnwrapWebSocketBuffer(WebSocketProtocolComponent.Buffer buffer,
+        internal static void UnwrapWebSocketBuffer(Interop.WebSocket.Buffer buffer,
             WebSocketProtocolComponent.BufferType bufferType,
             out IntPtr bufferData,
             out uint bufferLength)

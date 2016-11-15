@@ -1201,7 +1201,7 @@ namespace System.Net.WebSockets
 
         internal void ValidateNativeBuffers(WebSocketProtocolComponent.Action action,
             WebSocketProtocolComponent.BufferType bufferType,
-            WebSocketProtocolComponent.Buffer[] dataBuffers,
+            Interop.WebSocket.Buffer[] dataBuffers,
             uint dataBufferCount)
         {
             _internalBuffer.ValidateNativeBuffers(action, bufferType, dataBuffers, dataBufferCount);
@@ -1584,7 +1584,7 @@ namespace System.Net.WebSockets
                 Nullable<ArraySegment<byte>> buffer,
                 WebSocketProtocolComponent.BufferType bufferType,
                 WebSocketProtocolComponent.Action action,
-                WebSocketProtocolComponent.Buffer[] dataBuffers,
+                Interop.WebSocket.Buffer[] dataBuffers,
                 uint dataBufferCount,
                 IntPtr actionContext)
             {
@@ -1616,8 +1616,8 @@ namespace System.Net.WebSockets
 
                         while (!completed)
                         {
-                            WebSocketProtocolComponent.Buffer[] dataBuffers =
-                                new WebSocketProtocolComponent.Buffer[BufferCount];
+                            Interop.WebSocket.Buffer[] dataBuffers =
+                                new Interop.WebSocket.Buffer[BufferCount];
                             uint dataBufferCount = (uint)BufferCount;
                             IntPtr actionContext;
 
@@ -1933,7 +1933,7 @@ namespace System.Net.WebSockets
                     Nullable<ArraySegment<byte>> buffer,
                     WebSocketProtocolComponent.BufferType bufferType,
                     WebSocketProtocolComponent.Action action,
-                    WebSocketProtocolComponent.Buffer[] dataBuffers,
+                    Interop.WebSocket.Buffer[] dataBuffers,
                     uint dataBufferCount,
                     IntPtr actionContext)
                 {
@@ -2030,15 +2030,15 @@ namespace System.Net.WebSockets
                     get { return 2; }
                 }
 
-                protected virtual Nullable<WebSocketProtocolComponent.Buffer> CreateBuffer(Nullable<ArraySegment<byte>> buffer)
+                protected virtual Nullable<Interop.WebSocket.Buffer> CreateBuffer(Nullable<ArraySegment<byte>> buffer)
                 {
                     if (buffer == null)
                     {
                         return null;
                     }
 
-                    WebSocketProtocolComponent.Buffer payloadBuffer;
-                    payloadBuffer = new WebSocketProtocolComponent.Buffer();
+                    Interop.WebSocket.Buffer payloadBuffer;
+                    payloadBuffer = new Interop.WebSocket.Buffer();
                     _webSocket._internalBuffer.PinSendBuffer(buffer.Value, out _BufferHasBeenPinned);
                     payloadBuffer.Data.BufferData = _webSocket._internalBuffer.ConvertPinnedSendPayloadToNative(buffer.Value);
                     payloadBuffer.Data.BufferLength = (uint)buffer.Value.Count;
@@ -2068,7 +2068,7 @@ namespace System.Net.WebSockets
                     _webSocket.ThrowIfDisposed();
                     _webSocket.ThrowIfPendingException();
 
-                    Nullable<WebSocketProtocolComponent.Buffer> payloadBuffer = CreateBuffer(buffer);
+                    Nullable<Interop.WebSocket.Buffer> payloadBuffer = CreateBuffer(buffer);
                     if (payloadBuffer != null)
                     {
                         WebSocketProtocolComponent.WebSocketSend(_webSocket, BufferType, payloadBuffer.Value);
@@ -2103,7 +2103,7 @@ namespace System.Net.WebSockets
                 internal WebSocketCloseStatus CloseStatus { get; set; }
                 internal string CloseReason { get; set; }
 
-                protected override Nullable<WebSocketProtocolComponent.Buffer> CreateBuffer(Nullable<ArraySegment<byte>> buffer)
+                protected override Nullable<Interop.WebSocket.Buffer> CreateBuffer(Nullable<ArraySegment<byte>> buffer)
                 {
                     Debug.Assert(buffer == null, "'buffer' MUST BE NULL.");
                     _webSocket.ThrowIfDisposed();
@@ -2114,7 +2114,7 @@ namespace System.Net.WebSockets
                         return null;
                     }
 
-                    WebSocketProtocolComponent.Buffer payloadBuffer = new WebSocketProtocolComponent.Buffer();
+                    Interop.WebSocket.Buffer payloadBuffer = new Interop.WebSocket.Buffer();
                     if (CloseReason != null)
                     {
                         byte[] blob = Encoding.UTF8.GetBytes(CloseReason);
