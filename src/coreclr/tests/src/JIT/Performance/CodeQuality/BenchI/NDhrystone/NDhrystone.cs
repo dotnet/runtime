@@ -7,7 +7,7 @@
 // Dhrystone: a synthetic systems programming benchmark
 // Reinhold P. Weicker
 // Communications of the ACM, Volume 27 Issue 10, Oct 1984, Pages 1013-1030
- 
+
 using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
@@ -16,6 +16,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class NDhrystone
 {
 
@@ -63,9 +65,9 @@ public static class NDhrystone
         int intLoc2;
         int intLoc3 = 0;
         Enumeration enumLoc;
-        
+
         int i;   /* modification */
-        
+
         m_ptrGlb.PtrComp = m_ptrGlbNext;
         m_ptrGlb.Discr = Enumeration.Ident1;
         m_ptrGlb.EnumComp = Enumeration.Ident3;
@@ -117,12 +119,12 @@ public static class NDhrystone
             ptrParIn = ptrParIn.PtrComp;
         }
     }
-    
+
     static void Proc2(ref int intParIO) {
         int intLoc;
         Enumeration enumLoc = Enumeration.Ident2;
         intLoc = intParIO + 10;
-        
+
         for (;;) {
             if (s_char1Glob == 'A') {
                 --intLoc;
@@ -142,17 +144,17 @@ public static class NDhrystone
         else {
             s_intGlob = 100;
         }
-        
+
         Proc7(10, s_intGlob, ref m_ptrGlb.IntComp);
     }
-    
+
     static void Proc4() {
         bool boolLoc;
         boolLoc = s_char1Glob == 'A';
         boolLoc |= s_boolGlob;
         s_char2Glob = 'B';
     }
-    
+
     static void Proc5() {
         s_char1Glob = 'A';
         s_boolGlob = false;
@@ -163,12 +165,12 @@ public static class NDhrystone
         if (!Func3(enumParIn)) {
             enumParOut = Enumeration.Ident4;
         }
-        
+
         switch (enumParIn) {
-            case Enumeration.Ident1: 
+            case Enumeration.Ident1:
                 enumParOut = Enumeration.Ident1;
                 break;
-            case Enumeration.Ident2: 
+            case Enumeration.Ident2:
                 if (s_intGlob > 100) {
                     enumParOut = Enumeration.Ident1;
                 }
@@ -176,12 +178,12 @@ public static class NDhrystone
                     enumParOut = Enumeration.Ident4;
                 }
                 break;
-            case Enumeration.Ident3: 
+            case Enumeration.Ident3:
                 enumParOut = Enumeration.Ident2;
                 break;
-            case Enumeration.Ident4: 
+            case Enumeration.Ident4:
                 break;
-            case Enumeration.Ident5: 
+            case Enumeration.Ident5:
                 enumParOut = Enumeration.Ident3;
                 break;
         }
@@ -192,7 +194,7 @@ public static class NDhrystone
         intLoc = intParI1 + 2;
         intParOut = intParI2 + intLoc;
     }
-    
+
     static void Proc8(int[] array1Par, int[][] array2Par, int intParI1, int intParI2) {
         int intLoc;
         intLoc = intParI1 + 5;
@@ -206,7 +208,7 @@ public static class NDhrystone
         array2Par[intLoc + 20][intLoc] = array1Par[intLoc];
         s_intGlob = 5;
     }
-    
+
     static Enumeration Func1(char charPar1, char charPar2) {
         char charLoc1;
         char charLoc2;
@@ -219,7 +221,7 @@ public static class NDhrystone
             return (Enumeration.Ident2);
         }
     }
-    
+
     static bool Func2(char[] strParI1, char[] strParI2) {
         int intLoc;
         char charLoc = '\0';
@@ -243,18 +245,18 @@ public static class NDhrystone
                     return true;
                 }
             }
-            
+
             return false;
         }
     }
-    
+
     static bool Func3(Enumeration enumParIn) {
         Enumeration enumLoc;
         enumLoc = enumParIn;
         if (enumLoc == Enumeration.Ident3) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -278,9 +280,10 @@ public static class NDhrystone
         bool result = Bench();
         return result;
     }
-    
+
     public static int Main() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

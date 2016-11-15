@@ -12,6 +12,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchF
+{
 public static class NewtR
 {
 #if DEBUG
@@ -128,4 +130,5 @@ public static class NewtR
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

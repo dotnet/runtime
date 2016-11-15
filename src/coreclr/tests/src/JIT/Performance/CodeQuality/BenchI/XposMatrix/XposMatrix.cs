@@ -11,6 +11,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class XposMatrix
 {
     public const int ArraySize = 100;
@@ -48,11 +50,11 @@ public static class XposMatrix
                 matrix[i][j] = 1;
             }
         }
-        
+
         if (matrix[n][n] != 1) {
             return false;
         }
-        
+
         Inner(matrix, n);
 
         if (matrix[n][n] != 1) {
@@ -87,4 +89,5 @@ public static class XposMatrix
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

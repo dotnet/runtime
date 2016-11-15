@@ -11,6 +11,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class Array2
 {
 
@@ -75,7 +77,7 @@ public static class Array2
         }
 
         bool result = VerifyCopy(s, d);
-        
+
         return result;
     }
 
@@ -92,9 +94,10 @@ public static class Array2
         bool result = Bench(Iterations);
         return result;
     }
-    
+
     public static int Main() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

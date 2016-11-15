@@ -11,9 +11,9 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
-namespace ConsoleMandel
+namespace SIMD
 {
-    public static class Program
+    public static class ConsoleMandel
     {
         private const int Pass = 100;
         private const int Fail = -1;

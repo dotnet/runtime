@@ -11,6 +11,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class BubbleSort
 {
 
@@ -43,7 +45,7 @@ public static class BubbleSort
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -79,9 +81,10 @@ public static class BubbleSort
         }
         return result;
     }
-    
+
     public static int Main() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

@@ -26,8 +26,10 @@ if NOT EXIST %CORECLR_OVERLAY% (
 
 @echo --- setting up sandbox
 
-rd /s /q sandbox
-mkdir sandbox
+if exist sandbox rd /s /q sandbox
+if exist sandbox echo ERROR: Failed to remove the sandbox folder& exit /b 1
+if not exist sandbox mkdir sandbox
+if not exist sandbox echo ERROR: Failed to create the sandbox folder& exit /b 1
 pushd sandbox
 
 @rem stage stuff we need
@@ -41,6 +43,22 @@ xcopy /sy %CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Co
 @rem find and stage the tests
 for /R %CORECLR_PERF% %%T in (*.%TEST_FILE_EXT%) do (
   call :DOIT %%T
+)
+
+@rem optionally upload results to benchview
+if not [%BENCHVIEW_PATH%] == [] (
+  py "%BENCHVIEW_PATH%\submission.py" measurement.json ^
+                                    --build ..\build.json ^
+                                    --machine-data ..\machinedata.json ^
+                                    --metadata ..\submission-metadata.json ^
+                                    --group "CoreCLR" ^
+                                    --type "%RUN_TYPE%" ^
+                                    --config-name "%TEST_CONFIG%" ^
+                                    --config Configuration "%TEST_CONFIG%" ^
+                                    --config OS "Windows_NT" ^
+                                    --arch "%TEST_ARCH%" ^
+                                    --machinepool "PerfSnake"
+  py "%BENCHVIEW_PATH%\upload.py" submission.json --container coreclr
 )
 
 goto :EOF
@@ -60,28 +78,16 @@ xunit.performance.run.exe %BENCHNAME%.%TEST_FILE_EXT% -runner xunit.console.netc
 
 xunit.performance.analysis.exe %PERFOUT%.xml -xml %XMLOUT% > %BENCHNAME%-analysis.out
 
-@rem optionally upload results to benchview
+@rem optionally generate results for benchview
 if not [%BENCHVIEW_PATH%] == [] (
-  py %BENCHVIEW_PATH%\measurement.py xunit perf-%BENCHNAME%.xml --better desc --drop-first-value
-  py %BENCHVIEW_PATH%\submission.py measurement.json ^
-                                    --build ..\build.json ^
-                                    --machine-data ..\machinedata.json ^
-                                    --metadata ..\submission-metadata.json ^
-                                    --group "CoreCLR" ^
-                                    --type "%RUN_TYPE%" ^
-                                    --config-name "%TEST_CONFIG%" ^
-                                    --config Configuration "%TEST_CONFIG%" ^
-                                    --config OS "Windows_NT" ^
-                                    --arch "%TEST_ARCH%" ^
-                                    --machinepool "PerfSnake"
-  py %BENCHVIEW_PATH%\upload.py submission.json --container coreclr
+  py "%BENCHVIEW_PATH%\measurement.py" xunit "perf-%BENCHNAME%.xml" --better desc --drop-first-value --append
   REM Save off the results to the root directory for recovery later in Jenkins
   xcopy perf-%BENCHNAME%*.xml %CORECLR_REPO%\
   xcopy perf-%BENCHNAME%*.etl %CORECLR_REPO%\
 ) else (
-  type %XMLOUT% | findstr "test name" 
-  type %XMLOUT% | findstr Duration 
-  type %XMLOUT% | findstr InstRetired 
+  type %XMLOUT% | findstr "test name"
+  type %XMLOUT% | findstr Duration
+  type %XMLOUT% | findstr InstRetired
 )
 
 goto :EOF
@@ -146,3 +152,5 @@ echo -uploadtoBenchview is used to specify a path to the Benchview tooling and w
 echo set we will upload the results of the tests to the coreclr container in benchviewupload.
 echo Runtype sets the runtype that we upload to Benchview, rolling for regular runs, and private for
 echo PRs.
+
+goto :EOF

@@ -24,13 +24,15 @@ using System.Collections;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
-/* 
+/*
 Strengths are used to measure the relative importance of constraints.
 New strengths may be inserted in the strength hierarchy without
 disrupting current constraints.  Strengths cannot be created outside
 this class, so pointer comparison can be used for value comparison.
 */
 
+namespace V8
+{
 internal class Strength
 {
     private int _strengthValue;
@@ -1065,4 +1067,5 @@ public class deltablue
     {
         throw new Exception(s);
     }
+}
 }
