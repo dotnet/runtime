@@ -795,6 +795,14 @@ class FunctionMemberPtrArrayHolder : public NewArrayHolder<FunctionMember*>
 private:
     int m_cElements;
 
+    void DeleteElements()
+    {
+        for (int i = 0; i < m_cElements; i++)
+        {
+            delete this->m_value[i];
+        }
+    }
+
 public:
     FunctionMemberPtrArrayHolder() :
         NewArrayHolder<FunctionMember*>(),
@@ -802,10 +810,23 @@ public:
     {
     }
 
-    void Set(FunctionMember** value, int cElements)
+    bool Alloc(int cElements)
     {
+        FunctionMember** value = new (nothrow) FunctionMember*[cElements];
+        if (value == nullptr)
+            return false;
+
+        for (int i = 0; i < cElements; i++)
+        {
+            value[i] = nullptr;
+        }
+
+        // Clean previous elements
+        DeleteElements();
+
         NewArrayHolder<FunctionMember*>::operator=(value);
         m_cElements = cElements;
+        return true;
     }
 
     int GetCount() const
@@ -815,10 +836,7 @@ public:
 
     ~FunctionMemberPtrArrayHolder()
     {
-        for (int i = 0; i < m_cElements; i++)
-        {
-            delete this->m_value[i];
-        }
+        DeleteElements();
     }
 };
 
@@ -1409,8 +1427,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     }
 
     int method_count = countFuncs(symInfo, symInfoLen);
-    method.Set(new (nothrow) FunctionMember*[method_count], method_count);
-    if (method == nullptr) {
+    if (!method.Alloc(method_count)) {
         return;
     }
 
