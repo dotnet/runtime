@@ -8,6 +8,15 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public partial class RSAKeyExchangeFormatterTests
     {
+        private static RSA key;
+
+        static RSAKeyExchangeFormatterTests()
+        {
+            if (key == null) {
+                key = RSA.Create();
+            }
+        }
+
         [Fact]
         public static void RSAOAEPFormatterArguments()
         {
@@ -30,6 +39,33 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static void RSAPKCS1DeformatterArguments()
         {
             InvalidDeformatterArguments(new RSAPKCS1KeyExchangeDeformatter());
+        }
+
+        [Fact]
+        public static void RSAOAEPFormatterRng()
+        {
+            RSAOAEPKeyExchangeFormatter keyex = new RSAOAEPKeyExchangeFormatter(key);
+            Assert.Null(keyex.Rng);
+            keyex.Rng = RandomNumberGenerator.Create();
+            Assert.NotNull(keyex.Rng);
+        }
+
+        [Fact]
+        public static void RSAPKCS1FormatterRng()
+        {
+            RSAPKCS1KeyExchangeFormatter keyex = new RSAPKCS1KeyExchangeFormatter(key);
+            Assert.Null(keyex.Rng);
+            keyex.Rng = RandomNumberGenerator.Create();
+            Assert.NotNull(keyex.Rng);
+        }
+
+        [Fact]
+        public static void RSAPKCS1DeformatterRng()
+        {
+            RSAPKCS1KeyExchangeDeformatter keyex = new RSAPKCS1KeyExchangeDeformatter(key);
+            Assert.Null(keyex.RNG);
+            keyex.RNG = RandomNumberGenerator.Create();
+            Assert.NotNull(keyex.RNG);
         }
 
         private static void InvalidFormatterArguments(AsymmetricKeyExchangeFormatter formatter)
