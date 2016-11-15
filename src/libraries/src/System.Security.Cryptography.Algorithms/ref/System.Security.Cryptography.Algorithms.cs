@@ -413,6 +413,7 @@ namespace System.Security.Cryptography
         public RSAOAEPKeyExchangeFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         public byte[] Parameter { get { throw null; } set { } }
         public override string Parameters { get { throw null; } }
+        public RandomNumberGenerator Rng { get { throw null; } set { } }
         public override byte[] CreateKeyExchange(byte[] rgbData) { throw null; }
         public override byte[] CreateKeyExchange(byte[] rgbData, System.Type symAlgType) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
@@ -433,6 +434,7 @@ namespace System.Security.Cryptography
     {
         public RSAPKCS1KeyExchangeDeformatter() { }
         public RSAPKCS1KeyExchangeDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
+        public RandomNumberGenerator RNG { get { throw null; } set { } }
         public override string Parameters { get { throw null; } set { } }
         public override byte[] DecryptKeyExchange(byte[] rgbIn) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
@@ -442,6 +444,7 @@ namespace System.Security.Cryptography
         public RSAPKCS1KeyExchangeFormatter() { }
         public RSAPKCS1KeyExchangeFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         public override string Parameters { get { throw null; } }
+        public RandomNumberGenerator Rng { get { throw null; } set { } }
         public override byte[] CreateKeyExchange(byte[] rgbData) { throw null; }
         public override byte[] CreateKeyExchange(byte[] rgbData, System.Type symAlgType) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
