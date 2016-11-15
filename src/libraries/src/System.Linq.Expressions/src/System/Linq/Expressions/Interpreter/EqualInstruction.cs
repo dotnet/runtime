@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -585,17 +586,11 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.Single: return s_single ?? (s_single = new EqualSingle());
                     case TypeCode.Double: return s_double ?? (s_double = new EqualDouble());
 
-                    case TypeCode.String:
-                    case TypeCode.Object:
-                        if (!type.GetTypeInfo().IsValueType)
-                        {
-                            return s_reference ?? (s_reference = new EqualReference());
-                        }
-                        // TODO: Nullable<T>
-                        throw Error.ExpressionNotSupportedForNullableType("Equal", type);
-
                     default:
-                        throw Error.ExpressionNotSupportedForType("Equal", type);
+                        // Nullable only valid if one operand is constant null, so this assert is slightly too broad.
+                        Debug.Assert(type.IsNullableOrReferenceType());
+                        return s_reference ?? (s_reference = new EqualReference());
+
                 }
             }
         }

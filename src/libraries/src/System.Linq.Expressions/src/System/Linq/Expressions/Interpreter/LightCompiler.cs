@@ -973,9 +973,25 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+#if DEBUG
+        private static bool IsNullComparison(Expression left, Expression right)
+        {
+            return IsNullConstant(left)
+                ? !IsNullConstant(right) && right.Type.IsNullableType()
+                : IsNullConstant(right) && left.Type.IsNullableType();
+        }
+
+        private static bool IsNullConstant(Expression e)
+        {
+            var c = e as ConstantExpression;
+            return c != null && c.Value == null;
+        }
+#endif
         private void CompileEqual(Expression left, Expression right, bool liftedToNull)
         {
-            Debug.Assert(left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#if DEBUG
+            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#endif
             Compile(left);
             Compile(right);
             _instructions.EmitEqual(left.Type, liftedToNull);
@@ -983,7 +999,9 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileNotEqual(Expression left, Expression right, bool liftedToNull)
         {
-            Debug.Assert(left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#if DEBUG
+            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#endif
             Compile(left);
             Compile(right);
             _instructions.EmitNotEqual(left.Type, liftedToNull);
