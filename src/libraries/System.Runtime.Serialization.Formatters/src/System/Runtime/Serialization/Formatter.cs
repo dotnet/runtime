@@ -13,8 +13,8 @@ namespace System.Runtime.Serialization
     [CLSCompliant(false)]
     public abstract class Formatter : IFormatter
     {
-        protected readonly ObjectIDGenerator m_idGenerator;
-        protected readonly Queue m_objectQueue;
+        protected ObjectIDGenerator m_idGenerator;
+        protected Queue m_objectQueue;
 
         protected Formatter()
         {
