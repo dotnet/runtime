@@ -241,6 +241,7 @@ mono_disasm_code
 mono_disasm_code_one
 mono_dl_fallback_register
 mono_dl_fallback_unregister
+mono_dl_open
 mono_dllmap_insert
 mono_domain_add_class_static_data
 mono_domain_assembly_open
@@ -495,6 +496,7 @@ mono_ldstr
 mono_ldtoken
 mono_load_remote_field
 mono_load_remote_field_new
+mono_loader_register_module
 mono_lock_free_alloc
 mono_lock_free_allocator_check_consistency
 mono_lock_free_allocator_init_allocator
