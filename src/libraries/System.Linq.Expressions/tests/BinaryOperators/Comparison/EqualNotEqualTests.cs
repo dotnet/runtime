@@ -213,7 +213,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.NotEqual(uvConst, uvConst));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void CanPerformEqualityOnNullableWithoutOperatorsToConstantNull(bool useInterpreter)
         {
             var nullConst = Expression.Constant(null, typeof(UselessValue?));
@@ -227,13 +227,7 @@ namespace System.Linq.Expressions.Tests
             Assert.False(func());
         }
 
-        [Fact, ActiveIssue(13670)]
-        public static void CanPerformEqualityOnNullableWithoutOperatorsToConstantNullInterpreter()
-        {
-            CanPerformEqualityOnNullableWithoutOperatorsToConstantNull(true);
-        }
-
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void CanPerformInequalityOnNullableWithoutOperatorsToConstantNull(bool useInterpreter)
         {
             var nullConst = Expression.Constant(null, typeof(UselessValue?));
@@ -245,12 +239,6 @@ namespace System.Linq.Expressions.Tests
             exp = Expression.Lambda<Func<bool>>(Expression.NotEqual(uvConst, nullConst));
             func = exp.Compile(useInterpreter);
             Assert.True(func());
-        }
-
-        [Fact, ActiveIssue(13670)]
-        public static void CanPerformInequalityOnNullableWithoutOperatorsToConstantNullInterpreter()
-        {
-            CanPerformInequalityOnNullableWithoutOperatorsToConstantNull(true);
         }
 
         [Fact]
