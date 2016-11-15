@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Interpreter
     {
         // Perf: EqualityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_reference, s_boolean, s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
-        private static Instruction s_referenceLiftedToNull, s_booleanLiftedToNull, s_SByteLiftedToNull, s_int16LiftedToNull, s_charLiftedToNull, s_int32LiftedToNull, s_int64LiftedToNull, s_byteLiftedToNull, s_UInt16LiftedToNull, s_UInt32LiftedToNull, s_UInt64LiftedToNull, s_singleLiftedToNull, s_doubleLiftedToNull;
+        private static Instruction s_booleanLiftedToNull, s_SByteLiftedToNull, s_int16LiftedToNull, s_charLiftedToNull, s_int32LiftedToNull, s_int64LiftedToNull, s_byteLiftedToNull, s_UInt16LiftedToNull, s_UInt32LiftedToNull, s_UInt64LiftedToNull, s_singleLiftedToNull, s_doubleLiftedToNull;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -509,26 +509,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-
-        private sealed class EqualReferenceLiftedToNull : EqualInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object right = frame.Pop();
-                object left = frame.Pop();
-                if (left == null || right == null)
-                {
-                    frame.Push(null);
-                }
-                else
-                {
-                    frame.Push(left == right);
-                }
-                return +1;
-            }
-        }
-
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type, bool liftedToNull)
         {
@@ -552,19 +532,9 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.UInt64: return s_UInt64LiftedToNull ?? (s_UInt64LiftedToNull = new EqualUInt64LiftedToNull());
 
                     case TypeCode.Single: return s_singleLiftedToNull ?? (s_singleLiftedToNull = new EqualSingleLiftedToNull());
-                    case TypeCode.Double: return s_doubleLiftedToNull ?? (s_doubleLiftedToNull = new EqualDoubleLiftedToNull());
-
-                    case TypeCode.String:
-                    case TypeCode.Object:
-                        if (!type.GetTypeInfo().IsValueType)
-                        {
-                            return s_referenceLiftedToNull ?? (s_referenceLiftedToNull = new EqualReferenceLiftedToNull());
-                        }
-                        // TODO: Nullable<T>
-                        throw Error.ExpressionNotSupportedForNullableType("Equal", type);
-
                     default:
-                        throw Error.ExpressionNotSupportedForType("Equal", type);
+                        Debug.Assert(underlyingType.GetTypeCode() == TypeCode.Double);
+                        return s_doubleLiftedToNull ?? (s_doubleLiftedToNull = new EqualDoubleLiftedToNull());
                 }
             }
             else
