@@ -262,6 +262,9 @@
     <ClCompile Include="..\mono\metadata\class-accessors.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\metadata\property-bag.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\metadata\appdomain.h">
@@ -544,6 +547,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\mono-security-windows-internals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\property-bag.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

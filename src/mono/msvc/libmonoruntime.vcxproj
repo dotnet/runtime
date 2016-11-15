@@ -27,6 +27,7 @@
     <ClCompile Include="..\mono\metadata\class.c" />
     <ClCompile Include="..\mono\metadata\cominterop.c" />
     <ClCompile Include="..\mono\metadata\console-win32.c" />
+    <ClCompile Include="..\mono\metadata\property-bag.c" />
     <ClCompile Include="..\mono\metadata\socket-io-windows.c" />
     <ClCompile Include="..\mono\metadata\file-io-windows.c" />
     <ClCompile Include="..\mono\metadata\icall-windows.c" />
@@ -142,6 +143,7 @@
     <ClInclude Include="..\mono\metadata\marshal-windows-internals.h" />
     <ClInclude Include="..\mono\metadata\mono-security-windows-internals.h" />
     <ClInclude Include="..\mono\metadata\number-ms.h" />
+    <ClInclude Include="..\mono\metadata\property-bag.h" />
     <ClInclude Include="..\mono\metadata\w32process.h" />
     <ClInclude Include="..\mono\metadata\w32process-internals.h" />
     <ClInclude Include="..\mono\metadata\w32process-win32-internals.h" />
