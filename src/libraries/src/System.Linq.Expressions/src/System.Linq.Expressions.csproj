@@ -46,6 +46,9 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" Condition="'$(TargetGroup)'!=''">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
@@ -159,6 +162,8 @@
     <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
     <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
     <Compile Include="System\Linq\Expressions\Expression.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\LambdaExpression.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\ExpressionVisitor.netstandard1.7.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\TypeInfoExtensions.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard1.7.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
@@ -167,6 +172,8 @@
     <Compile Include="System\Runtime\CompilerServices\CallSiteOps.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSiteHelpers.cs" />
     <Compile Include="System\Runtime\CompilerServices\DynamicAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DebugInfoGenerator.cs" />
+    <Compile Include="System\Dynamic\Utils\CachedReflectionInfo.cs" />
     <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
     <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs" />

@@ -5,6 +5,7 @@
 using System.Threading;
 using System.IO;
 using System.Collections;
+using System.Reflection;
 
 namespace System.Diagnostics
 {
@@ -55,9 +56,7 @@ namespace System.Diagnostics
             {
                 if (s_appName == null)
                 {
-                    // This needs to be updated once we have the correct property implemented in the Environment class.
-                    // Bug:895000 is tracking this.
-                    s_appName = "DEFAULT_APPNAME";
+                    s_appName = Assembly.GetEntryAssembly().GetName().Name;
                 }
                 return s_appName;
             }

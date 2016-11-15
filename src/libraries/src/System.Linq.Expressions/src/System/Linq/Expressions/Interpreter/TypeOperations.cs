@@ -58,10 +58,10 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
         public override string InstructionName => "TypeIs";
-        
+
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(ScriptingRuntimeHelpers.BooleanToObject(_type.IsInstanceOfType(frame.Pop())));
+            frame.Push(_type.IsInstanceOfType(frame.Pop()));
             return +1;
         }
 
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
         public override string InstructionName => "TypeAs";
-        
+
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Pop();
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object type = frame.Pop();
             object obj = frame.Pop();
-            frame.Push(ScriptingRuntimeHelpers.BooleanToObject(obj != null && (object)obj.GetType() == type));
+            frame.Push((object)obj?.GetType() == type);
             return +1;
         }
     }
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object type = frame.Pop();
             object obj = frame.Pop();
-            frame.Push(ScriptingRuntimeHelpers.BooleanToObject(obj != null && (object)obj.GetType() == type));
+            frame.Push((object)obj?.GetType() == type);
             return +1;
         }
     }
@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object obj = frame.Pop();
-                frame.Push(ScriptingRuntimeHelpers.BooleanToObject(obj != null));
+                frame.Push(obj != null);
                 return +1;
             }
         }
@@ -219,15 +219,15 @@ namespace System.Linq.Expressions.Interpreter
                 object obj = frame.Pop();
                 if (obj == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(other == null));
+                    frame.Push(other == null);
                 }
                 else if (other == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(Utils.BoxedFalse);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(obj.Equals(other)));
+                    frame.Push(obj.Equals(other));
                 }
                 return +1;
             }
@@ -286,7 +286,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 case "ToString": return s_toString ?? (s_toString = new ToStringClass());
                 default:
-                    // System.Nullable doesn't have other instance methods 
+                    // System.Nullable doesn't have other instance methods
                     throw ContractUtils.Unreachable;
             }
         }
@@ -326,7 +326,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public new static CastInstruction Create(Type t)
             {
-                if (t.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(t))
+                if (t.GetTypeInfo().IsValueType && !t.IsNullableType())
                 {
                     return new Value(t);
                 }
@@ -343,8 +343,8 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     Type valueType = value.GetType();
 
-                    if (!TypeUtils.HasReferenceConversion(valueType, _t) &&
-                        !TypeUtils.HasIdentityPrimitiveOrNullableConversion(valueType, _t))
+                    if (!valueType.HasReferenceConversionTo(_t) &&
+                        !valueType.HasIdentityPrimitiveOrNullableConversionTo(_t))
                     {
                         throw new InvalidCastException();
                     }

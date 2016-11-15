@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Tests
         {
             CheckGenericWithStructRestrictionCoalesceHelper<Scs>(useInterpreter);
         }
-        
+
         private static void CheckGenericWithClassRestrictionCoalesceHelper<Tc>(bool useInterpreter) where Tc : class
         {
             Tc[] array1 = new Tc[] { null, default(Tc) };
@@ -307,7 +307,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(ExpressionType.Coalesce, actual.NodeType);
 
             // Compile and evaluate with interpretation flag and without
-            // in case there are bugs in the compiler/interpreter. 
+            // in case there are bugs in the compiler/interpreter.
             Assert.Equal(2, conversion.Compile(false).Invoke(1.1));
             Assert.Equal(2, conversion.Compile(true).Invoke(1.1));
         }
@@ -356,28 +356,28 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [InlineData(null, "YY")]
-        [InlineData("abc", "abcdef")]
-        public static void Conversion_String(string parameter, string expected)
+        [InlinePerCompilationType(null, "YY")]
+        [InlinePerCompilationType("abc", "abcdef")]
+        public static void Conversion_String(string parameter, string expected, bool useInterpreter)
         {
             Expression<Func<string, string>> conversion = x => x + "def";
             ParameterExpression parameterExpression = Expression.Parameter(typeof(string));
             BinaryExpression coalescion = Expression.Coalesce(parameterExpression, Expression.Constant("YY"), conversion);
 
-            Func<string, string> result = Expression.Lambda<Func<string, string>>(coalescion, parameterExpression).Compile();
+            Func<string, string> result = Expression.Lambda<Func<string, string>>(coalescion, parameterExpression).Compile(useInterpreter);
             Assert.Equal(expected, result(parameter));
         }
 
         [Theory]
-        [InlineData(null, 5)]
-        [InlineData(5, 10)]
-        public static void Conversion_NullableInt(int? parameter, int? expected)
+        [InlinePerCompilationType(null, 5)]
+        [InlinePerCompilationType(5, 10)]
+        public static void Conversion_NullableInt(int? parameter, int? expected, bool useInterpreter)
         {
             Expression<Func<int?, int?>> conversion = x => x * 2;
             ParameterExpression parameterExpression = Expression.Parameter(typeof(int?));
             BinaryExpression coalescion = Expression.Coalesce(parameterExpression, Expression.Constant(5, typeof(int?)), conversion);
 
-            Func<int?, int?> result = Expression.Lambda<Func<int?, int?>>(coalescion, parameterExpression).Compile();
+            Func<int?, int?> result = Expression.Lambda<Func<int?, int?>>(coalescion, parameterExpression).Compile(useInterpreter);
             Assert.Equal(expected, result(parameter));
         }
 
@@ -389,7 +389,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(5), Expression.Constant(5)));
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(5), Expression.Constant(5), conversion));
         }
-        
+
         [Fact]
         public static void RightLeft_NonEquivilentTypes_ThrowsArgumentException()
         {

@@ -10,7 +10,7 @@ namespace System.IO.Compression.Tests
 {
     public class zip_InvalidParametersAndStrangeFiles : ZipFileTestBase
     {
-        private static void ConstructorThrows<TException>(Func<ZipArchive> constructor, String Message) where TException : Exception
+        private static void ConstructorThrows<TException>(Func<ZipArchive> constructor, string Message) where TException : Exception
         {
             try
             {
@@ -96,12 +96,12 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("LZMA.zip")]
         [InlineData("invalidDeflate.zip")]
-        public static async Task ZipArchiveEntry_InvalidUpdate(String zipname)
+        public static async Task ZipArchiveEntry_InvalidUpdate(string zipname)
         {
             string filename = bad(zipname);
             Stream updatedCopy = await StreamHelpers.CreateTempCopyStream(filename);
-            String name;
-            Int64 length, compressedLength;
+            string name;
+            long length, compressedLength;
             DateTimeOffset lastWriteTime;
             using (ZipArchive archive = new ZipArchive(updatedCopy, ZipArchiveMode.Update, true))
             {
@@ -128,7 +128,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("CDoffsetOutOfBounds.zip")]
         [InlineData("EOCDmissing.zip")]
-        public static async Task ZipArchive_InvalidStream(String zipname)
+        public static async Task ZipArchive_InvalidStream(string zipname)
         {
             string filename = bad(zipname);
             using (var stream = await StreamHelpers.CreateTempCopyStream(filename))
@@ -138,7 +138,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("CDoffsetInBoundsWrong.zip")]
         [InlineData("numberOfEntriesDifferent.zip")]
-        public static async Task ZipArchive_InvalidEntryTable(String zipname)
+        public static async Task ZipArchive_InvalidEntryTable(string zipname)
         {
             string filename = bad(zipname);
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
@@ -151,7 +151,7 @@ namespace System.IO.Compression.Tests
         [InlineData("localFileOffsetOutOfBounds.zip", true)]
         [InlineData("LZMA.zip", true)]
         [InlineData("invalidDeflate.zip", false)]
-        public static async Task ZipArchive_InvalidEntry(String zipname, Boolean throwsOnOpen)
+        public static async Task ZipArchive_InvalidEntry(string zipname, bool throwsOnOpen)
         {
             string filename = bad(zipname);
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))

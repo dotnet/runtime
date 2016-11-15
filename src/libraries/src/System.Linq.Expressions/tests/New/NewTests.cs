@@ -346,7 +346,7 @@ namespace System.Linq.Expressions.Tests
         {
             ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
             Expression[] expressions = new Expression[] { Expression.Constant(5) };
-            
+
             Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions));
             Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
 
@@ -394,7 +394,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
             Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
-        
+
         [Fact]
         public static void Members_MemberWriteOnly_ThrowsArgumentException()
         {

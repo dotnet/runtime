@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="ProcessTests.netstandard1.7.cs" />
+    <Compile Include="ProcessStartInfoTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Diagnostics.Process.pkgproj">

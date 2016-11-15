@@ -406,11 +406,11 @@ namespace System.Linq.Expressions
     public partial class Expression
     {
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression with no arguments.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression.
         /// </returns>
         /// <param name="expression">
@@ -439,11 +439,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to one argument expression.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -477,11 +477,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to two argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -518,11 +518,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to three argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -564,11 +564,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to four argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -614,11 +614,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to five argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -668,11 +668,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to a list of argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -695,11 +695,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to a list of argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">

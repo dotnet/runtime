@@ -311,6 +311,18 @@ namespace System.IO
             return selector(_buffer, ref _startIndex, ref _endIndex);
         }
 
+        /// <summary>
+        /// Gets the current subcomponent and all remaining components of the string as a string.
+        /// </summary>
+        public string ExtractCurrentToEnd()
+        {
+            if (_buffer == null || _startIndex == -1)
+            {
+                throw new InvalidOperationException();
+            }
+            return _buffer.Substring(_startIndex);
+        }
+
         /// <summary>Throws unconditionally for invalid data.</summary>
         private static void ThrowForInvalidData()
         {

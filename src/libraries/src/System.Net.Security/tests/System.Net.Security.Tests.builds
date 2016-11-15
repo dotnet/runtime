@@ -4,20 +4,40 @@
   <ItemGroup>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Linux</OSGroup>
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
+      <OSGroup>Linux</OSGroup>
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>OSX</OSGroup>
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
+      <OSGroup>OSX</OSGroup>
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <!-- TODO #13070 Add net463 once the TFM is actually .Net 4.6.3 -->
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1;net462</TestTFMs>
     </Project>
     <Project Include="UnitTests\System.Net.Security.Unit.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Security.Unit.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

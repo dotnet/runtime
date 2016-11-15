@@ -11,11 +11,8 @@ namespace System.Dynamic
     /// </summary>
     public abstract class DeleteMemberBinder : DynamicMetaObjectBinder
     {
-        private readonly string _name;
-        private readonly bool _ignoreCase;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeleteIndexBinder" />.
+        /// Initializes a new instance of the <see cref="DeleteMemberBinder" />.
         /// </summary>
         /// <param name="name">The name of the member to delete.</param>
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
@@ -23,39 +20,24 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(name, nameof(name));
 
-            _name = name;
-            _ignoreCase = ignoreCase;
+            Name = name;
+            IgnoreCase = ignoreCase;
         }
 
         /// <summary>
         /// Gets the name of the member to delete.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         /// <summary>
         /// Gets the value indicating if the string comparison should ignore the case of the member name.
         /// </summary>
-        public bool IgnoreCase
-        {
-            get
-            {
-                return _ignoreCase;
-            }
-        }
+        public bool IgnoreCase { get; }
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return typeof(void); }
-        }
+        public override sealed Type ReturnType => typeof(void);
 
         /// <summary>
         /// Performs the binding of the dynamic delete member operation if the target dynamic object cannot bind.
@@ -89,14 +71,7 @@ namespace System.Dynamic
             return target.BindDeleteMember(this);
         }
 
-
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
     }
 }

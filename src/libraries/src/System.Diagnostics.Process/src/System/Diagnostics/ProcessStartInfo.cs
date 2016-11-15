@@ -4,7 +4,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Security;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Text;
 
 namespace System.Diagnostics
@@ -24,6 +25,10 @@ namespace System.Diagnostics
         private bool _redirectStandardError = false;
         private Encoding _standardOutputEncoding;
         private Encoding _standardErrorEncoding;
+        private bool _errorDialog;
+        private IntPtr _errorDialogParentHandle;
+        private string _verb;
+        private ProcessWindowStyle _windowStyle;
 
         private bool _createNoWindow = false;
         internal Dictionary<string, string> _environmentVariables;
@@ -78,6 +83,8 @@ namespace System.Diagnostics
             get { return _createNoWindow; }
             set { _createNoWindow = value; }
         }
+
+        public StringDictionary EnvironmentVariables => new StringDictionaryWrapper(Environment as Dictionary<string,string>);
 
         public IDictionary<string, string> Environment
         {
@@ -171,6 +178,43 @@ namespace System.Diagnostics
         {
             get { return _directory ?? string.Empty; }
             set { _directory = value; }
+        }
+
+        public bool ErrorDialog
+        {
+            get { return _errorDialog; }
+            set { _errorDialog = value; }
+        }
+
+        public IntPtr ErrorDialogParentHandle 
+        {
+            get { return _errorDialogParentHandle; }
+            set { _errorDialogParentHandle = value; }
+        }
+
+        [DefaultValueAttribute("")]
+        public string Verb 
+        {
+            get { return _verb ?? string.Empty; }
+            set { _verb = value; }
+        }
+
+        [DefaultValueAttribute(System.Diagnostics.ProcessWindowStyle.Normal)]
+        public ProcessWindowStyle WindowStyle
+        {
+            get 
+            { 
+                return _windowStyle; 
+            }
+            set 
+            {
+                if (!Enum.IsDefined(typeof(ProcessWindowStyle), value))
+                {
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessWindowStyle));
+                } 
+                    
+                _windowStyle = value;
+            }
         }
     }
 }

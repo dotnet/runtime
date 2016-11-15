@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitExpression(node.Left);
                 EmitExpression(node.Right);
                 Type rightType = node.Right.Type;
-                if (TypeUtils.IsNullableType(rightType))
+                if (rightType.IsNullableType())
                 {
                     LocalBuilder loc = GetLocal(rightType);
                     _ilg.Emit(OpCodes.Stloc, loc);
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.EmitGetValue(rightType);
                     FreeLocal(loc);
                 }
-                Type indexType = TypeUtils.GetNonNullableType(rightType);
+                Type indexType = rightType.GetNonNullableType();
                 if (indexType != typeof(int))
                 {
                     _ilg.EmitConvertToType(indexType, typeof(int), isChecked: true);
@@ -146,7 +146,7 @@ namespace System.Linq.Expressions.Compiler
                 // the address of field bar to do the call.  The address of a local which
                 // has the same value as bar is sufficient.
 
-                // The C# compiler will not compile a lambda expression tree 
+                // The C# compiler will not compile a lambda expression tree
                 // which writes to the address of an init-only field. But one could
                 // probably use the expression tree API to build such an expression.
                 // (When compiled, such an expression would fail silently.)  It might

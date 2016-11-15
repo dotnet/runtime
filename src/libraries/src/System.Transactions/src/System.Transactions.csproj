@@ -46,18 +46,12 @@
     <Compile Include="System\Transactions\Configuration\ConfigurationStrings.cs" />
     <Compile Include="System\Transactions\Configuration\DefaultSettingsSection.cs" />
     <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
-    <Compile Include="System\Transactions\Trace\TraceRecord.cs" />
-    <Compile Include="System\Transactions\Trace\TraceRecords.cs" />
-    <Compile Include="System\Transactions\Trace\TraceXPathNavigator.cs" />
-    <Compile Include="System\Transactions\Trace\Activity.cs" />
-    <Compile Include="System\Transactions\Trace\DiagnosticStrings.cs" />
-    <Compile Include="System\Transactions\Trace\DiagnosticTrace.cs" />
-    <Compile Include="System\Transactions\Trace\DiagnosticTraceCode.cs" />
-    <Compile Include="System\Transactions\Trace\PlainXmlWriter.cs" />
-    <Compile Include="System\Transactions\Trace\TraceCode.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Transactions\TransactionsEtwProvider.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

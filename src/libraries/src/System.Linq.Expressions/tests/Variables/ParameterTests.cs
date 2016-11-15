@@ -282,7 +282,7 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression @ref = Expression.Parameter(typeof(T).MakeByRefType());
             ParameterExpression val = Expression.Parameter(typeof(T));
 
-            ByRefWriteAction<T> f = 
+            ByRefWriteAction<T> f =
                 Expression.Lambda<ByRefWriteAction<T>>(
                     Expression.Assign(@ref, val),
                     @ref, val

@@ -12,16 +12,14 @@ namespace System.Dynamic
     /// </summary>
     public abstract class UnaryOperationBinder : DynamicMetaObjectBinder
     {
-        private ExpressionType _operation;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryOperationBinder"/> class.
+        /// Initializes a new instance of the <see cref="UnaryOperationBinder"/> class.
         /// </summary>
         /// <param name="operation">The unary operation kind.</param>
         protected UnaryOperationBinder(ExpressionType operation)
         {
             ContractUtils.Requires(OperationIsValid(operation), nameof(operation));
-            _operation = operation;
+            Operation = operation;
         }
 
         /// <summary>
@@ -31,7 +29,7 @@ namespace System.Dynamic
         {
             get
             {
-                switch (_operation)
+                switch (Operation)
                 {
                     case ExpressionType.IsFalse:
                     case ExpressionType.IsTrue:
@@ -45,13 +43,7 @@ namespace System.Dynamic
         /// <summary>
         /// The unary operation kind.
         /// </summary>
-        public ExpressionType Operation
-        {
-            get
-            {
-                return _operation;
-            }
-        }
+        public ExpressionType Operation { get; }
 
         /// <summary>
         /// Performs the binding of the unary dynamic operation if the target dynamic object cannot bind.
@@ -86,13 +78,7 @@ namespace System.Dynamic
         }
 
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
 
         internal static bool OperationIsValid(ExpressionType operation)
         {

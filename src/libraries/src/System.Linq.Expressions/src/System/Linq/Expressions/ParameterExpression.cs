@@ -104,7 +104,7 @@ namespace System.Linq.Expressions
     }
 
     /// <summary>
-    /// Specialized subclass to avoid holding onto the byref flag in a 
+    /// Specialized subclass to avoid holding onto the byref flag in a
     /// parameter expression.  This version always holds onto the expression
     /// type explicitly and therefore derives from TypedParameterExpression.
     /// </summary>

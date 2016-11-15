@@ -12,10 +12,6 @@ namespace System.Dynamic
     /// </summary>
     public abstract class InvokeMemberBinder : DynamicMetaObjectBinder
     {
-        private readonly string _name;
-        private readonly bool _ignoreCase;
-        private readonly CallInfo _callInfo;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="InvokeMemberBinder" />.
         /// </summary>
@@ -27,48 +23,30 @@ namespace System.Dynamic
             ContractUtils.RequiresNotNull(name, nameof(name));
             ContractUtils.RequiresNotNull(callInfo, nameof(callInfo));
 
-            _name = name;
-            _ignoreCase = ignoreCase;
-            _callInfo = callInfo;
+            Name = name;
+            IgnoreCase = ignoreCase;
+            CallInfo = callInfo;
         }
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return typeof(object); }
-        }
+        public override sealed Type ReturnType => typeof(object);
 
         /// <summary>
         /// Gets the name of the member to invoke.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         /// <summary>
         /// Gets the value indicating if the string comparison should ignore the case of the member name.
         /// </summary>
-        public bool IgnoreCase
-        {
-            get
-            {
-                return _ignoreCase;
-            }
-        }
+        public bool IgnoreCase { get; }
 
         /// <summary>
         /// Gets the signature of the arguments at the call site.
         /// </summary>
-        public CallInfo CallInfo
-        {
-            get { return _callInfo; }
-        }
+        public CallInfo CallInfo { get; }
 
         /// <summary>
         /// Performs the binding of the dynamic invoke member operation.
@@ -85,13 +63,7 @@ namespace System.Dynamic
         }
 
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
 
         /// <summary>
         /// Performs the binding of the dynamic invoke member operation if the target dynamic object cannot bind.

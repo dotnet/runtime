@@ -288,7 +288,7 @@ namespace System.Linq.Expressions.Tests
         public void GenericMethod<T>() { }
         public static void StaticMethod() { }
     }
-    
+
     public class InvalidTypesData : IEnumerable<object[]>
     {
         private static readonly object[] GenericTypeDefinition = new object[] { typeof(GenericClass<>) };

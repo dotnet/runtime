@@ -18,7 +18,7 @@ namespace System.Net.Tests
             {
                 yield return new object[] { new HttpRequestCachePolicy(level), level, TimeSpan.MaxValue, TimeSpan.MinValue, TimeSpan.MinValue, DateTime.MinValue };
             }
-            yield return new object[] { new HttpRequestCachePolicy(new DateTime(42)), HttpRequestCacheLevel.Default, TimeSpan.MaxValue, TimeSpan.MinValue, TimeSpan.MinValue, new DateTime(42) };
+            yield return new object[] { new HttpRequestCachePolicy(new DateTime(504000000000)), HttpRequestCacheLevel.Default, TimeSpan.MaxValue, TimeSpan.MinValue, TimeSpan.MinValue, new DateTime(504000000000) };
             yield return new object[] { new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAge, TimeSpan.FromSeconds(1)), HttpRequestCacheLevel.Default, TimeSpan.FromSeconds(1), TimeSpan.MinValue, TimeSpan.MinValue, DateTime.MinValue };
             yield return new object[] { new HttpRequestCachePolicy(HttpCacheAgeControl.MaxStale, TimeSpan.FromSeconds(1)), HttpRequestCacheLevel.Default, TimeSpan.MaxValue, TimeSpan.FromSeconds(1), TimeSpan.MinValue, DateTime.MinValue };
             yield return new object[] { new HttpRequestCachePolicy(HttpCacheAgeControl.MinFresh, TimeSpan.FromSeconds(1)), HttpRequestCacheLevel.Default, TimeSpan.MaxValue, TimeSpan.MinValue, TimeSpan.FromSeconds(1), DateTime.MinValue };

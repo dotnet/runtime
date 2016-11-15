@@ -10,7 +10,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.ManualTesting.Tests", "tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj", "{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "stresstest", "tests\stress\StressTest\stresstest.csproj", "{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Stress.Tests", "tests\StressTests\System.Data.SqlClient.Stress.Tests\System.Data.SqlClient.Stress.Tests.csproj", "{B94B8E6D-3E41-4046-B758-4A2E281F74EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,18 +54,18 @@ Global
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+        {B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Unix_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Unix_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Unix_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Unix_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -73,5 +73,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{F3E72F35-0351-4D67-9388-725BCAD807BA} = {ECE6CCAC-682B-4054-B737-E6DB4A4FA79A}
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5} = {ECE6CCAC-682B-4054-B737-E6DB4A4FA79A}
+		{B94B8E6D-3E41-4046-B758-4A2E281F74EE} = {ECE6CCAC-682B-4054-B737-E6DB4A4FA79A}
 	EndGlobalSection
 EndGlobal
