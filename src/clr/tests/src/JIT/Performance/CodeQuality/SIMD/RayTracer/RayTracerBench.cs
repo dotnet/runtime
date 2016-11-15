@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
-// Based on the Raytracer example from 
-// Samples for Parallel Programming with the .NET Framework 
+// Based on the Raytracer example from
+// Samples for Parallel Programming with the .NET Framework
 // https://code.msdn.microsoft.com/windowsdesktop/Samples-for-Parallel-b4b76364
 
 using Microsoft.Xunit.Performance;
@@ -16,6 +16,8 @@ using System.Collections.Concurrent;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace SIMD
+{
 public class RayTracerBench
 {
 #if DEBUG
@@ -141,4 +143,5 @@ public class RayTracerBench
         bool result = r.Run();
         return (result ? 100 : -1);
     }
+}
 }

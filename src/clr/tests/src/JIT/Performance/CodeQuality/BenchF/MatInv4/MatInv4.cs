@@ -10,6 +10,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchF
+{
 public static class MatInv4
 {
 #if DEBUG
@@ -217,11 +219,11 @@ public static class MatInv4
                 // 0 < ik <= n^2
                 ik = nk + i;
                 hold = a[ik - 1];
-                // -n < ij <= 0 
+                // -n < ij <= 0
                 ij = i - n;
                 for (j = 1; j <= n; ++j)
                 {
-                    // i <= n, ij <= n + n + ... + n (n times) or ij <= n * n 
+                    // i <= n, ij <= n + n + ... + n (n times) or ij <= n * n
                     ij = ij + n;
                     if (j == k)
                     {
@@ -237,7 +239,7 @@ public static class MatInv4
             kj = k - n;
             for (j = 1; j <= n; ++j)
             {
-                // k <= n, kj <= n + n + ... + n (n times) or kj <= n * n 
+                // k <= n, kj <= n + n + ... + n (n times) or kj <= n * n
                 kj = kj + n;
                 if (j == k)
                 {
@@ -268,11 +270,11 @@ public static class MatInv4
         jr = n * (i - 1);
         for (j = 1; j <= n; ++j)
         {
-            // jk <= n^2 - n + n 
+            // jk <= n^2 - n + n
             // jk <= n^2
             jk = jq + j;
             hold = a[jk - 1];
-            // ji <= n^2 - n + n 
+            // ji <= n^2 - n + n
             // ji <= n^2
             ji = jr + j;
             a[jk - 1] = -a[ji - 1];
@@ -288,7 +290,7 @@ public static class MatInv4
         ki = k - n;
         for (i = 1; i <= n; ++i)
         {
-            // ki <= n + n + ... + n (n times) or ki <= n * n 
+            // ki <= n + n + ... + n (n times) or ki <= n * n
             ki = ki + n;
             hold = a[ki - 1];
             // if i=1, ji = (1 + (n-1) * n) - 1 + n ==> ij = n^2
@@ -378,7 +380,7 @@ public static class MatInv4
                 {
                     if (j != k)
                     {
-                        // Accessing upto n^2 - n + n - 1 ==> n^2 - 1                            
+                        // Accessing upto n^2 - n + n - 1 ==> n^2 - 1
                         a[(i - 1) * n + (j - 1)] = a[(i - 1) * n + (k - 1)] * a[(k - 1) * n + (j - 1)] + a[(i - 1) * n + (j - 1)];
                     }
                 }
@@ -492,4 +494,5 @@ public static class MatInv4
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

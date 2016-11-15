@@ -11,6 +11,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class TreeSort
 {
 
@@ -74,7 +76,7 @@ public static class TreeSort
             else {
                 Insert(n, t.Left);
             }
-        } 
+        }
         else if (n < t.Val) {
             if (t.Right == null) {
                 t.Right = new Node(n);
@@ -117,7 +119,7 @@ public static class TreeSort
         bool result = CheckTree(tree);
         return result;
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Bench() {
         int[] sortList = new int[SortElements + 1];
@@ -143,9 +145,10 @@ public static class TreeSort
         }
         return result;
     }
-    
+
     public static int Main() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

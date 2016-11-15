@@ -12,6 +12,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchF
+{
 public static class Romber
 {
 #if DEBUG
@@ -166,4 +168,5 @@ public static class Romber
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

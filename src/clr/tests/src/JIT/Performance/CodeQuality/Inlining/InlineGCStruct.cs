@@ -22,6 +22,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Inlining
+{
 public class InlineGCStruct
 {
 #if DEBUG
@@ -141,5 +143,6 @@ public class InlineGCStruct
 
         return (withFormat && withoutFormat ? 100 : -1);
     }
+}
 }
 
