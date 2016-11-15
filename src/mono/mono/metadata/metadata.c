@@ -6634,8 +6634,8 @@ mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *e
 		return event;
 
 	gtd = mono_class_get_generic_class (event->parent)->container_class;
-	offset = event - event->parent->ext->events;
-	return gtd->ext->events + offset;
+	offset = event - mono_class_get_ext (event->parent)->events;
+	return mono_class_get_ext (gtd)->events + offset;
 }
 
 /*
@@ -6652,8 +6652,8 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 		return property;
 
 	gtd = mono_class_get_generic_class (property->parent)->container_class;
-	offset = property - property->parent->ext->properties;
-	return gtd->ext->properties + offset;
+	offset = property - mono_class_get_ext (property->parent)->properties;
+	return mono_class_get_ext (gtd)->properties + offset;
 }
 
 MonoWrapperCaches*

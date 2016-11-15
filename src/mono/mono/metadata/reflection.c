@@ -89,11 +89,12 @@ gpointer
 mono_class_get_ref_info (MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	guint32 ref_info_handle = mono_class_get_ref_info_handle (klass);
 
-	if (klass->ref_info_handle == 0)
+	if (ref_info_handle == 0)
 		return NULL;
 	else
-		return mono_gchandle_get_target (klass->ref_info_handle);
+		return mono_gchandle_get_target (ref_info_handle);
 }
 
 void
@@ -101,19 +102,23 @@ mono_class_set_ref_info (MonoClass *klass, gpointer obj)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	klass->ref_info_handle = mono_gchandle_new ((MonoObject*)obj, FALSE);
+	guint32 candidate = mono_gchandle_new ((MonoObject*)obj, FALSE);
+	guint32 handle = mono_class_set_ref_info_handle (klass, candidate);
 	++class_ref_info_handle_count;
-	g_assert (klass->ref_info_handle != 0);
+
+	if (handle != candidate)
+		mono_gchandle_free (candidate);
 }
 
 void
 mono_class_free_ref_info (MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
+	guint32 handle = mono_class_get_ref_info_handle (klass);
 
-	if (klass->ref_info_handle) {
-		mono_gchandle_free (klass->ref_info_handle);
-		klass->ref_info_handle = 0;
+	if (handle) {
+		mono_gchandle_free (handle);
+		mono_class_set_ref_info_handle (klass, 0);
 	}
 }
 
@@ -2363,7 +2368,8 @@ guint32
 mono_declsec_flags_from_class (MonoClass *klass)
 {
 	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_HAS_SECURITY) {
-		if (!klass->ext || !klass->ext->declsec_flags) {
+		MonoClassExt *ext = mono_class_get_ext (klass);
+		if (!ext || !ext->declsec_flags) {
 			guint32 idx;
 
 			idx = mono_metadata_token_index (klass->type_token);
@@ -2371,11 +2377,12 @@ mono_declsec_flags_from_class (MonoClass *klass)
 			idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
 			mono_loader_lock ();
 			mono_class_alloc_ext (klass);
+			ext = mono_class_get_ext (klass);
 			mono_loader_unlock ();
 			/* we cache the flags on classes */
-			klass->ext->declsec_flags = mono_declsec_get_flags (klass->image, idx);
+			ext->declsec_flags = mono_declsec_get_flags (klass->image, idx);
 		}
-		return klass->ext->declsec_flags;
+		return ext->declsec_flags;
 	}
 	return 0;
 }

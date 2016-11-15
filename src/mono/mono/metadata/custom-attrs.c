@@ -134,10 +134,11 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 static guint32
 find_property_index (MonoClass *klass, MonoProperty *property) {
 	int i;
+	MonoClassExt *ext = mono_class_get_ext (klass);
 
-	for (i = 0; i < klass->ext->property.count; ++i) {
-		if (property == &klass->ext->properties [i])
-			return klass->ext->property.first + 1 + i;
+	for (i = 0; i < ext->property.count; ++i) {
+		if (property == &ext->properties [i])
+			return ext->property.first + 1 + i;
 	}
 	return 0;
 }
@@ -148,10 +149,11 @@ find_property_index (MonoClass *klass, MonoProperty *property) {
 static guint32
 find_event_index (MonoClass *klass, MonoEvent *event) {
 	int i;
+	MonoClassExt *ext = mono_class_get_ext (klass);
 
-	for (i = 0; i < klass->ext->event.count; ++i) {
-		if (event == &klass->ext->events [i])
-			return klass->ext->event.first + 1 + i;
+	for (i = 0; i < ext->event.count; ++i) {
+		if (event == &ext->events [i])
+			return ext->event.first + 1 + i;
 	}
 	return 0;
 }

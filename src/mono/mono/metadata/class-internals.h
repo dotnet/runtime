@@ -9,6 +9,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/property-bag.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
@@ -164,6 +165,8 @@ typedef struct {
 } MonoMarshalField;
 
 typedef struct {
+	MonoPropertyBagItem head;
+
 	guint32 native_size, min_align;
 	guint32 num_fields;
 	MonoMethod *ptr_to_str;
@@ -232,6 +235,8 @@ typedef struct {
  * be used for fields which are only used in like 5% of all classes.
  */
 typedef struct {
+	MonoPropertyBagItem head;
+
 	struct {
 #if MONO_SMALL_CONFIG
 		guint16 first, count;
@@ -362,12 +367,6 @@ struct _MonoClass {
 		int generic_param_token; /* for generic param types, both var and mvar */
 	} sizes;
 
-	/* A GC handle pointing to the corresponding type builder/generic param builder */
-	guint32 ref_info_handle;
-
-	/* loaded on demand */
-	MonoMarshalType *marshal_info;
-
 	/*
 	 * Field information: Type and location from object base
 	 */
@@ -386,8 +385,8 @@ struct _MonoClass {
 	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
 	MonoMethod **vtable;
 
-	/* Rarely used fields of classes */
-	MonoClassExt *ext;
+	/* Infrequently used items. See class-accessors.c: InfrequentDataKind for what goes into here. */
+	MonoPropertyBag infrequent_data;
 };
 
 typedef struct {
@@ -1493,6 +1492,24 @@ mono_class_get_field_count (MonoClass *klass);
 
 void
 mono_class_set_field_count (MonoClass *klass, guint32 count);
+
+MonoMarshalType*
+mono_class_get_marshal_info (MonoClass *class);
+
+void
+mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info);
+
+MonoClassExt*
+mono_class_get_ext (MonoClass *class);
+
+void
+mono_class_set_ext (MonoClass *class, MonoClassExt *ext);
+
+guint32
+mono_class_get_ref_info_handle (MonoClass *class);
+
+guint32
+mono_class_set_ref_info_handle (MonoClass *class, guint32 value);
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>

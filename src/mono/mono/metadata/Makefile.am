@@ -201,6 +201,8 @@ common_sources = \
 	number-ms.h		\
 	object-internals.h	\
 	opcodes.c		\
+	property-bag.h	\
+	property-bag.c	\
 	socket-io.c		\
 	socket-io.h		\
 	w32process.c		\

@@ -9128,8 +9128,9 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mono_marshal_load_type_info (klass);
 
-	if (klass->marshal_info->str_to_ptr)
-		return klass->marshal_info->str_to_ptr;
+	MonoMarshalType *marshal_info = mono_class_get_marshal_info (klass);
+	if (marshal_info->str_to_ptr)
+		return marshal_info->str_to_ptr;
 
 	if (!stoptr) 
 		stoptr = mono_class_get_method_from_name (mono_defaults.marshal_class, "StructureToPtr", 3);
@@ -9175,10 +9176,10 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	mono_mb_free (mb);
 
 	mono_marshal_lock ();
-	if (!klass->marshal_info->str_to_ptr)
-		klass->marshal_info->str_to_ptr = res;
+	if (!marshal_info->str_to_ptr)
+		marshal_info->str_to_ptr = res;
 	else
-		res = klass->marshal_info->str_to_ptr;
+		res = marshal_info->str_to_ptr;
 	mono_marshal_unlock ();
 	return res;
 }
@@ -9201,8 +9202,9 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mono_marshal_load_type_info (klass);
 
-	if (klass->marshal_info->ptr_to_str)
-		return klass->marshal_info->ptr_to_str;
+	MonoMarshalType *marshal_info = mono_class_get_marshal_info (klass);
+	if (marshal_info->ptr_to_str)
+		return marshal_info->ptr_to_str;
 
 	if (!ptostr) {
 		MonoMethodSignature *sig;
@@ -9253,10 +9255,10 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	mono_mb_free (mb);
 
 	mono_marshal_lock ();
-	if (!klass->marshal_info->ptr_to_str)
-		klass->marshal_info->ptr_to_str = res;
+	if (!marshal_info->ptr_to_str)
+		marshal_info->ptr_to_str = res;
 	else
-		res = klass->marshal_info->ptr_to_str;
+		res = marshal_info->ptr_to_str;
 	mono_marshal_unlock ();
 	return res;
 }
@@ -11233,7 +11235,7 @@ mono_marshal_is_loading_type_info (MonoClass *klass)
 /**
  * mono_marshal_load_type_info:
  *
- *  Initialize klass->marshal_info using information from metadata. This function can
+ *  Initialize klass::marshal_info using information from metadata. This function can
  * recursively call itself, and the caller is responsible to avoid that by calling 
  * mono_marshal_is_loading_type_info () beforehand.
  *
@@ -11252,14 +11254,16 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	g_assert (klass != NULL);
 
-	if (klass->marshal_info)
-		return klass->marshal_info;
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
 
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (klass->marshal_info)
-		return klass->marshal_info;
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
 
 	/*
 	 * This function can recursively call itself, so we keep the list of classes which are
@@ -11381,15 +11385,17 @@ mono_marshal_load_type_info (MonoClass* klass)
 	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
 
 	mono_marshal_lock ();
-	if (!klass->marshal_info) {
+	MonoMarshalType *info2 = mono_class_get_marshal_info (klass);
+	if (!info2) {
 		/*We do double-checking locking on marshal_info */
 		mono_memory_barrier ();
-		klass->marshal_info = info;
+		mono_class_set_marshal_info (klass, info);
 		++class_marshal_info_count;
+		info2 = info;
 	}
 	mono_marshal_unlock ();
 
-	return klass->marshal_info;
+	return info2;
 }
 
 /**
@@ -11401,8 +11407,9 @@ mono_marshal_load_type_info (MonoClass* klass)
  */
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align)
-{	
-	if (!klass->marshal_info) {
+{
+	MonoMarshalType *info = mono_class_get_marshal_info (klass);
+	if (!info) {
 		if (mono_marshal_is_loading_type_info (klass)) {
 			if (align)
 				*align = 0;
@@ -11410,12 +11417,13 @@ mono_class_native_size (MonoClass *klass, guint32 *align)
 		} else {
 			mono_marshal_load_type_info (klass);
 		}
+		info = mono_class_get_marshal_info (klass);
 	}
 
 	if (align)
-		*align = klass->marshal_info->min_align;
+		*align = info->min_align;
 
-	return klass->marshal_info->native_size;
+	return info->native_size;
 }
 
 /*
