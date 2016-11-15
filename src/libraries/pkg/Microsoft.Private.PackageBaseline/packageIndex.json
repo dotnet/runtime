@@ -1476,6 +1476,13 @@
         "4.0.3.0": "4.4.0"
       }
     },
+    "System.Memory": {
+      "StableVersions": [
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
     "System.Net.Http": {
       "StableVersions": [
         "4.0.0",
