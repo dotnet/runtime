@@ -111,10 +111,6 @@
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.IO\pkg\System.IO.pkgproj" />
     <ProjectReference Include="..\..\pkg\System.Net.Http.pkgproj">
       <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
       <Name>System.Net.Http</Name>

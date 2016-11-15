@@ -225,6 +225,11 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            if (_headerStore == null || _headerStore.Count == 0)
+            {
+                return string.Empty;
+            }
+
             // Return all headers as string similar to: 
             // HeaderName1: Value1, Value2
             // HeaderName2: Value1
@@ -308,11 +313,13 @@ namespace System.Net.Http.Headers
 
         public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
         {
-            if (_headerStore == null)
-            {
-                yield break;
-            }
+            return _headerStore != null && _headerStore.Count > 0 ?
+                GetEnumeratorCore() :
+                ((IEnumerable<KeyValuePair<string, IEnumerable<string>>>)Array.Empty<KeyValuePair<string, IEnumerable<string>>>()).GetEnumerator();
+        }
 
+        private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
+        {
             List<string> invalidHeaders = null;
 
             foreach (var header in _headerStore)
