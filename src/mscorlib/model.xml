@@ -248,6 +248,8 @@
       <Member Name="CreateInstance(System.Type,System.Int64[])" />
       <Member Name="Empty&lt;T&gt;" />
       <Member Name="Exists&lt;T&gt;(T[],System.Predicate&lt;T&gt;)" />
+      <Member Name="Fill&lt;T&gt;(T[],T)" />
+      <Member Name="Fill&lt;T&gt;(T[],System.Int32,System.Int32,T)" />
       <Member Name="Find&lt;T&gt;(T[],System.Predicate&lt;T&gt;)" />
       <Member Name="FindAll&lt;T&gt;(T[],System.Predicate&lt;T&gt;)" />
       <Member Name="FindIndex&lt;T&gt;(T[],System.Int32,System.Int32,System.Predicate&lt;T&gt;)" />
