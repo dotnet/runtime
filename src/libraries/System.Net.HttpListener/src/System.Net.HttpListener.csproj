@@ -104,6 +104,42 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.Structs.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.Structs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketAbortHandle.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketAbortHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketBeginClientHandshake.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketBeginClientHandshake.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketBeginServerHandshake.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketBeginServerHandshake.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketCompleteAction.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketCompleteAction.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketCreateClientHandle.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketCreateClientHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketCreateServerHandle.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketCreateServerHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketDeleteHandle.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketDeleteHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketEndServerHandshake.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketEndServerHandshake.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketGetAction.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketGetAction.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketReceive.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketReceive.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.WebSocketSend.cs">
+      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketSend.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\HttpApi\Interop.ErrorCodes.cs">
       <Link>Common\Interop\Windows\HttpApi\Interop.ErrorCodes.cs</Link>
     </Compile>

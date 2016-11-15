@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -40,7 +35,7 @@ namespace System.Net.WebSockets
 
 
         private readonly SafeHandle _sessionHandle;
-        private readonly WebSocketProtocolComponent.Property[] _properties;
+        private readonly Interop.WebSocket.Property[] _properties;
 
         public ServerWebSocket(Stream innerStream,
             string subProtocol,

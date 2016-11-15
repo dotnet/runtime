@@ -33,8 +33,8 @@ namespace System.Net.WebSockets
         internal const int ClientTcpCloseTimeout = 1000; // 1s
 
         private static readonly ArraySegment<byte> s_EmptyPayload = new ArraySegment<byte>(new byte[] { }, 0, 0);
-        private static readonly Random s_KeyGenerator = new Random();
-        private static readonly bool s_HttpSysSupportsWebSockets = (Environment.OSVersion.Version >= new Version(6, 2));
+        private static readonly Random s_keyGenerator = new Random();
+        private static readonly bool s_httpSysSupportsWebSockets = (Environment.OSVersion.Version >= new Version(6, 2));
 
         internal static ArraySegment<byte> EmptyPayload
         {
@@ -448,7 +448,7 @@ namespace System.Net.WebSockets
 
         private static void EnsureHttpSysSupportsWebSockets()
         {
-            if (!s_HttpSysSupportsWebSockets)
+            if (!s_httpSysSupportsWebSockets)
             {
                 ThrowPlatformNotSupportedException_HTTPSYS();
             }
