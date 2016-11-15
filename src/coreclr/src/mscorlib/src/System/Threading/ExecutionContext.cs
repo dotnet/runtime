@@ -105,7 +105,16 @@ namespace System.Threading
         public static ExecutionContext Capture()
         {
             ExecutionContext executionContext = Thread.CurrentThread.ExecutionContext;
-            return executionContext == null || executionContext.m_isFlowSuppressed ? Default : executionContext;
+            if (executionContext == null)
+            {
+                return Default;
+            }
+            if (executionContext.m_isFlowSuppressed)
+            {
+                // Prevent ExecutionContext.Run on a suppressed-flow context for desktop framework compatibility
+                return null;
+            }
+            return executionContext;
         }
 
         private ExecutionContext ShallowClone(bool isFlowSuppressed)
@@ -116,7 +125,7 @@ namespace System.Threading
                 m_localValues == Default.m_localValues &&
                 m_localChangeNotifications == Default.m_localChangeNotifications)
             {
-                return null; // implies default context
+                return null; // implies the default context
             }
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
         }
@@ -134,7 +143,7 @@ namespace System.Threading
             executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
             var asyncFlowControl = new AsyncFlowControl();
             currentThread.ExecutionContext = executionContext;
-            asyncFlowControl.Initialize(currentThread, executionContext);
+            asyncFlowControl.Initialize(currentThread);
             return asyncFlowControl;
         }
 
@@ -383,16 +392,11 @@ namespace System.Threading
     public struct AsyncFlowControl : IDisposable
     {
         private Thread _thread;
-        private ExecutionContext _executionContext;
 
-        internal void Initialize(Thread currentThread, ExecutionContext executionContext)
+        internal void Initialize(Thread currentThread)
         {
             Contract.Assert(currentThread == Thread.CurrentThread);
-            Contract.Assert(executionContext != null);
-            Contract.Assert(executionContext == currentThread.ExecutionContext);
-
             _thread = currentThread;
-            _executionContext = executionContext;
         }
 
         public void Undo()
@@ -405,7 +409,18 @@ namespace System.Threading
             {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CannotUseAFCOtherThread"));
             }
-            if (_thread.ExecutionContext != _executionContext)
+
+            // An async flow control cannot be undone when a different execution context is applied. The desktop framework
+            // mutates the execution context when its state changes, and only changes the instance when an execution context
+            // is applied (for instance, through ExecutionContext.Run). The framework prevents a suppressed-flow execution
+            // context from being applied by returning null from ExecutionContext.Capture, so the only type of execution
+            // context that can be applied is one whose flow is not suppressed. After suppressing flow and changing an async
+            // local's value, the desktop framework verifies that a different execution context has not been applied by
+            // checking the execution context instance against the one saved from when flow was suppressed. In .NET Core,
+            // since the execution context instance will change after changing the async local's value, it verifies that a
+            // different execution context has not been applied, by instead ensuring that the current execution context's
+            // flow is suppressed.
+            if (!ExecutionContext.IsFlowSuppressed())
             {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_AsyncFlowCtrlCtxMismatch"));
             }
@@ -427,12 +442,12 @@ namespace System.Threading
 
         public bool Equals(AsyncFlowControl obj)
         {
-            return _thread == obj._thread && _executionContext == obj._executionContext;
+            return _thread == obj._thread;
         }
 
         public override int GetHashCode()
         {
-            return (_thread?.GetHashCode() ?? 0) + (_executionContext?.GetHashCode() ?? 0);
+            return _thread?.GetHashCode() ?? 0;
         }
 
         public static bool operator ==(AsyncFlowControl a, AsyncFlowControl b)

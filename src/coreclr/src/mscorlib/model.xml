@@ -7994,6 +7994,15 @@
       <Member MemberType="Field" Name="Unknown" />
       <Member MemberType="Field" Name="value__" />
     </Type>
+    <Type Name="System.Threading.AsyncFlowControl">
+      <Member Name="Dispose" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.Threading.AsyncFlowControl)" />
+      <Member Name="GetHashCode" />
+      <Member Name="op_Equality(System.Threading.AsyncFlowControl,System.Threading.AsyncFlowControl)" />
+      <Member Name="op_Inequality(System.Threading.AsyncFlowControl,System.Threading.AsyncFlowControl)" />
+      <Member Name="Undo" />
+    </Type>
     <Type Name="System.Threading.AutoResetEvent">
       <Member Name="#ctor(System.Boolean)" />
     </Type>
@@ -12181,8 +12190,15 @@
       <Member Name="get_ThreadContextChanged"/>
     </Type>
     <Type Name="System.Threading.ExecutionContext">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Capture" />
+      <Member Name="CreateCopy" />
+      <Member Name="Dispose" />
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="IsFlowSuppressed" />
+      <Member Name="RestoreFlow" />
       <Member Name="Run(System.Threading.ExecutionContext,System.Threading.ContextCallback,System.Object)"/>
+      <Member Name="SuppressFlow" />
     </Type>
     <Type Name="System.Threading.CancellationToken">
       <Member Name="#ctor(System.Boolean)"/>
