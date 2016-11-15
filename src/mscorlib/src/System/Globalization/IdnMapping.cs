@@ -710,8 +710,10 @@ namespace System.Globalization
                                             k >= bias + tmax ? tmax : k - bias;
                                     if (q < t) break;
                                     Contract.Assert(punycodeBase != t, "[IdnMapping.punycode_encode]Expected punycodeBase (36) to be != t");
-                                    output.Append(encode_digit(t + (q - t) % (punycodeBase - t)));
-                                    q = (q - t) / (punycodeBase - t);
+
+                                    int mod;
+                                    q = Math.DivRem(q - t, punycodeBase - t, out mod);
+                                    output.Append(encode_digit(t + mod));
                                 }
 
                                 output.Append(encode_digit(q));
