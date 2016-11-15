@@ -88,7 +88,6 @@
   
   <ItemGroup>
     <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
-    <SupportsDefinitionFileGroup Include="$(MSBuildThisFileDirectory)/packages/Microsoft.DotNet.BuildTools.TestSuite/**/runtime.json" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -137,8 +136,7 @@
   </Target>
 
   <UsingTask TaskName="AddDependenciesToProjectJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="UpdateVersionsOnTestProjectJson" >
-
+  <Target Name="UpdateVersionsOnTestProjectJson" DependsOnTargets="GetDefaultTestRid">
   <!-- Duplicate properties to be removed in future -->
     <ItemGroup>
       <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
@@ -147,7 +145,7 @@
       <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
     </PropertyGroup>
     
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] KARTHIKDEBUG supprots '$(SupportsDefinitionFile)'" />
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Using RuntimeIdentifier = '$(TestNugetRuntimeId)'" />
 
     <AddDependenciesToProjectJson AdditionalDependencies="@(_InjectProjectReferenceDependency)"
                                   PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
@@ -156,9 +154,9 @@
                                   ProjectJson="$(CommonTestProjectJson)"
                                   OutputProjectJson="$(CommonOutputTestProjectJson)"
                                   UseNewestAvailablePackages="$(UseNewestAvailablePackages)"
-                                  SupportsFile="$(SupportsDefinitionFile)"
+                                  SupportsFile="$(CommonTestProjectJson)"
                                   TestRuntime="$(TestNugetRuntimeId)"
-                                  TestTargetFramework="$(TestTFM)"
+                                  TestTargetFramework="$(FilterToTestTFM)"
                                   />
   </Target>
 
