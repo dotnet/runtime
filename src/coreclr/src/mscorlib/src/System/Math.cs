@@ -726,13 +726,21 @@ namespace System {
         }
 
         public static int DivRem(int a, int b, out int result) {
-            result =  a%b;
-            return a/b;
+            // TODO https://github.com/dotnet/coreclr/issues/3439:
+            // Restore to using % and / when the JIT is able to eliminate one of the idivs.
+            // In the meantime, a * and - is measurably faster than an extra /.
+            int div = a / b;
+            result = a - (div * b);
+            return div;
         }
 
         public static long DivRem(long a, long b, out long result) {
-            result =  a%b;
-            return a/b;
+            // TODO https://github.com/dotnet/coreclr/issues/3439:
+            // Restore to using % and / when the JIT is able to eliminate one of the idivs.
+            // In the meantime, a * and - is measurably faster than an extra /.
+            long div = a / b;
+            result = a - (div * b);
+            return div;
         }
     }
 }
