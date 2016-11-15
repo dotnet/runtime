@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Memory.Tests</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup>
+    <Compile Include="Span\CopyTo.cs" />
+    <Compile Include="Span\CtorArray.cs" />
+    <Compile Include="Span\CtorArrayInt.cs" />
+    <Compile Include="Span\CtorArrayIntInt.cs" />
+    <Compile Include="Span\CtorPointerInt.cs" />
+    <Compile Include="Span\DangerousCreate.cs" />
+    <Compile Include="Span\DangerousGetPinnableReference.cs" />
+    <Compile Include="Span\Empty.cs" />
+    <Compile Include="Span\Equality.cs" />
+    <Compile Include="Span\Overflow.cs" />
+    <Compile Include="Span\Slice.cs" />
+    <Compile Include="Span\TestHelpers.cs" />
+    <Compile Include="Span\ToArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Memory.pkgproj">
+      <Name>Memory</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
+
