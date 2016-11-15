@@ -11,6 +11,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchI
+{
 public static class MulMatrix
 {
 
@@ -19,7 +21,7 @@ public static class MulMatrix
 #else
     public const int Iterations = 100;
 #endif
-    
+
     const int Size = 75;
     static volatile object VolatileObject;
 
@@ -132,9 +134,10 @@ public static class MulMatrix
         bool result = Bench();
         return result;
     }
-    
+
     public static int Main() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }

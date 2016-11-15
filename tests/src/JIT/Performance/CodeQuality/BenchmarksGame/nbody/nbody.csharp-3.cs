@@ -15,6 +15,8 @@ using System;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace BenchmarksGame
+{
 public class NBody
 {
     public static int Main(String[] args)
@@ -152,5 +154,6 @@ internal class NBodySystem
         }
         return e;
     }
+}
 }
 

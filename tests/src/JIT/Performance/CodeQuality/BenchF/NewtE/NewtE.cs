@@ -13,6 +13,8 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
+namespace Benchstone.BenchF
+{
 public static class NewtE
 {
 #if DEBUG
@@ -132,4 +134,5 @@ public static class NewtE
         bool result = TestBase();
         return (result ? 100 : -1);
     }
+}
 }
