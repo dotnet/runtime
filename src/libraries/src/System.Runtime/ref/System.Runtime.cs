@@ -4509,6 +4509,7 @@ namespace System.IO
         public FileLoadException(string message, string fileName) { }
         public FileLoadException(string message, string fileName, System.Exception inner) { }
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
@@ -4525,6 +4526,7 @@ namespace System.IO
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     public enum HandleInheritability
