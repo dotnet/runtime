@@ -967,7 +967,7 @@ namespace System.Xml.Tests
 
         public CExceptionHandler(string strXmlFile, string ns, ITestOutputHelper output)
         {
-            _exVer = new ExceptionVerifier(ns, ExceptionVerificationFlags.IgnoreMultipleDots, _output);
+            _exVer = new ExceptionVerifier(ns, ExceptionVerificationFlags.IgnoreMultipleDots, output);
 
             _doc = new XPathDocument(strXmlFile);
             _nav = ((IXPathNavigable)_doc).CreateNavigator();
