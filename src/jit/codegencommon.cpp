@@ -11375,6 +11375,103 @@ void CodeGen::genSetScopeInfo()
     compiler->eeSetLVdone();
 }
 
+//------------------------------------------------------------------------
+// genSetScopeInfo: Record scope information for debug info
+//
+// Arguments:
+//    which
+//    startOffs - the starting offset for this scope
+//    length    - the length of this scope
+//    varNum    - the lclVar for this scope info
+//    LVnum
+//    avail
+//    varLoc
+//
+// Notes:
+//    Called for every scope info piece to record by the main genSetScopeInfo()
+
+void CodeGen::genSetScopeInfo(unsigned            which,
+                              UNATIVE_OFFSET      startOffs,
+                              UNATIVE_OFFSET      length,
+                              unsigned            varNum,
+                              unsigned            LVnum,
+                              bool                avail,
+                              Compiler::siVarLoc& varLoc)
+{
+    // We need to do some mapping while reporting back these variables.
+
+    unsigned ilVarNum = compiler->compMap2ILvarNum(varNum);
+    noway_assert((int)ilVarNum != ICorDebugInfo::UNKNOWN_ILNUM);
+
+#ifdef _TARGET_X86_
+    // Non-x86 platforms are allowed to access all arguments directly
+    // so we don't need this code.
+
+    // Is this a varargs function?
+
+    if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
+        varNum < compiler->info.compArgsCount && !compiler->lvaTable[varNum].lvIsRegArg)
+    {
+        noway_assert(varLoc.vlType == Compiler::VLT_STK || varLoc.vlType == Compiler::VLT_STK2);
+
+        // All stack arguments (except the varargs handle) have to be
+        // accessed via the varargs cookie. Discard generated info,
+        // and just find its position relative to the varargs handle
+
+        PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
+        if (!compiler->lvaTable[compiler->lvaVarargsHandleArg].lvOnFrame)
+        {
+            noway_assert(!compiler->opts.compDbgCode);
+            return;
+        }
+
+        // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
+        // arguments of vararg functions to avoid reporting them to GC.
+        noway_assert(!compiler->lvaTable[varNum].lvRegister);
+        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].lvStkOffs;
+        unsigned varOffset    = compiler->lvaTable[varNum].lvStkOffs;
+
+        noway_assert(cookieOffset < varOffset);
+        unsigned offset     = varOffset - cookieOffset;
+        unsigned stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * sizeof(void*);
+        noway_assert(offset < stkArgSize);
+        offset = stkArgSize - offset;
+
+        varLoc.vlType                   = Compiler::VLT_FIXED_VA;
+        varLoc.vlFixedVarArg.vlfvOffset = offset;
+    }
+
+#endif // _TARGET_X86_
+
+    VarName name = nullptr;
+
+#ifdef DEBUG
+
+    for (unsigned scopeNum = 0; scopeNum < compiler->info.compVarScopesCount; scopeNum++)
+    {
+        if (LVnum == compiler->info.compVarScopes[scopeNum].vsdLVnum)
+        {
+            name = compiler->info.compVarScopes[scopeNum].vsdName;
+        }
+    }
+
+    // Hang on to this compiler->info.
+
+    TrnslLocalVarInfo& tlvi = genTrnslLocalVarInfo[which];
+
+    tlvi.tlviVarNum    = ilVarNum;
+    tlvi.tlviLVnum     = LVnum;
+    tlvi.tlviName      = name;
+    tlvi.tlviStartPC   = startOffs;
+    tlvi.tlviLength    = length;
+    tlvi.tlviAvailable = avail;
+    tlvi.tlviVarLoc    = varLoc;
+
+#endif // DEBUG
+
+    compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, LVnum, name, avail, varLoc);
+}
+
 /*****************************************************************************/
 #ifdef LATE_DISASM
 #if defined(DEBUG)
