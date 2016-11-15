@@ -15,37 +15,29 @@ namespace System.Net.Sockets
     //
     // This class is used to take care of storage for async Socket operation
     // from the BeginSend, BeginSendTo, BeginReceive, BeginReceiveFrom calls.
-    internal sealed partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Internals.SocketAddress _socketAddress;
-        private Internals.SocketAddress _socketAddressOriginal; // Needed for partial BeginReceiveFrom/EndReceiveFrom completion.
 
         internal OverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
-        { }
+        {
+        }
 
         internal Internals.SocketAddress SocketAddress
         {
-            get
-            {
-                return _socketAddress;
-            }
-            set
-            {
-                _socketAddress = value;
-            }
+            get { return _socketAddress; }
+            set { _socketAddress = value; }
+        }
+    }
+
+    internal sealed class OriginalAddressOverlappedAsyncResult : OverlappedAsyncResult
+    {
+        internal OriginalAddressOverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
+            base(socket, asyncState, asyncCallback)
+        {
         }
 
-        internal Internals.SocketAddress SocketAddressOriginal
-        {
-            get
-            {
-                return _socketAddressOriginal;
-            }
-            set
-            {
-                _socketAddressOriginal = value;
-            }
-        }
+        internal Internals.SocketAddress SocketAddressOriginal { get; set; }
     }
 }
