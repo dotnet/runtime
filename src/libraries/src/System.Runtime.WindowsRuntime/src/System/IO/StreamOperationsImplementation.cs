@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+extern alias System_Runtime_Extensions;
+
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -10,6 +12,10 @@ using System.Threading.Tasks;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+
+// Type aliases cannot match existing typenames. In this file our code is in System.IO, which would
+// create two MemoryStream definitions that are in scope if we defined as MemoryStream.
+using SREMemoryStream = System_Runtime_Extensions::System.IO.MemoryStream;
 
 namespace System.IO
 {
@@ -27,7 +33,7 @@ namespace System.IO
         internal static IAsyncOperationWithProgress<IBuffer, UInt32> ReadAsync_MemoryStream(Stream stream, IBuffer buffer, UInt32 count)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(stream is MemoryStream);
+            Debug.Assert(stream is SREMemoryStream);
             Debug.Assert(stream.CanRead);
             Debug.Assert(stream.CanSeek);
             Debug.Assert(buffer != null);
@@ -42,7 +48,7 @@ namespace System.IO
             // The user specified buffer will not have any data put into it:
             buffer.Length = 0;
 
-            MemoryStream memStream = stream as MemoryStream;
+            SREMemoryStream memStream = stream as SREMemoryStream;
             Debug.Assert(memStream != null);
 
             try
