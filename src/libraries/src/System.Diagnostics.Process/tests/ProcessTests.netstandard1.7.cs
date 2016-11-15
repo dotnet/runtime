@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Xunit;
-using Xunit.NetCore.Extensions;
 
 namespace System.Diagnostics.Tests
 {
@@ -43,9 +38,9 @@ namespace System.Diagnostics.Tests
             {
                 Process p = Process.GetCurrentProcess();
                 int handleCount = p.HandleCount;
-                using (var fs1 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
-                using (var fs2 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
-                using (var fs3 = File.Open(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.OpenOrCreate))
+                using (var fs1 = File.Open(GetTestFilePath(), FileMode.OpenOrCreate))
+                using (var fs2 = File.Open(GetTestFilePath(), FileMode.OpenOrCreate))
+                using (var fs3 = File.Open(GetTestFilePath(), FileMode.OpenOrCreate))
                 {
                     p.Refresh();
                     int secondHandleCount = p.HandleCount;
