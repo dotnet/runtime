@@ -832,13 +832,7 @@ namespace System.Linq.Expressions
         {
             return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForType(p0, p1));
         }
-        /// <summary>
-        /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for nullable type '{1}'"
-        /// </summary>
-        internal static Exception ExpressionNotSupportedForNullableType(object p0, object p1)
-        {
-            return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForNullableType(p0, p1));
-        }
+
         /// <summary>
         /// ArgumentException with message like "ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'"
         /// </summary>
