@@ -295,5 +295,17 @@ namespace System.Diagnostics.TraceSourceTests
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
         }
+
+        [Fact]
+        public void TraceTransferTest()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceTransfer(1, "Trace transfer test message", Trace.CorrelationManager.ActivityId);
+            Assert.Equal(1, listener.GetCallCount(Method.TraceTransfer));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
     }
 }
