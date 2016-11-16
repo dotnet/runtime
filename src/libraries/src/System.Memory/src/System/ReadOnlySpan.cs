@@ -150,7 +150,7 @@ namespace System
 
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ReadOnlySpan(Pinnable<T> pinnable, IntPtr byteOffset, int length)
+        internal ReadOnlySpan(Pinnable<T> pinnable, IntPtr byteOffset, int length)
         {
             Debug.Assert(length >= 0);
 
@@ -220,7 +220,7 @@ namespace System
         /// <param name="destination">The span to copy items into.</param>
         public bool TryCopyTo(Span<T> destination)
         {
-            if ((uint)_length > (uint)destination._length)
+            if ((uint)_length > (uint)destination.Length)
                 return false;
 
             // TODO: This is a tide-over implementation as we plan to add a overlap-safe cpblk-based api to Unsafe. (https://github.com/dotnet/corefx/issues/13427)
@@ -303,11 +303,6 @@ namespace System
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
         public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment) => new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
-
-        /// <summary>
-        /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
-        /// </summary>
-        public static implicit operator ReadOnlySpan<T>(Span<T> span) => new ReadOnlySpan<T>(span._pinnable, span._byteOffset, span._length);
 
         /// <summary>
         /// Forms a slice out of the given read-only span, beginning at 'start'.
