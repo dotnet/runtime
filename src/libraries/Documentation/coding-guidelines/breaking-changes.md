@@ -23,33 +23,33 @@ To help triage breaking changes, we classify them in to four buckets:
 4. Clearly Non-Public
 
 ## Bucket 1: Public Contract
-*Clear [violation][breaking-change] of public contract.*
+*Clear [violation of public contract][breaking-change].*
 
 Examples:
-* renaming or removing of a public type, member, or parameter
-* changing the value of a public constant or enum member
-* sealing a type that wasn't sealed
-* making a virtual member abstract
-* adding an interface to the set of base types of an interfaces
-* removing a type or interface from the the of base types
-* changing the return type of a member
+* Renaming or removing of a public type, member, or parameter
+* Changing the value of a public constant or enum member
+* Sealing a type that wasn't sealed
+* Making a virtual member abstract
+* Adding an interface to the set of base types of an interfaces
+* Removing a type or interface from the the of base types
+* Changing the return type of a member
 * ...or any other [incompatible change][breaking-change] to the shape of an API
 
 [breaking-change]: breaking-change-rules.md#source-and-binary-compatibility-changes
 
 ## Bucket 2: Reasonable Grey Area
-*[Change of behavior][behavioral-changes] that customers would have reasonably*
-*depended on.*
+*[Change of behavior][behavioral-changes] that customers would have reasonably
+depended on.*
 
 Examples:
 
-* throwing a new/different exception type in an existing common scenario
+* Throwing a new/different exception type in an existing common scenario
 * An exception is no longer thrown
 * A different behavior is observed after the change for an input
 * decreasing the range of accepted values within a given parameter
 * A new instance field is added to a type (impacts serialization)
-* change in timing/order of events (even when not specified in docs)
-* change in parsing of input and throwing new errors (even if parsing behavior
+* Change in timing/order of events (even when not specified in docs)
+* Change in parsing of input and throwing new errors (even if parsing behavior
   is not specified in the docs)
 
 These require judgment: how predictable, obvious, consistent was the behavior?
@@ -57,19 +57,19 @@ These require judgment: how predictable, obvious, consistent was the behavior?
 [behavioral-changes]: breaking-change-rules.md#behavioral-changes
 
 ## Bucket 3: Unlikely Grey Area
-*Change of behavior that customers could have depended on, but probably*
-*wouldn't.*
+*Change of behavior that customers could have depended on, but probably
+wouldn't.*
 
 Examples:
 
-* correcting behavior in a subtle corner case
+* Correcting behavior in a subtle corner case
 
 As with type 2 changes, these require judgment: what is reasonable and what’s
 not?
 
 ## Bucket 4: Clearly Non-Public
-*Changes to surface area or behavior that is clearly internal or non-breaking*
-*in theory, but breaks an app.*
+*Changes to surface area or behavior that is clearly internal or non-breaking
+in theory, but breaks an app.*
 
 Examples:
 
