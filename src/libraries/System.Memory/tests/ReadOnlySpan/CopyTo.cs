@@ -64,7 +64,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97 };
 
             ReadOnlySpan<int> src = new ReadOnlySpan<int>(a, 1, 6);
-            ReadOnlySpan<int> dst = new ReadOnlySpan<int>(a, 2, 6);
+            Span<int> dst = new Span<int>(a, 2, 6);
             src.CopyTo(dst);
 
             int[] expected = { 90, 91, 91, 92, 93, 94, 95, 96 };
@@ -77,7 +77,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97 };
 
             ReadOnlySpan<int> src = new ReadOnlySpan<int>(a, 2, 6);
-            ReadOnlySpan<int> dst = new ReadOnlySpan<int>(a, 1, 6);
+            Span<int> dst = new Span<int>(a, 1, 6);
             src.CopyTo(dst);
 
             int[] expected = { 90, 92, 93, 94, 95, 96, 97, 97 };
