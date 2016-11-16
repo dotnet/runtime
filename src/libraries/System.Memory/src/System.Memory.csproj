@@ -15,8 +15,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Pinnable.cs" />
-    <NoCompile Include="System\Span.cs" />
     <Compile Include="System\ReadOnlySpan.cs" />
+    <Compile Include="System\Span.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
