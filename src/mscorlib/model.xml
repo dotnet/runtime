@@ -5766,6 +5766,7 @@
       <Member Name="get_IsStatic" />
       <Member Name="get_IsVirtual" />
       <Member Name="get_IsSecurityCritical" />
+      <Member Name="get_IsSecuritySafeCritical" />
       <Member Name="get_IsSecurityTransparent" />
       <Member Name="get_MethodHandle" />
       <Member Name="get_MethodImplementationFlags" />
@@ -5801,6 +5802,7 @@
       <Member MemberType="Property" Name="IsStatic" />
       <Member MemberType="Property" Name="IsVirtual" />
       <Member MemberType="Property" Name="IsSecurityCritical" />
+      <Member MemberType="Property" Name="IsSecuritySafeCritical" />
       <Member MemberType="Property" Name="IsSecurityTransparent" />
       <Member MemberType="Property" Name="MethodHandle" />
       <Member MemberType="Property" Name="MethodImplementationFlags" />
