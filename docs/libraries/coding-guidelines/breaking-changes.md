@@ -75,10 +75,33 @@ more latitude here in .NET Core.
 ## What This Means for Contributors
 
 * All bucket 1, 2, and 3 breaking changes require talking to the repo owners
-  first.
+  first:
+    - We generally **don't accept** change proposals that are in bucket #1.
+    - We **might accept** change proposals that are in #2 and #3 after a
+      risk-benefit analysis. See below for more details.
+    - We **usually accept** changes that are in bucket #4
 * If you're not sure in which bucket applies to a given change, contact us as
   well.
-* It doesn't matter if the old behavior is "wrong", we still need to think
-  through the implications.
-* If a change is deemed too breaking, we can help identify alternatives such as
-  introducing a new API and obsoleting the old one.
+
+### Risk-Benefit Analysis
+
+For buckets #2 and #3 we apply a risk-benefit analysis. It doesn't matter if the
+old behavior is "wrong", we still need to think through the implications. This
+can result in one of the following outcomes: 
+
+* **Accepted with quirking**. Depending on the estimated customer impact, we may
+  decide to "quirk" the behavior. That means, that the new behavior is only
+  exposed to apps that are compiled against the version of .NET Core that
+  introduced the change. In other words, apps running against a shared framework
+  will not see the behavior if they were compiled against an older version of
+  .NET Core and thus wouldn't have been tested in the context of the behavioral
+  change.
+
+* **Accepted**. In some minor cases, we may decide to accept the change if the
+  the benefit is large and the risk is super low or if the risk is moderate and
+  quirking isn't viable.
+
+* **Rejected**. If the risk is too high and/or the improvement too minor, we may
+  decide not to accept the change proposal at all. We can help identify
+  alternatives such as introducing a new API and obsoleting the old one.
+
