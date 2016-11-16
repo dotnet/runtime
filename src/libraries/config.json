@@ -27,7 +27,7 @@
     "TestNugetRuntimeId": {
       "description": "Target OS for result binaries.",
       "valueType": "property",
-      "values": ["win7-x64", "win7-x86", "osx.10.10-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "etc-other-rids"],
+      "values": ["win7-x64", "osx.10.10-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "etc-other-rids"],
       "defaultValue": "${OSRid}-x64"
     },
     "TestWithLocalLibraries": {
@@ -308,8 +308,7 @@
         "buildArch": {
           "description": "Passes the value of the build architecture to the respective build-native script.",
           "settings": {
-            "Platform": "default",
-            "TestNugetRuntimeId": "default"
+            "Platform": "default"
           }
         },
         "verbose": {
