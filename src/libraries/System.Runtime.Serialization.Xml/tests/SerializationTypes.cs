@@ -3997,3 +3997,121 @@ public class TypeWithSerializableEnum
 {
     public SerializableEnumWithNonSerializedValue EnumField;
 }
+
+[DataContract]
+public class Poseesions
+{
+    [DataMember]
+    public string ItemName;
+}
+
+public static class ReaderWriterConstants
+{
+    public const string ReaderWriterType = "ReaderWriterType";
+    public const string Encoding = "Encoding";
+    public const string TransferMode = "TransferMode";
+    public const string ReaderMode = "ReaderMode";
+    public const string ReaderMode_Streamed = "Streamed";
+    public const string ReaderMode_Buffered = "Buffered";
+
+    public const string RootElementName = "Root";
+    public const string XmlNamespace = "http://www.w3.org/XML/1998/namespace";
+}
+
+public static class FragmentHelper
+{
+    public static bool CanFragment(XmlDictionaryWriter writer)
+    {
+        IFragmentCapableXmlDictionaryWriter fragmentWriter = writer as IFragmentCapableXmlDictionaryWriter;
+        return fragmentWriter != null && fragmentWriter.CanFragment;
+    }
+
+    public static void Start(XmlDictionaryWriter writer, Stream stream)
+    {
+        Start(writer, stream, false);
+    }
+
+    public static void Start(XmlDictionaryWriter writer, Stream stream, bool generateSelfContainedText)
+    {
+        EnsureWriterCanFragment(writer);
+        ((IFragmentCapableXmlDictionaryWriter)writer).StartFragment(stream, generateSelfContainedText);
+    }
+
+    public static void End(XmlDictionaryWriter writer)
+    {
+        EnsureWriterCanFragment(writer);
+        ((IFragmentCapableXmlDictionaryWriter)writer).EndFragment();
+    }
+
+    public static void Write(XmlDictionaryWriter writer, byte[] buffer, int offset, int count)
+    {
+        EnsureWriterCanFragment(writer);
+        ((IFragmentCapableXmlDictionaryWriter)writer).WriteFragment(buffer, offset, count);
+    }
+
+    static void EnsureWriterCanFragment(XmlDictionaryWriter writer)
+    {
+        if (!CanFragment(writer))
+        {
+            throw new InvalidOperationException("Fragment cannot be done using writer " + writer.GetType());
+        }
+    }
+}
+
+[System.Xml.Serialization.XmlTypeAttribute(Namespace = "http://schemas.xmlsoap.org/ws/2003/03/addressing")]
+[System.Xml.Serialization.XmlRootAttribute("Action", Namespace = "http://schemas.xmlsoap.org/ws/2003/03/addressing", IsNullable = false)]
+public class AttributedURI
+{
+    [XmlText]
+    public string Value;
+
+    public bool[] BooleanValues = new bool[] { false, true, false, true, true };
+}
+
+public class SerializeIm : XmlSerializerImplementation
+{
+    public override XmlSerializer GetSerializer(Type type)
+    {
+        return new XmlSerializer(type);
+    }
+}
+
+[XmlSerializerAssembly(AssemblyName = "AssemblyAttrTestClass")]
+public class AssemblyAttrTestClass
+{
+    public string TestString { get; set;  }
+}
+
+public class MyXmlTextParser : IXmlTextParser
+{
+    private XmlTextReader _myreader;
+    public MyXmlTextParser(XmlTextReader reader)
+    {
+        _myreader = reader;
+    }
+    bool IXmlTextParser.Normalized
+    {
+        get
+        {
+            return _myreader.Normalization;
+        }
+
+        set
+        {
+            _myreader.Normalization = value;
+        }
+    }
+
+    WhitespaceHandling IXmlTextParser.WhitespaceHandling
+    {
+        get
+        {
+            return _myreader.WhitespaceHandling;
+        }
+
+        set
+        {
+            _myreader.WhitespaceHandling = value;
+        }
+    }
+}
