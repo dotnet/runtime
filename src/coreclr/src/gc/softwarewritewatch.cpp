@@ -6,6 +6,7 @@
 #include "softwarewritewatch.h"
 
 #include "gcenv.h"
+#include "env/gcenv.os.h"
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #ifndef DACCESS_COMPILE

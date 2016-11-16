@@ -24,7 +24,9 @@
 
 inline void FATAL_GC_ERROR()
 {
+#ifndef DACCESS_COMPILE
     GCToOSInterface::DebugBreak();
+#endif // DACCESS_COMPILE
     _ASSERTE(!"Fatal Error in GC.");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
