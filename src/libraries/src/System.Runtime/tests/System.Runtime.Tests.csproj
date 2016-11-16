@@ -148,6 +148,7 @@
     <Compile Include="System\StringTests.netstandard1.7.cs" />
     <Compile Include="System\TimeSpanTests.netstandard1.7.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
+    <Compile Include="TimeZoneTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
