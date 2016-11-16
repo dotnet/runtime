@@ -84,7 +84,7 @@
   
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <!-- Packaging.targets is only included when full build.cmd is invoked. -->
-    <PackageInstallPath>$(BinDir)localpkg</PackageInstallPath>
+    <PackageInstallPath>$(BinDir)localpkg/</PackageInstallPath>
   </PropertyGroup>
 
   <!-- Import packaging props -->
@@ -124,9 +124,9 @@
   
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(ProjectDir)src/" />
-    <DnuRestoreDir Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(ProjectDir)pkg/" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src/" />
+    <DnuRestoreDir Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(MSBuildThisFileDirectory)pkg/" />
+    <DnuRestoreDir Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(MSBuildThisFileDirectory)layout" />
     <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/" />
   </ItemGroup>
 

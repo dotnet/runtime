@@ -6,10 +6,17 @@
   </PropertyGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <ItemGroup>
+  <ItemGroup Condition="'$(GenerateIndependentOfOSGroup)' != 'true'">
     <Project Include="*\tests\**\*.builds">
-      <BuildAllOSGroups Condition="'$(OSGroup)' != '' OR '$(FilterToOSGroup)' != ''">false</BuildAllOSGroups>
-      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
+      <BuildAllOSGroups Condition="'$(OSGroup)' != '' OR '$(FilterToOSGroup)' != '' ">false</BuildAllOSGroups>
+      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == '' AND '$(DontFilterOsGroup)' != 'true'">$(OSEnvironment)</FilterToOSGroup>
+    </Project>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(GenerateIndependentOfOSGroup)' == 'true'">
+    <Project Include="*\tests\**\*.builds">
+      <BuildAllOSGroups>true</BuildAllOSGroups>
+      <UndefineProperties>OSGroup;FilterToOSGroup;</UndefineProperties>
     </Project>
   </ItemGroup>
 

@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <Project Include="Native\pkg\**\*.builds" Condition="'$(SkipNativePackageBuild)' != 'true'">
-      <AdditionalProperties>$(AdditionalProperties);AllowPartialPackages=true</AdditionalProperties>
+      <AdditionalProperties>$(AdditionalProperties);SkipCreatePackageOnMissingFiles=true</AdditionalProperties>
       <BuildAllOSGroups>$(BuildAllOSGroups)</BuildAllOSGroups>
     </Project>
     <Project Include="*\pkg\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">

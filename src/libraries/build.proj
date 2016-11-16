@@ -32,13 +32,10 @@
   <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
-  <ItemGroup>
+  <ItemGroup Condition="$(BuildTests)!='true'">
     <Project Include="src\dirs.proj">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
-    <Project Include="src\tests.builds" Condition="$(BuildTests)=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
     <!-- signing must happen before packaging -->
@@ -52,6 +49,12 @@
     <Project Include="src\post.builds">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
+    </Project>
+  </ItemGroup>
+  
+  <ItemGroup Condition="$(BuildTests)=='true'">
+    <Project Include="src\tests.builds">
+      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
   </ItemGroup>
 
@@ -167,7 +170,9 @@
           BeforeTargets="RestorePackages">
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's..." />
       <MSBuild Targets="GenerateAllTestProjectJsons"
-               Projects="src\tests.builds" />
+               Projects="src\tests.builds"
+               Properties="GenerateIndependentOfOSGroup=true"
+               />
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's...done" />
   </Target>
 

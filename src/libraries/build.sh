@@ -29,5 +29,10 @@ if [ $? -ne 0 ];then
 fi
 
 "$__scriptpath/build-managed.sh" $*
+if [ $? -ne 0 ];then
+   exit 1
+fi
+
+"$__scriptpath/build-tests.sh" $*
 exit $?
 
