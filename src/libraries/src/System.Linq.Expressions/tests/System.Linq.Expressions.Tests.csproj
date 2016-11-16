@@ -88,6 +88,7 @@
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="DebugInfo\DebugInfoExpressionTests.cs" />
     <Compile Include="DebugInfo\SymbolDocumentInfoTests.cs" />
+    <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="DelegateType\ActionTypeTests.cs" />
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
