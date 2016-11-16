@@ -23,14 +23,23 @@ To help triage breaking changes, we classify them in to four buckets:
 4. Clearly Non-Public
 
 ## Bucket 1: Public Contract
-*Clear violation of public contract.*
+*Clear [violation][breaking-change] of public contract.*
 
 Examples:
-* renaming a public type, member, or parameter
+* renaming or removing of a public type, member, or parameter
 * changing the value of a public constant or enum member
+* sealing a type that wasn't sealed
+* making a virtual member abstract
+* adding an interface to the set of base types of an interfaces
+* removing a type or interface from the the of base types
+* changing the return type of a member
+* ...or any other [incompatible change][breaking-change] to the shape of an API
+
+[breaking-change]: breaking-change-rules.md#source-and-binary-compatibility-changes
 
 ## Bucket 2: Reasonable Grey Area
-*Change of behavior that customers would have reasonably depended on.*
+*[Change of behavior][behavioral-changes] that customers would have reasonably*
+*depended on.*
 
 Examples:
 
@@ -44,6 +53,8 @@ Examples:
   is not specified in the docs)
 
 These require judgment: how predictable, obvious, consistent was the behavior?
+
+[behavioral-changes]: breaking-change-rules.md#behavioral-changes
 
 ## Bucket 3: Unlikely Grey Area
 *Change of behavior that customers could have depended on, but probably*
