@@ -37,8 +37,10 @@ namespace System.SpanTests
                     uint byteOffset = checked((uint)bigIndex * (uint)sizeof(Guid));
                     Assert.True(byteOffset > (uint)int.MaxValue);  // Make sure byteOffset actually overflows 2Gb, or this test is pointless.
                     ref Guid expected = ref Unsafe.AsRef<Guid>(((byte*)pMemory) + byteOffset);
-
-                    Assert.True(Unsafe.AreSame<Guid>(ref expected, ref span.GetItem(bigIndex)));
+                    Guid expectedGuid = Guid.NewGuid();
+                    expected = expectedGuid;
+                    Guid actualGuid = span[bigIndex];
+                    Assert.Equal(expectedGuid, actualGuid);
 
                     ReadOnlySpan<Guid> slice = span.Slice(bigIndex);
                     Assert.True(Unsafe.AreSame<Guid>(ref expected, ref slice.DangerousGetPinnableReference()));
