@@ -305,6 +305,11 @@ namespace System
         public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment) => new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 
         /// <summary>
+        /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
+        public static implicit operator ReadOnlySpan<T>(Span<T> span) => new ReadOnlySpan<T>(span._pinnable, span._byteOffset, span._length);
+
+        /// <summary>
         /// Forms a slice out of the given span, beginning at 'start'.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
