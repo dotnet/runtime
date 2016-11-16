@@ -207,3 +207,9 @@ mono_btls_ssl_set_server_name (MonoBtlsSsl *ptr, const char *name)
 {
 	return SSL_set_tlsext_host_name (ptr->ssl, name);
 }
+
+MONO_API const char *
+mono_btls_ssl_get_server_name (MonoBtlsSsl *ptr)
+{
+	return SSL_get_servername (ptr->ssl, TLSEXT_NAMETYPE_host_name);
+}

@@ -77,6 +77,9 @@ mono_btls_ssl_set_verify_param (MonoBtlsSsl *ptr, const MonoBtlsX509VerifyParam 
 int
 mono_btls_ssl_set_server_name (MonoBtlsSsl *ptr, const char *name);
 
+const char *
+mono_btls_ssl_get_server_name (MonoBtlsSsl *ptr);
+
 void
 mono_btls_ssl_destroy (MonoBtlsSsl *ptr);
 
