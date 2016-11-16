@@ -280,9 +280,9 @@ def osShortName = ['Windows 10': 'win10',
             steps {
                 helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
             }
-            // perf tests can be built on any Windows
-            label("windows10 || windows7 || windows")
         }
+        
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
