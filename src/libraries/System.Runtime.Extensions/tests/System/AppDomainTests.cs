@@ -15,6 +15,27 @@ namespace System.Tests
 {
     public class AppDomainTests : RemoteExecutorTestBase
     {
+        public AppDomainTests()
+        {
+            string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests.dll");
+            string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests", "AssemblyResolveTests.dll");
+            if (File.Exists(sourceTestAssemblyPath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+                File.Copy(sourceTestAssemblyPath, destTestAssemblyPath, true);
+                File.Delete(sourceTestAssemblyPath);
+            }
+
+            sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe");
+            destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
+            if (File.Exists(sourceTestAssemblyPath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+                File.Copy(sourceTestAssemblyPath, destTestAssemblyPath, true);
+                File.Delete(sourceTestAssemblyPath);
+            }
+        }
+
         [Fact]
         public void CurrentDomain_Not_Null()
         {
@@ -221,13 +242,12 @@ namespace System.Tests
         [Fact]
         public void ExecuteAssembly()
         {
-            string name = "TestApp.exe";
+            string name = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
             Assert.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
             Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
             Assert.Throws<PlatformNotSupportedException>(() => AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] {"2", "3"}, null, Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
-            // TODO: Currently below tests fail as LoadFrom does not work for assemblies in TPA
-            // Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssembly(name));
-            // Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssemblyByName(name, new string[2] { "2", "3" }));
+            Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssembly(name));
+            Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }));
         }        
 
         [Fact]
@@ -430,7 +450,41 @@ namespace System.Tests
         [Fact]
         public void AssemblyResolve()
         {
-            // TODO
+            RemoteInvoke(() =>
+            {
+                ResolveEventHandler handler = (sender, e) =>
+                {
+                    return Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests", "AssemblyResolveTests.dll"));
+                };
+
+                AppDomain.CurrentDomain.AssemblyResolve += handler;
+
+                Type t = Type.GetType("AssemblyResolveTests.Class1, AssemblyResolveTests", true);
+                Assert.NotNull(t);
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void AssemblyResolve_RequestingAssembly()
+        {
+            RemoteInvoke(() =>
+            {
+                Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe"));
+
+                ResolveEventHandler handler = (sender, e) =>
+                {
+                    Assert.Equal(e.RequestingAssembly, a);
+                    return Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests", "AssemblyResolveTests.dll"));
+                };
+
+                AppDomain.CurrentDomain.AssemblyResolve += handler;
+                Type ptype = a.GetType("Program");
+                MethodInfo myMethodInfo = ptype.GetMethod("foo");
+                object ret = myMethodInfo.Invoke(null, null);
+                Assert.NotNull(ret);
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
