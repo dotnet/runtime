@@ -14,7 +14,7 @@ namespace Microsoft.Win32
 #endif
     enum RegistryOptions
     {
-        None = Interop.mincore.RegistryOptions.REG_OPTION_NON_VOLATILE,       // 0x0000
-        Volatile = Interop.mincore.RegistryOptions.REG_OPTION_VOLATILE,      // 0x0001
+        None = Interop.Advapi32.RegistryOptions.REG_OPTION_NON_VOLATILE,       // 0x0000
+        Volatile = Interop.Advapi32.RegistryOptions.REG_OPTION_VOLATILE,      // 0x0001
     };
 }

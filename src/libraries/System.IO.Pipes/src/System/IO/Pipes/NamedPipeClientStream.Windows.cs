@@ -24,27 +24,27 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
 
             int _pipeFlags = (int)_pipeOptions;
             if (_impersonationLevel != TokenImpersonationLevel.None)
             {
-                _pipeFlags |= Interop.mincore.SecurityOptions.SECURITY_SQOS_PRESENT;
+                _pipeFlags |= Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT;
                 _pipeFlags |= (((int)_impersonationLevel - 1) << 16);
             }
 
-            if (!Interop.mincore.WaitNamedPipe(_normalizedPipePath, timeout))
+            if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath, timeout))
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
                 // Server is not yet created
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                 {
                     return false;
                 }
 
                 // The timeout has expired.
-                if (errorCode == Interop.mincore.Errors.ERROR_SUCCESS)
+                if (errorCode == Interop.Errors.ERROR_SUCCESS)
                 {
                     if (cancellationToken.CanBeCanceled)
                     {
@@ -61,13 +61,13 @@ namespace System.IO.Pipes
             int access = 0;
             if ((PipeDirection.In & _direction) != 0)
             {
-                access |= Interop.mincore.GenericOperations.GENERIC_READ;
+                access |= Interop.Kernel32.GenericOperations.GENERIC_READ;
             }
             if ((PipeDirection.Out & _direction) != 0)
             {
-                access |= Interop.mincore.GenericOperations.GENERIC_WRITE;
+                access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
             }
-            SafePipeHandle handle = Interop.mincore.CreateNamedPipeClient(_normalizedPipePath,
+            SafePipeHandle handle = Interop.Kernel32.CreateNamedPipeClient(_normalizedPipePath,
                                         access,           // read and write access
                                         0,                  // sharing: none
                                         ref secAttrs,           // security attributes
@@ -81,7 +81,7 @@ namespace System.IO.Pipes
 
                 // Handle the possible race condition of someone else connecting to the server 
                 // between our calls to WaitNamedPipe & CreateFile.
-                if (errorCode == Interop.mincore.Errors.ERROR_PIPE_BUSY)
+                if (errorCode == Interop.Errors.ERROR_PIPE_BUSY)
                 {
                     return false;
                 }
@@ -110,7 +110,7 @@ namespace System.IO.Pipes
                 // access request before calling NTCreateFile, so all NamedPipeClientStreams can read
                 // this if they are created (on WinXP SP2 at least)] 
                 int numInstances;
-                if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, out numInstances,
+                if (!Interop.Kernel32.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, out numInstances,
                     IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());

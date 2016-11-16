@@ -67,12 +67,12 @@ namespace Microsoft.Win32
                         [In][Out]ref long registrationHandle
                         )
             {
-                Interop.mincore.EtwEnableCallback indirection = delegate(ref Guid sourceId,
+                Interop.Kernel32.EtwEnableCallback indirection = delegate(ref Guid sourceId,
                                                                          int isEnabled,
                                                                          byte level,
                                                                          ulong matchAnyKeywords,
                                                                          ulong matchAllKeywords,
-                                                                         Interop.mincore.EVENT_FILTER_DESCRIPTOR* filterData,
+                                                                         Interop.Kernel32.EVENT_FILTER_DESCRIPTOR* filterData,
                                                                          IntPtr cbContext)
                 {
                     enableCallback(ref sourceId,
@@ -84,7 +84,7 @@ namespace Microsoft.Win32
                                    (void*)cbContext);
                 };
                 ulong temp;
-                uint status = Interop.mincore.EventRegister(ref providerId, indirection, (IntPtr)callbackContext, out temp);
+                uint status = Interop.Kernel32.EventRegister(ref providerId, indirection, (IntPtr)callbackContext, out temp);
                 registrationHandle = (long)temp;
                 
                 return status;
@@ -95,7 +95,7 @@ namespace Microsoft.Win32
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             internal static uint EventUnregister([In] long registrationHandle)
             {
-                return Interop.mincore.EventUnregister((ulong)registrationHandle);
+                return Interop.Kernel32.EventUnregister((ulong)registrationHandle);
             }
 
 
@@ -142,7 +142,7 @@ namespace Microsoft.Win32
             {
                 IntPtr descripPtr = Marshal.AllocHGlobal(Marshal.SizeOf(eventDescriptor));
                 Marshal.StructureToPtr(eventDescriptor, descripPtr, false);
-                int status = Interop.mincore.EventWriteTransfer((ulong)registrationHandle, 
+                int status = Interop.Kernel32.EventWriteTransfer((ulong)registrationHandle, 
                                                         (void*)descripPtr, 
                                                         activityId, 
                                                         relatedActivityId, 
@@ -176,7 +176,7 @@ namespace Microsoft.Win32
                 [In] void* eventInformation,
                 [In] int informationLength)
             {
-                return Interop.mincore.EventSetInformation((ulong)registrationHandle, (int)informationClass, (IntPtr)eventInformation, informationLength);
+                return Interop.Kernel32.EventSetInformation((ulong)registrationHandle, (int)informationClass, (IntPtr)eventInformation, informationLength);
             }
 
             // We want to not use this API for the Nuget package, as it is not an allowed API in the Store.  
@@ -230,7 +230,7 @@ namespace Microsoft.Win32
                 int OutBufferSize,
                 ref int ReturnLength)
             {
-                return Interop.mincore.EnumerateTraceGuidsEx(TraceQueryInfoClass,
+                return Interop.Kernel32.EnumerateTraceGuidsEx(TraceQueryInfoClass,
                                                              InBuffer,
                                                              InBufferSize,
                                                              OutBuffer,
@@ -256,14 +256,14 @@ namespace Microsoft.Win32
         // Gets an error message for a Win32 error code.
         internal static String GetMessage(int errorCode)
         {
-            return Interop.mincore.GetMessage(errorCode);
+            return Interop.Kernel32.GetMessage(errorCode);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
         [System.Security.SecurityCritical]
         internal static uint GetCurrentProcessId()
         {
-            return Interop.mincore.GetCurrentProcessId();
+            return Interop.Kernel32.GetCurrentProcessId();
         }
 
 

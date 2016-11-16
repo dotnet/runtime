@@ -21,7 +21,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegistryOptions.cs">
       <Link>Common\Interop\Windows\Interop.RegistryOptions.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\Registry.cs" />
@@ -39,52 +39,52 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCloseKey.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegCloseKey.cs">
       <Link>Common\Interop\Windows\Interop.RegCloseKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegConnectRegistry.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs">
       <Link>Common\Interop\Windows\Interop.RegConnectRegistry.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegCreateKeyEx.cs">
       <Link>Common\Interop\Windows\Interop.RegCreateKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegDeleteKeyEx.cs">
       <Link>Common\Interop\Windows\Interop.RegDeleteKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteValue.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
       <Link>Common\Interop\Windows\Interop.RegDeleteValue.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegEnumKeyEx.cs">
       <Link>Common\Interop\Windows\Interop.RegEnumKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumValue.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegEnumValue.cs">
       <Link>Common\Interop\Windows\Interop.RegEnumValue.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegFlushKey.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegFlushKey.cs">
       <Link>Common\Interop\Windows\Interop.RegFlushKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegOpenKeyEx.cs">
       <Link>Common\Interop\Windows\Interop.RegOpenKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegQueryInfoKey.cs">
       <Link>Common\Interop\Windows\Interop.RegQueryInfoKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs">
       <Link>Common\Interop\Windows\Interop.RegQueryValueEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegSetValueEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegSetValueEx.cs">
       <Link>Common\Interop\Windows\Interop.RegSetValueEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />

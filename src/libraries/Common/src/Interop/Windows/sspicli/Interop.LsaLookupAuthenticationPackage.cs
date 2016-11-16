@@ -11,7 +11,7 @@ internal partial class Interop
 {
     internal partial class SspiCli
     {
-        [DllImport(Libraries.Sspi)]
+        [DllImport(Libraries.SspiCli)]
         internal static extern int LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, [In] ref LSA_STRING PackageName, out int AuthenticationPackage);
     }
 }

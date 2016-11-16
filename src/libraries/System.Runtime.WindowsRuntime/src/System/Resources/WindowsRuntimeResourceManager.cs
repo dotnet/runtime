@@ -133,7 +133,7 @@ namespace System.Resources
         // no such culture exists.
         private static CultureInfo GetBestFitCultureFromLanguageList(List<string> languages)
         {
-            StringBuilder localeNameBuffer = new StringBuilder(Interop.mincore.LOCALE_NAME_MAX_LENGTH);
+            StringBuilder localeNameBuffer = new StringBuilder(Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
             for (int i = 0; i < languages.Count; i++)
             {
@@ -142,7 +142,7 @@ namespace System.Resources
                     return new CultureInfo(languages[i]);
                 }
 
-                if (Interop.mincore.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
+                if (Interop.Kernel32.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
                 {
                     string localeName = localeNameBuffer.ToString();
 
