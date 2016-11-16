@@ -14,8 +14,11 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                dsa.ImportParameters(DSATestData.GetDSA1024Params());
+
                 var formatter = new DSASignatureFormatter(dsa);
                 var deformatter = new DSASignatureDeformatter(dsa);
+
                 using (SHA1 alg = SHA1.Create())
                 {
                     VerifySignature(formatter, deformatter, alg, "SHA1");
