@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void DangerousCreateNullObject()
@@ -17,7 +17,7 @@ namespace System.SpanTests
                 delegate ()
                 {
                     int dummy = 4;
-                    Span<int>.DangerousCreate(null, ref dummy, 0);
+                    ReadOnlySpan<int>.DangerousCreate(null, ref dummy, 0);
                 });
         }
 
@@ -28,7 +28,7 @@ namespace System.SpanTests
                 delegate ()
                 {
                     TestClass testClass = new TestClass();
-                    Span<char> span = Span<char>.DangerousCreate(testClass, ref testClass.C1, -1);
+                    ReadOnlySpan<char> span = ReadOnlySpan<char>.DangerousCreate(testClass, ref testClass.C1, -1);
                 });
         }
 
@@ -41,7 +41,7 @@ namespace System.SpanTests
             testClass.C2 = 'c';
             testClass.C3 = 'd';
             testClass.C4 = 'e';
-            Span<char> span = Span<char>.DangerousCreate(testClass, ref testClass.C1, 3);
+            ReadOnlySpan<char> span = ReadOnlySpan<char>.DangerousCreate(testClass, ref testClass.C1, 3);
             span.Validate<char>('b', 'c', 'd');
 
             ref char pc1 = ref span.DangerousGetPinnableReference();

@@ -8,13 +8,13 @@ using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void DangerousGetPinnableReferenceArray()
         {
             int[] a = { 91, 92, 93, 94, 95 };
-            Span<int> span = new Span<int>(a, 1, 3);
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 1, 3);
             ref int pinnableReference = ref span.DangerousGetPinnableReference();
             Assert.True(Unsafe.AreSame<int>(ref a[1], ref pinnableReference));
         }
@@ -26,7 +26,7 @@ namespace System.SpanTests
             // DangerousGetPinnableReference() of a zero-length won't throw an IndexOutOfRange.
 
             int[] a = { 91, 92, 93, 94, 95 };
-            Span<int> span = new Span<int>(a, a.Length, 0);
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, a.Length, 0);
             ref int pinnableReference = ref span.DangerousGetPinnableReference();
             ref int expected = ref Unsafe.Add<int>(ref a[a.Length - 1], 1);
             Assert.True(Unsafe.AreSame<int>(ref expected, ref pinnableReference));
@@ -38,7 +38,7 @@ namespace System.SpanTests
             unsafe
             {
                 int i = 42;
-                Span<int> span = new Span<int>(&i, 1);
+                ReadOnlySpan<int> span = new ReadOnlySpan<int>(&i, 1);
                 ref int pinnableReference = ref span.DangerousGetPinnableReference();
                 Assert.True(Unsafe.AreSame<int>(ref i, ref pinnableReference));
             }
@@ -48,7 +48,7 @@ namespace System.SpanTests
         public static void DangerousGetPinnableReferencePointerDangerousCreate1()
         {
             TestClass testClass = new TestClass();
-            Span<char> span = Span<char>.DangerousCreate(testClass, ref testClass.C1, 3);
+            ReadOnlySpan<char> span = ReadOnlySpan<char>.DangerousCreate(testClass, ref testClass.C1, 3);
 
             ref char pinnableReference = ref span.DangerousGetPinnableReference();
             Assert.True(Unsafe.AreSame<char>(ref testClass.C1, ref pinnableReference));
@@ -59,7 +59,7 @@ namespace System.SpanTests
         {
             unsafe
             {
-                Span<int> span = Span<int>.Empty;
+                ReadOnlySpan<int> span = ReadOnlySpan<int>.Empty;
                 ref int pinnableReference = ref span.DangerousGetPinnableReference();
                 Assert.True(Unsafe.AreSame<int>(ref Unsafe.AsRef<int>(null), ref pinnableReference));
             }

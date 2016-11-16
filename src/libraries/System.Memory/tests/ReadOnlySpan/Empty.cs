@@ -7,12 +7,12 @@ using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void Empty()
         {
-            Span<int> empty = Span<int>.Empty;
+            ReadOnlySpan<int> empty = ReadOnlySpan<int>.Empty;
             Assert.True(empty.IsEmpty);
             Assert.Equal(0, empty.Length);
             unsafe
