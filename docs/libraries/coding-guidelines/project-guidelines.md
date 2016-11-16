@@ -41,7 +41,7 @@ For each unique configuration needed for a given library project a configuration
 - `$(TargetGroup) -> [Empty]* | <PackageTargetFramework> | <PackageTargetRuntime> | <Version> | <PackageTargetFramework><PackageTargetRuntime>`
  - `$(PackageTargetFramework) -> net46x | netstandard1.x | netcoreapp1.x | uap10.x | netcore50`
  - `$(PackageTargetRuntime) -> aot`
- - For more information on various targets see also [.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md)
+ - For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
 - `$(ConfigurationGroup) -> Debug* | Release`
 <BR/>`*` -> *default values*
 
