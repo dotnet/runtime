@@ -2,10 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{24BCEC6B-B9D2-47BC-9D66-725BD6B526FA}</ProjectGuid>
+    <ProjectGuid>{C44B33E3-F89F-40B9-B353-D380C1524988}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>TestApp</RootNamespace>
-    <AssemblyName>TestApp</AssemblyName>
+    <RootNamespace>TestAppOutsideOfTPA</RootNamespace>
+    <AssemblyName>TestAppOutsideOfTPA</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
@@ -16,7 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="TestApp.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="AssemblyAttributes.cs" />
@@ -31,6 +31,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AssemblyResolveTests\AssemblyResolveTests.csproj">
+      <Project>{ad83807c-8be5-4f27-85df-9793613233e1}</Project>
+      <Name>AssemblyResolveTests</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

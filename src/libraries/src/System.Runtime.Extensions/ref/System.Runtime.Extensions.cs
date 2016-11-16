@@ -30,6 +30,7 @@ namespace System
         public event System.EventHandler DomainUnload { add { } remove { } }
         public event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException { add { } remove { } }
         public event System.EventHandler ProcessExit { add { } remove { } }
+        public event ResolveEventHandler ReflectionOnlyAssemblyResolve { add { } remove { } }
         public event System.ResolveEventHandler ResourceResolve { add { } remove { } }
         public event System.ResolveEventHandler TypeResolve { add { } remove { } }
         public string ApplyPolicy(string assemblyName) { throw null; }
@@ -53,6 +54,8 @@ namespace System
         public System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public System.Reflection.Assembly[] ReflectionOnlyGetAssemblies() { throw null; }
         public void SetData(string name, object data) { }
+        [ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated.")]
+        public void SetDynamicBase(string path) { }
         public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
         public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
         public override string ToString() { throw null; }
