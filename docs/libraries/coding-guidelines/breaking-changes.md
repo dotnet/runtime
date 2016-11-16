@@ -26,12 +26,7 @@ To help triage breaking changes, we classify them in to four buckets:
 *Clear violation of public contract.*
 
 Examples:
-* throwing a new/different exception type in an existing common scenario
-* An exception is no longer thrown
-* A different behavior is observed after the change for an input
 * renaming a public type, member, or parameter
-* decreasing the range of accepted values within a given parameter
-* A new instance field is added to a type (impacts serialization)
 * changing the value of a public constant or enum member
 
 ## Bucket 2: Reasonable Grey Area
@@ -39,6 +34,11 @@ Examples:
 
 Examples:
 
+* throwing a new/different exception type in an existing common scenario
+* An exception is no longer thrown
+* A different behavior is observed after the change for an input
+* decreasing the range of accepted values within a given parameter
+* A new instance field is added to a type (impacts serialization)
 * change in timing/order of events (even when not specified in docs)
 * change in parsing of input and throwing new errors (even if parsing behavior
   is not specified in the docs)
