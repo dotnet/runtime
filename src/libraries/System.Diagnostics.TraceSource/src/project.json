@@ -15,8 +15,7 @@
         "System.Runtime.Extensions": "4.4.0-beta-24715-03",
         "System.Runtime.InteropServices": "4.4.0-beta-24715-03",
         "System.Threading": "4.4.0-beta-24715-03",
-        "System.Threading.Tasks": "4.4.0-beta-24715-03",
-        "System.Security.Permissions": "4.4.0-beta-24715-03"
+        "System.Threading.Tasks": "4.4.0-beta-24715-03"
       }
     },
     "net463": {
