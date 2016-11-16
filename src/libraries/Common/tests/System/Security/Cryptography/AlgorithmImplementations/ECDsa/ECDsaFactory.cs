@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         ECDsa Create(ECCurve curve);
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
+        bool SupportsKeyGeneration { get; }
     }
 
     public static partial class ECDsaFactory
@@ -35,12 +36,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return s_provider.IsCurveValid(oid);
         }
 
-        public static bool ExplicitCurvesSupported
-        {
-            get
-            {
-                return s_provider.ExplicitCurvesSupported;
-            }
-        }
+        public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
+        public static bool SupportsKeyGeneration => s_provider.SupportsKeyGeneration;
     }
 }

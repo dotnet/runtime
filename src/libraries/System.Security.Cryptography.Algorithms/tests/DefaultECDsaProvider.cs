@@ -32,6 +32,10 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 // Friendly name required for windows
                 return NativeOidFriendlyNameExists(oid.FriendlyName);
             }
+            if (PlatformDetection.IsOSX)
+            {
+                return false;
+            }
             if (!string.IsNullOrEmpty(oid.Value))
             {
                 // Value is passed before FriendlyName
@@ -48,6 +52,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 {
                     return PlatformDetection.WindowsVersion >= 10;
                 }
+
+                if (PlatformDetection.IsOSX)
+                {
+                    return false;
+                }
+
                 return true;
             }
         }
@@ -85,6 +95,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
             return false;
         }
+
+        public bool SupportsKeyGeneration => !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
     }
 
     public partial class ECDsaFactory

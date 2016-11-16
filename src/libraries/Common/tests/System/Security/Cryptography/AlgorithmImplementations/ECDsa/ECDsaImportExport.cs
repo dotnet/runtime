@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
-        [Theory, MemberData(nameof(TestCurvesFull))]
+        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)
         {
             using (ECDsa ec1 = ECDsaFactory.Create(curveDef.Curve))
@@ -113,7 +115,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.Throws<ArgumentException>(() => ECCurve.CreateFromOid(new Oid("", "")));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void TestKeySizeCreateKey()
         {
             using (ECDsa ec = ECDsaFactory.Create(ECCurve.NamedCurves.nistP256))

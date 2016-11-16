@@ -8,6 +8,8 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSAKeyGeneration
     {
+        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+
         [Fact]
         public static void VerifyDefaultKeySize_Fips186_2()
         {
@@ -20,19 +22,19 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void GenerateKey_1024()
         {
             GenerateKey(1024);

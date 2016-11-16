@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
     internal class DerSequenceReader
     {
         internal const byte ContextSpecificTagFlag = 0x80;
+        internal const byte ConstructedFlag = 0x20;
 
         private readonly byte[] _data;
         private readonly int _end;
@@ -92,6 +93,22 @@ namespace System.Security.Cryptography
             EatTag(DerTag.Integer);
 
             return ReadContentAsBytes();
+        }
+
+        internal byte[] ReadBitString()
+        {
+            EatTag(DerTag.BitString);
+
+            int contentLength = EatLength();
+            // skip the "unused bits" byte
+            contentLength--;
+            _position++;
+
+            byte[] octets = new byte[contentLength];
+            Buffer.BlockCopy(_data, _position, octets, 0, contentLength);
+
+            _position += contentLength;
+            return octets;
         }
 
         internal byte[] ReadOctetString()
