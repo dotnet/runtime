@@ -1860,7 +1860,7 @@ FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
 #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
-    FCFuncElement("WaitHelper", SynchronizationContextNative::WaitHelper)
+    FCFuncElement("WaitHelperNative", SynchronizationContextNative::WaitHelper)
 #endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 #ifdef FEATURE_APPX
     QCFuncElement("GetWinRTDispatcherForCurrentThread", SynchronizationContextNative::GetWinRTDispatcherForCurrentThread)
