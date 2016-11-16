@@ -34,7 +34,7 @@ from collections import defaultdict
 
 g_arm64ci_path = os.path.join(os.environ["USERPROFILE"], "bin")
 g_dotnet_url = "https://go.microsoft.com/fwlink/?LinkID=831469"
-g_test_url = "https://clrjit.blob.core.windows.net/arm64ci/CoreCLRTests-675622bb85f3c78de1967a78052d7280a2834611.zip"
+g_test_url = "https://clrjit.blob.core.windows.net/arm64ci/CoreCLRTests-2c0a2c05ba82460a8d8a4b1e2d98e908e59d5d54.zip"
 g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client.zip"
 
 ################################################################################
