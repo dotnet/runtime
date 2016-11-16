@@ -841,16 +841,16 @@ private:
 
     DECLARE_TYPED_ENUM(ChunkExtraAttribs, BYTE)
     {
-        CEA_None,      // No extra attributes.
-        CEA_Const,     // This chunk contains constant values.
-        CEA_Handle,    // This chunk contains handle constants.
-        CEA_NotAField, // This chunk contains "not a field" values.
-        CEA_Func0,     // Represents functions of arity 0.
-        CEA_Func1,     // ...arity 1.
-        CEA_Func2,     // ...arity 2.
-        CEA_Func3,     // ...arity 3.
-        CEA_Func4,     // ...arity 4.
-        CEA_Count
+        CEA_None,          // No extra attributes.
+            CEA_Const,     // This chunk contains constant values.
+            CEA_Handle,    // This chunk contains handle constants.
+            CEA_NotAField, // This chunk contains "not a field" values.
+            CEA_Func0,     // Represents functions of arity 0.
+            CEA_Func1,     // ...arity 1.
+            CEA_Func2,     // ...arity 2.
+            CEA_Func3,     // ...arity 3.
+            CEA_Func4,     // ...arity 4.
+            CEA_Count
     }
     END_DECLARE_TYPED_ENUM(ChunkExtraAttribs, BYTE);
 
