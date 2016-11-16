@@ -242,7 +242,7 @@ namespace System
         /// Thrown when the destination Span is shorter than the source Span.
         /// </exception>
         /// </summary>
-        public void CopyTo(ReadOnlySpan<T> destination)
+        public void CopyTo(Span<T> destination)
         {
             if (!TryCopyTo(destination))
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -258,9 +258,9 @@ namespace System
         /// return false and no data is written to the destination.</returns>
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public bool TryCopyTo(ReadOnlySpan<T> destination)
+        public bool TryCopyTo(Span<T> destination)
         {
-            if ((uint)_length > (uint)destination._length)
+            if ((uint)_length > (uint)destination.Length)
                 return false;
 
             // TODO: This is a tide-over implementation as we plan to add a overlap-safe cpblk-based api to Unsafe. (https://github.com/dotnet/corefx/issues/13427)
