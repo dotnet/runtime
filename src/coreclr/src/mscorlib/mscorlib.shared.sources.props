@@ -620,7 +620,6 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\SR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
-    <GlobalizationSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(CoreFxSourcesRoot)\System\Globalization\STUBS.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.cs" />
@@ -643,6 +642,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\HebrewCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\HebrewNumber.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\HijriCalendar.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\IdnMapping.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\InternalGlobalizationHelper.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
@@ -672,6 +672,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
@@ -683,6 +684,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DigitShapes.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
