@@ -74,7 +74,7 @@ Feature owners reserve the right to call out what they don't want to support on 
 
 This list, while not complete, is meant as a reference point. We'll add to it as we refine our porting plan. Also, just because something is currently not implemented, doesn't imply it's intentionally unsupported. Feel free to [file an issue](https://github.com/dotnet/corefx/issues/new) to ask for specific APIs and technologies. Porting requests are generally marked as [port-to-core](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aport-to-core).
 
-Binary Serialization is supported post 1.1, however we do not support cross-version or cross-platform binary serialization. For new code you may want to consider other serialization approaches such as data contract serialization, XML serialization, JSON.NET, and protobuf-net.
+Binary Serialization is supported post 1.1, however we do not support cross-platform binary serialization. For new code you may want to consider other serialization approaches such as data contract serialization, XML serialization, JSON.NET, and protobuf-net.
 
 Technology                 | More information
 ---------------------------|-----------------------------------
