@@ -2,67 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// Implementation of the GC environment
-//
+#include "env/gcenv.structs.h"
+#include "env/gcenv.base.h"
+#include "env/gcenv.os.h"
 
-#include "common.h"
-
-#include "windows.h"
-
-#include "gcenv.h"
-#include "gc.h"
-
-MethodTable * g_pFreeObjectMethodTable;
-
-int32_t g_TrapReturningThreads;
-
-bool g_fFinalizerRunOnShutDown;
-
-GCSystemInfo g_SystemInfo;
-
-static LARGE_INTEGER g_performanceFrequency;
+#error This file should not be compiled!
 
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
-    if (!::QueryPerformanceFrequency(&g_performanceFrequency))
-    {
-        return false;
-    }
-
-    SYSTEM_INFO systemInfo;
-    GetSystemInfo(&systemInfo);
-
-    g_SystemInfo.dwNumberOfProcessors = systemInfo.dwNumberOfProcessors;
-    g_SystemInfo.dwPageSize = systemInfo.dwPageSize;
-    g_SystemInfo.dwAllocationGranularity = systemInfo.dwAllocationGranularity;
-
-    return true;
+    throw nullptr;
 }
 
 // Shutdown the interface implementation
 void GCToOSInterface::Shutdown()
 {
+    throw nullptr;
 }
 
-// Get numeric id of the current thread if possible on the
+// Get numeric id of the current thread if possible on the 
 // current platform. It is indended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the 
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-    return ::GetCurrentThreadId();
+    throw nullptr;
 }
 
 // Get id of the process
-// Return:
-//  Id of the current process
 uint32_t GCToOSInterface::GetCurrentProcessId()
 {
-    return ::GetCurrentProcessId();
+    throw nullptr;
 }
 
 // Set ideal affinity for the current thread
@@ -72,63 +44,37 @@ uint32_t GCToOSInterface::GetCurrentProcessId()
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 {
-    bool success = true;
-
-#if !defined(FEATURE_CORESYSTEM)
-    SetThreadIdealProcessor(GetCurrentThread(), (DWORD)affinity->Processor);
-#else
-    PROCESSOR_NUMBER proc;
-
-    if (affinity->Group != -1)
-    {
-        proc.Group = (WORD)affinity->Group;
-        proc.Number = (BYTE)affinity->Processor;
-        proc.Reserved = 0;
-
-        success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
-    }
-    else
-    {
-        if (GetThreadIdealProcessorEx(GetCurrentThread(), &proc))
-        {
-            proc.Number = affinity->Processor;
-            success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
-        }
-    }
-#endif
-
-    return success;
+    throw nullptr;
 }
 
 // Get the number of the current processor
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
-    _ASSERTE(GCToOSInterface::CanGetCurrentProcessorNumber());
-    return ::GetCurrentProcessorNumber();
+    throw nullptr;
 }
 
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return true;
+    throw nullptr;
 }
 
 // Flush write buffers of processors that are executing threads of the current process
 void GCToOSInterface::FlushProcessWriteBuffers()
 {
-    ::FlushProcessWriteBuffers();
+    throw nullptr;
 }
 
 // Break into a debugger
 void GCToOSInterface::DebugBreak()
 {
-    ::DebugBreak();
+    throw nullptr;
 }
 
 // Get number of logical processors
 uint32_t GCToOSInterface::GetLogicalCpuCount()
 {
-    return g_SystemInfo.dwNumberOfProcessors;
+    throw nullptr;
 }
 
 // Causes the calling thread to sleep for the specified number of milliseconds
@@ -136,7 +82,7 @@ uint32_t GCToOSInterface::GetLogicalCpuCount()
 //  sleepMSec   - time to sleep before switching to another thread
 void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
-    ::Sleep(sleepMSec);
+    throw nullptr;
 }
 
 // Causes the calling thread to yield execution to another thread that is ready to run on the current processor.
@@ -144,21 +90,19 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
 //  switchCount - number of times the YieldThread was called in a loop
 void GCToOSInterface::YieldThread(uint32_t switchCount)
 {
-    SwitchToThread();
+    throw nullptr;
 }
 
 // Reserve virtual memory range.
 // Parameters:
-//  address   - starting virtual address, it can be NULL to let the function choose the starting address
 //  size      - size of the virtual memory range
-//  alignment - requested memory alignment
+//  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
 // Return:
 //  Starting virtual address of the reserved range
 void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
 {
-    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
-    return ::VirtualAlloc(0, size, memFlags, PAGE_READWRITE);
+    throw nullptr;
 }
 
 // Release virtual memory range previously reserved using VirtualReserve
@@ -169,8 +113,7 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 {
-    UNREFERENCED_PARAMETER(size);
-    return !!::VirtualFree(address, 0, MEM_RELEASE);
+    throw nullptr;
 }
 
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
@@ -181,7 +124,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualCommit(void* address, size_t size)
 {
-    return ::VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+    throw nullptr;
 }
 
 // Decomit virtual memory range.
@@ -192,10 +135,10 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 {
-    return !!::VirtualFree(address, size, MEM_DECOMMIT);
+    throw nullptr;
 }
 
-// Reset virtual memory range. Indicates that data in the memory range specified by address and size is no 
+// Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
 // longer of interest, but it should not be decommitted.
 // Parameters:
 //  address - starting virtual address
@@ -205,20 +148,13 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    bool success = ::VirtualAlloc(address, size, MEM_RESET, PAGE_READWRITE) != NULL;
-    if (success && unlock)
-    {
-        // Remove the page range from the working set
-        ::VirtualUnlock(address, size);
-    }
-
-    return success;
+    throw nullptr;
 }
 
 // Check if the OS supports write watching
 bool GCToOSInterface::SupportsWriteWatch()
 {
-    return false;
+    throw nullptr;
 }
 
 // Reset the write tracking state for the specified virtual memory range.
@@ -227,6 +163,7 @@ bool GCToOSInterface::SupportsWriteWatch()
 //  size    - size of the virtual memory range
 void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
 {
+    throw nullptr;
 }
 
 // Retrieve addresses of the pages that are written to in a region of virtual memory
@@ -241,7 +178,7 @@ void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size, void** pageAddresses, uintptr_t* pageAddressesCount)
 {
-    return false;
+    throw nullptr;
 }
 
 // Get size of the largest cache on the processor die
@@ -252,8 +189,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //  Size of the cache
 size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
 {
-    // TODO: implement
-    return 0;
+    throw nullptr;
 }
 
 // Get affinity mask of the current process
@@ -271,7 +207,7 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
 //  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
 bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
 {
-    return false;
+    throw nullptr;
 }
 
 // Get number of processors assigned to the current process
@@ -279,7 +215,7 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uint
 //  The number of processors
 uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
-    return g_SystemInfo.dwNumberOfProcessors;
+    throw nullptr;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.
@@ -287,27 +223,18 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 //  non zero if it has succeeded, 0 if it has failed
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
-    MEMORYSTATUSEX memStatus;
-
-    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
-    _ASSERTE(fRet);
-
-    return (size_t)memStatus.ullTotalVirtual;
+    throw nullptr;
 }
 
 // Get the physical memory that this process can use.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
+// Remarks:
+//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
+//  specified, it returns amount of actual physical memory.
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
 {
-    MEMORYSTATUSEX memStatus;
-
-    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
-    _ASSERTE(fRet);
-
-    return memStatus.ullTotalPhys;
+    throw nullptr;
 }
 
 // Get memory status
@@ -318,25 +245,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
 void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
-    MEMORYSTATUSEX memStatus;
-
-    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
-    _ASSERTE (fRet);
-
-    // If the machine has more RAM than virtual address limit, let us cap it.
-    // The GC can never use more than virtual address limit.
-    if (memStatus.ullAvailPhys > memStatus.ullTotalVirtual)
-    {
-        memStatus.ullAvailPhys = memStatus.ullAvailVirtual;
-    }
-
-    if (memory_load != NULL)
-        *memory_load = memStatus.dwMemoryLoad;
-    if (available_physical != NULL)
-        *available_physical = memStatus.ullAvailPhys;
-    if (available_page_file != NULL)
-        *available_page_file = memStatus.ullAvailPageFile;
+    throw nullptr;
 }
 
 // Get a high precision performance counter
@@ -344,14 +253,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 //  The counter value
 int64_t GCToOSInterface::QueryPerformanceCounter()
 {
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceCounter(&ts))
-    {
-        _ASSERTE(!"Fatal Error - cannot query performance counter.");
-        abort();
-    }
-
-    return ts.QuadPart;
+    throw nullptr;
 }
 
 // Get a frequency of the high precision performance counter
@@ -359,7 +261,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 //  The counter frequency
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
-    return g_performanceFrequency.QuadPart;
+    throw nullptr;
 }
 
 // Get a time stamp with a low precision
@@ -367,31 +269,11 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    return ::GetTickCount();
+    throw nullptr;
 }
 
-// Parameters of the GC thread stub
-struct GCThreadStubParam
-{
-    GCThreadFunction GCThreadFunction;
-    void* GCThreadParam;
-};
 
-// GC thread stub to convert GC thread function to an OS specific thread function
-static DWORD __stdcall GCThreadStub(void* param)
-{
-    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
-    GCThreadFunction function = stubParam->GCThreadFunction;
-    void* threadParam = stubParam->GCThreadParam;
-
-    delete stubParam;
-
-    function(threadParam);
-
-    return 0;
-}
-
-// Create a new thread
+// Create a new thread for GC use
 // Parameters:
 //  function - the function to be executed by the thread
 //  param    - parameters of the thread
@@ -400,54 +282,29 @@ static DWORD __stdcall GCThreadStub(void* param)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
 {
-    DWORD thread_id;
-
-    GCThreadStubParam* stubParam = new (nothrow) GCThreadStubParam();
-    if (stubParam == NULL)
-    {
-        return false;
-    }
-
-    stubParam->GCThreadFunction = function;
-    stubParam->GCThreadParam = param;
-
-    HANDLE gc_thread = ::CreateThread(NULL, 0, GCThreadStub, stubParam, CREATE_SUSPENDED, &thread_id);
-
-    if (!gc_thread)
-    {
-        delete stubParam;
-        return false;
-    }
-
-    SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
-
-    ResumeThread(gc_thread);
-
-    CloseHandle(gc_thread);
-
-    return true;
+    throw nullptr;
 }
 
 // Initialize the critical section
 void CLRCriticalSection::Initialize()
 {
-    ::InitializeCriticalSection(&m_cs);
+    throw nullptr;
 }
 
 // Destroy the critical section
 void CLRCriticalSection::Destroy()
 {
-    ::DeleteCriticalSection(&m_cs);
+    throw nullptr;
 }
 
 // Enter the critical section. Blocks until the section can be entered.
 void CLRCriticalSection::Enter()
 {
-    ::EnterCriticalSection(&m_cs);
+    throw nullptr;
 }
 
 // Leave the critical section
 void CLRCriticalSection::Leave()
 {
-    ::LeaveCriticalSection(&m_cs);
+    throw nullptr;
 }
