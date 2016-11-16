@@ -96,6 +96,11 @@ internal static class SR
         get { return Environment.GetResourceString("ArgumentOutOfRange_Index"); }
     }
 
+    public static string ArgumentOutOfRange_IndexCountBuffer
+    {
+        get { return Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"); }
+    }
+
     public static string ArgumentOutOfRange_InvalidEraValue
     {
         get { return Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"); }
@@ -176,6 +181,21 @@ internal static class SR
         get { return Environment.GetResourceString("Argument_EmptyDecString"); }
     }
 
+    public static string Argument_IdnBadLabelSize
+    {
+        get { return Environment.GetResourceString("Argument_IdnBadLabelSize"); }
+    }
+
+    public static string Argument_IdnBadPunycode
+    {
+        get { return Environment.GetResourceString("Argument_IdnBadPunycode"); }
+    }
+
+    public static string Argument_IdnIllegalName
+    {
+        get { return Environment.GetResourceString("Argument_IdnIllegalName"); }
+    }
+
     public static string Argument_InvalidArrayLength
     {
         get { return Environment.GetResourceString("Argument_InvalidArrayLength"); }
@@ -184,6 +204,11 @@ internal static class SR
     public static string Argument_InvalidCalendar
     {
         get { return Environment.GetResourceString("Argument_InvalidCalendar"); }
+    }
+
+    public static string Argument_InvalidCharSequence
+    {
+        get { return Environment.GetResourceString("Argument_InvalidCharSequence"); }
     }
 
     public static string Argument_InvalidCultureName
