@@ -2692,7 +2692,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTreePtr opA, FieldSeqNode* fldSeq)
         assert(GetVNFunc(VNNormVal(opA->GetVN(VNK_Conservative)), &consFuncApp) && consFuncApp.Equals(funcApp));
 #endif
         ValueNum fldSeqVN = VNForFieldSeq(fldSeq);
-        res               = VNForFunc(TYP_BYREF, VNF_PtrToLoc, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
+        res = VNForFunc(TYP_BYREF, VNF_PtrToLoc, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
     }
     else if (funcApp.m_func == VNF_PtrToStatic)
     {
@@ -6075,7 +6075,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 if (newVN == ValueNumStore::NoVN)
                 {
                     assert(arg->gtLclVarCommon.GetSsaNum() != ValueNumStore::NoVN);
-                    newVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(arg->gtLclVarCommon.GetLclNum()), vnStore->VNForFieldSeq(fieldSeq));
+                    newVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc,
+                                               vnStore->VNForIntCon(arg->gtLclVarCommon.GetLclNum()),
+                                               vnStore->VNForFieldSeq(fieldSeq));
                 }
                 tree->gtVNPair.SetBoth(newVN);
             }
