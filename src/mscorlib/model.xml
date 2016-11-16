@@ -10088,7 +10088,7 @@
     </Type>
     <Type Name="System.Reflection.StrongNameKeyPair">
       <Member Name="#ctor(System.Byte[])" />
-      <!--      <Member Name="#ctor(System.IO.FileStream)" /> -->
+      <Member Name="#ctor(System.IO.FileStream)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="get_PublicKey" />

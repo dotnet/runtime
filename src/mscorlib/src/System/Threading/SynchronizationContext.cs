@@ -143,28 +143,39 @@ namespace System.Threading
         }
 
 #if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
-        // Method called when the CLR does a wait operation 
+        // Method called when the CLR does a wait operation
         [System.Security.SecurityCritical]  // auto-generated_required
         [CLSCompliant(false)]
         [PrePrepareMethod]
         public virtual int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+        {
+            return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
+        }
+
+        // Method that can be called by Wait overrides
+        [System.Security.SecurityCritical]  // auto-generated_required
+        [CLSCompliant(false)]
+        [PrePrepareMethod]
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        protected static int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             if (waitHandles == null)
             {
                 throw new ArgumentNullException(nameof(waitHandles));
             }
             Contract.EndContractBlock();
-            return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
+
+            return WaitHelperNative(waitHandles, waitAll, millisecondsTimeout);
         }
-                                
-        // Static helper to which the above method can delegate to in order to get the default 
+
+        // Static helper to which the above method can delegate to in order to get the default
         // COM behavior.
         [System.Security.SecurityCritical]  // auto-generated_required
         [CLSCompliant(false)]
         [PrePrepareMethod]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]       
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        protected static extern int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
+        private static extern int WaitHelperNative(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
 #endif
 
 #if FEATURE_CORECLR
