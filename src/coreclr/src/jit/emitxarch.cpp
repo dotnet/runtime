@@ -2915,7 +2915,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (varNum != BAD_VAR_NUM || tmpDsc != nullptr)
     {
         // Is the memory op in the source position?
-        if (src->isContainedLclField() || src->isContainedLclVar() || src->isContainedSpillTemp() || src->isContainedMemoryOp())
+        if (src->isContainedLclField() || src->isContainedLclVar() || src->isContainedSpillTemp() ||
+            src->isContainedMemoryOp())
         {
             if (instrHasImplicitRegPairDest(ins))
             {
