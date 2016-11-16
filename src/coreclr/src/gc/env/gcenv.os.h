@@ -73,13 +73,12 @@ public:
 
     // Reserve virtual memory range.
     // Parameters:
-    //  address   - starting virtual address, it can be NULL to let the function choose the starting address
     //  size      - size of the virtual memory range
     //  alignment - requested memory alignment
     //  flags     - flags to control special settings like write watching
     // Return:
     //  Starting virtual address of the reserved range
-    static void* VirtualReserve(void *address, size_t size, size_t alignment, uint32_t flags);
+    static void* VirtualReserve(size_t size, size_t alignment, uint32_t flags);
 
     // Release virtual memory range previously reserved using VirtualReserve
     // Parameters:

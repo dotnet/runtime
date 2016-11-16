@@ -172,7 +172,6 @@ set(VM_SOURCES_WKS
     frameworkexceptionloader.cpp
     gccover.cpp
     gcenv.ee.cpp
-    gcenv.os.cpp
     gchelpers.cpp
     genmeth.cpp
     hosting.cpp
@@ -248,6 +247,12 @@ if(FEATURE_EVENT_TRACE)
         eventtrace.cpp
         )
 endif(FEATURE_EVENT_TRACE)
+
+if(NOT FEATURE_STANDALONE_GC)
+    list(APPEND VM_SOURCES_WKS
+        gcenv.os.cpp
+        )
+endif(NOT FEATURE_STANDALONE_GC)
 
 if(WIN32)
 
