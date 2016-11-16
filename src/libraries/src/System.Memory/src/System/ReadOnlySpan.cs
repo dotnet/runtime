@@ -12,13 +12,13 @@ using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 namespace System
 {
     /// <summary>
-    /// Span represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
+    /// ReadOnlySpan represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
     public struct ReadOnlySpan<T>
     {
         /// <summary>
-        /// Creates a new span over the entirety of the target array.
+        /// Creates a new read-only span over the entirety of the target array.
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
@@ -38,11 +38,11 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new span over the portion of the target array beginning
+        /// Creates a new read-only span over the portion of the target array beginning
         /// at 'start' index and covering the remainder of the array.
         /// </summary>
         /// <param name="array">The target array.</param>
-        /// <param name="start">The index at which to begin the span.</param>
+        /// <param name="start">The index at which to begin the read-only span.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
@@ -67,12 +67,12 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new span over the portion of the target array beginning
+        /// Creates a new read-only span over the portion of the target array beginning
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
         /// <param name="array">The target array.</param>
-        /// <param name="start">The index at which to begin the span.</param>
-        /// <param name="length">The number of items in the span.</param>
+        /// <param name="start">The index at which to begin the read-only span.</param>
+        /// <param name="length">The number of items in the read-only span.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
@@ -95,7 +95,7 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new span over the target unmanaged buffer.  Clearly this
+        /// Creates a new read-only span over the target unmanaged buffer.  Clearly this
         /// is quite dangerous, because we are creating arbitrarily typed T's
         /// out of a void*-typed block of memory.  And the length is not checked.
         /// But if this creation is correct, then all subsequent uses are correct.
@@ -122,7 +122,7 @@ namespace System
         }
 
         /// <summary>
-        /// Create a new span over a portion of a regular managed object. This can be useful
+        /// Create a new read-only span over a portion of a regular managed object. This can be useful
         /// if part of a managed object represents a "fixed array." This is dangerous because
         /// "length" is not checked, nor is the fact that "rawPointer" actually lies within the object.
         /// </summary>
@@ -160,7 +160,7 @@ namespace System
         }
 
         /// <summary>
-        /// The number of items in the span.
+        /// The number of items in the read-only span.
         /// </summary>
         public int Length => _length;
 
@@ -170,7 +170,7 @@ namespace System
         public bool IsEmpty => _length == 0;
 
         /// <summary>
-        /// Returns the specified element of the span.
+        /// Returns the specified element of the read-only span.
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
@@ -193,7 +193,7 @@ namespace System
         }
 
         /// <summary>
-        /// Copies the contents of this span into destination span. If the source
+        /// Copies the contents of this read-only span into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
         ///
@@ -210,7 +210,7 @@ namespace System
 
 
         /// <summary>
-        /// Copies the contents of this span into destination span. If the source
+        /// Copies the contents of this read-only span into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
         ///
@@ -310,7 +310,7 @@ namespace System
         public static implicit operator ReadOnlySpan<T>(Span<T> span) => new ReadOnlySpan<T>(span._pinnable, span._byteOffset, span._length);
 
         /// <summary>
-        /// Forms a slice out of the given span, beginning at 'start'.
+        /// Forms a slice out of the given read-only span, beginning at 'start'.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">
@@ -328,7 +328,7 @@ namespace System
         }
 
         /// <summary>
-        /// Forms a slice out of the given span, beginning at 'start', of given length
+        /// Forms a slice out of the given read-only span, beginning at 'start', of given length
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
@@ -346,7 +346,7 @@ namespace System
         }
 
         /// <summary>
-        /// Copies the contents of this span into a new array.  This heap
+        /// Copies the contents of this read-only span into a new array.  This heap
         /// allocates, so should generally be avoided, however it is sometimes
         /// necessary to bridge the gap with APIs written in terms of arrays.
         /// </summary>
@@ -361,7 +361,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 0-length span whose base is the null pointer.
+        /// Returns a 0-length read-only span whose base is the null pointer.
         /// </summary>
         public static readonly ReadOnlySpan<T> Empty = default(ReadOnlySpan<T>);
 
