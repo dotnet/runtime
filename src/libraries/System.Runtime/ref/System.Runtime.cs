@@ -6115,7 +6115,7 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public sealed partial class FirstChanceExceptionEventArgs : EventArgs
+    public partial class FirstChanceExceptionEventArgs : EventArgs
     {
         public FirstChanceExceptionEventArgs(Exception exception) { }
         public Exception Exception { get { throw null; } }
