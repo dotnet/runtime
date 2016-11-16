@@ -39,7 +39,6 @@ namespace System.Reflection
         private String  _keyPairContainer;
         private byte[]  _publicKey;
 
-#if !FEATURE_CORECLR
         // Build key pair from file.
         [System.Security.SecuritySafeCritical]  // auto-generated
 #pragma warning disable 618
@@ -57,7 +56,6 @@ namespace System.Reflection
 
             _keyPairExported = true;
         }
-#endif// FEATURE_CORECLR
 
         // Build key pair from byte array in memory.
         [System.Security.SecuritySafeCritical]  // auto-generated
