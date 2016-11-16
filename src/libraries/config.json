@@ -245,7 +245,7 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }    
+    }
   },
   "commands": {
     "build-managed": {
@@ -269,8 +269,10 @@
         "tests": {
           "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
-            "RestoreDuringBuild": "false",
-            "Project": "src/tests.builds",
+            "RestoreDuringBuild":  true,
+            "BuildTestsAgainstPackages": true,
+            "RestoreForTestsAgainstPackagesOnly": true,
+            "BuildTests": true,
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
         },
@@ -335,6 +337,7 @@
         "settings": {
           "OSGroup": "default",
           "TargetOS": "default",
+          "BuildTests": false,
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
