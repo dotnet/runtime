@@ -18,25 +18,25 @@ namespace System.Security.AccessControl
     enum RegistryRights
     {
         // No None field - An ACE with the value 0 cannot grant nor deny.
-        QueryValues = Interop.mincore.RegistryOperations.KEY_QUERY_VALUE,          // 0x0001 query the values of a registry key
-        SetValue = Interop.mincore.RegistryOperations.KEY_SET_VALUE,            // 0x0002 create, delete, or set a registry value
-        CreateSubKey = Interop.mincore.RegistryOperations.KEY_CREATE_SUB_KEY,       // 0x0004 required to create a subkey of a specific key
-        EnumerateSubKeys = Interop.mincore.RegistryOperations.KEY_ENUMERATE_SUB_KEYS,   // 0x0008 required to enumerate sub keys of a key
-        Notify = Interop.mincore.RegistryOperations.KEY_NOTIFY,               // 0x0010 needed to request change notifications
-        CreateLink = Interop.mincore.RegistryOperations.KEY_CREATE_LINK,          // 0x0020 reserved for system use
+        QueryValues = Interop.Advapi32.RegistryOperations.KEY_QUERY_VALUE,          // 0x0001 query the values of a registry key
+        SetValue = Interop.Advapi32.RegistryOperations.KEY_SET_VALUE,            // 0x0002 create, delete, or set a registry value
+        CreateSubKey = Interop.Advapi32.RegistryOperations.KEY_CREATE_SUB_KEY,       // 0x0004 required to create a subkey of a specific key
+        EnumerateSubKeys = Interop.Advapi32.RegistryOperations.KEY_ENUMERATE_SUB_KEYS,   // 0x0008 required to enumerate sub keys of a key
+        Notify = Interop.Advapi32.RegistryOperations.KEY_NOTIFY,               // 0x0010 needed to request change notifications
+        CreateLink = Interop.Advapi32.RegistryOperations.KEY_CREATE_LINK,          // 0x0020 reserved for system use
         ///
         /// The Windows Kernel team agrees that it was a bad design to expose the WOW64_n options as permissions.
         /// in the .NET Framework these options are exposed via the RegistryView enum
         ///
-        ///        Reg64             = Interop.mincore.RegistryOptions.KEY_WOW64_64KEY,          // 0x0100 operate on the 64-bit registry view
-        ///        Reg32             = Interop.mincore.RegistryOptions.KEY_WOW64_32KEY,          // 0x0200 operate on the 32-bit registry view
+        ///        Reg64             = Interop.Advapi32.RegistryOptions.KEY_WOW64_64KEY,          // 0x0100 operate on the 64-bit registry view
+        ///        Reg32             = Interop.Advapi32.RegistryOptions.KEY_WOW64_32KEY,          // 0x0200 operate on the 32-bit registry view
         ExecuteKey = ReadKey,
-        ReadKey = Interop.mincore.RegistryOperations.STANDARD_RIGHTS_READ | QueryValues | EnumerateSubKeys | Notify,
-        WriteKey = Interop.mincore.RegistryOperations.STANDARD_RIGHTS_WRITE | SetValue | CreateSubKey,
+        ReadKey = Interop.Advapi32.RegistryOperations.STANDARD_RIGHTS_READ | QueryValues | EnumerateSubKeys | Notify,
+        WriteKey = Interop.Advapi32.RegistryOperations.STANDARD_RIGHTS_WRITE | SetValue | CreateSubKey,
         Delete = 0x10000,
         ReadPermissions = 0x20000,
         ChangePermissions = 0x40000,
         TakeOwnership = 0x80000,
-        FullControl = 0xF003F | Interop.mincore.RegistryOperations.STANDARD_RIGHTS_READ | Interop.mincore.RegistryOperations.STANDARD_RIGHTS_WRITE
+        FullControl = 0xF003F | Interop.Advapi32.RegistryOperations.STANDARD_RIGHTS_READ | Interop.Advapi32.RegistryOperations.STANDARD_RIGHTS_WRITE
     }
 }

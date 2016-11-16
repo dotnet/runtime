@@ -36,13 +36,13 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FreeLibrary.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
       <Link>Common\Interop\Windows\Interop.FreeLibrary.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetModuleHandle.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Interop.GetModuleHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.LoadLibraryEx.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
       <Link>Common\Interop\Windows\Interop.LoadLibraryEx.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">

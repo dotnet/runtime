@@ -533,7 +533,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe uint HttpCreateRequestQueue(HTTPAPI_VERSION version, string pName,
-            Interop.mincore.SECURITY_ATTRIBUTES* pSecurityAttributes, uint flags, out HttpRequestQueueV2Handle pReqQueueHandle);
+            Interop.Kernel32.SECURITY_ATTRIBUTES* pSecurityAttributes, uint flags, out HttpRequestQueueV2Handle pReqQueueHandle);
 
         [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern uint HttpAddUrlToUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, ulong context, uint pReserved);
@@ -592,11 +592,11 @@ internal static partial class Interop
 
             override protected bool ReleaseHandle()
             {
-                return Interop.mincore_obsolete.LocalFree(handle) == IntPtr.Zero;
+                return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
             }
         }
 
-        [DllImport(Libraries.Heap, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern SafeLocalFreeChannelBinding LocalAlloc(int uFlags, UIntPtr sizetdwBytes);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
@@ -613,7 +613,7 @@ internal static partial class Interop
             SkipSetEventOnHandle = 2
         }
 
-        [DllImport(Libraries.Kernel32_L2, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe extern bool SetFileCompletionNotificationModes(SafeHandle handle, FileCompletionNotificationModes modes);
 
         internal static readonly string[] HttpVerbs = new string[]

@@ -10,21 +10,20 @@ namespace System.Data
 {
     internal static class LocaleMapper
     {
-        private const string ApiWinCoreLocalization = "api-ms-win-core-localization-l1-2-0.dll";
-        private const string ApiWinCoreLocalizationObsolete = "api-ms-win-core-localization-obsolete-l1-2-0.dll";
+        private const string ApiWinKernel32 = "kernel32.dll";
 
         private const int LOCALE_NAME_MAX_LENGTH = 85;
         private const int ERROR_INVALID_PARAMETER = 0x57;
         private const uint LOCALE_IDEFAULTANSICODEPAGE = 0x00001004;
         private const uint LOCALE_RETURN_NUMBER = 0x20000000;
 
-        [DllImport(ApiWinCoreLocalization, SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(ApiWinKernel32, SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, [Out] out uint lpLCData, int cchData);
 
-        [DllImport(ApiWinCoreLocalizationObsolete, SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(ApiWinKernel32, SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern unsafe int LCIDToLocaleName(uint Locale, char* lpName, int cchName, int dwFlags);
 
-        [DllImport(ApiWinCoreLocalization, SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(ApiWinKernel32, SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern uint LocaleNameToLCID(string lpName, uint dwFlags);
 
 

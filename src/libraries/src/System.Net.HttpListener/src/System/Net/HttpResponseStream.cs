@@ -507,7 +507,7 @@ namespace System.Net
             if (asyncState != null && !asyncState.IsCompleted)
             {
                 // It is safe to ignore the return value on a cancel operation because the connection is being closed
-                Interop.mincore.CancelIoEx(requestQueueHandle, asyncState._pOverlapped);
+                Interop.Kernel32.CancelIoEx(requestQueueHandle, asyncState._pOverlapped);
             }
         }
     }

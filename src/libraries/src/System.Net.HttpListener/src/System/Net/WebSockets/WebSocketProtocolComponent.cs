@@ -75,7 +75,7 @@ namespace System.Net.WebSockets
         [SecuritySafeCritical]
         static WebSocketProtocolComponent()
         {
-            s_webSocketDllHandle = Interop.mincore.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
+            s_webSocketDllHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
 
             if (!s_webSocketDllHandle.IsInvalid)
             {

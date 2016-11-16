@@ -12,7 +12,7 @@ namespace System.Text
             get
             {
                 int codePage;
-                return Interop.mincore.TryGetACPCodePage(out codePage) ? codePage : 0;
+                return Interop.Kernel32.TryGetACPCodePage(out codePage) ? codePage : 0;
             }
         }
     }

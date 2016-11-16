@@ -92,7 +92,7 @@ namespace System.IO
         public static string GetTempPath()
         {
             StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
-            uint r = Interop.mincore.GetTempPathW(MaxPath, sb);
+            uint r = Interop.Kernel32.GetTempPathW(MaxPath, sb);
             if (r == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return GetFullPath(StringBuilderCache.GetStringAndRelease(sb));
@@ -105,7 +105,7 @@ namespace System.IO
             string path = GetTempPath();
 
             StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
-            uint r = Interop.mincore.GetTempFileNameW(path, "tmp", 0, sb);
+            uint r = Interop.Kernel32.GetTempFileNameW(path, "tmp", 0, sb);
             if (r == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return StringBuilderCache.GetStringAndRelease(sb);

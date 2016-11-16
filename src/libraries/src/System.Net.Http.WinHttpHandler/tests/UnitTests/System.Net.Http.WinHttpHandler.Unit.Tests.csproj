@@ -29,8 +29,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
+      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
