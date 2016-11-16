@@ -7,7 +7,6 @@ using System.Threading;
 using System.Text;
 using System.Collections;
 using System.Globalization;
-using System.Security.Permissions;
 
 namespace System.Diagnostics
 {
