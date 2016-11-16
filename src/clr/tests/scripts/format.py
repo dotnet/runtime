@@ -239,7 +239,7 @@ def main(argv):
         print("There were errors in formatting. Please run jit-format locally with: \n")
         print(errorMessage)
         print("\nOr download and apply generated patch:")
-        print("wget " + buildUrl + "artifacts/format.patch")
+        print("wget " + buildUrl + "artifact/format.patch")
         print("git apply format.patch")
 
     return returncode
