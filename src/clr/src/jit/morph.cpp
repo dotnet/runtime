@@ -12760,12 +12760,13 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 {
                     assert(temp->OperIsLocal());
 
-                    const unsigned   lclNum  = temp->AsLclVarCommon()->gtLclNum;
-                    LclVarDsc* const varDsc  = &lvaTable[lclNum];
+                    const unsigned   lclNum = temp->AsLclVarCommon()->gtLclNum;
+                    LclVarDsc* const varDsc = &lvaTable[lclNum];
 
-                    const var_types tempTyp      = temp->TypeGet();
-                    const bool      useExactSize = varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
-                    const unsigned  varSize      = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
+                    const var_types tempTyp = temp->TypeGet();
+                    const bool      useExactSize =
+                        varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
+                    const unsigned varSize = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
 
                     // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
                     // a lclFld: the access represented by an lclFld node must begin at or after the start of the
