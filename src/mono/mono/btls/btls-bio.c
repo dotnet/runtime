@@ -64,8 +64,8 @@ mono_write (BIO *bio, const char *in, int inl)
 	return mono->write_func (mono->instance, in, inl);
 }
 
-static int64_t
-mono_ctrl (BIO *bio, int cmd, int64_t num, void *ptr)
+static long
+mono_ctrl (BIO *bio, int cmd, long num, void *ptr)
 {
 	MonoBtlsBio *mono = (MonoBtlsBio *)bio->ptr;
 

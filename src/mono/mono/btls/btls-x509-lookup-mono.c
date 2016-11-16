@@ -103,7 +103,7 @@ mono_btls_x509_lookup_mono_free (MonoBtlsX509LookupMono *mono)
 }
 
 static int
-mono_lookup_ctrl (X509_LOOKUP *ctx, int cmd, const char *argp, int64_t argl, char **ret)
+mono_lookup_ctrl (X509_LOOKUP *ctx, int cmd, const char *argp, long argl, char **ret)
 {
 	MonoLookup *lookup = (MonoLookup*)ctx->method_data;
 	MonoBtlsX509LookupMono *mono = (MonoBtlsX509LookupMono*)argp;
