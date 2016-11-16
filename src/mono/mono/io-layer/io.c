@@ -1764,7 +1764,12 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	if (attrs & FILE_FLAG_RANDOM_ACCESS)
 		posix_fadvise (fd, 0, 0, POSIX_FADV_RANDOM);
 #endif
-	
+
+#ifdef F_RDAHEAD
+	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN)
+		fcntl(fd, F_RDAHEAD, 1);
+#endif
+
 #ifndef S_ISFIFO
 #define S_ISFIFO(m) ((m & S_IFIFO) != 0)
 #endif
