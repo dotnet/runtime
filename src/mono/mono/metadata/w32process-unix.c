@@ -713,7 +713,7 @@ gboolean
 mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)
 {
 	MonoW32HandleProcess *process_handle;
-	GSList *mods = NULL;
+	GSList *mods = NULL, *mods_iter;
 	MonoW32ProcessModule *module;
 	guint32 count, avail = size / sizeof(gpointer);
 	int i;
@@ -756,10 +756,7 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 		return TRUE;
 	}
 
-	count = g_slist_length (mods);
-
-	/* count + 1 to leave slot 0 for the main module */
-	*needed = sizeof(gpointer) * (count + 1);
+	count = 0;
 
 	/*
 	 * Use the NULL shortcut, as the first line in
@@ -770,18 +767,26 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 	 * be a problem.
 	 */
 	modules[0] = NULL;
-	for (i = 0; i < (avail - 1) && i < count; i++) {
-		module = (MonoW32ProcessModule *)g_slist_nth_data (mods, i);
-		if (modules[0] != NULL)
-			modules[i] = module->address_start;
-		else if (match_procname_to_modulename (proc_name, module->filename))
-			modules[0] = module->address_start;
-		else
-			modules[i + 1] = module->address_start;
+	mods_iter = mods;
+	for (i = 0; mods_iter; i++) {
+		if (i < avail - 1) {
+			module = (MonoW32ProcessModule *)mods_iter->data;
+			if (modules[0] != NULL)
+				modules[i] = module->address_start;
+			else if (match_procname_to_modulename (proc_name, module->filename))
+				modules[0] = module->address_start;
+			else
+				modules[i + 1] = module->address_start;
+		}
+		mods_iter = g_slist_next (mods_iter);
+		count++;
 	}
 
-	for (i = 0; i < count; i++) {
-		mono_w32process_module_free ((MonoW32ProcessModule *)g_slist_nth_data (mods, i));
+	/* count + 1 to leave slot 0 for the main module */
+	*needed = sizeof(gpointer) * (count + 1);
+
+	for (mods_iter = mods; mods_iter; mods_iter = g_slist_next (mods_iter)) {
+		mono_w32process_module_free ((MonoW32ProcessModule *)mods_iter->data);
 	}
 	g_slist_free (mods);
 	g_free (proc_name);
@@ -841,10 +846,8 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	char *procname_ext = NULL;
 	glong len;
 	gsize bytes;
-	GSList *mods = NULL;
+	GSList *mods = NULL, *mods_iter;
 	MonoW32ProcessModule *found_module;
-	guint32 count;
-	int i;
 	char *proc_name = NULL;
 	gboolean res;
 
@@ -871,14 +874,12 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 		return 0;
 	}
 
-	count = g_slist_length (mods);
-
 	/* If module != NULL compare the address.
 	 * If module == NULL we are looking for the main module.
 	 * The best we can do for now check it the module name end with the process name.
 	 */
-	for (i = 0; i < count; i++) {
-		found_module = (MonoW32ProcessModule *)g_slist_nth_data (mods, i);
+	for (mods_iter = mods; mods_iter; mods_iter = g_slist_next (mods_iter)) {
+		found_module = (MonoW32ProcessModule *)mods_iter->data;
 		if (procname_ext == NULL &&
 			((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||
 			 (module != NULL && found_module->address_start == module))) {
@@ -940,10 +941,8 @@ mono_w32process_module_get_information (gpointer process, gpointer module, WapiM
 {
 	MonoW32HandleProcess *process_handle;
 	pid_t pid;
-	GSList *mods = NULL;
+	GSList *mods = NULL, *mods_iter;
 	MonoW32ProcessModule *found_module;
-	guint32 count;
-	int i;
 	gboolean ret = FALSE;
 	char *proc_name = NULL;
 	gboolean res;
@@ -969,14 +968,12 @@ mono_w32process_module_get_information (gpointer process, gpointer module, WapiM
 		return FALSE;
 	}
 
-	count = g_slist_length (mods);
-
 	/* If module != NULL compare the address.
 	 * If module == NULL we are looking for the main module.
 	 * The best we can do for now check it the module name end with the process name.
 	 */
-	for (i = 0; i < count; i++) {
-			found_module = (MonoW32ProcessModule *)g_slist_nth_data (mods, i);
+	for (mods_iter = mods; mods_iter; mods_iter = g_slist_next (mods_iter)) {
+			found_module = (MonoW32ProcessModule *)mods_iter->data;
 			if (ret == FALSE &&
 				((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||
 				 (module != NULL && found_module->address_start == module))) {
