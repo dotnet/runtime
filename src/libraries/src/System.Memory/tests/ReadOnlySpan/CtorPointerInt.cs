@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void CtorPointerInt()
@@ -19,7 +19,7 @@ namespace System.SpanTests
                 int[] a = { 90, 91, 92 };
                 fixed (int *pa = a)
                 {
-                    Span<int> span = new Span<int>(pa, 3);
+                    ReadOnlySpan<int> span = new ReadOnlySpan<int>(pa, 3);
                     span.Validate<int>(90, 91, 92);
                     Assert.True(Unsafe.AreSame<int>(ref Unsafe.AsRef<int>(pa), ref span.DangerousGetPinnableReference()));
                 }
@@ -31,7 +31,7 @@ namespace System.SpanTests
         {
             unsafe
             {
-                Span<int> span = new Span<int>((void*)null, 0);
+                ReadOnlySpan<int> span = new ReadOnlySpan<int>((void*)null, 0);
                 span.Validate<int>();
                 Assert.True(Unsafe.AreSame<int>(ref Unsafe.AsRef<int>((void*)null), ref span.DangerousGetPinnableReference()));
             }
@@ -46,7 +46,7 @@ namespace System.SpanTests
                     delegate ()
                     {
                         int i = 42;
-                        Span<int> span = new Span<int>(&i, -1);
+                        ReadOnlySpan<int> span = new ReadOnlySpan<int>(&i, -1);
                     });
             }
         }
@@ -56,10 +56,10 @@ namespace System.SpanTests
         {
             unsafe
             {
-                new Span<int>((void*)null, 0);
-                new Span<int?>((void*)null, 0);
-                Assert.Throws<ArgumentException>(() => new Span<object>((void*)null, 0).DontBox());
-                Assert.Throws<ArgumentException>(() => new Span<StructWithReferences>((void*)null, 0).DontBox());
+                new ReadOnlySpan<int>((void*)null, 0);
+                new ReadOnlySpan<int?>((void*)null, 0);
+                Assert.Throws<ArgumentException>(() => new ReadOnlySpan<object>((void*)null, 0).DontBox());
+                Assert.Throws<ArgumentException>(() => new ReadOnlySpan<StructWithReferences>((void*)null, 0).DontBox());
             }
         }
 

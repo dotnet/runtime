@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
-        private static void Validate<T>(this Span<T> span, params T[] expected)
+        private static void Validate<T>(this ReadOnlySpan<T> span, params T[] expected)
         {
             bool isValueType = default(T) != null || Nullable.GetUnderlyingType(typeof(T)) != null;
             Assert.Equal(span.Length, expected.Length);
@@ -26,10 +26,10 @@ namespace System.SpanTests
             AssertThrows<IndexOutOfRangeException, T>(span, (_span) => ignore = _span[expected.Length]);
         }
 
-        private delegate void AssertThrowsAction<T>(Span<T> span);
+        private delegate void AssertThrowsAction<T>(ReadOnlySpan<T> span);
 
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
-        private static void AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E:Exception
+        private static void AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsAction<T> action) where E:Exception
         {
             try
             {
@@ -59,7 +59,7 @@ namespace System.SpanTests
         // 
         // which turns the lambda return type back to "void" and eliminates the troublesome box instruction.
         //
-        private static void DontBox<T>(this Span<T> span)
+        private static void DontBox<T>(this ReadOnlySpan<T> span)
         {
             // This space intentionally left blank.
         }

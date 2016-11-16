@@ -7,13 +7,13 @@ using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void ToArray1()
         {
             int[] a = { 91, 92, 93 };
-            Span<int> span = new Span<int>(a);
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
             int[] copy = span.ToArray();
             Assert.Equal<int>(a, copy);
             Assert.NotSame(a, copy);
@@ -22,7 +22,7 @@ namespace System.SpanTests
         [Fact]
         public static void ToArrayEmpty()
         {
-            Span<int> span = Span<int>.Empty;
+            ReadOnlySpan<int> span = ReadOnlySpan<int>.Empty;
             int[] copy = span.ToArray();
             Assert.Equal(0, copy.Length);
         }

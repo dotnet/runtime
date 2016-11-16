@@ -9,13 +9,13 @@ namespace System.SpanTests
     //
     // Tests for Span<T>.ctor(T[], int). If the test is not specific to this overload, consider putting it in CtorArray.cs instread.
     //
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void CtorArrayInt1()
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
-            Span<int> span = new Span<int>(a, 3);
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 3);
             span.Validate<int>(93, 94, 95, 96, 97, 98);
         }
 
@@ -23,7 +23,7 @@ namespace System.SpanTests
         public static void CtorArrayInt2()
         {
             long[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
-            Span<long> span = new Span<long>(a, 3);
+            ReadOnlySpan<long> span = new ReadOnlySpan<long>(a, 3);
             span.Validate<long>(93, 94, 95, 96, 97, 98);
         }
 
@@ -31,14 +31,14 @@ namespace System.SpanTests
         public static void CtorArrayIntNegativeStart()
         {
             int[] a = new int[3];
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Span<int>(a, -1).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySpan<int>(a, -1).DontBox());
         }
 
         [Fact]
         public static void CtorArrayIntStartTooLarge()
         {
             int[] a = new int[3];
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Span<int>(a, 4).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySpan<int>(a, 4).DontBox());
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace System.SpanTests
         {
             // Valid for start to equal the array length. This returns an empty span that starts "just past the array."
             int[] a = { 91, 92, 93 };
-            Span<int> span = new Span<int>(a, 3);
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 3);
             span.Validate<int>();
         }
     }

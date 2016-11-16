@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void TryCopyTo()
@@ -14,7 +14,7 @@ namespace System.SpanTests
             int[] src = { 1, 2, 3 };
             int[] dst = { 99, 100, 101 };
 
-            Span<int> srcSpan = new Span<int>(src);
+            ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
             bool success = srcSpan.TryCopyTo(dst);
             Assert.True(success);
             Assert.Equal<int>(src, dst);
@@ -26,7 +26,7 @@ namespace System.SpanTests
             int[] src = { 1, 2, 3 };
             int[] dst = { 99, 100, 101, 102 };
 
-            Span<int> srcSpan = new Span<int>(src);
+            ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
             bool success = srcSpan.TryCopyTo(dst);
             Assert.True(success);
             int[] expected = { 1, 2, 3, 102 };
@@ -39,7 +39,7 @@ namespace System.SpanTests
             int[] src = { 1, 2, 3 };
             int[] dst = { 99, 100 };
 
-            Span<int> srcSpan = new Span<int>(src);
+            ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
             bool success = srcSpan.TryCopyTo(dst);
             Assert.False(success);
             int[] expected = { 99, 100 };
@@ -52,7 +52,7 @@ namespace System.SpanTests
             int[] src = { 1, 2, 3 };
             int[] dst = { 99, 100 };
 
-            Span<int> srcSpan = new Span<int>(src);
+            ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
             AssertThrows<ArgumentException, int>(srcSpan, (_srcSpan) => _srcSpan.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
@@ -63,8 +63,8 @@ namespace System.SpanTests
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97 };
 
-            Span<int> src = new Span<int>(a, 1, 6);
-            Span<int> dst = new Span<int>(a, 2, 6);
+            ReadOnlySpan<int> src = new ReadOnlySpan<int>(a, 1, 6);
+            ReadOnlySpan<int> dst = new ReadOnlySpan<int>(a, 2, 6);
             src.CopyTo(dst);
 
             int[] expected = { 90, 91, 91, 92, 93, 94, 95, 96 };
@@ -76,8 +76,8 @@ namespace System.SpanTests
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97 };
 
-            Span<int> src = new Span<int>(a, 2, 6);
-            Span<int> dst = new Span<int>(a, 1, 6);
+            ReadOnlySpan<int> src = new ReadOnlySpan<int>(a, 2, 6);
+            ReadOnlySpan<int> dst = new ReadOnlySpan<int>(a, 1, 6);
             src.CopyTo(dst);
 
             int[] expected = { 90, 92, 93, 94, 95, 96, 97, 97 };

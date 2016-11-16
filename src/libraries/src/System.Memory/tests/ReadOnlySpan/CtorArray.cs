@@ -12,21 +12,21 @@ namespace System.SpanTests
     // These tests will also exercise the matching codepaths in Span<T>.ctor(T[], int) and .ctor(T[], int, int). This makes it easier to ensure
     // that these parallel tests stay consistent, and avoid excess repetition in the files devoted to those specific overloads.
     //
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void CtorArray1()
         {
             int[] a = { 91, 92, -93, 94 };
-            Span<int> span;
+            ReadOnlySpan<int> span;
 
-            span = new Span<int>(a);
+            span = new ReadOnlySpan<int>(a);
             span.Validate<int>(91, 92, -93, 94);
 
-            span = new Span<int>(a, 0);
+            span = new ReadOnlySpan<int>(a, 0);
             span.Validate<int>(91, 92, -93, 94);
 
-            span = new Span<int>(a, 0, a.Length);
+            span = new ReadOnlySpan<int>(a, 0, a.Length);
             span.Validate<int>(91, 92, -93, 94);
         }
 
@@ -34,15 +34,15 @@ namespace System.SpanTests
         public static void CtorArray2()
         {
             long[] a = { 91, -92, 93, 94, -95 };
-            Span<long> span;
+            ReadOnlySpan<long> span;
 
-            span = new Span<long>(a);
+            span = new ReadOnlySpan<long>(a);
             span.Validate<long>(91, -92, 93, 94, -95);
 
-            span = new Span<long>(a, 0);
+            span = new ReadOnlySpan<long>(a, 0);
             span.Validate<long>(91, -92, 93, 94, -95);
 
-            span = new Span<long>(a, 0, a.Length);
+            span = new ReadOnlySpan<long>(a, 0, a.Length);
             span.Validate<long>(91, -92, 93, 94, -95);
         }
 
@@ -52,15 +52,15 @@ namespace System.SpanTests
             object o1 = new object();
             object o2 = new object();
             object[] a = { o1, o2 };
-            Span<object> span;
+            ReadOnlySpan<object> span;
 
-            span = new Span<object>(a);
+            span = new ReadOnlySpan<object>(a);
             span.Validate<object>(o1, o2);
 
-            span = new Span<object>(a, 0);
+            span = new ReadOnlySpan<object>(a, 0);
             span.Validate<object>(o1, o2);
 
-            span = new Span<object>(a, 0, a.Length);
+            span = new ReadOnlySpan<object>(a, 0, a.Length);
             span.Validate<object>(o1, o2);
         }
 
@@ -68,24 +68,24 @@ namespace System.SpanTests
         public static void CtorArrayZeroLength()
         {
             int[] empty = Array.Empty<int>();
-            Span<int> span;
+            ReadOnlySpan<int> span;
 
-            span = new Span<int>(empty);
+            span = new ReadOnlySpan<int>(empty);
             span.Validate<int>();
 
-            span = new Span<int>(empty, 0);
+            span = new ReadOnlySpan<int>(empty, 0);
             span.Validate<int>();
 
-            span = new Span<int>(empty, 0, empty.Length);
+            span = new ReadOnlySpan<int>(empty, 0, empty.Length);
             span.Validate<int>();
         }
 
         [Fact]
         public static void CtorArrayNullArray()
         {
-            Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null).DontBox());
-            Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null, 0).DontBox());
-            Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null, 0, 0).DontBox());
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>((int[])null).DontBox());
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>((int[])null, 0).DontBox());
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>((int[])null, 0, 0).DontBox());
         }
 
         [Fact]
@@ -93,9 +93,9 @@ namespace System.SpanTests
         {
             // Cannot pass variant array, if array type is not a valuetype.
             string[] a = { "Hello" };
-            Assert.Throws<ArrayTypeMismatchException>(() => new Span<object>(a).DontBox());
-            Assert.Throws<ArrayTypeMismatchException>(() => new Span<object>(a, 0).DontBox());
-            Assert.Throws<ArrayTypeMismatchException>(() => new Span<object>(a, 0, a.Length).DontBox());
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlySpan<object>(a).DontBox());
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlySpan<object>(a, 0).DontBox());
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlySpan<object>(a, 0, a.Length).DontBox());
         }
 
         [Fact]
@@ -105,15 +105,15 @@ namespace System.SpanTests
 
             uint[] a = { 42u, 0xffffffffu };
             int[] aAsIntArray = (int[])(object)a;
-            Span<int> span;
+            ReadOnlySpan<int> span;
 
-            span = new Span<int>(aAsIntArray);
+            span = new ReadOnlySpan<int>(aAsIntArray);
             span.Validate<int>(42, -1);
 
-            span = new Span<int>(aAsIntArray, 0);
+            span = new ReadOnlySpan<int>(aAsIntArray, 0);
             span.Validate<int>(42, -1);
 
-            span = new Span<int>(aAsIntArray, 0, aAsIntArray.Length);
+            span = new ReadOnlySpan<int>(aAsIntArray, 0, aAsIntArray.Length);
             span.Validate<int>(42, -1);
         }
     }

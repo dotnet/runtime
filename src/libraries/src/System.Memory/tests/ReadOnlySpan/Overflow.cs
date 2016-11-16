@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void IndexOverflow()
@@ -31,7 +31,7 @@ namespace System.SpanTests
 
                 try
                 {
-                    Span<Guid> span = new Span<Guid>(pMemory, GuidThreeGiBLimit);
+                    ReadOnlySpan<Guid> span = new ReadOnlySpan<Guid>(pMemory, GuidThreeGiBLimit);
 
                     int bigIndex = checked(GuidTwoGiBLimit + 1);
                     uint byteOffset = checked((uint)bigIndex * (uint)sizeof(Guid));
@@ -40,7 +40,7 @@ namespace System.SpanTests
 
                     Assert.True(Unsafe.AreSame<Guid>(ref expected, ref span.GetItem(bigIndex)));
 
-                    Span<Guid> slice = span.Slice(bigIndex);
+                    ReadOnlySpan<Guid> slice = span.Slice(bigIndex);
                     Assert.True(Unsafe.AreSame<Guid>(ref expected, ref slice.DangerousGetPinnableReference()));
 
                     slice = span.Slice(bigIndex, 1);
