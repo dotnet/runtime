@@ -424,8 +424,8 @@ namespace System
         //   _pinnable   = null
         //   _byteOffset = the pointer
         //
-        private readonly Pinnable<T> _pinnable;
-        private readonly IntPtr _byteOffset;
-        private readonly int _length;
+        internal readonly Pinnable<T> _pinnable;
+        internal readonly IntPtr _byteOffset;
+        internal readonly int _length;
     }
 }
