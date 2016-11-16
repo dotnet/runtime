@@ -3,9 +3,8 @@
 
 ## Reporting Problems (Bugs)
 
-We track bugs, feature requests and other issues on the .NET Core's [Issues Page](https://github.com/dotnet/coreclr/issues). 
-If you have a problem and believe that the issue is in .NET Core itself (native runtime or base level class library)
-you should log it there.   If in the upper levels of the class library the [CoreFX Issues Page](https://github.com/dotnet/corefx/issues).
+We track bugs, feature requests and other issues [in this repo](https://github.com/dotnet/coreclr/issues). 
+If you have a problem and believe that the issue is in the native runtime you should log it there. If in the managed code log it in the [CoreFX repo](https://github.com/dotnet/corefx/issues) _even if the code is in this CoreCLR repo_ (ie., in mscorlib/System.Private.Corelib). The reason for this is we sometimes move managed types between the two and it makes sense to keep all the issues together.
 
 Before you log a new issue, you should try using the search tool on the issue page on a few keywords to see if the issue was already logged.  
 
