@@ -36,36 +36,15 @@ THE SOFTWARE.
 #include <time.h>
 #include <errno.h>
 
-/* Spec says except for stftime() and the _r() functions, these
-   all return static memory.  Stabbings! */
-static struct tm   Static_Return_Date;
-static char        Static_Return_String[35];
-
-static const int days_in_month[2][12] = {
-    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-};
-
 static const int julian_days_by_month[2][12] = {
     {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
     {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335},
 };
 
-static char const wday_name[7][3] = {
-    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
-};
-
-static char const mon_name[12][3] = {
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
-
 static const int length_of_year[2] = { 365, 366 };
 
 /* Some numbers relating to the gregorian cycle */
-static const int64_t     years_in_gregorian_cycle   = 400;
 #define               days_in_gregorian_cycle      ((365 * 400) + 100 - 4 + 1)
-static const int64_t seconds_in_gregorian_cycle = days_in_gregorian_cycle * 60LL * 60LL * 24LL;
 
 /* Year range we can trust the time funcitons with */
 #define MAX_SAFE_YEAR 2037
@@ -73,28 +52,6 @@ static const int64_t seconds_in_gregorian_cycle = days_in_gregorian_cycle * 60LL
 
 /* 28 year Julian calendar cycle */
 #define SOLAR_CYCLE_LENGTH 28
-
-/* Year cycle from MAX_SAFE_YEAR down. */
-static const int safe_years_high[SOLAR_CYCLE_LENGTH] = {
-    2016, 2017, 2018, 2019,
-    2020, 2021, 2022, 2023,
-    2024, 2025, 2026, 2027,
-    2028, 2029, 2030, 2031,
-    2032, 2033, 2034, 2035,
-    2036, 2037, 2010, 2011,
-    2012, 2013, 2014, 2015
-};
-
-/* Year cycle from MIN_SAFE_YEAR up */
-static const int safe_years_low[SOLAR_CYCLE_LENGTH] = {
-    1996, 1997, 1998, 1971,
-    1972, 1973, 1974, 1975,
-    1976, 1977, 1978, 1979,
-    1980, 1981, 1982, 1983,
-    1984, 1985, 1986, 1987,
-    1988, 1989, 1990, 1991,
-    1992, 1993, 1994, 1995,
-};
 
 /* Let's assume people are going to be looking for dates in the future.
    Let's provide some cheats so you can skip ahead.
