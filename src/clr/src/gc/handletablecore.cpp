@@ -611,7 +611,7 @@ TableSegment *SegmentAlloc(HandleTable *pTable)
     _ASSERTE(HANDLE_SEGMENT_ALIGNMENT >= HANDLE_SEGMENT_SIZE);
     _ASSERTE(HANDLE_SEGMENT_ALIGNMENT == 0x10000);
 
-    pSegment = (TableSegment *)GCToOSInterface::VirtualReserve(NULL, HANDLE_SEGMENT_SIZE, HANDLE_SEGMENT_ALIGNMENT, VirtualReserveFlags::None);
+    pSegment = (TableSegment *)GCToOSInterface::VirtualReserve(HANDLE_SEGMENT_SIZE, HANDLE_SEGMENT_ALIGNMENT, VirtualReserveFlags::None);
     _ASSERTE(((size_t)pSegment % HANDLE_SEGMENT_ALIGNMENT) == 0);
     
     // bail out if we couldn't get any memory
