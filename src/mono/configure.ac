@@ -780,51 +780,33 @@ dnl
 TEST_PROFILE=default
 enable_llvm_default=no
 
+with_profile4_x_default=no
+with_monodroid_default=no
+with_monotouch_default=no
+with_monotouch_watch_default=no
+with_monotouch_tv_default=no
+with_xammac_default=no
+with_mobile_static_default=no
+
+with_bitcode_default=no
+with_cooperative_gc_default=no
+
 INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=8000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=4000
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
-   with_mobile_static_default=no
-   with_bitcode_default=no
-   with_cooperative_gc_default=no
 elif test x$with_runtime_preset = xnet_4_x; then
-   with_cooperative_gc_default=no
    with_profile4_x_default=yes
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
-   with_mobile_static_default=no
-   with_bitcode_default=no
 elif test x$with_runtime_preset = xall; then
-   with_cooperative_gc_default=no
    with_profile4_x_default=yes
    with_monodroid_default=yes
    with_monotouch_default=yes
    with_monotouch_watch_default=yes
    with_monotouch_tv_default=yes
    with_xammac_default=yes
-   with_mobile_static_default=no
-   with_bitcode_default=no
 elif test x$with_runtime_preset = xmobile_static; then
    DISABLE_MCS_DOCS_default=yes
-   with_cooperative_gc_default=no
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
    with_mobile_static_default=yes
-   with_bitcode_default=no
-   with_cooperative_gc_default=no
    TEST_PROFILE=mobile_static 
 
    mono_feature_disable_com='yes'
@@ -837,12 +819,6 @@ elif test x$with_runtime_preset = xmobile_static; then
    AOT_RUN_FLAGS="--full-aot"
 elif test x$with_runtime_preset = xbitcode_mobile_static; then
    DISABLE_MCS_DOCS_default=yes
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
    with_mobile_static_default=yes
    with_bitcode_default=yes
    with_cooperative_gc_default=yes
@@ -859,17 +835,7 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
    AOT_RUN_FLAGS="--llvmonly"
 elif test x$with_runtime_preset = xhybrid; then
    DISABLE_MCS_DOCS_default=yes
-   with_cooperative_gc_default=no
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
    with_mobile_default=yes
-   with_mobile_static_default=no
-   with_bitcode_default=no
-   with_cooperative_gc_default=no
    TEST_PROFILE=mobile 
    enable_llvm_default=yes
 
@@ -881,14 +847,6 @@ elif test x$with_runtime_preset = xhybrid; then
    AOT_RUN_FLAGS="--hybrid-aot"
 else
    with_profile4_x_default=yes
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_bitcode_default=no
-   with_xammac_default=no
-   with_mobile_static_default=no
-   with_cooperative_gc_default=no
 fi
 
 if test "x$AOT_BUILD_FLAGS" != "x"; then :
