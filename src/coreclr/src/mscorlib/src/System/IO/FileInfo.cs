@@ -74,7 +74,7 @@ namespace System.IO {
         {
             OriginalPath = fileName;
             // Must fully qualify the path for the security check
-            String fullPath = Path.GetFullPathInternal(fileName);
+            String fullPath = Path.GetFullPath(fileName);
 #if FEATURE_CORECLR
             if (checkHost)
             {
@@ -115,7 +115,7 @@ namespace System.IO {
 #endif //FEATURE_CORESYSTEM
         internal FileInfo(String fullPath, bool ignoreThis)
         {
-            Contract.Assert(Path.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
+            Contract.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
             _name = Path.GetFileName(fullPath);
             OriginalPath = _name;
             FullPath = fullPath;
@@ -388,7 +388,7 @@ namespace System.IO {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
 
-            String fullDestFileName = Path.GetFullPathInternal(destFileName);
+            string fullDestFileName = Path.GetFullPath(destFileName);
 #if FEATURE_CORECLR
             FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, DisplayPath, FullPath);
             FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destFileName, fullDestFileName);

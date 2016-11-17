@@ -1082,7 +1082,7 @@ namespace System.Reflection
                 if (fullyQualifiedName != null) {
                     bool checkPermission = true;
                     try {
-                        Path.GetFullPathInternal(fullyQualifiedName);
+                        Path.GetFullPath(fullyQualifiedName);
                     }
                     catch(ArgumentException) {
                         checkPermission = false;

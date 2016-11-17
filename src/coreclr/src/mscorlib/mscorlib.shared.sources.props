@@ -106,7 +106,6 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeBuffer.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandle.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
@@ -118,14 +117,23 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeBuffer.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
     <InteropSources Condition="'$(FeatureCoreClr)'=='true'"  Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExtensibleClassFactory.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectCreationDelegate.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxInteropServices)' != 'true'">
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeBuffer.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandle.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxInteropServices)' == 'true'">
+    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\NativeBuffer.cs" />
+    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
+    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandle.cs" />
+    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandleCache.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\IRegistrationServices.cs" />
@@ -760,10 +768,6 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskToApm.cs" />
     <ThreadingSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxFileStream)' != 'true'">
-    <FileStreamSources Include="$(BclSourcesRoot)\System\IO\FileStream.cs" />
-    <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxFileStream)' == 'true'">
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.NetStandard17.cs" />
@@ -778,6 +782,22 @@
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Win32.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStreamCompletionSource.Win32.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\Win32Marshal.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxPath)' == 'true'">
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.CaseSensitivity.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxPath)' == 'true' and '$(TargetsUnix)' == 'true'">
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Unix.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxPath)' == 'true' and '$(TargetsUnix)' != 'true'">
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Win32.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Windows.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathHelper.Windows.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.Windows.cs" />
+    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.Windows.StringBuffer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxOverlapped)' == 'true'" >
     <ThreadingSources Include="$(CoreFxSourcesRoot)\System\Threading\DeferredDisposableLifetime.cs" />
@@ -811,10 +831,6 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileAttributes.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\IOException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\Path.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\PathHelper.cs" />
-    <IoSources Condition="'$(TargetsUnix)' != 'true'" Include="$(BclSourcesRoot)\System\IO\LongPathHelper.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\PathInternal.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\ReadLinesIterator.cs" />
@@ -1176,6 +1192,8 @@
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.BOOL.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.Libraries.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CancelIoEx.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CloseHandle.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CreateFile.cs" />
@@ -1186,6 +1204,10 @@
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FormatMessage.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetTempPathW.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.LockFile.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
@@ -1226,12 +1248,16 @@
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.IOErrors.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Close.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.GetCwd.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.GetUnixName.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FLock.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FSync.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FTruncate.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.LSeek.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.MksTemps.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Open.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.OpenFlags.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.PathConf.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Permissions.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Read.cs" />

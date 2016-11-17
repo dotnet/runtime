@@ -85,7 +85,7 @@ namespace System.IO {
             bool isFullyQualified = false;
             if (path.Length < 2)
                 return path;
-            if (Path.IsDirectorySeparator(path[0]) && Path.IsDirectorySeparator(path[1]))
+            if (PathInternal.IsDirectorySeparator(path[0]) && PathInternal.IsDirectorySeparator(path[1]))
                 isFullyQualified = true;
             else if (path[1] == Path.VolumeSeparatorChar) {
                 isFullyQualified = true;
@@ -116,7 +116,7 @@ namespace System.IO {
             }
             
             if (!safeToReturn) {
-                if (Path.IsDirectorySeparator(path[path.Length - 1]))
+                if (PathInternal.IsDirectorySeparator(path[path.Length - 1]))
                     path = Environment.GetResourceString("IO.IO_NoPermissionToDirectoryName");
                 else
                     path = Path.GetFileName(path);

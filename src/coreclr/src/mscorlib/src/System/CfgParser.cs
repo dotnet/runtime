@@ -264,7 +264,7 @@ namespace System
             }
 
             if (!skipSecurityStuff) {
-                (new FileIOPermission( FileIOPermissionAccess.Read, System.IO.Path.GetFullPathInternal( fileName ) )).Demand();
+                (new FileIOPermission(FileIOPermissionAccess.Read, Path.GetFullPath(fileName))).Demand();
             }
 #pragma warning disable 618
             (new SecurityPermission(SecurityPermissionFlag.UnmanagedCode)).Assert();

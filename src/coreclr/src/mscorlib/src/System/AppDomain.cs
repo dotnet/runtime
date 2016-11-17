@@ -3597,7 +3597,7 @@ namespace System {
             AppDomainInitializerInfo initializerInfo    = (AppDomainInitializerInfo)args[5];
             string           sandboxName                = (string)args[6];
             string[]         propertyNames              = (string[])args[7]; // can contain null elements
-            string[]         propertyValues             = (string[])args[8]; // can contain null elements           
+            string[]         propertyValues             = (string[])args[8]; // can contain null elements
             // extract evidence
             Evidence providedSecurityInfo = null;
             Evidence creatorsSecurityInfo = null;
@@ -3617,8 +3617,8 @@ namespace System {
                     {
                         if(propertyValues[i]==null)
                             throw new ArgumentNullException("APPBASE");
-                            
-                        if (Path.IsRelative(propertyValues[i]))
+
+                        if (PathInternal.IsPartiallyQualified(propertyValues[i]))
                             throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
 
                         newSetup.ApplicationBase = NormalizePath(propertyValues[i], fullCheck: true);
@@ -3700,7 +3700,7 @@ namespace System {
                             if( path.Length==0 )                  // skip empty dirs
                                 continue;
 
-                            if (Path.IsRelative(path))
+                            if (PathInternal.IsPartiallyQualified(path))
                                 throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
 
                             string appPath = NormalizePath(path, fullCheck: true);
@@ -3817,10 +3817,7 @@ namespace System {
                 maxPathLength: PathInternal.MaxShortPath,
                 expandShortPaths: true);
 #else
-            return Path.NormalizePath(
-                path: path,
-                fullCheck: fullCheck,
-                expandShortPaths: true);
+            return Path.GetFullPath(path);
 #endif
         }
 
