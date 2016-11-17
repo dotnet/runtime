@@ -801,8 +801,7 @@ namespace System.IO
         /// <param name="length">The range to be locked.</param>
         private void LockInternal(long position, long length)
         {
-            // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
-            throw new PlatformNotSupportedException();
+            CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length));
         }
 
         /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
@@ -810,8 +809,7 @@ namespace System.IO
         /// <param name="length">The range to be unlocked.</param>
         private void UnlockInternal(long position, long length)
         {
-            // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
-            throw new PlatformNotSupportedException();
+            CheckFileCall(Interop.Sys.UnlockFileRegion(_fileHandle, position, length));
         }
 
         /// <summary>Sets the current position of this stream to the given value.</summary>
