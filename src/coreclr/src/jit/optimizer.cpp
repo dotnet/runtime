@@ -2856,6 +2856,7 @@ void Compiler::optUnrollLoops()
         genTreeOps testOper;     // type of loop test (i.e. GT_LE, GT_GE, etc.)
         bool       unsTest;      // Is the comparison u/int
 
+        unsigned loopRetCount;  // number of BBJ_RETURN blocks in loop
         unsigned totalIter;     // total number of iterations in the constant loop
         unsigned loopFlags;     // actual lpFlags
         unsigned requiredFlags; // required lpFlags
@@ -3038,12 +3039,18 @@ void Compiler::optUnrollLoops()
             block         = head->bbNext;
             auto tryIndex = block->bbTryIndex;
 
+            loopRetCount = 0;
             for (;; block = block->bbNext)
             {
                 if (block->bbTryIndex != tryIndex)
                 {
                     // Unrolling would require cloning EH regions
                     goto DONE_LOOP;
+                }
+
+                if (block->bbJumpKind == BBJ_RETURN)
+                {
+                    ++loopRetCount;
                 }
 
                 /* Visit all the statements in the block */
@@ -3063,6 +3070,14 @@ void Compiler::optUnrollLoops()
                 }
             }
 
+#ifdef JIT32_GCENCODER
+            if (fgReturnCount + loopRetCount * (totalIter - 1) > SET_EPILOGCNT_MAX)
+            {
+                // Jit32 GC encoder can't report more than SET_EPILOGCNT_MAX epilogs.
+                goto DONE_LOOP;
+            }
+#endif // !JIT32_GCENCODER
+
             /* Compute the estimated increase in code size for the unrolled loop */
 
             ClrSafeInt<unsigned> fixedLoopCostSz(8);
@@ -3074,8 +3089,6 @@ void Compiler::optUnrollLoops()
 
             if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
             {
-                /* prevent this loop from being revisited */
-                optLoopTable[lnum].lpFlags |= LPFLG_DONT_UNROLL;
                 goto DONE_LOOP;
             }
 
@@ -3261,6 +3274,9 @@ void Compiler::optUnrollLoops()
 
             optLoopTable[lnum].lpFlags |= LPFLG_REMOVED;
             optLoopTable[lnum].lpHead = optLoopTable[lnum].lpBottom = nullptr;
+
+            // Note if we created new BBJ_RETURNs
+            fgReturnCount += loopRetCount * (totalIter - 1);
         }
 
     DONE_LOOP:;
