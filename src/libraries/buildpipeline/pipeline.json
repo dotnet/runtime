@@ -532,6 +532,20 @@
             "TestContainerSuffix": "windows81",
             "ConfigurationGroup": "Release"
           }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Build-Test",
+          "Parameters": {
+            "FuncTestsDisabled": "true",
+            "Performance": "true",
+            "TargetQueue": "Windows.81.Amd64.Perf",
+            "TestContainerSuffix": "windows81perf"
+          },
+          "ReportingParameters": {
+            "TargetQueue": "Windows.81.Amd64.Perf",
+            "TestContainerSuffix": "windows81perf",
+            "ConfigurationGroup": "Release"
+          }
         }
       ],
       "DependsOn": [
@@ -640,6 +654,23 @@
           "ReportingParameters": {
             "TargetQueue": "Ubuntu.1404.Amd64",
             "TestContainerSuffix": "ubuntu1404",
+            "TestNugetRuntimeId": "ubuntu.14.04-x64",
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Build-Test",
+          "Parameters": {
+            "FuncTestsDisabled": "true",
+            "Performance": "true",
+            "TargetQueue": "Ubuntu.1404.Amd64.Perf",
+            "TestContainerSuffix": "ubuntu1404perf",
+            "TestNugetRuntimeId": "ubuntu.14.04-x64"
+          },
+          "ReportingParameters": {
+            "TargetQueue": "Ubuntu.1404.Amd64.Perf",
+            "TestContainerSuffix": "ubuntu1404perf",
             "TestNugetRuntimeId": "ubuntu.14.04-x64",
             "Type": "build/tests/",
             "ConfigurationGroup": "Release"
