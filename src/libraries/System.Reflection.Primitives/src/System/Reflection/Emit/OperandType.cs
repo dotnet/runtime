@@ -14,6 +14,7 @@ namespace System.Reflection.Emit
         InlineI8 = 3,
         InlineMethod = 4,
         InlineNone = 5,
+        InlinePhi = 6,
         InlineR = 7,
         InlineSig = 9,
         InlineString = 10,
