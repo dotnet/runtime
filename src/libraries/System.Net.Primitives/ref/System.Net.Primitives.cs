@@ -472,6 +472,8 @@ namespace System.Security.Authentication
         Tls = 192,
         Tls11 = 768,
         Tls12 = 3072,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        Default = Ssl3 | Tls
     }
 }
 namespace System.Security.Authentication.ExtendedProtection
