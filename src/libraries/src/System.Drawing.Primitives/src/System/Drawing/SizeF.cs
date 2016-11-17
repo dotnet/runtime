@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Numerics.Hashing;
+
 namespace System.Drawing
 {
     /**
@@ -210,10 +212,7 @@ namespace System.Drawing
             return (comp.Width == Width) && (comp.Height == Height);
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => HashHelpers.Combine(Width.GetHashCode(), Height.GetHashCode());
 
         public PointF ToPointF()
         {

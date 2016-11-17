@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics.Hashing;
 using System.Text;
 
 namespace System.Drawing
@@ -645,9 +646,18 @@ namespace System.Drawing
 
         public override int GetHashCode()
         {
-            return unchecked(value.GetHashCode() ^
-                    state.GetHashCode() ^
-                    knownColor.GetHashCode());
+            // Three cases:
+            // 1. We don't have a name. All relevant data, including this fact, is in the remaining fields.
+            // 2. We have a known name. The name will be the same instance of any other with the same
+            // knownColor value, so we can ignore it for hashing. Note this also hashes different to
+            // an unnamed color with the same ARGB value.
+            // 3. Have an unknown name. Will differ from other unknown-named colors only by name, so we
+            // can usefully use the names hash code alone.
+            if (name != null & !IsKnownColor)
+                return name.GetHashCode();
+
+            return HashHelpers.Combine(
+                HashHelpers.Combine(value.GetHashCode(), state.GetHashCode()), knownColor.GetHashCode());
         }
     }
 }
