@@ -14,6 +14,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86'">true</HeapVerifyIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
