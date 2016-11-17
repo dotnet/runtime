@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual String SignatureAlgorithm
+        public virtual string SignatureAlgorithm
         {
             get
             {
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual String KeyExchangeAlgorithm
+        public virtual string KeyExchangeAlgorithm
         {
             get
             {

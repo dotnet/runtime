@@ -326,7 +326,6 @@ namespace System.Security.Cryptography
 
             private static int FromBigEndian(byte[] b)
             {
-                Debug.Assert(b.Length == 4);
                 return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
             }
 

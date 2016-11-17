@@ -17,10 +17,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
-      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
-      <Name>System.Security.Cryptography.Algorithms</Name>
-    </ProjectReference>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.Cng.pkgproj">
       <Project>{4c1bd451-6a99-45e7-9339-79c77c42ee9e}</Project>
       <Name>System.Security.Cryptography.Cng</Name>
@@ -35,6 +31,8 @@
     <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
     <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
     <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CreateTests.cs" />
@@ -180,12 +178,6 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
-      <Name>System.Security.Cryptography.Algorithms</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

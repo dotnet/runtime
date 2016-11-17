@@ -186,9 +186,6 @@
   <data name="Cryptography_InvalidECNamedCurve" xml:space="preserve">
     <value>The specified named curve parameters are not valid. Only the Oid parameter must be set.</value>
   </data>
-  <data name="Cryptography_InvalidFromXmlString" xml:space="preserve">
-    <value>Input string does not contain a valid encoding of the '{0}' '{1}' parameter.</value>
-  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
@@ -216,9 +213,6 @@
   <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
     <value>The string contains a character not in the 7 bit ASCII character set.</value>
   </data>
-  <data name="Cryptography_MissingDomainParameters" xml:space="preserve">
-    <value>Could not read the domain parameters from the XML string.</value>
-  </data>
   <data name="Cryptography_MissingIV" xml:space="preserve">
     <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
   </data>
@@ -227,9 +221,6 @@
   </data>
   <data name="Cryptography_MissingOID" xml:space="preserve">
     <value>Required object identifier (OID) cannot be found.</value>
-  </data>
-  <data name="Cryptography_MissingPublicKey" xml:space="preserve">
-    <value>Could not read the public key from the XML string.</value>
   </data>
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
@@ -273,9 +264,6 @@
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
-  <data name="Cryptography_UnexpectedXmlNamespace" xml:space="preserve">
-    <value>The XML namespace '{0}' was unexpected, expected '{1}'.</value>
-  </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
   </data>
@@ -284,12 +272,6 @@
   </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
-  </data>
-  <data name="Cryptography_UnknownEllipticCurve" xml:space="preserve">
-    <value>Unknown elliptic curve.</value>
-  </data>
-  <data name="Cryptography_UnknownEllipticCurveAlgorithm" xml:space="preserve">
-    <value>Unknown elliptic curve algorithm.</value>
   </data>
   <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
     <value>The system cryptographic library returned error '{0}' of type '{1}'</value>

@@ -31,7 +31,6 @@
     <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.cs" />
-    <Compile Include="Internal\Cryptography\Rfc4050KeyFormatter.cs" />
     <Compile Include="Internal\Cryptography\RijndaelImplementation.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
@@ -54,7 +53,6 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanPublicKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Xml.cs" />
-    <Compile Include="System\Security\Cryptography\ECKeyXmlFormat.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
