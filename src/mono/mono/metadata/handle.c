@@ -252,3 +252,9 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx
 	MonoArray *raw = MONO_HANDLE_RAW (handle);
 	return mono_array_addr_with_size (raw, size, idx);
 }
+
+void
+mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
+{
+	mono_array_memcpy_refs (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
+}
