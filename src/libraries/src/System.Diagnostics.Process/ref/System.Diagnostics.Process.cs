@@ -107,6 +107,10 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
+        [System.CLSCompliant(false)]
+        public static System.Diagnostics.Process Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
+        [System.CLSCompliant(false)]
+        public static System.Diagnostics.Process Start(string fileName, string arguments, string userName, System.Security.SecureString password, string domain) { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
     }
@@ -151,6 +155,8 @@ namespace System.Diagnostics
         public System.Collections.Generic.IDictionary<string, string> Environment { get { throw null; } }
         public string FileName { get { throw null; } set { } }
         public bool LoadUserProfile { get { throw null; } set { } }
+        [System.CLSCompliant(false)]
+        public System.Security.SecureString Password { get { throw null; } set { } }
         public bool RedirectStandardError { get { throw null; } set { } }
         public bool RedirectStandardInput { get { throw null; } set { } }
         public bool RedirectStandardOutput { get { throw null; } set { } }
