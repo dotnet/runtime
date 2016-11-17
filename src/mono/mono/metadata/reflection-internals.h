@@ -70,6 +70,9 @@ mono_assembly_get_object_checked (MonoDomain *domain, MonoAssembly *assembly, Mo
 MonoReflectionType*
 mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *error);
 
+MonoReflectionTypeHandle
+mono_type_get_object_handle (MonoDomain *domain, MonoType *type, MonoError *error);
+
 MonoReflectionField*
 mono_field_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoClassField *field, MonoError *error);
 

@@ -486,6 +486,17 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	return res;
 }
 
+MonoReflectionTypeHandle
+mono_type_get_object_handle (MonoDomain *domain, MonoType *type, MonoError *error)
+{
+	/* NOTE: We happen to know that mono_type_get_object_checked returns
+	 * pinned objects, so we can just wrap its return value in a handle for
+	 * uniformity.  If it ever starts returning unpinned, objects, this
+	 * implementation would need to change!
+	 */
+	return MONO_HANDLE_NEW (MonoReflectionType, mono_type_get_object_checked (domain, type, error));
+}
+
 /*
  * mono_method_get_object:
  * @domain: an app domain
