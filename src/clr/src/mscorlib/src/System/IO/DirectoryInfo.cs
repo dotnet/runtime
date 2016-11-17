@@ -84,7 +84,7 @@ namespace System.IO {
             }
 
             // Must fully qualify the path for the security check
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 
             demandDir = new String[] {Directory.GetDemandDir(fullPath, true)};
 #if FEATURE_CORECLR
@@ -106,7 +106,7 @@ namespace System.IO {
 #endif //FEATURE_CORESYSTEM
         internal DirectoryInfo(String fullPath, bool junk)
         {
-            Contract.Assert(Path.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
+            Contract.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
             // Fast path when we know a DirectoryInfo exists.
             OriginalPath = Path.GetFileName(fullPath);
 
@@ -198,8 +198,8 @@ namespace System.IO {
         {
             Contract.Requires(path != null);
 
-            String newDirs = Path.InternalCombine(FullPath, path);
-            String fullPath = Path.GetFullPathInternal(newDirs);
+            String newDirs = Path.Combine(FullPath, path);
+            String fullPath = Path.GetFullPath(newDirs);
 
             if (0!=String.Compare(FullPath,0,fullPath,0, FullPath.Length,StringComparison.OrdinalIgnoreCase)) {
                 String displayPath = __Error.GetDisplayablePath(DisplayPath, false);
@@ -519,7 +519,7 @@ namespace System.IO {
             get
             {
                 String demandPath;
-                int rootLength = Path.GetRootLength(FullPath);
+                int rootLength = PathInternal.GetRootLength(FullPath);
                 String rootPath = FullPath.Substring(0, rootLength);
                 demandPath = Directory.GetDemandDir(rootPath, true);
 
@@ -547,7 +547,7 @@ namespace System.IO {
 #else
             new FileIOPermission(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, demandDir, false, false).Demand();
 #endif
-            String fullDestDirName = Path.GetFullPathInternal(destDirName);
+            String fullDestDirName = Path.GetFullPath(destDirName);
             String demandPath;
             if (!fullDestDirName.EndsWith(Path.DirectorySeparatorChar))
                 fullDestDirName = fullDestDirName + Path.DirectorySeparatorChar;

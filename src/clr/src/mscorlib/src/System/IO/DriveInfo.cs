@@ -63,7 +63,7 @@ namespace System.IO
                 _name = driveName + ":\\";
             else {
                 // GetPathRoot does not check all invalid characters
-                Path.CheckInvalidPathChars(driveName); 
+                PathInternal.CheckInvalidPathChars(driveName); 
                 _name = Path.GetPathRoot(driveName);
                 // Disallow null or empty drive letters and UNC paths
                 if (_name == null || _name.Length == 0 || _name.StartsWith("\\\\", StringComparison.Ordinal))

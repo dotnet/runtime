@@ -165,7 +165,7 @@ namespace System.Security.Util {
                     {
                         if (m_throwOnRelative)
                         {
-                            if (Path.IsRelative(temp))
+                            if (PathInternal.IsPartiallyQualified(temp))
                             {
                                 throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
                             }
@@ -325,7 +325,7 @@ namespace System.Security.Util {
                     {
                         if (m_throwOnRelative)
                         {
-                            if (Path.IsRelative(temp))
+                            if (PathInternal.IsPartiallyQualified(temp))
                             {
                                 throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
                             }
@@ -742,7 +742,7 @@ namespace System.Security.Util {
         {
             if (needFullPath)
             {
-                string newPath = Path.GetFullPathInternal(path);
+                string newPath = Path.GetFullPath(path);
                 if (path.EndsWith(m_directorySeparator + ".", StringComparison.Ordinal))
                 {
                     if (newPath.EndsWith(m_directorySeparator))

@@ -896,7 +896,7 @@ namespace System {
                             else
                                 fDelimiter = true;
                             
-                            newPath.Append(Path.GetFullPathInternal(directories[i]));
+                            newPath.Append(Path.GetFullPath(directories[i]));
                         }
                     }
                     

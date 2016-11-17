@@ -484,10 +484,14 @@ namespace System.Security.Util {
         private static void CheckPathTooLong(StringBuilder path)
         {
             if (path.Length >= (
-#if FEATURE_PATHCOMPAT
+#if PLATFORM_UNIX
+                Interop.Sys.MaxPath))
+#else
+    #if FEATURE_PATHCOMPAT
                 AppContextSwitches.BlockLongPaths ? PathInternal.MaxShortPath :
-#endif
+    #endif
                 PathInternal.MaxLongPath))
+#endif
             {
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
             }
@@ -513,7 +517,7 @@ namespace System.Security.Util {
             //      file:/home/johndoe/here
             //      file:../johndoe/here
             //      file:~/johndoe/here
-            String temp = url;            
+            String temp = url;
             int  nbSlashes = 0;
             while(nbSlashes<temp.Length && '/'==temp[nbSlashes])
                 nbSlashes++;  
@@ -533,7 +537,7 @@ namespace System.Security.Util {
         {
 
             String temp = url;
-#if !PLATFORM_UNIX            
+#if !PLATFORM_UNIX
             int index = temp.IndexOf( '/');
 
             if (index != -1 &&
@@ -651,7 +655,7 @@ namespace System.Security.Util {
             }
             else
             {
-#if !PLATFORM_UNIX 
+#if !PLATFORM_UNIX
                 String site = temp.Substring( 0, index );
                 m_localSite = null;
                 m_siteString = new SiteString( site );
