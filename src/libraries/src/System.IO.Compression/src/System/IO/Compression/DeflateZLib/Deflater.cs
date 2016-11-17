@@ -28,7 +28,7 @@ namespace System.IO.Compression
         // that they do not get inconsistent fields that may lead to an unmanaged memory violation.
         // To prevent *managed* buffer corruption or other weird behaviour users need to synchronise
         // on the stream explicitly.
-        private readonly object _syncLock = new object();
+        private object SyncLock => this;
 
         #region exposed members
 
@@ -106,7 +106,7 @@ namespace System.IO.Compression
             if (0 == count)
                 return;
 
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 _inputBufferHandle = GCHandle.Alloc(inputBuffer, GCHandleType.Pinned);
 
@@ -139,7 +139,7 @@ namespace System.IO.Compression
 
         private unsafe ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
         {
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 fixed (byte* bufPtr = outputBuffer)
                 {
@@ -195,7 +195,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(_inputBufferHandle.IsAllocated);
 
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
