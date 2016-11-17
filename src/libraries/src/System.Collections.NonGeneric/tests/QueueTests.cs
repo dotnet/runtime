@@ -859,9 +859,9 @@ namespace System.Collections.Tests
             PerformTest(StartEnqueueDequeueThread, 0);
 
             // Dequeue, enqueue
-            queue = Helpers.CreateIntQueue(_threadAge);
+            queue = Helpers.CreateIntQueue(_threadsToUse);
             _queue = Queue.Synchronized(queue);
-            PerformTest(StartDequeueEnqueueThread, _threadAge);
+            PerformTest(StartDequeueEnqueueThread, _threadsToUse);
         }
 
         private void PerformTest(Action action, int expected)
