@@ -29,9 +29,9 @@ namespace System.Net.Sockets
 
         public static SafeOverlappedFree Alloc()
         {
-            SafeOverlappedFree result = Interop.mincore_obsolete.LocalAlloc_SafeOverlappedFree(
-                                            Interop.mincore_obsolete.LPTR,
-                                            (UIntPtr)Interop.mincore_obsolete.OverlappedSize);
+            SafeOverlappedFree result = Interop.Kernel32.LocalAlloc_SafeOverlappedFree(
+                                            Interop.Kernel32.LPTR,
+                                            (UIntPtr)Interop.Kernel32.OverlappedSize);
 
             if (result.IsInvalid)
             {
@@ -72,7 +72,7 @@ namespace System.Net.Sockets
             }
 
             // Release the native overlapped structure.
-            return Interop.mincore_obsolete.LocalFree(handle) == IntPtr.Zero;
+            return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
         }
     }
 }

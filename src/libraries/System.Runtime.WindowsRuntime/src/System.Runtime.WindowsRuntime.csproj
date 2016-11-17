@@ -17,30 +17,25 @@
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uap101aot'">win8-aot</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <!-- windows.winmd is lower-case, see issue: https://github.com/dotnet/corefx/issues/13599 -->
-    <RunApiCompat Condition="'$(OSEnvironment)' != 'Windows_NT'">false</RunApiCompat>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />  
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-       <Aliases>System_Runtime_Extensions</Aliases>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
+      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
+      <Aliases>System_Runtime_Extensions</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
-    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj">
       <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
@@ -63,12 +58,16 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <TargetingPackReference Include="System.Private.Interop" />
     <TargetingPackReference Include="System.Private.Corelib" />
-    <TargetingPackReference Include="System.Private.Threading" /> 
+    <TargetingPackReference Include="System.Private.Threading" />
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
-    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj">
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
+      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
+      <Aliases>System_Runtime_Extensions</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj">
       <TargetGroup>uap101aot</TargetGroup>
@@ -95,8 +94,8 @@
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ResolveLocaleName.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.ResolveLocaleName.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
       <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>

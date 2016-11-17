@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SafeHandles
         [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore.FindClose(handle);
+            return Interop.Kernel32.FindClose(handle);
         }
 
         public override bool IsInvalid

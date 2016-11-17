@@ -23,7 +23,7 @@ namespace System
             StringBuilder result = StringBuilderCache.Acquire(currentSize); // A somewhat reasonable default size
 
             result.Length = 0;
-            int size = Interop.mincore.ExpandEnvironmentStringsW(name, result, currentSize);
+            int size = Interop.Kernel32.ExpandEnvironmentStringsW(name, result, currentSize);
             if (size == 0)
             {
                 StringBuilderCache.Release(result);
@@ -36,7 +36,7 @@ namespace System
                 result.Capacity = currentSize;
                 result.Length = 0;
 
-                size = Interop.mincore.ExpandEnvironmentStringsW(name, result, currentSize);
+                size = Interop.Kernel32.ExpandEnvironmentStringsW(name, result, currentSize);
                 if (size == 0)
                 {
                     StringBuilderCache.Release(result);
@@ -50,8 +50,8 @@ namespace System
         private static string GetEnvironmentVariableCore(string variable)
         {
             StringBuilder sb = StringBuilderCache.Acquire(128); // a somewhat reasonable default size
-            int requiredSize = Interop.mincore.GetEnvironmentVariableW(variable, sb, sb.Capacity);
-            if (requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.mincore.Errors.ERROR_ENVVAR_NOT_FOUND)
+            int requiredSize = Interop.Kernel32.GetEnvironmentVariableW(variable, sb, sb.Capacity);
+            if (requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
             {
                 StringBuilderCache.Release(sb);
                 return null;
@@ -61,7 +61,7 @@ namespace System
             {
                 sb.Capacity = requiredSize;
                 sb.Length = 0;
-                requiredSize = Interop.mincore.GetEnvironmentVariableW(variable, sb, sb.Capacity);
+                requiredSize = Interop.Kernel32.GetEnvironmentVariableW(variable, sb, sb.Capacity);
             }
 
             return StringBuilderCache.GetStringAndRelease(sb);
@@ -185,7 +185,7 @@ namespace System
             // [=HiddenVar=value\0]* [Variable=value\0]* \0
             // See the description of Environment Blocks in MSDN's
             // CreateProcess page (null-terminated array of null-terminated strings).
-            char* pStrings = Interop.mincore.GetEnvironmentStringsW();
+            char* pStrings = Interop.Kernel32.GetEnvironmentStringsW();
             if (pStrings == null)
             {
                 throw new OutOfMemoryException();
@@ -202,7 +202,7 @@ namespace System
             }
             finally
             {
-                Interop.mincore.FreeEnvironmentStringsW(pStrings); // ignore any cleanup error
+                Interop.Kernel32.FreeEnvironmentStringsW(pStrings); // ignore any cleanup error
             }
         }
 
@@ -222,144 +222,144 @@ namespace System
             switch (folder)
             {
                 case SpecialFolder.ApplicationData:
-                    folderGuid = Interop.mincore.KnownFolders.RoamingAppData;
+                    folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
                     break;
                 case SpecialFolder.CommonApplicationData:
-                    folderGuid = Interop.mincore.KnownFolders.ProgramData;
+                    folderGuid = Interop.Shell32.KnownFolders.ProgramData;
                     break;
                 case SpecialFolder.LocalApplicationData:
-                    folderGuid = Interop.mincore.KnownFolders.LocalAppData;
+                    folderGuid = Interop.Shell32.KnownFolders.LocalAppData;
                     break;
                 case SpecialFolder.Cookies:
-                    folderGuid = Interop.mincore.KnownFolders.Cookies;
+                    folderGuid = Interop.Shell32.KnownFolders.Cookies;
                     break;
                 case SpecialFolder.Desktop:
-                    folderGuid = Interop.mincore.KnownFolders.Desktop;
+                    folderGuid = Interop.Shell32.KnownFolders.Desktop;
                     break;
                 case SpecialFolder.Favorites:
-                    folderGuid = Interop.mincore.KnownFolders.Favorites;
+                    folderGuid = Interop.Shell32.KnownFolders.Favorites;
                     break;
                 case SpecialFolder.History:
-                    folderGuid = Interop.mincore.KnownFolders.History;
+                    folderGuid = Interop.Shell32.KnownFolders.History;
                     break;
                 case SpecialFolder.InternetCache:
-                    folderGuid = Interop.mincore.KnownFolders.InternetCache;
+                    folderGuid = Interop.Shell32.KnownFolders.InternetCache;
                     break;
                 case SpecialFolder.Programs:
-                    folderGuid = Interop.mincore.KnownFolders.Programs;
+                    folderGuid = Interop.Shell32.KnownFolders.Programs;
                     break;
                 case SpecialFolder.MyComputer:
-                    folderGuid = Interop.mincore.KnownFolders.ComputerFolder;
+                    folderGuid = Interop.Shell32.KnownFolders.ComputerFolder;
                     break;
                 case SpecialFolder.MyMusic:
-                    folderGuid = Interop.mincore.KnownFolders.Music;
+                    folderGuid = Interop.Shell32.KnownFolders.Music;
                     break;
                 case SpecialFolder.MyPictures:
-                    folderGuid = Interop.mincore.KnownFolders.Pictures;
+                    folderGuid = Interop.Shell32.KnownFolders.Pictures;
                     break;
                 case SpecialFolder.MyVideos:
-                    folderGuid = Interop.mincore.KnownFolders.Videos;
+                    folderGuid = Interop.Shell32.KnownFolders.Videos;
                     break;
                 case SpecialFolder.Recent:
-                    folderGuid = Interop.mincore.KnownFolders.Recent;
+                    folderGuid = Interop.Shell32.KnownFolders.Recent;
                     break;
                 case SpecialFolder.SendTo:
-                    folderGuid = Interop.mincore.KnownFolders.SendTo;
+                    folderGuid = Interop.Shell32.KnownFolders.SendTo;
                     break;
                 case SpecialFolder.StartMenu:
-                    folderGuid = Interop.mincore.KnownFolders.StartMenu;
+                    folderGuid = Interop.Shell32.KnownFolders.StartMenu;
                     break;
                 case SpecialFolder.Startup:
-                    folderGuid = Interop.mincore.KnownFolders.Startup;
+                    folderGuid = Interop.Shell32.KnownFolders.Startup;
                     break;
                 case SpecialFolder.System:
-                    folderGuid = Interop.mincore.KnownFolders.System;
+                    folderGuid = Interop.Shell32.KnownFolders.System;
                     break;
                 case SpecialFolder.Templates:
-                    folderGuid = Interop.mincore.KnownFolders.Templates;
+                    folderGuid = Interop.Shell32.KnownFolders.Templates;
                     break;
                 case SpecialFolder.DesktopDirectory:
-                    folderGuid = Interop.mincore.KnownFolders.Desktop;
+                    folderGuid = Interop.Shell32.KnownFolders.Desktop;
                     break;
                 case SpecialFolder.Personal:
                     // Same as Personal
                     // case SpecialFolder.MyDocuments:
-                    folderGuid = Interop.mincore.KnownFolders.Documents;
+                    folderGuid = Interop.Shell32.KnownFolders.Documents;
                     break;
                 case SpecialFolder.ProgramFiles:
-                    folderGuid = Interop.mincore.KnownFolders.ProgramFiles;
+                    folderGuid = Interop.Shell32.KnownFolders.ProgramFiles;
                     break;
                 case SpecialFolder.CommonProgramFiles:
-                    folderGuid = Interop.mincore.KnownFolders.ProgramFilesCommon;
+                    folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommon;
                     break;
                 case SpecialFolder.AdminTools:
-                    folderGuid = Interop.mincore.KnownFolders.AdminTools;
+                    folderGuid = Interop.Shell32.KnownFolders.AdminTools;
                     break;
                 case SpecialFolder.CDBurning:
-                    folderGuid = Interop.mincore.KnownFolders.CDBurning;
+                    folderGuid = Interop.Shell32.KnownFolders.CDBurning;
                     break;
                 case SpecialFolder.CommonAdminTools:
-                    folderGuid = Interop.mincore.KnownFolders.CommonAdminTools;
+                    folderGuid = Interop.Shell32.KnownFolders.CommonAdminTools;
                     break;
                 case SpecialFolder.CommonDocuments:
-                    folderGuid = Interop.mincore.KnownFolders.PublicDocuments;
+                    folderGuid = Interop.Shell32.KnownFolders.PublicDocuments;
                     break;
                 case SpecialFolder.CommonMusic:
-                    folderGuid = Interop.mincore.KnownFolders.PublicMusic;
+                    folderGuid = Interop.Shell32.KnownFolders.PublicMusic;
                     break;
                 case SpecialFolder.CommonOemLinks:
-                    folderGuid = Interop.mincore.KnownFolders.CommonOEMLinks;
+                    folderGuid = Interop.Shell32.KnownFolders.CommonOEMLinks;
                     break;
                 case SpecialFolder.CommonPictures:
-                    folderGuid = Interop.mincore.KnownFolders.PublicPictures;
+                    folderGuid = Interop.Shell32.KnownFolders.PublicPictures;
                     break;
                 case SpecialFolder.CommonStartMenu:
-                    folderGuid = Interop.mincore.KnownFolders.CommonStartMenu;
+                    folderGuid = Interop.Shell32.KnownFolders.CommonStartMenu;
                     break;
                 case SpecialFolder.CommonPrograms:
-                    folderGuid = Interop.mincore.KnownFolders.CommonPrograms;
+                    folderGuid = Interop.Shell32.KnownFolders.CommonPrograms;
                     break;
                 case SpecialFolder.CommonStartup:
-                    folderGuid = Interop.mincore.KnownFolders.CommonStartup;
+                    folderGuid = Interop.Shell32.KnownFolders.CommonStartup;
                     break;
                 case SpecialFolder.CommonDesktopDirectory:
-                    folderGuid = Interop.mincore.KnownFolders.PublicDesktop;
+                    folderGuid = Interop.Shell32.KnownFolders.PublicDesktop;
                     break;
                 case SpecialFolder.CommonTemplates:
-                    folderGuid = Interop.mincore.KnownFolders.CommonTemplates;
+                    folderGuid = Interop.Shell32.KnownFolders.CommonTemplates;
                     break;
                 case SpecialFolder.CommonVideos:
-                    folderGuid = Interop.mincore.KnownFolders.PublicVideos;
+                    folderGuid = Interop.Shell32.KnownFolders.PublicVideos;
                     break;
                 case SpecialFolder.Fonts:
-                    folderGuid = Interop.mincore.KnownFolders.Fonts;
+                    folderGuid = Interop.Shell32.KnownFolders.Fonts;
                     break;
                 case SpecialFolder.NetworkShortcuts:
-                    folderGuid = Interop.mincore.KnownFolders.NetHood;
+                    folderGuid = Interop.Shell32.KnownFolders.NetHood;
                     break;
                 case SpecialFolder.PrinterShortcuts:
-                    folderGuid = Interop.mincore.KnownFolders.PrintersFolder;
+                    folderGuid = Interop.Shell32.KnownFolders.PrintersFolder;
                     break;
                 case SpecialFolder.UserProfile:
-                    folderGuid = Interop.mincore.KnownFolders.Profile;
+                    folderGuid = Interop.Shell32.KnownFolders.Profile;
                     break;
                 case SpecialFolder.CommonProgramFilesX86:
-                    folderGuid = Interop.mincore.KnownFolders.ProgramFilesCommonX86;
+                    folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommonX86;
                     break;
                 case SpecialFolder.ProgramFilesX86:
-                    folderGuid = Interop.mincore.KnownFolders.ProgramFilesX86;
+                    folderGuid = Interop.Shell32.KnownFolders.ProgramFilesX86;
                     break;
                 case SpecialFolder.Resources:
-                    folderGuid = Interop.mincore.KnownFolders.ResourceDir;
+                    folderGuid = Interop.Shell32.KnownFolders.ResourceDir;
                     break;
                 case SpecialFolder.LocalizedResources:
-                    folderGuid = Interop.mincore.KnownFolders.LocalizedResourcesDir;
+                    folderGuid = Interop.Shell32.KnownFolders.LocalizedResourcesDir;
                     break;
                 case SpecialFolder.SystemX86:
-                    folderGuid = Interop.mincore.KnownFolders.SystemX86;
+                    folderGuid = Interop.Shell32.KnownFolders.SystemX86;
                     break;
                 case SpecialFolder.Windows:
-                    folderGuid = Interop.mincore.KnownFolders.Windows;
+                    folderGuid = Interop.Shell32.KnownFolders.Windows;
                     break;
                 default:
                     return string.Empty;
@@ -373,10 +373,10 @@ namespace System
             Guid folderId = new Guid(folderGuid);
 
             string path;
-            int hr = Interop.mincore.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out path);
+            int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out path);
             if (hr != 0) // Not S_OK
             {
-                if (hr == Interop.mincore.COR_E_PLATFORMNOTSUPPORTED)
+                if (hr == Interop.Shell32.COR_E_PLATFORMNOTSUPPORTED)
                 {
                     throw new PlatformNotSupportedException();
                 }
@@ -394,7 +394,7 @@ namespace System
             get
             {
                 bool isWow64;
-                return Interop.mincore.IsWow64Process(Interop.mincore.GetCurrentProcess(), out isWow64) && isWow64;
+                return Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out isWow64) && isWow64;
             }
         }
 
@@ -402,7 +402,7 @@ namespace System
         {
             get
             {
-                string name = Interop.mincore.GetComputerName();
+                string name = Interop.Kernel32.GetComputerName();
                 if (name == null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
@@ -413,8 +413,8 @@ namespace System
 
         private static unsafe Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() =>
         {
-            var version = new Interop.mincore.OSVERSIONINFOEX { dwOSVersionInfoSize = sizeof(Interop.mincore.OSVERSIONINFOEX) };
-            if (!Interop.mincore.GetVersionExW(ref version))
+            var version = new Interop.Kernel32.OSVERSIONINFOEX { dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX) };
+            if (!Interop.Kernel32.GetVersionExW(ref version))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GetVersion);
             }
@@ -441,8 +441,8 @@ namespace System
         {
             // Determine how much size we need for a call to GetLogicalProcessorInformationEx
             uint len = 0;
-            if (!Interop.mincore.GetLogicalProcessorInformationEx(Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, IntPtr.Zero, ref len) &&
-                Marshal.GetLastWin32Error() == Interop.mincore.Errors.ERROR_INSUFFICIENT_BUFFER)
+            if (!Interop.Kernel32.GetLogicalProcessorInformationEx(Interop.Kernel32.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, IntPtr.Zero, ref len) &&
+                Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
             {
                 // Allocate that much space
                 Debug.Assert(len > 0);
@@ -450,7 +450,7 @@ namespace System
                 fixed (byte* bufferPtr = buffer)
                 {
                     // Call GetLogicalProcessorInformationEx with the allocated buffer
-                    if (Interop.mincore.GetLogicalProcessorInformationEx(Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, (IntPtr)bufferPtr, ref len))
+                    if (Interop.Kernel32.GetLogicalProcessorInformationEx(Interop.Kernel32.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, (IntPtr)bufferPtr, ref len))
                     {
                         // Walk each SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX in the buffer, where the Size of each dictates how
                         // much space it's consuming.  For each group relation, count the number of active processors in each of its group infos.
@@ -458,10 +458,10 @@ namespace System
                         byte* ptr = bufferPtr, endPtr = bufferPtr + len;
                         while (ptr < endPtr)
                         {
-                            var current = (Interop.mincore.SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)ptr;
-                            if (current->Relationship == Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup)
+                            var current = (Interop.Kernel32.SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)ptr;
+                            if (current->Relationship == Interop.Kernel32.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup)
                             {
-                                Interop.mincore.PROCESSOR_GROUP_INFO* groupInfo = &current->Group.GroupInfo;
+                                Interop.Kernel32.PROCESSOR_GROUP_INFO* groupInfo = &current->Group.GroupInfo;
                                 int groupCount = current->Group.ActiveGroupCount;
                                 for (int i = 0; i < groupCount; i++)
                                 {
@@ -480,17 +480,17 @@ namespace System
 
         private static void SetEnvironmentVariableCore(string variable, string value)
         {
-            if (!Interop.mincore.SetEnvironmentVariableW(variable, value))
+            if (!Interop.Kernel32.SetEnvironmentVariableW(variable, value))
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 switch (errorCode)
                 {
-                    case Interop.mincore.Errors.ERROR_ENVVAR_NOT_FOUND: // Allow user to try to clear a environment variable                
+                    case Interop.Errors.ERROR_ENVVAR_NOT_FOUND: // Allow user to try to clear a environment variable
                         return;
-                    case Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE: // Fix inaccurate error code from Win32
+                    case Interop.Errors.ERROR_FILENAME_EXCED_RANGE: // Fix inaccurate error code from Win32
                         throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
                     default:
-                        throw new ArgumentException(Interop.mincore.GetMessage(errorCode));
+                        throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
                 }
             }
         }
@@ -543,8 +543,8 @@ namespace System
             }
 
             //// Desktop sends a WM_SETTINGCHANGE message to all windows.  Not available on all platforms.
-            //Interop.mincore.SendMessageTimeout(
-            //    new IntPtr(Interop.mincore.HWND_BROADCAST), Interop.mincore.WM_SETTINGCHANGE,
+            //Interop.Kernel32.SendMessageTimeout(
+            //    new IntPtr(Interop.Kernel32.HWND_BROADCAST), Interop.Kernel32.WM_SETTINGCHANGE,
             //    IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
         }
 
@@ -553,7 +553,7 @@ namespace System
             get
             {
                 StringBuilder sb = StringBuilderCache.Acquire(Path.MaxPath);
-                if (Interop.mincore.GetSystemDirectoryW(sb, Path.MaxPath) == 0)
+                if (Interop.Kernel32.GetSystemDirectoryW(sb, Path.MaxPath) == 0)
                 {
                     StringBuilderCache.Release(sb);
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -569,7 +569,7 @@ namespace System
                 // Use GetUserNameExW, as GetUserNameW isn't available on all platforms, e.g. Win7
                 var domainName = new StringBuilder(1024);
                 uint domainNameLen = (uint)domainName.Capacity;
-                if (Interop.mincore.GetUserNameExW(Interop.mincore.NameSamCompatible, domainName, ref domainNameLen) == 1)
+                if (Interop.SspiCli.GetUserNameExW(Interop.SspiCli.NameSamCompatible, domainName, ref domainNameLen) == 1)
                 {
                     string samName = domainName.ToString();
                     int index = samName.IndexOf('\\');
@@ -589,7 +589,7 @@ namespace System
             {
                 var domainName = new StringBuilder(1024);
                 uint domainNameLen = (uint)domainName.Capacity;
-                if (Interop.mincore.GetUserNameExW(Interop.mincore.NameSamCompatible, domainName, ref domainNameLen) == 1)
+                if (Interop.SspiCli.GetUserNameExW(Interop.SspiCli.NameSamCompatible, domainName, ref domainNameLen) == 1)
                 {
                     string samName = domainName.ToString();
                     int index = samName.IndexOf('\\');
@@ -603,7 +603,7 @@ namespace System
                 byte[] sid = new byte[1024];
                 int sidLen = sid.Length;
                 int peUse;
-                if (!Interop.mincore.LookupAccountNameW(null, UserName, sid, ref sidLen, domainName, ref domainNameLen, out peUse))
+                if (!Interop.Advapi32.LookupAccountNameW(null, UserName, sid, ref sidLen, domainName, ref domainNameLen, out peUse))
                 {
                     throw new InvalidOperationException(Win32Marshal.GetExceptionForLastWin32Error().Message);
                 }

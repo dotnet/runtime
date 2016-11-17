@@ -356,7 +356,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            XPathDocument xd = new XPathDocument(FullFilePath("fish.xml"));
+            XPathDocument xd = new XPathDocument(FullFilePath("Fish.xml"));
 
             m_xsltArg.AddParam("myArg5", szEmpty, ((IXPathNavigable)xd).CreateNavigator());
             retObj = m_xsltArg.GetParam("myArg5", szEmpty);
@@ -638,7 +638,7 @@ namespace System.Xml.Tests
     //            Assert.True(false);
     //        }
 
-    //        if((LoadXSL("MyObjectDef.xsl") == TEST_PASS) && (Transform_ArgList("fruits.xml") == TEST_PASS) &&
+    //        if((LoadXSL("myObjectDef.xsl") == TEST_PASS) && (Transform_ArgList("fruits.xml") == TEST_PASS) &&
     //            (CheckResult(430.402026847)== TEST_PASS))
     //            return;
     //        else
@@ -701,7 +701,7 @@ namespace System.Xml.Tests
     //        }
     //        try
     //        {
-    //            if((LoadXSL("MyObjectDef.xsl") == TEST_PASS))
+    //            if((LoadXSL("myObjectDef.xsl") == TEST_PASS))
     //                Transform_ArgList("fruits.xml");
     //        }
     //        catch(System.Xml.Xsl.XsltException)
@@ -855,7 +855,7 @@ namespace System.Xml.Tests
     //            Assert.True(false);
     //        }
 
-    //        if((LoadXSL("MyObjectDef.xsl") == TEST_PASS) && (Transform_ArgList("fruits.xml") == TEST_PASS) &&
+    //        if((LoadXSL("myObjectDef.xsl") == TEST_PASS) && (Transform_ArgList("fruits.xml") == TEST_PASS) &&
     //            (CheckResult(430.402026847)== TEST_PASS))
     //            return;
     //        else
@@ -885,7 +885,7 @@ namespace System.Xml.Tests
 
     //        try
     //        {
-    //            if((LoadXSL("MyObjectDef.xsl") == TEST_PASS))
+    //            if((LoadXSL("myObjectDef.xsl") == TEST_PASS))
     //                Transform_ArgList("fruits.xml");
     //        }
     //        catch(System.Xml.Xsl.XsltException)
@@ -915,7 +915,7 @@ namespace System.Xml.Tests
 
     //        try
     //        {
-    //            if((LoadXSL("MyObjectDef.xsl") == TEST_PASS))
+    //            if((LoadXSL("myObjectDef.xsl") == TEST_PASS))
     //                Transform_ArgList("fruits.xml");
     //        }
     //        catch(System.Xml.Xsl.XsltException)
@@ -944,7 +944,7 @@ namespace System.Xml.Tests
     //                Assert.True(false);
     //            }
     //        }
-    //        if((LoadXSL("MyObjectDef.xsl") == TEST_PASS) && (Transform_ArgList("fruits.xml") == TEST_PASS) &&
+    //        if((LoadXSL("myObjectDef.xsl") == TEST_PASS) && (Transform_ArgList("fruits.xml") == TEST_PASS) &&
     //            (CheckResult(430.402026847)== TEST_PASS))
     //            return;
     //        else
@@ -1819,7 +1819,7 @@ namespace System.Xml.Tests
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
                 (CheckResult(430.402026847) == 1))
                 return;
             else
@@ -2002,7 +2002,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddExtensionObject("urn:My-Object", obj);
             m_xsltArg.AddExtensionObject("urn-my:object", obj);
 
-            if ((LoadXSL("MyObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
                 (CheckResult(430.402026847) == 1))
                 return;
             else
@@ -2062,7 +2062,7 @@ namespace System.Xml.Tests
                 MyObject obj = new MyObject(i, _output);
                 m_xsltArg.AddExtensionObject(szDefaultNS + i, obj);
             }
-            if ((LoadXSL("MyObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
                 (CheckResult(430.402026847) == 1))
                 return;
             else
@@ -2085,7 +2085,7 @@ namespace System.Xml.Tests
             }
             try
             {
-                if ((LoadXSL("MyObjectDef.xsl") == 1))
+                if ((LoadXSL("myObjectDef.xsl") == 1))
                     Transform_ArgList("fruits.xml", true);
             }
             catch (System.Xml.Xsl.XsltException)
@@ -2133,7 +2133,7 @@ namespace System.Xml.Tests
             }
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
 
-            if ((LoadXSL("MyObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
                 (CheckResult(430.402026847) == 1))
                 return;
             else
@@ -2151,7 +2151,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddExtensionObject(szSimple, obj);
             try
             {
-                if ((LoadXSL("MyObjectDef.xsl") == 1))
+                if ((LoadXSL("myObjectDef.xsl") == 1))
                     Transform_ArgList("fruits.xml", true);
             }
             catch (System.Xml.Xsl.XsltException)
@@ -3001,7 +3001,7 @@ namespace System.Xml.Tests
 
             try
             {
-                if ((LoadXSL("MyObjectDef.xsl") == 1))
+                if ((LoadXSL("myObjectDef.xsl") == 1))
                     Transform_ArgList("fruits.xml", true);
             }
             catch (System.Xml.Xsl.XsltException)
@@ -3065,7 +3065,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             m_xsltArg.RemoveExtensionObject(szSimple);
 
-            if ((LoadXSL("MyObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
                 (CheckResult(430.402026847) == 1))
                 return;
             else
@@ -3085,7 +3085,7 @@ namespace System.Xml.Tests
 
             try
             {
-                if ((LoadXSL("MyObjectDef.xsl") == 1))
+                if ((LoadXSL("myObjectDef.xsl") == 1))
                     Transform_ArgList("fruits.xml", true);
             }
             catch (System.Xml.Xsl.XsltException)
@@ -3146,7 +3146,7 @@ namespace System.Xml.Tests
             m_xsltArg.RemoveExtensionObject("urn-my:object");
             m_xsltArg.RemoveExtensionObject("urn:my-object ");
 
-            if ((LoadXSL("MyObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
                 (CheckResult(430.402026847) == 1))
                 return;
             else
@@ -3178,7 +3178,7 @@ namespace System.Xml.Tests
 
             try
             {
-                if ((LoadXSL("MyObjectDef.xsl") == 1))
+                if ((LoadXSL("myObjectDef.xsl") == 1))
                     Transform_ArgList("fruits.xml", true);
             }
             catch (System.Xml.Xsl.XsltException)
@@ -3305,7 +3305,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("MyObjectDef.xsl") == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1))
             {
                 try
                 {
@@ -3439,7 +3439,7 @@ namespace System.Xml.Tests
             m_xsltArg.RemoveExtensionObject(szDefaultNS);
             m_xsltArg.Clear();
 
-            if ((LoadXSL("MyObjectDef.xsl") == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1))
             {
                 try
                 {

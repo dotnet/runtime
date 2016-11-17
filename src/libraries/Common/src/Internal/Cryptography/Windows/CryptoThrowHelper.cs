@@ -12,7 +12,7 @@ namespace Internal.Cryptography
     {
         public static CryptographicException ToCryptographicException(this int hr)
         {
-            string message = Interop.mincore.GetMessage(hr);
+            string message = Interop.Kernel32.GetMessage(hr);
             return new WindowsCryptographicException(hr, message);
         }
 

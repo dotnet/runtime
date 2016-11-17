@@ -2212,6 +2212,21 @@ namespace System
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
     }
+
+    public abstract partial class TimeZone
+    {
+        protected TimeZone() { }
+        public static System.TimeZone CurrentTimeZone { get { throw null; } }
+        public abstract string DaylightName { get; }
+        public abstract string StandardName { get; }
+        public abstract System.Globalization.DaylightTime GetDaylightChanges(int year);
+        public abstract System.TimeSpan GetUtcOffset(System.DateTime time);
+        public virtual bool IsDaylightSavingTime(System.DateTime time) { throw null; }
+        public static bool IsDaylightSavingTime(System.DateTime time, System.Globalization.DaylightTime daylightTimes) { throw null; }
+        public virtual System.DateTime ToLocalTime(System.DateTime time) { throw null; }
+        public virtual System.DateTime ToUniversalTime(System.DateTime time) { throw null; }
+    }
+    
     public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TimeZoneInfo() { }
@@ -2227,6 +2242,9 @@ namespace System
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTimeOffset ConvertTime(System.DateTimeOffset dateTimeOffset, System.TimeZoneInfo destinationTimeZone) { throw null; }
+        public static System.DateTime ConvertTimeBySystemTimeZoneId(System.DateTime dateTime, string destinationTimeZoneId) { throw null; }
+        public static System.DateTime ConvertTimeBySystemTimeZoneId(System.DateTime dateTime, string sourceTimeZoneId, string destinationTimeZoneId) { throw null; }
+        public static System.DateTimeOffset ConvertTimeBySystemTimeZoneId(System.DateTimeOffset dateTimeOffset, string destinationTimeZoneId) { throw null; }
         public static System.DateTime ConvertTimeFromUtc(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime) { throw null; }
         public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone) { throw null; }
@@ -4509,6 +4527,7 @@ namespace System.IO
         public FileLoadException(string message, string fileName) { }
         public FileLoadException(string message, string fileName, System.Exception inner) { }
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
@@ -4525,6 +4544,7 @@ namespace System.IO
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     public enum HandleInheritability
@@ -6113,7 +6133,7 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public sealed partial class FirstChanceExceptionEventArgs : EventArgs
+    public partial class FirstChanceExceptionEventArgs : EventArgs
     {
         public FirstChanceExceptionEventArgs(Exception exception) { }
         public Exception Exception { get { throw null; } }

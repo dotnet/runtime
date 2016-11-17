@@ -173,6 +173,7 @@
     <Compile Include="System\Runtime\CompilerServices\CallSiteHelpers.cs" />
     <Compile Include="System\Runtime\CompilerServices\DynamicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DebugInfoGenerator.cs" />
+    <Compile Include="System\Dynamic\Utils\CachedReflectionInfo.cs" />
     <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
     <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs" />

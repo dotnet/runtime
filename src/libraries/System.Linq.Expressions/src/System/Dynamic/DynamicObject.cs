@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using AstUtils = System.Linq.Expressions.Utils;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Dynamic
 {
@@ -554,9 +555,9 @@ namespace System.Dynamic
                         condition,
                         convert,
                         Expression.Throw(
-                            Expression.New(typeof(InvalidCastException).GetConstructor(new Type[] { typeof(string) }),
+                            Expression.New(InvalidCastException_Ctor_String,
                                 Expression.Call(
-                                    typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object[]) }),
+                                    String_Format_String_ObjectArray,
                                     Expression.Constant(convertFailed),
                                     Expression.NewArrayInit(typeof(object),
                                         Expression.Condition(
@@ -564,7 +565,7 @@ namespace System.Dynamic
                                             Expression.Constant("null"),
                                             Expression.Call(
                                                 resultMO.Expression,
-                                                typeof(object).GetMethod("GetType")
+                                                Object_GetType
                                             ),
                                             typeof(object)
                                         )

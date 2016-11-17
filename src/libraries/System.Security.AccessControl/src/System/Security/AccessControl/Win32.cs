@@ -31,7 +31,7 @@ namespace System.Security.AccessControl
             IntPtr ByteArray;
             uint ByteArraySize = 0;
 
-            if (!Interop.mincore.ConvertSdToStringSd(binaryForm, (uint)requestedRevision, (uint)si, out ByteArray, ref ByteArraySize))
+            if (!Interop.Advapi32.ConvertSdToStringSd(binaryForm, (uint)requestedRevision, (uint)si, out ByteArray, ref ByteArraySize))
             {
                 errorCode = Marshal.GetLastWin32Error();
                 goto Error;
@@ -47,7 +47,7 @@ namespace System.Security.AccessControl
             // Now is a good time to get rid of the returned pointer
             //
 
-            Interop.mincore_obsolete.LocalFree(ByteArray);
+            Interop.Kernel32.LocalFree(ByteArray);
 
             return 0;
 
@@ -55,7 +55,7 @@ namespace System.Security.AccessControl
 
             resultSddl = null;
 
-            if (errorCode == Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY)
+            if (errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
             {
                 throw new OutOfMemoryException();
             }
@@ -119,7 +119,7 @@ namespace System.Security.AccessControl
 
                 if (name != null)
                 {
-                    errorCode = (int)Interop.mincore.GetSecurityInfoByName(name, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
+                    errorCode = (int)Interop.Advapi32.GetSecurityInfoByName(name, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
                 }
                 else if (handle != null)
                 {
@@ -131,7 +131,7 @@ nameof(handle));
                     }
                     else
                     {
-                        errorCode = (int)Interop.mincore.GetSecurityInfoByHandle(handle, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
+                        errorCode = (int)Interop.Advapi32.GetSecurityInfoByHandle(handle, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
                     }
                 }
                 else
@@ -142,7 +142,7 @@ nameof(handle));
                     throw new ArgumentException();
                 }
 
-                if (errorCode == Interop.mincore.Errors.ERROR_SUCCESS && IntPtr.Zero.Equals(ByteArray))
+                if (errorCode == Interop.Errors.ERROR_SUCCESS && IntPtr.Zero.Equals(ByteArray))
                 {
                     //
                     // This means that the object doesn't have a security descriptor. And thus we throw
@@ -150,18 +150,18 @@ nameof(handle));
                     //
                     throw new InvalidOperationException(SR.InvalidOperation_NoSecurityDescriptor);
                 }
-                else if (errorCode == Interop.mincore.Errors.ERROR_NOT_ALL_ASSIGNED ||
-                         errorCode == Interop.mincore.Errors.ERROR_PRIVILEGE_NOT_HELD)
+                else if (errorCode == Interop.Errors.ERROR_NOT_ALL_ASSIGNED ||
+                         errorCode == Interop.Errors.ERROR_PRIVILEGE_NOT_HELD)
                 {
                     throw new PrivilegeNotHeldException(Privilege.Security);
                 }
-                else if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED ||
-                    errorCode == Interop.mincore.Errors.ERROR_CANT_OPEN_ANONYMOUS)
+                else if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED ||
+                    errorCode == Interop.Errors.ERROR_CANT_OPEN_ANONYMOUS)
                 {
                     throw new UnauthorizedAccessException();
                 }
 
-                if (errorCode != Interop.mincore.Errors.ERROR_SUCCESS)
+                if (errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
                     goto Error;
                 }
@@ -187,21 +187,21 @@ nameof(handle));
             // Extract data from the returned pointer
             //
 
-            uint Length = Interop.mincore.GetSecurityDescriptorLength(ByteArray);
+            uint Length = Interop.Advapi32.GetSecurityDescriptorLength(ByteArray);
 
             byte[] BinaryForm = new byte[Length];
 
             Marshal.Copy(ByteArray, BinaryForm, 0, (int)Length);
 
-            Interop.mincore_obsolete.LocalFree(ByteArray);
+            Interop.Kernel32.LocalFree(ByteArray);
 
             resultSd = new RawSecurityDescriptor(BinaryForm, 0);
 
-            return Interop.mincore.Errors.ERROR_SUCCESS;
+            return Interop.Errors.ERROR_SUCCESS;
 
         Error:
 
-            if (errorCode == Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY)
+            if (errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
             {
                 throw new OutOfMemoryException();
             }
@@ -282,7 +282,7 @@ nameof(handle));
 
                 if (name != null)
                 {
-                    errorCode = (int)Interop.mincore.SetSecurityInfoByName(name, (uint)type, (uint)securityInformation, OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
+                    errorCode = (int)Interop.Advapi32.SetSecurityInfoByName(name, (uint)type, (uint)securityInformation, OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
                 }
                 else if (handle != null)
                 {
@@ -294,7 +294,7 @@ nameof(handle));
                     }
                     else
                     {
-                        errorCode = (int)Interop.mincore.SetSecurityInfoByHandle(handle, (uint)type, (uint)securityInformation, OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
+                        errorCode = (int)Interop.Advapi32.SetSecurityInfoByHandle(handle, (uint)type, (uint)securityInformation, OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
                     }
                 }
                 else
@@ -304,17 +304,17 @@ nameof(handle));
                     throw new ArgumentException();
                 }
 
-                if (errorCode == Interop.mincore.Errors.ERROR_NOT_ALL_ASSIGNED ||
-                    errorCode == Interop.mincore.Errors.ERROR_PRIVILEGE_NOT_HELD)
+                if (errorCode == Interop.Errors.ERROR_NOT_ALL_ASSIGNED ||
+                    errorCode == Interop.Errors.ERROR_PRIVILEGE_NOT_HELD)
                 {
                     throw new PrivilegeNotHeldException(Privilege.Security);
                 }
-                else if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED ||
-                    errorCode == Interop.mincore.Errors.ERROR_CANT_OPEN_ANONYMOUS)
+                else if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED ||
+                    errorCode == Interop.Errors.ERROR_CANT_OPEN_ANONYMOUS)
                 {
                     throw new UnauthorizedAccessException();
                 }
-                else if (errorCode != Interop.mincore.Errors.ERROR_SUCCESS)
+                else if (errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
                     goto Error;
                 }
@@ -340,7 +340,7 @@ nameof(handle));
 
         Error:
 
-            if (errorCode == Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY)
+            if (errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
             {
                 throw new OutOfMemoryException();
             }

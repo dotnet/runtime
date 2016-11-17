@@ -162,6 +162,7 @@ namespace System.Linq.Expressions.Tests
         {
             var block = Expression.Block();
             Assert.Equal(typeof(void), block.Type);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Result);
             Action nop = Expression.Lambda<Action>(block).Compile(useInterpreter);
             nop();
         }
@@ -172,6 +173,7 @@ namespace System.Linq.Expressions.Tests
         {
             var block = Expression.Block(typeof(void));
             Assert.Equal(typeof(void), block.Type);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Result);
             Action nop = Expression.Lambda<Action>(block).Compile(useInterpreter);
             nop();
         }
@@ -188,6 +190,7 @@ namespace System.Linq.Expressions.Tests
         {
             var scope = Expression.Block(new[] { Expression.Parameter(typeof(int), "x") }, new Expression[0]);
             Assert.Equal(typeof(void), scope.Type);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => scope.Result);
             Action nop = Expression.Lambda<Action>(scope).Compile(useInterpreter);
             nop();
         }
@@ -198,6 +201,7 @@ namespace System.Linq.Expressions.Tests
         {
             var scope = Expression.Block(typeof(void), new[] { Expression.Parameter(typeof(int), "x") }, new Expression[0]);
             Assert.Equal(typeof(void), scope.Type);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => scope.Result);
             Action nop = Expression.Lambda<Action>(scope).Compile(useInterpreter);
             nop();
         }

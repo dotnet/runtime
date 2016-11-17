@@ -22,7 +22,7 @@ internal partial class Interop
             long maximumSize,
             string name)
     {
-        return Interop.mincore.CreateFileMappingFromApp(hFile, ref securityAttributes, pageProtection, maximumSize, name);
+        return Interop.Kernel32.CreateFileMappingFromApp(hFile, ref securityAttributes, pageProtection, maximumSize, name);
     }
 
     public static SafeMemoryMappedFileHandle CreateFileMapping(
@@ -32,7 +32,7 @@ internal partial class Interop
             long maximumSize,
             string name)
     {
-        return Interop.mincore.CreateFileMappingFromApp(hFile, ref securityAttributes, pageProtection, maximumSize, name);
+        return Interop.Kernel32.CreateFileMappingFromApp(hFile, ref securityAttributes, pageProtection, maximumSize, name);
     }
 
     public static SafeMemoryMappedViewHandle MapViewOfFile(
@@ -41,14 +41,14 @@ internal partial class Interop
             long fileOffset,
             UIntPtr numberOfBytesToMap)
     {
-        return Interop.mincore.MapViewOfFileFromApp(hFileMappingObject, desiredAccess, fileOffset, numberOfBytesToMap);
+        return Interop.Kernel32.MapViewOfFileFromApp(hFileMappingObject, desiredAccess, fileOffset, numberOfBytesToMap);
     }
     public static SafeMemoryMappedFileHandle OpenFileMapping(
             int desiredAccess,
             bool inheritHandle,
             string name)
     {
-        return Interop.mincore.OpenFileMappingFromApp(desiredAccess, inheritHandle, name);
+        return Interop.Kernel32.OpenFileMappingFromApp(desiredAccess, inheritHandle, name);
     }
     public static IntPtr VirtualAlloc(
             SafeHandle baseAddress,
@@ -56,6 +56,6 @@ internal partial class Interop
             int allocationType,
             int protection)
     {
-        return Interop.mincore.VirtualAllocFromApp(baseAddress, size, allocationType, protection);
+        return Interop.Kernel32.VirtualAllocFromApp(baseAddress, size, allocationType, protection);
     }
 }

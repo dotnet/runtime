@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
                 // Now we allocate the buffer and read the network parameters.
-                using (buffer = Interop.mincore_obsolete.LocalAlloc(0, (UIntPtr)size))
+                using (buffer = Interop.Kernel32.LocalAlloc(0, (UIntPtr)size))
                 {
                     if (buffer.IsInvalid)
                     {

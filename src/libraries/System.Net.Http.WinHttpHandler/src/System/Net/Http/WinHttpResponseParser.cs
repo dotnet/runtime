@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -32,86 +33,82 @@ namespace System.Net.Http
             // This buffer is the length needed for WINHTTP_QUERY_RAW_HEADERS_CRLF, which includes the status line
             // and all headers separated by CRLF, so it should be large enough for any individual status line or header queries.
             int bufferLength = GetResponseHeaderCharBufferLength(requestHandle, Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF);
-            char[] buffer = new char[bufferLength];
-
-            // Get HTTP version, status code, reason phrase from the response headers.
-
-            if (IsResponseHttp2(requestHandle))
+            char[] buffer = ArrayPool<char>.Shared.Rent(bufferLength);
+            try
             {
-                response.Version = WinHttpHandler.HttpVersion20;
-            }
-            else
-            {
-                int versionLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_VERSION, buffer);
-                response.Version =
-                    CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersionInternal.Version11 :
-                    CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersionInternal.Version10 :
-                    WinHttpHandler.HttpVersionUnknown;
-            }
+                // Get HTTP version, status code, reason phrase from the response headers.
 
-            response.StatusCode = (HttpStatusCode)GetResponseHeaderNumberInfo(
-                requestHandle,
-                Interop.WinHttp.WINHTTP_QUERY_STATUS_CODE);
-
-            int reasonPhraseLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_STATUS_TEXT, buffer);
-            response.ReasonPhrase = reasonPhraseLength > 0 ?
-                GetReasonPhrase(response.StatusCode, buffer, reasonPhraseLength) :
-                string.Empty;
-
-            // Create response stream and wrap it in a StreamContent object.
-            var responseStream = new WinHttpResponseStream(requestHandle, state);
-            state.RequestHandle = null; // ownership successfully transfered to WinHttpResponseStram.
-            Stream decompressedStream = responseStream;
-
-            if (doManualDecompressionCheck)
-            {
-                int contentEncodingStartIndex = 0;
-                int contentEncodingLength = GetResponseHeader(
-                    requestHandle,
-                    Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING,
-                    buffer);
-
-                CharArrayHelpers.Trim(buffer, ref contentEncodingStartIndex, ref contentEncodingLength);
-
-                if (contentEncodingLength > 0)
+                if (IsResponseHttp2(requestHandle))
                 {
-                    if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(
-                        EncodingNameGzip, buffer, contentEncodingStartIndex, contentEncodingLength))
+                    response.Version = WinHttpHandler.HttpVersion20;
+                }
+                else
+                {
+                    int versionLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_VERSION, buffer);
+                    response.Version =
+                        CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersionInternal.Version11 :
+                        CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersionInternal.Version10 :
+                        WinHttpHandler.HttpVersionUnknown;
+                }
+
+                response.StatusCode = (HttpStatusCode)GetResponseHeaderNumberInfo(
+                    requestHandle,
+                    Interop.WinHttp.WINHTTP_QUERY_STATUS_CODE);
+
+                int reasonPhraseLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_STATUS_TEXT, buffer);
+                response.ReasonPhrase = reasonPhraseLength > 0 ?
+                    GetReasonPhrase(response.StatusCode, buffer, reasonPhraseLength) :
+                    string.Empty;
+
+                // Create response stream and wrap it in a StreamContent object.
+                var responseStream = new WinHttpResponseStream(requestHandle, state);
+                state.RequestHandle = null; // ownership successfully transfered to WinHttpResponseStram.
+                Stream decompressedStream = responseStream;
+
+                if (doManualDecompressionCheck)
+                {
+                    int contentEncodingStartIndex = 0;
+                    int contentEncodingLength = GetResponseHeader(
+                        requestHandle,
+                        Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING,
+                        buffer);
+
+                    CharArrayHelpers.Trim(buffer, ref contentEncodingStartIndex, ref contentEncodingLength);
+
+                    if (contentEncodingLength > 0)
                     {
-                        decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress);
-                        stripEncodingHeaders = true;
-                    }
-                    else if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(
-                        EncodingNameDeflate, buffer, contentEncodingStartIndex, contentEncodingLength))
-                    {
-                        decompressedStream = new DeflateStream(responseStream, CompressionMode.Decompress);
-                        stripEncodingHeaders = true;
+                        if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(
+                            EncodingNameGzip, buffer, contentEncodingStartIndex, contentEncodingLength))
+                        {
+                            decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress);
+                            stripEncodingHeaders = true;
+                        }
+                        else if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(
+                            EncodingNameDeflate, buffer, contentEncodingStartIndex, contentEncodingLength))
+                        {
+                            decompressedStream = new DeflateStream(responseStream, CompressionMode.Decompress);
+                            stripEncodingHeaders = true;
+                        }
                     }
                 }
+
+                response.Content = new NoWriteNoSeekStreamContent(decompressedStream, state.CancellationToken);
+                response.RequestMessage = request;
+
+                // Parse raw response headers and place them into response message.
+                ParseResponseHeaders(requestHandle, response, buffer, stripEncodingHeaders);
+
+                if (response.RequestMessage.Method != HttpMethod.Head)
+                {
+                    state.ExpectedBytesToRead = response.Content.Headers.ContentLength;
+                }
+
+                return response;
             }
-
-#if HTTP_DLL
-            var content = new StreamContent(decompressedStream, state.CancellationToken);
-#else
-            // TODO: Issue https://github.com/dotnet/corefx/issues/9071
-            // We'd like to be able to pass state.CancellationToken into the StreamContent so that its
-            // SerializeToStreamAsync method can use it, but that ctor isn't public, nor is there a
-            // SerializeToStreamAsync override that takes a CancellationToken.
-            var content = new StreamContent(decompressedStream);
-#endif
-
-            response.Content = content;
-            response.RequestMessage = request;
-
-            // Parse raw response headers and place them into response message.
-            ParseResponseHeaders(requestHandle, response, buffer, stripEncodingHeaders);
-
-            if (response.RequestMessage.Method != HttpMethod.Head)
+            finally
             {
-                state.ExpectedBytesToRead = response.Content.Headers.ContentLength;
+                ArrayPool<char>.Shared.Return(buffer);
             }
-
-            return response;
         }
 
         /// <summary>
