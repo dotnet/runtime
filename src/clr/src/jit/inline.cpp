@@ -447,7 +447,7 @@ void InlineContext::DumpData(unsigned indent)
     else if (m_Success)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
-        printf("%*s%u,\"%s\",\"%s\"", indent, "", m_Ordinal, inlineReason, calleeName);
+        printf("%*s%u,\"%s\",\"%s\",", indent, "", m_Ordinal, inlineReason, calleeName);
         m_Policy->DumpData(jitstdout);
         printf("\n");
     }
@@ -500,11 +500,22 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
 
-        // Optionally, dump data about the last inline
-        if ((JitConfig.JitInlineDumpData() != 0) && (this == m_InlineStrategy->GetLastContext()))
+        // Optionally, dump data about the inline
+        const int dumpDataSetting = JitConfig.JitInlineDumpData();
+
+        // JitInlineDumpData=1 -- dump data plus deltas for last inline only
+        if ((dumpDataSetting == 1) && (this == m_InlineStrategy->GetLastContext()))
         {
             fprintf(file, "%*s<Data>", indent + 2, "");
             m_InlineStrategy->DumpDataContents(file);
+            fprintf(file, "</Data>\n");
+        }
+
+        // JitInlineDumpData=2 -- dump data for all inlines, no deltas
+        if ((dumpDataSetting == 2) && (m_Policy != nullptr))
+        {
+            fprintf(file, "%*s<Data>", indent + 2, "");
+            m_Policy->DumpData(file);
             fprintf(file, "</Data>\n");
         }
 
@@ -1383,7 +1394,7 @@ void InlineStrategy::DumpDataHeader(FILE* file)
 void InlineStrategy::DumpDataSchema(FILE* file)
 {
     DumpDataEnsurePolicyIsSet();
-    fprintf(file, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate");
+    fprintf(file, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate,");
     m_LastSuccessfulPolicy->DumpSchema(file);
 }
 
@@ -1419,7 +1430,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
 
-    fprintf(file, "%08X,%u,%u,%u,%u,%d,%d", currentMethodToken, m_InlineCount, info.compTotalHotCodeSize,
+    fprintf(file, "%08X,%u,%u,%u,%u,%d,%d,", currentMethodToken, m_InlineCount, info.compTotalHotCodeSize,
             info.compTotalColdCodeSize, microsecondsSpentJitting, m_CurrentSizeEstimate / 10, m_CurrentTimeEstimate);
     m_LastSuccessfulPolicy->DumpData(file);
 }
@@ -1456,10 +1467,22 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
         fprintf(file, "<InlineForest>\n");
         fprintf(file, "<Policy>%s</Policy>\n", m_LastSuccessfulPolicy->GetName());
 
-        if (JitConfig.JitInlineDumpData() != 0)
+        const int dumpDataSetting = JitConfig.JitInlineDumpData();
+        if (dumpDataSetting != 0)
         {
             fprintf(file, "<DataSchema>");
-            DumpDataSchema(file);
+
+            if (dumpDataSetting == 1)
+            {
+                // JitInlineDumpData=1 -- dump schema for data plus deltas
+                DumpDataSchema(file);
+            }
+            else if (dumpDataSetting == 2)
+            {
+                // JitInlineDumpData=2 -- dump schema for data only
+                m_LastSuccessfulPolicy->DumpSchema(file);
+            }
+
             fprintf(file, "</DataSchema>\n");
         }
 
@@ -1600,10 +1623,15 @@ CLRRandom* InlineStrategy::GetRandom()
     if (m_Random == nullptr)
     {
         int externalSeed = 0;
+
+#ifdef DEBUG
+
         if (m_Compiler->compRandomInlineStress())
         {
             externalSeed = getJitStressLevel();
         }
+
+#endif // DEBUG
 
         int randomPolicyFlag = JitConfig.JitInlinePolicyRandom();
         if (randomPolicyFlag != 0)
