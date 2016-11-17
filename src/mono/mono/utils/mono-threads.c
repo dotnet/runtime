@@ -338,6 +338,17 @@ mono_thread_info_register_small_id (void)
 	return small_id;
 }
 
+static void
+thread_handle_destroy (gpointer data)
+{
+	MonoThreadHandle *thread_handle;
+
+	thread_handle = (MonoThreadHandle*) data;
+
+	mono_os_event_destroy (&thread_handle->event);
+	g_free (thread_handle);
+}
+
 static void*
 register_thread (MonoThreadInfo *info, gpointer baseptr)
 {
@@ -349,7 +360,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	info->small_id = small_id;
 
 	info->handle = g_new0 (MonoThreadHandle, 1);
-	info->handle->ref = 1;
+	mono_refcount_init (info->handle, thread_handle_destroy);
 	mono_os_event_init (&info->handle->event, FALSE);
 
 	mono_os_sem_init (&info->resume_semaphore, 0);
@@ -1090,13 +1101,23 @@ mono_thread_info_is_async_context (void)
 }
 
 typedef struct {
-	gint32 ref;
+	MonoRefCount ref;
 	MonoThreadStart start_routine;
 	gpointer start_routine_arg;
-	gint32 priority;
 	MonoCoopSem registered;
 	MonoThreadHandle *handle;
 } CreateThreadData;
+
+static void
+create_thread_data_destroy (gpointer data)
+{
+	CreateThreadData *thread_data;
+
+	thread_data = (CreateThreadData*) data;
+
+	mono_coop_sem_destroy (&thread_data->registered);
+	g_free (thread_data);
+}
 
 static gsize WINAPI
 inner_start_thread (gpointer data)
@@ -1121,10 +1142,7 @@ inner_start_thread (gpointer data)
 
 	mono_coop_sem_post (&thread_data->registered);
 
-	if (InterlockedDecrement (&thread_data->ref) == 0) {
-		mono_coop_sem_destroy (&thread_data->registered);
-		g_free (thread_data);
-	}
+	mono_refcount_dec (thread_data);
 
 	/* thread_data is not valid anymore */
 	thread_data = NULL;
@@ -1151,15 +1169,15 @@ mono_threads_create_thread (MonoThreadStart start, gpointer arg, gsize * const s
 	MonoThreadHandle *ret;
 
 	thread_data = g_new0 (CreateThreadData, 1);
-	thread_data->ref = 2;
+	mono_refcount_init (thread_data, create_thread_data_destroy);
 	thread_data->start_routine = start;
 	thread_data->start_routine_arg = arg;
 	mono_coop_sem_init (&thread_data->registered, 0);
 
-	res = mono_threads_platform_create_thread (inner_start_thread, (gpointer) thread_data, stack_size, out_tid);
+	res = mono_threads_platform_create_thread (inner_start_thread, (gpointer) mono_refcount_inc (thread_data), stack_size, out_tid);
 	if (res != 0) {
 		/* ref is not going to be decremented in inner_start_thread */
-		InterlockedDecrement (&thread_data->ref);
+		mono_refcount_dec (thread_data);
 		ret = NULL;
 		goto done;
 	}
@@ -1171,10 +1189,7 @@ mono_threads_create_thread (MonoThreadStart start, gpointer arg, gsize * const s
 	g_assert (ret);
 
 done:
-	if (InterlockedDecrement (&thread_data->ref) == 0) {
-		mono_coop_sem_destroy (&thread_data->registered);
-		g_free (thread_data);
-	}
+	mono_refcount_dec (thread_data);
 
 	return ret;
 }
@@ -1399,40 +1414,13 @@ mono_thread_info_exit (gsize exit_code)
 MonoThreadHandle*
 mono_threads_open_thread_handle (MonoThreadHandle *thread_handle)
 {
-	guint32 oldref, newref;
-
-	g_assert (thread_handle);
-
-	do {
-		oldref = thread_handle->ref;
-		if (!(oldref >= 1))
-			g_error ("%s: thread_handle %p has ref %u, it should be >= 1", __func__, thread_handle, oldref);
-
-		newref = oldref + 1;
-	} while (InterlockedCompareExchange ((gint32*) &thread_handle->ref, newref, oldref) != oldref);
-
-	return thread_handle;
+	return mono_refcount_inc (thread_handle);
 }
 
 void
 mono_threads_close_thread_handle (MonoThreadHandle *thread_handle)
 {
-	guint32 oldref, newref;
-
-	g_assert (thread_handle);
-
-	do {
-		oldref = thread_handle->ref;
-		if (!(oldref >= 1))
-			g_error ("%s: thread_handle %p has ref %u, it should be >= 1", __func__, thread_handle, oldref);
-
-		newref = oldref - 1;
-	} while (InterlockedCompareExchange ((gint32*) &thread_handle->ref, newref, oldref) != oldref);
-
-	if (newref == 0) {
-		mono_os_event_destroy (&thread_handle->event);
-		g_free (thread_handle);
-	}
+	mono_refcount_dec (thread_handle);
 }
 
 static void

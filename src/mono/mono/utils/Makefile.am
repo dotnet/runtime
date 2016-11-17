@@ -173,7 +173,8 @@ monoutils_sources = \
 	parse.h	\
 	checked-build.c \
 	checked-build.h \
-	os-event.h
+	os-event.h \
+	refcount.h
 
 arch_sources = 
 

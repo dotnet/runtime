@@ -16,6 +16,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/os-event.h>
+#include <mono/utils/refcount.h>
 
 #include <mono/io-layer/io-layer.h>
 
@@ -66,7 +67,7 @@ typedef gsize (*MonoThreadStart)(gpointer);
 #endif /* #ifdef HOST_WIN32 */
 
 typedef struct {
-	guint32 ref;
+	MonoRefCount ref;
 	MonoOSEvent event;
 } MonoThreadHandle;
 
