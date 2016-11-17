@@ -1688,6 +1688,9 @@ mono_class_init_sizes (MonoClass *klass)
 	MonoCachedClassInfo cached_info;
 	gboolean has_cached_info;
 
+	if (klass->size_inited)
+		return;
+
 	has_cached_info = mono_class_get_cached_class_info (klass, &cached_info);
 
 	init_sizes_with_info (klass, has_cached_info ? &cached_info : NULL);
@@ -2090,6 +2093,17 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	mono_loader_lock ();
 	if (klass->instance_size && !klass->image->dynamic) {
 		/* Might be already set using cached info */
+		if (klass->instance_size != instance_size) {
+			/* Emit info to help debugging */
+			g_print ("%d %d %d %d\n", klass->instance_size, instance_size, klass->blittable, blittable);
+			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->packing_size, packing_size);
+			g_print ("%d %d\n", klass->min_align, min_align);
+			for (i = 0; i < top; ++i) {
+				field = &klass->fields [i];
+				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+					printf ("  %d %d\n", klass->fields [i].offset, field_offsets [i]);
+			}
+		}
 		g_assert (klass->instance_size == instance_size);
 	} else {
 		klass->instance_size = instance_size;
