@@ -10276,6 +10276,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeHelpers
     {
+        public static new bool Equals(object o1, object o2) { throw null; }    
         public static int OffsetToStringData { get { throw null; } }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
         public static void EnsureSufficientExecutionStack() { }
