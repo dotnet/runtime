@@ -650,4 +650,9 @@ MembersMustExist : Member 'System.TimeZone.ToLocalTime(System.DateTime)' does no
 MembersMustExist : Member 'System.TimeZone.CurrentTimeZone.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeZone.ToLocalTime(System.DateTime)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Globalization.IdnMapping' does not exist in the implementation but it does exist in the contract.
-Total Issues: 651
+MembersMustExist : Member 'System.Reflection.Assembly.EscapedCodeBase.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.GetFile(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.GetFiles()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.GetFiles(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.AssemblyName.EscapedCodeBase.get()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 656
