@@ -837,9 +837,9 @@ namespace System
     public static partial class Console
     {
         [System.Security.SecuritySafeCriticalAttribute]
-        public static void Write(string s) { }
+        public static void Write(string value) { }
         public static void WriteLine() { }
-        public static void WriteLine(string s) { }
+        public static void WriteLine(string value) { }
     }
     public static partial class Convert
     {
