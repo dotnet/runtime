@@ -10,6 +10,11 @@ namespace System.Security.Cryptography
 {
     public abstract partial class RSA : AsymmetricAlgorithm
     {
+        public static new RSA Create(String algName)
+        {
+            return (RSA)CryptoConfig.CreateFromName(algName);
+        }
+
         public abstract RSAParameters ExportParameters(bool includePrivateParameters);
         public abstract void ImportParameters(RSAParameters parameters);
         public abstract byte[] Encrypt(byte[] data, RSAEncryptionPadding padding);

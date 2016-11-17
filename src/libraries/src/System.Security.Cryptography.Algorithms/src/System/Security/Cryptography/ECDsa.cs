@@ -10,6 +10,16 @@ namespace System.Security.Cryptography
     {
         protected ECDsa() { }
 
+        public static new ECDsa Create(string algorithm)
+        {
+            if (algorithm == null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
+
+            return CryptoConfig.CreateFromName(algorithm) as ECDsa;
+        }
+
         /// <summary>
         /// When overridden in a derived class, exports the named or explicit ECParameters for an ECCurve.
         /// If the curve has a name, the Curve property will contain named curve parameters otherwise it will contain explicit parameters.

@@ -20,9 +20,14 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
         }
 
-        public static TripleDES Create()
+        public static new TripleDES Create()
         {
             return new TripleDesImplementation();
+        }
+
+        public static new TripleDES Create(string str)
+        {
+            return (TripleDES)CryptoConfig.CreateFromName(str);
         }
 
         public override byte[] Key

@@ -16,9 +16,14 @@ namespace System.Security.Cryptography
     {
         protected SHA256() { }
 
-        public static SHA256 Create()
+        public static new SHA256 Create()
         {
             return new Implementation();
+        }
+
+        public static new SHA256 Create(string hashName)
+        {
+            return (SHA256)CryptoConfig.CreateFromName(hashName);
         }
 
         private sealed class Implementation : SHA256
