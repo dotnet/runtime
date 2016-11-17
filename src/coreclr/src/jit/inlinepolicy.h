@@ -198,57 +198,6 @@ protected:
     bool m_IsNoReturnKnown : 1;
 };
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
-// RandomPolicy implements a policy that inlines at random.
-// It is mostly useful for stress testing.
-
-class RandomPolicy : public LegalPolicy
-{
-public:
-    // Construct a RandomPolicy
-    RandomPolicy(Compiler* compiler, bool isPrejitRoot);
-
-    // Policy observations
-    void NoteSuccess() override;
-    void NoteBool(InlineObservation obs, bool value) override;
-    void NoteInt(InlineObservation obs, int value) override;
-
-    // Policy determinations
-    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
-
-    // Policy policies
-    bool PropagateNeverToRuntime() const override
-    {
-        return true;
-    }
-    bool IsLegacyPolicy() const override
-    {
-        return false;
-    }
-
-    // Policy estimates
-    int CodeSizeEstimate() override
-    {
-        return 0;
-    }
-
-    const char* GetName() const override
-    {
-        return "RandomPolicy";
-    }
-
-private:
-    // Data members
-    Compiler*  m_RootCompiler;
-    CLRRandom* m_Random;
-    unsigned   m_CodeSize;
-    bool       m_IsForceInline : 1;
-    bool       m_IsForceInlineKnown : 1;
-};
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
-
 // DiscretionaryPolicy is a variant of the enhanced legacy policy.  It
 // differs in that there is no ALWAYS_INLINE class, there is no IL
 // size limit, it does not try and maintain legacy compatabilty, and
@@ -269,10 +218,6 @@ public:
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
-    bool IsLegacyPolicy() const override
-    {
-        return false;
-    }
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
@@ -383,6 +328,35 @@ public:
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 };
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+// RandomPolicy implements a policy that inlines at random.
+// It is mostly useful for stress testing.
+
+class RandomPolicy : public DiscretionaryPolicy
+{
+public:
+    // Construct a RandomPolicy
+    RandomPolicy(Compiler* compiler, bool isPrejitRoot);
+
+    // Policy observations
+    void NoteInt(InlineObservation obs, int value) override;
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+
+    const char* GetName() const override
+    {
+        return "RandomPolicy";
+    }
+
+private:
+    // Data members
+    CLRRandom* m_Random;
+};
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
