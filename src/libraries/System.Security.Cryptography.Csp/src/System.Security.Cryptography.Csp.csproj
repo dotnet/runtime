@@ -76,8 +76,6 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-<<<<<<< a751f20c7d586ee4cd5bece0c8633a24da01bcfe
-=======
   <ItemGroup>
     <!-- ToDo: Remove once prerelease gets updated again -->
     <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
@@ -87,6 +85,5 @@
       <Name>System.Security.Cryptography.Primitives</Name>
     </ProjectReference>
   </ItemGroup>
->>>>>>> AsymmetricAlgorthm.ToXmlString, FromXmlString, and other missing members
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

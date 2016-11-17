@@ -146,20 +146,5 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             return p;
         }
-
-        // Whitespace (or lack of) must be preserved here to compare against ToXmlString output
-        private const string NistP224Xml =
-            "<ECDSAKeyValue xmlns=\"http://www.w3.org/2001/04/xmldsig-more#\">{0}  <DomainParameters>{0}    " +
-            "<NamedCurve URN=\"urn:oid:1.3.132.0.33\" />{0}  </DomainParameters>{0}  <PublicKey>{0}    " +
-            "<X Value=\"75190203480250265324918629466525629790629130339101094484563787968\" " +
-            "xsi:type=\"PrimeFieldElemType\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" />{0}    " +
-            "<Y Value=\"13934987398491338668904233989939116029337323268225038983559815153778\" " +
-            "xsi:type=\"PrimeFieldElemType\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" />{0}  " +
-            "</PublicKey>{0}</ECDSAKeyValue>";
-
-        internal static string GetNistP224Xml()
-        {
-            return string.Format(NistP224Xml, Environment.NewLine);
-        }
     }
 }

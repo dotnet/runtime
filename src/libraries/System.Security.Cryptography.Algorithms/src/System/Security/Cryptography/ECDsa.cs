@@ -134,6 +134,9 @@ namespace System.Security.Cryptography
         public abstract byte[] SignHash(byte[] hash);
         public abstract bool VerifyHash(byte[] hash, byte[] signature);
 
+        public override string KeyExchangeAlgorithm => null;
+        public override string SignatureAlgorithm => "ECDsa";
+
         protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
@@ -143,11 +146,5 @@ namespace System.Security.Cryptography
         {
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
-
-        public override string KeyExchangeAlgorithm => null;
-        public override string SignatureAlgorithm => "ECDsa";
-
-        protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
-        protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
     }
 }
