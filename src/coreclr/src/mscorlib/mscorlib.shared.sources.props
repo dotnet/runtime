@@ -1250,6 +1250,7 @@
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Close.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.GetCwd.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.GetUnixName.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Fcntl.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FLock.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FSync.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FTruncate.cs" />
