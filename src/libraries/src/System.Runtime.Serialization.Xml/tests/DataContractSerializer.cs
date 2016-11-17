@@ -2662,7 +2662,17 @@ public static partial class DataContractSerializerTests
     public static void DCS_BasicRoundTripResolveDTOTypes()
     {
         ObjectContainer instance = new ObjectContainer(new DTOContainer());
-        Func<DataContractSerializer> serializerfunc = () => new DataContractSerializer(typeof(ObjectContainer), null, null, null, int.MaxValue, false, false, new DTOResolver());
+        Func<DataContractSerializer> serializerfunc = () =>
+        {
+            var settings = new DataContractSerializerSettings()
+            {
+                DataContractResolver = new DTOResolver()
+            };
+
+            var serializer = new DataContractSerializer(typeof(ObjectContainer), settings);
+            return serializer;
+        };
+
         string expectedxmlstring = "<ObjectContainer xmlns =\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:DTOContainer\" xmlns:a=\"http://www.default.com\"><nDTO i:type=\"a:DTO\"><DateTime xmlns=\"http://schemas.datacontract.org/2004/07/System\">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=\"http://schemas.datacontract.org/2004/07/System\">0</OffsetMinutes></nDTO></_data></ObjectContainer>";
         ObjectContainer deserialized = SerializeAndDeserialize(instance, expectedxmlstring, null, serializerfunc, false);
         Assert.Equal(DateTimeOffset.MaxValue, ((DTOContainer)deserialized.Data).nDTO);
