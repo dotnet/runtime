@@ -129,6 +129,21 @@ namespace System.Collections.Generic {
             }
         }
 
+        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection):
+            this(collection, null) { }
+
+        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer):
+            this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
+        {
+            if (collection == null) {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+            }
+
+            foreach (KeyValuePair<TKey, TValue> pair in collection) {
+                Add(pair.Key, pair.Value);
+            }
+        }
+
         protected Dictionary(SerializationInfo info, StreamingContext context) {
             //We can't do anything with the keys and values until the entire graph has been deserialized
             //and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
