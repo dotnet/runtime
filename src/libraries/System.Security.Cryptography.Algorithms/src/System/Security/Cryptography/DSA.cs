@@ -14,6 +14,11 @@ namespace System.Security.Cryptography
 
         protected DSA() { }
 
+        public static new DSA Create(string algName)
+        {
+            return (DSA)CryptoConfig.CreateFromName(algName);
+        }
+
         // DSA does not encode the algorithm identifier into the signature blob, therefore CreateSignature and
         // VerifySignature do not need the HashAlgorithmName value, only SignData and VerifyData do.
         abstract public byte[] CreateSignature(byte[] rgbHash);

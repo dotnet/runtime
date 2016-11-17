@@ -17,9 +17,14 @@ namespace System.Security.Cryptography
         protected SHA1() { }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
-        public static SHA1 Create()
+        public static new SHA1 Create()
         {
             return new Implementation();
+        }
+
+        public static new SHA1 Create(string hashName)
+        {
+            return (SHA1)CryptoConfig.CreateFromName(hashName);
         }
 
         private sealed class Implementation : SHA1
