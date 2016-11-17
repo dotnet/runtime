@@ -100,13 +100,9 @@ For buckets #2 and #3 we apply a risk-benefit analysis. It doesn't matter if the
 old behavior is "wrong", we still need to think through the implications. This
 can result in one of the following outcomes: 
 
-* **Accepted with quirking**. Depending on the estimated customer impact, we may
-  decide to "quirk" the behavior. That means, that the new behavior is only
-  exposed to apps that are compiled against the version of .NET Core that
-  introduced the change. In other words, apps running against a shared framework
-  will not see the behavior if they were compiled against an older version of
-  .NET Core and thus wouldn't have been tested in the context of the behavioral
-  change.
+* **Accepted with compat switch**. Depending on the estimated customer impact,
+  we may decide to add a compat switch that allows consumers to bring back the
+  old behavior if neessary.
 
 * **Accepted**. In some minor cases, we may decide to accept the change if the
   the benefit is large and the risk is super low or if the risk is moderate and
