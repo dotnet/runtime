@@ -842,26 +842,32 @@ mono_get_exception_method_access_msg (const char *msg)
  * Returns: a new instance of the `System.Reflection.ReflectionTypeLoadException`
  */
 MonoException *
-mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions)
+mono_get_exception_reflection_type_load (MonoArray *types_raw, MonoArray *exceptions_raw)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
-	MonoException *ret = mono_get_exception_reflection_type_load_checked (types, exceptions, &error);
+	MONO_HANDLE_DCL (MonoArray, types);
+	MONO_HANDLE_DCL (MonoArray, exceptions);
+	MonoExceptionHandle ret = mono_get_exception_reflection_type_load_checked (types, exceptions, &error);
 	if (is_ok (&error)) {
 		mono_error_cleanup (&error);
-		return NULL;
+		ret = MONO_HANDLE_CAST (MonoException, NULL_HANDLE);
+		goto leave;
 	}
 
-	return ret;
+leave:
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
+
 }
 
-MonoException *
-mono_get_exception_reflection_type_load_checked (MonoArray *types, MonoArray *exceptions, MonoError *error)
+MonoExceptionHandle
+mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArrayHandle exceptions, MonoError *error)
 {
 	MonoClass *klass;
-	gpointer args [2];
-	MonoObject *exc;
 	MonoMethod *method;
 	gpointer iter;
+
+	mono_error_init (error);
 
 	klass = mono_class_load_from_name (mono_get_corlib (), "System.Reflection", "ReflectionTypeLoadException");
 
@@ -880,16 +886,17 @@ mono_get_exception_reflection_type_load_checked (MonoArray *types, MonoArray *ex
 	}
 	g_assert (method);
 
-	args [0] = types;
-	args [1] = exceptions;
-
-	exc = mono_object_new_checked (mono_domain_get (), klass, error);
+	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, mono_object_new_checked (mono_domain_get (), klass, error));
 	mono_error_assert_ok (error);
 
-	mono_runtime_invoke_checked (method, exc, args, error);
-	return_val_if_nok (error, NULL);
+	gpointer args [2];
+	args [0] = MONO_HANDLE_RAW (types);
+	args [1] = MONO_HANDLE_RAW (exceptions);
 
-	return (MonoException *) exc;
+	mono_runtime_invoke_checked (method, MONO_HANDLE_RAW (exc), args, error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoException, NULL_HANDLE));
+
+	return exc;
 }
 
 MonoException *

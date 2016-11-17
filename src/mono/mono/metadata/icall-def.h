@@ -510,7 +510,7 @@ ICALL(ASSEM_9, "GetManifestResourceNames", ves_icall_System_Reflection_Assembly_
 ICALL(ASSEM_10, "GetModulesInternal", ves_icall_System_Reflection_Assembly_GetModulesInternal)
 //ICALL(ASSEM_11, "GetNamespaces", ves_icall_System_Reflection_Assembly_GetNamespaces)
 ICALL(ASSEM_12, "GetReferencedAssemblies", ves_icall_System_Reflection_Assembly_GetReferencedAssemblies)
-ICALL(ASSEM_13, "GetTypes", ves_icall_System_Reflection_Assembly_GetTypes)
+HANDLES(ICALL(ASSEM_13, "GetTypes", ves_icall_System_Reflection_Assembly_GetTypes))
 ICALL(ASSEM_14, "InternalGetAssemblyName", ves_icall_System_Reflection_Assembly_InternalGetAssemblyName)
 ICALL(ASSEM_15, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType)
 HANDLES(ICALL(ASSEM_16, "InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion))
