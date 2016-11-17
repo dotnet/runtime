@@ -322,6 +322,25 @@ uintptr_t mono_array_handle_length (MonoArrayHandle arr);
 
 #define mono_handle_class(o) mono_object_class (MONO_HANDLE_RAW (o))
 
+/* Local handles to global GC handles and back */
+
+uint32_t
+mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned);
+
+MonoObjectHandle
+mono_gchandle_get_target_handle (uint32_t gchandle);
+
+
+
+/* Pins the MonoArray using a gchandle and returns a pointer to the
+ * element with the given index (where each element is of the given
+ * size.  Call mono_gchandle_free to unpin.
+ */
+gpointer
+mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, uint32_t *gchandle);
+
+#define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out))
+
 G_END_DECLS
 
 #endif /* __MONO_HANDLE_H__ */
