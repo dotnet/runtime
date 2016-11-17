@@ -14,7 +14,7 @@ internal partial class Interop
         internal static extern bool CreateProcessWithLogonW(
             string userName,
             string domain,
-            string passwordInClearText,
+            IntPtr password,
             LogonFlags logonFlags,
             [MarshalAs(UnmanagedType.LPTStr)] string appName,
             StringBuilder cmdLine,

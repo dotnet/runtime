@@ -279,4 +279,7 @@
   <data name="RemoteMachinesNotSupported" xml:space="preserve">
     <value>Access to processes on remote machines is not supported on this platform.</value>
   </data>
+  <data name="CantSetDuplicatePassword" xml:space="preserve">
+    <value>ProcessStartInfo.Password and ProcessStartInfo.PasswordInClearText cannot both be set. Use only one of them.</value>
+  </data>
 </root>

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -137,6 +139,96 @@ namespace System.Diagnostics.Tests
             }
 
             Assert.True(_process.WorkingSet > 0);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Process_StartInvalidNamesTest()
+        {
+            Assert.Throws<InvalidOperationException>(() => Process.Start(null, "userName", new SecureString(), "thisDomain"));
+            Assert.Throws<InvalidOperationException>(() => Process.Start(string.Empty, "userName", new SecureString(), "thisDomain"));
+            Assert.Throws<Win32Exception>(() => Process.Start("exe", string.Empty, new SecureString(), "thisDomain"));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Process_StartWithInvalidUserNamePassword()
+        {
+            SecureString password = AsSecureString("Value");
+            Assert.Throws<Win32Exception>(() => Process.Start(GetCurrentProcessName(), "userName", password, "thisDomain"));
+            Assert.Throws<Win32Exception>(() => Process.Start(GetCurrentProcessName(), Environment.UserName, password, Environment.UserDomainName));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Process_StartTest()
+        {
+            string currentProcessName = GetCurrentProcessName();
+            string userName = string.Empty;
+            string domain = "thisDomain";
+            SecureString password = AsSecureString("Value");
+
+            Process p = Process.Start(currentProcessName, userName, password, domain);
+            Assert.NotNull(p);
+            Assert.Equal(currentProcessName, p.StartInfo.FileName);
+            Assert.Equal(userName, p.StartInfo.UserName);
+            Assert.Same(password, p.StartInfo.Password);
+            Assert.Equal(domain, p.StartInfo.Domain);
+            p.Kill();
+            password.Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Process_StartWithArgumentsTest()
+        {
+            string currentProcessName = GetCurrentProcessName();
+            string userName = string.Empty;
+            string domain = Environment.UserDomainName;
+            string arguments = "-xml testResults.xml";
+            SecureString password = AsSecureString("Value");
+
+            Process p = Process.Start(currentProcessName, arguments, userName, password, domain);
+            Assert.NotNull(p);
+            Assert.Equal(currentProcessName, p.StartInfo.FileName);
+            Assert.Equal(arguments, p.StartInfo.Arguments);
+            Assert.Equal(userName, p.StartInfo.UserName);
+            Assert.Same(password, p.StartInfo.Password);
+            Assert.Equal(domain, p.StartInfo.Domain);
+            p.Kill();
+            password.Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Process_StartWithDuplicatePassword()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = "exe";
+            psi.UserName = "dummyUser";
+            psi.PasswordInClearText = "Value";
+            psi.Password = AsSecureString("Value");
+
+            Process p = new Process();
+            p.StartInfo = psi;
+            Assert.Throws<ArgumentException>(() => p.Start());
+        }
+
+        private string GetCurrentProcessName()
+        {
+            return $"{Process.GetCurrentProcess().ProcessName}.exe";
+        }
+
+        private SecureString AsSecureString(string str)
+        {
+            SecureString secureString = new SecureString();
+
+            foreach (var ch in str)
+            {
+                secureString.AppendChar(ch);
+            }
+
+            return secureString;
         }
     }
 }

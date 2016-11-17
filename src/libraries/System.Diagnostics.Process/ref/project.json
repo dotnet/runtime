@@ -9,7 +9,8 @@
     "System.Collections": "4.4.0-beta-24715-03",
     "System.Collections.NonGeneric": "4.4.0-beta-24715-03",
     "System.Collections.Specialized": "4.4.0-beta-24715-03",
-    "System.Diagnostics.FileVersionInfo": "4.4.0-beta-24715-03"
+    "System.Diagnostics.FileVersionInfo": "4.4.0-beta-24715-03",
+    "System.Runtime.InteropServices": "4.4.0-beta-24715-03"
   },
   "frameworks": {
     "netstandard1.7": {}
