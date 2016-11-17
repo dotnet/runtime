@@ -134,9 +134,8 @@ namespace System.Xml.Tests
                 {
                     try
                     {
-                        throw new NotImplementedException("Cannot Load Satellite assembly");
                         // load satellite assembly
-                        //locAsm = asm.GetSatelliteAssembly(new CultureInfo(CultureInfo.CurrentCulture.Parent.IetfLanguageTag));
+                        _locAsm = _asm.GetSatelliteAssembly(new CultureInfo(CultureInfo.CurrentCulture.Parent.IetfLanguageTag));
                     }
                     catch (FileNotFoundException e1)
                     {
