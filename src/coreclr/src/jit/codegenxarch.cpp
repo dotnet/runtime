@@ -5802,10 +5802,6 @@ void CodeGen::genCompareLong(GenTreePtr treeNode)
         emitJumpKind jumpKindLo = genJumpKindForOper(tree->gtOper, CK_UNSIGNED);
 
         inst_SET(jumpKindLo, targetReg);
-        // Set the higher bytes to 0
-        inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), targetReg, targetReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
-        genProduceReg(tree);
-
         inst_JMP(EJ_jmp, labelFinal);
 
         // Define the label for hi jump target here. If we have jumped here, we want to set
@@ -5814,11 +5810,10 @@ void CodeGen::genCompareLong(GenTreePtr treeNode)
         genDefineTempLabel(labelHi);
         inst_SET(genJumpKindForOper(tree->gtOper, compareKind), targetReg);
 
+        genDefineTempLabel(labelFinal);
         // Set the higher bytes to 0
         inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), targetReg, targetReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
         genProduceReg(tree);
-
-        genDefineTempLabel(labelFinal);
     }
     else
     {
