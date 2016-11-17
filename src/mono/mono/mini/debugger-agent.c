@@ -2309,7 +2309,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
 	dbg_unlock ();
 
-	if (res->domain == NULL) {
+	if (res->domain == NULL || res->domain->state == MONO_APPDOMAIN_UNLOADED) {
 		DEBUG_PRINTF (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
