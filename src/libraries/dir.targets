@@ -80,6 +80,12 @@
     <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(OSGroup)'=='Windows_NT' and '$(EnableDotnetAnalyzers)' == 'true'">
+    <!-- Override pinvoke files from codeAnalysis.targets, to use Win32 API instead of API set -->
+    <ValidPinvokeMappings>$(MSBuildThisFileDirectory)PinvokeAnalyzer_OneCoreApis.txt</ValidPinvokeMappings>
+    <ValidPinvokeMappings Condition="'$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='netcore50aot' or '$(SupportsUWP)'=='true'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_UWPApis.txt</ValidPinvokeMappings>
+  </PropertyGroup>
+
   <Target Name="ProducesPackageId" 
           Returns="@(PackageIds)">
     <ItemGroup>

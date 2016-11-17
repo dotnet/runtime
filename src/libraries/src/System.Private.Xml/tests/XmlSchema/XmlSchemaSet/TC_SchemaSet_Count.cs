@@ -4,6 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
+using System.IO;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
@@ -55,7 +56,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.Add("xsdauthor", TestData._XsdAuthor);
-            sc.Add(null, TestData._Root + "xsdbookexternal.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "xsdbookexternal.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
 

@@ -262,6 +262,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
+        public bool ProduceLegacyHmacValues { get; set; }
         public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
@@ -273,6 +274,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
+        public bool ProduceLegacyHmacValues { get; set; }
         public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
@@ -358,7 +360,9 @@ namespace System.Security.Cryptography
         protected RSA() { }
         public static System.Security.Cryptography.RSA Create() { throw null; }
         public abstract byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding);
+        public virtual byte[] DecryptValue(byte[] rgb) { throw null; }
         public abstract byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding);
+        public virtual byte[] EncryptValue(byte[] rgb) { throw null; }
         public abstract System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters);
         protected abstract byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm);
         protected abstract byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm);
@@ -409,6 +413,7 @@ namespace System.Security.Cryptography
         public RSAOAEPKeyExchangeFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         public byte[] Parameter { get { throw null; } set { } }
         public override string Parameters { get { throw null; } }
+        public RandomNumberGenerator Rng { get { throw null; } set { } }
         public override byte[] CreateKeyExchange(byte[] rgbData) { throw null; }
         public override byte[] CreateKeyExchange(byte[] rgbData, System.Type symAlgType) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
@@ -429,6 +434,7 @@ namespace System.Security.Cryptography
     {
         public RSAPKCS1KeyExchangeDeformatter() { }
         public RSAPKCS1KeyExchangeDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
+        public RandomNumberGenerator RNG { get { throw null; } set { } }
         public override string Parameters { get { throw null; } set { } }
         public override byte[] DecryptKeyExchange(byte[] rgbIn) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
@@ -438,6 +444,7 @@ namespace System.Security.Cryptography
         public RSAPKCS1KeyExchangeFormatter() { }
         public RSAPKCS1KeyExchangeFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         public override string Parameters { get { throw null; } }
+        public RandomNumberGenerator Rng { get { throw null; } set { } }
         public override byte[] CreateKeyExchange(byte[] rgbData) { throw null; }
         public override byte[] CreateKeyExchange(byte[] rgbData, System.Type symAlgType) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }

@@ -89,6 +89,7 @@ namespace System.Net
                     {
                         case 'A': potentialHeader = Age; goto TryMatch; // [A]ge
                         case 'P': potentialHeader = P3P; goto TryMatch; // [P]3P
+                        case 'T': potentialHeader = TSV; goto TryMatch; // [T]SV
                         case 'V': potentialHeader = Via; goto TryMatch; // [V]ia
                     }
                     break;
@@ -100,6 +101,7 @@ namespace System.Net
                         case 'E': potentialHeader = ETag; goto TryMatch; // [E]Tag
                         case 'F': potentialHeader = From; goto TryMatch; // [F]rom
                         case 'H': potentialHeader = Host; goto TryMatch; // [H]ost
+                        case 'L': potentialHeader = Link; goto TryMatch; // [L]ink
                         case 'V': potentialHeader = Vary; goto TryMatch; // [V]ary
                     }
                     break;
@@ -127,6 +129,7 @@ namespace System.Net
                 case 7:
                     switch (charAt(key, startIndex))
                     {
+                        case 'A': potentialHeader = AltSvc; goto TryMatch;  // [A]lt-Svc
                         case 'C': potentialHeader = Cookie2; goto TryMatch; // [C]ookie2
                         case 'E': potentialHeader = Expires; goto TryMatch; // [E]xpires
                         case 'R': potentialHeader = Referer; goto TryMatch; // [R]eferer
@@ -165,11 +168,13 @@ namespace System.Net
                     break;
 
                 case 12:
-                    switch (charAt(key, startIndex))
+                    switch (charAt(key, startIndex + 2))
                     {
-                        case 'C': potentialHeader = ContentType; goto TryMatch; // [C]ontent-Type
-                        case 'M': potentialHeader = MaxForwards; goto TryMatch; // [M]ax-Forwards
-                        case 'X': potentialHeader = XPoweredBy; goto TryMatch;  // [X]-Powered-By
+                        case 'c': potentialHeader = AcceptPatch; goto TryMatch; // Ac[c]ept-Patch
+                        case 'n': potentialHeader = ContentType; goto TryMatch; // Co[n]tent-Type
+                        case 'x': potentialHeader = MaxForwards; goto TryMatch; // Ma[x]-Forwards
+                        case 'P': potentialHeader = XPoweredBy; goto TryMatch;  // X-[P]owered-By
+                        case 'R': potentialHeader = XRequestID; goto TryMatch;  // X-[R]equest-ID
                     }
                     break;
 
@@ -196,7 +201,10 @@ namespace System.Net
                 case 15:
                     switch (charAt(key, startIndex + 7))
                     {
+                        case '-': potentialHeader = XFrameOptions; goto TryMatch;  // X-Frame[-]Options
+                        case 'm': potentialHeader = XUACompatible; goto TryMatch;  // X-UA-Co[m]patible
                         case 'E': potentialHeader = AcceptEncoding; goto TryMatch; // Accept-[E]ncoding
+                        case 'K': potentialHeader = PublicKeyPins; goto TryMatch;  // Public-[K]ey-Pins
                         case 'L': potentialHeader = AcceptLanguage; goto TryMatch; // Accept-[L]anguage
                     }
                     break;
@@ -223,7 +231,12 @@ namespace System.Net
                     break;
 
                 case 18:
-                    potentialHeader = ProxyAuthenticate; goto TryMatch; // Proxy-Authenticate
+                    switch (charAt(key, startIndex))
+                    {
+                        case 'P': potentialHeader = ProxyAuthenticate; goto TryMatch; // [P]roxy-Authenticate
+                        case 'X': potentialHeader = XContentDuration; goto TryMatch;  // [X]-Content-Duration
+                    }
+                    break;
 
                 case 19:
                     switch (charAt(key, startIndex))
@@ -241,10 +254,44 @@ namespace System.Net
                     potentialHeader = SecWebSocketVersion; goto TryMatch; // Sec-WebSocket-Version
 
                 case 22:
-                    potentialHeader = SecWebSocketProtocol; goto TryMatch; // Sec-WebSocket-Protocol
+                    switch (charAt(key, startIndex))
+                    {
+                        case 'A': potentialHeader = AccessControlMaxAge; goto TryMatch;  // [A]ccess-Control-Max-Age
+                        case 'S': potentialHeader = SecWebSocketProtocol; goto TryMatch; // [S]ec-WebSocket-Protocol
+                        case 'X': potentialHeader = XContentTypeOptions; goto TryMatch;  // [X]-Content-Type-Options
+                    }
+                    break;
+
+                case 23:
+                    potentialHeader = ContentSecurityPolicy; goto TryMatch; // Content-Security-Policy
 
                 case 24:
                     potentialHeader = SecWebSocketExtensions; goto TryMatch; // Sec-WebSocket-Extensions
+
+                case 25:
+                    switch (charAt(key, startIndex))
+                    {
+                        case 'S': potentialHeader = StrictTransportSecurity; goto TryMatch; // [S]trict-Transport-Security
+                        case 'U': potentialHeader = UpgradeInsecureRequests; goto TryMatch; // [U]pgrade-Insecure-Requests
+                    }
+                    break;
+
+                case 27:
+                    potentialHeader = AccessControlAllowOrigin; goto TryMatch; // Access-Control-Allow-Origin
+
+                case 28:
+                    switch (charAt(key, startIndex + 21))
+                    {
+                        case 'H': potentialHeader = AccessControlAllowHeaders; goto TryMatch; // Access-Control-Allow-[H]eaders
+                        case 'M': potentialHeader = AccessControlAllowMethods; goto TryMatch; // Access-Control-Allow-[M]ethods
+                    }
+                    break;
+
+                case 29:
+                    potentialHeader = AccessControlExposeHeaders; goto TryMatch; // Access-Control-Expose-Headers
+
+                case 32:
+                    potentialHeader = AccessControlAllowCredentials; goto TryMatch; // Access-Control-Allow-Credentials
             }
 
             name = null;

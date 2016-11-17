@@ -260,25 +260,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, object message)
-        {
-            if (condition)
-            {
-                WriteLine(message);
-            }
-        }
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, object message, string category)
-        {
-            if (condition)
-            {
-                WriteLine(message, category);
-            }
-        }
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, string value)
+        public static void WriteLineIf(bool condition, object value)
         {
             if (condition)
             {
@@ -287,11 +269,29 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, string value, string category)
+        public static void WriteLineIf(bool condition, object value, string category)
         {
             if (condition)
             {
                 WriteLine(value, category);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, string message)
+        {
+            if (condition)
+            {
+                WriteLine(message);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, string message, string category)
+        {
+            if (condition)
+            {
+                WriteLine(message, category);
             }
         }
 

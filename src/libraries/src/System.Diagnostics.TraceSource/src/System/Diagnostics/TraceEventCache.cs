@@ -14,6 +14,7 @@ namespace System.Diagnostics
     {
         private long _timeStamp = -1;
         private DateTime _dateTime = DateTime.MinValue;
+        private string _stackTrace = null;
 
         public DateTime DateTime
         {
@@ -48,6 +49,27 @@ namespace System.Diagnostics
                 if (_timeStamp == -1)
                     _timeStamp = Stopwatch.GetTimestamp();
                 return _timeStamp;
+            }
+        }
+
+        public string Callstack 
+        {
+            get 
+            {
+                if (_stackTrace == null)
+                {
+                    _stackTrace = Environment.StackTrace;
+                }
+
+                return _stackTrace;
+            }
+        }
+
+        public Stack LogicalOperationStack 
+        {
+            get 
+            {
+                return Trace.CorrelationManager.LogicalOperationStack;
             }
         }
 

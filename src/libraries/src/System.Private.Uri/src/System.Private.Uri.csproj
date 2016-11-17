@@ -66,8 +66,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OutputDebugString.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.OutputDebugString.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OutputDebugString.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.OutputDebugString.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Windows.cs">
       <Link>Common\System\StringNormalizationExtensions.Windows.cs</Link>
@@ -78,14 +78,14 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetLastError.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetLastError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Normalization.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.Normalization.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Normalization.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Normalization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Idna.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.Idna.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\normaliz\Interop.Idna.cs">
+      <Link>Common\Interop\Windows\normaliz\Interop.Idna.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -158,8 +158,8 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs" Condition="'$(TargetsUnix)'=='true'">
       <Link>Common\System\Runtime\InteropServices\Marshal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetLastError.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

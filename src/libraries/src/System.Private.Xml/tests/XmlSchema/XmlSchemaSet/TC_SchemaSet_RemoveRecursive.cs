@@ -5,6 +5,7 @@
 using Xunit;
 using Xunit.Abstractions;
 using System;
+using System.IO;
 using System.Collections;
 using System.Xml.Schema;
 
@@ -123,7 +124,7 @@ namespace System.Xml.Tests
             {
                 // remove after compile
                 XmlSchema Schema1 = sc.Add(null, TestData._XsdAuthor);
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + fileName); // param as filename
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, fileName)); // param as filename
                 sc.Compile();
                 sc.RemoveRecursive(Schema2);
                 CError.Compare(sc.Count, 1, "Count");
@@ -131,7 +132,7 @@ namespace System.Xml.Tests
                 CError.Compare(Col.Count, 1, "ICollection.Count");
 
                 //remove before compile
-                Schema2 = sc.Add(null, TestData._Root + fileName); // param as filename
+                Schema2 = sc.Add(null, Path.Combine(TestData._Root, fileName)); // param as filename
                 CError.Compare(sc.Count, 2, "Count");
                 sc.RemoveRecursive(Schema2);
                 CError.Compare(sc.Count, 1, "Count");
@@ -163,7 +164,7 @@ namespace System.Xml.Tests
                 XmlSchema Schema1 = sc.Add(null, TestData._XsdAuthor);
 
                 //remove after compile
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
                 sc.Compile();
                 sc.RemoveRecursive(Schema2);
                 CError.Compare(sc.Count, param1, "Count");
@@ -171,7 +172,7 @@ namespace System.Xml.Tests
                 CError.Compare(Col.Count, param1, "ICollection.Count");
 
                 //remove before compile
-                Schema2 = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+                Schema2 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
                 sc.RemoveRecursive(Schema2);
                 CError.Compare(sc.Count, param1, "Count");
                 Col = sc.Schemas();
@@ -197,8 +198,8 @@ namespace System.Xml.Tests
             try
             {
                 //after compile
-                XmlSchema Schema1 = sc.Add("ns-b", TestData._Root + "import_v4_b.xsd");
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + "import_v5_a.xsd"); // param as filename
+                XmlSchema Schema1 = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd"));
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd")); // param as filename
                 sc.Compile();
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 2, "Count");
@@ -214,8 +215,8 @@ namespace System.Xml.Tests
                 CError.Compare(sc.Contains("ns-a"), false, "Contains");
 
                 //before compile
-                Schema1 = sc.Add("ns-b", TestData._Root + "import_v4_b.xsd");
-                Schema2 = sc.Add(null, TestData._Root + "import_v5_a.xsd"); // param as filename
+                Schema1 = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd"));
+                Schema2 = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd")); // param as filename
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 2, "Count");
                 CError.Compare(sc.Contains("ns-b"), false, "Contains");
@@ -250,7 +251,7 @@ namespace System.Xml.Tests
             try
             {
                 //after compile
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 sc.Compile();
                 CError.Compare(sc.Count, 3, "Count");
                 sc.RemoveRecursive(Schema1);
@@ -260,7 +261,7 @@ namespace System.Xml.Tests
                 CError.Compare(sc.Contains(param3.ToString()), false, "Contains");
 
                 //before compile
-                Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 CError.Compare(sc.Count, 3, "Count");
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 0, "Count");
@@ -288,7 +289,7 @@ namespace System.Xml.Tests
             try
             {
                 //after compile
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 sc.Compile();
                 CError.Compare(sc.Count, 4, "Count");
                 sc.RemoveRecursive(Schema1);
@@ -299,7 +300,7 @@ namespace System.Xml.Tests
                 CError.Compare(sc.Contains("ns-a"), false, "Contains");
 
                 //before compile
-                Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 CError.Compare(sc.Count, 4, "Count");
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 0, "Count");
@@ -325,17 +326,17 @@ namespace System.Xml.Tests
             try
             {
                 XmlSchemaSet sc = new XmlSchemaSet();
-                sc.Add(null, TestData._Root + "import_v16_b.xsd");
+                sc.Add(null, Path.Combine(TestData._Root, "import_v16_b.xsd"));
 
                 //before compile
-                XmlSchema parent = sc.Add(null, TestData._Root + "import_v16_a.xsd");
+                XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v16_a.xsd"));
                 sc.Compile();
                 sc.RemoveRecursive(parent);
                 CError.Compare(sc.Count, 1, "Count");
                 CError.Compare(sc.Contains("ns-b"), true, "Contains");
 
                 //after compile
-                parent = sc.Add(null, TestData._Root + "import_v16_a.xsd");
+                parent = sc.Add(null, Path.Combine(TestData._Root, "import_v16_a.xsd"));
                 sc.RemoveRecursive(parent);
                 CError.Compare(sc.Count, 1, "Count");
                 CError.Compare(sc.Contains("ns-b"), true, "Contains");
@@ -378,8 +379,8 @@ namespace System.Xml.Tests
             try
             {
                 //after compile
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString());
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + param1.ToString());
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, param1.ToString()));
                 sc.Compile();
                 CError.Compare(sc.Count, 5, "Count");
                 sc.RemoveRecursive(Schema1);
@@ -397,8 +398,8 @@ namespace System.Xml.Tests
                 CError.Compare(bErrorCallback, false, "Error Callback");
 
                 //before compile
-                Schema1 = sc.Add(null, TestData._Root + param0.ToString());
-                Schema2 = sc.Add(null, TestData._Root + param1.ToString());
+                Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+                Schema2 = sc.Add(null, Path.Combine(TestData._Root, param1.ToString()));
                 CError.Compare(sc.Count, 5, "Count");
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 5, "Count");
@@ -427,7 +428,7 @@ namespace System.Xml.Tests
             try
             {
                 //after compile
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 sc.Compile();
                 CError.Compare(sc.Count, 4, "Count");
                 sc.RemoveRecursive(Schema1);
@@ -437,7 +438,7 @@ namespace System.Xml.Tests
                 CError.Compare(sc.GlobalTypes.Count, 0, "Global Types Count");//should contain xs:anyType
 
                 //before compile
-                Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 CError.Compare(sc.Count, 4, "Count");
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 0, "Count");

@@ -26,25 +26,25 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileVersionInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\version\Interop.FileVersionInfo.cs">
       <Link>Common\Interop\Windows\Interop.FileVersionInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileVersionInfoType.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\version\Interop.FileVersionInfoType.cs">
       <Link>Common\Interop\Windows\Interop.FileVersionInfoType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileVersionInfoEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\version\Interop.GetFileVersionInfoEx.cs">
       <Link>Common\Interop\Windows\Interop.GetFileVersionInfoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileVersionInfoSizeEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\version\Interop.GetFileVersionInfoSizeEx.cs">
       <Link>Common\Interop\Windows\Interop.GetFileVersionInfoSizeEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.VerLanguageName.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.VerLanguageName.cs">
       <Link>Common\Interop\Windows\Interop.VerLanguageName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.VerQueryValue.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\version\Interop.VerQueryValue.cs">
       <Link>Common\Interop\Windows\Interop.VerQueryValue.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.VSFixedFileInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\version\Interop.VSFixedFileInfo.cs">
       <Link>Common\Interop\Windows\Interop.VSFixedFileInfo.cs</Link>
     </Compile>
   </ItemGroup>

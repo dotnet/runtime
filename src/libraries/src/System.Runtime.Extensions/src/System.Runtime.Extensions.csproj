@@ -147,56 +147,56 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalDrive.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathName.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathName.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathName.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetSystemInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetTempFileNameW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetTempFileNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempPathW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetTempPathW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetTempPathW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetVersionExW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetVersionExW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.MaxLengths.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.MaxLengths.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.QueryPerformanceCounter.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.QueryPerformanceFrequency.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.QueryPerformanceFrequency.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SetCurrentDirectory.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
@@ -215,32 +215,32 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnvironmentVariables.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.EnvironmentVariables.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetComputerName.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetComputerName.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetComputerNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalProcessorInformationEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLogicalProcessorInformationEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetUserNameExW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetUserNameExW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Interop.GetUserNameExW.cs">
+      <Link>Common\Interop\Windows\sspicli\Interop.GetUserNameExW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupAccountNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.LookupAccountNameW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LookupAccountNameW.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.LookupAccountNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SHGetKnownFolderPath.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SHGetKnownFolderPath.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs">
+      <Link>Common\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs</Link>
     </Compile>
     <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
     <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs">
@@ -279,50 +279,50 @@
     <Compile Include="..\..\Microsoft.Win32.Registry\src\System\Security\AccessControl\RegistryRights.cs">
       <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryRights.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCloseKey.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegCloseKey.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegCloseKey.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegCloseKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegConnectRegistry.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegConnectRegistry.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegCreateKeyEx.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegCreateKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegDeleteKeyEx.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegDeleteKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteValue.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegDeleteValue.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegDeleteValue.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegEnumKeyEx.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegEnumKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumValue.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegEnumValue.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegEnumValue.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegEnumValue.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegFlushKey.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegFlushKey.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegFlushKey.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegFlushKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegOpenKeyEx.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegOpenKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegQueryInfoKey.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegQueryInfoKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegSetValueEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegSetValueEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegSetValueEx.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegSetValueEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegistryOptions.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegistryOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\mincore\Interop.BOOL.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- UNIX -->
@@ -421,7 +421,7 @@
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">

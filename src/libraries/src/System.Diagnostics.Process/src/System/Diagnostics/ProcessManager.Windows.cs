@@ -112,7 +112,7 @@ namespace System.Diagnostics
                 baseName = machineName;
             if (baseName.Equals(".")) return false;
 
-            if (String.Compare(Interop.mincore.GetComputerName(), baseName, StringComparison.OrdinalIgnoreCase) == 0) return false;
+            if (String.Compare(Interop.Kernel32.GetComputerName(), baseName, StringComparison.OrdinalIgnoreCase) == 0) return false;
             return true;
         }
 
@@ -135,8 +135,8 @@ namespace System.Diagnostics
             // So we will try to get the privilege here.
             // We could fail if the user account doesn't have right to do this, but that's fair.
 
-            Interop.mincore.LUID luid = new Interop.mincore.LUID();
-            if (!Interop.mincore.LookupPrivilegeValue(null, Interop.mincore.SeDebugPrivilege, out luid))
+            Interop.Advapi32.LUID luid = new Interop.Advapi32.LUID();
+            if (!Interop.Advapi32.LookupPrivilegeValue(null, Interop.Advapi32.SeDebugPrivilege, out luid))
             {
                 return;
             }
@@ -144,20 +144,20 @@ namespace System.Diagnostics
             SafeTokenHandle tokenHandle = null;
             try
             {
-                if (!Interop.mincore.OpenProcessToken(
-                        Interop.mincore.GetCurrentProcess(),
-                        Interop.mincore.HandleOptions.TOKEN_ADJUST_PRIVILEGES,
+                if (!Interop.Advapi32.OpenProcessToken(
+                        Interop.Kernel32.GetCurrentProcess(),
+                        Interop.Kernel32.HandleOptions.TOKEN_ADJUST_PRIVILEGES,
                         out tokenHandle))
                 {
                     return;
                 }
 
-                Interop.mincore.TokenPrivileges tp = new Interop.mincore.TokenPrivileges();
+                Interop.Advapi32.TokenPrivileges tp = new Interop.Advapi32.TokenPrivileges();
                 tp.Luid = luid;
-                tp.Attributes = Interop.mincore.SEPrivileges.SE_PRIVILEGE_ENABLED;
+                tp.Attributes = Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED;
 
                 // AdjustTokenPrivileges can return true even if it didn't succeed (when ERROR_NOT_ALL_ASSIGNED is returned).
-                Interop.mincore.AdjustTokenPrivileges(tokenHandle, false, tp, 0, IntPtr.Zero, IntPtr.Zero);
+                Interop.Advapi32.AdjustTokenPrivileges(tokenHandle, false, tp, 0, IntPtr.Zero, IntPtr.Zero);
             }
             finally
             {
@@ -175,7 +175,7 @@ namespace System.Diagnostics
 
         public static SafeProcessHandle OpenProcess(int processId, int access, bool throwIfExited)
         {
-            SafeProcessHandle processHandle = Interop.mincore.OpenProcess(access, false, processId);
+            SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(access, false, processId);
             int result = Marshal.GetLastWin32Error();
             if (!processHandle.IsInvalid)
             {
@@ -204,11 +204,11 @@ namespace System.Diagnostics
 
         public static SafeThreadHandle OpenThread(int threadId, int access)
         {
-            SafeThreadHandle threadHandle = Interop.mincore.OpenThread(access, false, threadId);
+            SafeThreadHandle threadHandle = Interop.Kernel32.OpenThread(access, false, threadId);
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
-                if (result == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+                if (result == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString(CultureInfo.CurrentCulture)));
                 throw new Win32Exception(result);
             }
@@ -276,7 +276,7 @@ namespace System.Diagnostics
             int size;
             for (; ; )
             {
-                if (!Interop.mincore.EnumProcesses(processIds, processIds.Length * 4, out size))
+                if (!Interop.Kernel32.EnumProcesses(processIds, processIds.Length * 4, out size))
                     throw new Win32Exception();
                 if (size == processIds.Length * 4)
                 {
@@ -307,13 +307,13 @@ namespace System.Diagnostics
             if (processId == SystemProcessID || processId == IdleProcessID)
             {
                 // system process and idle process doesn't have any modules 
-                throw new Win32Exception(Interop.mincore.Errors.EFail, SR.EnumProcessModuleFailed);
+                throw new Win32Exception(Interop.Errors.EFail, SR.EnumProcessModuleFailed);
             }
 
             SafeProcessHandle processHandle = SafeProcessHandle.InvalidHandle;
             try
             {
-                processHandle = ProcessManager.OpenProcess(processId, Interop.mincore.ProcessOptions.PROCESS_QUERY_INFORMATION | Interop.mincore.ProcessOptions.PROCESS_VM_READ, true);
+                processHandle = ProcessManager.OpenProcess(processId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION | Interop.Advapi32.ProcessOptions.PROCESS_VM_READ, true);
 
                 IntPtr[] moduleHandles = new IntPtr[64];
                 GCHandle moduleHandlesArrayHandle = new GCHandle();
@@ -324,7 +324,7 @@ namespace System.Diagnostics
                     try
                     {
                         moduleHandlesArrayHandle = GCHandle.Alloc(moduleHandles, GCHandleType.Pinned);
-                        enumResult = Interop.mincore.EnumProcessModules(processHandle, moduleHandlesArrayHandle.AddrOfPinnedObject(), moduleHandles.Length * IntPtr.Size, ref moduleCount);
+                        enumResult = Interop.Kernel32.EnumProcessModules(processHandle, moduleHandlesArrayHandle.AddrOfPinnedObject(), moduleHandles.Length * IntPtr.Size, ref moduleCount);
 
                         // The API we need to use to enumerate process modules differs on two factors:
                         //   1) If our process is running in WOW64.
@@ -350,16 +350,16 @@ namespace System.Diagnostics
                             SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
                             try
                             {
-                                hCurProcess = ProcessManager.OpenProcess(unchecked((int)Interop.mincore.GetCurrentProcessId()), Interop.mincore.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
+                                hCurProcess = ProcessManager.OpenProcess(unchecked((int)Interop.Kernel32.GetCurrentProcessId()), Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
                                 bool wow64Ret;
 
-                                wow64Ret = Interop.mincore.IsWow64Process(hCurProcess, ref sourceProcessIsWow64);
+                                wow64Ret = Interop.Kernel32.IsWow64Process(hCurProcess, ref sourceProcessIsWow64);
                                 if (!wow64Ret)
                                 {
                                     throw new Win32Exception();
                                 }
 
-                                wow64Ret = Interop.mincore.IsWow64Process(processHandle, ref targetProcessIsWow64);
+                                wow64Ret = Interop.Kernel32.IsWow64Process(processHandle, ref targetProcessIsWow64);
                                 if (!wow64Ret)
                                 {
                                     throw new Win32Exception();
@@ -368,7 +368,7 @@ namespace System.Diagnostics
                                 if (sourceProcessIsWow64 && !targetProcessIsWow64)
                                 {
                                     // Wow64 isn't going to allow this to happen, the best we can do is give a descriptive error to the user.
-                                    throw new Win32Exception(Interop.mincore.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
+                                    throw new Win32Exception(Interop.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
                                 }
                             }
                             finally
@@ -382,7 +382,7 @@ namespace System.Diagnostics
                             // If the failure wasn't due to Wow64, try again.
                             for (int i = 0; i < 50; i++)
                             {
-                                enumResult = Interop.mincore.EnumProcessModules(processHandle, moduleHandlesArrayHandle.AddrOfPinnedObject(), moduleHandles.Length * IntPtr.Size, ref moduleCount);
+                                enumResult = Interop.Kernel32.EnumProcessModules(processHandle, moduleHandlesArrayHandle.AddrOfPinnedObject(), moduleHandles.Length * IntPtr.Size, ref moduleCount);
                                 if (enumResult)
                                 {
                                     break;
@@ -424,8 +424,8 @@ namespace System.Diagnostics
                     }
 
                     IntPtr moduleHandle = moduleHandles[i];
-                    Interop.mincore.NtModuleInfo ntModuleInfo;
-                    if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
+                    Interop.Kernel32.NtModuleInfo ntModuleInfo;
+                    if (!Interop.Kernel32.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
                     {
                         HandleError();
                         continue;
@@ -438,7 +438,7 @@ namespace System.Diagnostics
                         BaseAddress = ntModuleInfo.BaseOfDll
                     };
 
-                    int length = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                    int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
                     if (length == 0)
                     {
                         HandleError();
@@ -447,7 +447,7 @@ namespace System.Diagnostics
 
                     module.ModuleName = new string(chars, 0, length);
 
-                    length = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                    length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
                     if (length == 0)
                     {
                         HandleError();
@@ -480,8 +480,8 @@ namespace System.Diagnostics
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
             {
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
-                case Interop.mincore.Errors.ERROR_PARTIAL_COPY:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_PARTIAL_COPY:
                     // It's possible that another thread caused this module to become
                     // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
                     // move on.
@@ -566,22 +566,22 @@ namespace System.Diagnostics
             {
                 dataHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
                 IntPtr dataBlockPtr = dataHandle.AddrOfPinnedObject();
-                Interop.mincore.PERF_DATA_BLOCK dataBlock = new Interop.mincore.PERF_DATA_BLOCK();
+                Interop.Advapi32.PERF_DATA_BLOCK dataBlock = new Interop.Advapi32.PERF_DATA_BLOCK();
                 Marshal.PtrToStructure(dataBlockPtr, dataBlock);
                 IntPtr typePtr = (IntPtr)((long)dataBlockPtr + dataBlock.HeaderLength);
-                Interop.mincore.PERF_INSTANCE_DEFINITION instance = new Interop.mincore.PERF_INSTANCE_DEFINITION();
-                Interop.mincore.PERF_COUNTER_BLOCK counterBlock = new Interop.mincore.PERF_COUNTER_BLOCK();
+                Interop.Advapi32.PERF_INSTANCE_DEFINITION instance = new Interop.Advapi32.PERF_INSTANCE_DEFINITION();
+                Interop.Advapi32.PERF_COUNTER_BLOCK counterBlock = new Interop.Advapi32.PERF_COUNTER_BLOCK();
                 for (int i = 0; i < dataBlock.NumObjectTypes; i++)
                 {
-                    Interop.mincore.PERF_OBJECT_TYPE type = new Interop.mincore.PERF_OBJECT_TYPE();
+                    Interop.Advapi32.PERF_OBJECT_TYPE type = new Interop.Advapi32.PERF_OBJECT_TYPE();
                     Marshal.PtrToStructure(typePtr, type);
                     IntPtr instancePtr = (IntPtr)((long)typePtr + type.DefinitionLength);
                     IntPtr counterPtr = (IntPtr)((long)typePtr + type.HeaderLength);
-                    List<Interop.mincore.PERF_COUNTER_DEFINITION> counterList = new List<Interop.mincore.PERF_COUNTER_DEFINITION>();
+                    List<Interop.Advapi32.PERF_COUNTER_DEFINITION> counterList = new List<Interop.Advapi32.PERF_COUNTER_DEFINITION>();
 
                     for (int j = 0; j < type.NumCounters; j++)
                     {
-                        Interop.mincore.PERF_COUNTER_DEFINITION counter = new Interop.mincore.PERF_COUNTER_DEFINITION();
+                        Interop.Advapi32.PERF_COUNTER_DEFINITION counter = new Interop.Advapi32.PERF_COUNTER_DEFINITION();
                         Marshal.PtrToStructure(counterPtr, counter);
                         string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
@@ -593,7 +593,7 @@ namespace System.Diagnostics
                         counterPtr = (IntPtr)((long)counterPtr + counter.ByteLength);
                     }
 
-                    Interop.mincore.PERF_COUNTER_DEFINITION[] counters = counterList.ToArray();
+                    Interop.Advapi32.PERF_COUNTER_DEFINITION[] counters = counterList.ToArray();
 
                     for (int j = 0; j < type.NumInstances; j++)
                     {
@@ -674,12 +674,12 @@ namespace System.Diagnostics
             return temp;
         }
 
-        static ThreadInfo GetThreadInfo(Interop.mincore.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.mincore.PERF_COUNTER_DEFINITION[] counters)
+        static ThreadInfo GetThreadInfo(Interop.Advapi32.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.Advapi32.PERF_COUNTER_DEFINITION[] counters)
         {
             ThreadInfo threadInfo = new ThreadInfo();
             for (int i = 0; i < counters.Length; i++)
             {
-                Interop.mincore.PERF_COUNTER_DEFINITION counter = counters[i];
+                Interop.Advapi32.PERF_COUNTER_DEFINITION counter = counters[i];
                 long value = ReadCounterValue(counter.CounterType, (IntPtr)((long)instancePtr + counter.CounterOffset));
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
@@ -738,12 +738,12 @@ namespace System.Diagnostics
             }
         }
 
-        static ProcessInfo GetProcessInfo(Interop.mincore.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.mincore.PERF_COUNTER_DEFINITION[] counters)
+        static ProcessInfo GetProcessInfo(Interop.Advapi32.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.Advapi32.PERF_COUNTER_DEFINITION[] counters)
         {
             ProcessInfo processInfo = new ProcessInfo();
             for (int i = 0; i < counters.Length; i++)
             {
-                Interop.mincore.PERF_COUNTER_DEFINITION counter = counters[i];
+                Interop.Advapi32.PERF_COUNTER_DEFINITION counter = counters[i];
                 long value = ReadCounterValue(counter.CounterType, (IntPtr)((long)instancePtr + counter.CounterOffset));
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
@@ -802,7 +802,7 @@ namespace System.Diagnostics
 
         static long ReadCounterValue(int counterType, IntPtr dataPtr)
         {
-            if ((counterType & Interop.mincore.PerfCounterOptions.NtPerfCounterSizeLarge) != 0)
+            if ((counterType & Interop.Advapi32.PerfCounterOptions.NtPerfCounterSizeLarge) != 0)
                 return Marshal.ReadInt64(dataPtr);
             else
                 return (long)Marshal.ReadInt32(dataPtr);

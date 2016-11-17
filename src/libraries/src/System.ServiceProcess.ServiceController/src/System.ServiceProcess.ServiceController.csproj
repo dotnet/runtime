@@ -23,49 +23,49 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ServiceProcessOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ServiceProcessOptions.cs">
       <Link>Common\Interop\Windows\Interop.ServiceProcessOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseServiceHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CloseServiceHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseServiceHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ControlService.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ControlService.cs">
       <Link>Common\Interop\Windows\Interop.ControlService.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnumDependentServices.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EnumDependentServices.cs">
       <Link>Common\Interop\Windows\Interop.EnumDependentServices.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnumServicesStatusEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EnumServicesStatusEx.cs">
       <Link>Common\Interop\Windows\Interop.EnumServicesStatusEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenSCManager.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenSCManager.cs">
       <Link>Common\Interop\Windows\Interop.OpenSCManager.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenService.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenService.cs">
       <Link>Common\Interop\Windows\Interop.OpenService.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryServiceConfig.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.QueryServiceConfig.cs">
       <Link>Common\Interop\Windows\Interop.QueryServiceConfig.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryServiceStatus.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.QueryServiceStatus.cs">
       <Link>Common\Interop\Windows\Interop.QueryServiceStatus.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.StartService.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.StartService.cs">
       <Link>Common\Interop\Windows\Interop.StartService.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ENUM_SERVICE_STATUS.cs">
       <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS_PROCESS.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ENUM_SERVICE_STATUS_PROCESS.cs">
       <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS_PROCESS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QUERY_SERVICE_CONFIG.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.QUERY_SERVICE_CONFIG.cs">
       <Link>Common\Interop\Windows\Interop.QUERY_SERVICE_CONFIG.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SERVICE_STATUS.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SERVICE_STATUS.cs">
       <Link>Common\Interop\Windows\Interop.SERVICE_STATUS.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />

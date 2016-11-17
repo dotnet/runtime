@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+extern alias System_Runtime_Extensions;
+
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.WindowsRuntime.Internal;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+
+using MemoryStream = System_Runtime_Extensions::System.IO.MemoryStream;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {

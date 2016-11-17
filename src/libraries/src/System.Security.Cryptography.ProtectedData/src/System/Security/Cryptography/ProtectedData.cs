@@ -97,8 +97,8 @@ namespace System.Security.Cryptography
         private static bool ErrorMayBeCausedByUnloadedProfile(int errorCode)
         {
             // CAPI returns a file not found error if the user profile is not yet loaded
-            return errorCode == Interop.mincore.Errors.E_FILENOTFOUND ||
-                   errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND;
+            return errorCode == Interop.Errors.E_FILENOTFOUND ||
+                   errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND;
         }
     }
 }

@@ -70,7 +70,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
-            using (XmlTextReader xtr = new XmlTextReader(TestData._Root + "bug110823.xsd"))
+            using (XmlTextReader xtr = new XmlTextReader(Path.Combine(TestData._Root, "bug110823.xsd")))
             {
                 xss.Add(XmlSchema.Read(xtr, null));
             }
@@ -85,7 +85,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss.Add(null, TestData._Root + "bug115049.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug115049.xsd"));
             ss.Compile();
 
             //create reader
@@ -96,7 +96,7 @@ namespace System.Xml.Tests
                                        XmlSchemaValidationFlags.ProcessInlineSchema;
             settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             settings.Schemas.Add(ss);
-            XmlReader vr = XmlReader.Create(TestData._Root + "bug115049.xml", settings);
+            XmlReader vr = XmlReader.Create(Path.Combine(TestData._Root, "bug115049.xml"), settings);
             while (vr.Read()) ;
             CError.Compare(errorCount, 1, "Error Count mismatch!");
             return;
@@ -156,7 +156,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss.Add(null, TestData._Root + xmlFile);
+            ss.Add(null, Path.Combine(TestData._Root, xmlFile));
             ss.Compile();
 
             //test the count
@@ -186,7 +186,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss.Add(xmlns, TestData._Root + "bug264908_v11.xsd");
+            ss.Add(xmlns, Path.Combine(TestData._Root, "bug264908_v11.xsd"));
             ss.Compile();
 
             //test the count
@@ -213,7 +213,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss.Add(xmlns, TestData._Root + "bug338038_v1.xsd");
+            ss.Add(xmlns, Path.Combine(TestData._Root, "bug338038_v1.xsd"));
             ss.Compile();
 
             //test the count
@@ -237,7 +237,7 @@ namespace System.Xml.Tests
             string xmlns = @"http://www.w3.org/XML/1998/namespace";
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(xmlns, TestData._Root + "bug338038_v2.xsd");
+            ss.Add(xmlns, Path.Combine(TestData._Root, "bug338038_v2.xsd"));
 
             try
             {
@@ -263,9 +263,9 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "bug338038_v3.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v3a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3a.xsd"));
             ss.Compile();
 
             CError.Compare(ss.Count, 4, "Count of SchemaSet not matched!");
@@ -289,13 +289,13 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "bug338038_v3.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v3a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3a.xsd"));
             ss.Compile();
             try
             {
-                ss.Add(null, TestData._Root + "bug338038_v3b.xsd");
+                ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3b.xsd"));
                 ss.Compile();
             }
             catch (XmlSchemaException e)
@@ -315,11 +315,11 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "bug338038_v3.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v4a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v4a.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v4b.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v4b.xsd"));
             ss.Compile();
 
             foreach (XmlSchemaAttribute a in ss.GlobalAttributes.Values)
@@ -345,11 +345,11 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "bug338038_v3.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v4a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v4a.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v5b.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v5b.xsd"));
             ss.Compile();
 
             foreach (XmlSchemaAttribute a in ss.GlobalAttributes.Values)
@@ -373,7 +373,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "bug338038_v3.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v3.xsd"));
             ss.Compile();
 
             foreach (XmlSchema s in ss.Schemas(xmlns))
@@ -381,9 +381,9 @@ namespace System.Xml.Tests
                 schema = s;
             }
 
-            ss.Add(null, TestData._Root + "bug338038_v4a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v4a.xsd"));
             ss.Compile();
-            ss.Add(null, TestData._Root + "bug338038_v5b.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "bug338038_v5b.xsd"));
             ss.Compile();
 
             ss.Remove(schema);
@@ -458,8 +458,8 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss.Add(null, TestData._Root + "schZ013c.xsd");
-            ss.Add(null, TestData._Root + "schZ013a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "schZ013c.xsd"));
+            ss.Add(null, Path.Combine(TestData._Root, "schZ013a.xsd"));
             ss.Compile();
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
             CError.Compare(errorCount, 0, "Error Count mismatch!");
@@ -479,7 +479,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss1 = new XmlSchemaSet();
             ss1.XmlResolver = new XmlUrlResolver();
             ss1.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss1.Add(null, TestData._Root + "Misc103_x.xsd");
+            ss1.Add(null, Path.Combine(TestData._Root, "Misc103_x.xsd"));
             ss1.Compile();
 
             CError.Compare(ss1.Count, 1, "Schema Set 1 Count mismatch!");
@@ -487,7 +487,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss2 = new XmlSchemaSet();
             ss2.XmlResolver = new XmlUrlResolver();
             ss2.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlSchema s = ss2.Add(null, TestData._Root + "Misc103_a.xsd");
+            XmlSchema s = ss2.Add(null, Path.Combine(TestData._Root, "Misc103_a.xsd"));
             ss2.Compile();
 
             CError.Compare(ss1.Count, 1, "Schema Set 1 Count mismatch!");
@@ -514,7 +514,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss3 = new XmlSchemaSet();
             ss3.XmlResolver = new XmlUrlResolver();
             ss3.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss3.Add(null, TestData._Root + "Misc103_c.xsd");
+            ss3.Add(null, Path.Combine(TestData._Root, "Misc103_c.xsd"));
             ss3.Compile();
             ss1.Add(ss3);
 
@@ -532,7 +532,7 @@ namespace System.Xml.Tests
             XmlSchemaSet schemaSet = new XmlSchemaSet();
             schemaSet.XmlResolver = new XmlUrlResolver();
             schemaSet.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            schemaSet.Add(null, TestData._Root + "Misc105.xsd");
+            schemaSet.Add(null, Path.Combine(TestData._Root, "Misc105.xsd"));
             CError.Compare(warningCount, 1, "Warning Count mismatch!");
             CError.Compare(errorCount, 0, "Error Count mismatch!");
             return;
@@ -552,7 +552,7 @@ namespace System.Xml.Tests
 #pragma warning disable 0618
             settings.ProhibitDtd = false;
 #pragma warning restore 0618
-            XmlReader r = XmlReader.Create(TestData._Root + "XmlSchema.xsd", settings);
+            XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, "XMLSchema.xsd"), settings);
             ss1.Add(null, r);
             ss1.Compile();
 
@@ -565,7 +565,7 @@ namespace System.Xml.Tests
                 ss.Add(s);
             }
 
-            ss.Add(null, TestData._Root + "xsdauthor.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "xsdauthor.xsd"));
             ss.Compile();
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
             CError.Compare(errorCount, 0, "Error Count mismatch!");
@@ -582,7 +582,7 @@ namespace System.Xml.Tests
             XmlSchemaSet schemaSet = new XmlSchemaSet();
             schemaSet.XmlResolver = new XmlUrlResolver();
             schemaSet.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            schemaSet.Add(null, TestData._Root + "bug356711_root.xsd");
+            schemaSet.Add(null, Path.Combine(TestData._Root, "bug356711_root.xsd"));
 
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.XmlResolver = new XmlUrlResolver();
@@ -696,8 +696,8 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            ss.Add("http://EmployeeTest.org", TestData._Root + "EmployeeTypes.xsd");
-            ss.Add(null, TestData._Root + "EmployeeTypes.xsd");
+            ss.Add("http://EmployeeTest.org", Path.Combine(TestData._Root, "EmployeeTypes.xsd"));
+            ss.Add(null, Path.Combine(TestData._Root, "EmployeeTypes.xsd"));
 
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
             CError.Compare(errorCount, 0, "Error Count mismatch!");
@@ -714,8 +714,8 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlSchema s1 = ss.Add("http://EmployeeTest.org", TestData._Root + "EmployeeTypes.xsd");
-            XmlSchema s2 = ss.Add("http://EmployeeTest.org", TestData._Root + "EmployeeTypes.xsd");
+            XmlSchema s1 = ss.Add("http://EmployeeTest.org", Path.Combine(TestData._Root, "EmployeeTypes.xsd"));
+            XmlSchema s2 = ss.Add("http://EmployeeTest.org", Path.Combine(TestData._Root, "EmployeeTypes.xsd"));
 
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
             CError.Compare(errorCount, 0, "Error Count mismatch!");
@@ -733,7 +733,7 @@ namespace System.Xml.Tests
             XmlSchemaSet newSet = new XmlSchemaSet();
             newSet.XmlResolver = new XmlUrlResolver();
             newSet.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlSchema chameleon = newSet.Add(null, TestData._Root + "EmployeeTypes.xsd");
+            XmlSchema chameleon = newSet.Add(null, Path.Combine(TestData._Root, "EmployeeTypes.xsd"));
             newSet.Compile();
 
             CError.Compare(newSet.GlobalTypes.Count, 10, "GlobalTypes count mismatch!");
@@ -742,7 +742,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             sc.Add(chameleon);
-            sc.Add(null, TestData._Root + "baseEmployee.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "baseEmployee.xsd"));
             sc.Compile();
 
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
@@ -760,16 +760,16 @@ namespace System.Xml.Tests
 
             XmlSchemaSet set2 = new XmlSchemaSet();
             set2.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlSchema includedSchema = set2.Add(null, TestData._Root + "bug382035a1.xsd");
+            XmlSchema includedSchema = set2.Add(null, Path.Combine(TestData._Root, "bug382035a1.xsd"));
             set2.Compile();
 
             XmlSchemaSet set = new XmlSchemaSet();
             set.XmlResolver = new XmlUrlResolver();
             set.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlSchema mainSchema = set.Add(null, TestData._Root + "bug382035a.xsd");
+            XmlSchema mainSchema = set.Add(null, Path.Combine(TestData._Root, "bug382035a.xsd"));
             set.Compile();
 
-            XmlReader r = XmlReader.Create(TestData._Root + "bug382035a1.xsd");
+            XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, "bug382035a1.xsd"));
             XmlSchema reParsedInclude = XmlSchema.Read(r, new ValidationEventHandler(ValidationCallback));
 
             ((XmlSchemaExternal)mainSchema.Includes[0]).Schema = reParsedInclude;
@@ -889,7 +889,7 @@ namespace System.Xml.Tests
         [Theory]
         public void v118()
         {
-            using (XmlReader r = new XmlTextReader(TestData._Root + "bug424904.xsd"))
+            using (XmlReader r = new XmlTextReader(Path.Combine(TestData._Root, "Bug424904.xsd")))
             {
                 XmlSchema s = XmlSchema.Read(r, null);
                 XmlSchemaSet set = new XmlSchemaSet();
@@ -911,7 +911,7 @@ namespace System.Xml.Tests
         [Theory]
         public void v120()
         {
-            using (XmlReader schemaReader = XmlReader.Create(TestData._Root + "bug397633.xsd"))
+            using (XmlReader schemaReader = XmlReader.Create(Path.Combine(TestData._Root, "Bug397633.xsd")))
             {
                 XmlSchemaSet sc = new XmlSchemaSet();
                 sc.XmlResolver = new XmlUrlResolver();
@@ -922,7 +922,7 @@ namespace System.Xml.Tests
                 readerSettings.ValidationType = ValidationType.Schema;
                 readerSettings.Schemas = sc;
 
-                using (XmlReader docValidatingReader = XmlReader.Create(TestData._Root + "bug397633.xml", readerSettings))
+                using (XmlReader docValidatingReader = XmlReader.Create(Path.Combine(TestData._Root, "Bug397633.xml"), readerSettings))
                 {
                     XmlDocument doc = new XmlDocument();
                     try
@@ -949,7 +949,7 @@ namespace System.Xml.Tests
         {
             XmlReaderSettings readerSettings = new XmlReaderSettings();
             readerSettings.ValidationType = ValidationType.Schema;
-            using (XmlReader reader = XmlReader.Create(TestData._Root + "bug397633.xml", readerSettings))
+            using (XmlReader reader = XmlReader.Create(Path.Combine(TestData._Root, "Bug397633.xml"), readerSettings))
             {
                 XmlDocument doc = new XmlDocument();
                 try
@@ -1049,7 +1049,7 @@ namespace System.Xml.Tests
             string xml = @"<?xml version='1.0' encoding='utf-8'?><e1 xmlns='ns-a'>  <c23 xmlns='ns-b'/></e1>";
             XmlSchemaSet set = new XmlSchemaSet();
             set.XmlResolver = new XmlUrlResolver();
-            string path = Path.Combine(TestData.StandardPath, @"XSD10\schema\schN11_a.xsd");
+            string path = Path.Combine(TestData.StandardPath, "xsd10", "SCHEMA", "schN11_a.xsd");
             set.Add(null, path);
             set.Compile();
 
@@ -1097,8 +1097,8 @@ namespace System.Xml.Tests
         public void Dev10_40509()
         {
             Initialize();
-            string xml = TestData._Root + "bug511217.xml";
-            string xsd = TestData._Root + "bug511217.xsd";
+            string xml = Path.Combine(TestData._Root, "bug511217.xml");
+            string xsd = Path.Combine(TestData._Root, "bug511217.xsd");
             XmlSchemaSet s = new XmlSchemaSet();
             s.XmlResolver = new XmlUrlResolver();
             XmlReader r = XmlReader.Create(xsd);

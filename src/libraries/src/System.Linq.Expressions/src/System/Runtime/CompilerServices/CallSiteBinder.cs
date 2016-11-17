@@ -5,11 +5,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Reflection;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Runtime.CompilerServices
 {
@@ -18,8 +18,6 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public abstract class CallSiteBinder
     {
-        private static readonly LabelTarget s_updateLabel = Expression.Label("CallSiteBinder.UpdateLabel");
-
         /// <summary>
         /// The Level 2 cache - all rules produced for the same binder.
         /// </summary>
@@ -38,14 +36,12 @@ namespace System.Runtime.CompilerServices
         /// This is typically used when the "version" of a dynamic object has
         /// changed.
         /// </summary>
-        public static LabelTarget UpdateLabel
-        {
-            get { return s_updateLabel; }
-        }
+        public static LabelTarget UpdateLabel { get; } = Expression.Label("CallSiteBinder.UpdateLabel");
 
         private sealed class LambdaSignature<T> where T : class
         {
             private static LambdaSignature<T> s_instance;
+
             internal static LambdaSignature<T> Instance
             {
                 get
@@ -173,7 +169,7 @@ namespace System.Runtime.CompilerServices
             var site = Expression.Parameter(typeof(CallSite), "$site");
             var @params = signature.Parameters.AddFirst(site);
 
-            Expression updLabel = Expression.Label(CallSiteBinder.UpdateLabel);
+            Expression updLabel = Expression.Label(UpdateLabel);
 
 #if DEBUG
             // put the AST into the constant pool for debugging purposes
@@ -189,14 +185,14 @@ namespace System.Runtime.CompilerServices
                     signature.ReturnLabel,
                     Expression.Condition(
                         Expression.Call(
-                            typeof(CallSiteOps).GetMethod("SetNotMatched"),
+                            CallSiteOps_SetNotMatched,
                             @params.First()
                         ),
                         Expression.Default(signature.ReturnLabel.Type),
                         Expression.Invoke(
                             Expression.Property(
                                 Expression.Convert(site, siteType),
-                                typeof(CallSite<T>).GetProperty("Update")
+                                typeof(CallSite<T>).GetProperty(nameof(CallSite<T>.Update))
                             ),
                             new TrueReadOnlyCollection<Expression>(@params)
                         )

@@ -25,18 +25,11 @@ namespace System.Net.Http
 
         private IntPtr s_dbg_requestHandle;
 #endif        
-        // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
-        // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
-        // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
-
-        // The _lock object must be used during the execution of any WinHttp function to ensure no race conditions with 
-        // calling WinHttpCloseHandle.
-        private readonly object _lock = new object();
 
         // A GCHandle for this operation object.
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
         private GCHandle _operationHandle;
-
+        private WinHttpTransportContext _transportContext;
         private volatile bool _disposed = false; // To detect redundant calls.
 
         public WinHttpRequestState()
@@ -44,7 +37,6 @@ namespace System.Net.Http
 #if DEBUG
             Interlocked.Increment(ref s_dbg_allocated);
 #endif
-            TransportContext = new WinHttpTransportContext();
         }
 
         public void Pin()
@@ -69,13 +61,12 @@ namespace System.Net.Http
             return GCHandle.ToIntPtr(_operationHandle);
         }
 
-        public object Lock
-        {
-            get
-            {
-                return _lock;
-            }
-        }
+        // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
+        // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
+        // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
+        // The lock object must be used during the execution of any WinHttp function to ensure no race conditions with 
+        // calling WinHttpCloseHandle.
+        public object Lock => this;
 
         public void ClearSendRequestState()
         {
@@ -85,10 +76,7 @@ namespace System.Net.Http
             // Since WinHttpRequestState has a self-referenced strong GCHandle, we
             // need to clear out object references to break cycles and prevent leaks.
             Tcs = null;
-            TcsSendRequest = null;
-            TcsWriteToRequestStream = null;
             TcsInternalWriteDataToRequestStream = null;
-            TcsReceiveResponseHeaders = null;
             CancellationToken = default(CancellationToken);
             RequestMessage = null;
             Handler = null;
@@ -144,7 +132,11 @@ namespace System.Net.Http
             SslPolicyErrors,
             bool> ServerCertificateValidationCallback { get; set; }
 
-        public WinHttpTransportContext TransportContext { get; private set; }
+        public WinHttpTransportContext TransportContext
+        {
+            get { return _transportContext ?? (_transportContext = new WinHttpTransportContext()); }
+            set { _transportContext = value; }
+        }
 
         public WindowsProxyUsePolicy WindowsProxyUsePolicy { get; set; }
 
@@ -160,16 +152,11 @@ namespace System.Net.Http
 
         public bool RetryRequest { get; set; }
 
-        // Important: do not hold _lock while signaling completion of any of below TaskCompletionSources.
-        public TaskCompletionSource<bool> TcsSendRequest { get; set; }
-        public TaskCompletionSource<bool> TcsWriteToRequestStream { get; set; }
+        public RendezvousAwaitable<int> LifecycleAwaitable { get; set; } = new RendezvousAwaitable<int>();
         public TaskCompletionSource<bool> TcsInternalWriteDataToRequestStream { get; set; }
-        public TaskCompletionSource<bool> TcsReceiveResponseHeaders { get; set; }
-        
+        public bool AsyncReadInProgress { get; set; }
+
         // WinHttpResponseStream state.
-        public TaskCompletionSource<int> TcsQueryDataAvailable { get; set; }
-        public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
-        public CancellationTokenRegistration CtrReadFromResponseStream { get; set; }
         public long? ExpectedBytesToRead { get; set; }
         public long CurrentBytesRead { get; set; }
 
@@ -187,13 +174,6 @@ namespace System.Net.Http
 
                 _cachedReceivePinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
-        }
-
-        public void DisposeCtrReadFromResponseStream()
-        {
-            WinHttpTraceHelper.Trace("WinHttpRequestState.DisposeCtrReadFromResponseStream: disposing ctr");
-            CtrReadFromResponseStream.Dispose();
-            CtrReadFromResponseStream = default(CancellationTokenRegistration);
         }
 
         #region IDisposable Members

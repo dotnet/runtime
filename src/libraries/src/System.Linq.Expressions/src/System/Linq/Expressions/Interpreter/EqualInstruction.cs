@@ -27,15 +27,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((bool)left) == ((bool)right)));
+                    frame.Push((bool)left == (bool)right);
                 }
                 return +1;
             }
@@ -49,15 +49,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((sbyte)left) == ((sbyte)right)));
+                    frame.Push((sbyte)left == (sbyte)right);
                 }
                 return +1;
             }
@@ -71,15 +71,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((short)left) == ((short)right)));
+                    frame.Push((short)left == (short)right);
                 }
                 return +1;
             }
@@ -93,15 +93,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((char)left) == ((char)right)));
+                    frame.Push((char)left == (char)right);
                 }
                 return +1;
             }
@@ -115,15 +115,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((int)left) == ((int)right)));
+                    frame.Push((int)left == (int)right);
                 }
                 return +1;
             }
@@ -137,15 +137,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((long)left) == ((long)right)));
+                    frame.Push((long)left == (long)right);
                 }
                 return +1;
             }
@@ -159,15 +159,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((byte)left) == ((byte)right)));
+                    frame.Push((byte)left == (byte)right);
                 }
                 return +1;
             }
@@ -181,15 +181,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ushort)left) == ((ushort)right)));
+                    frame.Push((ushort)left == (ushort)right);
                 }
                 return +1;
             }
@@ -203,15 +203,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((uint)left) == ((uint)right)));
+                    frame.Push((uint)left == (uint)right);
                 }
                 return +1;
             }
@@ -225,15 +225,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ulong)left) == ((ulong)right)));
+                    frame.Push((ulong)left == (ulong)right);
                 }
                 return +1;
             }
@@ -247,15 +247,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((float)left) == ((float)right)));
+                    frame.Push((float)left == (float)right);
                 }
                 return +1;
             }
@@ -269,15 +269,15 @@ namespace System.Linq.Expressions.Interpreter
                 object left = frame.Pop();
                 if (left == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(right == null));
+                    frame.Push(right == null);
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
+                    frame.Push(false);
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((double)left) == ((double)right)));
+                    frame.Push((double)left == (double)right);
                 }
                 return +1;
             }
@@ -287,7 +287,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                frame.Push(ScriptingRuntimeHelpers.BooleanToObject(frame.Pop() == frame.Pop()));
+                frame.Push(frame.Pop() == frame.Pop());
                 return +1;
             }
         }
@@ -304,7 +304,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((bool)left) == ((bool)right)));
+                    frame.Push((bool)left == (bool)right);
                 }
                 return +1;
             }
@@ -322,7 +322,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((sbyte)left) == ((sbyte)right)));
+                    frame.Push((sbyte)left == (sbyte)right);
                 }
                 return +1;
             }
@@ -340,7 +340,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((short)left) == ((short)right)));
+                    frame.Push((short)left == (short)right);
                 }
                 return +1;
             }
@@ -358,7 +358,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((char)left) == ((char)right)));
+                    frame.Push((char)left == (char)right);
                 }
                 return +1;
             }
@@ -376,7 +376,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((int)left) == ((int)right)));
+                    frame.Push((int)left == (int)right);
                 }
                 return +1;
             }
@@ -394,7 +394,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((long)left) == ((long)right)));
+                    frame.Push((long)left == (long)right);
                 }
                 return +1;
             }
@@ -412,7 +412,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((byte)left) == ((byte)right)));
+                    frame.Push((byte)left == (byte)right);
                 }
                 return +1;
             }
@@ -430,7 +430,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ushort)left) == ((ushort)right)));
+                    frame.Push((ushort)left == (ushort)right);
                 }
                 return +1;
             }
@@ -448,7 +448,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((uint)left) == ((uint)right)));
+                    frame.Push((uint)left == (uint)right);
                 }
                 return +1;
             }
@@ -466,7 +466,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((ulong)left) == ((ulong)right)));
+                    frame.Push((ulong)left == (ulong)right);
                 }
                 return +1;
             }
@@ -484,7 +484,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((float)left) == ((float)right)));
+                    frame.Push((float)left == (float)right);
                 }
                 return +1;
             }
@@ -502,7 +502,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(((double)left) == ((double)right)));
+                    frame.Push((double)left == (double)right);
                 }
                 return +1;
             }
@@ -521,7 +521,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.BooleanToObject(left == right));
+                    frame.Push(left == right);
                 }
                 return +1;
             }
