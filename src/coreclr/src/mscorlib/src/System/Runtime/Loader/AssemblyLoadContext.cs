@@ -104,7 +104,7 @@ namespace System.Runtime.Loader
                 throw new ArgumentNullException(nameof(assemblyPath));
             }
 
-            if (Path.IsRelative(assemblyPath))
+            if (PathInternal.IsPartiallyQualified(assemblyPath))
             {
                 throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
             }
@@ -121,12 +121,12 @@ namespace System.Runtime.Loader
                 throw new ArgumentNullException(nameof(nativeImagePath));
             }
 
-            if (Path.IsRelative(nativeImagePath))
+            if (PathInternal.IsPartiallyQualified(nativeImagePath))
             {
                 throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(nativeImagePath));
             }
 
-            if (assemblyPath != null && Path.IsRelative(assemblyPath))
+            if (assemblyPath != null && PathInternal.IsPartiallyQualified(assemblyPath))
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
             }
@@ -308,7 +308,7 @@ namespace System.Runtime.Loader
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), nameof(unmanagedDllPath));
             }
-            if (Path.IsRelative(unmanagedDllPath))
+            if (PathInternal.IsPartiallyQualified(unmanagedDllPath))
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(unmanagedDllPath));
             }
@@ -391,8 +391,8 @@ namespace System.Runtime.Loader
             {
                 throw new ArgumentNullException(nameof(assemblyPath));
             }
-            
-            String fullPath = Path.GetFullPathInternal(assemblyPath);
+
+            string fullPath = Path.GetFullPath(assemblyPath);
             return nGetFileInformation(fullPath);
         }
 

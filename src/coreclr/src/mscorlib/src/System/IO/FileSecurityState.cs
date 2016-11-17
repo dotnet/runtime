@@ -56,7 +56,7 @@ namespace System.IO
             else
             {
                 VerifyPath(path);
-                m_canonicalizedPath = System.IO.Path.GetFullPathInternal(path);
+                m_canonicalizedPath = IO.Path.GetFullPath(path);
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(access), Environment.GetResourceString("Arg_EnumIllegalVal"));
         }
 
-        private static void VerifyPath(String path)
+        private static void VerifyPath(string path)
         {
             if (path != null)
             {
@@ -126,7 +126,7 @@ namespace System.IO
                     throw new ArgumentException(Environment.GetResourceString("Argument_PathFormatNotSupported"));
 #endif
 
-                System.IO.Path.CheckInvalidPathChars(path, checkAdditional: true);
+                PathInternal.CheckInvalidPathChars(path);
             }
         }
     }

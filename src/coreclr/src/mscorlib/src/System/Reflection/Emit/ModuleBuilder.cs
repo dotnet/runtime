@@ -589,7 +589,7 @@ namespace System.Reflection.Emit
         }
 
         #endregion
-            
+
         #region Module Overrides
             
         // m_internalModuleBuilder is null iff this is a "internal" ModuleBuilder
@@ -962,7 +962,7 @@ namespace System.Reflection.Emit
                 if (ContainingAssemblyBuilder.m_assemblyData.m_strDir != null)
                 {
                     fullyQualifiedName = Path.Combine(ContainingAssemblyBuilder.m_assemblyData.m_strDir, fullyQualifiedName);
-                    fullyQualifiedName = Path.UnsafeGetFullPath(fullyQualifiedName);
+                    fullyQualifiedName = Path.GetFullPath(fullyQualifiedName);
                 }
                 
                 if (ContainingAssemblyBuilder.m_assemblyData.m_strDir != null && fullyQualifiedName != null) 

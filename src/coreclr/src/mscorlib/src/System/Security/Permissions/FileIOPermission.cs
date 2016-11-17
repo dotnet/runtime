@@ -558,7 +558,7 @@ namespace System.Security.Permissions {
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
 
                 if (!onlyCheckExtras)
-                    Path.CheckInvalidPathChars(str[i]);
+                    PathInternal.CheckInvalidPathChars(str[i]);
             }
 #else
             // There are no "extras" on Unix
@@ -567,7 +567,7 @@ namespace System.Security.Permissions {
 
             for (int i = 0; i < str.Length; ++i)
             {
-                Path.CheckInvalidPathChars(str[i]);
+                PathInternal.CheckInvalidPathChars(str[i]);
             }
 #endif
         }
@@ -1090,15 +1090,18 @@ namespace System.Security.Permissions {
             // These checks are done via CheckIllegalCharacters() and StringExpressionSet in AddPathList() above.
             //
             // We have to check the beginning as some paths may be passed in as path + @"\.", which will be normalized away.
+#if !FEATURE_CORECLR
             BCLDebug.Assert(
                 fullPath.StartsWith(Path.NormalizePath(fullPath, fullCheck: false), StringComparison.OrdinalIgnoreCase),
                 string.Format("path isn't normalized: {0}", fullPath));
+#endif
 
+#if !PLATFORM_UNIX
             // Checking for colon / invalid characters on device paths blocks legitimate access to objects such as named pipes.
             if (
-#if FEATURE_PATHCOMPAT
+    #if FEATURE_PATHCOMPAT
                 AppContextSwitches.UseLegacyPathHandling ||
-#endif
+    #endif
                 !PathInternal.IsDevice(fullPath))
             {
                 // GetFullPath already checks normal invalid path characters. We need to just check additional (wildcard) characters here.
@@ -1113,6 +1116,7 @@ namespace System.Security.Permissions {
                     throw new NotSupportedException(Environment.GetResourceString("Argument_PathFormatNotSupported"));
                 }
             }
+#endif // !PLATFORM_UNIX
         }
     }
 
