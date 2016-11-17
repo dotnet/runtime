@@ -20,7 +20,7 @@ namespace System.IO.Compression
         private Inflater _inflater;
         private Deflater _deflater;
         private byte[] _buffer;
-        private int _asyncOperations;
+        private int _activeAsyncOperation; // 1 == true, 0 == false
         private bool _wroteBytes;
 
         #region Public Constructors
@@ -112,20 +112,20 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
-            IntializeBuffer();
+            InitializeBuffer();
         }
 
-        private void IntializeBuffer()
+        private void InitializeBuffer()
         {
             Debug.Assert(_buffer == null);
-            _buffer = new byte[DefaultBufferSize];
+            _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
         }
 
         private void EnsureBufferInitialized()
         {
             if (_buffer == null)
             {
-                IntializeBuffer();
+                InitializeBuffer();
             }
         }
 
@@ -203,9 +203,7 @@ namespace System.IO.Compression
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (_asyncOperations != 0)
-                throw new InvalidOperationException(SR.InvalidBeginCall);
-
+            EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
             if (cancellationToken.IsCancellationRequested)
@@ -216,7 +214,7 @@ namespace System.IO.Compression
 
         private async Task FlushAsyncCore(CancellationToken cancellationToken)
         {
-            IncrementAsyncOperations();
+            AsyncOperationStarting();
             try
             {
                 // Compress any bytes left:
@@ -237,7 +235,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                DecrementAsyncOperations();
+                AsyncOperationCompleting();
             }
         }
 
@@ -370,12 +368,9 @@ namespace System.IO.Compression
 
         public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
-            EnsureDecompressionMode();
-
             // We use this checking order for compat to earlier versions:
-            if (_asyncOperations != 0)
-                throw new InvalidOperationException(SR.InvalidBeginCall);
-
+            EnsureDecompressionMode();
+            EnsureNoActiveAsyncOperation();
             ValidateParameters(array, offset, count);
             EnsureNotDisposed();
 
@@ -384,10 +379,10 @@ namespace System.IO.Compression
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            IncrementAsyncOperations();
             EnsureBufferInitialized();
             Task<int> readTask = null;
 
+            AsyncOperationStarting();
             try
             {
                 // Try to read decompressed data in output buffer
@@ -419,7 +414,7 @@ namespace System.IO.Compression
                 // if we haven't started any async work, decrement the counter to end the transaction
                 if (readTask == null)
                 {
-                    DecrementAsyncOperations();
+                    AsyncOperationCompleting();
                 }
             }
         }
@@ -469,7 +464,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                DecrementAsyncOperations();
+                AsyncOperationCompleting();
             }
         }
 
@@ -587,8 +582,8 @@ namespace System.IO.Compression
                 // In this case, we still need to clean up internal resources, hence the inner finally blocks.
                 try
                 {
-                    if (disposing && !_leaveOpen && _stream != null)
-                        _stream.Dispose();
+                    if (disposing && !_leaveOpen)
+                        _stream?.Dispose();
                 }
                 finally
                 {
@@ -596,15 +591,24 @@ namespace System.IO.Compression
 
                     try
                     {
-                        if (_deflater != null)
-                            _deflater.Dispose();
-                        if (_inflater != null)
-                            _inflater.Dispose();
+                        _deflater?.Dispose();
+                        _inflater?.Dispose();
                     }
                     finally
                     {
                         _deflater = null;
                         _inflater = null;
+
+                        byte[] buffer = _buffer;
+                        if (buffer != null)
+                        {
+                            _buffer = null;
+                            if (!AsyncOperationIsActive)
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+                        }
+
                         base.Dispose(disposing);
                     }
                 }
@@ -621,12 +625,9 @@ namespace System.IO.Compression
 
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
-            EnsureCompressionMode();
-
             // We use this checking order for compat to earlier versions:
-            if (_asyncOperations != 0)
-                throw new InvalidOperationException(SR.InvalidBeginCall);
-
+            EnsureCompressionMode();
+            EnsureNoActiveAsyncOperation();
             ValidateParameters(array, offset, count);
             EnsureNotDisposed();
 
@@ -638,7 +639,7 @@ namespace System.IO.Compression
 
         private async Task WriteAsyncCore(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
-            IncrementAsyncOperations();
+            AsyncOperationStarting();
             try
             {
                 await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
@@ -652,7 +653,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                DecrementAsyncOperations();
+                AsyncOperationCompleting();
             }
         }
 
@@ -678,7 +679,7 @@ namespace System.IO.Compression
 
             // Validation as ReadAsync would do
             EnsureDecompressionMode();
-            if (_asyncOperations != 0) throw new InvalidOperationException(SR.InvalidBeginCall);
+            EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
             // Early check for cancellation
@@ -713,7 +714,7 @@ namespace System.IO.Compression
 
             public async Task CopyFromSourceToDestination()
             {
-                _deflateStream.IncrementAsyncOperations();
+                _deflateStream.AsyncOperationStarting();
                 try
                 {
                     // Flush any existing data in the inflater to the destination stream.
@@ -733,7 +734,7 @@ namespace System.IO.Compression
                 }
                 finally
                 {
-                    _deflateStream.DecrementAsyncOperations();
+                    _deflateStream.AsyncOperationCompleting();
 
                     Array.Clear(_arrayPoolBuffer, 0, _arrayPoolBufferHighWaterMark); // clear only the most we used
                     ArrayPool<byte>.Shared.Return(_arrayPoolBuffer, clearArray: false);
@@ -786,16 +787,32 @@ namespace System.IO.Compression
             public override void SetLength(long value) { throw new NotSupportedException(); }
         }
 
-        private void IncrementAsyncOperations()
+        private bool AsyncOperationIsActive => _activeAsyncOperation != 0;
+
+        private void EnsureNoActiveAsyncOperation()
         {
-            int newCount = Interlocked.Increment(ref _asyncOperations);
-            Debug.Assert(newCount == 1, $"DeflateStream was misused, with multiple pending async operations");
+            if (AsyncOperationIsActive)
+                ThrowInvalidBeginCall();
         }
 
-        private void DecrementAsyncOperations()
+        private void AsyncOperationStarting()
         {
-            int newCount = Interlocked.Decrement(ref _asyncOperations);
-            Debug.Assert(newCount >= 0, $"DeflateStream was misused, with the number of active ops dropping to negative");
+            if (Interlocked.CompareExchange(ref _activeAsyncOperation, 1, 0) != 0)
+            {
+                ThrowInvalidBeginCall();
+            }
+        }
+
+        private void AsyncOperationCompleting()
+        {
+            int oldValue = Interlocked.CompareExchange(ref _activeAsyncOperation, 0, 1);
+            Debug.Assert(oldValue == 1, $"Expected {nameof(_activeAsyncOperation)} to be 1, got {oldValue}");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowInvalidBeginCall()
+        {
+            throw new InvalidOperationException(SR.InvalidBeginCall);
         }
     }
 }
