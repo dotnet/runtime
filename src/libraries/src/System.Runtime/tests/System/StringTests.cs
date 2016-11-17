@@ -1625,6 +1625,7 @@ namespace System.Tests
             yield return new object[] { "|", new object[] { new ObjectWithNullToString(), "Foo", new ObjectWithNullToString(), "Bar", new ObjectWithNullToString() }, "|Foo||Bar|" };
         }
 
+        [ActiveIssue(13747)]
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
