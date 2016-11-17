@@ -120,6 +120,14 @@ then
   exit 0
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$COMPlus_HeapVerify" ]
+then
+  echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  exit 0
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
