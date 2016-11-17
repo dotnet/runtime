@@ -3067,8 +3067,8 @@ void Compiler::optUnrollLoops()
 
             ClrSafeInt<unsigned> fixedLoopCostSz(8);
 
-            ClrSafeInt<int> unrollCostSz((loopCostSz * ClrSafeInt<unsigned>(totalIter)) -
-                                         (loopCostSz + fixedLoopCostSz));
+            ClrSafeInt<int> unrollCostSz = ClrSafeInt<int>(loopCostSz * ClrSafeInt<unsigned>(totalIter)) -
+                                           ClrSafeInt<int>(loopCostSz + fixedLoopCostSz);
 
             /* Don't unroll if too much code duplication would result. */
 
