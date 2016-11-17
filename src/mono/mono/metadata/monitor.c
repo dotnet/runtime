@@ -631,18 +631,19 @@ mono_object_hash (MonoObject* obj)
 #endif
 }
 
-static void
+static gboolean
 mono_monitor_ensure_owned (LockWord lw, guint32 id)
 {
 	if (lock_word_is_flat (lw)) {
 		if (lock_word_get_owner (lw) == id)
-			return;
+			return TRUE;
 	} else if (lock_word_is_inflated (lw)) {
 		if (mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) == id)
-			return;
+			return TRUE;
 	}
 
 	mono_set_pending_exception (mono_get_exception_synchronization_lock ("Object synchronization method was called from an unsynchronized block of code."));
+	return FALSE;
 }
 
 /*
@@ -1082,7 +1083,8 @@ mono_monitor_exit (MonoObject *obj)
 
 	lw.sync = obj->synchronisation;
 
-	mono_monitor_ensure_owned (lw, mono_thread_info_get_small_id ());
+	if (!mono_monitor_ensure_owned (lw, mono_thread_info_get_small_id ()))
+		return;
 
 	if (G_UNLIKELY (lock_word_is_inflated (lw)))
 		mono_monitor_exit_inflated (obj);
@@ -1233,7 +1235,8 @@ ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 	id = mono_thread_info_get_small_id ();
 	lw.sync = obj->synchronisation;
 
-	mono_monitor_ensure_owned (lw, id);
+	if (!mono_monitor_ensure_owned (lw, id))
+		return;
 
 	if (!lock_word_is_inflated (lw)) {
 		/* No threads waiting. A wait would have inflated the lock */
@@ -1264,7 +1267,8 @@ ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 	id = mono_thread_info_get_small_id ();
 	lw.sync = obj->synchronisation;
 
-	mono_monitor_ensure_owned (lw, id);
+	if (!mono_monitor_ensure_owned (lw, id))
+		return;
 
 	if (!lock_word_is_inflated (lw)) {
 		/* No threads waiting. A wait would have inflated the lock */
@@ -1300,7 +1304,8 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 
 	lw.sync = obj->synchronisation;
 
-	mono_monitor_ensure_owned (lw, id);
+	if (!mono_monitor_ensure_owned (lw, id))
+		return FALSE;
 
 	if (!lock_word_is_inflated (lw)) {
 		mono_monitor_inflate_owned (obj, id);
