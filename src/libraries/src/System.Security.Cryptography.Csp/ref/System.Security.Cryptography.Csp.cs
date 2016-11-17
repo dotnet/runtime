@@ -90,10 +90,12 @@ namespace System.Security.Cryptography
         public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
         public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
+        public override string KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public bool PersistKeyInCsp { get { throw null; } set { } }
         public bool PublicOnly { get { throw null; } }
+        public override string SignatureAlgorithm { get { throw null; } }
         public static bool UseMachineKeyStore { get { throw null; } set { } }
         public override byte[] CreateSignature(byte[] rgbHash) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -161,10 +163,12 @@ namespace System.Security.Cryptography
         public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
         public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
+        public override string KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public bool PersistKeyInCsp { get { throw null; } set { } }
         public bool PublicOnly { get { throw null; } }
+        public override string SignatureAlgorithm { get { throw null; } }
         public static bool UseMachineKeyStore { get { throw null; } set { } }
         public byte[] Decrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }

@@ -74,7 +74,27 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x3E, 0xAC, 0xCC, 0xD4, 0x87, 0x9A, 0x6F, 0xFD,
             },
         };
-        
+
+        // Whitespace (or lack of) must be exact here to compare against ToXmlString output
+        private const string Rsa384Xml =
+            "<RSAKeyValue><Modulus>2swi2G5nFXUDLjHyBtz8GSxl4tUQieURLQlvKIKv21t4zbZXL9L2HbOQRyIy49n1</Modulus>" +
+            "<Exponent>AQAB</Exponent>";
+
+        private const string Rsa384XmlPrivateKey = Rsa384Xml +
+            "<P>+tvX+KGLOnWk9t+u40Jv0P+LrHS2ci3v</P>" +
+            "<Q>30gUSm2Ip4AUT86ma9zaUNYHHFTl0Npb</Q>" +
+            "<DP>JP+70N3yrQKg/BBtuPMZjtfCAAOOzTRd</DP>" +
+            "<DQ>hd9zuwRdkQBsLUWb5sQuaZVKAiSs/kJN</DQ>" +
+            "<InverseQ>Gjp2nCEmK4TKnKliD5jS9D6szNSHmm/9</InverseQ>" +
+            "<D>DPOrlmNGr+L62rezK4vWUokpyNky/u6zzwTuEDYdRBCtW0lyjwIjyqeT83A8Dm4L</D></RSAKeyValue>";
+
+        private const string Rsa384XmlNoPrivateKey = Rsa384Xml + "</RSAKeyValue>";
+
+        public static string GetRSA384Xml(bool includePrivate)
+        {
+            return includePrivate ? Rsa384XmlPrivateKey : Rsa384XmlNoPrivateKey;
+        }
+
         public static readonly RSAParameters RSA1024Params = new RSAParameters
         {
             Modulus = new byte[]

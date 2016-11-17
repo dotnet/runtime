@@ -262,6 +262,9 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override string KeyExchangeAlgorithm => null;
+        public override string SignatureAlgorithm => "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

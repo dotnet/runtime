@@ -80,6 +80,25 @@ namespace System.Security.Cryptography.Dsa.Tests
             return p;
         }
 
+        // Whitespace (or lack of) must be exact here to compare against ToXmlString output
+        private const string Dsa1024PartialXml =
+            "<DSAKeyValue><P>wW0mx01sFid5nAkYVI5VP+WMeIHaSEYpyvZDEfSyfP72vbDyEgaw/8SZmi/tU7Q7nuKRDGjaLENqgBj0k49k" +
+            "cjafVkfQBbzJbiJZDMFePNTqDRMvXaWvaqoIB7DMTvNASvVC9FRrN73WpH5kETCDfbmTl8hFY119w20FN+SoSzE=</P>" +
+            "<Q>2DwOy3NVHi/jDVH89CNsZRiDrdc=</Q>" +
+            "<G>a8NmtmNVVF4Jjx/pDlRptWfgn6edgX8rNntF3s1DAaWcgdaRH3aR03DhWsaSwEvBGHLBcaf+ZU6WPX3aV1qemM4Cb7fTk0olh" +
+            "ggTSo7F7WmirtyJQBtnrd5CfxftrrctevRdmrHVnhsT1O+9F8dkMwJn3eNSwg4FuA2zwQn+i5w=</G>" +
+            "<Y>aQuzepFF4F1ue0fEV4mKrt1yUBydFuebGtdahyzwF6qQu/uQ8bO39cA8h+RuhyVmVSb9NBV7JvWWofCZf1nz5l78YVpVLV51a" +
+            "cX/xFk9WgKZEQ5xyX4SIaWgP+mmk1rt2I7ws7L3nTqZ7XX3uHHm6vJoDZbVdKX0wTus47S0TeE=</Y>";
+
+        private const string Dsa1024XmlPrivateKey = Dsa1024PartialXml + "<X>wCZ4AHd55S42BoIhS9R/j69CvC0=</X></DSAKeyValue>";
+
+        private const string Dsa1024XmlNoPrivateKey = Dsa1024PartialXml + "</DSAKeyValue>";
+
+        internal static string GetDSA1024Xml(bool includePrivate)
+        {
+            return includePrivate ? Dsa1024XmlPrivateKey : Dsa1024XmlNoPrivateKey;
+        }
+
         internal static DSAParameters GetDSA2048Params()
         {
             DSAParameters p = new DSAParameters();
