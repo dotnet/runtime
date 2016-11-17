@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Numerics.Hashing;
+
 namespace System.Drawing
 {
     /// <summary>
@@ -194,10 +196,7 @@ namespace System.Drawing
             return comp.X == X && comp.Y == Y;
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => HashHelpers.Combine(X.GetHashCode(), Y.GetHashCode());
 
         public override string ToString()
         {
