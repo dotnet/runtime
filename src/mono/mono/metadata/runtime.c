@@ -139,3 +139,24 @@ mono_runtime_init_tls (void)
 {
 	mono_marshal_init_tls ();
 }
+
+char*
+mono_runtime_get_aotid (void)
+{
+	int i;
+	guint8 aotid_sum = 0;
+	MonoDomain* domain = mono_domain_get ();
+
+	if (!domain->entry_assembly || !domain->entry_assembly->image)
+		return NULL;
+
+	guint8 (*aotid)[16] = &domain->entry_assembly->image->aotid;
+
+	for (i = 0; i < 16; ++i)
+		aotid_sum |= (*aotid)[i];
+
+	if (aotid_sum == 0)
+		return NULL;
+
+	return mono_guid_to_string ((guint8*) aotid);
+}
