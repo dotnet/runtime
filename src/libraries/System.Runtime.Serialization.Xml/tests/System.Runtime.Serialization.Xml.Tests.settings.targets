@@ -10,7 +10,7 @@
     <TestSourceFolder>$(MSBuildThisFileDirectory)\</TestSourceFolder>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceFolder)..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
+    <ProjectReference Include="$(TestSourceFolder)..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>
       <KeepProjectReference>true</KeepProjectReference>
@@ -23,6 +23,8 @@
       <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>
       <Name>System.Xml.XmlSerializer</Name>
     </ProjectReference>
+    <ProjectReference Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\pkg\System.Runtime.Serialization.Xml.pkgproj" />
+    <ProjectReference Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Json\pkg\System.Runtime.Serialization.Json.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(TestSourceFolder)project.json" />
