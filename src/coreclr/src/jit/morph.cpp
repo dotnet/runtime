@@ -8110,31 +8110,76 @@ NO_TAIL_CALL:
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
     if ((call->gtCallType == CT_HELPER) && (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
     {
-        GenTreePtr value = gtArgEntryByArgNum(call, 2)->node;
-
+        GenTree* value = gtArgEntryByArgNum(call, 2)->node;
         if (value->IsIntegralConst(0))
         {
             assert(value->OperGet() == GT_CNS_INT);
-            GenTreePtr arr   = gtArgEntryByArgNum(call, 0)->node;
-            GenTreePtr index = gtArgEntryByArgNum(call, 1)->node;
 
-            arr = gtClone(arr, true);
-            if (arr != nullptr)
+            GenTree* arr   = gtArgEntryByArgNum(call, 0)->node;
+            GenTree* index = gtArgEntryByArgNum(call, 1)->node;
+
+            // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
+            // the spill trees as well if necessary.
+            GenTree*   argSetup       = nullptr;
+            GenTreeOp* argSetupCursor = nullptr;
+            for (GenTreeArgList* earlyArgs = call->gtCallArgs; earlyArgs != nullptr; earlyArgs = earlyArgs->Rest())
             {
-                index = gtClone(index, true);
-                if (index != nullptr)
+                GenTree* const arg = earlyArgs->Current();
+                if (arg->OperGet() != GT_ASG)
                 {
-                    value = gtClone(value);
-                    noway_assert(value != nullptr);
-
-                    GenTreePtr nullCheckedArr = impCheckForNullPointer(arr);
-                    GenTreePtr arrIndexNode   = gtNewIndexRef(TYP_REF, nullCheckedArr, index);
-                    GenTreePtr arrStore       = gtNewAssignNode(arrIndexNode, value);
-                    arrStore->gtFlags |= GTF_ASG;
-
-                    return fgMorphTree(arrStore);
+                    continue;
                 }
+
+                assert(arg != arr);
+                assert(arg != index);
+
+                // NOTE: we pass `arg` as both op1 and op2 of the comma becuase the constructor insists that we provide
+                // a non-null op2. The value of op2 will later be replaced with either the comma node for the next arg
+                // setup node or with the eventual assignment node that replaces the call.
+                GenTreeOp* commaNode = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, arg, arg);
+                if (argSetup == nullptr)
+                {
+                    argSetup = commaNode;
+                }
+                else
+                {
+                    assert(argSetupCursor != nullptr);
+                    argSetupCursor->gtOp2 = commaNode;
+                }
+
+                argSetupCursor = commaNode;
+
+#if DEBUG
+                commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
             }
+
+#ifdef DEBUG
+            auto resetMorphedFlag = [](GenTree** slot, fgWalkData* data) -> fgWalkResult
+            {
+                (*slot)->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+                return WALK_CONTINUE;
+            };
+
+            fgWalkTreePost(&arr, resetMorphedFlag);
+            fgWalkTreePost(&index, resetMorphedFlag);
+            fgWalkTreePost(&value, resetMorphedFlag);
+#endif // DEBUG
+
+            GenTree* const nullCheckedArr = impCheckForNullPointer(arr);
+            GenTree* const arrIndexNode   = gtNewIndexRef(TYP_REF, nullCheckedArr, index);
+            GenTree* const arrStore       = gtNewAssignNode(arrIndexNode, value);
+            arrStore->gtFlags |= GTF_ASG;
+
+            GenTree* result = fgMorphTree(arrStore);
+            if (argSetup != nullptr)
+            {
+                assert(argSetupCursor != nullptr);
+                argSetupCursor->gtOp2 = result;
+                result = argSetup;
+            }
+
+            return result;
         }
     }
 
