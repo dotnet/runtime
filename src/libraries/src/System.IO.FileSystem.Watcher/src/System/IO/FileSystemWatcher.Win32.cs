@@ -14,6 +14,13 @@ namespace System.IO
         /// <summary>Start monitoring the current directory.</summary>
         private void StartRaisingEvents()
         {
+            // If we're called when "Initializing" is true, set enabled to true
+            if (IsSuspended())
+            {
+                _enabled = true;
+                return;
+            }
+
             // If we're already running, don't do anything.
             if (!IsHandleInvalid(_directoryHandle))
                 return;
@@ -66,6 +73,9 @@ namespace System.IO
         private void StopRaisingEvents()
         {
             _enabled = false;
+
+            if (IsSuspended())
+                return;
 
             // If we're not running, do nothing.
             if (IsHandleInvalid(_directoryHandle))
