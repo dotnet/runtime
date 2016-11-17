@@ -139,8 +139,8 @@ namespace System.IO {
             Contract.Requires(sourceFileName.Length > 0);
             Contract.Requires(destFileName.Length > 0);
 
-            String fullSourceFileName = Path.GetFullPathInternal(sourceFileName);
-            String fullDestFileName = Path.GetFullPathInternal(destFileName);
+            String fullSourceFileName = Path.GetFullPath(sourceFileName);
+            String fullDestFileName = Path.GetFullPath(destFileName);
             
 #if FEATURE_CORECLR
             if (checkHost) {
@@ -251,7 +251,7 @@ namespace System.IO {
         [System.Security.SecurityCritical] 
         internal static void InternalDelete(String path, bool checkHost)
         {
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 
 #if FEATURE_CORECLR
             if (checkHost)
@@ -282,7 +282,7 @@ namespace System.IO {
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileIOPermission.QuickDemand(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, fullPath, false, false);
 
             bool r = Win32Native.DecryptFile(fullPath, 0);
@@ -306,7 +306,7 @@ namespace System.IO {
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileIOPermission.QuickDemand(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, fullPath, false, false);
 
             bool r = Win32Native.EncryptFile(fullPath);
@@ -352,12 +352,12 @@ namespace System.IO {
                 if (path.Length == 0)
                     return false;
 
-                path = Path.GetFullPathInternal(path);
+                path = Path.GetFullPath(path);
                 // After normalizing, check whether path ends in directory separator.
                 // Otherwise, FillAttributeInfo removes it and we may return a false positive.
-                // GetFullPathInternal should never return null
-                Contract.Assert(path != null, "File.Exists: GetFullPathInternal returned null");
-                if (path.Length > 0 && Path.IsDirectorySeparator(path[path.Length - 1]))
+                // GetFullPath should never return null
+                Contract.Assert(path != null, "File.Exists: GetFullPath returned null");
+                if (path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]))
                 {
                     return false;
                 }
@@ -441,7 +441,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         private static DateTime InternalGetCreationTimeUtc(String path, bool checkHost)
         {
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 #if FEATURE_CORECLR
             if (checkHost) 
             {
@@ -498,7 +498,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         private static DateTime InternalGetLastAccessTimeUtc(String path, bool checkHost)
         {       
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 #if FEATURE_CORECLR
             if (checkHost) 
             {
@@ -555,7 +555,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         private static DateTime InternalGetLastWriteTimeUtc(String path, bool checkHost)
         {
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 #if FEATURE_CORECLR
             if (checkHost)
             {
@@ -578,7 +578,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         public static FileAttributes GetAttributes(String path) 
         {
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 #if FEATURE_CORECLR
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, fullPath);
             state.EnsureState();
@@ -601,7 +601,7 @@ namespace System.IO {
 #endif
         public static void SetAttributes(String path, FileAttributes fileAttributes) 
         {
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 #if !FEATURE_CORECLR
             FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, fullPath, false, false);
 #endif
@@ -633,7 +633,7 @@ namespace System.IO {
                 throw new ArgumentNullException(nameof(fileSecurity));
             Contract.EndContractBlock();
 
-            String fullPath = Path.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             // Appropriate security check should be done for us by FileSecurity.
             fileSecurity.Persist(fullPath);
         }
@@ -1052,8 +1052,8 @@ namespace System.IO {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
             
-            String fullSourceFileName = Path.GetFullPathInternal(sourceFileName);
-            String fullDestFileName = Path.GetFullPathInternal(destFileName);
+            String fullSourceFileName = Path.GetFullPath(sourceFileName);
+            String fullDestFileName = Path.GetFullPath(destFileName);
 
 #if FEATURE_CORECLR
             if (checkHost) {
@@ -1107,11 +1107,11 @@ namespace System.IO {
 
             // Write permission to all three files, read permission to source 
             // and dest.
-            String fullSrcPath = Path.GetFullPathInternal(sourceFileName);
-            String fullDestPath = Path.GetFullPathInternal(destinationFileName);
+            String fullSrcPath = Path.GetFullPath(sourceFileName);
+            String fullDestPath = Path.GetFullPath(destinationFileName);
             String fullBackupPath = null;
             if (destinationBackupFileName != null)
-                fullBackupPath = Path.GetFullPathInternal(destinationBackupFileName);
+                fullBackupPath = Path.GetFullPath(destinationBackupFileName);
 
 #if FEATURE_CORECLR
             FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read | FileSecurityStateAccess.Write, sourceFileName, fullSrcPath);
@@ -1251,7 +1251,7 @@ namespace System.IO {
                 // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
                 // probably be consistent w/ every other directory.
                 int hr = Marshal.GetLastWin32Error();
-                String FullPath = Path.GetFullPathInternal(path);
+                String FullPath = Path.GetFullPath(path);
                 if (hr==__Error.ERROR_PATH_NOT_FOUND && FullPath.Equals(Directory.GetDirectoryRoot(FullPath)))
                     hr = __Error.ERROR_ACCESS_DENIED;
 

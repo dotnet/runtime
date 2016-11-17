@@ -211,7 +211,7 @@ namespace System.IO
                 _resultHandler = resultHandler;
                 this.searchOption = searchOption;
 
-                fullPath = Path.GetFullPathInternal(path);
+                fullPath = Path.GetFullPath(path);
                 String fullSearchString = GetFullSearchString(fullPath, normalizedSearchPattern);
                 normalizedSearchPath = Path.GetDirectoryName(fullSearchString);
 
@@ -260,7 +260,7 @@ namespace System.IO
             Contract.Assert(searchCriteria != null && searchData != null, "searchCriteria and searchData should be initialized");
 
             // Execute searchCriteria against the current directory
-            String searchPath = Path.InternalCombine(searchData.fullPath, searchCriteria);
+            String searchPath = Path.Combine(searchData.fullPath, searchCriteria);
 
             Win32Native.WIN32_FIND_DATA data = new Win32Native.WIN32_FIND_DATA();
 
@@ -416,7 +416,7 @@ namespace System.IO
                             AddSearchableDirsToStack(searchData);
 
                             // Execute searchCriteria against the current directory
-                            String searchPath = Path.InternalCombine(searchData.fullPath, searchCriteria);
+                            String searchPath = Path.Combine(searchData.fullPath, searchCriteria);
 
                             // Open a Find handle
                             _hnd = Win32Native.FindFirstFile(searchPath, data);
@@ -509,8 +509,8 @@ namespace System.IO
         [System.Security.SecurityCritical]
         private SearchResult CreateSearchResult(Directory.SearchData localSearchData, Win32Native.WIN32_FIND_DATA findData)
         {
-            String userPathFinal = Path.InternalCombine(localSearchData.userPath, findData.cFileName);
-            String fullPathFinal = Path.InternalCombine(localSearchData.fullPath, findData.cFileName);
+            String userPathFinal = Path.Combine(localSearchData.userPath, findData.cFileName);
+            String fullPathFinal = Path.Combine(localSearchData.fullPath, findData.cFileName);
             return new SearchResult(fullPathFinal, userPathFinal, findData);
         }
 
@@ -526,7 +526,7 @@ namespace System.IO
         {
             Contract.Requires(localSearchData != null);
 
-            String searchPath = Path.InternalCombine(localSearchData.fullPath, "*");
+            String searchPath = Path.Combine(localSearchData.fullPath, "*");
             SafeFindHandle hnd = null;
             Win32Native.WIN32_FIND_DATA data = new Win32Native.WIN32_FIND_DATA();
             try
@@ -553,8 +553,8 @@ namespace System.IO
                 {
                     if (FileSystemEnumerableHelpers.IsDir(data))
                     {
-                        String tempFullPath = Path.InternalCombine(localSearchData.fullPath, data.cFileName);
-                        String tempUserPath = Path.InternalCombine(localSearchData.userPath, data.cFileName);
+                        String tempFullPath = Path.Combine(localSearchData.fullPath, data.cFileName);
+                        String tempUserPath = Path.Combine(localSearchData.userPath, data.cFileName);
 
                         SearchOption option = localSearchData.searchOption;
 
@@ -598,8 +598,8 @@ namespace System.IO
         {
             Contract.Requires(searchPattern != null);
 
-            // Win32 normalization trims only U+0020. 
-            String tempSearchPattern = searchPattern.TrimEnd(Path.TrimEndChars);
+            // Win32 normalization trims only U+0020.
+            String tempSearchPattern = searchPattern.TrimEnd(PathInternal.s_trimEndChars);
 
             // Make this corner case more useful, like dir
             if (tempSearchPattern.Equals("."))
@@ -607,7 +607,7 @@ namespace System.IO
                 tempSearchPattern = "*";
             }
 
-            Path.CheckSearchPattern(tempSearchPattern);
+            PathInternal.CheckSearchPattern(tempSearchPattern);
             return tempSearchPattern;
         }
 
@@ -619,7 +619,7 @@ namespace System.IO
 
             String searchCriteria = null;
             char lastChar = fullPathMod[fullPathMod.Length - 1];
-            if (Path.IsDirectorySeparator(lastChar))
+            if (PathInternal.IsDirectorySeparator(lastChar))
             {
                 // Can happen if the path is C:\temp, in which case GetDirectoryName would return C:\
                 searchCriteria = fullSearchString.Substring(fullPathMod.Length);
@@ -637,11 +637,11 @@ namespace System.IO
             Contract.Requires(fullPath != null);
             Contract.Requires(searchPattern != null);
 
-            String tempStr = Path.InternalCombine(fullPath, searchPattern);
+            String tempStr = Path.Combine(fullPath, searchPattern);
 
             // If path ends in a trailing slash (\), append a * or we'll get a "Cannot find the file specified" exception
             char lastChar = tempStr[tempStr.Length - 1];
-            if (Path.IsDirectorySeparator(lastChar) || lastChar == Path.VolumeSeparatorChar)
+            if (PathInternal.IsDirectorySeparator(lastChar) || lastChar == Path.VolumeSeparatorChar)
             {
                 tempStr = tempStr + '*';
             }

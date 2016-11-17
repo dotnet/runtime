@@ -82,6 +82,8 @@
     <FeatureCoreFxFileStream>true</FeatureCoreFxFileStream>
     <FeatureCoreFxShim>true</FeatureCoreFxShim>
     <FeatureCoreFxOverlapped>true</FeatureCoreFxOverlapped>
+    <FeatureCoreFxPath>true</FeatureCoreFxPath>
+    <FeatureCoreFxInteropServices>true</FeatureCoreFxInteropServices>
 
     <!-- We only want to use the CoreFx implementation of SecureString when we are not building the legacy surface area -->
     <FeatureCoreFxSecureString Condition="'$(FeatureLegacySurface)'==''" >true</FeatureCoreFxSecureString>

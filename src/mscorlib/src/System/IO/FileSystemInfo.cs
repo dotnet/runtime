@@ -63,10 +63,10 @@ namespace System.IO {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
-            
+
             // Must use V1 field names here, since V1 didn't implement 
             // ISerializable.
-            FullPath = Path.GetFullPathInternal(info.GetString("FullPath"));
+            FullPath = Path.GetFullPath(info.GetString("FullPath"));
             OriginalPath = info.GetString("OriginalPath");
 
             // Lazily initialize the file attributes.

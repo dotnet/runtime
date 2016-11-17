@@ -114,7 +114,7 @@ namespace System.Reflection
         {
             if(assemblyFile == null) 
                 throw new ArgumentNullException(nameof(assemblyFile));
-            string fullPath = Path.GetFullPathInternal(assemblyFile);
+            string fullPath = Path.GetFullPath(assemblyFile);
             return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
         }
 #else
@@ -584,15 +584,15 @@ namespace System.Reflection
             if(path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (Path.IsRelative(path))
+            if (PathInternal.IsPartiallyQualified(path))
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(path));
             }
 
-            string normalizedPath = Path.GetFullPathInternal(path);
+            string normalizedPath = Path.GetFullPath(path);
 
             lock(s_loadfile)
-            {          
+            {
                 if(s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext();
@@ -2396,10 +2396,10 @@ namespace System.Reflection
             else if ((len > 2) && (codebase[0] == '\\') && (codebase[1] == '\\'))
                 return "file://" + codebase;
             else
-                return "file:///" + Path.GetFullPathInternal( codebase );
+                return "file:///" + Path.GetFullPath(codebase);
 #else
             else
-                return "file://" + Path.GetFullPathInternal( codebase );
+                return "file://" + Path.GetFullPath(codebase);
 #endif // !PLATFORM_UNIX
         }
 
