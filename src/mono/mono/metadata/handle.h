@@ -306,6 +306,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 TYPED_HANDLE_DECL (MonoString);
 TYPED_HANDLE_DECL (MonoArray);
 TYPED_HANDLE_DECL (MonoObject);
+TYPED_HANDLE_DECL (MonoException);
 
 #define NULL_HANDLE_STRING MONO_HANDLE_CAST(MonoString, NULL_HANDLE)
 
@@ -347,6 +348,9 @@ gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, uint32_t *gchandle);
 
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out))
+
+void
+mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
 
 G_END_DECLS
 
