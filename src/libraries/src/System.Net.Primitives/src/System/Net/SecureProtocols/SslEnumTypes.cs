@@ -11,11 +11,14 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]        
         Ssl2 = Interop.SChannel.SP_PROT_SSL2,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]        
         Ssl3 = Interop.SChannel.SP_PROT_SSL3,
         Tls = Interop.SChannel.SP_PROT_TLS1_0,
         Tls11 = Interop.SChannel.SP_PROT_TLS1_1,
         Tls12 = Interop.SChannel.SP_PROT_TLS1_2,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]        
         Default = Ssl3 | Tls
     }
 
