@@ -130,9 +130,64 @@ namespace System.Globalization
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
-        public String GetAscii(String unicode, int index, int count)
+        public string GetAscii(String unicode, int index, int count)
         {
-            throw null;
+            if (unicode == null) throw new ArgumentNullException(nameof(unicode));
+            if (index < 0 || count < 0)
+                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count),
+                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (index > unicode.Length)
+                throw new ArgumentOutOfRangeException(nameof(index),
+                    Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (index > unicode.Length - count)
+                throw new ArgumentOutOfRangeException(nameof(unicode),
+                      Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+            Contract.EndContractBlock();
+
+            // We're only using part of the string
+            unicode = unicode.Substring(index, count);
+
+            if (Environment.IsWindows8OrAbove)
+            {
+                return GetAsciiUsingOS(unicode);
+            }
+
+            // Check for ASCII only string, which will be unchanged
+            if (ValidateStd3AndAscii(unicode, UseStd3AsciiRules, true))
+            {
+                return unicode;
+            }
+
+            // Cannot be null terminated (normalization won't help us with this one, and
+            // may have returned false before checking the whole string above)
+            Contract.Assert(unicode.Length >= 1, "[IdnMapping.GetAscii]Expected 0 length strings to fail before now.");
+            if (unicode[unicode.Length - 1] <= 0x1f)
+            {
+                throw new ArgumentException(
+                    Environment.GetResourceString("Argument_InvalidCharSequence", unicode.Length-1 ),
+                    nameof(unicode));
+            }
+
+            // Have to correctly IDNA normalize the string and Unassigned flags
+            bool bHasLastDot = (unicode.Length > 0) && IsDot(unicode[unicode.Length - 1]);
+            unicode = unicode.Normalize((NormalizationForm)(m_bAllowUnassigned ?
+                ExtendedNormalizationForms.FormIdna : ExtendedNormalizationForms.FormIdnaDisallowUnassigned));
+
+            // Make sure we didn't normalize away something after a last dot
+            if ((!bHasLastDot) && unicode.Length > 0 && IsDot(unicode[unicode.Length - 1]))
+            {
+                throw new ArgumentException(Environment.GetResourceString(
+                    "Argument_IdnBadLabelSize"), nameof(unicode));
+            }
+
+            // May need to check Std3 rules again for non-ascii
+            if (UseStd3AsciiRules)
+            {
+                ValidateStd3AndAscii(unicode, true, false);
+            }
+
+            // Go ahead and encode it
+            return punycode_encode(unicode);
         }
 
 
