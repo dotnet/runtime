@@ -5,7 +5,7 @@
     "System.Resources.ResourceManager": "4.0.1",
     "System.Runtime": "4.1.0",
     "System.Reflection": "4.1.0",
-    "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-24715-03"
+    "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-24717-02"
   },
   "frameworks": {
     "netstandard1.0": {}
