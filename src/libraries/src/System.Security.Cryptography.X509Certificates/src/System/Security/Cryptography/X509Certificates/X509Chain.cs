@@ -31,6 +31,10 @@ namespace System.Security.Cryptography.X509Certificates
             _chainElements = new X509ChainElementCollection(_pal.ChainElements);
         }
 
+        public static X509Chain Create() {
+            return new X509Chain();
+        }
+
         public X509ChainElementCollection ChainElements
         {
             get
