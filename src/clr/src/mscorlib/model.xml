@@ -644,6 +644,8 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Collections.Generic.IDictionary&lt;TKey,TValue&gt;)" />
       <Member Name="#ctor(System.Collections.Generic.IDictionary&lt;TKey,TValue&gt;,System.Collections.Generic.IEqualityComparer&lt;TKey&gt;)" />
+      <Member Name="#ctor(System.Collections.Generic.IEnumerable&lt;System.Collections.Generic.KeyValuePair&lt;TKey,TValue&gt;&gt;)" />
+      <Member Name="#ctor(System.Collections.Generic.IEnumerable&lt;System.Collections.Generic.KeyValuePair&lt;TKey,TValue&gt;&gt;,System.Collections.Generic.IEqualityComparer&lt;TKey&gt;)" />
       <Member Name="#ctor(System.Collections.Generic.IEqualityComparer&lt;TKey&gt;)" />
       <Member Name="#ctor(System.Int32)" />
       <Member Name="#ctor(System.Int32,System.Collections.Generic.IEqualityComparer&lt;TKey&gt;)" />
