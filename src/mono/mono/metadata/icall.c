@@ -5499,12 +5499,29 @@ mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
 	return TRUE;
 }
 
-static MonoArray*
-mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **exceptions, MonoBoolean exportedOnly, MonoError *error)
+static void
+image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int table_idx, int count, MonoArrayHandle res, MonoArrayHandle exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
-	MonoReflectionType *rt;
-	MonoArray *res;
-	MonoClass *klass;
+	mono_error_init (error);
+	HANDLE_FUNCTION_ENTER ();
+	MonoError klass_error;
+	MonoClass *klass = mono_class_get_checked (image, table_idx | MONO_TOKEN_TYPE_DEF, &klass_error);
+
+	if (klass) {
+		MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &klass->byval_arg, error);
+		return_if_nok (error);
+
+		MONO_HANDLE_ARRAY_SETREF (res, count, rt);
+	} else {
+		MonoException *ex = mono_error_convert_to_exception (error);
+		MONO_HANDLE_ARRAY_SETRAW (exceptions, count, ex);
+	}
+	HANDLE_FUNCTION_RETURN ();
+}
+
+static MonoArrayHandle
+mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
+{
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
 	int i, count;
 
@@ -5520,29 +5537,32 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **excepti
 	} else {
 		count = tdef->rows - 1;
 	}
-	res = mono_array_new_checked (domain, mono_defaults.runtimetype_class, count, error);
-	return_val_if_nok (error, NULL);
-	*exceptions = mono_array_new_checked (domain, mono_defaults.exception_class, count, error);
-	return_val_if_nok (error, NULL);
+	MonoArrayHandle res = mono_array_new_handle (domain, mono_defaults.runtimetype_class, count, error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
+	MONO_HANDLE_ASSIGN (exceptions,  mono_array_new_handle (domain, mono_defaults.exception_class, count, error));
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 	count = 0;
 	for (i = 1; i < tdef->rows; ++i) {
-		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i + 1)) {
-			klass = mono_class_get_checked (image, (i + 1) | MONO_TOKEN_TYPE_DEF, error);
-			
-			if (klass) {
-				rt = mono_type_get_object_checked (domain, &klass->byval_arg, error);
-				return_val_if_nok (error, NULL);
-
-				mono_array_setref (res, count, rt);
-			} else {
-				MonoException *ex = mono_error_convert_to_exception (error);
-				mono_array_setref (*exceptions, count, ex);
-			}
+		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i+1)) {
+			image_get_type (domain, image, tdef, i + 1, count, res, exceptions, exportedOnly, error);
+			return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 			count++;
 		}
 	}
 	
 	return res;
+}
+
+static MonoArray*
+mono_module_get_types_legacy (MonoDomain *domain, MonoImage *image, MonoArray **exceptions_raw, MonoBoolean exportedOnly, MonoError *error)
+{
+	/* FIXME: don't use this function, update callers to use mono_module_get_types */
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoArrayHandle exceptions = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandle res = mono_module_get_types (domain, image, exceptions, exportedOnly, error);
+	mono_gc_wbarrier_generic_store (exceptions_raw, MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, exceptions)));
+	HANDLE_FUNCTION_RETURN_OBJ (res);
 }
 
 ICALL_EXPORT MonoArray*
@@ -5562,7 +5582,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	g_assert (!assembly_is_dynamic (assembly->assembly));
 	image = assembly->assembly->image;
 	table = &image->tables [MONO_TABLE_FILE];
-	res = mono_module_get_types (domain, image, &exceptions, exportedOnly, &error);
+	res = mono_module_get_types_legacy (domain, image, &exceptions, exportedOnly, &error); /* FIXME no _legacy */
 	if (mono_error_set_pending_exception (&error))
 		return NULL;
 
@@ -5576,7 +5596,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 				MonoArray *ex2;
 				MonoArray *res2;
 
-				res2 = mono_module_get_types (domain, loaded_image, &ex2, exportedOnly, &error);
+				res2 = mono_module_get_types_legacy (domain, loaded_image, &ex2, exportedOnly, &error); /* FIXME no _legacy */
 				if (mono_error_set_pending_exception (&error))
 					return NULL;
 
@@ -5686,37 +5706,32 @@ ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, Mo
 	return mono_assembly_name_parse_full (name, aname, TRUE, is_version_definited, is_token_defined);
 }
 
-ICALL_EXPORT MonoReflectionType*
-ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModule *module)
+ICALL_EXPORT MonoReflectionTypeHandle
+ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModuleHandle module, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionType *ret;
-	MonoDomain *domain = mono_object_domain (module); 
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (module);
+	MonoImage *image = MONO_HANDLE_GETVAL (module, image);
 	MonoClass *klass;
 
-	g_assert (module->image);
+	g_assert (image);
 
-	if (image_is_dynamic (module->image) && ((MonoDynamicImage*)(module->image))->initial_image)
+	MonoReflectionTypeHandle ret = MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
+
+	if (image_is_dynamic (image) && ((MonoDynamicImage*)image)->initial_image)
 		/* These images do not have a global type */
-		return NULL;
+		goto leave;
 
-	klass = mono_class_get_checked (module->image, 1 | MONO_TOKEN_TYPE_DEF, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
+	klass = mono_class_get_checked (image, 1 | MONO_TOKEN_TYPE_DEF, error);
+	if (!is_ok (error))
+		goto leave;
 
-	ret = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
-
+	ret = mono_type_get_object_handle (domain, &klass->byval_arg, error);
+leave:
 	return ret;
 }
 
 ICALL_EXPORT void
-ves_icall_System_Reflection_Module_Close (MonoReflectionModule *module)
+ves_icall_System_Reflection_Module_Close (MonoReflectionModuleHandle module, MonoError *error)
 {
 	/*if (module->image)
 		mono_image_close (module->image);*/
@@ -5726,7 +5741,7 @@ ICALL_EXPORT MonoStringHandle
 ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModuleHandle refmodule, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (refmodule);
-	MonoImage *image = MONO_HANDLE_RAW (refmodule)->image;
+	MonoImage *image = MONO_HANDLE_GETVAL (refmodule, image);
 
 	g_assert (image);
 	return mono_string_new_handle (domain, image->guid, error);
@@ -5734,20 +5749,20 @@ ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModuleHandle r
 
 #ifndef HOST_WIN32
 static inline gpointer
-mono_icall_module_get_hinstance (MonoReflectionModule *module)
+mono_icall_module_get_hinstance (MonoReflectionModuleHandle module)
 {
 	return (gpointer) (-1);
 }
 #endif /* HOST_WIN32 */
 
 ICALL_EXPORT gpointer
-ves_icall_System_Reflection_Module_GetHINSTANCE (MonoReflectionModule *module)
+ves_icall_System_Reflection_Module_GetHINSTANCE (MonoReflectionModuleHandle module, MonoError *error)
 {
 	return mono_icall_module_get_hinstance (module);
 }
 
 ICALL_EXPORT void
-ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine)
+ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine, MonoError *error)
 {
 	if (image_is_dynamic (image)) {
 		MonoDynamicImage *dyn = (MonoDynamicImage*)image;
@@ -5761,34 +5776,34 @@ ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind,
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_Reflection_Module_GetMDStreamVersion (MonoImage *image)
+ves_icall_System_Reflection_Module_GetMDStreamVersion (MonoImage *image, MonoError *error)
 {
 	return (image->md_version_major << 16) | (image->md_version_minor);
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *module)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModuleHandle module, MonoError *error)
 {
-	MonoError error;
-	MonoArray *exceptions;
-	int i;
+	mono_error_init (error);
 
-	if (!module->image) {
-		MonoArray *arr = mono_array_new_checked (mono_object_domain (module), mono_defaults.runtimetype_class, 0, &error);
-		mono_error_set_pending_exception (&error);
+	MonoImage *image = MONO_HANDLE_GETVAL (module, image);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (module);
+
+	if (!image) {
+		MonoArrayHandle arr = mono_array_new_handle (domain, mono_defaults.runtimetype_class, 0, error);
 		return arr;
 	} else {
-		MonoArray *res;
+		MonoArrayHandle exceptions = MONO_HANDLE_NEW (MonoArray, NULL);
+		MonoArrayHandle res = mono_module_get_types (domain, image, exceptions, FALSE, error);
+		return_val_if_nok (error, MONO_HANDLE_CAST(MonoArray, NULL_HANDLE));
 
-		res = mono_module_get_types (mono_object_domain (module), module->image, &exceptions, FALSE, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-
-		for (i = 0; i < mono_array_length (exceptions); ++i) {
-			MonoException *ex = mono_array_get (exceptions, MonoException *, i);
-			if (ex) {
-				mono_set_pending_exception (ex);
-				return NULL;
+		int n = mono_array_handle_length (exceptions);
+		MonoExceptionHandle ex = MONO_HANDLE_NEW (MonoException, NULL);
+		for (int i = 0; i < n; ++i) {
+			MONO_HANDLE_ARRAY_GETREF(ex, exceptions, i);
+			if (!MONO_HANDLE_IS_NULL (ex)) {
+				mono_error_set_exception_handle (error, ex);
+				return MONO_HANDLE_CAST(MonoArray, NULL_HANDLE);
 			}
 		}
 		return res;

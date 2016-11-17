@@ -20,7 +20,7 @@ const gchar *
 mono_icall_get_file_path_prefix (const gchar *path);
 
 gpointer
-mono_icall_module_get_hinstance (MonoReflectionModule *module);
+mono_icall_module_get_hinstance (MonoReflectionModuleHandle module);
 
 MonoString *
 mono_icall_get_machine_name (void);
