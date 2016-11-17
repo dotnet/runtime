@@ -6421,6 +6421,7 @@
       <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Runtime.CompilerServices.RuntimeHelpers">
+      <Member Name="Equals(System.Object,System.Object)" />
       <Member Name="GetUninitializedObject(System.Type)" />
       <Member Name="EnsureSufficientExecutionStack" />
       <Member Name="TryEnsureSufficientExecutionStack" />
