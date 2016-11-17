@@ -295,7 +295,7 @@ def main(args):
       print std_out
 
    if std_out is not None and isinstance(std_out, str):
-      if len(std_out.split("TestID")) > 0:
+      if len(std_out.split("TestID")) > 1:
          sys.exit(1)
 
    # This run has been successful.
