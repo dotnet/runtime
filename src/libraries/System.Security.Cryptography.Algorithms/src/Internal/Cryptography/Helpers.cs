@@ -118,6 +118,82 @@ namespace Internal.Cryptography
             }
             return oddParityKey;
         }
+
+        public static string DiscardWhiteSpaces(string inputBuffer)
+        {
+            int iCount = 0;
+
+            foreach (char ch in inputBuffer)
+            {
+                if (char.IsWhiteSpace(ch))
+                {
+                    iCount++;
+                }
+            }
+
+            if (iCount == 0)
+            {
+                return inputBuffer;
+            }
+
+            char[] output = new char[inputBuffer.Length - iCount];
+            iCount = 0;
+            foreach (char ch in inputBuffer)
+            {
+                if (!char.IsWhiteSpace(ch))
+                {
+                    output[iCount++] = ch;
+                }
+            }
+
+            return new string(output);
+        }
+
+        /// <summary>
+        /// Return an integer from a variable length BigEndian array
+        /// </summary>
+        public static int FromBigEndian(byte[] input)
+        {
+            int output = 0;
+
+            foreach (byte b in input)
+            {
+                output <<= 8;
+                output += b;
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Return a variable length BigEndian array
+        /// </summary>
+        public static byte[] ToBigEndian(int input)
+        {
+            byte[] output;
+            byte b0 = (byte)(input >> 24);
+            byte b1 = (byte)(input >> 16);
+            byte b2 = (byte)(input >> 8);
+            byte b3 = (byte)(input >> 0);
+
+            if (b0 != 0)
+            {
+                output = new byte[4] { b0, b1, b2, b3 };
+            }
+            else if (b1 != 0)
+            {
+                output = new byte[3] { b1, b2, b3 };
+            }
+            else if (b2 != 0)
+            {
+                output = new byte[2] { b2, b3 };
+            }
+            else
+            {
+                output = new byte[1] { b3 };
+            }
+
+            return output;
+        }
     }
 }
-

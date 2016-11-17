@@ -46,10 +46,41 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Dispose()
+        public virtual String SignatureAlgorithm
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public virtual String KeyExchangeAlgorithm
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public virtual void FromXmlString(string xmlString)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string ToXmlString(bool includePrivateParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Clear()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public void Dispose()
+        {
+            Clear();
         }
 
         protected virtual void Dispose(bool disposing)
