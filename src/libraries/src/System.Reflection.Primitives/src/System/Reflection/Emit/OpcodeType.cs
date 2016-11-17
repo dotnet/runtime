@@ -8,6 +8,7 @@ namespace System.Reflection.Emit
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum OpCodeType
     {
+        Annotation = 0,
         Macro = 1,
         Nternal = 2,
         Objmodel = 3,
