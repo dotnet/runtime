@@ -4533,21 +4533,22 @@ void CodeGen::genStoreInd(GenTreePtr node)
                     assert(rmwSrc == data->gtGetOp2());
                     genCodeForShiftRMW(storeInd);
                 }
-                else if (data->OperGet() == GT_ADD && rmwSrc->IsIntegralConst(1))
+                else if (!compiler->opts.compDbgCode && data->OperGet() == GT_ADD &&
+                         (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
                 {
-                    // Generate inc [mem] instead of "add [mem], 1".
-                    // Note that we don't need to check for GT_SUB of -1 because
-                    // global morph would transform it to GT_ADD of 1.
+                    // Generate "inc/dec [mem]" instead of "add/sub [mem], 1".
+                    //
+                    // Notes:
+                    //  1) Global morph transforms GT_SUB(x, +/-1) into GT_ADD(x, -/+1).
+                    //  2) TODO-AMD64: Debugger routine NativeWalker::Decode() runs into
+                    //     an assert while decoding ModR/M byte of "inc dword ptr [rax]".
+                    //     It is not clear whether Decode() can handle all possible
+                    //     addr modes with inc/dec.  For this reason, inc/dec [mem]
+                    //     is not generated while generating debuggable code.  Update
+                    //     the above if condition once Decode() routine is fixed.
                     assert(rmwSrc->isContainedIntOrIImmed());
-                    getEmitter()->emitInsRMW(INS_inc, emitTypeSize(storeInd), storeInd);
-                }
-                else if (data->OperGet() == GT_ADD && rmwSrc->IsIntegralConst(-1))
-                {
-                    // Generate dec [mem] instead of "add [mem], -1".
-                    // Note that we don't need to check for GT_SUB of 1 because
-                    // global morph would transform it to GT_ADD of -1.
-                    assert(rmwSrc->isContainedIntOrIImmed());
-                    getEmitter()->emitInsRMW(INS_dec, emitTypeSize(storeInd), storeInd);
+                    instruction ins = rmwSrc->IsIntegralConst(1) ? INS_inc : INS_dec;
+                    getEmitter()->emitInsRMW(ins, emitTypeSize(storeInd), storeInd);
                 }
                 else
                 {
