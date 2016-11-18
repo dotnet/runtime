@@ -597,6 +597,12 @@ mono_arch_cleanup (void)
 {
 }
 
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
+}
+
 /*
  * This function returns the optimizations supported on this cpu.
  */

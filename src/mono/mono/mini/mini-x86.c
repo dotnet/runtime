@@ -2244,7 +2244,7 @@ static int tls_gs_offset;
 #endif
 
 gboolean
-mono_x86_have_tls_get (void)
+mono_arch_have_fast_tls (void)
 {
 #ifdef TARGET_MACH
 	static gboolean have_tls_get = FALSE;

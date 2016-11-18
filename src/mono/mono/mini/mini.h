@@ -2741,6 +2741,7 @@ gboolean  mono_arch_tail_call_supported         (MonoCompile *cfg, MonoMethodSig
 int       mono_arch_translate_tls_offset        (int offset);
 gboolean  mono_arch_opcode_supported            (int opcode);
 void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func);
+gboolean  mono_arch_have_fast_tls               (void);
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 gboolean  mono_arch_is_soft_float               (void);

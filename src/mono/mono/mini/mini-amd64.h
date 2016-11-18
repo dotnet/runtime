@@ -370,7 +370,9 @@ typedef struct {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
+#ifndef HOST_WIN32
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
+#endif
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 #define MONO_ARCH_IMT_REG AMD64_R10
@@ -464,6 +466,9 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 
 guint64
 mono_amd64_get_original_ip (void);
+
+gboolean
+mono_amd64_have_fast_tls (void);
 
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot);

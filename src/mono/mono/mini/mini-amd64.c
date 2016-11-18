@@ -3414,22 +3414,22 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 
 #endif /* DISABLE_JIT */
 
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 static int tls_gs_offset;
 #endif
 
 gboolean
-mono_amd64_have_tls_get (void)
+mono_arch_have_fast_tls (void)
 {
 #ifdef TARGET_MACH
-	static gboolean have_tls_get = FALSE;
+	static gboolean have_fast_tls = FALSE;
 	static gboolean inited = FALSE;
+	guint8 *ins;
 
 	if (inited)
-		return have_tls_get;
+		return have_fast_tls;
 
-#if MONO_HAVE_FAST_TLS
-	guint8 *ins = (guint8*)pthread_getspecific;
+	ins = (guint8*)pthread_getspecific;
 
 	/*
 	 * We're looking for these two instructions:
@@ -3437,7 +3437,7 @@ mono_amd64_have_tls_get (void)
 	 * mov    %gs:[offset](,%rdi,8),%rax
 	 * retq
 	 */
-	have_tls_get = ins [0] == 0x65 &&
+	have_fast_tls = ins [0] == 0x65 &&
 		       ins [1] == 0x48 &&
 		       ins [2] == 0x8b &&
 		       ins [3] == 0x04 &&
@@ -3459,8 +3459,8 @@ mono_amd64_have_tls_get (void)
 	 * popq   %rbp
 	 * retq
 	 */
-	if (!have_tls_get) {
-		have_tls_get = ins [0] == 0x55 &&
+	if (!have_fast_tls) {
+		have_fast_tls = ins [0] == 0x55 &&
 			       ins [1] == 0x48 &&
 			       ins [2] == 0x89 &&
 			       ins [3] == 0xe5 &&
@@ -3477,26 +3477,13 @@ mono_amd64_have_tls_get (void)
 
 		tls_gs_offset = ins[9];
 	}
-#endif
-
 	inited = TRUE;
 
-	return have_tls_get;
+	return have_fast_tls;
 #elif defined(TARGET_ANDROID)
 	return FALSE;
 #else
 	return TRUE;
-#endif
-}
-
-int
-mono_amd64_get_tls_gs_offset (void)
-{
-#ifdef TARGET_OSX
-	return tls_gs_offset;
-#else
-	g_assert_not_reached ();
-	return -1;
 #endif
 }
 
@@ -3512,7 +3499,7 @@ mono_amd64_get_tls_gs_offset (void)
  *
  * Returns: a pointer to the end of the stored code
  */
-guint8*
+static guint8*
 mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
 #ifdef TARGET_WIN32
@@ -3532,7 +3519,7 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 		amd64_mov_reg_membase (code, dreg, dreg, (tls_offset * 8) - 0x200, 8);
 		amd64_patch (buf [0], code);
 	}
-#elif defined(__APPLE__)
+#elif defined(TARGET_MACH)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_reg_mem (code, dreg, tls_gs_offset + (tls_offset * 8), 8);
 #else
@@ -3548,111 +3535,12 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
-#ifdef TARGET_WIN32
-
-#define MAX_TEB_TLS_SLOTS 64
-#define TEB_TLS_SLOTS_OFFSET 0x1480
-#define TEB_TLS_EXPANSION_SLOTS_OFFSET 0x1780
-
 static guint8*
-emit_tls_get_reg_windows (guint8* code, int dreg, int offset_reg)
-{
-	int tmp_reg = -1;
-	guint8 * more_than_64_slots = NULL;
-	guint8 * empty_slot = NULL;
-	guint8 * tls_get_reg_done = NULL;
-	
-	//Use temporary register for offset calculation?
-	if (dreg == offset_reg) {
-		tmp_reg = dreg == AMD64_RAX ? AMD64_RCX : AMD64_RAX;
-		amd64_push_reg (code, tmp_reg);
-		amd64_mov_reg_reg (code, tmp_reg, offset_reg, sizeof (gpointer));
-		offset_reg = tmp_reg;
-	}
-
-	//TEB TLS slot array only contains MAX_TEB_TLS_SLOTS items, if more is used the expansion slots must be addressed.
-	amd64_alu_reg_imm (code, X86_CMP, offset_reg, MAX_TEB_TLS_SLOTS);
-	more_than_64_slots = code;
-	amd64_branch8 (code, X86_CC_GE, 0, TRUE);
-
-	//TLS slot array, _TEB.TlsSlots, is at offset TEB_TLS_SLOTS_OFFSET and index is offset * 8 in Windows 64-bit _TEB structure.
-	amd64_shift_reg_imm (code, X86_SHL, offset_reg, 3);
-	amd64_alu_reg_imm (code, X86_ADD, offset_reg, TEB_TLS_SLOTS_OFFSET);
-
-	//TEB pointer is stored in GS segment register on Windows x64. TLS slot is located at calculated offset from that pointer.
-	x86_prefix (code, X86_GS_PREFIX);
-	amd64_mov_reg_membase (code, dreg, offset_reg, 0, sizeof (gpointer));
-		
-	tls_get_reg_done = code;
-	amd64_jump8 (code, 0);
-
-	amd64_patch (more_than_64_slots, code);
-
-	//TLS expansion slots, _TEB.TlsExpansionSlots, is at offset TEB_TLS_EXPANSION_SLOTS_OFFSET in Windows 64-bit _TEB structure.
-	x86_prefix (code, X86_GS_PREFIX);
-	amd64_mov_reg_mem (code, dreg, TEB_TLS_EXPANSION_SLOTS_OFFSET, sizeof (gpointer));
-	
-	//Check for NULL in _TEB.TlsExpansionSlots.
-	amd64_test_reg_reg (code, dreg, dreg);
-	empty_slot = code;
-	amd64_branch8 (code, X86_CC_EQ, 0, TRUE);
-	
-	//TLS expansion slots are at index offset into the expansion array.
-	//Calculate for the MAX_TEB_TLS_SLOTS offsets, since the interessting offset is offset_reg - MAX_TEB_TLS_SLOTS.
-	amd64_alu_reg_imm (code, X86_SUB, offset_reg, MAX_TEB_TLS_SLOTS);
-	amd64_shift_reg_imm (code, X86_SHL, offset_reg, 3);
-	
-	amd64_mov_reg_memindex (code, dreg, dreg, 0, offset_reg, 0, sizeof (gpointer));
-	
-	amd64_patch (empty_slot, code);
-	amd64_patch (tls_get_reg_done, code);
-
-	if (tmp_reg != -1)
-		amd64_pop_reg (code, tmp_reg);
-
-	return code;
-}
-
-#endif
-
-static guint8*
-emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
-{
-	/* offset_reg contains a value translated by mono_arch_translate_tls_offset () */
-#ifdef TARGET_OSX
-	if (dreg != offset_reg)
-		amd64_mov_reg_reg (code, dreg, offset_reg, sizeof (mgreg_t));
-	amd64_prefix (code, X86_GS_PREFIX);
-	amd64_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
-#elif defined(__linux__)
-	int tmpreg = -1;
-
-	if (dreg == offset_reg) {
-		/* Use a temporary reg by saving it to the redzone */
-		tmpreg = dreg == AMD64_RAX ? AMD64_RCX : AMD64_RAX;
-		amd64_mov_membase_reg (code, AMD64_RSP, -8, tmpreg, 8);
-		amd64_mov_reg_reg (code, tmpreg, offset_reg, sizeof (gpointer));
-		offset_reg = tmpreg;
-	}
-	x86_prefix (code, X86_FS_PREFIX);
-	amd64_mov_reg_mem (code, dreg, 0, 8);
-	amd64_mov_reg_memindex (code, dreg, dreg, 0, offset_reg, 0, 8);
-	if (tmpreg != -1)
-		amd64_mov_reg_membase (code, tmpreg, AMD64_RSP, -8, 8);
-#elif defined(TARGET_WIN32)
-	code = emit_tls_get_reg_windows (code, dreg, offset_reg);
-#else
-	g_assert_not_reached ();
-#endif
-	return code;
-}
-
-static guint8*
-amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
+mono_amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
 {
 #ifdef TARGET_WIN32
 	g_assert_not_reached ();
-#elif defined(__APPLE__)
+#elif defined(TARGET_MACH)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_mem_reg (code, tls_gs_offset + (tls_offset * 8), sreg, 8);
 #else
@@ -3663,22 +3551,6 @@ amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
 	return code;
 }
 
-static guint8*
-amd64_emit_tls_set_reg (guint8 *code, int sreg, int offset_reg)
-{
-	/* offset_reg contains a value translated by mono_arch_translate_tls_offset () */
-#ifdef TARGET_WIN32
-	g_assert_not_reached ();
-#elif defined(__APPLE__)
-	x86_prefix (code, X86_GS_PREFIX);
-	amd64_mov_membase_reg (code, offset_reg, 0, sreg, 8);
-#else
-	x86_prefix (code, X86_FS_PREFIX);
-	amd64_mov_membase_reg (code, offset_reg, 0, sreg, 8);
-#endif
-	return code;
-}
- 
 /*
  * emit_setup_lmf:
  *
@@ -5681,15 +5553,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_amd64_emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
 		}
-		case OP_TLS_GET_REG:
-			code = emit_tls_get_reg (code, ins->dreg, ins->sreg1);
-			break;
 		case OP_TLS_SET: {
-			code = amd64_emit_tls_set (code, ins->sreg1, ins->inst_offset);
-			break;
-		}
-		case OP_TLS_SET_REG: {
-			code = amd64_emit_tls_set_reg (code, ins->sreg1, ins->sreg2);
+			code = mono_amd64_emit_tls_set (code, ins->sreg1, ins->inst_offset);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -7187,11 +7052,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (method->save_lmf) {
 		/* check if we need to restore protection of the stack after a stack overflow */
-		/* FIXME */
-#if 0
-		if (!cfg->compile_aot && mono_get_jit_tls_offset () != -1) {
+		if (!cfg->compile_aot && mono_arch_have_fast_tls () && mono_tls_get_tls_offset (TLS_KEY_JIT_TLS) != -1) {
 			guint8 *patch;
-			code = mono_amd64_emit_tls_get (code, AMD64_RCX, mono_get_jit_tls_offset ());
+			code = mono_amd64_emit_tls_get (code, AMD64_RCX, mono_tls_get_tls_offset (TLS_KEY_JIT_TLS));
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */
@@ -7205,7 +7068,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
-#endif
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
 			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
 		}

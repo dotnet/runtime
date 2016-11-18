@@ -697,6 +697,12 @@ mono_arch_cleanup (void)
 	mono_os_mutex_destroy (&mini_arch_mutex);
 }
 
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
+}
+
 /*
  * This function returns the optimizations supported on this cpu.
  */

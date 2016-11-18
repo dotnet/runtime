@@ -322,6 +322,12 @@ mono_arm_patchable_bl (guint8 *code, int cond)
 	return code;
 }
 
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
+}
+
 /*
  * emit_save_lmf:
  *

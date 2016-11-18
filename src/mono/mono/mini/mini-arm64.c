@@ -745,6 +745,12 @@ mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, int dreg,
 	return emit_aotconst_full (NULL, (MonoJumpInfo**)ji, code, code_start, dreg, patch_type, data);
 }
 
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
+}
+
 static guint8*
 emit_tls_get (guint8 *code, int dreg, int tls_offset)
 {

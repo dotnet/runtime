@@ -1357,6 +1357,24 @@ mono_arch_cleanup (void)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- mono_arch_have_fast_tls                           */
+/*                                                                  */
+/* Function	- Returns whether we use fast inlined thread local  */
+/*                storage managed access, instead of falling back   */
+/*                to native code.                                   */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- mono_arch_cpu_optimizations                       */
 /*                                                                  */
 /* Function	- Returns the optimizations supported on this CPU   */

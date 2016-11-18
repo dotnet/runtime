@@ -67,6 +67,7 @@ mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 void mono_tls_init_gc_keys (void);
 void mono_tls_init_runtime_keys (void);
 void mono_tls_free_keys (void);
+gint32 mono_tls_get_tls_offset (MonoTlsKey key);
 gpointer mono_tls_get_tls_getter (MonoTlsKey key, gboolean name);
 gpointer mono_tls_get_tls_setter (MonoTlsKey key, gboolean name);
 gpointer mono_tls_get_tls_addr (MonoTlsKey key);
