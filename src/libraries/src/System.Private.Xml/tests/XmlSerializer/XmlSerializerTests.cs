@@ -2600,6 +2600,24 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         MyXmlTextParser text = new MyXmlTextParser(reader);
     }
 
+    [Fact]
+    public static void SoapSchemaMemberTest()
+    {
+        string ns = "http://www.w3.org/2001/XMLSchema";
+        SoapSchemaMember member = new SoapSchemaMember();
+        member.MemberName = "System.DateTime";
+        member.MemberType = new XmlQualifiedName("dateTime", ns);
+        SoapSchemaMember[] members = new SoapSchemaMember[] { member };
+        var schemas = new XmlSchemas();
+        XmlSchemaImporter importer = new XmlSchemaImporter(schemas);
+        string name = "mydatetime";
+        var mapping = importer.ImportMembersMapping(name, ns, members);
+        Assert.NotNull(mapping);
+        Assert.Equal(name, mapping.ElementName);
+        Assert.Equal(name, mapping.XsdElementName);
+        Assert.Equal(1, mapping.Count);
+    }
+
     private static Stream GenerateStreamFromString(string s)
     {
         var stream = new MemoryStream();
