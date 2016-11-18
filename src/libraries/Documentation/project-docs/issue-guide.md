@@ -14,7 +14,7 @@ Sometimes after debate, we'll decide an issue isn't a good fit for CoreFx.  In t
 
 ### Labels
 We use GitHub [labels](https://github.com/dotnet/corefx/labels) on our issues in order to classify them.  We have the following categories per issue:
-* **Area**: These area-&#42; labels (e.g. [area-System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)) call out the assembly or assemblies the issue applies to. In addition to labels per assembly, we have a few other area labels: [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure), for issues that relate to our build or test infrastructure, and [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta) for issues that deal with the repository itself, the direction of the .NET Core Platform, our processes, etc. See [full list of areas](#areas).
+* **Area**: These area-&#42; labels (e.g. [area-System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)) call out the assembly or assemblies the issue applies to. In addition to labels per assembly, we have a few other area labels: [area-Infrastructure](https://github.com/dotnet/corefx/labels/area-Infrastructure), for issues that relate to our build or test infrastructure, and [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta) for issues that deal with the repository itself, the direction of the .NET Core Platform, our processes, etc. See [full list of areas](#areas).
 * **Issue Type**: These labels classify the type of issue.  We use the following types:
  * [bug](https://github.com/dotnet/corefx/labels/bug): Bugs in an assembly.
  * api-&#42; ([api-approved](https://github.com/dotnet/corefx/labels/api-approved), [api-needs-work](https://github.com/dotnet/corefx/labels/api-needs-work)): Issues which would add APIs to an assembly (see [API Review process](api-review-process.md) for details).
@@ -38,12 +38,12 @@ We assign each issue to assignee, when the assignee is ready to pick up the work
 Note: This is a new scheme introduced in 2016/9.  The old scheme used assignees as area owners.  We will migrate issues to the new scheme throughout 2016.
 
 ### Areas
-Areas are tracked by labels area-&#42; (e.g. area-System.Collections), or Infrastructure. Each area typically corresponds to one or more contract assemblies.
+Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area typically corresponds to one or more contract assemblies.
 
 | Area                                                                                          | Owners / experts | Description |
 |-----------------------------------------------------------------------------------------------|------------------|-------------|
+| [area-Infrastructure](https://github.com/dotnet/corefx/labels/area-Infrastructure)                      | [@mellinoe](https://github.com/mellinoe), [@ericstj](https://github.com/ericstj), [@weshaggard](https://github.com/weshaggard) |Covers:<ul><li>Packaging</li><li>Build and test infra</li><li>VS intergation</li></ul><br/>**Pending triage** |
 | [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                | [@tarekgh](https://github.com/tarekgh) | Issues without clear association to any specific API/contract, e.g. <ul><li>new contract proposals</li><li>cross-cutting code/test pattern changes (e.g. FxCop failures)</li><li>project-wide docs</li></ul> **Pending triage** |
-| [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      | [@mellinoe](https://github.com/mellinoe), [@ericstj](https://github.com/ericstj), [@weshaggard](https://github.com/weshaggard) |Covers:<ul><li>Packaging</li><li>Build and test infra</li><li>VS intergation</li></ul><br/>**Pending triage** |
 | [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)              | [@shmao](https://github.com/shmao), [@zhenlan](https://github.com/zhenlan) | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerialization</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
 | **System contract assemblies** | | |
 | [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           | [@AlexGhiondea](https://github.com/AlexGhiondea) | **Pending triage** |  |
