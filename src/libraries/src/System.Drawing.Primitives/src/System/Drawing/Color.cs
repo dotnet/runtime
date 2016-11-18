@@ -612,26 +612,10 @@ namespace System.Drawing
         }
 
         public static bool operator ==(Color left, Color right)
-        {
-            if (left.value == right.value
+            => left.value == right.value
                 && left.state == right.state
-                && left.knownColor == right.knownColor)
-            {
-                if (left.name == right.name)
-                {
-                    return true;
-                }
-
-                if (ReferenceEquals(left.name, null) || ReferenceEquals(right.name, null))
-                {
-                    return false;
-                }
-
-                return left.name.Equals(right.name);
-            }
-
-            return false;
-        }
+                && left.knownColor == right.knownColor
+                && left.name == right.name;
 
         public static bool operator !=(Color left, Color right)
         {
