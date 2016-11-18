@@ -649,4 +649,5 @@ MembersMustExist : Member 'System.TimeZone.CurrentTimeZone.get()' does not exist
 MembersMustExist : Member 'System.TimeZone.ToLocalTime(System.DateTime)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeZone.CurrentTimeZone.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeZone.ToLocalTime(System.DateTime)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 650
+TypesMustExist : Type 'System.Globalization.IdnMapping' does not exist in the implementation but it does exist in the contract.
+Total Issues: 651
