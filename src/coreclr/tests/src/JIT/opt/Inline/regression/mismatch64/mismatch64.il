@@ -5,6 +5,10 @@
 // When the jit considers inlining B it can get itself into
 // trouble because of the type mismatch. This test tries to
 // ensure the jit backs out of the inline successfully.
+//
+// By default (when no args are passed) execution avoids
+// the problematic callsite, and the app should run without
+// failing.
 
 .assembly extern mscorlib { }
 .assembly extern System.Console
@@ -39,7 +43,7 @@
    ldarg.0
    ldlen
    ldc.i4 1
-   bgt DONE
+   blt DONE
    newobj instance void F::.ctor()
    ldc.i8 44
    call  int64 B(int64, int64)
