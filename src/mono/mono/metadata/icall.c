@@ -4913,10 +4913,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
 			mono_assembly_load_reference (assembly->assembly->image, i - 1);
 			if (assembly->assembly->image->references [i - 1] == (gpointer)-1) {
-				char *msg = g_strdup_printf ("Assembly %d referenced from assembly %s not found ", i - 1, assembly->assembly->image->name);
-				MonoException *ex = mono_get_exception_file_not_found2 (msg, NULL);
-				g_free (msg);
-				mono_set_pending_exception (ex);
+				mono_error_set_assembly_load (&error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->assembly->image->name);
+				mono_error_set_pending_exception (&error);
 				return FALSE;
 			}
 			MonoReflectionAssembly *assm_obj;
@@ -5057,8 +5055,9 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 			if (mono_error_set_pending_exception (&error))
 				return NULL;
 			if (!m) {
-				MonoString *fname = mono_string_new (mono_domain_get (), mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
-				mono_set_pending_exception (mono_get_exception_file_not_found2 (NULL, fname));
+				const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
+				mono_error_set_assembly_load (&error, g_strdup (filename), "%s", "");
+				mono_error_set_pending_exception (&error);
 				return NULL;
 			}
 			MonoReflectionModule *rm = mono_module_get_object_checked (domain, m, &error);
@@ -5429,14 +5428,11 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	image = mono_image_open (filename, &status);
 
 	if (!image){
-		MonoException *exc;
-
-		g_free (filename);
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			exc = mono_get_exception_bad_image_format2 (NULL, fname);
+			mono_error_set_bad_image_name (error, g_strdup (filename), "%s", "");
 		else
-			exc = mono_get_exception_file_not_found2 (NULL, fname);
-		mono_set_pending_exception (exc);
+			mono_error_set_assembly_load (error, g_strdup (filename), "%s", "");
+		g_free (filename);
 		return;
 	}
 

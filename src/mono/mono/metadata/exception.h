@@ -106,6 +106,7 @@ mono_get_exception_io                    (const char *msg);
 MONO_API MonoException *
 mono_get_exception_file_not_found        (MonoString *fname);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_file_not_found2       (const char *msg, MonoString *fname);
 
@@ -125,6 +126,7 @@ mono_get_exception_appdomain_unloaded (void);
 MONO_API MonoException *
 mono_get_exception_bad_image_format (const char *msg);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname);
 
