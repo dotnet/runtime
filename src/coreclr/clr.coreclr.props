@@ -79,14 +79,6 @@
      -->
     <FeatureImplicitTls Condition="'$(TargetArch)' == 'arm64'">true</FeatureImplicitTls>
     <FeatureSvrGc Condition="'$(TargetArch)' != 'arm'">true</FeatureSvrGc>
-    <FeatureCoreFxFileStream>true</FeatureCoreFxFileStream>
-    <FeatureCoreFxShim>true</FeatureCoreFxShim>
-    <FeatureCoreFxOverlapped>true</FeatureCoreFxOverlapped>
-    <FeatureCoreFxPath>true</FeatureCoreFxPath>
-    <FeatureCoreFxInteropServices>true</FeatureCoreFxInteropServices>
-
-    <!-- We only want to use the CoreFx implementation of SecureString when we are not building the legacy surface area -->
-    <FeatureCoreFxSecureString Condition="'$(FeatureLegacySurface)'==''" >true</FeatureCoreFxSecureString>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -111,12 +103,5 @@
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
     <FeatureUseLcid>true</FeatureUseLcid>
     <FeatureImplicitLongPath>true</FeatureImplicitLongPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetsUnix)' != 'true' and '$(ClrProduct)' == 'core_clr'">
-    <FeatureCoreFxWindowsInterop>true</FeatureCoreFxWindowsInterop>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)' == 'true' and '$(ClrProduct)' == 'core_clr'">
-    <FeatureCoreFxUnixInterop>true</FeatureCoreFxUnixInterop>
   </PropertyGroup>
 </Project>
