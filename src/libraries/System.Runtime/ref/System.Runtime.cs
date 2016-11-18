@@ -5794,6 +5794,7 @@ namespace System.Reflection
     public partial class StrongNameKeyPair : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public StrongNameKeyPair(byte[] keyPairArray) { }
+        public StrongNameKeyPair(System.IO.FileStream keyPairFile) { }
         protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public StrongNameKeyPair(string keyPairContainer) { }
         public byte[] PublicKey { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
