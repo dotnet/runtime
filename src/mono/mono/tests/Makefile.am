@@ -50,6 +50,10 @@ if INSTALL_MOBILE_STATIC
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_STATIC,MOBILE_LEGACY 
 endif
 
+if INSTALL_AOT_HYBRID
+PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY 
+endif
+
 MCS_NO_LIB = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -debug \
 	-noconfig -nologo \
 	-nowarn:0162 -nowarn:0168 -nowarn:0219 -nowarn:0414 -nowarn:0618 \
@@ -835,6 +839,12 @@ PROFILE_DISABLED_TESTS += \
 	bug-515884.exe
 endif
 
+if INSTALL_AOT_HYBRID
+PROFILE_DISABLED_TESTS += \
+	bug-80307.exe \
+	namedmutex-destroy-race.exe
+endif
+
 AOT_DISABLED_TESTS= \
 	constraints-load.exe
 
@@ -906,7 +916,9 @@ EXTRA_DIST=test-driver test-runner.cs $(TEST_CS_SRC_DIST) $(TEST_IL_SRC) \
 	$(ILASM) -out:$@ $<
 
 if !INSTALL_MOBILE_STATIC
+if !INSTALL_AOT_HYBRID
 TEST_DRIVER_HARD_KILL_FEATURE=-r:Mono.Posix.dll
+endif
 endif
 
 if INSTALL_MOBILE_STATIC

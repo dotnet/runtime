@@ -18,7 +18,7 @@ using System.Xml;
 using System.Text;
 using System.Text.RegularExpressions;
 
-#if !MOBILE_STATIC
+#if !MOBILE_STATIC && !MOBILE
 using Mono.Unix.Native;
 #endif
 
@@ -369,7 +369,7 @@ public class TestRunner
 							timedout.Add (data);
 						}
 
-#if !MOBILE_STATIC
+#if !MOBILE_STATIC && !MOBILE
 						// Force the process to print a thread dump
 						try {
 							Syscall.kill (p.Id, Signum.SIGQUIT);

@@ -455,6 +455,8 @@ public class Tests
 
 			#region Runtime Callable Wrapper Tests
 
+#if !MOBILE
+
 			IntPtr pUnk;
 			if (mono_test_marshal_com_object_create (out pUnk) != 0)
 				return 145;
@@ -540,6 +542,8 @@ public class Tests
 
 			if (TestITest (itest) != 0)
 				return 176;
+
+#endif
 
 			#endregion // Runtime Callable Wrapper Tests
 
