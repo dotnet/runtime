@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -27,30 +28,39 @@ namespace System.Linq.Expressions.Tests
             MethodInfo method = d.GetMethodInfo();
             ITypeFactory typeFactory = GetTypeFactory(expression);
 
-            var sw = new StringWriter();
-
-            AppendIL(method, sw, typeFactory);
-
-            if (appendInnerLambdas)
+            var oldCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            try
             {
-                var closure = (Closure)d.Target;
+                var sw = new StringWriter();
 
-                int i = 0;
-                foreach (object constant in closure.Constants)
+                AppendIL(method, sw, typeFactory);
+
+                if (appendInnerLambdas)
                 {
-                    var innerMethod = constant as DynamicMethod;
-                    if (innerMethod != null)
+                    var closure = (Closure)d.Target;
+
+                    int i = 0;
+                    foreach (object constant in closure.Constants)
                     {
-                        sw.WriteLine();
-                        sw.WriteLine("// closure.Constants[" + i + "]");
-                        AppendIL(innerMethod, sw, typeFactory);
+                        var innerMethod = constant as DynamicMethod;
+                        if (innerMethod != null)
+                        {
+                            sw.WriteLine();
+                            sw.WriteLine("// closure.Constants[" + i + "]");
+                            AppendIL(innerMethod, sw, typeFactory);
+                        }
+
+                        i++;
                     }
-
-                    i++;
                 }
-            }
 
-            return sw.ToString();
+                return sw.ToString();
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = oldCulture;
+            }
         }
 
         private static void AppendIL(MethodInfo method, StringWriter sw, ITypeFactory typeFactory)
