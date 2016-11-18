@@ -3679,11 +3679,10 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTreePtr node)
         return next;
     }
 
-    // We're committed to the conversion now. Go find the use.
+    // We're committed to the conversion now. Go find the use if any.
     LIR::Use use;
     if (!BlockRange().TryGetUse(node, &use))
     {
-        assert(!"signed DIV/MOD node is unused");
         return next;
     }
 

@@ -13920,8 +13920,8 @@ GenTreePtr Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
     var_types valTyp = val->TypeGet();
     if (val->OperGet() == GT_LCL_VAR && lvaTable[val->gtLclVar.gtLclNum].lvNormalizeOnLoad())
     {
-        valTyp = lvaGetRealType(val->gtLclVar.gtLclNum);
-        val    = gtNewLclvNode(val->gtLclVar.gtLclNum, valTyp, val->gtLclVar.gtLclILoffs);
+        valTyp      = lvaGetRealType(val->gtLclVar.gtLclNum);
+        val->gtType = valTyp;
     }
     var_types dstTyp = varDsc->TypeGet();
 
