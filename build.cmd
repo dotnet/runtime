@@ -52,6 +52,7 @@ set __BuildTypeDebug=0
 set __BuildTypeChecked=0
 set __BuildTypeRelease=0
 set __BuildJit32="-DBUILD_JIT32=0"
+set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=0"
 
 set __PgoInstrument=0
 
@@ -109,6 +110,7 @@ if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set proc
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "altjitcrossgen"      (set __AltJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildstandalonegc"    (set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set __UnprocessedBuildArgs=!__args!
@@ -246,7 +248,7 @@ if %__BuildNative% EQU 1 (
 
     pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildJit32% !__ExtraCmakeArgs!
+    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildJit32% %__BuildStandaloneGC% !__ExtraCmakeArgs!
 	@if defined _echo @echo on
     popd
 :SkipConfigure

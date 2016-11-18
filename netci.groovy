@@ -77,7 +77,7 @@ class Constants {
                                         'r2r_jitstressregs4', 'r2r_jitstressregs8', 'r2r_jitstressregsx10', 'r2r_jitstressregsx80',
                                         'r2r_jitminopts', 'r2r_jitforcerelocs']
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'formatting', 'gcsimulator'] + r2rJitStressScenarios
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'formatting', 'gcsimulator', 'standalone_gc'] + r2rJitStressScenarios
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
     def static architectureList = ['arm', 'arm64', 'x64', 'x86ryujit', 'x86lb']
@@ -434,6 +434,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
                 // TODO: Add once external email sending is available again
                 // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
+                break
+            case 'standalone_gc':
+                assert (os == 'Windows_NT')
+                assert (configuration == 'Release' || configuration == 'Checked')
+                // TODO: Add once external email sending is available again
+                // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
+                Utilities.addPeriodicTrigger(job, '@weekly')
                 break
             case 'ilrt':
                 assert !(os in bidailyCrossList)
@@ -959,6 +966,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'gcsimulator':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                            }
+                            break
+                        case 'standalone_gc':
+                            if (configuration == 'Release' || configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Standalone GC", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         case 'minopts':
@@ -1657,6 +1669,19 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            case 'standalone_gc':
+                                if (os != 'Windows_NT') {
+                                    return
+                                }
+
+                                if (architecture != 'x64') {
+                                    return
+                                }
+
+                                if (configuration != 'Release' && configuration != 'Checked') {
+                                    return
+                                }
+                                break
                             // We need Windows x64 Release bits for the code coverage build
                             case 'coverage':
                                 if (os != 'Windows_NT') {
@@ -1753,6 +1778,9 @@ combinedScenarios.each { scenario ->
                                     else if (isLongGc(scenario)) {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} ${buildOpts} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch}"
+                                    }
+                                    else if (scenario == 'standalone_gc') {
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} ${buildOpts} buildstandalonegc"
                                     }
                                     else if (scenario == 'formatting') {
                                         buildCommands += "python -u tests\\scripts\\format.py -c %WORKSPACE% -o Windows_NT -a ${arch}"
@@ -2235,6 +2263,10 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            case 'standalone_gc':
+                                if (configuration != 'Release' && configuration != 'Checked') {
+                                    return
+                                }
                             case 'coverage':
                                 //We only want Ubuntu Release for coverage
                                 if (os != 'Ubuntu') {
