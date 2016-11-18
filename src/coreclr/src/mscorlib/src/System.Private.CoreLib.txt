@@ -206,6 +206,7 @@ Arg_ArithmeticException = Overflow or underflow in the arithmetic operation.
 Arg_ArrayLengthsDiffer = Array lengths must be the same.
 Arg_ArrayPlusOffTooSmall = Destination array is not long enough to copy all the items in the collection. Check array index and length.
 Arg_ArrayTypeMismatchException = Attempted to access an element as a type incompatible with the array.
+Arg_BadDecimal = Read an invalid decimal value from the buffer.
 Arg_BadImageFormatException = Format of the executable (.exe) or library (.dll) is invalid.
 Argument_BadImageFormatExceptionResolve = A BadImageFormatException has been thrown while parsing the signature. This is likely due to lack of a generic context. Ensure genericTypeArguments and genericMethodArguments are provided and contain enough context.
 Arg_BufferTooSmall = Not enough space available in the buffer.
