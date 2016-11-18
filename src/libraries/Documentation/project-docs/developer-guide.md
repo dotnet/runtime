@@ -126,7 +126,23 @@ src\System.Diagnostics.DiagnosticSource\tests and typing `msbuild System.Diagnos
 There is also a pkg directory for each project, and if you go into it and type `msbuild`, it will build the DLL (if needed)
 and then also build the NuGet package for it. The NuGet package ends up in the bin\packages directory.
 
-**Note:** If building in a non-Windows environment, call `./Tools/msbuild.sh` instead of just `msbuild`.
+For libraries that have multiple build configurations, the `.builds` file will have multiple binary outputs (one for each configuration). It is also possible to directly build the `.csproj` project in order to produce only a single configuration. Looking at the `.builds` file will tell you which configuration combinations are valid. For example, a builds file with these entries will have two valid combinations:
+```XML
+<Project Include="System.Net.NetworkInformation.csproj">
+  <OSGroup>Linux</OSGroup>
+</Project>
+```
+`msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux`
+
+```XML
+<Project Include="System.Net.NetworkInformation.csproj">
+  <OSGroup>Windows_NT</OSGroup>
+  <TargetGroup>uap101</TargetGroup>
+</Project>
+```
+`msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Windows_NT /p:TargetGroup=uap101`
+
+**Note:** If building in a non-Windows environment, call `<repo-root>/Tools/msbuild.sh` instead of just `msbuild`.
 
 ### Building other OSes
 

@@ -193,23 +193,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public System.Runtime.Serialization.ISurrogateSelector SurrogateSelector { get { throw null; } set { } }
         public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { throw null; } set { } }
         public object Deserialize(System.IO.Stream serializationStream) { throw null; }
-        public object Deserialize(System.IO.Stream serializationStream, System.Runtime.Remoting.Messaging.HeaderHandler handler) { throw null; }
         public void Serialize(System.IO.Stream serializationStream, object graph) { }
-        public void Serialize(System.IO.Stream serializationStream, object graph, System.Runtime.Remoting.Messaging.Header[] headers) { }
-        public object UnsafeDeserialize(System.IO.Stream serializationStream, System.Runtime.Remoting.Messaging.HeaderHandler handler) { throw null; }
     }
 } // end of System.Runtime.Serialization.Formatters.Binary
-namespace System.Runtime.Remoting.Messaging
-{
-    public partial class Header
-    {
-        public string HeaderNamespace;
-        public bool MustUnderstand;
-        public string Name;
-        public object Value;
-        public Header(string _Name, object _Value) { }
-        public Header(string _Name, object _Value, bool _MustUnderstand) { }
-        public Header(string _Name, object _Value, bool _MustUnderstand, string _HeaderNamespace) { }
-    }
-    public delegate object HeaderHandler(System.Runtime.Remoting.Messaging.Header[] headers);
-}

@@ -4,7 +4,6 @@
 
 using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime.Remoting.Messaging;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -21,7 +20,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private long _topId;
         private string _topName = null;
-        private Header[] _headers;
 
         private InternalFE _formatterEnums;
         private SerializationBinder _binder;
@@ -49,9 +47,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectManager = new SerializationObjectManager(context);
         }
 
-        // Commences the process of serializing the entire graph.
-        // initialize the graph walker.
-        internal void Serialize(object graph, Header[] inHeaders, BinaryFormatterWriter serWriter, bool fCheck)
+        internal void Serialize(object graph, BinaryFormatterWriter serWriter, bool fCheck)
         {
             if (graph == null)
             {
@@ -63,7 +59,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
 
             _serWriter = serWriter;
-            _headers = inHeaders;
 
             serWriter.WriteBegin();
             long headerId = 0;
@@ -78,14 +73,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _serObjectInfoInit = new SerObjectInfoInit();
 
             _topId = InternalGetId(graph, false, null, out isNew);
-            headerId = _headers != null ? InternalGetId(_headers, false, null, out isNew) : -1;
+            headerId = -1;
             WriteSerializedStreamHeader(_topId, headerId);
-
-            // Write out SerializedStream header
-            if ((_headers != null) && (_headers.Length > 0))
-            {
-                _objectQueue.Enqueue(_headers);
-            }
 
             _objectQueue.Enqueue(graph);
             while ((obj = GetNext(out objectId)) != null)

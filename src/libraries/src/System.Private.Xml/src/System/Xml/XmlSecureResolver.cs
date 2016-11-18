@@ -6,7 +6,6 @@ namespace System.Xml
 {
     using System.Net;
     using System.Security;
-    using System.Security.Policy;
     using System.Runtime.Versioning;
 
     public partial class XmlSecureResolver : XmlResolver
@@ -17,15 +16,6 @@ namespace System.Xml
         {
             _resolver = resolver;
         }
-
-#if CAS
-        internal XmlSecureResolver(XmlResolver resolver, Evidence evidence) : this(resolver, SecurityManager.GetStandardSandbox(evidence)) { }
-
-        internal XmlSecureResolver(XmlResolver resolver, PermissionSet permissionSet)
-        {
-            _resolver = resolver;
-        }
-#endif
 
         public override ICredentials Credentials
         {
@@ -40,37 +30,6 @@ namespace System.Xml
         public override Uri ResolveUri(Uri baseUri, string relativeUri)
         {
             return _resolver.ResolveUri(baseUri, relativeUri);
-        }
-
-#if CAS
-        internal static Evidence CreateEvidenceForUrl(string securityUrl)
-        {
-            return new Evidence();
-        }
-#endif
-
-        [Serializable]
-        private class UncDirectory
-        {
-            private string _uncDir;
-
-            public UncDirectory(string uncDirectory)
-            {
-                _uncDir = uncDirectory;
-            }
-
-            private SecurityElement ToXml()
-            {
-                SecurityElement root = new SecurityElement("System.Xml.XmlSecureResolver");
-                root.AddAttribute("version", "1");
-                root.AddChild(new SecurityElement("UncDirectory", _uncDir));
-                return root;
-            }
-
-            public override string ToString()
-            {
-                return ToXml().ToString();
-            }
         }
     }
 }

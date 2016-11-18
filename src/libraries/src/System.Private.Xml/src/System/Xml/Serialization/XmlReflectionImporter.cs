@@ -10,7 +10,6 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.ComponentModel;
     using System.Globalization;
-    using System.CodeDom.Compiler;
     using System.Threading;
     using System.Diagnostics;
     using System.Linq;

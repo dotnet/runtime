@@ -354,56 +354,83 @@ namespace System.Linq.Expressions
         //
         // Does reflection help us out at all? Expression.Property skips all of
         // these checks, so either it needs more checks or we need less here.
-        private static void ValidateIndexedProperty(Expression instance, PropertyInfo property, ref ReadOnlyCollection<Expression> argList)
+        private static void ValidateIndexedProperty(Expression instance, PropertyInfo indexer, ref ReadOnlyCollection<Expression> argList)
         {
             // If both getter and setter specified, all their parameter types
             // should match, with exception of the last setter parameter which
             // should match the type returned by the get method.
             // Accessor parameters cannot be ByRef.
 
-            ContractUtils.RequiresNotNull(property, nameof(property));
-            if (property.PropertyType.IsByRef) throw Error.PropertyCannotHaveRefType(nameof(property));
-            if (property.PropertyType == typeof(void)) throw Error.PropertyTypeCannotBeVoid(nameof(property));
+            ContractUtils.RequiresNotNull(indexer, nameof(indexer));
+            if (indexer.PropertyType.IsByRef)
+            {
+                throw Error.PropertyCannotHaveRefType(nameof(indexer));
+            }
+            if (indexer.PropertyType == typeof(void))
+            {
+                throw Error.PropertyTypeCannotBeVoid(nameof(indexer));
+            }
 
             ParameterInfo[] getParameters = null;
-            MethodInfo getter = property.GetGetMethod(nonPublic: true);
+            MethodInfo getter = indexer.GetGetMethod(nonPublic: true);
             if (getter != null)
             {
                 getParameters = getter.GetParametersCached();
-                ValidateAccessor(instance, getter, getParameters, ref argList, nameof(property));
+                ValidateAccessor(instance, getter, getParameters, ref argList, nameof(indexer));
             }
 
-            MethodInfo setter = property.GetSetMethod(nonPublic: true);
+            MethodInfo setter = indexer.GetSetMethod(nonPublic: true);
             if (setter != null)
             {
                 ParameterInfo[] setParameters = setter.GetParametersCached();
-                if (setParameters.Length == 0) throw Error.SetterHasNoParams(nameof(property));
+                if (setParameters.Length == 0)
+                {
+                    throw Error.SetterHasNoParams(nameof(indexer));
+                }
 
                 // valueType is the type of the value passed to the setter (last parameter)
                 Type valueType = setParameters[setParameters.Length - 1].ParameterType;
-                if (valueType.IsByRef) throw Error.PropertyCannotHaveRefType(nameof(property));
-                if (setter.ReturnType != typeof(void)) throw Error.SetterMustBeVoid(nameof(property));
-                if (property.PropertyType != valueType) throw Error.PropertyTypeMustMatchSetter(nameof(property));
+                if (valueType.IsByRef)
+                {
+                    throw Error.PropertyCannotHaveRefType(nameof(indexer));
+                }
+                if (setter.ReturnType != typeof(void))
+                {
+                    throw Error.SetterMustBeVoid(nameof(indexer));
+                }
+                if (indexer.PropertyType != valueType)
+                {
+                    throw Error.PropertyTypeMustMatchSetter(nameof(indexer));
+                }
 
                 if (getter != null)
                 {
-                    if (getter.IsStatic ^ setter.IsStatic) throw Error.BothAccessorsMustBeStatic(nameof(property));
-                    if (getParameters.Length != setParameters.Length - 1) throw Error.IndexesOfSetGetMustMatch(nameof(property));
+                    if (getter.IsStatic ^ setter.IsStatic)
+                    {
+                        throw Error.BothAccessorsMustBeStatic(nameof(indexer));
+                    }
+                    if (getParameters.Length != setParameters.Length - 1)
+                    {
+                        throw Error.IndexesOfSetGetMustMatch(nameof(indexer));
+                    }
 
                     for (int i = 0; i < getParameters.Length; i++)
                     {
-                        if (getParameters[i].ParameterType != setParameters[i].ParameterType) throw Error.IndexesOfSetGetMustMatch(nameof(property));
+                        if (getParameters[i].ParameterType != setParameters[i].ParameterType)
+                        {
+                            throw Error.IndexesOfSetGetMustMatch(nameof(indexer));
+                        }
                     }
                 }
                 else
                 {
-                    ValidateAccessor(instance, setter, setParameters.RemoveLast(), ref argList, nameof(property));
+                    ValidateAccessor(instance, setter, setParameters.RemoveLast(), ref argList, nameof(indexer));
                 }
             }
 
             if (getter == null && setter == null)
             {
-                throw Error.PropertyDoesNotHaveAccessor(property, nameof(property));
+                throw Error.PropertyDoesNotHaveAccessor(indexer, nameof(indexer));
             }
         }
 

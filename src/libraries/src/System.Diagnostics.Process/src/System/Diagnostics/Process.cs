@@ -604,10 +604,12 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
+                EnsureHandleCountPopulated();
                 return _processInfo.HandleCount;
             }
         }
 
+        partial void EnsureHandleCountPopulated();
 
         public long VirtualMemorySize64
         {

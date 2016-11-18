@@ -33,7 +33,7 @@ namespace Microsoft.Win32.SafeHandles
 
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore.CloseHandle(handle);
+            return Interop.Kernel32.CloseHandle(handle);
         }
     }
 }

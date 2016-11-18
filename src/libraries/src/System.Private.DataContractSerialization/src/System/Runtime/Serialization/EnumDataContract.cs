@@ -262,10 +262,13 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        DataMember memberContract = new DataMember(field);
-                        memberContract.Name = field.Name;
-                        ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
-                        enumMemberValid = true;
+                        if (!field.IsNotSerialized)
+                        {
+                            DataMember memberContract = new DataMember(field);
+                            memberContract.Name = field.Name;
+                            ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
+                            enumMemberValid = true;
+                        }
                     }
 
                     if (enumMemberValid)

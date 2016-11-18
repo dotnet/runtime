@@ -14,7 +14,6 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.ComponentModel;
     using System.Globalization;
-    using System.CodeDom.Compiler;
     using System.Diagnostics;
     using System.Threading;
     using System.Configuration;

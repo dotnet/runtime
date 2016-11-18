@@ -7,6 +7,10 @@
     <AssemblyName>System.Data.StressRunner</AssemblyName>
     <OutputType>Exe</OutputType>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <!-- Don't attempt to publish for any runtime.  
+         Though this is an EXE it is built as netstandard and will be 
+         published for a specific framework/runtime by a referencing project. -->
+    <CopyNuGetImplementations>false</CopyNuGetImplementations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IMonitorLoader\IMonitorLoader.csproj" />

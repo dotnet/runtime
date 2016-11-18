@@ -62,7 +62,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ConsumedStack => 1;
         public override string InstructionName =>"Pop";
-        
+
         public override int Run(InterpretedFrame frame)
         {
             frame.Pop();
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 0;
         public override int ProducedStack => 1;
         public override string InstructionName => "Dup";
-        
+
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Peek();

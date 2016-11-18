@@ -14,19 +14,26 @@ namespace System.IO
         /// <summary>Start monitoring the current directory.</summary>
         private void StartRaisingEvents()
         {
+            // If we're called when "Initializing" is true, set enabled to true
+            if (IsSuspended())
+            {
+                _enabled = true;
+                return;
+            }
+
             // If we're already running, don't do anything.
             if (!IsHandleInvalid(_directoryHandle))
                 return;
 
             // Create handle to directory being monitored
-            var defaultSecAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
-            _directoryHandle = Interop.mincore.CreateFile(
+            var defaultSecAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            _directoryHandle = Interop.Kernel32.CreateFile(
                 lpFileName: _directory,
-                dwDesiredAccess: Interop.mincore.FileOperations.FILE_LIST_DIRECTORY,
+                dwDesiredAccess: Interop.Kernel32.FileOperations.FILE_LIST_DIRECTORY,
                 dwShareMode: FileShare.Read | FileShare.Delete | FileShare.Write,
                 securityAttrs: ref defaultSecAttrs,
                 dwCreationDisposition: FileMode.Open,
-                dwFlagsAndAttributes: Interop.mincore.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.mincore.FileOperations.FILE_FLAG_OVERLAPPED,
+                dwFlagsAndAttributes: Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED,
                 hTemplateFile: IntPtr.Zero);
             if (IsHandleInvalid(_directoryHandle))
             {
@@ -66,6 +73,9 @@ namespace System.IO
         private void StopRaisingEvents()
         {
             _enabled = false;
+
+            if (IsSuspended())
+                return;
 
             // If we're not running, do nothing.
             if (IsHandleInvalid(_directoryHandle))
@@ -136,7 +146,7 @@ namespace System.IO
                 // Get the overlapped pointer to use for this iteration.
                 overlappedPointer = state.ThreadPoolBinding.AllocateNativeOverlapped(state.PreAllocatedOverlapped);
                 int size;
-                continueExecuting = Interop.mincore.ReadDirectoryChangesW(
+                continueExecuting = Interop.Kernel32.ReadDirectoryChangesW(
                     state.DirectoryHandle,
                     state.Buffer, // the buffer is kept pinned for the duration of the sync and async operation by the PreAllocatedOverlapped
                     _internalBufferSize,
@@ -304,12 +314,12 @@ namespace System.IO
                  */
 
                 // If the action is RENAMED_FROM, save the name of the file
-                if (action == Interop.mincore.FileOperations.FILE_ACTION_RENAMED_OLD_NAME)
+                if (action == Interop.Kernel32.FileOperations.FILE_ACTION_RENAMED_OLD_NAME)
                 {
                     Debug.Assert(oldName == null, "Two FILE_ACTION_RENAMED_OLD_NAME in a row!  [" + oldName + "], [ " + name + "]");
                     oldName = name;
                 }
-                else if (action == Interop.mincore.FileOperations.FILE_ACTION_RENAMED_NEW_NAME)
+                else if (action == Interop.Kernel32.FileOperations.FILE_ACTION_RENAMED_NEW_NAME)
                 {
                     if (oldName != null)
                     {
@@ -334,13 +344,13 @@ namespace System.IO
 
                     switch (action)
                     {
-                        case Interop.mincore.FileOperations.FILE_ACTION_ADDED:
+                        case Interop.Kernel32.FileOperations.FILE_ACTION_ADDED:
                             NotifyFileSystemEventArgs(WatcherChangeTypes.Created, name);
                             break;
-                        case Interop.mincore.FileOperations.FILE_ACTION_REMOVED:
+                        case Interop.Kernel32.FileOperations.FILE_ACTION_REMOVED:
                             NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, name);
                             break;
-                        case Interop.mincore.FileOperations.FILE_ACTION_MODIFIED:
+                        case Interop.Kernel32.FileOperations.FILE_ACTION_MODIFIED:
                             NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, name);
                             break;
                         default:

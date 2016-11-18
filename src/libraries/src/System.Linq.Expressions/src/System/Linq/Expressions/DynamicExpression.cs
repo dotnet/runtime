@@ -173,11 +173,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Makes a copy of this node replacing the args with the provided values.  The 
+        /// Makes a copy of this node replacing the args with the provided values.  The
         /// number of the args needs to match the number of the current block.
-        /// 
+        ///
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
-        /// subclass of DynamicExpression which is being used. 
+        /// subclass of DynamicExpression which is being used.
         /// </summary>
         internal virtual DynamicExpression Rewrite(Expression[] args)
         {

@@ -76,7 +76,7 @@ namespace System.Xml.Tests
 
             try
             {
-                sc.Add(null, TestData._Root + "schema1.xdr");
+                sc.Add(null, Path.Combine(TestData._Root, "schema1.xdr"));
             }
             catch (XmlSchemaException)
             {

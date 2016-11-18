@@ -83,8 +83,10 @@ namespace System
         public static string BaseDirectory { get { throw null; } }
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { throw null; }
+#if netcoreapp11
         public static string TargetFrameworkName { get { throw null; } }
         public static object GetData(string name) { throw null; }
+#endif
     }
     
     public partial class EntryPointNotFoundException : System.TypeLoadException
@@ -1078,7 +1080,7 @@ namespace System
         public DuplicateWaitObjectException() { }
         public DuplicateWaitObjectException(string parameterName) { }
         public DuplicateWaitObjectException(string parameterName, string message) { }
-        public DuplicateWaitObjectException(string message, System.Exception inner) { }
+        public DuplicateWaitObjectException(string message, System.Exception innerException) { }
         protected DuplicateWaitObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.IFormattable
@@ -2212,6 +2214,21 @@ namespace System
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
     }
+
+    public abstract partial class TimeZone
+    {
+        protected TimeZone() { }
+        public static System.TimeZone CurrentTimeZone { get { throw null; } }
+        public abstract string DaylightName { get; }
+        public abstract string StandardName { get; }
+        public abstract System.Globalization.DaylightTime GetDaylightChanges(int year);
+        public abstract System.TimeSpan GetUtcOffset(System.DateTime time);
+        public virtual bool IsDaylightSavingTime(System.DateTime time) { throw null; }
+        public static bool IsDaylightSavingTime(System.DateTime time, System.Globalization.DaylightTime daylightTimes) { throw null; }
+        public virtual System.DateTime ToLocalTime(System.DateTime time) { throw null; }
+        public virtual System.DateTime ToUniversalTime(System.DateTime time) { throw null; }
+    }
+    
     public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TimeZoneInfo() { }
@@ -2227,6 +2244,9 @@ namespace System
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTimeOffset ConvertTime(System.DateTimeOffset dateTimeOffset, System.TimeZoneInfo destinationTimeZone) { throw null; }
+        public static System.DateTime ConvertTimeBySystemTimeZoneId(System.DateTime dateTime, string destinationTimeZoneId) { throw null; }
+        public static System.DateTime ConvertTimeBySystemTimeZoneId(System.DateTime dateTime, string sourceTimeZoneId, string destinationTimeZoneId) { throw null; }
+        public static System.DateTimeOffset ConvertTimeBySystemTimeZoneId(System.DateTimeOffset dateTimeOffset, string destinationTimeZoneId) { throw null; }
         public static System.DateTime ConvertTimeFromUtc(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime) { throw null; }
         public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone) { throw null; }
@@ -2662,7 +2682,7 @@ namespace System
     {
         public TypeUnloadedException() { }
         public TypeUnloadedException(string message) { }
-        public TypeUnloadedException(string message, System.Exception inner) { }
+        public TypeUnloadedException(string message, System.Exception innerException) { }
         protected TypeUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4481,6 +4501,26 @@ namespace System.IO
         ReadWrite = 3,
         Write = 2,
     }
+    [System.FlagsAttribute]
+    public enum FileAttributes
+    {
+        Archive = 32,
+        Compressed = 2048,
+        Device = 64,
+        Directory = 16,
+        Encrypted = 16384,
+        Hidden = 2,
+        IntegrityStream = 32768,
+        Normal = 128,
+        NoScrubData = 131072,
+        NotContentIndexed = 8192,
+        Offline = 4096,
+        ReadOnly = 1,
+        ReparsePoint = 1024,
+        SparseFile = 512,
+        System = 4,
+        Temporary = 256,
+    }
     public partial class FileLoadException : System.IO.IOException
     {
         public FileLoadException() { }
@@ -4489,6 +4529,7 @@ namespace System.IO
         public FileLoadException(string message, string fileName) { }
         public FileLoadException(string message, string fileName, System.Exception inner) { }
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
@@ -4505,6 +4546,7 @@ namespace System.IO
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     public enum HandleInheritability
@@ -4582,6 +4624,14 @@ namespace System.IO
     }
     public partial class FileStream : System.IO.Stream
     {
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access) { }
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle) { }
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize) { }
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize, bool isAsync) { }
@@ -4681,7 +4731,7 @@ namespace System.Reflection
         public static System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
         public static System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public static System.Reflection.Assembly LoadFile(String path) { throw null; }
-        public static System.Reflection.Assembly LoadFrom(String path) { throw null; }
+        public static System.Reflection.Assembly LoadFrom(String assemblyFile) { throw null; }
         public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
@@ -6093,7 +6143,7 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public sealed partial class FirstChanceExceptionEventArgs : EventArgs
+    public partial class FirstChanceExceptionEventArgs : EventArgs
     {
         public FirstChanceExceptionEventArgs(Exception exception) { }
         public Exception Exception { get { throw null; } }
@@ -6225,6 +6275,8 @@ namespace System.Runtime.Serialization
     {
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter) { }
+        [CLSCompliant(false)]
+        public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust) { }
         public string AssemblyName { get { throw null; } set { } }
         public string FullTypeName { get { throw null; } set { } }
         public int MemberCount { get { throw null; } }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -47,7 +46,7 @@ namespace System.Xml.Xsl.Xslt
         public int Version;                // 0 - Auto; 1 - XSLT 1.0; 2 - XSLT 2.0
         public string inputTypeAnnotations;   // null - "unspecified"; "preserve"; "strip"
 
-        public CompilerResults CompilerResults;        // Results of the compilation
+        public CompilerErrorCollection CompilerErrorColl;        // Results of the compilation
         public int CurrentPrecedence = 0;  // Decreases by 1 with each import
         public XslNode StartApplyTemplates;
         public RootLevel Root;
@@ -69,10 +68,7 @@ namespace System.Xml.Xsl.Xslt
 
         public Compiler(XsltSettings settings, bool debug, string scriptAssemblyPath)
         {
-            Debug.Assert(CompilerResults == null, "Compiler cannot be reused");
-
-            // Keep all intermediate files if tracing is enabled
-            TempFileCollection tempFiles = settings.TempFiles ?? new TempFileCollection();
+            Debug.Assert(CompilerErrorColl == null, "Compiler cannot be reused");
 
 #if DEBUG
             if (XmlILTrace.IsEnabled) {
@@ -84,11 +80,11 @@ namespace System.Xml.Xsl.Xslt
             IsDebug = settings.IncludeDebugInformation | debug;
             ScriptAssemblyPath = scriptAssemblyPath;
 
-            CompilerResults = new CompilerResults(tempFiles);
+            CompilerErrorColl = new CompilerErrorCollection();
             Scripts = new Scripts(this);
         }
 
-        public CompilerResults Compile(object stylesheet, XmlResolver xmlResolver, out QilExpression qil)
+        public CompilerErrorCollection Compile(object stylesheet, XmlResolver xmlResolver, out QilExpression qil)
         {
             Debug.Assert(stylesheet != null);
             Debug.Assert(Root == null, "Compiler cannot be reused");
@@ -96,7 +92,7 @@ namespace System.Xml.Xsl.Xslt
             new XsltLoader().Load(this, stylesheet, xmlResolver);
             qil = QilGenerator.CompileStylesheet(this);
             SortErrors();
-            return CompilerResults;
+            return CompilerErrorColl;
         }
 
         public Stylesheet CreateStylesheet()
@@ -290,14 +286,14 @@ namespace System.Xml.Xsl.Xslt
         {
             get
             {
-                return CompilerResults.Errors.Count;
+                return CompilerErrorColl.Count;
             }
             set
             {
                 Debug.Assert(value <= ErrorCount);
                 for (int idx = ErrorCount - 1; idx >= value; idx--)
                 {
-                    CompilerResults.Errors.RemoveAt(idx);
+                    CompilerErrorColl.RemoveAt(idx);
                 }
             }
         }
@@ -336,7 +332,7 @@ namespace System.Xml.Xsl.Xslt
         public void ReportError(ISourceLineInfo lineInfo, string res, params string[] args)
         {
             CompilerError error = CreateError(lineInfo, res, args);
-            CompilerResults.Errors.Add(error);
+            CompilerErrorColl.Add(error);
         }
 
         public void ReportWarning(ISourceLineInfo lineInfo, string res, params string[] args)
@@ -351,18 +347,18 @@ namespace System.Xml.Xsl.Xslt
             if (Settings.TreatWarningsAsErrors)
             {
                 error.ErrorText = XslTransformException.CreateMessage(SR.Xslt_WarningAsError, error.ErrorText);
-                CompilerResults.Errors.Add(error);
+                CompilerErrorColl.Add(error);
             }
             else
             {
                 error.IsWarning = true;
-                CompilerResults.Errors.Add(error);
+                CompilerErrorColl.Add(error);
             }
         }
 
         private void SortErrors()
         {
-            CompilerErrorCollection errorColl = this.CompilerResults.Errors;
+            CompilerErrorCollection errorColl = this.CompilerErrorColl;
             if (errorColl.Count > 1)
             {
                 CompilerError[] errors = new CompilerError[errorColl.Count];

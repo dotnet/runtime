@@ -5,8 +5,6 @@
 // <spec>http://webdata/xml/specs/XslCompiledTransform.xml</spec>
 //------------------------------------------------------------------------------
 
-using System.CodeDom.Compiler;
-
 namespace System.Xml.Xsl
 {
     public sealed class XsltSettings
@@ -17,7 +15,6 @@ namespace System.Xml.Xsl
         private bool _includeDebugInformation;
         private int _warningLevel = -1;     // -1 means not set
         private bool _treatWarningsAsErrors;
-        private TempFileCollection _tempFiles;
 
         public XsltSettings() { }
 
@@ -71,12 +68,6 @@ namespace System.Xml.Xsl
         {
             get { return _treatWarningsAsErrors; }
             set { _treatWarningsAsErrors = value; }
-        }
-
-        internal TempFileCollection TempFiles
-        {
-            get { return _tempFiles; }
-            set { _tempFiles = value; }
         }
     }
 }

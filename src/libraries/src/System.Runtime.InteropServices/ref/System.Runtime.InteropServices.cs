@@ -721,6 +721,16 @@ namespace System.Runtime.InteropServices
         public static int Release(System.IntPtr pUnk) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public static int ReleaseComObject(object o) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToBSTR(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        [System.CLSCompliant(false)]
+        public static IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public static int SizeOf(object structure) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]

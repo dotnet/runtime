@@ -12,8 +12,6 @@ namespace System.Dynamic
     /// </summary>
     public abstract class BinaryOperationBinder : DynamicMetaObjectBinder
     {
-        private ExpressionType _operation;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryOperationBinder"/> class.
         /// </summary>
@@ -21,27 +19,18 @@ namespace System.Dynamic
         protected BinaryOperationBinder(ExpressionType operation)
         {
             ContractUtils.Requires(OperationIsValid(operation), nameof(operation));
-            _operation = operation;
+            Operation = operation;
         }
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return typeof(object); }
-        }
+        public override sealed Type ReturnType => typeof(object);
 
         /// <summary>
         /// The binary operation kind.
         /// </summary>
-        public ExpressionType Operation
-        {
-            get
-            {
-                return _operation;
-            }
-        }
+        public ExpressionType Operation { get; }
 
         /// <summary>
         /// Performs the binding of the binary dynamic operation if the target dynamic object cannot bind.
@@ -82,13 +71,7 @@ namespace System.Dynamic
         }
 
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         internal static bool OperationIsValid(ExpressionType operation)

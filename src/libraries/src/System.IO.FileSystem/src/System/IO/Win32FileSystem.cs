@@ -13,33 +13,33 @@ namespace System.IO
     {
         internal const int GENERIC_READ = unchecked((int)0x80000000);
 
-        public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
-        public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
+        public override int MaxPath { get { return Interop.Kernel32.MAX_PATH; } }
+        public override int MaxDirectoryPath { get { return Interop.Kernel32.MAX_DIRECTORY_PATH; } }
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
-            int errorCode = Interop.mincore.CopyFile(sourceFullPath, destFullPath, !overwrite);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
 
-            if (errorCode != Interop.mincore.Errors.ERROR_SUCCESS)
+            if (errorCode != Interop.Errors.ERROR_SUCCESS)
             {
                 string fileName = destFullPath;
 
-                if (errorCode != Interop.mincore.Errors.ERROR_FILE_EXISTS)
+                if (errorCode != Interop.Errors.ERROR_FILE_EXISTS)
                 {
                     // For a number of error codes (sharing violation, path 
                     // not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using (SafeFileHandle handle = Interop.mincore.UnsafeCreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
+                    using (SafeFileHandle handle = Interop.Kernel32.UnsafeCreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
                     {
                         if (handle.IsInvalid)
                             fileName = sourceFullPath;
                     }
 
-                    if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                    if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                     {
                         if (DirectoryExists(destFullPath))
-                            throw new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, destFullPath), Interop.mincore.Errors.ERROR_ACCESS_DENIED);
+                            throw new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, destFullPath), Interop.Errors.ERROR_ACCESS_DENIED);
                     }
                 }
 
@@ -49,13 +49,13 @@ namespace System.IO
 
         public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {
-            int flags = Interop.mincore.REPLACEFILE_WRITE_THROUGH;
+            int flags = Interop.Kernel32.REPLACEFILE_WRITE_THROUGH;
             if (ignoreMetadataErrors)
             {
-                flags |= Interop.mincore.REPLACEFILE_IGNORE_MERGE_ERRORS;
+                flags |= Interop.Kernel32.REPLACEFILE_IGNORE_MERGE_ERRORS;
             }
 
-            if (!Interop.mincore.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, IntPtr.Zero, IntPtr.Zero))
+            if (!Interop.Kernel32.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, IntPtr.Zero, IntPtr.Zero))
             {
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
@@ -115,7 +115,7 @@ namespace System.IO
 
             // If we were passed a DirectorySecurity, convert it to a security
             // descriptor and set it in he call to CreateDirectory.
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
 
             bool r = true;
             int firstError = 0;
@@ -127,7 +127,7 @@ namespace System.IO
                 String name = stackDir[stackDir.Count - 1];
                 stackDir.RemoveAt(stackDir.Count - 1);
 
-                r = Interop.mincore.CreateDirectory(name, ref secAttrs);
+                r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
                 if (!r && (firstError == 0))
                 {
                     int currentError = Marshal.GetLastWin32Error();
@@ -139,12 +139,12 @@ namespace System.IO
                     // create the directory between the time we check and the
                     // time we try using the directory.  Thirdly, it could
                     // fail because the target does exist, but is a file.
-                    if (currentError != Interop.mincore.Errors.ERROR_ALREADY_EXISTS)
+                    if (currentError != Interop.Errors.ERROR_ALREADY_EXISTS)
                         firstError = currentError;
                     else
                     {
                         // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                        if (File.InternalExists(name) || (!DirectoryExists(name, out currentError) && currentError == Interop.mincore.Errors.ERROR_ACCESS_DENIED))
+                        if (File.InternalExists(name) || (!DirectoryExists(name, out currentError) && currentError == Interop.Errors.ERROR_ACCESS_DENIED))
                         {
                             firstError = currentError;
                             errorString = name;
@@ -159,7 +159,7 @@ namespace System.IO
             {
                 String root = Directory.InternalGetDirectoryRoot(fullPath);
                 if (!DirectoryExists(root))
-                    throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_PATH_NOT_FOUND, root);
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, root);
                 return;
             }
 
@@ -171,11 +171,11 @@ namespace System.IO
 
         public override void DeleteFile(System.String fullPath)
         {
-            bool r = Interop.mincore.DeleteFile(fullPath);
+            bool r = Interop.Kernel32.DeleteFile(fullPath);
             if (!r)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     return;
                 else
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -184,17 +184,17 @@ namespace System.IO
 
         public override bool DirectoryExists(string fullPath)
         {
-            int lastError = Interop.mincore.Errors.ERROR_SUCCESS;
+            int lastError = Interop.Errors.ERROR_SUCCESS;
             return DirectoryExists(fullPath, out lastError);
         }
 
         private bool DirectoryExists(String path, out int lastError)
         {
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             lastError = FillAttributeInfo(path, ref data, false, true);
 
             return (lastError == 0) && (data.fileAttributes != -1)
-                    && ((data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
+                    && ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
         public override IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
@@ -223,13 +223,13 @@ namespace System.IO
         // Returns 0 on success, otherwise a Win32 error code.  Note that
         // classes should use -1 as the uninitialized state for dataInitialized.
         [System.Security.SecurityCritical]  // auto-generated
-        internal static int FillAttributeInfo(String path, ref Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data, bool tryagain, bool returnErrorOnNotFound)
+        internal static int FillAttributeInfo(String path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool tryagain, bool returnErrorOnNotFound)
         {
             int errorCode = 0;
             if (tryagain) // someone has a handle to the file open, or other error
             {
-                Interop.mincore.WIN32_FIND_DATA findData;
-                findData = new Interop.mincore.WIN32_FIND_DATA();
+                Interop.Kernel32.WIN32_FIND_DATA findData;
+                findData = new Interop.Kernel32.WIN32_FIND_DATA();
 
                 // Remove trailing slash since this can cause grief to FindFirstFile. You will get an invalid argument error
                 String tempPath = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
@@ -238,11 +238,11 @@ namespace System.IO
                 // there is no disk in drive A:, please insert one.  We don't want that.
                 // SetErrorMode will let us disable this, but we should set the error
                 // mode back, since this may have wide-ranging effects.
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
                     bool error = false;
-                    SafeFindHandle handle = Interop.mincore.FindFirstFile(tempPath, ref findData);
+                    SafeFindHandle handle = Interop.Kernel32.FindFirstFile(tempPath, ref findData);
                     try
                     {
                         if (handle.IsInvalid)
@@ -250,9 +250,9 @@ namespace System.IO
                             error = true;
                             errorCode = Marshal.GetLastWin32Error();
 
-                            if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND ||
-                                errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND ||
-                                errorCode == Interop.mincore.Errors.ERROR_NOT_READY)  // floppy device not ready
+                            if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                                errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND ||
+                                errorCode == Interop.Errors.ERROR_NOT_READY)  // floppy device not ready
                             {
                                 if (!returnErrorOnNotFound)
                                 {
@@ -283,7 +283,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
 
                 // Copy the information to data
@@ -296,22 +296,22 @@ namespace System.IO
                 // SetErrorMode will let us disable this, but we should set the error
                 // mode back, since this may have wide-ranging effects.
                 bool success = false;
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    success = Interop.mincore.GetFileAttributesEx(path, Interop.mincore.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data);
+                    success = Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data);
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
 
                 if (!success)
                 {
                     errorCode = Marshal.GetLastWin32Error();
-                    if (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND &&
-                        errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND &&
-                        errorCode != Interop.mincore.Errors.ERROR_NOT_READY)  // floppy device not ready
+                    if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND &&
+                        errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND &&
+                        errorCode != Interop.Errors.ERROR_NOT_READY)  // floppy device not ready
                     {
                         // In case someone latched onto the file. Take the perf hit only for failure
                         return FillAttributeInfo(path, ref data, true, returnErrorOnNotFound);
@@ -333,16 +333,16 @@ namespace System.IO
 
         public override bool FileExists(System.String fullPath)
         {
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, false, true);
 
             return (errorCode == 0) && (data.fileAttributes != -1)
-                    && ((data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
+                    && ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
         }
 
         public override FileAttributes GetAttributes(string fullPath)
         {
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, false, true);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -352,8 +352,8 @@ namespace System.IO
 
         public override string GetCurrentDirectory()
         {
-            StringBuilder sb = StringBuilderCache.Acquire(Interop.mincore.MAX_PATH + 1);
-            if (Interop.mincore.GetCurrentDirectory(sb.Capacity, sb) == 0)
+            StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH + 1);
+            if (Interop.Kernel32.GetCurrentDirectory(sb.Capacity, sb) == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             String currentDirectory = sb.ToString();
             // Note that if we have somehow put our command prompt into short
@@ -361,16 +361,16 @@ namespace System.IO
             // this will return a short file name.
             if (currentDirectory.IndexOf('~') >= 0)
             {
-                int r = Interop.mincore.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                if (r == 0 || r >= Interop.mincore.MAX_PATH)
+                int r = Interop.Kernel32.GetLongPathName(currentDirectory, sb, sb.Capacity);
+                if (r == 0 || r >= Interop.Kernel32.MAX_PATH)
                 {
                     int errorCode = Marshal.GetLastWin32Error();
-                    if (r >= Interop.mincore.MAX_PATH)
-                        errorCode = Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE;
-                    if (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND &&
-                        errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND &&
-                        errorCode != Interop.mincore.Errors.ERROR_INVALID_FUNCTION &&  // by design - enough said.
-                        errorCode != Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                    if (r >= Interop.Kernel32.MAX_PATH)
+                        errorCode = Interop.Errors.ERROR_FILENAME_EXCED_RANGE;
+                    if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND &&
+                        errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND &&
+                        errorCode != Interop.Errors.ERROR_INVALID_FUNCTION &&  // by design - enough said.
+                        errorCode != Interop.Errors.ERROR_ACCESS_DENIED)
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
                 currentDirectory = sb.ToString();
@@ -382,7 +382,7 @@ namespace System.IO
 
         public override DateTimeOffset GetCreationTime(string fullPath)
         {
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, false, false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -400,7 +400,7 @@ namespace System.IO
 
         public override DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, false, false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -411,7 +411,7 @@ namespace System.IO
 
         public override DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, false, false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -422,15 +422,15 @@ namespace System.IO
 
         public override void MoveDirectory(string sourceFullPath, string destFullPath)
         {
-            if (!Interop.mincore.MoveFile(sourceFullPath, destFullPath))
+            if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath))
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
-                    throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_PATH_NOT_FOUND, sourceFullPath);
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, sourceFullPath);
 
                 // This check was originally put in for Win9x (unfortunately without special casing it to be for Win9x only). We can't change the NT codepath now for backcomp reasons.
-                if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED) // WinNT throws IOException. This check is for Win9x. We can't change it for backcomp.
+                if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED) // WinNT throws IOException. This check is for Win9x. We can't change it for backcomp.
                     throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), Win32Marshal.MakeHRFromErrorCode(errorCode));
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
@@ -439,7 +439,7 @@ namespace System.IO
 
         public override void MoveFile(string sourceFullPath, string destFullPath)
         {
-            if (!Interop.mincore.MoveFile(sourceFullPath, destFullPath))
+            if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -460,14 +460,14 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
             }
 
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
-            SafeFileHandle handle = Interop.mincore.SafeCreateFile(
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            SafeFileHandle handle = Interop.Kernel32.SafeCreateFile(
                 fullPath,
-                (int)Interop.mincore.GenericOperations.GENERIC_WRITE,
+                (int)Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 FileShare.ReadWrite | FileShare.Delete,
                 ref secAttrs,
                 FileMode.Open,
-                asDirectory ? (int)Interop.mincore.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : (int)FileOptions.None,
+                asDirectory ? (int)Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : (int)FileOptions.None,
                 IntPtr.Zero
             );
 
@@ -478,8 +478,8 @@ namespace System.IO
                 // NT5 oddity - when trying to open "C:\" as a File,
                 // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
                 // probably be consistent w/ every other directory.
-                if (!asDirectory && errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && fullPath.Equals(Directory.GetDirectoryRoot(fullPath)))
-                    errorCode = Interop.mincore.Errors.ERROR_ACCESS_DENIED;
+                if (!asDirectory && errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Equals(Directory.GetDirectoryRoot(fullPath)))
+                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
@@ -491,13 +491,13 @@ namespace System.IO
             // future version we will add a new flag to control this behavior, 
             // but for now we're much safer if we err on the conservative side.
             // This applies to symbolic links and mount points.
-            Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, false, true);
             if (errorCode != 0)
             {
                 // Ensure we throw a DirectoryNotFoundException.
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
-                    errorCode = Interop.mincore.Errors.ERROR_PATH_NOT_FOUND;
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
@@ -527,17 +527,17 @@ namespace System.IO
 
             if (recursive)
             {
-                Interop.mincore.WIN32_FIND_DATA data = new Interop.mincore.WIN32_FIND_DATA();
+                Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
 
                 // Open a Find handle
-                using (SafeFindHandle hnd = Interop.mincore.FindFirstFile(Directory.EnsureTrailingDirectorySeparator(fullPath) + "*", ref data))
+                using (SafeFindHandle hnd = Interop.Kernel32.FindFirstFile(Directory.EnsureTrailingDirectorySeparator(fullPath) + "*", ref data))
                 {
                     if (hnd.IsInvalid)
                         throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
 
                     do
                     {
-                        bool isDir = (0 != (data.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY));
+                        bool isDir = (0 != (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY));
                         if (isDir)
                         {
                             // Skip ".", "..".
@@ -566,16 +566,16 @@ namespace System.IO
                             {
                                 // Check to see if this is a mount point, and
                                 // unmount it.
-                                if (data.dwReserved0 == Interop.mincore.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
+                                if (data.dwReserved0 == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                                 {
                                     // Use full path plus a trailing '\'
                                     String mountPoint = Path.Combine(fullPath, data.cFileName + PathHelpers.DirectorySeparatorCharAsString);
-                                    if (!Interop.mincore.DeleteVolumeMountPoint(mountPoint))
+                                    if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint))
                                     {
                                          errorCode = Marshal.GetLastWin32Error();
                                     
-                                        if (errorCode != Interop.mincore.Errors.ERROR_SUCCESS && 
-                                            errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                                        if (errorCode != Interop.Errors.ERROR_SUCCESS && 
+                                            errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                         {
                                             try
                                             {
@@ -593,11 +593,11 @@ namespace System.IO
                                 // RemoveDirectory on a symbolic link will
                                 // remove the link itself.
                                 String reparsePoint = Path.Combine(fullPath, data.cFileName);
-                                r = Interop.mincore.RemoveDirectory(reparsePoint);
+                                r = Interop.Kernel32.RemoveDirectory(reparsePoint);
                                 if (!r)
                                 {
                                     errorCode = Marshal.GetLastWin32Error();
-                                    if (errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                                    if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                     {
                                         try
                                         {
@@ -615,11 +615,11 @@ namespace System.IO
                         else
                         {
                             String fileName = Path.Combine(fullPath, data.cFileName);
-                            r = Interop.mincore.DeleteFile(fileName);
+                            r = Interop.Kernel32.DeleteFile(fileName);
                             if (!r)
                             {
                                 errorCode = Marshal.GetLastWin32Error();
-                                if (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                                if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
                                 {
                                     try
                                     {
@@ -633,31 +633,31 @@ namespace System.IO
                                 }
                             }
                         }
-                    } while (Interop.mincore.FindNextFile(hnd, ref data));
+                    } while (Interop.Kernel32.FindNextFile(hnd, ref data));
                     // Make sure we quit with a sensible error.
                     errorCode = Marshal.GetLastWin32Error();
                 }
 
                 if (ex != null)
                     throw ex;
-                if (errorCode != 0 && errorCode != Interop.mincore.Errors.ERROR_NO_MORE_FILES)
+                if (errorCode != 0 && errorCode != Interop.Errors.ERROR_NO_MORE_FILES)
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
-            r = Interop.mincore.RemoveDirectory(fullPath);
+            r = Interop.Kernel32.RemoveDirectory(fullPath);
 
             if (!r)
             {
                 errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND) // A dubious error code.
-                    errorCode = Interop.mincore.Errors.ERROR_PATH_NOT_FOUND;
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND) // A dubious error code.
+                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
                 // This check was originally put in for Win9x (unfortunately without special casing it to be for Win9x only). We can't change the NT codepath now for backcomp reasons.
-                if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                     throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
 
                 // don't throw the DirectoryNotFoundException since this is a subdir and 
                 // there could be a race condition between two Directory.Delete callers
-                if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && !throwOnTopLevelDirectoryNotFound)
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && !throwOnTopLevelDirectoryNotFound)
                     return;
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -671,11 +671,11 @@ namespace System.IO
 
         private static void SetAttributesInternal(string fullPath, FileAttributes attributes)
         {
-            bool r = Interop.mincore.SetFileAttributes(fullPath, (int)attributes);
+            bool r = Interop.Kernel32.SetFileAttributes(fullPath, (int)attributes);
             if (!r)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentException(SR.Arg_InvalidFileAttrs, nameof(attributes));
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
@@ -690,7 +690,7 @@ namespace System.IO
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                bool r = Interop.mincore.SetFileTime(handle, creationTime: time.ToFileTime());
+                bool r = Interop.Kernel32.SetFileTime(handle, creationTime: time.ToFileTime());
                 if (!r)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
@@ -700,14 +700,14 @@ namespace System.IO
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            if (!Interop.mincore.SetCurrentDirectory(fullPath))
+            if (!Interop.Kernel32.SetCurrentDirectory(fullPath))
             {
                 // If path doesn't exist, this sets last error to 2 (File 
                 // not Found).  LEGACY: This may potentially have worked correctly
                 // on Win9x, maybe.
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
-                    errorCode = Interop.mincore.Errors.ERROR_PATH_NOT_FOUND;
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
         }
@@ -721,7 +721,7 @@ namespace System.IO
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                bool r = Interop.mincore.SetFileTime(handle, lastAccessTime: time.ToFileTime());
+                bool r = Interop.Kernel32.SetFileTime(handle, lastAccessTime: time.ToFileTime());
                 if (!r)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
@@ -738,7 +738,7 @@ namespace System.IO
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                bool r = Interop.mincore.SetFileTime(handle, lastWriteTime: time.ToFileTime());
+                bool r = Interop.Kernel32.SetFileTime(handle, lastWriteTime: time.ToFileTime());
                 if (!r)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);

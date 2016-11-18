@@ -1,88 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <Import Project="..\pkg\NETStandard.Library\NETStandard.Library.packages.targets" />
+<Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
   <PropertyGroup>
-    <LayoutBasePath>$(BaseOutputPath)/layout</LayoutBasePath>
+    <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
+
   <ItemGroup>
-    <TargetFrameworkMonikers Include="netstandard1.0" />
-    <TargetFrameworkMonikers Include="netstandard1.1" />
-    <TargetFrameworkMonikers Include="netstandard1.2" />
-    <TargetFrameworkMonikers Include="netstandard1.3" />
-    <TargetFrameworkMonikers Include="netstandard1.4" />
-    <TargetFrameworkMonikers Include="netstandard1.5" />
-    <TargetFrameworkMonikers Include="netstandard1.6" />
-    <TargetFrameworkMonikers Include="netstandard1.7" />
-    <TargetFrameworkMonikers Include="netcoreapp1.1">
-      <RID>win7-x64</RID>
-      <AdditionalBinaryPath>
-        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.2.0-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
-      </AdditionalBinaryPath>
-    </TargetFrameworkMonikers>
-    <TargetFrameworkMonikers Include="uap10.1">
-      <RID>win10-x64-aot</RID>
-      <AdditionalBinaryPath>
-        $(PackagesDir)/Microsoft.TargetingPack.Private.NETNative/1.1.0-$(ProjectNTfsExpectedPrerelease)/lib/uap10.1;
-      </AdditionalBinaryPath>
-    </TargetFrameworkMonikers>
+    <Project Include="net461/net461.depproj" />
+    <Project Include="netstandard20/netstandard20.depproj" />
+    <Project Include="layout.proj" />
+    <Project Include="shims.proj" />
   </ItemGroup>
 
-  <UsingTask TaskName="GetApplicableAssetsFromPackageReports" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
-
-  <Target Name="Build" />
-  <Target Name="Clean">
-    <RemoveDir Directories="$(LayoutBasePath)" />
-  </Target>
-
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
-  <Target Name="GetAssetsFromReports" BeforeTargets="Build"
-    Inputs="'%(TargetFrameworkMonikers.Identity)'"
-    Outputs="'%(TargetFrameworkMonikers.Identity).output'">
-
-    <PropertyGroup>
-      <TargetFrameworkMoniker>%(TargetFrameworkMonikers.Identity)</TargetFrameworkMoniker>
-      <TargetRuntime>%(TargetFrameworkMonikers.RID)</TargetRuntime>
-      <AdditionalBinaryPath>%(TargetFrameworkMonikers.AdditionalBinaryPath)</AdditionalBinaryPath>
-      <RefRelOutputPath>ref/$(TargetFrameworkMoniker)</RefRelOutputPath>
-      <RuntimeRelOutputPath>runtime/$(TargetFrameworkMoniker).$(TargetRuntime)</RuntimeRelOutputPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- Package item group comes from NETStandard.Library package list -->
-      <PackageReports Condition="$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/%(Package.Identity).json" />
-
-      <PackageReports Condition="!$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/*.json" />
-      <AdditionalBinaryPaths Include="$(AdditionalBinaryPath)" />
-    </ItemGroup>
-
-    <GetApplicableAssetsFromPackageReports
-      PackageReports="@(PackageReports)"
-      TargetMoniker="$(TargetFrameworkMoniker)"
-      TargetRuntime="$(TargetRuntime)"
-      >
-      <Output TaskParameter="CompileAssets" ItemName="_CompileAssets" />
-      <Output TaskParameter="RuntimeAssets" ItemName="_RuntimeAssets" />
-    </GetApplicableAssetsFromPackageReports>
-
-    <!-- Need to use CreateItem to get it to resolve the nested wildcards -->
-    <CreateItem Include="@(AdditionalBinaryPaths->'%(FullPath)\**\*')">
-      <Output TaskParameter="Include" ItemName="AdditionalBinaryAssets" />
-    </CreateItem>
-
-    <Error Text="Additional Directory %(AdditionalBinaryPaths.Identity) doesn't exist"
-      Condition="'%(AdditionalBinaryPaths.Identity)' != '' and !Exists('%(AdditionalBinaryPaths.Identity)')" />
-
-    <Copy
-      Condition="'$(TargetRuntime)' != ''"
-      SourceFiles="@(_RuntimeAssets);@(AdditionalBinaryAssets)"
-      DestinationFolder="$(LayoutBasePath)/$(RuntimeRelOutputPath)" />
-
-    <Copy
-      SourceFiles="@(_CompileAssets)"
-      DestinationFolder="$(LayoutBasePath)/$(RefRelOutputPath)" />
-
-  </Target>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="..\dir.traversal.targets" />
 </Project>

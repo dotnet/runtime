@@ -13,6 +13,7 @@ namespace System.Numerics.Tests
     public partial class ComplexTests
     {
         private static Random s_random = new Random(-55);
+        private static bool Is64Bit => IntPtr.Size == 8;
         
         public static readonly double[] s_validDoubleValues = new double[]
         {
@@ -486,7 +487,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Cos_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Cos_Advanced_TestData")]
         public static void Cos_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -538,7 +539,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Cosh_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Cosh_Advanced_TestData")]
         public static void Cosh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -729,7 +730,7 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MinValue, double.MinValue };
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(Is64Bit))]
         [MemberData(nameof(Exp_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
@@ -1068,7 +1069,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
         
-        [Theory]
+        [ConditionalTheory(nameof(Is64Bit))]
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
@@ -1134,7 +1135,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Sin_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Sin_Advanced_TestData")]
         public static void Sin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1186,7 +1187,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Sinh_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Sinh_Advanced_TestData")]
         public static void Sinh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);

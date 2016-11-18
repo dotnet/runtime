@@ -5,64 +5,15 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.ArrayList))]
+#pragma warning disable 0618
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.IHashCodeProvider))]
+#pragma warning restore 0618
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Hashtable))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Comparer))]
 
 namespace System.Collections
 {
-    public partial class ArrayList : System.Collections.IEnumerable, System.Collections.IList, System.ICloneable
-    {
-        public ArrayList() { }
-        public ArrayList(System.Collections.ICollection c) { }
-        public ArrayList(int capacity) { }
-        public virtual int Capacity { get { throw null; } set { } }
-        public virtual int Count { get { throw null; } }
-        public virtual bool IsFixedSize { get { throw null; } }
-        public virtual bool IsReadOnly { get { throw null; } }
-        public virtual bool IsSynchronized { get { throw null; } }
-        public virtual object this[int index] { get { throw null; } set { } }
-        public virtual object SyncRoot { get { throw null; } }
-        public static System.Collections.ArrayList Adapter(System.Collections.IList list) { throw null; }
-        public virtual int Add(object value) { throw null; }
-        public virtual void AddRange(System.Collections.ICollection c) { }
-        public virtual int BinarySearch(int index, int count, object value, System.Collections.IComparer comparer) { throw null; }
-        public virtual int BinarySearch(object value) { throw null; }
-        public virtual int BinarySearch(object value, System.Collections.IComparer comparer) { throw null; }
-        public virtual void Clear() { }
-        public virtual object Clone() { throw null; }
-        public virtual bool Contains(object item) { throw null; }
-        public virtual void CopyTo(System.Array array) { }
-        public virtual void CopyTo(System.Array array, int arrayIndex) { }
-        public virtual void CopyTo(int index, System.Array array, int arrayIndex, int count) { }
-        public static System.Collections.ArrayList FixedSize(System.Collections.ArrayList list) { throw null; }
-        public static System.Collections.IList FixedSize(System.Collections.IList list) { throw null; }
-        public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public virtual System.Collections.IEnumerator GetEnumerator(int index, int count) { throw null; }
-        public virtual System.Collections.ArrayList GetRange(int index, int count) { throw null; }
-        public virtual int IndexOf(object value) { throw null; }
-        public virtual int IndexOf(object value, int startIndex) { throw null; }
-        public virtual int IndexOf(object value, int startIndex, int count) { throw null; }
-        public virtual void Insert(int index, object value) { }
-        public virtual void InsertRange(int index, System.Collections.ICollection c) { }
-        public virtual int LastIndexOf(object value) { throw null; }
-        public virtual int LastIndexOf(object value, int startIndex) { throw null; }
-        public virtual int LastIndexOf(object value, int startIndex, int count) { throw null; }
-        public static System.Collections.ArrayList ReadOnly(System.Collections.ArrayList list) { throw null; }
-        public static System.Collections.IList ReadOnly(System.Collections.IList list) { throw null; }
-        public virtual void Remove(object obj) { }
-        public virtual void RemoveAt(int index) { }
-        public virtual void RemoveRange(int index, int count) { }
-        public static System.Collections.ArrayList Repeat(object value, int count) { throw null; }
-        public virtual void Reverse() { }
-        public virtual void Reverse(int index, int count) { }
-        public virtual void SetRange(int index, System.Collections.ICollection c) { }
-        public virtual void Sort() { }
-        public virtual void Sort(System.Collections.IComparer comparer) { }
-        public virtual void Sort(int index, int count, System.Collections.IComparer comparer) { }
-        public static System.Collections.ArrayList Synchronized(System.Collections.ArrayList list) { throw null; }
-        public static System.Collections.IList Synchronized(System.Collections.IList list) { throw null; }
-        public virtual object[] ToArray() { throw null; }
-        public virtual System.Array ToArray(System.Type type) { throw null; }
-        public virtual void TrimToSize() { }
-    }
     public partial class CaseInsensitiveComparer : System.Collections.IComparer
     {
         public CaseInsensitiveComparer() { }
@@ -112,15 +63,6 @@ namespace System.Collections
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
     }
-    public sealed partial class Comparer : System.Collections.IComparer, System.Runtime.Serialization.ISerializable
-    {
-        public static readonly System.Collections.Comparer Default;
-        public static readonly System.Collections.Comparer DefaultInvariant;
-        public Comparer(System.Globalization.CultureInfo culture) { }
-        private Comparer(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public int Compare(object a, object b) { throw null; }
-        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-    }
     public abstract partial class DictionaryBase : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
     {
         protected DictionaryBase() { }
@@ -152,63 +94,6 @@ namespace System.Collections
         void System.Collections.IDictionary.Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback, System.ICloneable
-    {
-        public Hashtable() { }
-        public Hashtable(System.Collections.IDictionary d) { }
-        public Hashtable(System.Collections.IDictionary d, System.Collections.IEqualityComparer equalityComparer) { }
-        [System.ObsoleteAttribute("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
-        public Hashtable(System.Collections.IDictionary d, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
-        public Hashtable(System.Collections.IDictionary d, float loadFactor) { }
-        public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
-        [System.ObsoleteAttribute("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
-        public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
-        public Hashtable(System.Collections.IEqualityComparer equalityComparer) { }
-        [System.ObsoleteAttribute("Please use Hashtable(IEqualityComparer) instead.")]
-        public Hashtable(System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
-        public Hashtable(int capacity) { }
-        public Hashtable(int capacity, System.Collections.IEqualityComparer equalityComparer) { }
-        [System.ObsoleteAttribute("Please use Hashtable(int, IEqualityComparer) instead.")]
-        public Hashtable(int capacity, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
-        public Hashtable(int capacity, float loadFactor) { }
-        public Hashtable(int capacity, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
-        [System.ObsoleteAttribute("Please use Hashtable(int, float, IEqualityComparer) instead.")]
-        public Hashtable(int capacity, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
-        protected Hashtable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("Please use KeyComparer properties.")]
-        protected System.Collections.IComparer comparer { get { throw null; } set { } }
-        public virtual int Count { get { throw null; } }
-        protected System.Collections.IEqualityComparer EqualityComparer { get { throw null; } }
-        [System.ObsoleteAttribute("Please use EqualityComparer property.")]
-        protected System.Collections.IHashCodeProvider hcp { get { throw null; } set { } }
-        public virtual bool IsFixedSize { get { throw null; } }
-        public virtual bool IsReadOnly { get { throw null; } }
-        public virtual bool IsSynchronized { get { throw null; } }
-        public virtual object this[object key] { get { throw null; } set { } }
-        public virtual System.Collections.ICollection Keys { get { throw null; } }
-        public virtual object SyncRoot { get { throw null; } }
-        public virtual System.Collections.ICollection Values { get { throw null; } }
-        public virtual void Add(object key, object value) { }
-        public virtual void Clear() { }
-        public virtual object Clone() { throw null; }
-        public virtual bool Contains(object key) { throw null; }
-        public virtual bool ContainsKey(object key) { throw null; }
-        public virtual bool ContainsValue(object value) { throw null; }
-        public virtual void CopyTo(System.Array array, int arrayIndex) { }
-        public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
-        protected virtual int GetHash(object key) { throw null; }
-        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        protected virtual bool KeyEquals(object item, object key) { throw null; }
-        public virtual void OnDeserialization(object sender) { }
-        public virtual void Remove(object key) { }
-        public static System.Collections.Hashtable Synchronized(System.Collections.Hashtable table) { throw null; }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-    }
-    [System.ObsoleteAttribute("Please use IEqualityComparer instead.")] 
-    public partial interface IHashCodeProvider 
-    { 
-        int GetHashCode(object obj); 
-    } 
     public partial class Queue : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
     {
         public Queue() { }

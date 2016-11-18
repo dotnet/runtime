@@ -10,6 +10,11 @@ namespace System.Security.Cryptography
 {
     public abstract partial class RSA : AsymmetricAlgorithm
     {
+        public static new RSA Create(String algName)
+        {
+            return (RSA)CryptoConfig.CreateFromName(algName);
+        }
+
         public abstract RSAParameters ExportParameters(bool includePrivateParameters);
         public abstract void ImportParameters(RSAParameters parameters);
         public abstract byte[] Encrypt(byte[] data, RSAEncryptionPadding padding);
@@ -19,6 +24,16 @@ namespace System.Security.Cryptography
 
         protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
         protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
+
+        public virtual byte[] DecryptValue(byte[] rgb) 
+        {
+            throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
+        }
+
+        public virtual byte[] EncryptValue(byte[] rgb) 
+        {
+            throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
+        }
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {

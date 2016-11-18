@@ -67,7 +67,7 @@ namespace System.Linq.Expressions
             return Expression.ElementInit(AddMethod, arguments);
         }
     }
-    
+
     public partial class Expression
     {
         /// <summary>

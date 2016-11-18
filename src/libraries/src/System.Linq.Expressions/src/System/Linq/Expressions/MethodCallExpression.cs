@@ -42,7 +42,7 @@ namespace System.Linq.Expressions
         public MethodInfo Method { get; }
 
         /// <summary>
-        /// Gets the <see cref="Expression"/> that represents the instance 
+        /// Gets the <see cref="Expression"/> that represents the instance
         /// for instance method calls or null for static method calls.
         /// </summary>
         public Expression Object => GetInstance();
@@ -87,9 +87,9 @@ namespace System.Linq.Expressions
         /// Returns a new MethodCallExpression replacing the existing instance/args with the
         /// newly provided instance and args.    Arguments can be null to use the existing
         /// arguments.
-        /// 
+        ///
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
-        /// subclass of MethodCallExpression which is being used. 
+        /// subclass of MethodCallExpression which is being used.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         internal virtual MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)

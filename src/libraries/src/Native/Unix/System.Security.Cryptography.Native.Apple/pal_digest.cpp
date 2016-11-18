@@ -37,6 +37,9 @@ extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm
         return nullptr;
 
     DigestCtx* digestCtx = reinterpret_cast<DigestCtx*>(malloc(sizeof(DigestCtx)));
+    if (digestCtx == nullptr)
+        return nullptr;
+
     digestCtx->algorithm = algorithm;
 
     switch (algorithm)

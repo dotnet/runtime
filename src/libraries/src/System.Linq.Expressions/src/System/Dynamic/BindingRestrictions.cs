@@ -7,11 +7,12 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Dynamic
 {
     /// <summary>
-    /// Represents a set of binding restrictions on the <see cref="DynamicMetaObject"/>under which the dynamic binding is valid.
+    /// Represents a set of binding restrictions on the <see cref="DynamicMetaObject"/> under which the dynamic binding is valid.
     /// </summary>
     [DebuggerTypeProxy(typeof(BindingRestrictionsProxy)), DebuggerDisplay("{DebugView}")]
     public abstract class BindingRestrictions
@@ -20,7 +21,7 @@ namespace System.Dynamic
         /// Represents an empty set of binding restrictions. This field is read only.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly BindingRestrictions Empty = new CustomRestriction(Expression.Constant(true));
+        public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
 
         private const int TypeRestrictionHash = 0x10000000;
         private const int InstanceRestrictionHash = 0x20000000;
@@ -74,11 +75,11 @@ namespace System.Dynamic
         {
             if (obj.Value == null && obj.HasValue)
             {
-                return BindingRestrictions.GetInstanceRestriction(obj.Expression, null);
+                return GetInstanceRestriction(obj.Expression, null);
             }
             else
             {
-                return BindingRestrictions.GetTypeRestriction(obj.Expression, obj.LimitType);
+                return GetTypeRestriction(obj.Expression, obj.LimitType);
             }
         }
 
@@ -191,7 +192,7 @@ namespace System.Dynamic
 
             if (this == Empty)
             {
-                return Expression.Constant(true);
+                return AstUtils.Constant(true);
             }
 
             var testBuilder = new TestBuilder();
@@ -231,6 +232,7 @@ namespace System.Dynamic
                 Left = left;
                 Right = right;
             }
+
             internal override Expression GetExpression()
             {
                 throw ContractUtils.Unreachable;
@@ -319,7 +321,7 @@ namespace System.Dynamic
                 {
                     return Expression.Equal(
                         Expression.Convert(_expression, typeof(object)),
-                        Expression.Constant(null)
+                        AstUtils.Null
                     );
                 }
 
@@ -342,7 +344,7 @@ namespace System.Dynamic
 #endif
                     Expression.AndAlso(
                         //check that WeekReference was not collected.
-                        Expression.NotEqual(temp, Expression.Constant(null)),
+                        Expression.NotEqual(temp, AstUtils.Null),
                         Expression.Equal(
                             Expression.Convert(_expression, typeof(object)),
                             temp
@@ -366,15 +368,9 @@ namespace System.Dynamic
                 _node = node;
             }
 
-            public bool IsEmpty
-            {
-                get { return _node == Empty; }
-            }
+            public bool IsEmpty => _node == Empty;
 
-            public Expression Test
-            {
-                get { return _node.ToExpression(); }
-            }
+            public Expression Test => _node.ToExpression();
 
             public BindingRestrictions[] Restrictions
             {

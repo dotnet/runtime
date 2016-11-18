@@ -11,76 +11,103 @@ namespace System.Net.Sockets
     {
         public static Task<Socket> AcceptAsync(this Socket socket)
         {
-            return Task<Socket>.Factory.FromAsync(
-                (callback, state) => ((Socket)state).BeginAccept(callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndAccept(asyncResult),
-                state: socket);
+            var tcs = new TaskCompletionSource<Socket>(socket);
+            socket.BeginAccept(iar =>
+            {
+                var innerTcs = (TaskCompletionSource<Socket>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndAccept(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<Socket> AcceptAsync(this Socket socket, Socket acceptSocket)
         {
             const int ReceiveSize = 0;
-            return Task<Socket>.Factory.FromAsync(
-                (socketForAccept, receiveSize, callback, state) => ((Socket)state).BeginAccept(socketForAccept, receiveSize, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndAccept(asyncResult),
-                acceptSocket,
-                ReceiveSize,
-                state: socket);
+            var tcs = new TaskCompletionSource<Socket>(socket);
+            socket.BeginAccept(acceptSocket, ReceiveSize, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<Socket>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndAccept(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
-        public static Task ConnectAsync(this Socket socket, EndPoint remoteEndPoint)
+        public static Task ConnectAsync(this Socket socket, EndPoint remoteEP)
         {
-            return Task.Factory.FromAsync(
-                (targetEndPoint, callback, state) => ((Socket)state).BeginConnect(targetEndPoint, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndConnect(asyncResult),
-                remoteEndPoint,
-                state: socket);
+            var tcs = new TaskCompletionSource<bool>(socket);
+            socket.BeginConnect(remoteEP, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState;
+                try
+                {
+                    ((Socket)innerTcs.Task.AsyncState).EndConnect(iar);
+                    innerTcs.TrySetResult(true);
+                }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task ConnectAsync(this Socket socket, IPAddress address, int port)
         {
-            return Task.Factory.FromAsync(
-                (targetAddress, targetPort, callback, state) => ((Socket)state).BeginConnect(targetAddress, targetPort, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndConnect(asyncResult),
-                address,
-                port,
-                state: socket);
+            var tcs = new TaskCompletionSource<bool>(socket);
+            socket.BeginConnect(address, port, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState;
+                try
+                {
+                    ((Socket)innerTcs.Task.AsyncState).EndConnect(iar);
+                    innerTcs.TrySetResult(true);
+                }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task ConnectAsync(this Socket socket, IPAddress[] addresses, int port)
         {
-            return Task.Factory.FromAsync(
-                (targetAddresses, targetPort, callback, state) => ((Socket)state).BeginConnect(targetAddresses, targetPort, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndConnect(asyncResult),
-                addresses,
-                port,
-                state: socket);
+            var tcs = new TaskCompletionSource<bool>(socket);
+            socket.BeginConnect(addresses, port, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState;
+                try
+                {
+                    ((Socket)innerTcs.Task.AsyncState).EndConnect(iar);
+                    innerTcs.TrySetResult(true);
+                }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task ConnectAsync(this Socket socket, string host, int port)
         {
-            return Task.Factory.FromAsync(
-                (targetHost, targetPort, callback, state) => ((Socket)state).BeginConnect(targetHost, targetPort, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndConnect(asyncResult),
-                host,
-                port,
-                state: socket);
+            var tcs = new TaskCompletionSource<bool>(socket);
+            socket.BeginConnect(host, port, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState;
+                try
+                {
+                    ((Socket)innerTcs.Task.AsyncState).EndConnect(iar);
+                    innerTcs.TrySetResult(true);
+                }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags)
         {
-            return Task<int>.Factory.FromAsync(
-                (targetBuffer, flags, callback, state) => ((Socket)state).BeginReceive(
-                                                              targetBuffer.Array,
-                                                              targetBuffer.Offset,
-                                                              targetBuffer.Count,
-                                                              flags,
-                                                              callback,
-                                                              state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndReceive(asyncResult),
-                buffer,
-                socketFlags,
-                state: socket);
+            var tcs = new TaskCompletionSource<int>(socket);
+            socket.BeginReceive(buffer.Array, buffer.Offset, buffer.Count, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndReceive(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<int> ReceiveAsync(
@@ -88,12 +115,14 @@ namespace System.Net.Sockets
             IList<ArraySegment<byte>> buffers,
             SocketFlags socketFlags)
         {
-            return Task<int>.Factory.FromAsync(
-                (targetBuffers, flags, callback, state) => ((Socket)state).BeginReceive(targetBuffers, flags, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndReceive(asyncResult),
-                buffers,
-                socketFlags,
-                state: socket);
+            var tcs = new TaskCompletionSource<int>(socket);
+            socket.BeginReceive(buffers, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndReceive(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<SocketReceiveFromResult> ReceiveFromAsync(
@@ -102,44 +131,22 @@ namespace System.Net.Sockets
             SocketFlags socketFlags,
             EndPoint remoteEndPoint)
         {
-            object[] packedArguments = new object[] { socket, remoteEndPoint };
-
-            return Task<SocketReceiveFromResult>.Factory.FromAsync(
-                (targetBuffer, flags, callback, state) =>
+            var tcs = new StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>(socket) { _field1 = remoteEndPoint };
+            socket.BeginReceiveFrom(buffer.Array, buffer.Offset, buffer.Count, socketFlags, ref tcs._field1, iar =>
+            {
+                var innerTcs = (StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>)iar.AsyncState;
+                try
                 {
-                    var arguments = (object[])state;
-                    var s = (Socket)arguments[0];
-                    var e = (EndPoint)arguments[1];
-
-                    IAsyncResult result = s.BeginReceiveFrom(
-                        targetBuffer.Array,
-                        targetBuffer.Offset,
-                        targetBuffer.Count,
-                        flags,
-                        ref e,
-                        callback,
-                        state);
-
-                    arguments[1] = e;
-                    return result;
-                },
-                asyncResult =>
-                {
-                    var arguments = (object[])asyncResult.AsyncState;
-                    var s = (Socket)arguments[0];
-                    var e = (EndPoint)arguments[1];
-
-                    int bytesReceived = s.EndReceiveFrom(asyncResult, ref e);
-
-                    return new SocketReceiveFromResult()
+                    int receivedBytes = ((Socket)innerTcs.Task.AsyncState).EndReceiveFrom(iar, ref innerTcs._field1);
+                    innerTcs.TrySetResult(new SocketReceiveFromResult
                     {
-                        ReceivedBytes = bytesReceived,
-                        RemoteEndPoint = e
-                    };
-                },
-                buffer,
-                socketFlags,
-                state: packedArguments);
+                        ReceivedBytes = receivedBytes,
+                        RemoteEndPoint = innerTcs._field1
+                    });
+                }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(
@@ -148,68 +155,37 @@ namespace System.Net.Sockets
             SocketFlags socketFlags,
             EndPoint remoteEndPoint)
         {
-            object[] packedArguments = new object[] { socket, socketFlags, remoteEndPoint };
-
-            return Task<SocketReceiveMessageFromResult>.Factory.FromAsync(
-                (targetBuffer, callback, state) =>
+            var tcs = new StateTaskCompletionSource<SocketFlags, EndPoint, SocketReceiveMessageFromResult>(socket) { _field1 = socketFlags, _field2 = remoteEndPoint };
+            socket.BeginReceiveMessageFrom(buffer.Array, buffer.Offset, buffer.Count, socketFlags, ref tcs._field2, iar =>
+            {
+                var innerTcs = (StateTaskCompletionSource<SocketFlags, EndPoint, SocketReceiveMessageFromResult>)iar.AsyncState;
+                try
                 {
-                    var arguments = (object[])state;
-                    var s = (Socket)arguments[0];
-                    var f = (SocketFlags)arguments[1];
-                    var e = (EndPoint)arguments[2];
-
-                    IAsyncResult result = s.BeginReceiveMessageFrom(
-                        targetBuffer.Array,
-                        targetBuffer.Offset,
-                        targetBuffer.Count,
-                        f,
-                        ref e,
-                        callback,
-                        state);
-
-                    arguments[2] = e;
-                    return result;
-                },
-                asyncResult =>
-                {
-                    var arguments = (object[])asyncResult.AsyncState;
-                    var s = (Socket)arguments[0];
-                    var f = (SocketFlags)arguments[1];
-                    var e = (EndPoint)arguments[2];
-                    IPPacketInformation ipPacket;
-
-                    int bytesReceived = s.EndReceiveMessageFrom(
-                        asyncResult,
-                        ref f,
-                        ref e,
-                        out ipPacket);
-
-                    return new SocketReceiveMessageFromResult()
+                    IPPacketInformation ipPacketInformation;
+                    int receivedBytes = ((Socket)innerTcs.Task.AsyncState).EndReceiveMessageFrom(iar, ref innerTcs._field1, ref innerTcs._field2, out ipPacketInformation);
+                    innerTcs.TrySetResult(new SocketReceiveMessageFromResult
                     {
-                        PacketInformation = ipPacket,
-                        ReceivedBytes = bytesReceived,
-                        RemoteEndPoint = e,
-                        SocketFlags = f
-                    };
-                },
-                buffer,
-                state: packedArguments);
+                        ReceivedBytes = receivedBytes,
+                        RemoteEndPoint = innerTcs._field2,
+                        SocketFlags = innerTcs._field1,
+                        PacketInformation = ipPacketInformation
+                    });
+                }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags)
         {
-            return Task<int>.Factory.FromAsync(
-                (targetBuffer, flags, callback, state) => ((Socket)state).BeginSend(
-                                                              targetBuffer.Array,
-                                                              targetBuffer.Offset,
-                                                              targetBuffer.Count,
-                                                              flags,
-                                                              callback,
-                                                              state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndSend(asyncResult),
-                buffer,
-                socketFlags,
-                state: socket);
+            var tcs = new TaskCompletionSource<int>(socket);
+            socket.BeginSend(buffer.Array, buffer.Offset, buffer.Count, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSend(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<int> SendAsync(
@@ -217,34 +193,42 @@ namespace System.Net.Sockets
             IList<ArraySegment<byte>> buffers,
             SocketFlags socketFlags)
         {
-            return Task<int>.Factory.FromAsync(
-                (targetBuffers, flags, callback, state) => ((Socket)state).BeginSend(targetBuffers, flags, callback, state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndSend(asyncResult),
-                buffers,
-                socketFlags,
-                state: socket);
+            var tcs = new TaskCompletionSource<int>(socket);
+            socket.BeginSend(buffers, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSend(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         public static Task<int> SendToAsync(
             this Socket socket,
             ArraySegment<byte> buffer,
             SocketFlags socketFlags,
-            EndPoint remoteEndPoint)
+            EndPoint remoteEP)
         {
-            return Task<int>.Factory.FromAsync(
-                (targetBuffer, flags, endPoint, callback, state) => ((Socket)state).BeginSendTo(
-                                                                        targetBuffer.Array,
-                                                                        targetBuffer.Offset,
-                                                                        targetBuffer.Count,
-                                                                        flags,
-                                                                        endPoint,
-                                                                        callback,
-                                                                        state),
-                asyncResult => ((Socket)asyncResult.AsyncState).EndSendTo(asyncResult),
-                buffer,
-                socketFlags,
-                remoteEndPoint,
-                state: socket);
+            var tcs = new TaskCompletionSource<int>(socket);
+            socket.BeginSendTo(buffer.Array, buffer.Offset, buffer.Count, socketFlags, remoteEP, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSendTo(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
+        }
+
+        private class StateTaskCompletionSource<TField1, TResult> : TaskCompletionSource<TResult>
+        {
+            internal TField1 _field1;
+            public StateTaskCompletionSource(object baseState) : base(baseState) { }
+        }
+
+        private class StateTaskCompletionSource<TField1, TField2, TResult> : StateTaskCompletionSource<TField1, TResult>
+        {
+            internal TField2 _field2;
+            public StateTaskCompletionSource(object baseState) : base(baseState) { }
         }
     }
 }

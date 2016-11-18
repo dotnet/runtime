@@ -282,8 +282,6 @@ namespace System.Net.Http
             }
         }
 
-        private SslProtocols ActualSslProtocols => this.SslProtocols != SslProtocols.None ? this.SslProtocols : SecurityProtocol.DefaultSecurityProtocols;
-
         internal bool SupportsAutomaticDecompression => s_supportsAutomaticDecompression;
 
         internal DecompressionMethods AutomaticDecompression

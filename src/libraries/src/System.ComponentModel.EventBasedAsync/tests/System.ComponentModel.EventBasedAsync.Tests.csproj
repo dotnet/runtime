@@ -4,6 +4,9 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <!-- this tests run in multiple AppDomains in full framework, so if an Assert fails we would get a Serialization exception instead of the real failure.
+    adding this xunit so it runs in one AppDomain -->
+    <XunitOptions Condition="'$(TestTFM)'=='net46'">$(XunitOptions) -noappdomain </XunitOptions>
     <ProjectGuid>{59E9B218-81D0-4A80-A4B7-66C716136D82}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.ComponentModel.EventBasedAsync.Tests</AssemblyName>

@@ -166,6 +166,8 @@ namespace System.IO
         public System.IO.FileStream OpenRead() { throw null; }
         public System.IO.StreamReader OpenText() { throw null; }
         public System.IO.FileStream OpenWrite() { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string destinationBackupFileName) { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
         public override string ToString() { throw null; }
     }
 

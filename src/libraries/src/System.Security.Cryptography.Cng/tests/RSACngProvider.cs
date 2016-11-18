@@ -33,6 +33,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 return _supports384PrivateKey.Value;
             }
         }
+
+        public bool SupportsSha2Oaep
+        {
+            get { return true; }
+        }
     }
 
     public partial class RSAFactory

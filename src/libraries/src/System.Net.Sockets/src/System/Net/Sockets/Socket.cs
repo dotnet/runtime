@@ -2817,7 +2817,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSend"));
             }
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             if (s_perfCountersEnabled)
@@ -2997,7 +2997,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendTo"));
             }
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             if (s_perfCountersEnabled)
@@ -3316,7 +3316,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndReceive"));
             }
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             if (s_perfCountersEnabled)
@@ -3518,7 +3518,7 @@ namespace System.Net.Sockets
 
             Internals.SocketAddress socketAddressOriginal = SnapshotAndSerialize(ref endPoint);
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             // Update socket address size.
@@ -3633,7 +3633,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref remoteEP);
 
             // Set up the result and set it to collect the context.
-            OverlappedAsyncResult asyncResult = new OverlappedAsyncResult(this, state, callback);
+            var asyncResult = new OriginalAddressOverlappedAsyncResult(this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
 
             // Start the ReceiveFrom.
@@ -3657,7 +3657,7 @@ namespace System.Net.Sockets
             return asyncResult;
         }
 
-        private void DoBeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
+        private void DoBeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OriginalAddressOverlappedAsyncResult asyncResult)
         {
             EndPoint oldEndPoint = _rightEndPoint;
 
@@ -3752,7 +3752,7 @@ namespace System.Net.Sockets
 
             Internals.SocketAddress socketAddressOriginal = SnapshotAndSerialize(ref endPoint);
 
-            int bytesTransferred = (int)castedAsyncResult.InternalWaitForCompletion();
+            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
             // Update socket address size.

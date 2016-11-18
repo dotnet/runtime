@@ -103,6 +103,7 @@ namespace System.Diagnostics.Tracing
         Sqm = (long)2251799813685248,
         WdiContext = (long)562949953421312,
         WdiDiagnostic = (long)1125899906842624,
+        MicrosoftTelemetry = (long)562949953421312,
     }
     public enum EventLevel
     {

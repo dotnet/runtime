@@ -17,18 +17,18 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>f57830454938f27095b28723d3f8339ac3d9eb8e</CoreFxCurrentRef>
-    <CoreClrCurrentRef>ce2ed29b88e2b7594e216a66f10a5dc08c0ef286</CoreClrCurrentRef>
-    <ExternalCurrentRef>ce2ed29b88e2b7594e216a66f10a5dc08c0ef286</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>ce2ed29b88e2b7594e216a66f10a5dc08c0ef286</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>825abc44ee05aa0e5f45437ce3ceaf7165e3fc30</CoreFxCurrentRef>
+    <CoreClrCurrentRef>825abc44ee05aa0e5f45437ce3ceaf7165e3fc30</CoreClrCurrentRef>
+    <ExternalCurrentRef>d6bf8abc1e1f92953fb4153e0a20d26204aff10b</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>825abc44ee05aa0e5f45437ce3ceaf7165e3fc30</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24705-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24707-02</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24707-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24707-00</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24717-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24717-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24716-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24717-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -101,7 +101,7 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
-      <Version>1.0.2</Version>
+      <Version>1.0.3</Version>
     </StaticDependency>
 
     <XUnitDependency Include="xunit"/>

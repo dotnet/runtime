@@ -7,7 +7,7 @@ using System.IO;
 
 internal class WrappedStream : Stream
 {
-    internal WrappedStream(Stream baseStream, Boolean canRead, Boolean canWrite, Boolean canSeek, EventHandler onClosed)
+    internal WrappedStream(Stream baseStream, bool canRead, bool canWrite, bool canSeek, EventHandler onClosed)
     {
         _baseStream = baseStream;
         _onClosed = onClosed;
@@ -121,5 +121,5 @@ internal class WrappedStream : Stream
 
     private Stream _baseStream;
     private EventHandler _onClosed;
-    private Boolean _canRead, _canWrite, _canSeek;
+    private bool _canRead, _canWrite, _canSeek;
 }

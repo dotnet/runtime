@@ -258,7 +258,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-#if FEATURE_MAKE_RUN_METHODS    
+#if FEATURE_MAKE_RUN_METHODS
                 if (DelegateHelpers.MakeDelegate(paramTypes) == delegateType)
                 {
                     name = "Make" + name + paramInfos.Length;

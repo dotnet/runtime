@@ -148,6 +148,7 @@
     <Compile Include="System\StringTests.netstandard1.7.cs" />
     <Compile Include="System\TimeSpanTests.netstandard1.7.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
+    <Compile Include="TimeZoneTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
@@ -196,6 +197,8 @@
     <Compile Include="System\Reflection\StrongNameKeyPairTests.netstandard1.7.cs" />
     <Compile Include="System\ActivatorTest.netstandard1.7.cs" />
     <Compile Include="System\ExceptionTests.netstandard1.7.cs" />
+    <Compile Include="System\TypeTests.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\Tests.netstandard.1.7.cs" />
     <Compile Include="System\GCTests.netstandard1.7.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
@@ -215,6 +218,10 @@
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>TestAssembly</Name>
     </ProjectReference>
+    <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj">
+      <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
+      <Name>TestLoadAssembly</Name>
+    </ProjectReference>
     <ProjectReference Include="..\pkg\System.Runtime.pkgproj">
       <Project>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</Project>
       <Name>System.Runtime</Name>
@@ -223,6 +230,14 @@
       <Project>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</Project>
       <Name>System.Private.Uri</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\pkg\System.Collections.NonGeneric.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

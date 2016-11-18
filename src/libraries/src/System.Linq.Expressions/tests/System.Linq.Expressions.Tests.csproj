@@ -88,11 +88,15 @@
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="DebugInfo\DebugInfoExpressionTests.cs" />
     <Compile Include="DebugInfo\SymbolDocumentInfoTests.cs" />
+    <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="DelegateType\ActionTypeTests.cs" />
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
     <Compile Include="DelegateType\FuncTypeTests.cs" />
     <Compile Include="DelegateType\GetDelegateTypeTests.cs" />
+    <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />
+    <Compile Include="Dynamic\BindingRestrictionsTests.cs" />
+    <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
@@ -159,6 +163,7 @@
     <Compile Include="MemberInit\MemberBindTests.cs" />
     <Compile Include="MemberInit\MemberInitTests.cs" />
     <Compile Include="Member\MemberAccessTests.cs" />
+    <Compile Include="New\NewWithByRefParameterTests.cs" />
     <Compile Include="New\NewTests.cs" />
     <Compile Include="New\NewWithParameterTests.cs" />
     <Compile Include="New\NewWithTwoParametersTests.cs" />
@@ -170,6 +175,7 @@
     <Compile Include="Ternary\TernaryArrayTests.cs" />
     <Compile Include="Ternary\TernaryNullableTests.cs" />
     <Compile Include="Ternary\TernaryTests.cs" />
+    <Compile Include="TestExtensions\InlinePerCompilationTypeAttribute.cs" />
     <Compile Include="TestExtensions\PerCompilationTypeAttribute.cs" />
     <Compile Include="TestExtensions\TestOrderer.cs" />
     <Compile Include="TestExtensions\TestOrderAttribute.cs" />

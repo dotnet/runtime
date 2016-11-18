@@ -1315,88 +1315,7 @@ namespace System.Xml.Xsl.Xslt
                 return;
             }
 
-            ScriptClass scriptClass;
-            StringBuilder scriptCode = new StringBuilder();
-            string uriString = _input.Uri;
-            int lineNumber = 0;
-            int lastEndLine = 0;
-
-            scriptClass = _compiler.Scripts.GetScriptClass(scriptNs, language, (IErrorHelper)this);
-            if (scriptClass == null)
-            {
-                _input.SkipNode();
-                return;
-            }
-
-            QName parentName = _input.ElementName;
-            if (_input.MoveToFirstChild())
-            {
-                do
-                {
-                    switch (_input.NodeType)
-                    {
-                        case XmlNodeType.Text:
-                            int startLine = _input.Start.Line;
-                            int endLine = _input.End.Line;
-                            if (scriptCode.Length == 0)
-                            {
-                                lineNumber = startLine;
-                            }
-                            else if (lastEndLine < startLine)
-                            {
-                                // A multiline comment, a PI, or an unrecognized element encountered within
-                                // this script block. Insert missed '\n' characters here; otherwise line numbers
-                                // in error messages and in the debugger will be screwed up. This action may spoil
-                                // the script if the current position is situated in the middle of some identifier
-                                // or string literal; however we hope users will not put XML nodes there.
-                                scriptCode.Append('\n', startLine - lastEndLine);
-                            }
-                            scriptCode.Append(_input.Value);
-                            lastEndLine = endLine;
-                            break;
-                        case XmlNodeType.Element:
-                            if (_input.IsNs(_atoms.UrnMsxsl) && (_input.IsKeyword(_atoms.Assembly) || _input.IsKeyword(_atoms.Using)))
-                            {
-                                if (scriptCode.Length != 0)
-                                {
-                                    ReportError(/*[XT_012]*/SR.Xslt_ScriptNotAtTop, _input.QualifiedName);
-                                    _input.SkipNode();
-                                }
-                                else if (_input.IsKeyword(_atoms.Assembly))
-                                {
-                                    LoadMsAssembly(scriptClass);
-                                }
-                                else if (_input.IsKeyword(_atoms.Using))
-                                {
-                                    LoadMsUsing(scriptClass);
-                                }
-                            }
-                            else
-                            {
-                                ReportError(/*[XT_012]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
-                                _input.SkipNode();
-                            }
-                            break;
-                        default:
-                            Debug.Assert(
-                                _input.NodeType == XmlNodeType.SignificantWhitespace ||
-                                _input.NodeType == XmlNodeType.Whitespace
-                            );
-                            // Skip leading whitespaces
-                            if (scriptCode.Length != 0)
-                            {
-                                goto case XmlNodeType.Text;
-                            }
-                            break;
-                    }
-                } while (_input.MoveToNextSibling());
-            }
-
-            if (scriptCode.Length == 0)
-            {
-                lineNumber = _input.Start.Line;
-            }
-            scriptClass.AddScriptBlock(scriptCode.ToString(), uriString, lineNumber, _input.Start);
+            throw new PlatformNotSupportedException("Compiling JScript/CSharp scripts is not supported"); // Not adding any scripts as script compilation is not available
         }
 
         private XsltAttribute[] _assemblyAttributes = {
@@ -1446,11 +1365,8 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     Debug.Assert(href != null);
-                    //BinCompat TODO
-                    throw new FileLoadException("Can't load assembly from Uri", ResolveUri(href, _input.BaseUri).ToString());
-
-                    //asmLocation = Assembly.LoadFrom(ResolveUri(href, input.BaseUri).ToString()).Location;
-                    //scriptClass.refAssembliesByHref = true;
+                    asmLocation = Assembly.LoadFrom(ResolveUri(href, _input.BaseUri).ToString()).Location;
+                    scriptClass.refAssembliesByHref = true;
                 }
 
                 if (asmLocation != null)

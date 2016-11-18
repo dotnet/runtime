@@ -30,9 +30,10 @@ namespace System.Net.Security.Tests
         public async Task SslStream_ClientAndServerUsesAuxRecord_Ok()
         {
             X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate();
-            var server = new SchSendAuxRecordTestServer(serverCert);
+            var server = new HttpsTestServer(serverCert);
 
-            int port = server.StartServer();
+            server.StartServer();
+            int port = server.Port; 
             var client = new SchSendAuxRecordTestClient("localhost", port);
 
             var tasks = new Task[2];
@@ -41,7 +42,7 @@ namespace System.Net.Security.Tests
 
             await Task.WhenAll(tasks).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
             
-            if (server.IsInconclusive)
+            if (server.IsAuxRecordDetectionInconclusive)
             {
                 _output.WriteLine("Test inconclusive: The Operating system preferred a non-CBC or Null cipher.");
             }

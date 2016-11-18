@@ -342,15 +342,15 @@ namespace System.Security.AccessControl
 
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_INVALID_NAME:
+                case Interop.Errors.ERROR_INVALID_NAME:
                     exception = new ArgumentException(SR.Argument_InvalidName, nameof(name));
                     break;
 
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     exception = new ArgumentException(SR.AccessControl_InvalidHandle);
                     break;
 
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     if ((context != null) && (context is bool) && ((bool)context))
                     { // DirectorySecurity
                         if ((name != null) && (name.Length != 0))

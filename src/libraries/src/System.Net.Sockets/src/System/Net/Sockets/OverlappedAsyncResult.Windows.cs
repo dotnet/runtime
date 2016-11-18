@@ -109,7 +109,7 @@ namespace System.Net.Sockets
                 LogBuffer(numBytes);
             }
 
-            return numBytes;
+            return base.PostCompletion(numBytes);
         }
 
         private void LogBuffer(int size)

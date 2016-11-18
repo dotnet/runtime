@@ -28,7 +28,7 @@ namespace System.IO.Compression
         {
             base.GetObjectData(si, context);
             si.AddValue("zlibErrorContext", _zlibErrorContext);
-            si.AddValue("zlibErrorCode", (Int32)_zlibErrorCode);
+            si.AddValue("zlibErrorCode", (int)_zlibErrorCode);
             si.AddValue("zlibErrorMessage", _zlibErrorMessage);
         }
     }

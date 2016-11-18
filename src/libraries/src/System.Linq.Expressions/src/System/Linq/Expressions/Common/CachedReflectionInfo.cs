@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions
 {
-    internal static class CachedReflectionInfo
+    internal static partial class CachedReflectionInfo
     {
         private static Type[] s_ArrayOfType_Bool;
         public  static Type[]   ArrayOfType_Bool =>
@@ -26,7 +26,7 @@ namespace System.Linq.Expressions
                                       (s_Decimal_Ctor_Int64 = typeof(decimal).GetConstructor(new[] { typeof(long) }));
 
         private static ConstructorInfo s_Decimal_Ctor_Int32_Int32_Int32_Bool_Byte;
-        public  static ConstructorInfo   Decimal_Ctor_Int32_Int32_Int32_Bool_Byte => 
+        public  static ConstructorInfo   Decimal_Ctor_Int32_Int32_Int32_Bool_Byte =>
                                        s_Decimal_Ctor_Int32_Int32_Int32_Bool_Byte ??
                                       (s_Decimal_Ctor_Int32_Int32_Int32_Bool_Byte = typeof(decimal).GetConstructor(new[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }));
 
@@ -102,52 +102,52 @@ namespace System.Linq.Expressions
 
         private static MethodInfo s_Object_GetType;
         public  static MethodInfo   Object_GetType =>
-                                  s_Object_GetType ?? 
+                                  s_Object_GetType ??
                                  (s_Object_GetType = typeof(object).GetMethod(nameof(object.GetType)));
 
         private static MethodInfo s_Decimal_op_Implicit_Byte;
         public  static MethodInfo   Decimal_op_Implicit_Byte =>
-                                  s_Decimal_op_Implicit_Byte ?? 
+                                  s_Decimal_op_Implicit_Byte ??
                                  (s_Decimal_op_Implicit_Byte = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(byte) }));
 
         private static MethodInfo s_Decimal_op_Implicit_SByte;
         public  static MethodInfo   Decimal_op_Implicit_SByte =>
-                                  s_Decimal_op_Implicit_SByte ?? 
+                                  s_Decimal_op_Implicit_SByte ??
                                  (s_Decimal_op_Implicit_SByte = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(sbyte) }));
 
         private static MethodInfo s_Decimal_op_Implicit_Int16;
         public  static MethodInfo   Decimal_op_Implicit_Int16 =>
-                                  s_Decimal_op_Implicit_Int16 ?? 
+                                  s_Decimal_op_Implicit_Int16 ??
                                  (s_Decimal_op_Implicit_Int16 = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(short) }));
 
         private static MethodInfo s_Decimal_op_Implicit_UInt16;
         public  static MethodInfo   Decimal_op_Implicit_UInt16 =>
-                                  s_Decimal_op_Implicit_UInt16 ?? 
+                                  s_Decimal_op_Implicit_UInt16 ??
                                  (s_Decimal_op_Implicit_UInt16 = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(ushort) }));
 
         private static MethodInfo s_Decimal_op_Implicit_Int32;
         public  static MethodInfo   Decimal_op_Implicit_Int32 =>
-                                  s_Decimal_op_Implicit_Int32 ?? 
+                                  s_Decimal_op_Implicit_Int32 ??
                                  (s_Decimal_op_Implicit_Int32 = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(int) }));
 
         private static MethodInfo s_Decimal_op_Implicit_UInt32;
         public  static MethodInfo   Decimal_op_Implicit_UInt32 =>
-                                  s_Decimal_op_Implicit_UInt32 ?? 
+                                  s_Decimal_op_Implicit_UInt32 ??
                                  (s_Decimal_op_Implicit_UInt32 = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(uint) }));
 
         private static MethodInfo s_Decimal_op_Implicit_Int64;
         public  static MethodInfo   Decimal_op_Implicit_Int64 =>
-                                  s_Decimal_op_Implicit_Int64 ?? 
+                                  s_Decimal_op_Implicit_Int64 ??
                                  (s_Decimal_op_Implicit_Int64 = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(long) }));
 
         private static MethodInfo s_Decimal_op_Implicit_UInt64;
         public  static MethodInfo   Decimal_op_Implicit_UInt64 =>
-                                  s_Decimal_op_Implicit_UInt64 ?? 
+                                  s_Decimal_op_Implicit_UInt64 ??
                                  (s_Decimal_op_Implicit_UInt64 = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(ulong) }));
 
         private static MethodInfo s_Decimal_op_Implicit_Char;
         public  static MethodInfo   Decimal_op_Implicit_Char =>
-                                  s_Decimal_op_Implicit_Char ?? 
+                                  s_Decimal_op_Implicit_Char ??
                                  (s_Decimal_op_Implicit_Char = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(char) }));
 
         private static MethodInfo s_Math_Pow_Double_Double;

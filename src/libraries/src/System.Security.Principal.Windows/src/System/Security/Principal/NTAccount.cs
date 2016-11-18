@@ -293,7 +293,7 @@ namespace System.Security.Principal
                 someFailed = false;
                 uint ReturnCode;
 
-                ReturnCode = Interop.mincore.LsaLookupNames2(LsaHandle, 0, sourceAccounts.Count, Names, ref ReferencedDomainsPtr, ref SidsPtr);
+                ReturnCode = Interop.Advapi32.LsaLookupNames2(LsaHandle, 0, sourceAccounts.Count, Names, ref ReferencedDomainsPtr, ref SidsPtr);
 
                 //
                 // Make a decision regarding whether it makes sense to proceed
@@ -316,9 +316,9 @@ namespace System.Security.Principal
                 }
                 else if (ReturnCode != 0)
                 {
-                    int win32ErrorCode = Interop.mincore.RtlNtStatusToDosError(unchecked((int)ReturnCode));
+                    int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(unchecked((int)ReturnCode));
 
-                    if (win32ErrorCode != Interop.mincore.Errors.ERROR_TRUSTED_RELATIONSHIP_FAILURE)
+                    if (win32ErrorCode != Interop.Errors.ERROR_TRUSTED_RELATIONSHIP_FAILURE)
                     {
                         Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupNames(2) returned unrecognized error {0}", win32ErrorCode));
                     }

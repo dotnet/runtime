@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class RSA : AsymmetricAlgorithm
     {
-        public static RSA Create()
+        public static new RSA Create()
         {
             return new RSAImplementation.RSAOpenSsl();
         }

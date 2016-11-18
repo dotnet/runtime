@@ -13,49 +13,30 @@ namespace System.Net.Http.Headers
 
         #region Parser instances
 
-        internal static readonly HttpHeaderParser HostParser = new GenericHeaderParser(false, ParseHost,
-            StringComparer.OrdinalIgnoreCase);
-        internal static readonly HttpHeaderParser TokenListParser = new GenericHeaderParser(true, ParseTokenList,
-            StringComparer.OrdinalIgnoreCase);
-        internal static readonly HttpHeaderParser SingleValueNameValueWithParametersParser = new GenericHeaderParser(false,
-            NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
-        internal static readonly HttpHeaderParser MultipleValueNameValueWithParametersParser = new GenericHeaderParser(true,
-            NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
-        internal static readonly HttpHeaderParser SingleValueNameValueParser = new GenericHeaderParser(false, ParseNameValue);
-        internal static readonly HttpHeaderParser MultipleValueNameValueParser = new GenericHeaderParser(true, ParseNameValue);
-        internal static readonly HttpHeaderParser MailAddressParser = new GenericHeaderParser(false, ParseMailAddress);
-        internal static readonly HttpHeaderParser SingleValueProductParser = new GenericHeaderParser(false, ParseProduct);
-        internal static readonly HttpHeaderParser MultipleValueProductParser = new GenericHeaderParser(true, ParseProduct);
-        internal static readonly HttpHeaderParser RangeConditionParser = new GenericHeaderParser(false,
-            RangeConditionHeaderValue.GetRangeConditionLength);
-        internal static readonly HttpHeaderParser SingleValueAuthenticationParser = new GenericHeaderParser(false,
-            AuthenticationHeaderValue.GetAuthenticationLength);
-        internal static readonly HttpHeaderParser MultipleValueAuthenticationParser = new GenericHeaderParser(true,
-            AuthenticationHeaderValue.GetAuthenticationLength);
-        internal static readonly HttpHeaderParser RangeParser = new GenericHeaderParser(false,
-            RangeHeaderValue.GetRangeLength);
-        internal static readonly HttpHeaderParser RetryConditionParser = new GenericHeaderParser(false,
-            RetryConditionHeaderValue.GetRetryConditionLength);
-        internal static readonly HttpHeaderParser ContentRangeParser = new GenericHeaderParser(false,
-            ContentRangeHeaderValue.GetContentRangeLength);
-        internal static readonly HttpHeaderParser ContentDispositionParser = new GenericHeaderParser(false,
-            ContentDispositionHeaderValue.GetDispositionTypeLength);
-        internal static readonly HttpHeaderParser SingleValueStringWithQualityParser = new GenericHeaderParser(false,
-            StringWithQualityHeaderValue.GetStringWithQualityLength);
-        internal static readonly HttpHeaderParser MultipleValueStringWithQualityParser = new GenericHeaderParser(true,
-            StringWithQualityHeaderValue.GetStringWithQualityLength);
-        internal static readonly HttpHeaderParser SingleValueEntityTagParser = new GenericHeaderParser(false,
-            ParseSingleEntityTag);
-        internal static readonly HttpHeaderParser MultipleValueEntityTagParser = new GenericHeaderParser(true,
-            ParseMultipleEntityTags);
-        internal static readonly HttpHeaderParser SingleValueViaParser = new GenericHeaderParser(false,
-            ViaHeaderValue.GetViaLength);
-        internal static readonly HttpHeaderParser MultipleValueViaParser = new GenericHeaderParser(true,
-            ViaHeaderValue.GetViaLength);
-        internal static readonly HttpHeaderParser SingleValueWarningParser = new GenericHeaderParser(false,
-            WarningHeaderValue.GetWarningLength);
-        internal static readonly HttpHeaderParser MultipleValueWarningParser = new GenericHeaderParser(true,
-            WarningHeaderValue.GetWarningLength);
+        internal static readonly GenericHeaderParser HostParser = new GenericHeaderParser(false, ParseHost, StringComparer.OrdinalIgnoreCase);
+        internal static readonly GenericHeaderParser TokenListParser = new GenericHeaderParser(true, ParseTokenList, StringComparer.OrdinalIgnoreCase);
+        internal static readonly GenericHeaderParser SingleValueNameValueWithParametersParser = new GenericHeaderParser(false, NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
+        internal static readonly GenericHeaderParser MultipleValueNameValueWithParametersParser = new GenericHeaderParser(true, NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
+        internal static readonly GenericHeaderParser SingleValueNameValueParser = new GenericHeaderParser(false, ParseNameValue);
+        internal static readonly GenericHeaderParser MultipleValueNameValueParser = new GenericHeaderParser(true, ParseNameValue);
+        internal static readonly GenericHeaderParser MailAddressParser = new GenericHeaderParser(false, ParseMailAddress);
+        internal static readonly GenericHeaderParser SingleValueProductParser = new GenericHeaderParser(false, ParseProduct);
+        internal static readonly GenericHeaderParser MultipleValueProductParser = new GenericHeaderParser(true, ParseProduct);
+        internal static readonly GenericHeaderParser RangeConditionParser = new GenericHeaderParser(false, RangeConditionHeaderValue.GetRangeConditionLength);
+        internal static readonly GenericHeaderParser SingleValueAuthenticationParser = new GenericHeaderParser(false, AuthenticationHeaderValue.GetAuthenticationLength);
+        internal static readonly GenericHeaderParser MultipleValueAuthenticationParser = new GenericHeaderParser(true, AuthenticationHeaderValue.GetAuthenticationLength);
+        internal static readonly GenericHeaderParser RangeParser = new GenericHeaderParser(false, RangeHeaderValue.GetRangeLength);
+        internal static readonly GenericHeaderParser RetryConditionParser = new GenericHeaderParser(false, RetryConditionHeaderValue.GetRetryConditionLength);
+        internal static readonly GenericHeaderParser ContentRangeParser = new GenericHeaderParser(false, ContentRangeHeaderValue.GetContentRangeLength);
+        internal static readonly GenericHeaderParser ContentDispositionParser = new GenericHeaderParser(false, ContentDispositionHeaderValue.GetDispositionTypeLength);
+        internal static readonly GenericHeaderParser SingleValueStringWithQualityParser = new GenericHeaderParser(false, StringWithQualityHeaderValue.GetStringWithQualityLength);
+        internal static readonly GenericHeaderParser MultipleValueStringWithQualityParser = new GenericHeaderParser(true, StringWithQualityHeaderValue.GetStringWithQualityLength);
+        internal static readonly GenericHeaderParser SingleValueEntityTagParser = new GenericHeaderParser(false, ParseSingleEntityTag);
+        internal static readonly GenericHeaderParser MultipleValueEntityTagParser = new GenericHeaderParser(true, ParseMultipleEntityTags);
+        internal static readonly GenericHeaderParser SingleValueViaParser = new GenericHeaderParser(false, ViaHeaderValue.GetViaLength);
+        internal static readonly GenericHeaderParser MultipleValueViaParser = new GenericHeaderParser(true, ViaHeaderValue.GetViaLength);
+        internal static readonly GenericHeaderParser SingleValueWarningParser = new GenericHeaderParser(false, WarningHeaderValue.GetWarningLength);
+        internal static readonly GenericHeaderParser MultipleValueWarningParser = new GenericHeaderParser(true, WarningHeaderValue.GetWarningLength);
 
         #endregion
 

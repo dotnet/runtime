@@ -878,8 +878,8 @@ namespace System.Xml.Xsl.IlGen
                 OpCode opcode = meth.IsVirtual || meth.IsAbstract ? OpCodes.Callvirt : OpCodes.Call;
 
                 TraceCall(opcode, meth);
-                //BinCompat TODO: test this
-                //this.ilgen.Emit(opcode, ((ModuleBuilder) methBldr.GetModule()).GetMethodToken(meth).Token);
+
+                this._ilgen.Emit(opcode, ((ModuleBuilder) methBldr.Module).MetadataToken);
 
                 if (_lastSourceInfo != null)
                 {
