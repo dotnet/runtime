@@ -2903,6 +2903,19 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         varNum = tmpDsc->tdTempNum();
         offset = 0;
     }
+    else
+    {
+        // At this point we must have a memory operand that is a contained indir: if we do not, we should have handled
+        // this instruction above in the reg/imm or reg/reg case.
+        assert(mem != nullptr);
+        assert(memBase != nullptr);
+
+        if (memBase->OperGet() == GT_LCL_VAR_ADDR)
+        {
+            varNum = memBase->AsLclVarCommon()->GetLclNum();
+            offset = 0;
+        }
+    }
 
     // Spill temp numbers are negative and start with -1
     // which also happens to be BAD_VAR_NUM. For this reason
@@ -2910,7 +2923,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (varNum != BAD_VAR_NUM || tmpDsc != nullptr)
     {
         // Is the memory op in the source position?
-        if (src->isContainedLclField() || src->isContainedLclVar() || src->isContainedSpillTemp())
+        if (src->isContainedMemoryOp())
         {
             if (instrHasImplicitRegPairDest(ins))
             {
