@@ -200,7 +200,8 @@ namespace Microsoft.DotNet.Cli.Build
 
             // Form the dynamic path that would not collide if another instance of this is running.
             string basePath = Path.Combine(Dirs.Intermediate, Guid.NewGuid().ToString());
-
+            Directory.CreateDirectory(basePath);
+            
             foreach (var file in Directory.GetFiles(pathToAssemblies))
             {
                 string fileName = Path.GetFileName(file);
@@ -211,7 +212,7 @@ namespace Microsoft.DotNet.Cli.Build
                     continue;
                 }
 
-                string tempPathName = Path.Combine(basePath, Path.ChangeExtension(file, "readytorun"));
+                string tempPathName = Path.Combine(basePath, Path.ChangeExtension(fileName, "readytorun"));
 
                 IList<string> crossgenArgs = new List<string> {
                     "-readytorun", "-in", file, "-out", tempPathName,
