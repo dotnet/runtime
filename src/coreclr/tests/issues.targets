@@ -204,12 +204,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd">
             <Issue>tail. call pop ret is only supported on amd64</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\regression\mismatch32\mismatch32\mismatch32.cmd">
-            <Issue>needs triage: System.AccessViolationException: Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\regression\mismatch64\mismatch64\mismatch64.cmd">
-            <Issue>needs triage: System.AccessViolationException: Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
             <Issue>2420. x86 JIT doesn't support implicit tail call optimization or tail. call pop ret sequence</Issue>
         </ExcludeList>
