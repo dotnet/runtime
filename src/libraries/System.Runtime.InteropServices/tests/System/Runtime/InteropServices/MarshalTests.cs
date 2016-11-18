@@ -230,6 +230,22 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
+        public static void PtrToStringAutoWithLength()
+        {
+            Assert.Throws<ArgumentNullException>(() => Marshal.PtrToStringAuto(IntPtr.Zero, 0));
+
+            String s = "Hello World";
+            int len = 5;
+            IntPtr ptr = Marshal.StringToCoTaskMemAuto(s);
+
+            
+            String s2 = Marshal.PtrToStringAuto(ptr, len);
+            Assert.Equal(s.Substring(0, len), s2);
+
+            Marshal.FreeCoTaskMem(ptr);  
+        }
+
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public static void SetComObjectData()
         {
