@@ -9,10 +9,13 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LockFileRegion", SetLastError=true)]
-        internal static extern int LockFileRegion(SafeHandle fd, long offset, long length);
+        internal enum LockType : short
+        {
+            F_UNLCK = 2,    // unlock
+            F_WRLCK = 3     // exclusive or write lock
+        }
         
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UnlockFileRegion", SetLastError=true)]
-        internal static extern int UnlockFileRegion(SafeHandle fd, long offset, long length);
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LockFileRegion", SetLastError=true)]
+        internal static extern int LockFileRegion(SafeHandle fd, long offset, long length, LockType lockType);
     }
 }
