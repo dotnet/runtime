@@ -93,6 +93,18 @@ static char *mono_environ[1] = { NULL };
 extern char **environ;
 #endif
 
+/*
+ * Handles > _WAPI_PROCESS_UNHANDLED are pseudo handles which represent processes
+ * not started by the runtime.
+ */
+/* This marks a system process that we don't have a handle on */
+/* FIXME: Cope with PIDs > sizeof guint */
+#define _WAPI_PROCESS_UNHANDLED (1 << (8*sizeof(pid_t)-1))
+
+#define WAPI_IS_PSEUDO_PROCESS_HANDLE(handle) ((GPOINTER_TO_UINT(handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED)
+#define WAPI_PID_TO_HANDLE(pid) GINT_TO_POINTER (_WAPI_PROCESS_UNHANDLED + (pid))
+#define WAPI_HANDLE_TO_PID(handle) (GPOINTER_TO_UINT ((handle)) - _WAPI_PROCESS_UNHANDLED)
+
 typedef enum {
 	STARTF_USESHOWWINDOW=0x001,
 	STARTF_USESIZE=0x002,
@@ -145,7 +157,6 @@ struct _MonoProcess {
 /* MonoW32HandleProcess is a structure containing all the required information for process handling. */
 typedef struct {
 	pid_t id;
-	gboolean child;
 	guint32 exitstatus;
 	gpointer main_thread;
 	WapiFileTime create_time;
@@ -185,33 +196,6 @@ static const gunichar2 *utf16_space = utf16_space_bytes;
 static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
 static const gunichar2 *utf16_quote = utf16_quote_bytes;
 
-/* Check if a pid is valid - i.e. if a process exists with this pid. */
-static gboolean
-process_is_alive (pid_t pid)
-{
-#if defined(HOST_WATCHOS)
-	return TRUE; // TODO: Rewrite using sysctl
-#elif defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
-	if (pid == 0)
-		return FALSE;
-	if (kill (pid, 0) == 0)
-		return TRUE;
-	if (errno == EPERM)
-		return TRUE;
-	return FALSE;
-#elif defined(__HAIKU__)
-	team_info teamInfo;
-	if (get_team_info ((team_id)pid, &teamInfo) == B_OK)
-		return TRUE;
-	return FALSE;
-#else
-	gchar *dir = g_strdup_printf ("/proc/%d", pid);
-	gboolean result = access (dir, F_OK) == 0;
-	g_free (dir);
-	return result;
-#endif
-}
-
 static void
 process_details (gpointer data)
 {
@@ -242,6 +226,10 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	MonoProcess *mp;
 	gboolean res;
 
+	/* FIXME: We can now easily wait on processes that aren't our own children,
+	 * but WaitFor*Object won't call us for pseudo handles. */
+	g_assert (!WAPI_IS_PSEUDO_PROCESS_HANDLE (handle));
+
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u)", __func__, handle, timeout);
 
 	if (alerted)
@@ -261,11 +249,6 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 
 	pid = process_handle->id;
 
-	if (pid == mono_process_current_pid ()) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on current process", __func__, handle, timeout);
-		return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
-	}
-
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): PID: %d", __func__, handle, timeout, pid);
 
 	/* We don't need to lock processes here, the entry
@@ -274,29 +257,25 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	if (!mp) {
 		pid_t res;
 
+		if (pid == mono_process_current_pid ()) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on current process", __func__, handle, timeout);
+			return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+		}
+
 		/* This path is used when calling Process.HasExited, so
 		 * it is only used to poll the state of the process, not
 		 * to actually wait on it to exit */
 		g_assert (timeout == 0);
 
-		/* We alway create a MonoProcess for a child process */
-		g_assert (!process_handle->child);
-
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on non-child process", __func__, handle, timeout);
 
 		res = waitpid (pid, &status, WNOHANG);
-		if (res != -1)
-			g_error ("%s: a process handle without a mono_process is not a child process", __func__);
-
-		if (errno == ECHILD) {
-			if (!process_is_alive (pid)) {
-				/* assume the process had exited */
-				process_handle->exited = TRUE;
-				process_handle->exitstatus = -1;
-				mono_w32handle_set_signal_state (handle, TRUE, TRUE);
-			}
-
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): non-child process waited successfully (2)", __func__, handle, timeout);
+		if (res == 0) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): non-child process wait timeout", __func__, handle, timeout);
+			return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+		}
+		if (res > 0) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): non-child process waited successfully", __func__, handle, timeout);
 			return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 		}
 
@@ -525,6 +504,31 @@ mono_w32process_cleanup (void)
 	g_free (cli_launcher);
 }
 
+/* Check if a pid is valid - i.e. if a process exists with this pid. */
+static gboolean
+is_pid_valid (pid_t pid)
+{
+	gboolean result = FALSE;
+
+#if defined(HOST_WATCHOS)
+	result = TRUE; // TODO: Rewrite using sysctl
+#elif defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
+	if (((kill(pid, 0) == 0) || (errno == EPERM)) && pid != 0)
+		result = TRUE;
+#elif defined(__HAIKU__)
+	team_info teamInfo;
+	if (get_team_info ((team_id)pid, &teamInfo) == B_OK)
+		result = TRUE;
+#else
+	char *dir = g_strdup_printf ("/proc/%d", pid);
+	if (!access (dir, F_OK))
+		result = TRUE;
+	g_free (dir);
+#endif
+
+	return result;
+}
+
 static int
 len16 (const gunichar2 *str)
 {
@@ -575,6 +579,11 @@ mono_w32process_get_pid (gpointer handle)
 	MonoW32HandleProcess *process_handle;
 	gboolean res;
 
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle)) {
+		/* This is a pseudo handle */
+		return WAPI_HANDLE_TO_PID (handle);
+	}
+
 	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
 	if (!res) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -600,6 +609,8 @@ get_process_foreach_callback (gpointer handle, gpointer handle_specific, gpointe
 
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_PROCESS)
 		return FALSE;
+
+	g_assert (!WAPI_IS_PSEUDO_PROCESS_HANDLE (handle));
 
 	process_handle = (MonoW32HandleProcess*) handle_specific;
 
@@ -639,23 +650,9 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 		return handle;
 	}
 
-	if (process_is_alive (pid)) {
-		/* non-child process */
-		MonoW32HandleProcess process_handle;
-
-		memset (&process_handle, 0, sizeof (process_handle));
-		process_handle.id = pid;
-		process_handle.proc_name = mono_w32process_get_name (pid);
-
-		handle = mono_w32handle_new (MONO_W32HANDLE_PROCESS, &process_handle);
-		if (handle == INVALID_HANDLE_VALUE) {
-			g_warning ("%s: error creating process handle", __func__);
-
-			SetLastError (ERROR_OUTOFMEMORY);
-			return NULL;
-		}
-
-		return handle;
+	if (is_pid_valid (pid)) {
+		/* Return a pseudo handle for processes we don't have handles for */
+		return WAPI_PID_TO_HANDLE (pid);
 	}
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find pid %d", __func__, pid);
@@ -733,14 +730,19 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 	if (size < sizeof(gpointer))
 		return FALSE;
 
-	res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
-		return FALSE;
-	}
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (process)) {
+		pid = WAPI_HANDLE_TO_PID (process);
+		proc_name = mono_w32process_get_name (pid);
+	} else {
+		res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+		if (!res) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
+			return FALSE;
+		}
 
-	pid = process_handle->id;
-	proc_name = g_strdup (process_handle->proc_name);
+		pid = process_handle->id;
+		proc_name = g_strdup (process_handle->proc_name);
+	}
 
 	if (!proc_name) {
 		modules[0] = NULL;
@@ -856,14 +858,20 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	if (basename == NULL || size == 0)
 		return 0;
 
-	res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
-		return 0;
-	}
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (process)) {
+		/* This is a pseudo handle */
+		pid = (pid_t)WAPI_HANDLE_TO_PID (process);
+		proc_name = mono_w32process_get_name (pid);
+	} else {
+		res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+		if (!res) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
+			return 0;
+		}
 
-	pid = process_handle->id;
-	proc_name = g_strdup (process_handle->proc_name);
+		pid = process_handle->id;
+		proc_name = g_strdup (process_handle->proc_name);
+	}
 
 	mods = mono_w32process_get_modules (pid);
 	if (!mods) {
@@ -954,14 +962,19 @@ mono_w32process_module_get_information (gpointer process, gpointer module, WapiM
 	if (modinfo == NULL || size < sizeof (WapiModuleInfo))
 		return FALSE;
 
-	res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
-		return FALSE;
-	}
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (process)) {
+		pid = (pid_t)WAPI_HANDLE_TO_PID (process);
+		proc_name = mono_w32process_get_name (pid);
+	} else {
+		res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+		if (!res) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
+			return FALSE;
+		}
 
-	pid = process_handle->id;
-	proc_name = g_strdup (process_handle->proc_name);
+		pid = process_handle->id;
+		proc_name = g_strdup (process_handle->proc_name);
+	}
 
 	mods = mono_w32process_get_modules (pid);
 	if (!mods) {
@@ -1649,7 +1662,6 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline, gpointer new
 
 		memset (&process_handle, 0, sizeof (process_handle));
 		process_handle.id = pid;
-		process_handle.child = TRUE;
 		process_handle.proc_name = g_strdup (prog);
 		process_set_defaults (&process_handle);
 
@@ -2029,10 +2041,24 @@ MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gint32 *exitcode)
 {
 	MonoW32HandleProcess *process_handle;
+	guint32 pid;
 	gboolean res;
 
 	if (!exitcode)
 		return FALSE;
+
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle)) {
+		pid = WAPI_HANDLE_TO_PID (handle);
+		/* This is a pseudo handle, so we don't know what the exit
+		 * code was, but we can check whether it's alive or not */
+		if (is_pid_valid (pid)) {
+			*exitcode = STILL_ACTIVE;
+			return TRUE;
+		} else {
+			*exitcode = -1;
+			return TRUE;
+		}
+	}
 
 	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
 	if (!res) {
@@ -2058,6 +2084,8 @@ ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gin
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_CloseProcess (gpointer handle)
 {
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle))
+		return TRUE;
 	return CloseHandle (handle);
 }
 
@@ -2068,16 +2096,22 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 	MonoW32HandleProcess *process_handle;
 	int ret;
 	pid_t pid;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
-		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle)) {
+		/* This is a pseudo handle */
+		pid = (pid_t)WAPI_HANDLE_TO_PID (handle);
+	} else {
+		gboolean res;
+
+		res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+		if (!res) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+			SetLastError (ERROR_INVALID_HANDLE);
+			return FALSE;
+		}
+
+		pid = process_handle->id;
 	}
-
-	pid = process_handle->id;
 
 	ret = kill (pid, exitcode == -1 ? SIGKILL : SIGTERM);
 	if (ret == 0)
@@ -2105,14 +2139,14 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handl
 	if (!min || !max)
 		return FALSE;
 
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle))
+		return FALSE;
+
 	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
 	if (!res) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
 		return FALSE;
 	}
-
-	if (!process_handle->child)
-		return FALSE;
 
 	*min = process_handle->min_working_set;
 	*max = process_handle->max_working_set;
@@ -2125,14 +2159,14 @@ ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handl
 	MonoW32HandleProcess *process_handle;
 	gboolean res;
 
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle))
+		return FALSE;
+
 	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
 	if (!res) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
 		return FALSE;
 	}
-
-	if (!process_handle->child)
-		return FALSE;
 
 	process_handle->min_working_set = min;
 	process_handle->max_working_set = max;
@@ -2146,15 +2180,21 @@ ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 	MonoW32HandleProcess *process_handle;
 	gint ret;
 	pid_t pid;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return 0;
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle)) {
+		/* This is a pseudo handle */
+		pid = (pid_t)WAPI_HANDLE_TO_PID (handle);
+	} else {
+		gboolean res;
+
+		res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+		if (!res) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return 0;
+		}
+
+		pid = process_handle->id;
 	}
-
-	pid = process_handle->id;
 
 	errno = 0;
 	ret = getpriority (PRIO_PROCESS, pid);
@@ -2201,15 +2241,21 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 	int ret;
 	int prio;
 	pid_t pid;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle)) {
+		/* This is a pseudo handle */
+		pid = (pid_t)WAPI_HANDLE_TO_PID (handle);
+	} else {
+		gboolean res;
+
+		res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+		if (!res) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return FALSE;
+		}
+
+		pid = process_handle->id;
 	}
-
-	pid = process_handle->id;
 
 	switch (priorityClass) {
 	case MONO_W32PROCESS_PRIORITY_CLASS_IDLE:
@@ -2293,22 +2339,22 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 	memset (kernel_processtime, 0, sizeof (ProcessTime));
 	memset (user_processtime, 0, sizeof (ProcessTime));
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
-		return FALSE;
-	}
-
-	if (!process_handle->child) {
+	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (handle)) {
 		gint64 start_ticks, user_ticks, kernel_ticks;
 
-		mono_process_get_times (GINT_TO_POINTER (process_handle->id),
+		mono_process_get_times (GINT_TO_POINTER (WAPI_HANDLE_TO_PID (handle)),
 			&start_ticks, &user_ticks, &kernel_ticks);
 
 		ticks_to_processtime (start_ticks, creation_processtime);
 		ticks_to_processtime (user_ticks, kernel_processtime);
 		ticks_to_processtime (kernel_ticks, user_processtime);
 		return TRUE;
+	}
+
+	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
+	if (!res) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+		return FALSE;
 	}
 
 	wapifiletime_to_processtime (process_handle->create_time, creation_processtime);
