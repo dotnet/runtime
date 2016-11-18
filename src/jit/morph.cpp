@@ -12675,7 +12675,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                                 // Also make sure that the tree type matches the fieldVarType and that it's lvFldOffset
                                 // is zero
-                                if (fieldVarDsc->TypeGet() == tree->TypeGet() && (fieldVarDsc->lvFldOffset == 0))
+                                if (fieldVarDsc->TypeGet() == typ && (fieldVarDsc->lvFldOffset == 0))
                                 {
                                     // We can just use the existing promoted field LclNum
                                     temp->gtLclVarCommon.SetLclNum(lclNumFld);
@@ -12693,8 +12693,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            tree->gtType      = temp->gtType;
-                            foldAndReturnTemp = true;
+                            tree->gtType = typ = temp->TypeGet();
+                            foldAndReturnTemp  = true;
                         }
                         else
                         {
@@ -12709,7 +12709,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                                 // Append the field sequence, change the type.
                                 temp->AsLclFld()->gtFieldSeq =
                                     GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
-                                temp->gtType = tree->TypeGet();
+                                temp->gtType = typ;
 
                                 foldAndReturnTemp = true;
                             }
@@ -12778,9 +12778,9 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 #ifdef _TARGET_ARM_
                             // Check for a LclVar TYP_STRUCT with misalignment on a Floating Point field
                             //
-                            if (varTypeIsFloating(tree->TypeGet()))
+                            if (varTypeIsFloating(typ))
                             {
-                                if ((ival1 % emitTypeSize(tree->TypeGet())) != 0)
+                                if ((ival1 % emitTypeSize(typ)) != 0)
                                 {
                                     tree->gtFlags |= GTF_IND_UNALIGNED;
                                     break;
@@ -12793,24 +12793,35 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     }
                 }
 
-#ifdef DEBUG
-                // If we have decided to fold, then temp cannot be nullptr
-                if (foldAndReturnTemp)
+                // At this point we may have a lclVar or lclFld that might be foldable with a bit of extra massaging:
+                // - We may have a load of a local where the load has a different type than the local
+                // - We may have a load of a local plus an offset
+                //
+                // In these cases, we will change the lclVar or lclFld into a lclFld of the appropriate type and
+                // offset if doing so is legal. The only cases in which this transformation is illegal are if the load
+                // begins before the local or if the load extends beyond the end of the local (i.e. if the load is
+                // out-of-bounds w.r.t. the local).
+                if ((temp != nullptr) && !foldAndReturnTemp)
                 {
-                    assert(temp != nullptr);
-                }
-#endif
+                    assert(temp->OperIsLocal());
 
-                if (temp != nullptr)
-                {
-                    noway_assert(op1->gtOper == GT_ADD || op1->gtOper == GT_ADDR);
+                    const unsigned   lclNum = temp->AsLclVarCommon()->gtLclNum;
+                    LclVarDsc* const varDsc = &lvaTable[lclNum];
 
-                    // If we haven't already decided to fold this expression
-                    //
-                    if (!foldAndReturnTemp)
+                    const var_types tempTyp = temp->TypeGet();
+                    const bool      useExactSize =
+                        varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
+                    const unsigned varSize = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
+
+                    // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
+                    // a lclFld: the access represented by an lclFld node must begin at or after the start of the
+                    // lclVar and must not extend beyond the end of the lclVar.
+                    if ((ival1 < 0) || ((ival1 + genTypeSize(typ)) > varSize))
                     {
-                        noway_assert(temp->OperIsLocal());
-                        LclVarDsc* varDsc = &(lvaTable[temp->AsLclVarCommon()->gtLclNum]);
+                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
+                    }
+                    else
+                    {
                         // Make sure we don't separately promote the fields of this struct.
                         if (varDsc->lvRegStruct)
                         {
@@ -12819,7 +12830,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         }
                         else
                         {
-                            lvaSetVarDoNotEnregister(temp->gtLclVarCommon.gtLclNum DEBUGARG(DNER_LocalField));
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                         }
 
                         // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
@@ -12844,18 +12855,18 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         temp->gtType      = tree->gtType;
                         foldAndReturnTemp = true;
                     }
+                }
 
-                    assert(foldAndReturnTemp == true);
+                if (foldAndReturnTemp)
+                {
+                    assert(temp != nullptr);
+                    assert(temp->TypeGet() == typ);
+                    assert((op1->OperGet() == GT_ADD) || (op1->OperGet() == GT_ADDR));
 
-                    // Keep the DONT_CSE flag in sync
-                    // (i.e keep the original value of this flag from tree)
-                    // as it can be set for 'temp' because a GT_ADDR always marks it for it's op1
-                    //
+                    // Copy the value of GTF_DONT_CSE from the original tree to `temp`: it can be set for
+                    // 'temp' because a GT_ADDR always marks it for its operand.
                     temp->gtFlags &= ~GTF_DONT_CSE;
                     temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
-
-                    noway_assert(op1->gtOper == GT_ADD || op1->gtOper == GT_ADDR);
-                    noway_assert(temp->gtType == tree->gtType);
 
                     if (op1->OperGet() == GT_ADD)
                     {
