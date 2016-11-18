@@ -346,6 +346,24 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.UnsafeLoadFrom(null));
         }        
 
+        [Fact]
+        public void GetFile()
+        {
+            Assert.Throws<ArgumentNullException>(() => typeof(AssemblyTests).Assembly.GetFile(null));
+            Assert.Throws<ArgumentException>(() => typeof(AssemblyTests).Assembly.GetFile(""));
+            Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
+            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Runtime.Tests.dll"));
+            Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Runtime.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
+        }
+
+        [Fact]
+        public void GetFiles()
+        {
+            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
+            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles().Length, 1);
+            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
+        }
+
         // Helpers
         private static Assembly GetGetCallingAssembly()
         {
