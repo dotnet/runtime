@@ -342,7 +342,26 @@ namespace System.Runtime.Serialization
 
             private void ReadClass(ClassDataContract classContract)
             {
-                ReadMembers(classContract, null /*extensionDataLocal*/);
+                if (classContract.HasExtensionData)
+                {
+                    LocalBuilder extensionDataLocal = _ilg.DeclareLocal(Globals.TypeOfExtensionDataObject, "extensionData");
+                    _ilg.New(XmlFormatGeneratorStatics.ExtensionDataObjectCtor);
+                    _ilg.Store(extensionDataLocal);
+                    ReadMembers(classContract, extensionDataLocal);
+
+                    ClassDataContract currentContract = classContract;
+                    while (currentContract != null)
+                    {
+                        MethodInfo extensionDataSetMethod = currentContract.ExtensionDataSetMethod;
+                        if (extensionDataSetMethod != null)
+                            _ilg.Call(_objectLocal, extensionDataSetMethod, extensionDataLocal);
+                        currentContract = currentContract.BaseContract;
+                    }
+                }
+                else
+                {
+                    ReadMembers(classContract, null /*extensionDataLocal*/);
+                }
             }
 
             private void ReadMembers(ClassDataContract classContract, LocalBuilder extensionDataLocal)

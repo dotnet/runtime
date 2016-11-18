@@ -361,30 +361,14 @@ public static class XmlDictionaryWriterTest
         if (rwType != ReaderWriterFactory.ReaderWriterType.MTOM)
         {
             // stream should be released right after WriteValue
-            if (myStreamProvider.StreamReleased)
-            {
-                Console.WriteLine("Ok, stream released right after WriteValue");
-            }
-            else
-            {
-                Console.WriteLine("Error, stream not released after WriteValue");
-                return false;
-            }
+            Assert.True(myStreamProvider.StreamReleased, "Error, stream not released after WriteValue");
         }
         writer.WriteEndElement();
 
         // stream should be released now for MTOM
         if (rwType == ReaderWriterFactory.ReaderWriterType.MTOM)
         {
-            if (myStreamProvider.StreamReleased)
-            {
-                Console.WriteLine("Ok, stream released right after WriteValue");
-            }
-            else
-            {
-                Console.WriteLine("Error, stream not released after WriteValue");
-                return false;
-            }
+            Assert.True(myStreamProvider.StreamReleased, "Error, stream not released after WriteEndElement");
         }
         writer.Flush();
         return true;
@@ -396,15 +380,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Root");
         Task writeValueAsynctask = writer.WriteValueAsync(myStreamProvider);
         writeValueAsynctask.Wait();
-        if (myStreamProvider.StreamReleased)
-        {
-            Console.WriteLine("Ok, stream released right after AsyncWriteValue");
-        }
-        else
-        {
-            Console.WriteLine("Error, stream not released after AsyncWriteValue");
-            return false;
-        }
+        Assert.True(myStreamProvider.StreamReleased, "Error, stream not released.");
         writer.WriteEndElement();
         writer.Flush();
         return true;
@@ -416,16 +392,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Root");
         Task writeValueBase64Asynctask = writer.WriteBase64Async(byteArray, 0, byteArray.Length);
         writeValueBase64Asynctask.Wait();
-
-        if (myStreamProvider.StreamReleased)
-        {
-            Console.WriteLine("Ok, stream released right after AsyncWriteValueBase64");
-        }
-        else
-        {
-            Console.WriteLine("Error, stream not released after AsyncWriteValueBase64");
-            return false;
-        }
+        Assert.True(myStreamProvider.StreamReleased, "Error, stream not released.");
         writer.WriteEndElement();
         writer.Flush();
         return true;

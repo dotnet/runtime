@@ -85,6 +85,9 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static PropertyInfo s_extensionDataProperty;
+        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ?? 
+                                                              (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData"));
 
         [SecurityCritical]
         private static ConstructorInfo s_dictionaryEnumeratorCtor;
@@ -221,6 +224,11 @@ namespace System.Runtime.Serialization
                 return s_nodeTypeProperty;
             }
         }
+
+        private static ConstructorInfo s_extensionDataObjectCtor;
+        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
+                                                                   (s_extensionDataObjectCtor =
+                                                                       typeof (ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, new Type[] {}, null));
 
         [SecurityCritical]
         private static ConstructorInfo s_hashtableCtor;
@@ -874,6 +882,10 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo s_writeExtensionDataMethod;
+        internal static MethodInfo WriteExtensionDataMethod => s_writeExtensionDataMethod ?? 
+                                                               (s_writeExtensionDataMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers));
+
         [SecurityCritical]
         private static MethodInfo s_writeXmlValueMethod;
         internal static MethodInfo WriteXmlValueMethod
@@ -953,6 +965,10 @@ namespace System.Runtime.Serialization
                 return s_memberNamesField;
             }
         }
+
+        private static MethodInfo s_extensionDataSetExplicitMethodInfo;
+        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ?? 
+                                                                         (s_extensionDataSetExplicitMethodInfo = typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod));
 
         [SecurityCritical]
         private static PropertyInfo s_childElementNamespacesProperty;

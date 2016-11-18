@@ -200,6 +200,11 @@ namespace System.Runtime.Serialization
             { return _helper.OnDeserialized; }
         }
 
+        internal MethodInfo ExtensionDataSetMethod
+        {
+            get { return _helper.ExtensionDataSetMethod; }
+        }
+
 #if !NET_NATIVE
         public override DataContractDictionary KnownDataContracts
         {
@@ -238,7 +243,7 @@ namespace System.Runtime.Serialization
             { return _helper.HasDataContract; }
             set { _helper.HasDataContract = value; }
         }
-
+#endif
         public bool HasExtensionData
         {
             [SecuritySafeCritical]
@@ -246,7 +251,6 @@ namespace System.Runtime.Serialization
             { return _helper.HasExtensionData; }
             set { _helper.HasExtensionData = value; }
         }
-#endif
 
         internal bool IsKeyValuePairAdapter
         {
@@ -833,6 +837,7 @@ namespace System.Runtime.Serialization
             private List<DataMember> _members;
             private MethodInfo _onSerializing, _onSerialized;
             private MethodInfo _onDeserializing, _onDeserialized;
+            private MethodInfo _extensionDataSetMethod;
             private DataContractDictionary _knownDataContracts;
             private bool _isISerializable;
             private bool _isKnownTypeAttributeChecked;
@@ -846,9 +851,7 @@ namespace System.Runtime.Serialization
             /// in serialization/deserialization we base the decision whether to Demand SerializationFormatter permission on this value and isNonAttributedType
             /// </SecurityNote>
             private bool _hasDataContract;
-#if NET_NATIVE
             private bool _hasExtensionData;
-#endif
             private bool _isScriptObject;
 
             private XmlDictionaryString[] _childElementNamespaces;
@@ -904,7 +907,15 @@ namespace System.Runtime.Serialization
                     }
                 }
                 else
+                {
                     this.BaseContract = null;
+                }
+
+                _hasExtensionData = (Globals.TypeOfIExtensibleDataObject.IsAssignableFrom(type));
+                if (_hasExtensionData && !HasDataContract && !IsNonAttributedType)
+                {
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.OnlyDataContractTypesCanHaveExtensionData, DataContract.GetClrTypeFullName(type))));
+                }
 
                 if (_isISerializable)
                 {
@@ -1315,7 +1326,13 @@ namespace System.Runtime.Serialization
                                 MethodInfo method = methods[i];
                                 Type prevAttributeType = null;
                                 ParameterInfo[] parameters = method.GetParameters();
-                                //THese attributes are cut from mscorlib.
+                                if (HasExtensionData && IsValidExtensionDataSetMethod(method, parameters))
+                                {
+                                    if (method.Name == Globals.ExtensionDataSetExplicitMethod || !method.IsPublic)
+                                        _extensionDataSetMethod = XmlFormatGeneratorStatics.ExtensionDataSetExplicitMethodInfo;
+                                    else
+                                        _extensionDataSetMethod = method;
+                                }
                                 if (IsValidCallback(method, parameters, Globals.TypeOfOnSerializingAttribute, _onSerializing, ref prevAttributeType))
                                     _onSerializing = method;
                                 if (IsValidCallback(method, parameters, Globals.TypeOfOnSerializedAttribute, _onSerialized, ref prevAttributeType))
@@ -1332,6 +1349,20 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            private bool IsValidExtensionDataSetMethod(MethodInfo method, ParameterInfo[] parameters)
+            {
+                if (method.Name == Globals.ExtensionDataSetExplicitMethod || method.Name == Globals.ExtensionDataSetMethod)
+                {
+                    if (_extensionDataSetMethod != null)
+                        ThrowInvalidDataContractException(SR.Format(SR.DuplicateExtensionDataSetMethod, method, _extensionDataSetMethod, DataContract.GetClrTypeFullName(method.DeclaringType)));
+                    if (method.ReturnType != Globals.TypeOfVoid)
+                        DataContract.ThrowInvalidDataContractException(SR.Format(SR.ExtensionDataSetMustReturnVoid, DataContract.GetClrTypeFullName(method.DeclaringType), method), method.DeclaringType);
+                    if (parameters == null || parameters.Length != 1 || parameters[0].ParameterType != Globals.TypeOfExtensionDataObject)
+                        DataContract.ThrowInvalidDataContractException(SR.Format(SR.ExtensionDataSetParameterInvalid, DataContract.GetClrTypeFullName(method.DeclaringType), method, Globals.TypeOfExtensionDataObject), method.DeclaringType);
+                    return true;
+                }
+                return false;
+            }
 
             private static bool IsValidCallback(MethodInfo method, ParameterInfo[] parameters, Type attributeType, MethodInfo currentCallback, ref Type prevAttributeType)
             {
@@ -1409,6 +1440,14 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            internal MethodInfo ExtensionDataSetMethod
+            {
+                get
+                {
+                    EnsureMethodsImported();
+                    return _extensionDataSetMethod;
+                }
+            }
 
             internal override DataContractDictionary KnownDataContracts
             {
@@ -1452,13 +1491,12 @@ namespace System.Runtime.Serialization
                 set { _hasDataContract = value; }
 #endif
             }
-#if NET_NATIVE
+
             internal bool HasExtensionData
             {
                 get { return _hasExtensionData; }
                 set { _hasExtensionData = value; }
             }
-#endif
 
             internal bool IsNonAttributedType
             {
