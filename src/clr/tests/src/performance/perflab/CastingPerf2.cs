@@ -2,10 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using CastingPerf2;
+using PerfLabTests.CastingPerf2;
 using Microsoft.Xunit.Performance;
 
-namespace CastingPerf2
+namespace PerfLabTests.CastingPerf2
 {
     public interface IFoo
     {
@@ -95,7 +95,7 @@ namespace CastingPerf2
         public static IFoo ifo, ifo1, ifo2, ifo3, ifo4, ifo5, ifo6, ifo7, ifo8, ifo9;
         public static IFoo_5 if_0, if_1, if_2, if_3, if_4, if_5, if_6, if_7, if_8, if_9;
 
-        [Benchmark(InnerIterationCount=200000)]
+        [Benchmark(InnerIterationCount = 200000)]
         public static void ObjFooIsObj()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -104,7 +104,7 @@ namespace CastingPerf2
                         o = foo;
         }
 
-        [Benchmark(InnerIterationCount=200000)]
+        [Benchmark(InnerIterationCount = 200000)]
         public static void FooObjIsFoo()
         {
             o = foo;
@@ -115,7 +115,7 @@ namespace CastingPerf2
                         f = (Foo)o;
         }
 
-        [Benchmark(InnerIterationCount=200000)]
+        [Benchmark(InnerIterationCount = 200000)]
         public static void FooObjIsNull()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -124,7 +124,7 @@ namespace CastingPerf2
                         o = (Foo)n;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void FooObjIsDescendant()
         {
             o = foo_5;
@@ -135,7 +135,7 @@ namespace CastingPerf2
                         f = (Foo)o;
         }
 
-        [Benchmark(InnerIterationCount=200000)]
+        [Benchmark(InnerIterationCount = 200000)]
         public static void IFooFooIsIFoo()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -144,7 +144,7 @@ namespace CastingPerf2
                         ifo = foo;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void IFooObjIsIFoo()
         {
             o = foo;
@@ -155,7 +155,7 @@ namespace CastingPerf2
                         ifo = (IFoo)o;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void IFooObjIsIFooInterAlia()
         {
             o = foo2;
@@ -166,7 +166,7 @@ namespace CastingPerf2
                         if_0 = (IFoo_5)o;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void IFooObjIsDescendantOfIFoo()
         {
             o = foo_5;
@@ -177,7 +177,7 @@ namespace CastingPerf2
                         ifo = (IFoo)o;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void ObjInt()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -186,7 +186,7 @@ namespace CastingPerf2
                         o = (Object)j;
         }
 
-        [Benchmark(InnerIterationCount=200000)]
+        [Benchmark(InnerIterationCount = 200000)]
         public static void IntObj()
         {
             o = (Object)1;
@@ -197,7 +197,7 @@ namespace CastingPerf2
                         j = (int)o;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void ObjScalarValueType()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -206,7 +206,7 @@ namespace CastingPerf2
                         o = svt;
         }
 
-        [Benchmark(InnerIterationCount=300000)]
+        [Benchmark(InnerIterationCount = 300000)]
         public static void ScalarValueTypeObj()
         {
             o = svt;
@@ -217,7 +217,7 @@ namespace CastingPerf2
                         svt = (FooSVT)o;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void ObjObjrefValueType()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -226,7 +226,7 @@ namespace CastingPerf2
                         o = (Object)orvt;
         }
 
-        [Benchmark(InnerIterationCount=200000)]
+        [Benchmark(InnerIterationCount = 200000)]
         public static void ObjrefValueTypeObj()
         {
             o = (Object)orvt;
@@ -237,7 +237,7 @@ namespace CastingPerf2
                         orvt = (FooORVT)o;
         }
 
-        [Benchmark(InnerIterationCount=100000)]
+        [Benchmark(InnerIterationCount = 100000)]
         public static void FooObjCastIfIsa()
         {
             o = foo;
