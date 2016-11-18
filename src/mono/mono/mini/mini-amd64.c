@@ -3426,6 +3426,9 @@ mono_arch_have_fast_tls (void)
 	static gboolean inited = FALSE;
 	guint8 *ins;
 
+	if (mini_get_debug_options ()->use_fallback_tls)
+		return FALSE;
+
 	if (inited)
 		return have_fast_tls;
 
@@ -3483,6 +3486,8 @@ mono_arch_have_fast_tls (void)
 #elif defined(TARGET_ANDROID)
 	return FALSE;
 #else
+	if (mini_get_debug_options ()->use_fallback_tls)
+		return FALSE;
 	return TRUE;
 #endif
 }

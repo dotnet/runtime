@@ -1763,7 +1763,10 @@ mono_create_fast_tls_setter (MonoCompile *cfg, MonoInst* value, MonoTlsKey key)
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
-	MonoInst *fast_tls = mono_create_fast_tls_getter (cfg, key);
+	MonoInst *fast_tls = NULL;
+
+	if (!mini_get_debug_options ()->use_fallback_tls)
+		fast_tls = mono_create_fast_tls_getter (cfg, key);
 
 	if (fast_tls) {
 		MONO_ADD_INS (cfg->cbb, fast_tls);
@@ -1788,7 +1791,10 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 static MonoInst*
 mono_create_tls_set (MonoCompile *cfg, MonoInst *value, MonoTlsKey key)
 {
-	MonoInst *fast_tls = mono_create_fast_tls_setter (cfg, value, key);
+	MonoInst *fast_tls = NULL;
+
+	if (!mini_get_debug_options ()->use_fallback_tls)
+		fast_tls = mono_create_fast_tls_setter (cfg, value, key);
 
 	if (fast_tls) {
 		MONO_ADD_INS (cfg->cbb, fast_tls);
