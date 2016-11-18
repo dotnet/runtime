@@ -26,6 +26,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\LocalDataStoreSlot.cs" />
+    <Compile Include="System\Threading\CompressedStack.cs" />
     <Compile Include="System\Threading\Thread.cs" />
     <Compile Include="System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\Thread.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />

@@ -3188,7 +3188,6 @@ namespace System.Runtime.ConstrainedExecution
 
 namespace System.Runtime.InteropServices
 {
-    [System.Security.SecurityCriticalAttribute]
     public abstract partial class CriticalHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
         protected System.IntPtr handle;
@@ -3196,9 +3195,7 @@ namespace System.Runtime.InteropServices
         public bool IsClosed { get { throw null; } }
         public abstract bool IsInvalid { get; }
         public void Close() { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public void Dispose() { }
-        [System.Security.SecurityCriticalAttribute]
         protected virtual void Dispose(bool disposing) { }
         ~CriticalHandle() { }
         protected abstract bool ReleaseHandle();
