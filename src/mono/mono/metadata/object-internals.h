@@ -1211,6 +1211,9 @@ typedef struct {
 	guint32     processor_architecture;
 } MonoReflectionAssemblyName;
 
+/* Safely access System.Reflection.AssemblyName from native code */
+TYPED_HANDLE_DECL (MonoReflectionAssemblyName);
+
 typedef struct {
 	MonoObject  obj;
 	MonoString *name;
