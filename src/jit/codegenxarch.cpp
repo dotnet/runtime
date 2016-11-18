@@ -546,6 +546,90 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     }
 }
 
+#ifdef _TARGET_X86_
+//------------------------------------------------------------------------
+// genCodeForLongUMod: Generate code for a tree of the form
+//                     `(umod (gt_long x y) (const int))`
+//
+// Arguments:
+//   node - the node for which to generate code
+//
+void CodeGen::genCodeForLongUMod(GenTreeOp* node)
+{
+    assert(node != nullptr);
+    assert(node->OperGet() == GT_UMOD);
+    assert(node->TypeGet() == TYP_INT);
+
+    GenTreeOp* const dividend = node->gtOp1->AsOp();
+    assert(dividend->OperGet() == GT_LONG);
+    assert(varTypeIsLong(dividend));
+
+    GenTree* const dividendLo = dividend->gtOp1;
+    GenTree* const dividendHi = dividend->gtOp2;
+    assert(!dividendLo->isContained());
+    assert(!dividendHi->isContained());
+
+    GenTreeIntCon* const divisor = node->gtOp2->AsIntCon();
+    assert(!divisor->isContained());
+    assert(divisor->gtIconVal >= 2);
+    assert(divisor->gtIconVal <= 0x3fffffff);
+
+    genConsumeOperands(node);
+
+    // dividendLo must be in RAX; dividendHi must be in RDX
+    genCopyRegIfNeeded(dividendLo, REG_EAX);
+    genCopyRegIfNeeded(dividendHi, REG_EDX);
+
+    // At this point, EAX:EDX contains the 64bit dividend and op2->gtRegNum
+    // contains the 32bit divisor. We want to generate the following code:
+    //
+    //   cmp edx, divisor->gtRegNum
+    //   jb noOverflow
+    //
+    //   mov temp, eax
+    //   mov eax, edx
+    //   xor edx, edx
+    //   div divisor->gtRegNum
+    //   mov eax, temp
+    //
+    // noOverflow:
+    //   div divisor->gtRegNum
+    //
+    // This works because (a * 2^32 + b) % c = ((a % c) * 2^32 + b) % c.
+
+    BasicBlock* const noOverflow = genCreateTempLabel();
+
+    //   cmp edx, divisor->gtRegNum
+    //   jb noOverflow
+    inst_RV_RV(INS_cmp, REG_EDX, divisor->gtRegNum);
+    inst_JMP(EJ_jb, noOverflow);
+
+    //   mov temp, eax
+    //   mov eax, edx
+    //   xor edx, edx
+    //   div divisor->gtRegNum
+    //   mov eax, temp
+    const regNumber tempReg = genRegNumFromMask(node->gtRsvdRegs);
+    inst_RV_RV(INS_mov, tempReg, REG_EAX, TYP_INT);
+    inst_RV_RV(INS_mov, REG_EAX, REG_EDX, TYP_INT);
+    instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
+    inst_RV(INS_div, divisor->gtRegNum, TYP_INT);
+    inst_RV_RV(INS_mov, REG_EAX, tempReg, TYP_INT);
+
+    // noOverflow:
+    //   div divisor->gtRegNum
+    genDefineTempLabel(noOverflow);
+    inst_RV(INS_div, divisor->gtRegNum, TYP_INT);
+
+    const regNumber targetReg = node->gtRegNum;
+    if (targetReg != REG_EDX)
+    {
+        inst_RV_RV(INS_mov, targetReg, REG_RDX, TYP_INT);
+    }
+    genProduceReg(node);
+}
+#endif // _TARGET_X86_
+
 //------------------------------------------------------------------------
 // genCodeForDivMod: Generate code for a DIV or MOD operation.
 //
@@ -554,7 +638,15 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
-    GenTree*   dividend   = treeNode->gtOp1;
+    GenTree* dividend = treeNode->gtOp1;
+#ifdef _TARGET_X86_
+    if (varTypeIsLong(dividend->TypeGet()))
+    {
+        genCodeForLongUMod(treeNode);
+        return;
+    }
+#endif // _TARGET_X86_
+
     GenTree*   divisor    = treeNode->gtOp2;
     genTreeOps oper       = treeNode->OperGet();
     emitAttr   size       = emitTypeSize(treeNode);
@@ -562,27 +654,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     var_types  targetType = treeNode->TypeGet();
     emitter*   emit       = getEmitter();
 
-#ifdef _TARGET_X86_
-    bool     dividendIsLong = varTypeIsLong(dividend->TypeGet());
-    GenTree* dividendLo     = nullptr;
-    GenTree* dividendHi     = nullptr;
-
-    if (dividendIsLong)
-    {
-        // If dividend is a GT_LONG, the we need to make sure its lo and hi parts are not contained.
-        dividendLo = dividend->gtGetOp1();
-        dividendHi = dividend->gtGetOp2();
-
-        assert(!dividendLo->isContained());
-        assert(!dividendHi->isContained());
-        assert(divisor->IsCnsIntOrI());
-    }
-    else
-#endif
-    {
-        // dividend is not contained.
-        assert(!dividend->isContained());
-    }
+    // dividend is not contained.
+    assert(!dividend->isContained());
 
     genConsumeOperands(treeNode->AsOp());
     if (varTypeIsFloating(targetType))
@@ -617,37 +690,19 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     }
     else
     {
-#ifdef _TARGET_X86_
-        if (dividendIsLong)
-        {
-            assert(dividendLo != nullptr && dividendHi != nullptr);
+        // dividend must be in RAX
+        genCopyRegIfNeeded(dividend, REG_RAX);
 
-            // dividendLo must be in RAX; dividendHi must be in RDX
-            genCopyRegIfNeeded(dividendLo, REG_EAX);
-            genCopyRegIfNeeded(dividendHi, REG_EDX);
+        // zero or sign extend rax to rdx
+        if (oper == GT_UMOD || oper == GT_UDIV)
+        {
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
         }
         else
-#endif
         {
-            // dividend must be in RAX
-            genCopyRegIfNeeded(dividend, REG_RAX);
-        }
-
-#ifdef _TARGET_X86_
-        if (!dividendIsLong)
-#endif
-        {
-            // zero or sign extend rax to rdx
-            if (oper == GT_UMOD || oper == GT_UDIV)
-            {
-                instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
-            }
-            else
-            {
-                emit->emitIns(INS_cdq, size);
-                // the cdq instruction writes RDX, So clear the gcInfo for RDX
-                gcInfo.gcMarkRegSetNpt(RBM_RDX);
-            }
+            emit->emitIns(INS_cdq, size);
+            // the cdq instruction writes RDX, So clear the gcInfo for RDX
+            gcInfo.gcMarkRegSetNpt(RBM_RDX);
         }
 
         // Perform the 'targetType' (64-bit or 32-bit) divide instruction
@@ -7016,27 +7071,27 @@ void CodeGen::genCkfinite(GenTreePtr treeNode)
     //
     // For TYP_DOUBLE, we'll generate (for targetReg != op1->gtRegNum):
     //    movaps targetReg, op1->gtRegNum
-    //    shufps targetReg, targetReg, 0xB1	// WZYX => ZWXY
-    //    mov_xmm2i tmpReg, targetReg		// tmpReg <= Y
+    //    shufps targetReg, targetReg, 0xB1    // WZYX => ZWXY
+    //    mov_xmm2i tmpReg, targetReg          // tmpReg <= Y
     //    and tmpReg, <mask>
     //    cmp tmpReg, <mask>
     //    je <throw block>
     //    movaps targetReg, op1->gtRegNum   // copy the value again, instead of un-shuffling it
     //
     // For TYP_DOUBLE with (targetReg == op1->gtRegNum):
-    //    shufps targetReg, targetReg, 0xB1	// WZYX => ZWXY
-    //    mov_xmm2i tmpReg, targetReg		// tmpReg <= Y
+    //    shufps targetReg, targetReg, 0xB1    // WZYX => ZWXY
+    //    mov_xmm2i tmpReg, targetReg          // tmpReg <= Y
     //    and tmpReg, <mask>
     //    cmp tmpReg, <mask>
     //    je <throw block>
-    //    shufps targetReg, targetReg, 0xB1	// ZWXY => WZYX
+    //    shufps targetReg, targetReg, 0xB1    // ZWXY => WZYX
     //
     // For TYP_FLOAT, it's the same as _TARGET_64BIT_:
-    //    mov_xmm2i tmpReg, targetReg		// tmpReg <= low 32 bits
+    //    mov_xmm2i tmpReg, targetReg          // tmpReg <= low 32 bits
     //    and tmpReg, <mask>
     //    cmp tmpReg, <mask>
     //    je <throw block>
-    //    movaps targetReg, op1->gtRegNum   // only if targetReg != op1->gtRegNum
+    //    movaps targetReg, op1->gtRegNum      // only if targetReg != op1->gtRegNum
 
     regNumber copyToTmpSrcReg; // The register we'll copy to the integer temp.
 

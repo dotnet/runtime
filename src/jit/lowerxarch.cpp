@@ -2493,6 +2493,10 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
         assert(op2->IsCnsIntOrI());
         info->srcCount++;
 
+        // This situation also requires an internal register.
+        info->internalIntCount = 1;
+        info->setInternalCandidates(l, l->allRegs(TYP_INT));
+
         loVal->gtLsraInfo.setSrcCandidates(l, RBM_EAX);
         hiVal->gtLsraInfo.setSrcCandidates(l, RBM_EDX);
     }
