@@ -443,7 +443,7 @@ VOID ETW::GCLog::GCSettingsEvent()
             Info.GCSettings.LargeObjectSegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (TRUE);
             FireEtwGCSettings_V1(Info.GCSettings.SegmentSize, Info.GCSettings.LargeObjectSegmentSize, Info.GCSettings.ServerGC, GetClrInstanceId());
         }  
-        GCHeapUtilities::GetGCHeap()->TraceGCSegments();
+        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 };
 
@@ -902,7 +902,7 @@ VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo)
 
         // Fire an event per range per generation
         IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DescrGenerationsToProfiler(FireSingleGenerationRangeEvent, NULL /* context */);
+        hp->DiagDescrGenerations(FireSingleGenerationRangeEvent, NULL /* context */);
     }
 }
 
@@ -929,7 +929,7 @@ VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth)
     {
         // Fire an event per range per generation
         IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DescrGenerationsToProfiler(FireSingleGenerationRangeEvent, NULL /* context */);
+        hp->DiagDescrGenerations(FireSingleGenerationRangeEvent, NULL /* context */);
 
         // GCEnd
         FireEtwGCEnd_V1(Count, Depth, GetClrInstanceId());
@@ -938,7 +938,7 @@ VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth)
  
 //---------------------------------------------------------------------------------------
 //
-// Callback made by GC when we call GCHeapUtilities::DescrGenerationsToProfiler().  This is
+// Callback made by GC when we call GCHeapUtilities::DiagDescrGenerations().  This is
 // called once per range per generation, and results in a single ETW event per range per
 // generation.
 //

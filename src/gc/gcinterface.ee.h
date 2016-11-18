@@ -92,6 +92,37 @@ public:
     // Creates and returns a new background thread.
     virtual
     Thread* CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg) = 0;
+
+    // When a GC starts, gives the diagnostics code a chance to run.
+    virtual
+    void DiagGCStart(int gen, bool isInduced) = 0;
+
+    // When GC heap segments change, gives the diagnostics code a chance to run.
+    virtual
+    void DiagUpdateGenerationBounds() = 0;
+
+    // When a GC ends, gives the diagnostics code a chance to run.
+    virtual
+    void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent) = 0;
+
+    // During a GC after we discover what objects' finalizers should run, gives the diagnostics code a chance to run.
+    virtual
+    void DiagWalkFReachableObjects(void* gcContext) = 0;
+
+    // During a GC after we discover the survivors and the relocation info, 
+    // gives the diagnostics code a chance to run. This includes LOH if we are 
+    // compacting LOH.
+    virtual
+    void DiagWalkSurvivors(void* gcContext) = 0;
+
+    // During a full GC after we discover what objects to survive on LOH,
+    // gives the diagnostics code a chance to run.
+    virtual
+    void DiagWalkLOHSurvivors(void* gcContext) = 0;
+
+    // At the end of a background GC, gives the diagnostics code a chance to run.
+    virtual
+    void DiagWalkBGCSurvivors(void* gcContext) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

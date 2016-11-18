@@ -34,6 +34,13 @@ typedef enum
     SUSPEND_FOR_GC_PREP = 6
 } SUSPEND_REASON;
 
+typedef enum
+{
+    walk_for_gc = 1,
+    walk_for_bgc = 2,
+    walk_for_loh = 3
+} walk_surv_type;
+
 #include "gcinterface.ee.h"
 
 // The allocation context must be known to the VM for use in the allocation
@@ -87,6 +94,8 @@ struct segment_info
 // The minimum size of an object is three pointers wide: one for the syncblock,
 // one for the object header, and one for the first field in the object.
 #define min_obj_size ((sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
+
+#define max_generation 2
 
 class Object;
 class IGCHeap;
@@ -174,6 +183,10 @@ enum end_no_gc_region_status
 
 typedef BOOL (* walk_fn)(Object*, void*);
 typedef void (* gen_walk_fn)(void* context, int generation, uint8_t* range_start, uint8_t* range_end, uint8_t* range_reserved);
+typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, size_t context, BOOL compacting_p, BOOL bgc_p);
+typedef void (* fq_walk_fn)(BOOL, void*);
+typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
+typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, BOOL isDependent);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
@@ -413,8 +426,8 @@ public:
     // with the given size and flags.
     virtual Object* AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
 
-    // If allocating on the LOH, blocks if a BGC is in a position (concurrent mark)
-    // where the LOH allocator can't allocate.
+    // This is for the allocator to indicate it's done allocating a large object during a 
+    // background GC as the BGC threads also need to walk LOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
     // Gets the event that suspended threads will use to wait for the
@@ -449,13 +462,31 @@ public:
     */
 
     // Walks an object, invoking a callback on each member.
-    virtual void WalkObject(Object* obj, walk_fn fn, void* context) = 0;
+    virtual void DiagWalkObject(Object* obj, walk_fn fn, void* context) = 0;
+
+    // Walk the heap object by object.
+    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p) = 0;
+    
+    // Walks the survivors and get the relocation information if objects have moved.
+    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, size_t diag_context, walk_surv_type type) = 0;
+
+    // Walks the finalization queue.
+    virtual void DiagWalkFinalizeQueue(void* gc_context, fq_walk_fn fn) = 0;
+
+    // Scan roots on finalizer queue. This is a generic function.
+    virtual void DiagScanFinalizeQueue(fq_scan_fn fn, ScanContext* context) = 0;
+
+    // Scan handles for profiling or ETW.
+    virtual void DiagScanHandles(handle_scan_fn fn, int gen_number, ScanContext* context) = 0;
+
+    // Scan dependent handles for profiling or ETW.
+    virtual void DiagScanDependentHandles(handle_scan_fn fn, int gen_number, ScanContext* context) = 0;
 
     // Describes all generations to the profiler, invoking a callback on each generation.
-    virtual void DescrGenerationsToProfiler(gen_walk_fn fn, void* context) = 0;
+    virtual void DiagDescrGenerations(gen_walk_fn fn, void* context) = 0;
 
     // Traces all GC segments and fires ETW events with information on them.
-    virtual void TraceGCSegments() = 0;
+    virtual void DiagTraceGCSegments() = 0;
 
     /*
     ===========================================================================
@@ -549,27 +580,5 @@ struct ScanContext
 #endif // FEATURE_EVENT_TRACE
     }
 };
-
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-struct ProfilingScanContext : ScanContext
-{
-    BOOL fProfilerPinned;
-    void * pvEtwContext;
-    void *pHeapId;
-    
-    ProfilingScanContext(BOOL fProfilerPinnedParam) : ScanContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        pHeapId = NULL;
-        fProfilerPinned = fProfilerPinnedParam;
-        pvEtwContext = NULL;
-#ifdef FEATURE_CONSERVATIVE_GC
-        // To not confuse GCScan::GcScanRoots
-        promotion = g_pConfig->GetGCConservative();
-#endif
-    }
-};
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 #endif // _GC_INTERFACE_H_
