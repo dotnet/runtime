@@ -6954,6 +6954,12 @@ mono_string_to_utf8_checked (MonoString *s, MonoError *error)
 	return as;
 }
 
+char *
+mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error)
+{
+	return mono_string_to_utf8_checked (MONO_HANDLE_RAW (s), error);
+}
+
 /**
  * mono_string_to_utf8_ignore:
  * @s: a MonoString

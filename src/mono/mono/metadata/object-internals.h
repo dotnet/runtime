@@ -1398,6 +1398,9 @@ void
 mono_release_type_locks (MonoInternalThread *thread);
 
 char *
+mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
+
+char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
 
 char *
