@@ -91,9 +91,10 @@ static inline void
 mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
 	HandleStack *handles = (HandleStack *)info->handle_stack;
-	handles->top->size = stackmark->size;
+	HandleChunk *old_top = stackmark->chunk;
+	old_top->size = stackmark->size;
 	mono_memory_write_barrier ();
-	handles->top = stackmark->chunk;
+	handles->top = old_top;
 }
 
 /*
@@ -115,6 +116,19 @@ Icall macros
 #define CLEAR_ICALL_FRAME	\
 	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
 	mono_stack_mark_pop (__info, &__mark);
+
+#define HANDLE_FUNCTION_ENTER() do {				\
+	MonoThreadInfo *__info = mono_thread_info_current ();	\
+	SETUP_ICALL_FRAME					\
+
+#define HANDLE_FUNCTION_RETURN()		\
+	CLEAR_ICALL_FRAME;			\
+	} while (0)
+
+#define HANDLE_FUNCTION_RETURN_VAL(VAL)		\
+	CLEAR_ICALL_FRAME;			\
+	return (VAL);				\
+	} while (0)
 
 #ifdef MONO_NEEDS_STACK_WATERMARK
 
@@ -188,6 +202,8 @@ void mono_handle_verify (MonoRawHandle handle);
 
 #define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
+#define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
+
 
 /*
  * TYPED_HANDLE_DECL(SomeType):
@@ -200,8 +216,12 @@ void mono_handle_verify (MonoRawHandle handle);
  * } MonoObjectHandlePayload;
  *
  * typedef MonoObjectHandlePayload* MonoObjectHandle;
+ * typedef MonoObjectHandlePayload* MonoObjectHandleOut;
  */
-#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE)
+#define TYPED_HANDLE_DECL(TYPE)						\
+	typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
+	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE); \
+	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_OUT_HANDLE_NAME (TYPE)
 /* Have to double expand because MONO_STRUCT_OFFSET is doing token pasting on cross-compilers. */
 #define MONO_HANDLE_PAYLOAD_OFFSET_(PayloadType) MONO_STRUCT_OFFSET(PayloadType, __obj)
 #define MONO_HANDLE_PAYLOAD_OFFSET(TYPE) MONO_HANDLE_PAYLOAD_OFFSET_(TYPED_HANDLE_PAYLOAD_NAME (TYPE))
@@ -215,6 +235,9 @@ void mono_handle_verify (MonoRawHandle handle);
 #define MONO_HANDLE_NEW(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( mono_handle_new ((MonoObject*)(VALUE)) )
 #define MONO_HANDLE_CAST(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( VALUE )
 
+#define MONO_HANDLE_IS_NULL(HANDLE) (MONO_HANDLE_RAW(HANDLE) == NULL)
+
+
 /*
 WARNING WARNING WARNING
 
@@ -227,12 +250,20 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_SETRAW(HANDLE, FIELD, VALUE) do {	\
 		MonoObject *__val = (MonoObject*)(VALUE);	\
 		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (HANDLE), FIELD, __val);	\
-	} while (0);
+	} while (0)
 
 #define MONO_HANDLE_SET(HANDLE, FIELD, VALUE) do {	\
 		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);	\
 		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (HANDLE), FIELD, MONO_HANDLE_RAW (__val));	\
-	} while (0);
+	} while (0)
+
+/* N.B. RESULT is evaluated before HANDLE */
+#define MONO_HANDLE_GET(RESULT, HANDLE, FIELD) do {			\
+		MonoObjectHandle __dest = MONO_HANDLE_CAST(MonoObject, RESULT);	\
+		mono_gc_wbarrier_generic_store (&__dest->__obj,  (MonoObject*)(MONO_HANDLE_RAW(HANDLE)->FIELD)); \
+	} while (0)
+
+#define MONO_HANDLE_GETVAL(HANDLE, FIELD) (MONO_HANDLE_RAW(HANDLE)->FIELD)
 
 /* VS doesn't support typeof :( :( :( */
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
@@ -246,12 +277,28 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, MONO_HANDLE_RAW (__val));	\
 	} while (0)
 
+#define MONO_HANDLE_ARRAY_SETVAL(HANDLE, TYPE, IDX, VALUE) do {		\
+		int __idx = (IDX);					\
+   		TYPE __val = (VALUE);			\
+		mono_array_set (MONO_HANDLE_RAW (HANDLE), TYPE, __idx, __val); \
+	} while (0)
+
 #define MONO_HANDLE_ARRAY_SETRAW(HANDLE, IDX, VALUE) do {	\
 		int __idx = (IDX);	\
 		MonoObject *__val = (MonoObject*)(VALUE);	\
-		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, __val);	\
+		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, __val); \
 	} while (0)
 
+/* N.B. DEST is evaluated AFTER all the other arguments */
+#define MONO_HANDLE_ARRAY_GETVAL(DEST, HANDLE, TYPE, IDX) do {		\
+		MonoArrayHandle __arr = (HANDLE);			\
+		int __idx = (IDX);					\
+		TYPE __result = mono_array_get (MONO_HANDLE_RAW(__arr), TYPE, __idx); \
+		(DEST) =  __result;					\
+	} while (0)
+
+#define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
+	mono_handle_assign (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_CAST(MonoObject, (SRCH)))
 
 #define MONO_HANDLE_DOMAIN(HANDLE) (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, HANDLE))))
 
@@ -268,10 +315,38 @@ Init values to it.
 */
 extern const MonoObjectHandle mono_null_value_handle;
 
+static inline void
+mono_handle_assign (MonoObjectHandle dest, MonoObjectHandle src)
+{
+	mono_gc_wbarrier_generic_store (&dest->__obj, MONO_HANDLE_RAW(src));
+}
 
 //FIXME this should go somewhere else
 MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error);
 MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+
+uintptr_t mono_array_handle_length (MonoArrayHandle arr);
+
+#define mono_handle_class(o) mono_object_class (MONO_HANDLE_RAW (o))
+
+/* Local handles to global GC handles and back */
+
+uint32_t
+mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned);
+
+MonoObjectHandle
+mono_gchandle_get_target_handle (uint32_t gchandle);
+
+
+
+/* Pins the MonoArray using a gchandle and returns a pointer to the
+ * element with the given index (where each element is of the given
+ * size.  Call mono_gchandle_free to unpin.
+ */
+gpointer
+mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, uint32_t *gchandle);
+
+#define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out))
 
 G_END_DECLS
 

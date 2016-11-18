@@ -841,41 +841,37 @@ ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArray *array, MonoClassField *field_handle)
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArrayHandle array, MonoClassField *field_handle, MonoError *error)
 {
-	MonoClass *klass = array->obj.vtable->klass;
+	mono_error_init (error);
+
+	MonoClass *klass = mono_handle_class (array);
 	guint32 size = mono_array_element_size (klass);
 	MonoType *type = mono_type_get_underlying_type (&klass->element_class->byval_arg);
 	int align;
 	const char *field_data;
 
 	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
-		MonoException *exc = mono_get_exception_argument("array",
-			"Cannot initialize array of non-primitive type.");
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return;
 	}
 
 	if (!(field_handle->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
-		MonoException *exc = mono_get_exception_argument("field_handle",
-			"Field doesn't have an RVA");
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "field_handle", "Field '%s' doesn't have an RVA", mono_field_get_name (field_handle));
 		return;
 	}
 
-	size *= array->max_length;
+	size *= MONO_HANDLE_GETVAL(array, max_length);
 	field_data = mono_field_get_data (field_handle);
 
 	if (size > mono_type_size (field_handle->type, &align)) {
-		MonoException *exc = mono_get_exception_argument("field_handle",
-			"Field not large enough to fill array");
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "field_handle", "Field not large enough to fill array");
 		return;
 	}
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP(n) {								\
-	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); 	\
+	guint ## n *data = (guint ## n *) mono_array_addr (MONO_HANDLE_RAW(array), char, 0); \
 	guint ## n *src = (guint ## n *) field_data; 				\
 	int i,									\
 	    nEnt = (size / sizeof(guint ## n));					\
@@ -904,11 +900,11 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 		SWAP (64);
 		break;
 	default:
-		memcpy (mono_array_addr (array, char, 0), field_data, size);
+		memcpy (mono_array_addr (MONO_HANDLE_RAW(array), char, 0), field_data, size);
 		break;
 	}
 #else
-	memcpy (mono_array_addr (array, char, 0), field_data, size);
+	memcpy (mono_array_addr (MONO_HANDLE_RAW(array), char, 0), field_data, size);
 #endif
 }
 
@@ -3646,64 +3642,77 @@ ves_icall_System_Enum_get_hashcode (MonoObject *eobj)
 	return 0;
 }
 
-ICALL_EXPORT MonoBoolean
-ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionType *type, MonoArray **values, MonoArray **names)
+static void
+get_enum_field (MonoDomain *domain, MonoArrayHandle names, MonoArrayHandle values, int base_type, MonoClassField *field, guint* j, guint64 *previous_value, gboolean *sorted, MonoError *error)
 {
-	MonoError error;
-	MonoDomain *domain = mono_object_domain (type); 
-	MonoClass *enumc = mono_class_from_mono_type (type->type);
+	mono_error_init (error);
+	HANDLE_FUNCTION_ENTER();
+	guint64 field_value;
+	const char *p;
+	MonoTypeEnum def_type;
+
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		goto leave;
+	if (strcmp ("value__", mono_field_get_name (field)) == 0)
+		goto leave;
+	if (mono_field_is_deleted (field))
+		goto leave;
+	MonoStringHandle name = mono_string_new_handle (domain, mono_field_get_name (field), error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_ARRAY_SETREF (names, *j, name);
+
+	p = mono_class_get_field_default_value (field, &def_type);
+	/* len = */ mono_metadata_decode_blob_size (p, &p);
+
+	field_value = read_enum_value (p, base_type);
+	MONO_HANDLE_ARRAY_SETVAL (values, guint64, *j, field_value);
+
+	if (*previous_value > field_value)
+		*sorted = FALSE;
+
+	*previous_value = field_value;
+	(*j)++;
+leave:
+	HANDLE_FUNCTION_RETURN();
+}
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionTypeHandle type, MonoArrayHandleOut values, MonoArrayHandleOut names, MonoError *error)
+{
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (type);
+	MonoClass *enumc = mono_class_from_mono_type (MONO_HANDLE_RAW(type)->type);
 	guint j = 0, nvalues;
 	gpointer iter;
 	MonoClassField *field;
 	int base_type;
-	guint64 field_value, previous_value = 0;
+	guint64 previous_value = 0;
 	gboolean sorted = TRUE;
 
-	mono_class_init_checked (enumc, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
-
+	mono_error_init (error);
+	mono_class_init_checked (enumc, error);
+	return_val_if_nok (error, FALSE);
 
 	if (!enumc->enumtype) {
-		mono_set_pending_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
+		mono_error_set_argument (error, "enumType", "Type provided must be an Enum.");
 		return TRUE;
 	}
 
 	base_type = mono_class_enum_basetype (enumc)->type;
 
-	nvalues = mono_class_num_fields (enumc) ? mono_class_num_fields (enumc) - 1 : 0;
-	*names = mono_array_new_checked (domain, mono_defaults.string_class, nvalues, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
-	*values = mono_array_new_checked (domain, mono_defaults.uint64_class, nvalues, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+	nvalues = mono_class_num_fields (enumc) > 0 ? mono_class_num_fields (enumc) - 1 : 0;
+	MONO_HANDLE_ASSIGN(names, mono_array_new_handle (domain, mono_defaults.string_class, nvalues, error));
+	return_val_if_nok (error, FALSE);
+	MONO_HANDLE_ASSIGN(values, mono_array_new_handle (domain, mono_defaults.uint64_class, nvalues, error));
+	return_val_if_nok (error, FALSE);
 
 	iter = NULL;
 	while ((field = mono_class_get_fields (enumc, &iter))) {
-		const char *p;
-		MonoTypeEnum def_type;
-
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			continue;
-		if (strcmp ("value__", mono_field_get_name (field)) == 0)
-			continue;
-		if (mono_field_is_deleted (field))
-			continue;
-		mono_array_setref (*names, j, mono_string_new (domain, mono_field_get_name (field)));
-
-		p = mono_class_get_field_default_value (field, &def_type);
-		/* len = */ mono_metadata_decode_blob_size (p, &p);
-
-		field_value = read_enum_value (p, base_type);
-		mono_array_set (*values, guint64, j, field_value);
-
-		if (previous_value > field_value)
-			sorted = FALSE;
-
-		previous_value = field_value;
-		++j;
+		get_enum_field(domain, names, values, base_type, field, &j, &previous_value, &sorted, error);
+		if (!is_ok (error))
+			break;
 	}
+	return_val_if_nok (error, FALSE);
 
 	return sorted;
 }
@@ -7937,14 +7946,15 @@ ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObject *obj)
 }
 
 
-ICALL_EXPORT MonoString*
-ves_icall_Mono_Runtime_GetDisplayName (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_Mono_Runtime_GetDisplayName (MonoError *error)
 {
 	char *info;
-	MonoString *display_name;
+	MonoStringHandle display_name;
 
+	mono_error_init (error);
 	info = mono_get_runtime_callbacks ()->get_runtime_build_info ();
-	display_name = mono_string_new (mono_domain_get (), info);
+	display_name = mono_string_new_handle (mono_domain_get (), info, error);
 	g_free (info);
 	return display_name;
 }

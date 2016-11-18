@@ -7793,6 +7793,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		int thread_info_var = -1, stack_mark_var = -1, error_var = -1;
 		MonoMethodSignature *call_sig = csig;
 		gboolean uses_handles = FALSE;
+		gboolean has_outarg_handles = FALSE;
+		int *outarg_handle = NULL;
 		(void) mono_lookup_internal_call_full (method, &uses_handles);
 
 
@@ -7809,9 +7811,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			ret->param_count = csig->param_count + 1;
 			ret->ret = csig->ret;
 			for (int i = 0; i < csig->param_count; ++i) {
-				// FIXME: TODO implement handle wrapping for out and inout params.
-				g_assert (!mono_signature_param_is_out (csig, i));
-				ret->params [i] = csig->params [i];
+				if (MONO_TYPE_IS_REFERENCE (csig->params[i])) {
+					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type(csig->params[i]));
+					if (mono_signature_param_is_out (csig, i)) {
+						has_outarg_handles = TRUE;
+					}
+				} else
+					ret->params [i] = csig->params [i];
 			}
 			ret->params [csig->param_count] = &mono_get_intptr_class ()->byval_arg;
 			call_sig = ret;
@@ -7825,7 +7831,17 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			stack_mark_var = mono_mb_add_local (mb, &handle_stack_mark_class->byval_arg);
 			error_var = mono_mb_add_local (mb, &error_class->byval_arg);
 
-			// FIXME: Change csig so it passes a handle not an objref
+			if (has_outarg_handles) {
+				outarg_handle = g_new0 (int, sig->param_count);
+
+				/* add a local var to hold the handles for each out arg */
+				for (int i = 0; i < sig->param_count; ++i) {
+					if (mono_signature_param_is_out (sig, i) && MONO_TYPE_IS_REFERENCE (sig->params[i])) {
+						outarg_handle[i] = mono_mb_add_local (mb, sig->params[i]);
+					} else if (outarg_handle != NULL)
+						outarg_handle[i] = -1;
+				}
+			}
 		}
 
 		if (sig->hasthis) {
@@ -7852,9 +7868,24 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				mono_mb_emit_icall (mb, mono_handle_new);
 			}
 			for (i = 0; i < sig->param_count; i++) {
-				mono_mb_emit_ldarg (mb, i + sig->hasthis);
-				if (MONO_TYPE_IS_REFERENCE (sig->params [i])) {
-					mono_mb_emit_icall (mb, mono_handle_new);
+				/* load each argument. object reference arguments get wrapped in handles */
+
+				if (!MONO_TYPE_IS_REFERENCE (sig->params [i])) {
+					mono_mb_emit_ldarg (mb, i + sig->hasthis);
+				} else {
+					if (outarg_handle && outarg_handle[i] != -1) {
+						/* handleI = argI = mono_handle_new (NULL) */
+						mono_mb_emit_byte (mb, CEE_LDNULL);
+						mono_mb_emit_icall (mb, mono_handle_new);
+						/* tmp = argI */
+						mono_mb_emit_byte (mb, CEE_DUP);
+						/* handleI = tmp */
+						mono_mb_emit_stloc (mb, outarg_handle[i]);
+					} else {
+						/* argI = mono_handle_new (argI_raw) */
+						mono_mb_emit_ldarg (mb, i + sig->hasthis);
+						mono_mb_emit_icall (mb, mono_handle_new);
+					}
 				}
 			}
 			mono_mb_emit_ldloc_addr (mb, error_var);
@@ -7884,6 +7915,25 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 				mono_mb_patch_branch (mb, pos);
+			}
+			if (outarg_handle != NULL) {
+				for (i = 0; i < sig->param_count; i++) {
+					if (outarg_handle[i] != -1) {
+						/* *argI_raw = MONO_HANDLE_RAW (handleI) */
+
+						/* argI_raw */
+						mono_mb_emit_ldarg (mb, i + sig->hasthis);
+						/* handleI */
+						mono_mb_emit_ldloc (mb, outarg_handle[i]);
+						/* MONO_HANDLE_RAW(handleI) */
+						mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+						/* *argI_raw = MONO_HANDLE_RAW(handleI) */
+						mono_mb_emit_byte (mb, CEE_STIND_REF);
+					}
+				}
+				g_free (outarg_handle);
+				outarg_handle = NULL;
 			}
 			mono_mb_emit_ldloc (mb, thread_info_var);
 			mono_mb_emit_ldloc_addr (mb, stack_mark_var);
