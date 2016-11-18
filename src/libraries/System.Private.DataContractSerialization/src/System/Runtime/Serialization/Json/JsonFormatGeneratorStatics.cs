@@ -17,6 +17,10 @@ namespace System.Runtime.Serialization
         [SecurityCritical]
         private static PropertyInfo s_collectionItemNameProperty;
 
+        private static ConstructorInfo s_extensionDataObjectCtor;
+
+        private static PropertyInfo s_extensionDataProperty;
+
         [SecurityCritical]
         private static MethodInfo s_getItemContractMethod;
 
@@ -121,6 +125,14 @@ namespace System.Runtime.Serialization
                 return s_collectionItemNameProperty;
             }
         }
+
+        public static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
+                                                                 (s_extensionDataObjectCtor =
+                                                                     typeof (ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, new Type[] {}, null));
+
+        public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
+                                                            (s_extensionDataProperty = typeof (IExtensibleDataObject).GetProperty("ExtensionData"));
+
         public static MethodInfo GetCurrentMethod
         {
             [SecuritySafeCritical]

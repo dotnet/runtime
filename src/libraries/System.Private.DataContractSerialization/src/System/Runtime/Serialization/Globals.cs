@@ -569,6 +569,12 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfIExtensibleDataObject;
+        internal static Type TypeOfIExtensibleDataObject => s_typeOfIExtensibleDataObject ?? (s_typeOfIExtensibleDataObject = typeof (IExtensibleDataObject));
+
+        private static Type s_typeOfExtensionDataObject;
+        internal static Type TypeOfExtensionDataObject => s_typeOfExtensionDataObject ?? (s_typeOfExtensionDataObject = typeof (ExtensionDataObject));
+
         [SecurityCritical]
         private static Type s_typeOfISerializableDataNode;
         internal static Type TypeOfISerializableDataNode
@@ -607,6 +613,9 @@ namespace System.Runtime.Serialization
                 return s_typeOfCollectionDataNode;
             }
         }
+
+        private static Type s_typeOfXmlDataNode;
+        internal static Type TypeOfXmlDataNode => s_typeOfXmlDataNode ?? (s_typeOfXmlDataNode = typeof (XmlDataNode));
 
 #if NET_NATIVE
         [SecurityCritical]

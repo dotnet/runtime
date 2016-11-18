@@ -1167,4 +1167,25 @@
   <data name="ChangingFullTypeNameNotSupported" xml:space="preserve">
     <value>DataContractJsonSerializer does not support the setting of the FullTypeName of the object to be serialized to a value other than the default FullTypeName. Attempted to serialize object with full type name '{0}' and default full type name '{1}'.</value>
   </data>
+  <data name="InterfaceTypeCannotBeCreated" xml:space="preserve">
+    <value>Interface type '{0}' cannot be created. Consider replacing with a non-interface serializable type.</value>
+  </data>
+  <data name="ArraySizeAttributeIncorrect" xml:space="preserve">
+    <value>Array Size '{0}' is not equal to the number of elements found '{1}'.</value>
+  </data>
+  <data name="DuplicateExtensionDataSetMethod" xml:space="preserve">
+    <value>Invalid IExtensibleDataObject. Both '{0}' and '{1}' in type '{2}' provide property setter.</value>
+  </data>
+  <data name="ExtensionDataSetMustReturnVoid" xml:space="preserve">
+    <value>IExtensibleDataObject property setter '{1}' in type '{0}' must return void.</value>
+  </data>
+  <data name="ExtensionDataSetParameterInvalid" xml:space="preserve">
+    <value>IExtensibleDataObject property setter '{1}' in type '{0}' must have a single parameter of type '{2}'.</value>
+  </data>
+  <data name="OnlyDataContractTypesCanHaveExtensionData" xml:space="preserve">
+    <value>Type '{0}' does not have DataContractAttribute attribute and therefore cannot support IExtensibleDataObject. </value>
+  </data>
+  <data name="ParseJsonNumberReturnInvalidNumber" xml:space="preserve">
+    <value>JsonObjectDataContract.ParseJsonNumber shouldn't return a TypeCode that we're not expecting.</value>
+  </data>
 </root>
