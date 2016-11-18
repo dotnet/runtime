@@ -3109,15 +3109,15 @@ build_wait_tids (gpointer key, gpointer value, gpointer user)
 	}
 }
 
-static void
-collect_and_abort_threads (gpointer key, gpointer value, gpointer user)
+static gboolean
+remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 {
 	WaitData *wait = (WaitData *)user;
 	MonoNativeThreadId self = mono_native_thread_id_get ();
 	MonoInternalThread *thread = (MonoInternalThread *)value;
 
 	if (wait->num >= MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS)
-		return;
+		return FALSE;
 
 	/* The finalizer thread is not a background thread */
 	if (!mono_native_thread_id_equals (thread_get_tid (thread), self)
@@ -3127,8 +3127,11 @@ collect_and_abort_threads (gpointer key, gpointer value, gpointer user)
 
 		THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
 		mono_thread_internal_abort (thread);
-		return;
+		return TRUE;
 	}
+
+	return !mono_native_thread_id_equals (thread_get_tid (thread), self)
+	        && !mono_gc_is_finalizer_internal_thread (thread);
 }
 
 /** 
@@ -3236,7 +3239,7 @@ mono_thread_manage (void)
 		mono_threads_lock ();
 
 		init_wait_data (wait);
-		mono_g_hash_table_foreach (threads, collect_and_abort_threads, wait);
+		mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads, wait);
 
 		mono_threads_unlock ();
 
