@@ -2412,7 +2412,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;UNSTABLE
+Categories=NEW;EXPECTED_FAIL;UNSTABLE
 HostStyle=0
 [CompareExchangeTClass_1.cmd_345]
 RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass_1\CompareExchangeTClass_1.cmd
@@ -10532,7 +10532,7 @@ RelativePath=CoreMangLib\cti\system\globalization\regioninfo\RegionInfoCurrentRe
 WorkingDir=CoreMangLib\cti\system\globalization\regioninfo\RegionInfoCurrentRegion
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_FAIL
 HostStyle=0
 [RegionInfoEquals.cmd_1505]
 RelativePath=CoreMangLib\cti\system\globalization\regioninfo\RegionInfoEquals\RegionInfoEquals.cmd
@@ -20990,7 +20990,7 @@ RelativePath=GC\Scenarios\FinalizeTimeout\FinalizeTimeout\FinalizeTimeout.cmd
 WorkingDir=GC\Scenarios\FinalizeTimeout\FinalizeTimeout
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=0
 [finalnstruct.cmd_3013]
 RelativePath=GC\Scenarios\FinalNStruct\finalnstruct\finalnstruct.cmd
@@ -23930,7 +23930,7 @@ RelativePath=GC\Scenarios\GCSimulator\GCSimulator_81\GCSimulator_81.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_81
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS
+Categories=NEW;EXPECTED_FAIL
 HostStyle=0
 [GCSimulator_82.cmd_3433]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_82\GCSimulator_82.cmd
@@ -42592,7 +42592,7 @@ RelativePath=JIT\Methodical\divrem\div\decimaldiv_cs_do\decimaldiv_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\decimaldiv_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [decimaldiv_cs_r.cmd_6168]
 RelativePath=JIT\Methodical\divrem\div\decimaldiv_cs_r\decimaldiv_cs_r.cmd
@@ -42606,7 +42606,7 @@ RelativePath=JIT\Methodical\divrem\div\decimaldiv_cs_ro\decimaldiv_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\decimaldiv_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i4div_cs_d.cmd_6170]
 RelativePath=JIT\Methodical\divrem\div\i4div_cs_d\i4div_cs_d.cmd
@@ -42620,7 +42620,7 @@ RelativePath=JIT\Methodical\divrem\div\i4div_cs_do\i4div_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\i4div_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i4div_cs_r.cmd_6172]
 RelativePath=JIT\Methodical\divrem\div\i4div_cs_r\i4div_cs_r.cmd
@@ -42634,7 +42634,7 @@ RelativePath=JIT\Methodical\divrem\div\i4div_cs_ro\i4div_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\i4div_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i8div_cs_d.cmd_6174]
 RelativePath=JIT\Methodical\divrem\div\i8div_cs_d\i8div_cs_d.cmd
@@ -42648,7 +42648,7 @@ RelativePath=JIT\Methodical\divrem\div\i8div_cs_do\i8div_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\i8div_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i8div_cs_r.cmd_6176]
 RelativePath=JIT\Methodical\divrem\div\i8div_cs_r\i8div_cs_r.cmd
@@ -42662,7 +42662,7 @@ RelativePath=JIT\Methodical\divrem\div\i8div_cs_ro\i8div_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\i8div_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [negSignedMod.cmd_6178]
 RelativePath=JIT\Methodical\divrem\div\negSignedMod\negSignedMod.cmd
@@ -42683,7 +42683,7 @@ RelativePath=JIT\Methodical\divrem\div\overlddiv_cs_do\overlddiv_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\overlddiv_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [overlddiv_cs_r.cmd_6181]
 RelativePath=JIT\Methodical\divrem\div\overlddiv_cs_r\overlddiv_cs_r.cmd
@@ -42697,7 +42697,7 @@ RelativePath=JIT\Methodical\divrem\div\overlddiv_cs_ro\overlddiv_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\overlddiv_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r4div_cs_d.cmd_6183]
 RelativePath=JIT\Methodical\divrem\div\r4div_cs_d\r4div_cs_d.cmd
@@ -42711,7 +42711,7 @@ RelativePath=JIT\Methodical\divrem\div\r4div_cs_do\r4div_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\r4div_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r4div_cs_r.cmd_6185]
 RelativePath=JIT\Methodical\divrem\div\r4div_cs_r\r4div_cs_r.cmd
@@ -42725,7 +42725,7 @@ RelativePath=JIT\Methodical\divrem\div\r4div_cs_ro\r4div_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\r4div_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r8div_cs_d.cmd_6187]
 RelativePath=JIT\Methodical\divrem\div\r8div_cs_d\r8div_cs_d.cmd
@@ -42739,7 +42739,7 @@ RelativePath=JIT\Methodical\divrem\div\r8div_cs_do\r8div_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\r8div_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r8div_cs_r.cmd_6189]
 RelativePath=JIT\Methodical\divrem\div\r8div_cs_r\r8div_cs_r.cmd
@@ -42753,7 +42753,7 @@ RelativePath=JIT\Methodical\divrem\div\r8div_cs_ro\r8div_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\r8div_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u4div_cs_d.cmd_6191]
 RelativePath=JIT\Methodical\divrem\div\u4div_cs_d\u4div_cs_d.cmd
@@ -42767,7 +42767,7 @@ RelativePath=JIT\Methodical\divrem\div\u4div_cs_do\u4div_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\u4div_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u4div_cs_r.cmd_6193]
 RelativePath=JIT\Methodical\divrem\div\u4div_cs_r\u4div_cs_r.cmd
@@ -42781,7 +42781,7 @@ RelativePath=JIT\Methodical\divrem\div\u4div_cs_ro\u4div_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\u4div_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u8div_cs_d.cmd_6195]
 RelativePath=JIT\Methodical\divrem\div\u8div_cs_d\u8div_cs_d.cmd
@@ -42795,7 +42795,7 @@ RelativePath=JIT\Methodical\divrem\div\u8div_cs_do\u8div_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\div\u8div_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u8div_cs_r.cmd_6197]
 RelativePath=JIT\Methodical\divrem\div\u8div_cs_r\u8div_cs_r.cmd
@@ -42809,7 +42809,7 @@ RelativePath=JIT\Methodical\divrem\div\u8div_cs_ro\u8div_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\div\u8div_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [decimalrem_cs_d.cmd_6199]
 RelativePath=JIT\Methodical\divrem\rem\decimalrem_cs_d\decimalrem_cs_d.cmd
@@ -42823,7 +42823,7 @@ RelativePath=JIT\Methodical\divrem\rem\decimalrem_cs_do\decimalrem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\decimalrem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [decimalrem_cs_r.cmd_6201]
 RelativePath=JIT\Methodical\divrem\rem\decimalrem_cs_r\decimalrem_cs_r.cmd
@@ -42837,7 +42837,7 @@ RelativePath=JIT\Methodical\divrem\rem\decimalrem_cs_ro\decimalrem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\decimalrem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i4rem_cs_d.cmd_6203]
 RelativePath=JIT\Methodical\divrem\rem\i4rem_cs_d\i4rem_cs_d.cmd
@@ -42851,7 +42851,7 @@ RelativePath=JIT\Methodical\divrem\rem\i4rem_cs_do\i4rem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\i4rem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i4rem_cs_r.cmd_6205]
 RelativePath=JIT\Methodical\divrem\rem\i4rem_cs_r\i4rem_cs_r.cmd
@@ -42865,7 +42865,7 @@ RelativePath=JIT\Methodical\divrem\rem\i4rem_cs_ro\i4rem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\i4rem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i8rem_cs_d.cmd_6207]
 RelativePath=JIT\Methodical\divrem\rem\i8rem_cs_d\i8rem_cs_d.cmd
@@ -42879,7 +42879,7 @@ RelativePath=JIT\Methodical\divrem\rem\i8rem_cs_do\i8rem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\i8rem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [i8rem_cs_r.cmd_6209]
 RelativePath=JIT\Methodical\divrem\rem\i8rem_cs_r\i8rem_cs_r.cmd
@@ -42893,7 +42893,7 @@ RelativePath=JIT\Methodical\divrem\rem\i8rem_cs_ro\i8rem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\i8rem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [overldrem_cs_d.cmd_6211]
 RelativePath=JIT\Methodical\divrem\rem\overldrem_cs_d\overldrem_cs_d.cmd
@@ -42907,7 +42907,7 @@ RelativePath=JIT\Methodical\divrem\rem\overldrem_cs_do\overldrem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\overldrem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [overldrem_cs_r.cmd_6213]
 RelativePath=JIT\Methodical\divrem\rem\overldrem_cs_r\overldrem_cs_r.cmd
@@ -42921,7 +42921,7 @@ RelativePath=JIT\Methodical\divrem\rem\overldrem_cs_ro\overldrem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\overldrem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r4rem_cs_d.cmd_6215]
 RelativePath=JIT\Methodical\divrem\rem\r4rem_cs_d\r4rem_cs_d.cmd
@@ -42935,7 +42935,7 @@ RelativePath=JIT\Methodical\divrem\rem\r4rem_cs_do\r4rem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\r4rem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r4rem_cs_r.cmd_6217]
 RelativePath=JIT\Methodical\divrem\rem\r4rem_cs_r\r4rem_cs_r.cmd
@@ -42949,7 +42949,7 @@ RelativePath=JIT\Methodical\divrem\rem\r4rem_cs_ro\r4rem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\r4rem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r8rem_cs_d.cmd_6219]
 RelativePath=JIT\Methodical\divrem\rem\r8rem_cs_d\r8rem_cs_d.cmd
@@ -42963,7 +42963,7 @@ RelativePath=JIT\Methodical\divrem\rem\r8rem_cs_do\r8rem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\r8rem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [r8rem_cs_r.cmd_6221]
 RelativePath=JIT\Methodical\divrem\rem\r8rem_cs_r\r8rem_cs_r.cmd
@@ -42977,7 +42977,7 @@ RelativePath=JIT\Methodical\divrem\rem\r8rem_cs_ro\r8rem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\r8rem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u4rem_cs_d.cmd_6223]
 RelativePath=JIT\Methodical\divrem\rem\u4rem_cs_d\u4rem_cs_d.cmd
@@ -42991,7 +42991,7 @@ RelativePath=JIT\Methodical\divrem\rem\u4rem_cs_do\u4rem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\u4rem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u4rem_cs_r.cmd_6225]
 RelativePath=JIT\Methodical\divrem\rem\u4rem_cs_r\u4rem_cs_r.cmd
@@ -43005,7 +43005,7 @@ RelativePath=JIT\Methodical\divrem\rem\u4rem_cs_ro\u4rem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\u4rem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u8rem_cs_d.cmd_6227]
 RelativePath=JIT\Methodical\divrem\rem\u8rem_cs_d\u8rem_cs_d.cmd
@@ -43019,7 +43019,7 @@ RelativePath=JIT\Methodical\divrem\rem\u8rem_cs_do\u8rem_cs_do.cmd
 WorkingDir=JIT\Methodical\divrem\rem\u8rem_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [u8rem_cs_r.cmd_6229]
 RelativePath=JIT\Methodical\divrem\rem\u8rem_cs_r\u8rem_cs_r.cmd
@@ -43033,7 +43033,7 @@ RelativePath=JIT\Methodical\divrem\rem\u8rem_cs_ro\u8rem_cs_ro.cmd
 WorkingDir=JIT\Methodical\divrem\rem\u8rem_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL
 HostStyle=0
 [dblarray1_cs_d.cmd_6231]
 RelativePath=JIT\Methodical\doublearray\dblarray1_cs_d\dblarray1_cs_d.cmd
@@ -47086,14 +47086,14 @@ RelativePath=JIT\Methodical\explicit\coverage\seq_byte_1_d\seq_byte_1_d.cmd
 WorkingDir=JIT\Methodical\explicit\coverage\seq_byte_1_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=0
 [seq_byte_1_r.cmd_6812]
 RelativePath=JIT\Methodical\explicit\coverage\seq_byte_1_r\seq_byte_1_r.cmd
 WorkingDir=JIT\Methodical\explicit\coverage\seq_byte_1_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=0
 [seq_double_1_d.cmd_6813]
 RelativePath=JIT\Methodical\explicit\coverage\seq_double_1_d\seq_double_1_d.cmd
@@ -48059,7 +48059,7 @@ RelativePath=JIT\Methodical\fp\exgen\1000w1d_cs_do\1000w1d_cs_do.cmd
 WorkingDir=JIT\Methodical\fp\exgen\1000w1d_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=0
 [1000w1d_cs_r.cmd_6951]
 RelativePath=JIT\Methodical\fp\exgen\1000w1d_cs_r\1000w1d_cs_r.cmd
@@ -48073,7 +48073,7 @@ RelativePath=JIT\Methodical\fp\exgen\1000w1d_cs_ro\1000w1d_cs_ro.cmd
 WorkingDir=JIT\Methodical\fp\exgen\1000w1d_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=0
 [10w250d_cs_d.cmd_6953]
 RelativePath=JIT\Methodical\fp\exgen\10w250d_cs_d\10w250d_cs_d.cmd
@@ -52560,7 +52560,7 @@ RelativePath=JIT\Methodical\tailcall\Desktop\_il_relthread-race\_il_relthread-ra
 WorkingDir=JIT\Methodical\tailcall\Desktop\_il_relthread-race
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=0
 [_il_dbgcompat_enum.cmd_7596]
 RelativePath=JIT\Methodical\tailcall\_il_dbgcompat_enum\_il_dbgcompat_enum.cmd
@@ -64754,7 +64754,7 @@ RelativePath=Loader\classloader\generics\GenericMethods\VSW491668\VSW491668.cmd
 WorkingDir=Loader\classloader\generics\GenericMethods\VSW491668
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS
+Categories=NEW;EXPECTED_FAIL
 HostStyle=0
 [abstract01.cmd_9373]
 RelativePath=Loader\classloader\generics\Instantiation\Negative\abstract01\abstract01.cmd
