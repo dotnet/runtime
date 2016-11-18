@@ -758,7 +758,7 @@ struct GenerationTable
 
 //---------------------------------------------------------------------------------------
 //
-// This is a callback used by the GC when we call GCHeapUtilities::DescrGenerationsToProfiler
+// This is a callback used by the GC when we call GCHeapUtilities::DiagDescrGenerations
 // (from UpdateGenerationBounds() below).  The GC gives us generation information through
 // this callback, which we use to update the GenerationDesc in the corresponding
 // GenerationTable
@@ -879,7 +879,7 @@ void __stdcall UpdateGenerationBounds()
         // fill in the values by calling back into the gc, which will report
         // the ranges by calling GenWalkFunc for each one
         IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DescrGenerationsToProfiler(GenWalkFunc, newGenerationTable);
+        hp->DiagDescrGenerations(GenWalkFunc, newGenerationTable);
 
         // remember the old table and plug in the new one
         GenerationTable *oldGenerationTable = s_currentGenerationTable;
@@ -1022,7 +1022,7 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type walk_fn used by GCHeapUtilities::WalkObject.  Keeps a count of each
+// Callback of type walk_fn used by GCHeapUtilities::DiagWalkObject.  Keeps a count of each
 // object reference found.
 //
 // Arguments:
@@ -1044,7 +1044,7 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type walk_fn used by GCHeapUtilities::WalkObject.  Stores each object reference
+// Callback of type walk_fn used by GCHeapUtilities::DiagWalkObject.  Stores each object reference
 // encountered into an array.
 //
 // Arguments:
@@ -1117,7 +1117,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     if (pMT->ContainsPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
-        GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
+        GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
 
         if (cNumRefs > 0)
         {
@@ -1142,7 +1142,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 
             // Second round saves off all of the ref values
             OBJECTREF * pCurObjRef = arrObjRef;
-            GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
+            GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
         }
     }
 

@@ -77,7 +77,7 @@ public:
     size_t  GetLastGCDuration(int generation);
     size_t  GetNow();
 
-    void  TraceGCSegments ();    
+    void  DiagTraceGCSegments ();    
     void PublishObject(uint8_t* obj);
     
     BOOL    IsGCInProgressHelper (BOOL bConsiderGCStart = FALSE);
@@ -199,7 +199,7 @@ public:
     BOOL ShouldRestartFinalizerWatchDog();
 
     void SetCardsAfterBulkCopy( Object**, size_t);
-    void WalkObject (Object* obj, walk_fn fn, void* context);
+    void DiagWalkObject (Object* obj, walk_fn fn, void* context);
 
 public:	// FIX 
 
@@ -272,7 +272,19 @@ protected:
 #endif  // STRESS_HEAP 
 #endif // FEATURE_REDHAWK
 
-    virtual void DescrGenerationsToProfiler (gen_walk_fn fn, void *context);
+    virtual void DiagDescrGenerations (gen_walk_fn fn, void *context);
+
+    virtual void DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, size_t diag_context, walk_surv_type type);
+
+    virtual void DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn);
+
+    virtual void DiagScanFinalizeQueue (fq_scan_fn fn, ScanContext* context);
+
+    virtual void DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* context);
+
+    virtual void DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context);
+
+    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
 
 public:
     Object * NextObj (Object * object);
