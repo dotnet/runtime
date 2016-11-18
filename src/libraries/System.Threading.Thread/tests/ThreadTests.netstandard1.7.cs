@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading.Tests;
 using Xunit;
@@ -678,6 +679,7 @@ namespace System.Threading.Threads.Tests
             t.IsBackground = true;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => t.Join(-2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => t.Join(TimeSpan.FromMilliseconds(-2)));
             Assert.Throws<ArgumentOutOfRangeException>(() => t.Join(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
 
             Assert.Throws<ThreadStateException>(() => t.Join());
@@ -758,6 +760,19 @@ namespace System.Threading.Threads.Tests
             Thread.EndCriticalRegion();
             Thread.BeginThreadAffinity();
             Thread.EndThreadAffinity();
+
+            ThreadTestHelpers.RunTestInBackgroundThread(() =>
+            {
+                // TODO: Port tests for these once all of the necessary interop APIs are available
+                Thread.CurrentThread.DisableComObjectEagerCleanup();
+                Marshal.CleanupUnusedObjectsInCurrentContext();
+            });
+
+#pragma warning disable 618 // obsolete members
+            Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.GetCompressedStack());
+            Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetCompressedStack(CompressedStack.Capture()));
+#pragma warning restore 618 // obsolete members
+
             Thread.MemoryBarrier();
 
             var ad = Thread.GetDomain();

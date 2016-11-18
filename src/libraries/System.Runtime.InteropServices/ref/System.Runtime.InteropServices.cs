@@ -510,6 +510,7 @@ namespace System.Runtime.InteropServices
         public static bool AreComObjectsAvailableForCleanup() { throw null; }
         public static object BindToMoniker(string monikerName) { throw null; }
         public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak) { }        
+        public static void CleanupUnusedObjectsInCurrentContext() { }
         public static void Copy(byte[] source, int startIndex, System.IntPtr destination, int length) { }
         public static void Copy(char[] source, int startIndex, System.IntPtr destination, int length) { }
         public static void Copy(double[] source, int startIndex, System.IntPtr destination, int length) { }

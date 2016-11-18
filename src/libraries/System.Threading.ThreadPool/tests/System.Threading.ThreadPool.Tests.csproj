@@ -5,8 +5,9 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{9C77C3CA-7067-4D45-BDFE-CC62AB5C1ED5}</ProjectGuid>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <AssemblyName>System.Threading.ThreadPool.Tests</AssemblyName>
+    <ProjectGuid>{403AD1B8-6F95-4A2E-92A2-727606ABD866}</ProjectGuid>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -14,19 +15,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Runtime.Handles.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <Compile Include="ThreadPoolTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CriticalHandle.cs" />
-    <Compile Include="SafeHandle.cs" />
-    <Compile Include="SafeWaitHandle.cs" />
-    <Compile Include="SafeWaitHandleExtensions.cs" />
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="CriticalHandle.netstandard1.7.cs" />
-    <Compile Include="SafeHandle.netstandard1.7.cs" />
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Threading.ThreadPool.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

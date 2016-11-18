@@ -52,5 +52,6 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringAut
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SetComObjectData(System.Object, System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.BindToMoniker(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ChangeWrapperHandleStrength(System.Object, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.ProgIdAttribute' does not exist in the implementation but it does exist in the contract.
-Total Issues: 53
+Total Issues: 54
