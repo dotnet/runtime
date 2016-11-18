@@ -134,7 +134,14 @@ namespace System.Security.Cryptography
         public abstract byte[] SignHash(byte[] hash);
         public abstract bool VerifyHash(byte[] hash, byte[] signature);
 
-        protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
-        protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
     }
 }
