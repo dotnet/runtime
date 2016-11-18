@@ -8155,8 +8155,7 @@ NO_TAIL_CALL:
             }
 
 #ifdef DEBUG
-            auto resetMorphedFlag = [](GenTree** slot, fgWalkData* data) -> fgWalkResult
-            {
+            auto resetMorphedFlag = [](GenTree** slot, fgWalkData* data) -> fgWalkResult {
                 (*slot)->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
                 return WALK_CONTINUE;
             };
@@ -8176,7 +8175,7 @@ NO_TAIL_CALL:
             {
                 assert(argSetupCursor != nullptr);
                 argSetupCursor->gtOp2 = result;
-                result = argSetup;
+                result                = argSetup;
             }
 
             return result;
