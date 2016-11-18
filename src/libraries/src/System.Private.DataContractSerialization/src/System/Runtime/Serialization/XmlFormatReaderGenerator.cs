@@ -150,6 +150,11 @@ namespace System.Runtime.Serialization
                         ReadClass(classContract);
                     }
 
+                    if (Globals.TypeOfIDeserializationCallback.IsAssignableFrom(classContract.UnderlyingType))
+                    {
+                        _ilg.Call(_objectLocal, XmlFormatGeneratorStatics.OnDeserializationMethod, null);
+                    }
+
                     InvokeOnDeserialized(classContract);
                     if (objectId == null)
                     {

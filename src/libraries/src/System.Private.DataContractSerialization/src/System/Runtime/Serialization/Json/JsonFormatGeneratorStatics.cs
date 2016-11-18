@@ -56,6 +56,8 @@ namespace System.Runtime.Serialization
         [SecurityCritical]
         private static PropertyInfo s_nodeTypeProperty;
 
+        private static MethodInfo s_onDeserializationMethod;
+
         [SecurityCritical]
         private static MethodInfo s_readJsonValueMethod;
 
@@ -287,6 +289,18 @@ namespace System.Runtime.Serialization
                     Debug.Assert(s_nodeTypeProperty != null);
                 }
                 return s_nodeTypeProperty;
+            }
+        }
+        public static MethodInfo OnDeserializationMethod
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_onDeserializationMethod == null)
+                {
+                    s_onDeserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization");
+                }
+                return s_onDeserializationMethod;
             }
         }
         public static MethodInfo ReadJsonValueMethod

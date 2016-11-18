@@ -2330,6 +2330,15 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(0, deserialized.Member2);
     }
 
+    [Fact]
+    public static void DCJS_SquareWithDeserializationCallback()
+    {
+        var value = new SquareWithDeserializationCallback(2);
+        var actual = SerializeAndDeserialize(value, "{\"Edge\":2}");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Area, actual.Area);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;

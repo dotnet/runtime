@@ -94,6 +94,12 @@ namespace System.Runtime.Serialization.Json
                     ReadISerializable(classContract);
                 else
                     ReadClass(classContract);
+
+                if (Globals.TypeOfIDeserializationCallback.IsAssignableFrom(classContract.UnderlyingType))
+                {
+                    _ilg.Call(_objectLocal, JsonFormatGeneratorStatics.OnDeserializationMethod, null);
+                }
+
                 InvokeOnDeserialized(classContract);
                 if (!InvokeFactoryMethod(classContract))
                 {

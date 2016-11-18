@@ -2811,6 +2811,15 @@ public static partial class DataContractSerializerTests
         Assert.Throws<SerializationException>(() => SerializeAndDeserialize(value2, ""));
     }
 
+    [Fact]
+    public static void DCS_SquareWithDeserializationCallback()
+    {
+        var value = new SquareWithDeserializationCallback(2);
+        var actual = SerializeAndDeserialize(value, "<SquareWithDeserializationCallback xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Edge>2</Edge></SquareWithDeserializationCallback>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Area, actual.Area);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
