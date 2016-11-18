@@ -190,7 +190,7 @@ namespace System.Tests
             for (int i = 0; i < parameters.Length; i++) { parameters[i] = Type.Missing; }
 
             Assert.Equal(
-                "True, test, c, 2, -1, -3, 4, -5, 6, -7, 8, 9.1, 11.12",
+                $"True, test, c, 2, -1, -3, 4, -5, 6, -7, 8, {9.1}, {11.12}",
                 (string)(new AllPrimitivesWithDefaultValues(AllPrimitivesMethod)).DynamicInvoke(parameters));
         }
 
@@ -198,7 +198,7 @@ namespace System.Tests
         public static void DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithAllExplicitValues()
         {
             Assert.Equal(
-                "False, value, d, 102, -101, -103, 104, -105, 106, -107, 108, 109.1, 111.12",
+                $"False, value, d, 102, -101, -103, 104, -105, 106, -107, 108, {109.1}, {111.12}",
                 (string)(new AllPrimitivesWithDefaultValues(AllPrimitivesMethod)).DynamicInvoke(
                     new object[13]
                     {
@@ -223,7 +223,7 @@ namespace System.Tests
         public static void DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues()
         {
             Assert.Equal(
-                "False, test, d, 2, -101, -3, 104, -5, 106, -7, 108, 9.1, 111.12",
+                $"False, test, d, 2, -101, -3, 104, -5, 106, -7, 108, {9.1}, {111.12}",
                 (string)(new AllPrimitivesWithDefaultValues(AllPrimitivesMethod)).DynamicInvoke(
                     new object[13]
                     {
