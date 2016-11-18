@@ -13,7 +13,7 @@ namespace System.Dynamic.Utils
     {
         /// <summary>
         /// Wraps the provided enumerable into a ReadOnlyCollection{T}
-        /// 
+        ///
         /// Copies all of the data into a new array, so the data can't be
         /// changed after creation. The exception is if the enumerable is
         /// already a ReadOnlyCollection{T}, in which case we just return it.

@@ -1161,7 +1161,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Diagnostics.Tools": {
@@ -1184,7 +1184,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Diagnostics.Tracing": {
@@ -1474,6 +1474,13 @@
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
         "4.0.3.0": "4.4.0"
+      }
+    },
+    "System.Memory": {
+      "StableVersions": [
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
       }
     },
     "System.Net.Http": {
@@ -2739,7 +2746,13 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
-    }
+    },
+    "System.Net.HttpListener": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
+    "Microsoft.Private.CoreFx.NETCoreApp": {}
   },
   "ModulesToPackages": {
     "System.Native": "runtime.native.System",

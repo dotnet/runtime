@@ -256,7 +256,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>(null, () => Expression.MakeMemberAccess(expression, typeof(FC).GetField(nameof(FC.II))));
         }
-        
+
         [Fact]
         public static void Field_NoSuchFieldName_ThrowsArgumentException()
         {
@@ -395,7 +395,7 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentException>("property", () => Expression.Property(Expression.Default(typeof(UnreadableIndexableClass)), typeof(UnreadableIndexableClass).GetProperty("Item")));
         }
-        
+
         [Fact]
         public static void Property_NullProperty_ThrowsArgumentNullException()
         {
@@ -453,7 +453,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, typeof(PC).GetProperty(nameof(PC.II))));
         }
-        
+
         [Fact]
         public static void Property_NoSuchPropertyName_ThrowsArgumentException()
         {

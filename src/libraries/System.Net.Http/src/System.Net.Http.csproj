@@ -95,6 +95,9 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
       <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
@@ -345,16 +348,8 @@
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Globalization.Extensions\ref\System.Globalization.Extensions.csproj">
+    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
       <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
     </ProjectReference>
   </ItemGroup>

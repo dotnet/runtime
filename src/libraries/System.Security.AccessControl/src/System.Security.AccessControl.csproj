@@ -42,79 +42,79 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUID.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUID.cs">
       <Link>Common\Interop\Interop.LUID.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUIDAndAttributes.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUIDAndAttributes.cs">
       <Link>Common\Interop\Interop.LUIDAndAttributes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUIDAndAttributes1.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUIDAndAttributes1.cs">
       <Link>Common\Interop\Interop.LUIDAndAttributes1.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.TokenPrivilege.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TokenPrivilege.cs">
       <Link>Common\Interop\Interop.TokenPrivilege.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityImpersonationLevel.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SecurityImpersonationLevel.cs">
       <Link>Common\Interop\Interop.SecurityImpersonationLevel.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ProcessOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ProcessOptions.cs">
       <Link>Common\Interop\Interop.ProcessOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupPrivilegeValue.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LookupPrivilegeValue.cs">
       <Link>Common\Interop\Interop.LookupPrivilegeValue.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RevertToSelf.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RevertToSelf.cs">
       <Link>Common\Interop\Interop.RevertToSelf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
       <Link>Common\Interop\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConvertSdToStringSd.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ConvertSdToStringSd.cs">
       <Link>Common\Interop\Interop.ConvertSdToStringSd.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConvertStringSdToSd.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ConvertStringSdToSd.cs">
       <Link>Common\Interop\Interop.ConvertStringSdToSd.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSecurityInfoByHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetSecurityInfoByHandle.cs">
       <Link>Common\Interop\Interop.GetSecurityInfoByHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetSecurityInfoByHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SetSecurityInfoByHandle.cs">
       <Link>Common\Interop\Interop.SetSecurityInfoByHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSecurityInfoByName.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetSecurityInfoByName.cs">
       <Link>Common\Interop\Interop.GetSecurityInfoByName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetSecurityInfoByName.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SetSecurityInfoByName.cs">
       <Link>Common\Interop\Interop.SetSecurityInfoByName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSecurityDescriptorLength.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetSecurityDescriptorLength.cs">
       <Link>Common\Interop\Interop.GetSecurityDescriptorLength.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Interop.CloseHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenThreadToken_SafeTokenHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenThreadToken_SafeTokenHandle.cs">
       <Link>Common\Interop\Interop.OpenThreadToken_SafeTokenHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenProcessToken_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken_IntPtr.cs">
       <Link>Common\Interop\Interop.OpenProcessToken_IntPtrs.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetThreadToken.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SetThreadToken.cs">
       <Link>Common\Interop\Interop.SetThreadToken.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentThread.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentThread.cs">
       <Link>Common\Interop\Interop.GetCurrentThread.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.AdjustTokenPrivileges_TokenPrivilege.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges_TokenPrivilege.cs">
       <Link>Common\Interop\Interop.AdjustTokenPrivileges_TokenPrivilege.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateTokenEx_SafeTokenHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.DuplicateTokenEx_SafeTokenHandle.cs">
       <Link>Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs</Link>
     </Compile>
   </ItemGroup>

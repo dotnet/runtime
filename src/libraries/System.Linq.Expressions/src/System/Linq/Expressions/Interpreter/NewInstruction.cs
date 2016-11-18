@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
@@ -83,6 +84,7 @@ namespace System.Linq.Expressions.Interpreter
             int first = frame.StackIndex - _argumentCount;
 
             object[] args = GetArgs(frame, first);
+            Debug.Assert(args != null);
 
             try
             {
@@ -101,12 +103,9 @@ namespace System.Linq.Expressions.Interpreter
             }
             finally
             {
-                if (args != null)
+                foreach (ByRefUpdater arg in _byrefArgs)
                 {
-                    foreach (ByRefUpdater arg in _byrefArgs)
-                    {
-                        arg.Update(frame, args[arg.ArgumentIndex]);
-                    }
+                    arg.Update(frame, args[arg.ArgumentIndex]);
                 }
             }
 

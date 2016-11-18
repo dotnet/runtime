@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils
 {
@@ -28,7 +25,10 @@ namespace System.Dynamic.Utils
             }
             using (var e = source.GetEnumerator())
             {
-                if (e.MoveNext()) return e.Current;
+                if (e.MoveNext())
+                {
+                    return e.Current;
+                }
             }
             throw new InvalidOperationException();
         }

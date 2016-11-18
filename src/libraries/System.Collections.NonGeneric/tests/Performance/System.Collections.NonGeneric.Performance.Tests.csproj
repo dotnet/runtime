@@ -20,6 +20,10 @@
     <ProjectReference Include="..\..\pkg\System.Collections.NonGeneric.pkgproj">
       <Name>System.Collections.NonGeneric</Name>
     </ProjectReference>
+    <!-- Do not remove this P2P reference since part of the implementation of NonGeneric has moved to Runtime.Extensions -->
+    <ProjectReference Include="..\..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
+    <!-- ToDo: Remove this P2P reference once packages are updated -->
+    <ProjectReference Include="..\..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

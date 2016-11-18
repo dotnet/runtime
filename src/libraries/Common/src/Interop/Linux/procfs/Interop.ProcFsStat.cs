@@ -18,6 +18,7 @@ internal static partial class Interop
         internal const string ProcUptimeFilePath = RootPath + "uptime";
         private const string StatFileName = "/stat";
         private const string MapsFileName = "/maps";
+        private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
 
         internal struct ParsedStat
@@ -94,6 +95,11 @@ internal static partial class Interop
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + TaskDirectoryName;
         }
 
+        internal static string GetFileDescriptorDirectoryPathForProcess(int pid)
+        {
+            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + FileDescriptorDirectoryName;
+        }
+
         internal static IEnumerable<ParsedMapsModule> ParseMapsModules(int pid)
         {
             try
@@ -161,7 +167,7 @@ internal static partial class Interop
                 {
                     continue;
                 }
-                string pathname = parser.ExtractCurrent();
+                string pathname = parser.ExtractCurrentToEnd();
 
                 // We only get here if a we have a non-empty pathname and
                 // the permissions included both readability and executability.

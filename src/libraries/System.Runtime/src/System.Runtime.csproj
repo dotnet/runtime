@@ -39,18 +39,19 @@
     <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
     <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
+    <Compile Include="System\IO\FileAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)' == 'netstandard1.7' OR '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == '' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot' And '$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463'">
+  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)'!='net462' and '$(TargetGroup)'!='net463'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' Or '$(TargetGroup)'=='uap101'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)'=='uap101'">
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
   </ItemGroup>
   <ItemGroup>

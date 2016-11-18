@@ -73,7 +73,7 @@ namespace System.Net
     internal partial class ContextAwareResult : LazyAsyncResult
     {
         [Flags]
-        private enum StateFlags
+        private enum StateFlags : byte
         {
             None = 0x00,
             CaptureIdentity = 0x01,

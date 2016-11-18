@@ -29,6 +29,23 @@ namespace System.Security.Cryptography
             base.Key = _hMacCommon.ActualKey;
         }
 
+        public bool ProduceLegacyHmacValues
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+                // We don't have a managed implementation of HMAC
+                // so we can't support this
+                if (value)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+            }
+        }
+
         public override int HashSize
         {
             get

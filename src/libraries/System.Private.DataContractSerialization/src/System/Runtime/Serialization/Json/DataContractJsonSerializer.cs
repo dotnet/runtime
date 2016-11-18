@@ -61,13 +61,13 @@ namespace System.Runtime.Serialization.Json
         }
 
         public DataContractJsonSerializer(Type type, string rootName, IEnumerable<Type> knownTypes)
+            : this(type, new DataContractJsonSerializerSettings() { RootName = rootName, KnownTypes = knownTypes })
         {
-            throw new PlatformNotSupportedException();
         }
 
         public DataContractJsonSerializer(Type type, XmlDictionaryString rootName, IEnumerable<Type> knownTypes)
         {
-            throw new PlatformNotSupportedException();
+            _serializer = new DataContractJsonSerializerImpl(type, rootName, knownTypes);
         }
 
         public DataContractJsonSerializer(Type type, DataContractJsonSerializerSettings settings)
@@ -184,9 +184,34 @@ namespace System.Runtime.Serialization.Json
             _serializer.WriteObject(stream, graph);
         }
 
+        public override void WriteObject(XmlWriter writer, object graph)
+        {
+            _serializer.WriteObject(writer, graph);
+        }
+
+        public override void WriteObject(XmlDictionaryWriter writer, object graph)
+        {
+            _serializer.WriteObject(writer, graph);
+        }
+
         public override object ReadObject(Stream stream)
         {
             return _serializer.ReadObject(stream);
+        }
+
+        public override object ReadObject(XmlReader reader)
+        {
+            return _serializer.ReadObject(reader);
+        }
+
+        public override object ReadObject(XmlReader reader, bool verifyObjectName)
+        {
+            return _serializer.ReadObject(reader, verifyObjectName);
+        }
+
+        public override object ReadObject(XmlDictionaryReader reader)
+        {
+            return _serializer.ReadObject(reader);
         }
 
         private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type> serializerKnownTypeList)
@@ -425,14 +450,29 @@ namespace System.Runtime.Serialization.Json
             contract.WriteJsonValue(writer, graph, context, declaredTypeHandle);
         }
 
+        public override void WriteStartObject(XmlWriter writer, object graph)
+        {
+            _serializer.WriteStartObject(writer, graph);
+        }
+
         public override void WriteStartObject(XmlDictionaryWriter writer, object graph)
         {
             _serializer.WriteStartObject(writer, graph);
         }
 
+        public override void WriteObjectContent(XmlWriter writer, object graph)
+        {
+            _serializer.WriteObjectContent(writer, graph);
+        }
+
         public override void WriteObjectContent(XmlDictionaryWriter writer, object graph)
         {
             _serializer.WriteObjectContent(writer, graph);
+        }
+
+        public override void WriteEndObject(XmlWriter writer)
+        {
+            _serializer.WriteEndObject(writer);
         }
 
         public override void WriteEndObject(XmlDictionaryWriter writer)
@@ -443,6 +483,11 @@ namespace System.Runtime.Serialization.Json
         public override object ReadObject(XmlDictionaryReader reader, bool verifyObjectName)
         {
             return _serializer.ReadObject(reader, verifyObjectName);
+        }
+
+        public override bool IsStartObject(XmlReader reader)
+        {
+            return _serializer.IsStartObject(reader);
         }
 
         public override bool IsStartObject(XmlDictionaryReader reader)
@@ -473,19 +518,26 @@ namespace System.Runtime.Serialization.Json
         }
 
         public DataContractJsonSerializerImpl(Type type, IEnumerable<Type> knownTypes)
-            : this(type, knownTypes, int.MaxValue, false, false)
+            : this(type, null, knownTypes, int.MaxValue, false, false)
         {
         }
 
-        internal DataContractJsonSerializerImpl(Type type,
+        public DataContractJsonSerializerImpl(Type type, XmlDictionaryString rootName, IEnumerable<Type> knownTypes)
+            : this(type, rootName, knownTypes, int.MaxValue, false, false)
+        {
+        }
+
+        internal DataContractJsonSerializerImpl(Type type, 
+            XmlDictionaryString rootName,
             IEnumerable<Type> knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
             bool alwaysEmitTypeInformation)
         {
             EmitTypeInformation emitTypeInformation = alwaysEmitTypeInformation ? EmitTypeInformation.Always : EmitTypeInformation.AsNeeded;
-            Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
+            Initialize(type, rootName, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
         }
+
         public DataContractJsonSerializerImpl(Type type, DataContractJsonSerializerSettings settings)
         {
             if (settings == null)

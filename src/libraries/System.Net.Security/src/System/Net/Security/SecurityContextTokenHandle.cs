@@ -32,7 +32,7 @@ namespace System.Net.Security
             {
                 if (Interlocked.Increment(ref _disposed) == 1)
                 {
-                    return Interop.mincore.CloseHandle(handle);
+                    return Interop.Kernel32.CloseHandle(handle);
                 }
             }
             return true;

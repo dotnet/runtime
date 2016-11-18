@@ -39,6 +39,9 @@
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot'">
+    <Compile Include="System\Security\SecureStringMarshal.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\Attributes.cs" />
@@ -46,14 +49,11 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumSTATDATA.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomMarshaler.cs" />
-
-    <Compile Condition="'$(TargetGroup)'!='uap101aot'" Include="System\Security\SecureStringMarshal.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System" />
-    <Compile Include="System\Security\SecureStringMarshal.net46.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />

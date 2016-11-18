@@ -29,8 +29,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
+      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
@@ -49,6 +49,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs">
       <Link>Common\System\Diagnostics\ExceptionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
@@ -77,8 +80,14 @@
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs">
       <Link>Common\System\Net\Http\HttpHandlerLoggingStrings.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
+      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
+      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>

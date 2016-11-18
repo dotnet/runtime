@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Rewrite the expression
         /// </summary>
-        /// 
+        ///
         /// <param name="node">Expression to rewrite</param>
         /// <param name="stack">State of the stack before the expression is emitted.</param>
         /// <returns>Rewritten expression.</returns>

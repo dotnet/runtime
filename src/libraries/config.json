@@ -42,8 +42,8 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "Platform": {
-      "description": "Sets the value of the platform.",
+    "TestArchitecture": {
+      "description": "Sets the architecture value that will be used for testing.",
       "valueType": "property",
       "values": ["AnyCPU", "x86", "arm", "x64", "arm64"],
       "defaultValue": "x64"
@@ -306,9 +306,9 @@
           }
         },
         "buildArch": {
-          "description": "Passes the value of the build architecture to the respective build-native script.",
+          "description": "Passes the value of the test architecture to the respective build-managed script.",
           "settings": {
-            "Platform": "default"
+            "TestArchitecture": "default"
           }
         },
         "verbose": {

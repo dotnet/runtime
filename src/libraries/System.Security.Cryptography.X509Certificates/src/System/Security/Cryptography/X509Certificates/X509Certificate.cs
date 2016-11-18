@@ -64,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate(byte[] rawData, SecureString password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
@@ -82,6 +83,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
@@ -116,6 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate(string fileName, SecureString password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
@@ -134,6 +137,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [System.CLSCompliantAttribute(false)]
         public X509Certificate(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags) : this()
         {
             if (fileName == null)
@@ -290,6 +294,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [System.CLSCompliantAttribute(false)]
         public virtual byte[] Export(X509ContentType contentType, SecureString password)
         {
             VerifyContentType(contentType);
@@ -503,6 +508,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        [System.CLSCompliantAttribute(false)]
         public virtual void Import(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException();
@@ -518,6 +524,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        [System.CLSCompliantAttribute(false)]
         public virtual void Import(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException();

@@ -46,6 +46,9 @@
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
+    <Project Include="layout\Microsoft.Private.CoreFx.NETCoreApp\Microsoft.Private.CoreFx.NETCoreApp.builds" Condition="'$(BuildPackages)'=='true'">
+      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
+    </Project>
     <Project Include="src\post.builds">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
@@ -73,7 +76,7 @@
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
   </ItemGroup>
@@ -84,25 +87,26 @@
   <ItemGroup>
     <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
     <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)pkg/**/project.json" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
     <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
   </ItemGroup>
-  
+
   <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
-    <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" /> 
+    <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
 
     <IsRestoreRequired ProjectJsons="@(ProjectJsonFiles)" PackagesFolder="$(PackagesDir)">
       <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
     </IsRestoreRequired>
-    
+
     <!-- This is to restore the test-runtime project.json up front which contains the latest packages to be tested to avoid download contention within nuget. -->
     <Exec Command="$(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')"
           Condition="'$(RestoreRequired)' == 'true'"
           StandardOutputImportance="Low"
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
           ContinueOnError="ErrorAndContinue" />
-    
+
     <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
           Condition="'$(RestoreRequired)' == 'true'"
           StandardOutputImportance="Low"
@@ -111,10 +115,10 @@
 
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
-    
+
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
-  
+
   <!-- Generated project.json's may not exist when the "ProjectJsonFiles"" item group is defined (in dir.props), This target
        ensures those files are added to the itemgroup. -->
   <Target Name="AddGeneratedProjectJsons">
@@ -122,10 +126,10 @@
       <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
     </ItemGroup>
   </Target>
-  
+
   <UsingTask TaskName="AddDependenciesToProjectJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="UpdateVersionsOnTestProjectJson" >
-  
+
   <!-- Duplicate properties to be removed in future -->
     <PropertyGroup>
         <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
@@ -133,7 +137,7 @@
     <ItemGroup>
       <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
     </ItemGroup>
-  
+
     <AddDependenciesToProjectJson AdditionalDependencies="@(ExternalDependencies)"
                                   PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
                                   PackageNameRegex="$(PackageNameRegex)"
@@ -146,7 +150,7 @@
 
   <!-- Evaluate our test projects (in src\tests.builds) -->
   <Target Name="BatchGenerateTestProjectJsons"
-          Condition="'$(BuildTestsAgainstPackages)' == 'true'" 
+          Condition="'$(BuildTestsAgainstPackages)' == 'true'"
           DependsOnTargets="FilterProjects;UpdateVersionsOnTestProjectJson"
           BeforeTargets="RestorePackages">
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's..." />
@@ -157,7 +161,7 @@
 
   <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
   <UsingTask TaskName="ValidateExactRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-  
+
   <Target Name="ValidateExactRestore"
           Condition="'$(AllowInexactRestore)'!='true'">
     <ValidateExactRestore ProjectLockJsons="@(ProjectJsonFiles->'%(RootDir)%(Directory)%(Filename).lock.json')" />
@@ -182,7 +186,7 @@
       <ExcludeFromArchive Include="TestData" />
       <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
     </ItemGroup>
-    
+
     <PropertyGroup>
       <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/</TestArchiveDir>
       <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
@@ -194,7 +198,7 @@
       RelativePathBaseDirectory="$(PackagesDir)"
       OverwriteDestination="true" />
   </Target>
-  
+
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
   <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
 

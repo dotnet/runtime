@@ -107,9 +107,7 @@ namespace System.Security.Permissions.Tests
             testbool = pp.IsUnrestricted();
             string teststring = pp.ToString();
             ip2 = pp.Union(ip);
-            SecurityElement se = new SecurityElement("");
-            pp.FromXml(se);
-            se = pp.ToXml();
+            pp.ToXml();
         }
 
         [Fact]

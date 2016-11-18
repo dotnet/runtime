@@ -30,7 +30,7 @@ namespace System.IO.Compression.Tests
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("small.zip")), ZipArchiveMode.Update))
             {
                 ZipArchiveEntry entry = archive.Entries[0];
-                String contents1, contents2;
+                string contents1, contents2;
                 using (StreamReader s = new StreamReader(entry.Open()))
                 {
                     contents1 = s.ReadToEnd();
@@ -58,8 +58,8 @@ namespace System.IO.Compression.Tests
         [InlineData(ZipArchiveMode.Update)]
         public static void EmptyEntryTest(ZipArchiveMode mode)
         {
-            String data1 = "test data written to file.";
-            String data2 = "more test data written to file.";
+            string data1 = "test data written to file.";
+            string data2 = "more test data written to file.";
             DateTimeOffset lastWrite = new DateTimeOffset(1992, 4, 5, 12, 00, 30, new TimeSpan(-5, 0, 0));
 
             var baseline = new LocalMemoryStream();
@@ -166,7 +166,7 @@ namespace System.IO.Compression.Tests
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                String fileName = zmodified(Path.Combine("overwrite", "first.txt"));
+                string fileName = zmodified(Path.Combine("overwrite", "first.txt"));
                 ZipArchiveEntry e = archive.GetEntry("first.txt");
 
                 var file = FileData.GetFile(fileName);
@@ -231,7 +231,7 @@ namespace System.IO.Compression.Tests
             IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
         }
 
-        private static async Task updateArchive(ZipArchive archive, String installFile, String entryName)
+        private static async Task updateArchive(ZipArchive archive, string installFile, string entryName)
         {
             ZipArchiveEntry e = archive.CreateEntry(entryName);
 

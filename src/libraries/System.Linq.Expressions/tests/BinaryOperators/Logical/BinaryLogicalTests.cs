@@ -516,7 +516,7 @@ namespace System.Linq.Expressions.Tests
             // Does not return bool
             TypeBuilder typeBuilder1 = GetTypeBuilder();
             yield return new object[] { typeBuilder1, typeof(void), new Type[] { typeBuilder1.AsType() } };
-            
+
             // Parameter is not assignable from left
             yield return new object[] { GetTypeBuilder(), typeof(bool), new Type[] { typeof(int) } };
 
@@ -724,7 +724,7 @@ namespace System.Linq.Expressions.Tests
             MethodBuilder method = builder.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int), typeof(int) });
             method.GetILGenerator().Emit(OpCodes.Ret);
 
-            TypeInfo createdType = builder.CreateTypeInfo();            
+            TypeInfo createdType = builder.CreateTypeInfo();
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
         }
 
@@ -775,7 +775,7 @@ namespace System.Linq.Expressions.Tests
             var e2 = Expression.OrElse(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a OrElse b)", e2.ToString());
         }
-        
+
         private static TypeBuilder GetTypeBuilder()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);

@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            // create it 
+            // create it
             try
             {
 #if FEATURE_FAST_CREATE
@@ -110,9 +110,9 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (NotSupportedException)
             {
-                // if Delegate.CreateDelegate can't handle the method fall back to 
-                // the slow reflection version.  For example this can happen w/ 
-                // a generic method defined on an interface and implemented on a class or 
+                // if Delegate.CreateDelegate can't handle the method fall back to
+                // the slow reflection version.  For example this can happen w/
+                // a generic method defined on an interface and implemented on a class or
                 // a virtual generic method.
                 res = new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -260,12 +260,12 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => ArgumentCount;
 
         public override string ToString() => "Call()";
-        
+
         #endregion
 
         /// <summary>
         /// If the target of invocation happens to be a delegate
-        /// over enclosed instance lightLambda, return that instance. 
+        /// over enclosed instance lightLambda, return that instance.
         /// We can interpret LightLambdas directly.
         /// </summary>
         /// <param name="instance"></param>
@@ -476,7 +476,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         if (arg.ArgumentIndex == -1)
                         {
-                            // instance param, just copy back the exact instance invoked with, which 
+                            // instance param, just copy back the exact instance invoked with, which
                             // gets passed by reference from reflection for value types.
                             arg.Update(frame, instance);
                         }

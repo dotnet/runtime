@@ -22,12 +22,6 @@ namespace System.Xml.Serialization.Configuration
         public DateTimeSerializationSection()
         {
         }
-
-        public DateTimeSerializationMode Mode
-        {
-            get { return default(DateTimeSerializationMode); }
-            set { }
-        }
     }
 }
 

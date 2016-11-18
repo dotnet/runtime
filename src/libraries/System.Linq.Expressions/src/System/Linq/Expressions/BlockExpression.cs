@@ -30,14 +30,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the last expression in this block.
         /// </summary>
-        public Expression Result
-        {
-            get
-            {
-                Debug.Assert(ExpressionCount > 0);
-                return GetExpression(ExpressionCount - 1);
-            }
-        }
+        public Expression Result => GetExpression(ExpressionCount - 1);
 
         internal BlockExpression()
         {
@@ -109,14 +102,14 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Makes a copy of this node replacing the parameters/args with the provided values.  The 
+        /// Makes a copy of this node replacing the parameters/args with the provided values.  The
         /// shape of the parameters/args needs to match the shape of the current block - in other
         /// words there should be the same # of parameters and args.
-        /// 
+        ///
         /// parameters can be null in which case the existing parameters are used.
-        /// 
+        ///
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
-        /// subclass of BlockExpression which is being used. 
+        /// subclass of BlockExpression which is being used.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
@@ -126,15 +119,15 @@ namespace System.Linq.Expressions
 
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
-        /// 
+        ///
         /// This is similar to the ReturnReadOnly which only takes a single argument. This version
         /// supports nodes which hold onto 5 Expressions and puts all of the arguments into the
         /// ReadOnlyCollection.
-        /// 
+        ///
         /// Ultimately this means if we create the readonly collection we will be slightly more wasteful as we'll
         /// have a readonly collection + some fields in the type.  The DLR internally avoids accessing anything
         /// which would force the readonly collection to be created.
-        /// 
+        ///
         /// This is used by BlockExpression5 and MethodCallExpression5.
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnlyExpressions(BlockExpression provider, ref object collection)

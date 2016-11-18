@@ -210,6 +210,23 @@ namespace System.Tests
 
                 Assert.False(Tuple.Equals(null));
                 Assert.False(((IStructuralEquatable)Tuple).Equals(null));
+
+                IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException();
+                IStructuralEquatable_GetHashCode_NullComparer_ThrowsNullReferenceException();
+            }
+            
+            public void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
+            {
+                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+                IStructuralEquatable equatable = (IStructuralEquatable)Tuple;
+                Assert.Throws<NullReferenceException>(() => equatable.Equals(Tuple, null));
+            }
+
+            public void IStructuralEquatable_GetHashCode_NullComparer_ThrowsNullReferenceException()
+            {
+                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+                IStructuralEquatable equatable = (IStructuralEquatable)Tuple;
+                Assert.Throws<NullReferenceException>(() => equatable.GetHashCode(null));
             }
 
             public void CompareTo(TupleTestDriver<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> other, int expectedResult, int expectedStructuralResult)
@@ -217,6 +234,15 @@ namespace System.Tests
                 Assert.Equal(expectedResult, ((IComparable)Tuple).CompareTo(other.Tuple));
                 Assert.Equal(expectedStructuralResult, ((IStructuralComparable)Tuple).CompareTo(other.Tuple, TestComparer.Instance));
                 Assert.Equal(1, ((IComparable)Tuple).CompareTo(null));
+
+                IStructuralComparable_NullComparer_ThrowsNullReferenceException();  
+            }
+
+            public void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
+            {
+                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+                IStructuralComparable comparable = (IStructuralComparable)Tuple;
+                Assert.Throws<NullReferenceException>(() => comparable.CompareTo(Tuple, null));
             }
 
             public void NotEqual()

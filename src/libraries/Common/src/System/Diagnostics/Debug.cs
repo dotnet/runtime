@@ -278,20 +278,20 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, string value)
+        public static void WriteLineIf(bool condition, string message)
         {
             if (condition)
             {
-                WriteLine(value);
+                WriteLine(message);
             }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, string value, string category)
+        public static void WriteLineIf(bool condition, string message, string category)
         {
             if (condition)
             {
-                WriteLine(value, category);
+                WriteLine(message, category);
             }
         }
 

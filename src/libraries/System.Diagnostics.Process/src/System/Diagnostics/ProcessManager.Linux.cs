@@ -117,7 +117,7 @@ namespace System.Diagnostics
                 ProcessName = procFsStat.comm,
                 BasePriority = (int)procFsStat.nice,
                 VirtualBytes = (long)procFsStat.vsize,
-                WorkingSet = procFsStat.rss,
+                WorkingSet = procFsStat.rss * Environment.SystemPageSize,
                 SessionId = procFsStat.session,
 
                 // We don't currently fill in the other values.

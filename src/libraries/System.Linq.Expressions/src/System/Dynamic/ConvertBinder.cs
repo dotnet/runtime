@@ -11,9 +11,6 @@ namespace System.Dynamic
     /// </summary>
     public abstract class ConvertBinder : DynamicMetaObjectBinder
     {
-        private readonly Type _type;
-        private readonly bool _explicit;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ConvertBinder" />.
         /// </summary>
@@ -23,32 +20,20 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
 
-            _type = type;
-            _explicit = @explicit;
+            Type = type;
+            Explicit = @explicit;
         }
 
         /// <summary>
         /// The type to convert to.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public Type Type
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public Type Type { get; }
 
         /// <summary>
         /// Gets the value indicating if the conversion should consider explicit conversions.
         /// </summary>
-        public bool Explicit
-        {
-            get
-            {
-                return _explicit;
-            }
-        }
+        public bool Explicit { get; }
 
         /// <summary>
         /// Performs the binding of the dynamic convert operation if the target dynamic object cannot bind.
@@ -83,20 +68,11 @@ namespace System.Dynamic
         }
 
         // this is a standard DynamicMetaObjectBinder
-        internal override sealed bool IsStandardBinder
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal override sealed bool IsStandardBinder => true;
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return _type; }
-        }
+        public override sealed Type ReturnType => Type;
     }
 }

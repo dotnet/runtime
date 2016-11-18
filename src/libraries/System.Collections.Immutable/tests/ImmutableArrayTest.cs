@@ -720,25 +720,10 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void InsertRangeNoOpIdentity()
-        {
-            Assert.Equal(s_empty, s_empty.InsertRange(0, s_empty));
-            Assert.Equal(s_oneElement, s_empty.InsertRange(0, s_oneElement)); // struct overload
-            Assert.Equal(s_oneElement, s_empty.InsertRange(0, (IEnumerable<int>)s_oneElement)); // enumerable overload
-            Assert.Equal(s_oneElement, s_oneElement.InsertRange(0, s_empty));
-        }
-
-        [Fact]
-        public void InsertRangeEmpty()
+        public void InsertRangeEmptyInvalid()
         {
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(-1, 10));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(1, 10));
-            Assert.Equal(new int[0], s_empty.InsertRange(0, Enumerable.Empty<int>()));
-            Assert.Equal(s_empty, s_empty.InsertRange(0, Enumerable.Empty<int>()));
-            Assert.Equal(new[] { 1 }, s_empty.InsertRange(0, new[] { 1 }));
-            Assert.Equal(new[] { 2, 3, 4 }, s_empty.InsertRange(0, new[] { 2, 3, 4 }));
-            Assert.Equal(new[] { 2, 3, 4 }, s_empty.InsertRange(0, Enumerable.Range(2, 3)));
-            Assert.Equal(s_manyElements, s_manyElements.InsertRange(0, Enumerable.Empty<int>()));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(1, s_oneElement));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(-1, s_oneElement));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(1, (IEnumerable<int>)s_oneElement));
@@ -790,33 +775,79 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<InvalidOperationException>(() => s_oneElement.InsertRange(0, emptyDefaultBoxed));
         }
 
-        [Fact]
-        public void InsertRangeLeft()
+        public static IEnumerable<object[]> InsertRangeLeft()
         {
-            Assert.Equal(new[] { 7, 1, 2, 3 }, s_manyElements.InsertRange(0, new[] { 7 }));
-            Assert.Equal(new[] { 7, 8, 1, 2, 3 }, s_manyElements.InsertRange(0, new[] { 7, 8 }));
+            yield return new object[] { new[] { 7, 1, 2, 3 }, s_manyElements, 0, new[] { 7 } };
+            yield return new object[] { new[] { 7, 8, 1, 2, 3 }, s_manyElements, 0, new[] { 7, 8 } };
         }
 
-        [Fact]
-        public void InsertRangeMid()
+        public static IEnumerable<object[]> InsertRangeMiddle()
         {
-            Assert.Equal(new[] { 1, 7, 2, 3 }, s_manyElements.InsertRange(1, new[] { 7 }));
-            Assert.Equal(new[] { 1, 7, 8, 2, 3 }, s_manyElements.InsertRange(1, new[] { 7, 8 }));
+            yield return new object[] { new[] { 1, 7, 2, 3 }, s_manyElements, 1, new[] { 7 } };
+            yield return new object[] { new[] { 1, 7, 8, 2, 3 }, s_manyElements, 1, new[] { 7, 8 } };
         }
 
-        [Fact]
-        public void InsertRangeRight()
+        public static IEnumerable<object[]> InsertRangeRight()
         {
-            Assert.Equal(new[] { 1, 2, 3, 7 }, s_manyElements.InsertRange(3, new[] { 7 }));
-            Assert.Equal(new[] { 1, 2, 3, 7, 8 }, s_manyElements.InsertRange(3, new[] { 7, 8 }));
+            yield return new object[] { new[] { 1, 2, 3, 7 }, s_manyElements, 3, new[] { 7 } };
+            yield return new object[] { new[] { 1, 2, 3, 7, 8 }, s_manyElements, 3, new[] { 7, 8 } };
         }
 
-        [Fact]
-        public void InsertRangeImmutableArray()
+        public static IEnumerable<object[]> InsertRangeEmpty()
         {
-            Assert.Equal(new[] { 7, 8, 1, 2, 3 }, s_manyElements.InsertRange(0, ImmutableArray.Create(7, 8)));
-            Assert.Equal(new[] { 1, 7, 2, 3 }, s_manyElements.InsertRange(1, ImmutableArray.Create(7)));
-            Assert.Equal(new[] { 1, 2, 3, 7 }, s_manyElements.InsertRange(3, ImmutableArray.Create(7)));
+            yield return new object[] { new int[0], s_empty, 0, Enumerable.Empty<int>() };
+            yield return new object[] { s_empty, s_empty, 0, Enumerable.Empty<int>() };
+            yield return new object[] { new[] { 1 }, s_empty, 0, new[] { 1 } };
+            yield return new object[] { new[] { 2, 3, 4 }, s_empty, 0, new[] { 2, 3, 4 } };
+            yield return new object[] { new[] { 2, 3, 4 }, s_empty, 0, Enumerable.Range(2, 3) };
+            yield return new object[] { s_manyElements, s_manyElements, 0, Enumerable.Empty<int>() };
+        }
+
+        public static IEnumerable<object[]> InsertRangeIdentity()
+        {
+            yield return new object[] { s_empty, s_empty, 0, s_empty };
+            yield return new object[] { s_oneElement, s_empty, 0, s_oneElement };
+            yield return new object[] { s_oneElement, s_oneElement, 0, s_empty };
+        }
+
+        public static IEnumerable<object[]> InsertRangeDifferentUnderlyingType()
+        {
+            yield return new object[] { new int[] { 1, 2, 3 }, s_empty, 0, (int[])(object)new uint[] { 1, 2, 3 } };
+            yield return new object[] { new int[] { 4, 5, 6, 1, 2, 3 }, s_manyElements, 0, (int[])(object)new uint[] { 4, 5, 6 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6 }, s_manyElements, 3, (int[])(object)new uint[] { 4, 5, 6 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(InsertRangeLeft))]
+        [MemberData(nameof(InsertRangeMiddle))]
+        [MemberData(nameof(InsertRangeRight))]
+        [MemberData(nameof(InsertRangeEmpty))]
+        [MemberData(nameof(InsertRangeIdentity))]
+        public void InsertRange(IEnumerable<int> expected, ImmutableArray<int> array, int index, IEnumerable<int> items)
+        {
+            // All of these functions should take an enumerable and produce another w/ the same contents.
+            var identityTransforms = new List<Func<IEnumerable<int>, IEnumerable<int>>>
+            {
+                e => e,
+                e => e.ToArray(), // Array
+                e => e.ToList(), // List
+                e => new LinkedList<int>(e), // Non-array, non-List, non-ImmutableArray IList
+                e => e.ToImmutableArray(), // ImmutableArray
+                e => e.Select(i => i), // Lazy enumerable
+                e => new Queue<int>(e) // IReadOnlyCollection / non-generic ICollection
+            };
+
+            foreach (var equivalentItems in identityTransforms.Select(t => t(items)))
+            {
+                Assert.Equal(expected, array.InsertRange(index, equivalentItems));
+                Assert.Equal(expected, array.InsertRange(index, equivalentItems.ToImmutableArray())); // Call the ImmutableArray overload.
+
+                if (index == array.Length) // Insertion @ the end should be equivalent to adding.
+                {
+                    Assert.Equal(expected, array.AddRange(equivalentItems));
+                    Assert.Equal(expected, array.AddRange(equivalentItems.ToImmutableArray()));
+                }
+            }
         }
 
         [Fact]
@@ -1128,7 +1159,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<InvalidOperationException>(() => ((IList<int>)s_emptyDefault)[0]);
             Assert.Throws<InvalidOperationException>(() => ((IReadOnlyList<int>)s_emptyDefault)[0]);
         }
-        
+
         [Fact]
         public void Sort()
         {
@@ -1257,6 +1288,28 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IStructuralEquatable_Equals_NullComparerNonNullUnderlyingArray_ThrowsNullReferenceException()
+        {
+            // This was not fixed for compatability reasons. See #13410
+            IStructuralEquatable equatable = ImmutableArray.Create(1, 2, 3);
+
+            Assert.True(equatable.Equals(equatable, null));
+            Assert.Throws<NullReferenceException>(() => equatable.Equals(ImmutableArray.Create(1, 2, 3), null));
+            Assert.False(equatable.Equals(new ImmutableArray<int>(), null));
+            Assert.False(equatable.Equals(null, null));
+        }
+
+        [Fact]
+        public void IStructuralEquatable_Equals_NullComparerNullUnderlyingArray_Works()
+        {
+            IStructuralEquatable equatable = new ImmutableArray<int>();
+            Assert.True(equatable.Equals(equatable, null));
+            Assert.False(equatable.Equals(ImmutableArray.Create(1, 2, 3), null));
+            Assert.True(equatable.Equals(new ImmutableArray<int>(), null));
+            Assert.Throws<NullReferenceException>(() => equatable.Equals(null, null));
+        }
+
+        [Fact]
         public void StructuralEquatableGetHashCodeDefault()
         {
             IStructuralEquatable defaultImmArray = s_emptyDefault;
@@ -1274,6 +1327,20 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(emptyArray.GetHashCode(EqualityComparer<int>.Default), emptyImmArray.GetHashCode(EqualityComparer<int>.Default));
             Assert.Equal(array.GetHashCode(EqualityComparer<int>.Default), immArray.GetHashCode(EqualityComparer<int>.Default));
             Assert.Equal(array.GetHashCode(EverythingEqual<int>.Default), immArray.GetHashCode(EverythingEqual<int>.Default));
+        }
+
+        [Fact]
+        public void IStructuralEquatable_GetHashCode_NullComparerNonNullUnderlyingArray_ThrowsArgumentNullException()
+        {
+            IStructuralEquatable equatable = ImmutableArray.Create(1, 2, 3);
+            Assert.Throws<ArgumentNullException>(() => equatable.GetHashCode(null));
+        }
+
+        [Fact]
+        public void IStructuralEquatable_GetHashCode_NullComparerNullUnderlyingArray_Works()
+        {
+            IStructuralEquatable equatable = new ImmutableArray<int>();
+            Assert.Equal(0, equatable.GetHashCode(null));
         }
 
         [Fact]
@@ -1321,6 +1388,26 @@ namespace System.Collections.Immutable.Tests
             IStructuralComparable equalImmArray = ImmutableArray.Create((int[])equalArray);
 
             Assert.Equal(array.CompareTo(equalArray, Comparer<int>.Default), immArray.CompareTo(equalArray, Comparer<int>.Default));
+        }
+
+        [Fact]
+        public void IStructuralComparable_NullComparerNonNullUnderlyingArray_ThrowsNullReferenceException()
+        {
+            // This was not fixed for compatability reasons. See #13410
+            IStructuralComparable comparable = ImmutableArray.Create(1, 2, 3);
+            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(comparable, null));
+            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(ImmutableArray.Create(1, 2, 3), null));
+            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(new ImmutableArray<int>(), null));
+        }
+
+        [Fact]
+        public void IStructuralComparable_NullComparerNullUnderlyingArray_Works()
+        {
+            IStructuralComparable comparable = new ImmutableArray<int>();
+            Assert.Equal(0, comparable.CompareTo(comparable, null));
+            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(null, null));
+            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(ImmutableArray.Create(1, 2, 3), null));
+            Assert.Equal(0, comparable.CompareTo(new ImmutableArray<int>(), null));
         }
 
         [Theory]

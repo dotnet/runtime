@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security;
 using System.Text;
@@ -228,11 +227,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     foreach (TypeFilterLevel filterLevel in new[] { TypeFilterLevel.Full, TypeFilterLevel.Low })
                     {
                         foreach (FormatterTypeStyle typeFormat in new[] { FormatterTypeStyle.TypesAlways, FormatterTypeStyle.TypesWhenNeeded, FormatterTypeStyle.XsdString })
-                        {
-                            foreach (bool unsafeDeserialize in new[] { true, false })
-                            {
-                                yield return new object[] { obj, assemblyFormat, filterLevel, typeFormat, unsafeDeserialize };
-                            }
+                        {  
+                            yield return new object[] { obj, assemblyFormat, filterLevel, typeFormat};
                         }
                     }
                 }
@@ -241,9 +237,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(ValidateBasicObjectsRoundtrip_MemberData))]
-        public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat, bool unsafeDeserialize)
+        public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
-            object result = FormatterClone(obj, null, assemblyFormat, filterLevel, typeFormat, unsafeDeserialize);
+            object result = FormatterClone(obj, null, assemblyFormat, filterLevel, typeFormat);
             if (!ReferenceEquals(obj, string.Empty)) // "" is interned and will roundtrip as the same object
             {
                 Assert.NotSame(obj, result);
@@ -261,16 +257,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
                 yield return new[] { obj };
             }
-        }
-
-        [Theory]
-        [MemberData(nameof(RoundtripWithHeaders_MemberData))]
-        public void RoundtripWithHeaders(object obj)
-        {
-            Assert.Equal(obj, FormatterClone(obj, headers: new Header[0]));
-            Assert.Equal(obj, FormatterClone(obj, headers: new[] { new Header("SomeHeader", "some value") }));
-            Assert.Equal(obj, FormatterClone(obj, headers: new[] { new Header("SomeHeader", "some value", true, "some namespace") }));
-            Assert.Equal(obj, FormatterClone(obj, headers: new[] { new Header("SomeHeader", 42), new Header("SomeOtherHeader", obj) })); ;
         }
 
         [Fact]
@@ -764,13 +750,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        [ActiveIssue("Fails on desktop and core: 'The object with ID 1 was referenced in a fixup but does not exist'")]
-        [Fact]
-        public void RoundtripWithHeaders_StringAsGraphRootAndInHeader()
-        {
-            RoundtripWithHeaders("any string");
-        }
-
         [ActiveIssue("Fails on desktop and core: 'Unable to cast object of type 'System.UInt32[][*]' to type 'System.Object[]'")]
         [Fact]
         public void Roundtrip_ArrayContainingArrayAtNonZeroLowerBound()
@@ -789,9 +768,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             ISerializationSurrogate surrogate = null,
             FormatterAssemblyStyle assemblyFormat = FormatterAssemblyStyle.Full,
             TypeFilterLevel filterLevel = TypeFilterLevel.Full,
-            FormatterTypeStyle typeFormat = FormatterTypeStyle.TypesAlways,
-            bool unsafeDeserialize = false,
-            Header[] headers = null)
+            FormatterTypeStyle typeFormat = FormatterTypeStyle.TypesAlways)
         {
             BinaryFormatter f;
             if (surrogate == null)
@@ -811,10 +788,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             using (var s = new MemoryStream())
             {
-                f.Serialize(s, obj, headers);
+                f.Serialize(s, obj);
                 Assert.NotEqual(0, s.Position);
                 s.Position = 0;
-                return (T)(unsafeDeserialize ? f.UnsafeDeserialize(s, handler: null) : f.Deserialize(s));
+                return (T)(f.Deserialize(s));
             }
         }
     }

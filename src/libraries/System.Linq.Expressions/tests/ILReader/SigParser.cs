@@ -29,14 +29,14 @@ namespace System.Linq.Expressions.Tests
 
         MethodRefSig ::= [[HASTHIS] [EXPLICITTHIS]] VARARG ParamCount RetType Param* [SENTINEL Param+]
 
-        StandAloneMethodSig ::=  [[HASTHIS] [EXPLICITTHIS]] (DEFAULT|VARARG|C|STDCALL|THISCALL|FASTCALL) 
+        StandAloneMethodSig ::=  [[HASTHIS] [EXPLICITTHIS]] (DEFAULT|VARARG|C|STDCALL|THISCALL|FASTCALL)
                             ParamCount RetType Param* [SENTINEL Param+]
 
         FieldSig ::= FIELD CustomMod* Type
 
         PropertySig ::= PROPERTY [HASTHIS] ParamCount CustomMod* Type Param*
 
-        LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+ 
+        LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+
 
 
         -------------
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Tests
         Type ::= ( BOOLEAN | CHAR | I1 | U1 | U2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | I | U |
                         | VALUETYPE TypeDefOrRefEncoded
                         | CLASS TypeDefOrRefEncoded
-                        | STRING 
+                        | STRING
                         | OBJECT
                         | PTR CustomMod* VOID
                         | PTR CustomMod* Type
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Tests
         protected virtual void NotifySize(sig_count count) { }
 
         // BUG BUG lower bounds can be negative, how can this be encoded?
-        // number of dimensions with specified lower bounds followed by lower bound of each 
+        // number of dimensions with specified lower bounds followed by lower bound of each
         protected virtual void NotifyNumLoBounds(sig_count count) { }
         protected virtual void NotifyLoBound(sig_count count) { }
 
@@ -432,7 +432,7 @@ namespace System.Linq.Expressions.Tests
 
         bool ParseLocals(sig_elem_type elem_type)
         {
-            //   LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+ 
+            //   LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+
 
             NotifyBeginLocals(elem_type);
 
@@ -681,7 +681,7 @@ namespace System.Linq.Expressions.Tests
             Type ::= ( BOOLEAN | CHAR | I1 | U1 | U2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | I | U |
                             | VALUETYPE TypeDefOrRefEncoded
                             | CLASS TypeDefOrRefEncoded
-                            | STRING 
+                            | STRING
                             | OBJECT
                             | PTR CustomMod* VOID
                             | PTR CustomMod* Type
