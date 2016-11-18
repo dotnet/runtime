@@ -1076,11 +1076,7 @@ namespace System {
             get {return ((GetAttributeFlagsImpl() & TypeAttributes.Sealed) != 0);}
         }       
         
-#if FEATURE_CORECLR
-         public bool IsEnum {
-#else
          public virtual bool IsEnum {
-#endif
              [Pure]
              get
              {
@@ -1773,11 +1769,7 @@ namespace System {
 
         // _Type.Equals(Type)
         [Pure]
-#if !FEATURE_CORECLR
         public virtual bool Equals(Type o)
-#else
-        public bool Equals(Type o)
-#endif
         {
             if ((object)o == null)
                 return false;
