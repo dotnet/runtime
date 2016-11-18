@@ -21,22 +21,6 @@
 
 #define USE_INTROSORT
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-inline BOOL ShouldTrackMovementForProfilerOrEtw()
-{
-#ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
-        return true;
-#endif
-
-#ifdef FEATURE_EVENT_TRACE
-    if (ETW::GCLog::ShouldTrackMovementForEtw())
-        return true;
-#endif
-
-    return false;
-}
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
 BOOL bgc_heap_walk_for_etw_p = FALSE;
@@ -4703,10 +4687,7 @@ heap_segment* gc_heap::get_segment_for_loh (size_t size
 
         FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(res), (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)), ETW::GCLog::ETW_GC_INFO::LARGE_OBJECT_HEAP, GetClrInstanceId());
 
-#ifdef GC_PROFILING
-        if (CORProfilerTrackGC())
-            UpdateGenerationBounds();
-#endif // GC_PROFILING
+        GCToEEInterface::DiagUpdateGenerationBounds();
 
 #ifdef MULTIPLE_HEAPS
         hp->thread_loh_segment (res);
@@ -5523,7 +5504,6 @@ public:
         saved_post_plug_reloc = temp;
     }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     void swap_pre_plug_and_saved_for_profiler()
     {
         gap_reloc_pair temp;
@@ -5539,7 +5519,6 @@ public:
         memcpy (saved_post_plug_info_start, &saved_post_plug, sizeof (saved_post_plug));
         saved_post_plug = temp;
     }
-#endif //GC_PROFILING || //FEATURE_EVENT_TRACE
 
     // We should think about whether it's really necessary to have to copy back the pre plug
     // info since it was already copied during compacting plugs. But if a plug doesn't move
@@ -10360,6 +10339,7 @@ gc_heap::init_gc_heap (int  h_number)
                               (size_t)(heap_segment_reserved (lseg) - heap_segment_mem(lseg)), 
                               ETW::GCLog::ETW_GC_INFO::LARGE_OBJECT_HEAP, 
                               GetClrInstanceId());
+
 #ifdef SEG_MAPPING_TABLE
     seg_mapping_table_add_segment (lseg, __this);
 #else //SEG_MAPPING_TABLE
@@ -13043,11 +13023,11 @@ int gc_heap::try_allocate_more_space (alloc_context* acontext, size_t size,
    
     if (can_allocate)
     {
-        //ETW trace for allocation tick
         size_t alloc_context_bytes = acontext->alloc_limit + Align (min_obj_size, align_const) - acontext->alloc_ptr;
         int etw_allocation_index = ((gen_number == 0) ? 0 : 1);
 
         etw_allocation_running_amount[etw_allocation_index] += alloc_context_bytes;
+
 
         if (etw_allocation_running_amount[etw_allocation_index] > etw_allocation_tick)
         {
@@ -15475,7 +15455,15 @@ void gc_heap::gc1()
 #ifdef FEATURE_EVENT_TRACE
         if (bgc_heap_walk_for_etw_p && settings.concurrent)
         {
-            make_free_lists_for_profiler_for_bgc();
+            GCToEEInterface::DiagWalkBGCSurvivors(__this);
+
+#ifdef MULTIPLE_HEAPS
+            bgc_t_join.join(this, gc_join_after_profiler_heap_walk);
+            if (bgc_t_join.joined())
+            {
+                bgc_t_join.restart();
+            }
+#endif // MULTIPLE_HEAPS
         }
 #endif // FEATURE_EVENT_TRACE
 #endif //BACKGROUND_GC
@@ -16414,89 +16402,56 @@ int gc_heap::garbage_collect (int n)
 
 #endif //MULTIPLE_HEAPS
 
-    BOOL should_evaluate_elevation = FALSE;
-    BOOL should_do_blocking_collection = FALSE;
+        BOOL should_evaluate_elevation = FALSE;
+        BOOL should_do_blocking_collection = FALSE;
 
 #ifdef MULTIPLE_HEAPS
-    int gen_max = condemned_generation_num;
-    for (int i = 0; i < n_heaps; i++)
-    {
-        if (gen_max < g_heaps[i]->condemned_generation_num)
-            gen_max = g_heaps[i]->condemned_generation_num;
-        if ((!should_evaluate_elevation) && (g_heaps[i]->elevation_requested))
-            should_evaluate_elevation = TRUE;
-        if ((!should_do_blocking_collection) && (g_heaps[i]->blocking_collection))
-            should_do_blocking_collection = TRUE;
-    }
-
-    settings.condemned_generation = gen_max;
-//logically continues after GC_PROFILING.
-#else //MULTIPLE_HEAPS
-    settings.condemned_generation = generation_to_condemn (n, 
-                                                           &blocking_collection, 
-                                                           &elevation_requested, 
-                                                           FALSE);
-    should_evaluate_elevation = elevation_requested;
-    should_do_blocking_collection = blocking_collection;
-#endif //MULTIPLE_HEAPS
-
-    settings.condemned_generation = joined_generation_to_condemn (
-                                        should_evaluate_elevation, 
-                                        settings.condemned_generation,
-                                        &should_do_blocking_collection
-                                        STRESS_HEAP_ARG(n)
-                                        );
-
-    STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10, 
-            "condemned generation num: %d\n", settings.condemned_generation);
-
-    record_gcs_during_no_gc();
-
-    if (settings.condemned_generation > 1)
-        settings.promotion = TRUE;
-
-#ifdef HEAP_ANALYZE
-    // At this point we've decided what generation is condemned
-    // See if we've been requested to analyze survivors after the mark phase
-    if (AnalyzeSurvivorsRequested(settings.condemned_generation))
-    {
-        heap_analyze_enabled = TRUE;
-    }
-#endif // HEAP_ANALYZE
-
-#ifdef GC_PROFILING
-
-        // If we're tracking GCs, then we need to walk the first generation
-        // before collection to track how many items of each class has been
-        // allocated.
-        UpdateGenerationBounds();
-        GarbageCollectionStartedCallback(settings.condemned_generation, settings.reason == reason_induced);
+        int gen_max = condemned_generation_num;
+        for (int i = 0; i < n_heaps; i++)
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-            size_t profiling_context = 0;
-
-#ifdef MULTIPLE_HEAPS
-            int hn = 0;
-            for (hn = 0; hn < gc_heap::n_heaps; hn++)
-            {
-                gc_heap* hp = gc_heap::g_heaps [hn];
-
-                // When we're walking objects allocated by class, then we don't want to walk the large
-                // object heap because then it would count things that may have been around for a while.
-                hp->walk_heap (&AllocByClassHelper, (void *)&profiling_context, 0, FALSE);
-            }
-#else
-            // When we're walking objects allocated by class, then we don't want to walk the large
-            // object heap because then it would count things that may have been around for a while.
-            gc_heap::walk_heap (&AllocByClassHelper, (void *)&profiling_context, 0, FALSE);
-#endif //MULTIPLE_HEAPS
-
-            // Notify that we've reached the end of the Gen 0 scan
-            g_profControlBlock.pProfInterface->EndAllocByClass(&profiling_context);
-            END_PIN_PROFILER();
+            if (gen_max < g_heaps[i]->condemned_generation_num)
+                gen_max = g_heaps[i]->condemned_generation_num;
+            if ((!should_evaluate_elevation) && (g_heaps[i]->elevation_requested))
+                should_evaluate_elevation = TRUE;
+            if ((!should_do_blocking_collection) && (g_heaps[i]->blocking_collection))
+                should_do_blocking_collection = TRUE;
         }
 
-#endif // GC_PROFILING
+        settings.condemned_generation = gen_max;
+#else //MULTIPLE_HEAPS
+        settings.condemned_generation = generation_to_condemn (n, 
+                                                            &blocking_collection, 
+                                                            &elevation_requested, 
+                                                            FALSE);
+        should_evaluate_elevation = elevation_requested;
+        should_do_blocking_collection = blocking_collection;
+#endif //MULTIPLE_HEAPS
+
+        settings.condemned_generation = joined_generation_to_condemn (
+                                            should_evaluate_elevation, 
+                                            settings.condemned_generation,
+                                            &should_do_blocking_collection
+                                            STRESS_HEAP_ARG(n)
+                                            );
+
+        STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10, 
+                "condemned generation num: %d\n", settings.condemned_generation);
+
+        record_gcs_during_no_gc();
+
+        if (settings.condemned_generation > 1)
+            settings.promotion = TRUE;
+
+#ifdef HEAP_ANALYZE
+        // At this point we've decided what generation is condemned
+        // See if we've been requested to analyze survivors after the mark phase
+        if (AnalyzeSurvivorsRequested(settings.condemned_generation))
+        {
+            heap_analyze_enabled = TRUE;
+        }
+#endif // HEAP_ANALYZE
+
+        GCToEEInterface::DiagGCStart(settings.condemned_generation, settings.reason == reason_induced);
 
 #ifdef BACKGROUND_GC
         if ((settings.condemned_generation == max_generation) &&
@@ -19628,12 +19583,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     dprintf (3, ("Finalize marking"));
     finalize_queue->ScanForFinalization (GCHeap::Promote, condemned_gen_number, mark_only_p, __this);
 
-#ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
-    {
-        finalize_queue->WalkFReachableObjects (__this);
-    }
-#endif //GC_PROFILING
+    GCToEEInterface::DiagWalkFReachableObjects(__this);
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
     // Scan dependent handles again to promote any secondaries associated with primaries that were promoted
@@ -21108,8 +21058,7 @@ void gc_heap::relocate_in_loh_compact()
         generation_free_obj_space (gen)));
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-void gc_heap::walk_relocation_loh (size_t profiling_context)
+void gc_heap::walk_relocation_for_loh (size_t profiling_context, record_surv_fn fn)
 {
     generation* gen        = large_object_generation;
     heap_segment* seg      = heap_segment_rw (generation_start_segment (gen));
@@ -21139,14 +21088,7 @@ void gc_heap::walk_relocation_loh (size_t profiling_context)
 
             STRESS_LOG_PLUG_MOVE(o, (o + size), -reloc);
 
-            {
-                ETW::GCLog::MovedReference(
-                                    o,
-                                   (o + size),
-                                   reloc,
-                                   profiling_context,
-                                   settings.compaction);
-            }
+            fn (o, (o + size), reloc, profiling_context, settings.compaction, FALSE);
 
             o = o + size;
             if (o < heap_segment_allocated (seg))
@@ -21163,7 +21105,6 @@ void gc_heap::walk_relocation_loh (size_t profiling_context)
         }
     }
 }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 BOOL gc_heap::loh_object_p (uint8_t* o)
 {
@@ -22321,10 +22262,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (!loh_compacted_p)
 #endif //FEATURE_LOH_COMPACTION
         {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-            if (ShouldTrackMovementForProfilerOrEtw())
-                notify_profiler_of_surviving_large_objects();
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+            GCToEEInterface::DiagWalkLOHSurvivors(__this);
             sweep_large_objects();
         }
     }
@@ -22526,12 +22464,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         assert (generation_allocation_segment (consing_gen) ==
                 ephemeral_heap_segment);
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-        if (ShouldTrackMovementForProfilerOrEtw())
-        {
-            record_survived_for_profiler(condemned_gen_number, first_condemned_address);
-        }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+        GCToEEInterface::DiagWalkSurvivors(__this);
 
         relocate_phase (condemned_gen_number, first_condemned_address);
         compact_phase (condemned_gen_number, first_condemned_address,
@@ -22741,12 +22674,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             fix_older_allocation_area (older_gen);
         }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-        if (ShouldTrackMovementForProfilerOrEtw())
-        {
-            record_survived_for_profiler(condemned_gen_number, first_condemned_address);
-        }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+        GCToEEInterface::DiagWalkSurvivors(__this);
 
         gen0_big_free_spaces = 0;
         make_free_lists (condemned_gen_number);
@@ -23952,8 +23880,7 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
     }
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-void gc_heap::walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, walk_relocate_args* args, size_t profiling_context)
+void gc_heap::walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, walk_relocate_args* args)
 {
     if (check_last_object_p)
     {
@@ -23973,15 +23900,10 @@ void gc_heap::walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, w
     }
 
     ptrdiff_t last_plug_relocation = node_relocation_distance (plug);
+    STRESS_LOG_PLUG_MOVE(plug, (plug + size), -last_plug_relocation);
     ptrdiff_t reloc = settings.compaction ? last_plug_relocation : 0;
 
-    STRESS_LOG_PLUG_MOVE(plug, (plug + size), -last_plug_relocation);
-
-    ETW::GCLog::MovedReference(plug,
-                               (plug + size),
-                               reloc,
-                               profiling_context,
-                               settings.compaction);
+    (args->fn) (plug, (plug + size), reloc, args->profiling_context, settings.compaction, FALSE);
 
     if (check_last_object_p)
     {
@@ -23998,12 +23920,12 @@ void gc_heap::walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, w
     }
 }
 
-void gc_heap::walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args, size_t profiling_context)
+void gc_heap::walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args)
 {
     assert ((tree != NULL));
     if (node_left_child (tree))
     {
-        walk_relocation_in_brick (tree + node_left_child (tree), args, profiling_context);
+        walk_relocation_in_brick (tree + node_left_child (tree), args);
     }
 
     uint8_t*  plug = tree;
@@ -24032,7 +23954,7 @@ void gc_heap::walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args,
             assert (last_plug_size >= Align (min_obj_size));
         }
 
-        walk_plug (args->last_plug, last_plug_size, check_last_object_p, args, profiling_context);
+        walk_plug (args->last_plug, last_plug_size, check_last_object_p, args);
     }
     else
     {
@@ -24045,18 +23967,14 @@ void gc_heap::walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args,
 
     if (node_right_child (tree))
     {
-        walk_relocation_in_brick (tree + node_right_child (tree), args, profiling_context);
-
+        walk_relocation_in_brick (tree + node_right_child (tree), args);
     }
 }
 
-void gc_heap::walk_relocation (int condemned_gen_number,
-                               uint8_t* first_condemned_address,
-                               size_t profiling_context)
-
+void gc_heap::walk_relocation (size_t profiling_context, record_surv_fn fn)
 {
-    generation* condemned_gen = generation_of (condemned_gen_number);
-    uint8_t*  start_address = first_condemned_address;
+    generation* condemned_gen = generation_of (settings.condemned_generation);
+    uint8_t*  start_address = generation_allocation_start (condemned_gen);
     size_t  current_brick = brick_of (start_address);
     heap_segment*  current_heap_segment = heap_segment_rw (generation_start_segment (condemned_gen));
 
@@ -24069,6 +23987,8 @@ void gc_heap::walk_relocation (int condemned_gen_number,
     args.is_shortened = FALSE;
     args.pinned_plug_entry = 0;
     args.last_plug = 0;
+    args.profiling_context = profiling_context;
+    args.fn = fn;
 
     while (1)
     {
@@ -24078,8 +23998,8 @@ void gc_heap::walk_relocation (int condemned_gen_number,
             {
                 walk_plug (args.last_plug, 
                            (heap_segment_allocated (current_heap_segment) - args.last_plug), 
-                           args.is_shortened, 
-                           &args, profiling_context);
+                           args.is_shortened,
+                           &args);
                 args.last_plug = 0;
             }
             if (heap_segment_next_rw (current_heap_segment))
@@ -24100,16 +24020,29 @@ void gc_heap::walk_relocation (int condemned_gen_number,
             {
                 walk_relocation_in_brick (brick_address (current_brick) +
                                           brick_entry - 1,
-                                          &args,
-                                          profiling_context);
+                                          &args);
             }
         }
         current_brick++;
     }
 }
 
+void gc_heap::walk_survivors (record_surv_fn fn, size_t context, walk_surv_type type)
+{
+    if (type == walk_for_gc)
+        walk_survivors_relocation (context, fn);
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
-void gc_heap::walk_relocation_for_bgc(size_t profiling_context)
+    else if (type == walk_for_bgc)
+        walk_survivors_for_bgc (context, fn);
+#endif //BACKGROUND_GC && FEATURE_EVENT_TRACE
+    else if (type == walk_for_loh)
+        walk_survivors_for_loh (context, fn);
+    else
+        assert (!"unknown type!");
+}
+
+#if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
+void gc_heap::walk_survivors_for_bgc (size_t profiling_context, record_surv_fn fn)
 {
     // This should only be called for BGCs
     assert(settings.concurrent);
@@ -24143,8 +24076,7 @@ void gc_heap::walk_relocation_for_bgc(size_t profiling_context)
         uint8_t* end = heap_segment_allocated (seg);
 
         while (o < end)
-        {   
-
+        {
             if (method_table(o) == g_pFreeObjectMethodTable)
             {
                 o += Align (size (o), align_const);
@@ -24167,51 +24099,18 @@ void gc_heap::walk_relocation_for_bgc(size_t profiling_context)
                 
             uint8_t* plug_end = o;
 
-            // Note on last parameter: since this is for bgc, only ETW
-            // should be sending these events so that existing profapi profilers
-            // don't get confused.
-            ETW::GCLog::MovedReference(
-                plug_start,
+            fn (plug_start, 
                 plug_end,
                 0,              // Reloc distance == 0 as this is non-compacting
                 profiling_context,
                 FALSE,          // Non-compacting
-                FALSE);         // fAllowProfApiNotification
+                TRUE);          // BGC
         }
 
         seg = heap_segment_next (seg);
     }
 }
-
-void gc_heap::make_free_lists_for_profiler_for_bgc ()
-{
-    assert(settings.concurrent);
-
-    size_t profiling_context = 0;
-    ETW::GCLog::BeginMovedReferences(&profiling_context);
-
-    // This provides the profiler with information on what blocks of
-    // memory are moved during a gc.
-
-    walk_relocation_for_bgc(profiling_context);
-
-    // Notify the EE-side profiling code that all the references have been traced for
-    // this heap, and that it needs to flush all cached data it hasn't sent to the
-    // profiler and release resources it no longer needs.  Since this is for bgc, only
-    // ETW should be sending these events so that existing profapi profilers don't get confused.
-    ETW::GCLog::EndMovedReferences(profiling_context, FALSE /* fAllowProfApiNotification */);
-
-#ifdef MULTIPLE_HEAPS
-    bgc_t_join.join(this, gc_join_after_profiler_heap_walk);
-    if (bgc_t_join.joined())
-    {
-        bgc_t_join.restart();
-    }
-#endif // MULTIPLE_HEAPS
-}
-
 #endif // defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 void gc_heap::relocate_phase (int condemned_gen_number,
                               uint8_t* first_condemned_address)
@@ -30622,35 +30521,21 @@ BOOL gc_heap::large_object_marked (uint8_t* o, BOOL clearp)
     return m;
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-void gc_heap::record_survived_for_profiler(int condemned_gen_number, uint8_t * start_address)
+void gc_heap::walk_survivors_relocation (size_t profiling_context, record_surv_fn fn)
 {
-    size_t profiling_context = 0;
-
-    ETW::GCLog::BeginMovedReferences(&profiling_context);
-
     // Now walk the portion of memory that is actually being relocated.
-    walk_relocation(condemned_gen_number, start_address, profiling_context);
+    walk_relocation (profiling_context, fn);
 
 #ifdef FEATURE_LOH_COMPACTION
     if (loh_compacted_p)
     {
-        walk_relocation_loh (profiling_context);
+        walk_relocation_for_loh (profiling_context, fn);
     }
 #endif //FEATURE_LOH_COMPACTION
-
-    // Notify the EE-side profiling code that all the references have been traced for
-    // this heap, and that it needs to flush all cached data it hasn't sent to the
-    // profiler and release resources it no longer needs.
-    ETW::GCLog::EndMovedReferences(profiling_context);
 }
 
-void gc_heap::notify_profiler_of_surviving_large_objects ()
+void gc_heap::walk_survivors_for_loh (size_t profiling_context, record_surv_fn fn)
 {
-    size_t profiling_context = 0;
-
-    ETW::GCLog::BeginMovedReferences(&profiling_context);
-
     generation* gen        = large_object_generation;
     heap_segment* seg      = heap_segment_rw (generation_start_segment (gen));;
 
@@ -30659,13 +30544,6 @@ void gc_heap::notify_profiler_of_surviving_large_objects ()
     uint8_t* o                = generation_allocation_start (gen);
     uint8_t* plug_end         = o;
     uint8_t* plug_start       = o;
-
-    // Generally, we can only get here if this is TRUE:
-    // (CORProfilerTrackGC() || ETW::GCLog::ShouldTrackMovementForEtw())
-    // But we can't always assert that, as races could theoretically cause GC profiling
-    // or ETW to turn off just before we get here.  This is harmless (we do checks later
-    // on, under appropriate locks, before actually calling into profilers), though it's
-    // a slowdown to determine these plugs for nothing.
 
     while (1)
     {
@@ -30694,12 +30572,7 @@ void gc_heap::notify_profiler_of_surviving_large_objects ()
 
             plug_end = o;
 
-            ETW::GCLog::MovedReference(
-                plug_start,
-                plug_end,
-                0,
-                profiling_context,
-                FALSE);
+            fn (plug_start, plug_end, 0, profiling_context, FALSE, FALSE);
         }
         else
         {
@@ -30709,9 +30582,7 @@ void gc_heap::notify_profiler_of_surviving_large_objects ()
             }
         }
     }
-    ETW::GCLog::EndMovedReferences(profiling_context);
 }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 #ifdef BACKGROUND_GC
 
@@ -31943,7 +31814,6 @@ void gc_heap::descr_card_table ()
 
 void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 #ifdef MULTIPLE_HEAPS
     int n_heaps = g_theGCHeap->GetNumberOfHeaps ();
     for (int i = 0; i < n_heaps; i++)
@@ -32021,7 +31891,6 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
             curr_gen_number0--;
         }
     }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
 #ifdef TRACE_GC
@@ -33560,10 +33429,7 @@ HRESULT GCHeap::Initialize ()
     {
         GCScan::GcRuntimeStructuresValid (TRUE);
 
-#ifdef GC_PROFILING
-        if (CORProfilerTrackGC())
-            UpdateGenerationBounds();
-#endif // GC_PROFILING
+        GCToEEInterface::DiagUpdateGenerationBounds();
     }
 
     return hr;
@@ -34972,7 +34838,6 @@ void gc_heap::do_post_gc()
 {
     if (!settings.concurrent)
     {
-        GCProfileWalkHeap();
         initGCShadow();
     }
 
@@ -34992,13 +34857,10 @@ void gc_heap::do_post_gc()
     
     GCToEEInterface::GcDone(settings.condemned_generation);
 
-#ifdef GC_PROFILING
-    if (!settings.concurrent)
-    {
-        UpdateGenerationBounds();
-        GarbageCollectionFinishedCallback();
-    }
-#endif // GC_PROFILING
+    GCToEEInterface::DiagGCEnd(VolatileLoad(&settings.gc_index),
+                         (uint32_t)settings.condemned_generation,
+                         (uint32_t)settings.reason,
+                         !!settings.concurrent);
 
     //dprintf (1, (" ****end of Garbage Collection**** %d(gen0:%d)(%d)", 
     dprintf (1, ("*EGC* %d(gen0:%d)(%d)(%s)", 
@@ -36281,21 +36143,17 @@ CFinalize::GcScanRoots (promote_func* fn, int hn, ScanContext *pSC)
     }
 }
 
-#ifdef GC_PROFILING
-void CFinalize::WalkFReachableObjects (gc_heap* hp)
+void CFinalize::WalkFReachableObjects (fq_walk_fn fn)
 {
-    BEGIN_PIN_PROFILER(CORProfilerPresent());
     Object** startIndex = SegQueue (CriticalFinalizerListSeg);
     Object** stopCriticalIndex = SegQueueLimit (CriticalFinalizerListSeg);
     Object** stopIndex  = SegQueueLimit (FinalizerListSeg);
     for (Object** po = startIndex; po < stopIndex; po++)
     {
         //report *po
-        g_profControlBlock.pProfInterface->FinalizeableObjectQueued(po < stopCriticalIndex, (ObjectID)*po);
+        fn(po < stopCriticalIndex, *po);
     }
-    END_PIN_PROFILER();
 }
-#endif //GC_PROFILING
 
 BOOL
 CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
@@ -36531,8 +36389,7 @@ void CFinalize::CheckFinalizerObjects()
 //                      End of VM specific support
 //
 //------------------------------------------------------------------------------
-
-void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p)
+void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p)
 {
     generation* gen = gc_heap::generation_of (gen_number);
     heap_segment*    seg = generation_start_segment (gen);
@@ -36588,9 +36445,29 @@ void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_la
     }
 }
 
-void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
+void gc_heap::walk_finalize_queue (fq_walk_fn fn)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_PREMORTEM_FINALIZATION
+    finalize_queue->WalkFReachableObjects (fn);
+#endif //FEATURE_PREMORTEM_FINALIZATION
+}
+
+void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p)
+{
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+
+        hp->walk_heap_per_heap (fn, context, gen_number, walk_large_object_heap_p);
+    }
+#else
+    walk_heap_per_heap(fn, context, gen_number, walk_large_object_heap_p);
+#endif //MULTIPLE_HEAPS
+}
+
+void GCHeap::DiagWalkObject (Object* obj, walk_fn fn, void* context)
+{
     uint8_t* o = (uint8_t*)obj;
     if (o)
     {
@@ -36605,7 +36482,46 @@ void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
                                     }
             );
     }
-#endif //defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+}
+
+void GCHeap::DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, size_t diag_context, walk_surv_type type)
+{
+    gc_heap* hp = (gc_heap*)gc_context;
+    hp->walk_survivors (fn, diag_context, type);
+}
+
+void GCHeap::DiagWalkHeap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p)
+{
+    gc_heap::walk_heap (fn, context, gen_number, walk_large_object_heap_p);
+}
+
+void GCHeap::DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn)
+{
+    gc_heap* hp = (gc_heap*)gc_context;
+    hp->walk_finalize_queue (fn);
+}
+
+void GCHeap::DiagScanFinalizeQueue (fq_scan_fn fn, ScanContext* sc)
+{
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+        hp->finalize_queue->GcScanRoots(fn, hn, sc);
+    }
+#else
+        pGenGCHeap->finalize_queue->GcScanRoots(fn, 0, sc);
+#endif //MULTIPLE_HEAPS
+}
+
+void GCHeap::DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* context)
+{
+    GCScan::GcScanHandlesForProfilerAndETW (max_generation, context, fn);
+}
+
+void GCHeap::DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context)
+{
+    GCScan::GcScanDependentHandlesForProfilerAndETW (max_generation, context, fn);
 }
 
 // Go through and touch (read) each page straddled by a memory block.

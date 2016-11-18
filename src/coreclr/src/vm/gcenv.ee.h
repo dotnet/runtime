@@ -32,6 +32,15 @@ public:
     bool CatchAtSafePoint(Thread * pThread);
     void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
     Thread* CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg);
+
+    // Diagnostics methods.
+    void DiagGCStart(int gen, bool isInduced);
+    void DiagUpdateGenerationBounds();
+    void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent);
+    void DiagWalkFReachableObjects(void* gcContext);
+    void DiagWalkSurvivors(void* gcContext);
+    void DiagWalkLOHSurvivors(void* gcContext);
+    void DiagWalkBGCSurvivors(void* gcContext);
 };
 
 #endif // FEATURE_STANDALONE_GC
