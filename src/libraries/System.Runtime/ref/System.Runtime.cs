@@ -3195,6 +3195,7 @@ namespace System.Runtime.InteropServices
         protected CriticalHandle(System.IntPtr invalidHandleValue) { }
         public bool IsClosed { get { throw null; } }
         public abstract bool IsInvalid { get; }
+        public void Close() { }
         [System.Security.SecuritySafeCriticalAttribute]
         public void Dispose() { }
         [System.Security.SecurityCriticalAttribute]
