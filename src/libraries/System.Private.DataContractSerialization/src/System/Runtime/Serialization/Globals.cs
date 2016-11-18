@@ -275,6 +275,17 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfIDeserializationCallback;
+        internal static Type TypeOfIDeserializationCallback
+        {
+            get
+            {
+                if (s_typeOfIDeserializationCallback == null)
+                    s_typeOfIDeserializationCallback = typeof(IDeserializationCallback);
+                return s_typeOfIDeserializationCallback;
+            }
+        }
+
         [SecurityCritical]
         private static Type s_typeOfXmlFormatClassWriterDelegate;
         internal static Type TypeOfXmlFormatClassWriterDelegate

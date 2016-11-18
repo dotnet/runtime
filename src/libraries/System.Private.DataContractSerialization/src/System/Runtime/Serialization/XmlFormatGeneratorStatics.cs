@@ -195,6 +195,17 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo s_onDeserializationMethod;
+        internal static MethodInfo OnDeserializationMethod
+        {
+            get
+            {
+                if (s_onDeserializationMethod == null)
+                    s_onDeserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization");
+                return s_onDeserializationMethod;
+            }
+        }
+
         [SecurityCritical]
         private static PropertyInfo s_nodeTypeProperty;
         internal static PropertyInfo NodeTypeProperty
