@@ -594,7 +594,8 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr OffsetOf<T>(string fieldName) { throw null; }
         public static void Prelink(System.Reflection.MethodInfo m) { }
         public static void PrelinkAll(Type c) { }
-        public static string PtrToStringAuto(System.IntPtr ptr) { throw null; }        
+        public static string PtrToStringAuto(System.IntPtr ptr) { throw null; }
+        public static string PtrToStringAuto(System.IntPtr ptr, int length) { throw null; }        
         public static string PtrToStringAnsi(System.IntPtr ptr) { throw null; }
         public static string PtrToStringAnsi(System.IntPtr ptr, int len) { throw null; }
         public static string PtrToStringBSTR(System.IntPtr ptr) { throw null; }
