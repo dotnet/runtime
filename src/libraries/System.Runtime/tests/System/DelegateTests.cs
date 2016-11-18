@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -190,7 +191,7 @@ namespace System.Tests
             for (int i = 0; i < parameters.Length; i++) { parameters[i] = Type.Missing; }
 
             Assert.Equal(
-                $"True, test, c, 2, -1, -3, 4, -5, 6, -7, 8, {9.1}, {11.12}",
+                "True, test, c, 2, -1, -3, 4, -5, 6, -7, 8, 9.1, 11.12",
                 (string)(new AllPrimitivesWithDefaultValues(AllPrimitivesMethod)).DynamicInvoke(parameters));
         }
 
@@ -198,7 +199,7 @@ namespace System.Tests
         public static void DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithAllExplicitValues()
         {
             Assert.Equal(
-                $"False, value, d, 102, -101, -103, 104, -105, 106, -107, 108, {109.1}, {111.12}",
+                "False, value, d, 102, -101, -103, 104, -105, 106, -107, 108, 109.1, 111.12",
                 (string)(new AllPrimitivesWithDefaultValues(AllPrimitivesMethod)).DynamicInvoke(
                     new object[13]
                     {
@@ -223,7 +224,7 @@ namespace System.Tests
         public static void DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues()
         {
             Assert.Equal(
-                $"False, test, d, 2, -101, -3, 104, -5, 106, -7, 108, {9.1}, {111.12}",
+                "False, test, d, 2, -101, -3, 104, -5, 106, -7, 108, 9.1, 111.12",
                 (string)(new AllPrimitivesWithDefaultValues(AllPrimitivesMethod)).DynamicInvoke(
                     new object[13]
                     {
@@ -496,21 +497,8 @@ namespace System.Tests
             Single single,
             Double dbl)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(boolean.ToString() + ", ");
-            builder.Append(str + ", ");
-            builder.Append(character.ToString() + ", ");
-            builder.Append(unsignedbyte.ToString() + ", ");
-            builder.Append(signedbyte.ToString() + ", ");
-            builder.Append(int16.ToString() + ", ");
-            builder.Append(uint16.ToString() + ", ");
-            builder.Append(int32.ToString() + ", ");
-            builder.Append(uint32.ToString() + ", ");
-            builder.Append(int64.ToString() + ", ");
-            builder.Append(uint64.ToString() + ", ");
-            builder.Append(single.ToString() + ", ");
-            builder.Append(dbl);
-            return builder.ToString();
+            FormattableString s = $"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}";
+            return s.ToString(CultureInfo.InvariantCulture);
         }
 
         private delegate string StringParameter(string parameter);
