@@ -16,6 +16,10 @@ void genCodeForTreeNode(GenTreePtr treeNode);
 
 void genCodeForBinary(GenTreePtr treeNode);
 
+#if defined(_TARGET_X86_)
+void genCodeForLongUMod(GenTreeOp* node);
+#endif // _TARGET_X86_
+
 void genCodeForDivMod(GenTreeOp* treeNode);
 
 void genCodeForMulHi(GenTreeOp* treeNode);
