@@ -9,7 +9,7 @@
 
 *SupportedGroups*
 
-For each ref project and src project, we define `SupportedGroups`. `SupportedGroups` is a tuple for the supported `TargetGroups` and `OSGroups`.
+For each ref project and src project, we define `SupportedGroups`. `SupportedGroups` is a tuple for the supported `TargetGroup` and `OSGroup`.
 
 
 ie
@@ -18,12 +18,12 @@ ref\System.Runtime.csproj
 ```MSBuild
 <PropertyGroup>
   <SupportedGroups>
-    netstandard1.7_Windows_NT;
-    netstandard1.7_OSX;
-    netstandard1.7_Linux;
-    netcoreapp1.1_Windows_NT;
-    netcoreapp1.1_OSX;
-    netcoreapp1.1_Linux
+    netstandard1.7|Windows_NT;
+    netstandard1.7|OSX;
+    netstandard1.7|Linux;
+    netcoreapp1.1|Windows_NT;
+    netcoreapp1.1|OSX;
+    netcoreapp1.1|Linux
   </SupportedGroups>
 <PropertyGroup>
 ```
@@ -35,8 +35,8 @@ We have a contract layer (msbuild task).
 Inputs:
 
         SupportedGroups
-        VerticalTargetGroup
-        OSGroup
+        VerticalGroup (desired OSGroup-TargetGroup-[Release|Debug])
+
 Output:
 
         VerticalTargets (ItemTask)
@@ -44,15 +44,16 @@ Output:
                       OSGroup
 
 Given the supported target and OS groups, and the desired vertical target and OS groups, return the closest supported group or empty metadata items.
+
 How should we handle determining the target / os groups, fallback groups, etc...?  The simplest solution is to use the NuGet api's for targets.  We can use platforms\runtime.json for os groups, or try to use the already existent os group filtering instead of adding it to the contract layer.
 
 Options:
 
 1. Use NuGet API's
 
-2. Make use of inormation we already have and develop our own resolution algorithm.
+2. Make use of information we already have and develop our own resolution algorithm.
 
-The current plan is to use the NuGet API's.  We know that there is an intrinsic problem with the NuGet API's, in that we (CoreFx) define the targets (tfm's), but NuGet contains the data / logic, so anytime we want to create a new tfm, we have to go make an update to NuGet.  This is an existent problem.  For now, it is much simpler to utilize NuGet instead of deriving a second solution.  When we break free of the NuGet dependency and wholly define our tfm graph, then we should utilize that solution for this work.
+The current implementation uses our own resolution algorithm. We define the resolution graph for `TargetGroup` and `OSGroup` in targetgroup.props and osgroup.props files respectively. 
 
 **Building a vertical implementation steps**
 
