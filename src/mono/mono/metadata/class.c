@@ -2095,13 +2095,14 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		/* Might be already set using cached info */
 		if (klass->instance_size != instance_size) {
 			/* Emit info to help debugging */
+			g_print ("%s %s\n", klass->name_space, klass->name);
 			g_print ("%d %d %d %d\n", klass->instance_size, instance_size, klass->blittable, blittable);
 			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->packing_size, packing_size);
 			g_print ("%d %d\n", klass->min_align, min_align);
 			for (i = 0; i < top; ++i) {
 				field = &klass->fields [i];
 				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-					printf ("  %d %d\n", klass->fields [i].offset, field_offsets [i]);
+					printf ("  %s %d %d\n", klass->fields [i].name, klass->fields [i].offset, field_offsets [i]);
 			}
 		}
 		g_assert (klass->instance_size == instance_size);
