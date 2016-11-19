@@ -167,22 +167,10 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByValOut3(CharSetAns
 }
 extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByRefOut3(CharSetAnsiSequential* str1)
 {
-	char const* strSource = "change string";
-	int len = strlen(strSource);
-	LPCSTR temp = (LPCSTR)TP_CoTaskMemAlloc((sizeof(char)*len)+1);
-	if(temp != NULL)
-	{
-		TP_CoTaskMemFree((void*)(str1->f1));
-		strcpy((char*)temp,strSource);		
-		str1->f1 = temp;
-		str1->f2 = 'n';
-		return TRUE;
-	}
-	else
-	{
-		printf("Memory Allocated Failed !");
-		return FALSE;
-	}
+	TP_CoTaskMemFree((void*)(str1->f1));
+	str1->f1 = CoStrDup("change string");
+	str1->f2 = 'n';
+	return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -663,7 +651,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByVal14(S11 str1)
 {
 	if( str1.i32 != 0 || str1.i != 32 )
 		return FALSE;
-	str1.i32 = (LPINT)(long)(str1.i);
+	str1.i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1.i));
 	str1.i = 64;
 	return TRUE;
 }
@@ -673,7 +661,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByRef14(S11* str1)
 		return FALSE;
 	else
 	{
-		str1->i32 = (LPINT)(long)(str1->i);
+		str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
 		str1->i = 64;
 		return TRUE;
 	}
@@ -684,7 +672,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByRefIn14(S11* str1)
 		return FALSE;
 	else
 	{
-		str1->i32 = (LPINT)(long)(str1->i);
+		str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
 		str1->i = 64;
 		return TRUE;
 	}
@@ -698,7 +686,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByValOut14(S11 str1)
 }
 extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsSeqByRefOut14(S11* str1)
 {
-	str1->i32 = (LPINT)(long)(str1->i);
+	str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
 	str1->i = 64;
 	return TRUE;
 }
@@ -817,7 +805,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByValInnerArrayExpli
 			return FALSE;
 		}
 	}
-	if(memcmp((&outer2)->f4,"some string2",12) != 0)
+	if(memcmp((&outer2)->s.f4,"some string2",12) != 0)
 	{
 		printf("\tMarshalStructAsParam_AsExpByVal3:InnerArrayExplicit param f4 not as expected\n");
 		return FALSE;
@@ -835,7 +823,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByRefInnerArrayExpli
 			return FALSE;
 		}
 	}
-	if(memcmp(outer2->f4,"some string2",12) != 0)
+	if(memcmp(outer2->s.f4,"some string2",12) != 0)
 	{
 		printf("\tMarshalStructAsParam_AsExpByRef3:InnerArrayExplicit param f4 not as expected\n");
 		return FALSE;
@@ -844,11 +832,8 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByRefInnerArrayExpli
 	{
 		outer2->arr[i].f1 = 77;
 	}
-	char const * temp = "change string2";
-	size_t len = strlen(temp);
-	LPCSTR str = (LPCSTR)TP_CoTaskMemAlloc( sizeof(char)*(len+1) );
-	strcpy((char*)str,temp);
-	outer2->f4 = str;
+
+	outer2->s.f4 = CoStrDup("change string2");
 	return TRUE;
 }
 
@@ -862,7 +847,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByRefInInnerArrayExp
 			return FALSE;
 		}
 	}
-	if(memcmp(outer2->f4, "some string2",12*(sizeof(char))) != 0)
+	if(memcmp(outer2->s.f4, "some string2",12*(sizeof(char))) != 0)
 	{
 		printf("\tMarshalStructAsParam_AsExpByRefIn3:InnerArrayExplicit param f4 not as expected\n");
 		return FALSE;
@@ -871,11 +856,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByRefInInnerArrayExp
 	{
 		outer2->arr[i].f1 = 77;
 	}
-	char const * temp = "change string2";
-	size_t len = strlen(temp);
-	LPCSTR str = (LPCSTR)TP_CoTaskMemAlloc( sizeof(char)*(len+1) );
-	strcpy((char*)str,temp);
-	outer2->f4 = str;
+	outer2->s.f4 = CoStrDup("change string2");
 	return TRUE;
 }
 extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByRefOutInnerArrayExplicit(InnerArrayExplicit* outer2)
@@ -884,11 +865,7 @@ extern "C" DLL_EXPORT BOOL WINAPI MarshalStructAsParam_AsExpByRefOutInnerArrayEx
 	{
 		outer2->arr[i].f1 = 77;
 	}
-	char const * temp = "change string2";
-	size_t len = strlen(temp);
-	LPCSTR str = (LPCSTR)TP_CoTaskMemAlloc( sizeof(char)*(len+1) );
-	strcpy((char*)str,temp);
-	outer2->f4 = str;
+    outer2->s.f4 = CoStrDup("change string2");
 	return TRUE;
 }
 
