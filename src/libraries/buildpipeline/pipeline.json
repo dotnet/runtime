@@ -702,6 +702,21 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows-Build-Test",
           "Parameters": {
+            "TargetQueue": "Ubuntu.1610.Amd64",
+            "TestContainerSuffix": "ubuntu1610",
+            "TestNugetRuntimeId": "ubuntu.16.10-x64"
+          },
+          "ReportingParameters": {
+            "TargetQueue": "Ubuntu.1610.Amd64",
+            "TestContainerSuffix": "ubuntu1610",
+            "TestNugetRuntimeId": "ubuntu.16.10-x64",
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Build-Test",
+          "Parameters": {
             "TargetQueue": "Fedora.23.Amd64",
             "TestContainerSuffix": "fedora23",
             "TestNugetRuntimeId": "fedora.23-x64"
@@ -992,6 +1007,21 @@
             "TargetQueue": "Ubuntu.1604.Amd64",
             "TestContainerSuffix": "ubuntu1604",
             "TestNugetRuntimeId": "ubuntu.16.04-x64",
+            "Type": "build/tests/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows-Build-Test",
+          "Parameters": {
+            "TargetQueue": "Ubuntu.1610.Amd64",
+            "TestContainerSuffix": "ubuntu1610",
+            "TestNugetRuntimeId": "ubuntu.16.10-x64"
+          },
+          "ReportingParameters": {
+            "TargetQueue": "Ubuntu.1610.Amd64",
+            "TestContainerSuffix": "ubuntu1610",
+            "TestNugetRuntimeId": "ubuntu.16.10-x64",
             "Type": "build/tests/",
             "ConfigurationGroup": "Debug"
           }
