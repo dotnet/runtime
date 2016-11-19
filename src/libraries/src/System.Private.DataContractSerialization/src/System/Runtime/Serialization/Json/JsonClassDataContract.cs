@@ -6,16 +6,13 @@ using System.Threading;
 using System.Xml;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Security;
 
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonClassDataContract : JsonDataContract
     {
-        [SecurityCritical]
         private JsonClassDataContractCriticalHelper _helper;
 
-        [SecuritySafeCritical]
         public JsonClassDataContract(ClassDataContract traditionalDataContract)
             : base(new JsonClassDataContractCriticalHelper(traditionalDataContract))
         {
@@ -24,7 +21,6 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassReaderDelegate JsonFormatReaderDelegate
         {
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -68,7 +64,6 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassWriterDelegate JsonFormatWriterDelegate
         {
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -110,27 +105,11 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal XmlDictionaryString[] MemberNames
-        {
-            [SecuritySafeCritical]
-            get
-            { return _helper.MemberNames; }
-        }
+        internal XmlDictionaryString[] MemberNames => _helper.MemberNames;
 
-        internal override string TypeName
-        {
-            [SecuritySafeCritical]
-            get
-            { return _helper.TypeName; }
-        }
+        internal override string TypeName => _helper.TypeName;
 
-
-        private ClassDataContract TraditionalClassDataContract
-        {
-            [SecuritySafeCritical]
-            get
-            { return _helper.TraditionalClassDataContract; }
-        }
+        private ClassDataContract TraditionalClassDataContract => _helper.TraditionalClassDataContract;
 
         public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
         {

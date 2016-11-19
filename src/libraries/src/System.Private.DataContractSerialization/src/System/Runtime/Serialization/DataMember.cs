@@ -19,39 +19,18 @@ namespace System.Runtime.Serialization
     internal class DataMember
 #endif
     {
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-        ///            Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         private CriticalHelper _helper;
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         public DataMember()
         {
             _helper = new CriticalHelper();
         }
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal DataMember(MemberInfo memberInfo)
         {
             _helper = new CriticalHelper(memberInfo);
         }
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal DataMember(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
         {
             _helper = new CriticalHelper(memberTypeContract, name, isNullable, isRequired, emitDefaultValue, order);
@@ -59,81 +38,72 @@ namespace System.Runtime.Serialization
 
         internal MemberInfo MemberInfo
         {
-            [SecuritySafeCritical]
             get
             { return _helper.MemberInfo; }
         }
 
         public string Name
         {
-            [SecuritySafeCritical]
             get
             { return _helper.Name; }
-            [SecurityCritical]
+
             set
             { _helper.Name = value; }
         }
 
         public int Order
         {
-            [SecuritySafeCritical]
             get
             { return _helper.Order; }
-            [SecurityCritical]
+
             set
             { _helper.Order = value; }
         }
 
         public bool IsRequired
         {
-            [SecuritySafeCritical]
             get
             { return _helper.IsRequired; }
-            [SecurityCritical]
+            
             set
             { _helper.IsRequired = value; }
         }
 
         public bool EmitDefaultValue
         {
-            [SecuritySafeCritical]
             get
             { return _helper.EmitDefaultValue; }
-            [SecurityCritical]
+            
             set
             { _helper.EmitDefaultValue = value; }
         }
 
         public bool IsNullable
         {
-            [SecuritySafeCritical]
             get
             { return _helper.IsNullable; }
-            [SecurityCritical]
+
             set
             { _helper.IsNullable = value; }
         }
 
         public bool IsGetOnlyCollection
         {
-            [SecuritySafeCritical]
             get
             { return _helper.IsGetOnlyCollection; }
-            [SecurityCritical]
+
             set
             { _helper.IsGetOnlyCollection = value; }
         }
 
         internal Type MemberType
         {
-            [SecuritySafeCritical]
             get
             { return _helper.MemberType; }
         }
 
         internal DataContract MemberTypeContract
         {
-            [SecuritySafeCritical]
             get
             { return _helper.MemberTypeContract; }
         }
@@ -148,20 +118,18 @@ namespace System.Runtime.Serialization
 
         public bool HasConflictingNameAndType
         {
-            [SecuritySafeCritical]
             get
             { return _helper.HasConflictingNameAndType; }
-            [SecurityCritical]
+
             set
             { _helper.HasConflictingNameAndType = value; }
         }
 
         internal DataMember ConflictingMember
         {
-            [SecuritySafeCritical]
             get
             { return _helper.ConflictingMember; }
-            [SecurityCritical]
+
             set
             { _helper.ConflictingMember = value; }
         }
@@ -180,7 +148,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-
         private FastInvokerBuilder.Setter _setter;
         internal FastInvokerBuilder.Setter Setter
         {
@@ -195,11 +162,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
-
-        /// <SecurityNote>
-        /// Critical
-        /// </SecurityNote>
         private class CriticalHelper
         {
             private DataContract _memberTypeContract;

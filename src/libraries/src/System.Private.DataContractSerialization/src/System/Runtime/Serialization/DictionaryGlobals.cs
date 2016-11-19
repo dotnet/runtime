@@ -5,16 +5,9 @@
 using System;
 using System.Xml;
 using System.Xml.Schema;
-using System.Security;
-
 
 namespace System.Runtime.Serialization
 {
-    /// <SecurityNote>
-    /// Review - Static fields are marked SecurityCritical or readonly to prevent
-    ///          data from being modified or leaked to other components in appdomain.
-    ///          changes to static fields could affect serialization/deserialization; should be reviewed.
-    /// </SecurityNote>
 #if USE_REFEMIT
     public static class DictionaryGlobals
 #else
