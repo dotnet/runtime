@@ -19,6 +19,7 @@ namespace System.Collections.ObjectModel
         protected void ChangeItemKey(TItem item, TKey newKey) { }
         protected override void ClearItems() { }
         public bool Contains(TKey key) { throw null; }
+        public bool TryGetValue(TKey key, out TItem item) { throw null; }
         protected abstract TKey GetKeyForItem(TItem item);
         protected override void InsertItem(int index, TItem item) { }
         public bool Remove(TKey key) { throw null; }
