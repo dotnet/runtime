@@ -26,22 +26,18 @@ namespace System.Runtime.Serialization.Json
 
     internal class JsonFormatWriterGenerator
     {
-        [SecurityCritical]
         private CriticalHelper _helper;
 
-        [SecurityCritical]
         public JsonFormatWriterGenerator()
         {
             _helper = new CriticalHelper();
         }
 
-        [SecurityCritical]
         internal JsonFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
         {
             return _helper.GenerateClassWriter(classContract);
         }
 
-        [SecurityCritical]
         internal JsonFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
         {
             return _helper.GenerateCollectionWriter(collectionContract);

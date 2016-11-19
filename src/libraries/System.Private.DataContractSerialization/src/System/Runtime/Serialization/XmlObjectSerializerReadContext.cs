@@ -298,7 +298,6 @@ namespace System.Runtime.Serialization
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex])));
         }
 
-        [SecuritySafeCritical]
         private static bool IsBitSet(byte[] bytes, int bitIndex)
         {
             throw new NotImplementedException();

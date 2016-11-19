@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Xml;
-using System.Security;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
@@ -390,7 +389,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [SecuritySafeCritical]
         private static bool IsBitSet(byte[] bytes, int bitIndex)
         {
             return BitFlagsGenerator.IsBitSet(bytes, bitIndex);
