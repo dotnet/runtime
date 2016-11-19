@@ -442,6 +442,7 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10",
             "TargetTestCategory": "Core Tests",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         },
@@ -454,6 +455,7 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.10.Core.Amd64",
             "TestContainerSuffix": "windows10core",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         },
@@ -472,6 +474,7 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10ilc",
             "TargetTestCategory": "UWP ILC",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }            
         },
@@ -489,6 +492,7 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10uwp",
             "TargetTestCategory": "UWP",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         },
@@ -506,6 +510,7 @@
             "TargetQueue": "Windows.10.Amd64",
             "TestContainerSuffix": "windows10desktop",
             "TargetTestCategory": "Full Framework",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         },
@@ -518,6 +523,7 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.7.Amd64",
             "TestContainerSuffix": "windows7",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         },
@@ -530,6 +536,7 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.81.Amd64",
             "TestContainerSuffix": "windows81",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         },
@@ -544,6 +551,7 @@
           "ReportingParameters": {
             "TargetQueue": "Windows.81.Amd64.Perf",
             "TestContainerSuffix": "windows81perf",
+            "Type": "build/tests/",
             "ConfigurationGroup": "Release"
           }
         }
