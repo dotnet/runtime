@@ -2,31 +2,36 @@
 
 **Definitions**
 
-*VerticalTargetGroup*
+*VerticalGroup*
 
-`VerticalTargetGroup` - We need a property to define the vertical target group, but we don't want to set "TargetGroup" explicitly or we won't be able to build the "" TargetGroups for projects.
-  If `VerticalTargetGroup != ""`, we import buildvertical.targets which will contain our additional targets.
+`VerticalGroup` - We need a property to define the vertical target group, but we don't want to set "TargetGroup" explicitly or we won't be able to build the "" TargetGroups for projects.
+  If `VerticalGroup != ""`, we import buildvertical.targets which will contain our additional targets.
 
-*SupportedGroups*
+*ProjectConfigurations*
 
-For each ref project and src project, we define `SupportedGroups`. `SupportedGroups` is a tuple for the supported `TargetGroup` and `OSGroup`.
+For each ref project and src project, we define `ProjectConfigurations`. `ProjectConfigurations` is a tuple for the supported `TargetGroup` and `OSGroup`.
 
 
 ie
 
 ref\System.Runtime.csproj
 ```MSBuild
+<DefaultTargetGroup>netstandard1.7</DefaultTargetGroup>
 <PropertyGroup>
-  <SupportedGroups>
-    netstandard1.7|Windows_NT;
-    netstandard1.7|OSX;
-    netstandard1.7|Linux;
+  <ProjectConfigurations>
+    $(DefaultTargetGroup)|Windows_NT;
+    $(DefaultTargetGroup)|OSX;
+    $(DefaultTargetGroup)|Linux;
     netcoreapp1.1|Windows_NT;
     netcoreapp1.1|OSX;
     netcoreapp1.1|Linux
-  </SupportedGroups>
+  </ProjectConfigurations>
 <PropertyGroup>
 ```
+
+*DefaultTargetGroup*
+
+We define a `DefaultTargetGroup` in each csproj so that we can undefine the `TargetGroup` property if we are building targeting that `TargetGroup`.
 
 *Contract Layer*
 
@@ -34,8 +39,8 @@ We have a contract layer (msbuild task).
 
 Inputs:
 
-        SupportedGroups
-        VerticalGroup (desired OSGroup-TargetGroup-[Release|Debug])
+        ProjectConfigurations
+        VerticalGroup (desired OSGroup and TargetGroup as OSGroup-TargetGroup-[Release|Debug])
 
 Output:
 
