@@ -27,6 +27,8 @@ namespace System.Security.Cryptography
             this.HashName = HashAlgorithmNames.SHA512;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA512, key, BlockSize);
             base.Key = _hMacCommon.ActualKey;
+            // change the default value of BlockSizeValue to 128 instead of 64 
+            BlockSizeValue = BlockSize; 
         }
 
         public bool ProduceLegacyHmacValues

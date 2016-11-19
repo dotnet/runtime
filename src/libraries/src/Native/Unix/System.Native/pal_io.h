@@ -691,3 +691,10 @@ extern "C" char* SystemNative_RealPath(const char* path);
 */
 extern "C" int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 
+/**
+* Attempts to lock/unlock the region of the file "fd" specified by the offset and length. lockType
+* can be set to F_UNLCK (2) for unlock or F_WRLCK (3) for lock.
+*
+* Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
+*/
+extern "C" int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType);

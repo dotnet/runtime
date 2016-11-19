@@ -8,8 +8,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Xml;
-using System.Security;
-
 
 namespace System.Runtime.Serialization
 {
@@ -21,19 +19,8 @@ namespace System.Runtime.Serialization
     {
         internal static readonly PrimitiveDataContract NullContract = new NullPrimitiveDataContract();
 
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-        ///            Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         private PrimitiveDataContractCriticalHelper _helper;
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         protected PrimitiveDataContract(Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(new PrimitiveDataContractCriticalHelper(type, name, ns))
         {
             _helper = base.Helper as PrimitiveDataContractCriticalHelper;
@@ -54,46 +41,21 @@ namespace System.Runtime.Serialization
 
         public override XmlDictionaryString TopLevelElementNamespace
         {
-            /// <SecurityNote>
-            /// Critical - for consistency with base class
-            /// Safe - for consistency with base class
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return DictionaryGlobals.SerializationNamespace; }
-            /// <SecurityNote>
-            /// Critical - for consistency with base class
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { }
         }
 
-        internal override bool CanContainReferences
-        {
-            get { return false; }
-        }
+        internal override bool CanContainReferences => false;
 
-        internal override bool IsPrimitive
-        {
-            get { return true; }
-        }
+        internal override bool IsPrimitive => true;
 
-        public override bool IsBuiltInDataContract
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool IsBuiltInDataContract => true;
 
         internal MethodInfo XmlFormatWriterMethod
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical XmlFormatWriterMethod property
-            /// Safe - XmlFormatWriterMethod only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.XmlFormatWriterMethod == null)
@@ -109,11 +71,6 @@ namespace System.Runtime.Serialization
 
         internal MethodInfo XmlFormatContentWriterMethod
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical XmlFormatContentWriterMethod property
-            /// Safe - XmlFormatContentWriterMethod only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.XmlFormatContentWriterMethod == null)
@@ -129,11 +86,6 @@ namespace System.Runtime.Serialization
 
         internal MethodInfo XmlFormatReaderMethod
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical XmlFormatReaderMethod property
-            /// Safe - XmlFormatReaderMethod only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.XmlFormatReaderMethod == null)
@@ -168,11 +120,7 @@ namespace System.Runtime.Serialization
             }
             return false;
         }
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds all state used for (de)serializing primitives.
-        ///            since the data is cached statically, we lock down access to it.
-        /// </SecurityNote>
+
         private class PrimitiveDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private MethodInfo _xmlFormatWriterMethod;

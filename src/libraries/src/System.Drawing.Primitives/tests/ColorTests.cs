@@ -4,9 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 
 namespace System.Drawing.Primitives.Tests
@@ -493,6 +491,10 @@ namespace System.Drawing.Primitives.Tests
             yield return new object[] { Color.FromName("SomeName"), Color.FromName("SomeOtherName"), false };
 
             yield return new object[] { Color.FromArgb(0, 0, 0), default(Color), false };
+
+            string someNameConstructed = string.Join("", "Some", "Name");
+            Assert.NotSame("SomeName", someNameConstructed); // If this fails the above must be changed so this test is correct.
+            yield return new object[] {Color.FromName("SomeName"), Color.FromName(someNameConstructed), true};
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop incorrectly does "name.Equals(name)" in Equals

@@ -2280,6 +2280,66 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(result.Equal, $"The serialization payload was not as expected.{Environment.NewLine}Expected: {expectedString}.{Environment.NewLine}Actual: {actualString}");
     }
 
+#if ReflectionOnly
+    [ActiveIssue(13699)]
+#endif
+    [Fact]
+    public static void DCJS_ExtensionDataObjectTest()
+    {
+        var p2 = new PersonV2();
+        p2.Name = "Elizabeth";
+        p2.ID = 2006;
+
+        // Serialize the PersonV2 object
+        var ser = new DataContractJsonSerializer(typeof(PersonV2));
+        var ms1 = new MemoryStream();
+        ser.WriteObject(ms1, p2);
+
+        // Verify the payload
+        ms1.Position = 0;
+        string actualOutput1 = new StreamReader(ms1).ReadToEnd();
+        string baseline1 = "{\"Name\":\"Elizabeth\",\"ID\":2006}";
+
+        try
+        {
+            Utils.CompareResult result = Utils.Compare(baseline1, actualOutput1);
+            Assert.True(result.Equal, $"{nameof(actualOutput1)} was not as expected: {Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+        }
+        catch (Exception e)
+        {
+            Assert.True(false, $"Error occured when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+        }
+
+
+        // Deserialize the payload into a Person instance.
+        ms1.Position = 0;
+        var ser2 = new DataContractJsonSerializer(typeof(Person));
+        var p1 = (Person)ser2.ReadObject(ms1);
+
+        Assert.True(p1 != null, $"Variable {nameof(p1)} was null.");
+        Assert.True(p1.ExtensionData != null, $"{nameof(p1.ExtensionData)} was null.");
+        Assert.Equal(p2.Name, p1.Name);
+
+        // Serialize the Person instance
+        var ms2 = new MemoryStream();
+        ser2.WriteObject(ms2, p1);
+
+        // Verify the payload
+        ms2.Position = 0;
+        string actualOutput2 = new StreamReader(ms2).ReadToEnd();
+        string baseline2 = "{\"Name\":\"Elizabeth\",\"ID\":2006}";
+
+        try
+        {
+            Utils.CompareResult result2 = Utils.Compare(baseline2, actualOutput2);
+            Assert.True(result2.Equal, $"{nameof(actualOutput2)} was not as expected: {Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+        }
+        catch(Exception e)
+        {
+            Assert.True(false, $"Error occured when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+        }
+    }
+
     private static string ConstructorWithRootNameTestHelper(TypeForRootNameTest value, DataContractJsonSerializer serializer)
     {
         using (var ms = new MemoryStream())
@@ -2328,6 +2388,15 @@ public static partial class DataContractJsonSerializerTests
         var deserialized = DeserializeString<TypeWithOptionalField>(payloadMissingOptionalField);
         Assert.Equal(member1Value, deserialized.Member1);
         Assert.Equal(0, deserialized.Member2);
+    }
+
+    [Fact]
+    public static void DCJS_SquareWithDeserializationCallback()
+    {
+        var value = new SquareWithDeserializationCallback(2);
+        var actual = SerializeAndDeserialize(value, "{\"Edge\":2}");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Area, actual.Area);
     }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)

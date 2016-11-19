@@ -33,6 +33,9 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">  
+    <Compile Include="CryptoConfigTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <!-- TODO: Remove this when the package reference is ready -->
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />

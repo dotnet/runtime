@@ -109,7 +109,9 @@ namespace System.IO
         // but descendant classes can override the method to provide the
         // appropriate functionality.
         //
-        public abstract void Write(char value);
+        public virtual void Write(char value)
+        {
+        }
 
         // Writes a character array to the text stream. This default method calls
         // Write(char) for each of the characters in the character array.

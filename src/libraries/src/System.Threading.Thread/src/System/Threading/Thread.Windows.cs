@@ -8,19 +8,11 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-        public ApartmentState GetApartmentState()
-        {
-            return _runtimeThread.GetApartmentState();
-        }
+        public ApartmentState GetApartmentState() => _runtimeThread.GetApartmentState();
+        private static Exception GetApartmentStateChangeFailedException() =>
+            new InvalidOperationException(SR.Thread_ApartmentState_ChangeFailed);
+        private bool TrySetApartmentStateUnchecked(ApartmentState state) => _runtimeThread.TrySetApartmentState(state);
 
-        private static Exception GetApartmentStateChangeFailedException()
-        {
-            return new InvalidOperationException(SR.Thread_ApartmentState_ChangeFailed);
-        }
-
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
-        {
-            return _runtimeThread.TrySetApartmentState(state);
-        }
+        public void DisableComObjectEagerCleanup() => _runtimeThread.DisableComObjectEagerCleanup();
     }
 }

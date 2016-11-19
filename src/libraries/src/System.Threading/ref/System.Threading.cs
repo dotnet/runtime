@@ -20,6 +20,16 @@ namespace System.Threading
         public System.Threading.Mutex Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
+    public partial struct AsyncFlowControl : System.IDisposable
+    {
+        public void Dispose() { }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
+        public static bool operator !=(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
+        public void Undo() { }
+    }
     public sealed partial class AsyncLocal<T>
     {
         public AsyncLocal() { }
@@ -110,12 +120,33 @@ namespace System.Threading
         [System.Security.SecurityCriticalAttribute]
         public static bool TryOpenExisting(string name, out System.Threading.EventWaitHandle result) { throw null; }
     }
-    public sealed partial class ExecutionContext
+    public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
     {
-        internal ExecutionContext() { }
+        private ExecutionContext() { }
         public static System.Threading.ExecutionContext Capture() { throw null; }
-        [System.Security.SecurityCriticalAttribute]
+        public System.Threading.ExecutionContext CreateCopy() { throw null; }
+        public void Dispose() { }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static bool IsFlowSuppressed() { throw null; }
+        public static void RestoreFlow() { }
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object state) { }
+        public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
+    }
+    public partial class HostExecutionContext : System.IDisposable
+    {
+        public HostExecutionContext() { }
+        public HostExecutionContext(object state) { }
+        protected internal object State { get { throw null; } set { } }
+        public virtual System.Threading.HostExecutionContext CreateCopy() { throw null; }
+        public void Dispose() { }
+        public virtual void Dispose(bool disposing) { }
+    }
+    public partial class HostExecutionContextManager
+    {
+        public HostExecutionContextManager() { }
+        public virtual System.Threading.HostExecutionContext Capture() { throw null; }
+        public virtual void Revert(object previousState) { }
+        public virtual object SetHostExecutionContext(System.Threading.HostExecutionContext hostExecutionContext) { throw null; }
     }
     public static partial class Interlocked
     {
@@ -346,12 +377,19 @@ namespace System.Threading
         public SynchronizationContext() { }
         public static System.Threading.SynchronizationContext Current { get { throw null; } }
         public virtual System.Threading.SynchronizationContext CreateCopy() { throw null; }
+        public bool IsWaitNotificationRequired() { throw null; }
         public virtual void OperationCompleted() { }
         public virtual void OperationStarted() { }
         public virtual void Post(System.Threading.SendOrPostCallback d, object state) { }
         public virtual void Send(System.Threading.SendOrPostCallback d, object state) { }
-        [System.Security.SecurityCriticalAttribute]
         public static void SetSynchronizationContext(System.Threading.SynchronizationContext syncContext) { }
+        protected void SetWaitNotificationRequired() { }
+        [System.CLSCompliantAttribute(false)]
+        [System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute]
+        public virtual int Wait(System.IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        [System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute]
+        protected static int WaitHelper(System.IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout) { throw null; }
     }
     public partial class SynchronizationLockException : System.SystemException
     {

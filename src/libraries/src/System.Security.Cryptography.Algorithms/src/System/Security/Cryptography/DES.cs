@@ -18,9 +18,14 @@ namespace System.Security.Cryptography
             BlockSizeValue = 64;
         }
 
-        public static DES Create()
+        public static new DES Create()
         {
             return new DesImplementation();
+        }
+
+        public static new DES Create(string algName)
+        {
+            return (DES)CryptoConfig.CreateFromName(algName);
         }
 
         public override byte[] Key

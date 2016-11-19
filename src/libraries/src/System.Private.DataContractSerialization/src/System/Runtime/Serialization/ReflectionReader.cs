@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization
 
             ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
             obj = ResolveAdapterObject(obj, classContract);
-
+            InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);
 
             return obj;
@@ -347,6 +347,12 @@ namespace System.Runtime.Serialization
                 var contextArg = context.GetStreamingContext();
                 classContract.OnDeserialized.Invoke(obj, new object[] { contextArg });
             }
+        }
+
+        private void InvokeDeserializationCallback(object obj)
+        {
+            var deserializationCallbackObject = obj as IDeserializationCallback;
+            deserializationCallbackObject?.OnDeserialization(null);
         }
 
         private static object CreateObject(ClassDataContract classContract)

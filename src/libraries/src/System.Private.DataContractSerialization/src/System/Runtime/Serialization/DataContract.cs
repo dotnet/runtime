@@ -12,7 +12,6 @@ namespace System.Runtime.Serialization
     using System.Text;
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Security;
     using System.Text.RegularExpressions;
     using System.Runtime.CompilerServices;
     using System.Linq;
@@ -24,17 +23,8 @@ namespace System.Runtime.Serialization
     internal abstract class DataContract
 #endif
     {
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - XmlDictionaryString representing the type name.
-        ///            statically cached and used from IL generated code.
-        /// </SecurityNote>
         private XmlDictionaryString _name;
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - XmlDictionaryString representing the type namespace.
-        ///            statically cached and used from IL generated code.
-        /// </SecurityNote>
+
         private XmlDictionaryString _ns;
 
         // this the global dictionary for data contracts introduced for multi-file.
@@ -45,19 +35,8 @@ namespace System.Runtime.Serialization
             return s_dataContracts;
         }
 
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-        ///            Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         private DataContractCriticalHelper _helper;
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal DataContract(DataContractCriticalHelper helper)
         {
             _helper = helper;
@@ -136,11 +115,6 @@ namespace System.Runtime.Serialization
             return dataContract.GetValidContract(mode);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up DataContract 
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
         {
             return DataContractCriticalHelper.GetDataContractSkipValidation(id, typeHandle, type);
@@ -157,61 +131,31 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up DataContract 
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
         {
             return DataContractCriticalHelper.GetGetOnlyCollectionDataContractSkipValidation(id, typeHandle, type);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up DataContract 
-        /// Safe - read only access; doesn't modify any static information
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static DataContract GetDataContractForInitialization(int id)
         {
             return DataContractCriticalHelper.GetDataContractForInitialization(id);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up id for DataContract 
-        /// Safe - read only access; doesn't modify any static information
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static int GetIdForInitialization(ClassDataContract classContract)
         {
             return DataContractCriticalHelper.GetIdForInitialization(classContract);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up id assigned to a particular type
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static int GetId(RuntimeTypeHandle typeHandle)
         {
             return DataContractCriticalHelper.GetId(typeHandle);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up DataContract 
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         public static DataContract GetBuiltInDataContract(Type type)
         {
             return DataContractCriticalHelper.GetBuiltInDataContract(type);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up DataContract 
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         public static DataContract GetBuiltInDataContract(string name, string ns)
         {
             return DataContractCriticalHelper.GetBuiltInDataContract(name, ns);
@@ -222,31 +166,16 @@ namespace System.Runtime.Serialization
             return DataContractCriticalHelper.GetBuiltInDataContract(typeName);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up string reference to use for a namespace string
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static string GetNamespace(string key)
         {
             return DataContractCriticalHelper.GetNamespace(key);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to look up XmlDictionaryString for a string
-        /// Safe - read only access
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static XmlDictionaryString GetClrTypeString(string key)
         {
             return DataContractCriticalHelper.GetClrTypeString(key);
         }
 
-        /// <SecurityNote>
-        /// Critical - accesses SecurityCritical static cache to remove invalid DataContract if it has been added to cache
-        /// Safe - doesn't leak any information
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static void ThrowInvalidDataContractException(string message, Type type)
         {
             DataContractCriticalHelper.ThrowInvalidDataContractException(message, type);
@@ -258,23 +187,12 @@ namespace System.Runtime.Serialization
         protected DataContractCriticalHelper Helper
 #endif
         {
-            /// <SecurityNote>
-            /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-            ///            Static fields are marked SecurityCritical or readonly to prevent
-            ///            data from being modified or leaked to other components in appdomain.
-            /// </SecurityNote>
-            [SecurityCritical]
             get
             { return _helper; }
         }
 
         public Type UnderlyingType
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical UnderlyingType property
-            /// Safe - underlyingType only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.UnderlyingType; }
             set { _helper.UnderlyingType = value; }
@@ -288,11 +206,6 @@ namespace System.Runtime.Serialization
 
         public virtual bool IsBuiltInDataContract
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical isBuiltInDataContract property
-            /// Safe - isBuiltInDataContract only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsBuiltInDataContract; }
             set { }
@@ -300,11 +213,6 @@ namespace System.Runtime.Serialization
 
         internal Type TypeForInitialization
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical typeForInitialization property
-            /// Safe - typeForInitialization only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.TypeForInitialization; }
         }
@@ -342,68 +250,36 @@ namespace System.Runtime.Serialization
 
         public bool IsValueType
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical isValueType property
-            /// Safe - isValueType only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsValueType; }
-            /// <SecurityNote>
-            /// Critical - sets the critical IsValueType property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.IsValueType = value; }
         }
 
         public bool IsReference
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical isReference property
-            /// Safe - isReference only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsReference; }
-            /// <SecurityNote>
-            /// Critical - sets the critical IsReference property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.IsReference = value; }
         }
 
         public XmlQualifiedName StableName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical StableName property
-            /// Safe - StableName only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.StableName; }
-            /// <SecurityNote>
-            /// Critical - sets the critical StableName property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.StableName = value; }
         }
 
         public virtual DataContractDictionary KnownDataContracts
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical KnownDataContracts property
-            /// Safe - KnownDataContracts only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.KnownDataContracts; }
-            /// <SecurityNote>
-            /// Critical - sets the critical KnownDataContracts property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.KnownDataContracts = value; }
         }
@@ -417,11 +293,6 @@ namespace System.Runtime.Serialization
 
         public XmlDictionaryString Name
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical Name property
-            /// Safe - Name only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _name; }
             set { _name = value; }
@@ -429,11 +300,6 @@ namespace System.Runtime.Serialization
 
         public virtual XmlDictionaryString Namespace
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical Namespace property
-            /// Safe - Namespace only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _ns; }
             set { _ns = value; }
@@ -441,51 +307,27 @@ namespace System.Runtime.Serialization
 
         public virtual bool HasRoot
         {
-            /// <SecurityNote>
-            /// Critical - in case derived classes want to override and set a critical field
-            /// Safe - expectation is readonly access is safe
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return true; }
-            /// <SecurityNote>
-            /// Critical - in case derived classes want to override and set a critical field
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { }
         }
 
         public virtual XmlDictionaryString TopLevelElementName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical Name property
-            /// Safe - Name only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.TopLevelElementName; }
-            /// <SecurityNote>
-            /// Critical - sets the critical Name property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.TopLevelElementName = value; }
         }
 
         public virtual XmlDictionaryString TopLevelElementNamespace
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical Namespace property
-            /// Safe - Namespace only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.TopLevelElementNamespace; }
-            /// <SecurityNote>
-            /// Critical - sets the critical Namespace property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.TopLevelElementNamespace = value; }
         }
@@ -529,11 +371,6 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        /// <SecurityNote>
-        /// Critical - holds all state used for (de)serializing types.
-        ///            since the data is cached statically, we lock down access to it.
-        /// </SecurityNote>
-        [SecurityCritical]
         internal class DataContractCriticalHelper
         {
             private static Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
@@ -1220,12 +1057,6 @@ namespace System.Runtime.Serialization
                 get { return _typeForInitialization; }
             }
 
-            /// <SecurityNote>
-            /// Critical - sets the critical typeForInitialization field
-            /// Safe - validates input data, sets field correctly
-            /// </SecurityNote>
-            //CSD16748
-            //[SecuritySafeCritical]
             private void SetTypeForInitialization(Type classType)
             {
                 //if (classType.IsSerializable || classType.IsDefined(Globals.TypeOfDataContractAttribute, false))
@@ -1485,13 +1316,6 @@ namespace System.Runtime.Serialization
             return GetStableName(type, out hasDataContract);
         }
 
-        /// <SecurityNote>
-        /// RequiresReview - marked SRR because callers may need to depend on hasDataContract for a security decision
-        ///            hasDataContract must be calculated correctly
-        ///            GetStableName is factored into sub-methods so as to isolate the DataContractAttribute calculation and
-        ///            reduce SecurityCritical surface area
-        /// Safe - does not let caller influence hasDataContract calculation; no harm in leaking value
-        /// </SecurityNote>
         internal static XmlQualifiedName GetStableName(Type type, out bool hasDataContract)
         {
             type = UnwrapRedundantNullableType(type);
@@ -1593,11 +1417,6 @@ namespace System.Runtime.Serialization
             return stableName != null;
         }
 
-        /// <SecurityNote>
-        /// Critical - marked SecurityCritical because callers may need to base security decisions on the presence (or absence) of the DC attribute
-        /// Safe - does not let caller influence calculation and the result is not a protected value
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal static bool TryGetDCAttribute(Type type, out DataContractAttribute dataContractAttribute)
         {
             dataContractAttribute = null;

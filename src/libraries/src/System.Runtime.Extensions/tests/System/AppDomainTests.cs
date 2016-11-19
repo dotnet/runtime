@@ -402,8 +402,9 @@ namespace System.Tests
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             Assert.NotNull(assemblies);
             Assert.True(assemblies.Length > 0, "There must be assemblies already loaded in the process");
-            AppDomain.CurrentDomain.Load(assemblies[0].GetName().FullName);
+            AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.GetName().FullName);
             Assembly[] assemblies1 = AppDomain.CurrentDomain.GetAssemblies();
+            // Another thread could have loaded an assembly hence not checking for equality
             Assert.True(assemblies1.Length >= assemblies.Length, "Assembly.Load of an already loaded assembly should not cause another load");
             Assembly.LoadFile(typeof(AppDomain).Assembly.Location);
             Assembly[] assemblies2 = AppDomain.CurrentDomain.GetAssemblies();
@@ -419,7 +420,7 @@ namespace System.Tests
                 if (a.Location == typeof(AppDomain).Assembly.Location)
                     ctr--;
             }
-            Assert.True(ctr > 0, "Assembly.loadFile should cause file to loaded again");
+            Assert.True(ctr > 0, "Assembly.LoadFile should cause file to be loaded again");
         }
 
         [Fact]

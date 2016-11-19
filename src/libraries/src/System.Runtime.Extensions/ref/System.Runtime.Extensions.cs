@@ -1461,7 +1461,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
-        public abstract void Write(char value);
+        public virtual void Write(char value) { }
         public virtual void Write(char[] buffer) { }
         public virtual void Write(char[] buffer, int index, int count) { }
         public virtual void Write(decimal value) { }

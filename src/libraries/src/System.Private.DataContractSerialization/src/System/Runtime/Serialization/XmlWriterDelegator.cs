@@ -369,6 +369,87 @@ namespace System.Runtime.Serialization
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
         }
 
+        internal void WriteExtensionData(IDataNode dataNode)
+        {
+            bool handled = true;
+            Type valueType = dataNode.DataType;
+            switch (Type.GetTypeCode(valueType))
+            {
+                case TypeCode.Boolean:
+                    WriteBoolean(((DataNode<bool>)dataNode).GetValue());
+                    break;
+                case TypeCode.Char:
+                    WriteChar(((DataNode<char>)dataNode).GetValue());
+                    break;
+                case TypeCode.Byte:
+                    WriteUnsignedByte(((DataNode<byte>)dataNode).GetValue());
+                    break;
+                case TypeCode.Int16:
+                    WriteShort(((DataNode<short>)dataNode).GetValue());
+                    break;
+                case TypeCode.Int32:
+                    WriteInt(((DataNode<int>)dataNode).GetValue());
+                    break;
+                case TypeCode.Int64:
+                    WriteLong(((DataNode<long>)dataNode).GetValue());
+                    break;
+                case TypeCode.Single:
+                    WriteFloat(((DataNode<float>)dataNode).GetValue());
+                    break;
+                case TypeCode.Double:
+                    WriteDouble(((DataNode<double>)dataNode).GetValue());
+                    break;
+                case TypeCode.Decimal:
+                    WriteDecimal(((DataNode<decimal>)dataNode).GetValue());
+                    break;
+                case TypeCode.DateTime:
+                    WriteDateTime(((DataNode<DateTime>)dataNode).GetValue());
+                    break;
+                case TypeCode.String:
+                    WriteString(((DataNode<string>)dataNode).GetValue());
+                    break;
+                case TypeCode.SByte:
+                    WriteSignedByte(((DataNode<sbyte>)dataNode).GetValue());
+                    break;
+                case TypeCode.UInt16:
+                    WriteUnsignedShort(((DataNode<ushort>)dataNode).GetValue());
+                    break;
+                case TypeCode.UInt32:
+                    WriteUnsignedInt(((DataNode<uint>)dataNode).GetValue());
+                    break;
+                case TypeCode.UInt64:
+                    WriteUnsignedLong(((DataNode<ulong>)dataNode).GetValue());
+                    break;
+                case TypeCode.Empty:
+                case TypeCode.DBNull:
+                case TypeCode.Object:
+                default:
+                    if (valueType == Globals.TypeOfByteArray)
+                        WriteBase64(((DataNode<byte[]>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfObject)
+                    {
+                        object obj = dataNode.Value;
+                        if (obj != null)
+                            WriteAnyType(obj);
+                    }
+                    else if (valueType == Globals.TypeOfTimeSpan)
+                        WriteTimeSpan(((DataNode<TimeSpan>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfGuid)
+                        WriteGuid(((DataNode<Guid>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfUri)
+                        WriteUri(((DataNode<Uri>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                        WriteQName(((DataNode<XmlQualifiedName>)dataNode).GetValue());
+                    else
+                        handled = false;
+                    break;
+            }
+
+            if (!handled)
+            {
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
+            }
+        }
 
         internal void WriteString(string value)
         {
