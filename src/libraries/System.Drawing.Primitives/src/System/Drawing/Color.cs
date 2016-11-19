@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
+using System.Numerics.Hashing;
 
 namespace System.Drawing
 {
@@ -307,11 +306,11 @@ namespace System.Drawing
         // NOTE : The "zero" pattern (all members being 0) must represent
         //      : "not set". This allows "Color c;" to be correct.
 
-        private static short s_stateKnownColorValid = 0x0001;
-        private static short s_stateARGBValueValid = 0x0002;
-        private static short s_stateValueMask = (short)(s_stateARGBValueValid);
-        private static short s_stateNameValid = 0x0008;
-        private static long s_notDefinedValue = 0;
+        private const short StateKnownColorValid = 0x0001;
+        private const short StateARGBValueValid = 0x0002;
+        private const short StateValueMask = StateARGBValueValid;
+        private const short StateNameValid = 0x0008;
+        private const long NotDefinedValue = 0;
 
         /**
          * Shift count and bit mask for A, R, G, B components in ARGB mode!
@@ -343,7 +342,7 @@ namespace System.Drawing
         internal Color(KnownColor knownColor)
         {
             value = 0;
-            state = s_stateKnownColorValid;
+            state = StateKnownColorValid;
             name = null;
             this.knownColor = unchecked((short)knownColor);
         }
@@ -364,11 +363,11 @@ namespace System.Drawing
 
         public byte A => (byte)((Value >> ARGBAlphaShift) & 0xFF);
 
-        public bool IsKnownColor => ((state & s_stateKnownColorValid) != 0);
+        public bool IsKnownColor => ((state & StateKnownColorValid) != 0);
 
         public bool IsEmpty => state == 0;
 
-        public bool IsNamedColor => ((state & s_stateNameValid) != 0) || IsKnownColor;
+        public bool IsNamedColor => ((state & StateNameValid) != 0) || IsKnownColor;
 
         public bool IsSystemColor => IsKnownColor && ((((KnownColor)knownColor) <= KnownColor.WindowText) || (((KnownColor)knownColor) > KnownColor.YellowGreen));
 
@@ -383,21 +382,17 @@ namespace System.Drawing
         {
             get
             {
-                if ((state & s_stateNameValid) != 0)
+                if ((state & StateNameValid) != 0)
                 {
                     return name;
                 }
 
                 if (IsKnownColor)
                 {
-                    // first try the table so we can avoid the (slow!) .ToString()
                     string tablename = KnownColorTable.KnownColorToName((KnownColor)knownColor);
-                    if (tablename != null)
-                        return tablename;
+                    Debug.Assert(tablename != null, $"Could not find known color '{(KnownColor)knownColor}' in the KnownColorTable");
 
-                    Debug.Assert(false, "Could not find known color '" + ((KnownColor)knownColor) + "' in the KnownColorTable");
-
-                    return ((KnownColor)knownColor).ToString();
+                    return tablename;
                 }
 
                 // if we reached here, just encode the value
@@ -410,16 +405,17 @@ namespace System.Drawing
         {
             get
             {
-                if ((state & s_stateValueMask) != 0)
+                if ((state & StateValueMask) != 0)
                 {
                     return value;
                 }
+
                 if (IsKnownColor)
                 {
-                    return unchecked((int)KnownColorTable.KnownColorToArgb((KnownColor)knownColor));
+                    return KnownColorTable.KnownColorToArgb((KnownColor)knownColor);
                 }
 
-                return s_notDefinedValue;
+                return NotDefinedValue;
             }
         }
 
@@ -429,18 +425,13 @@ namespace System.Drawing
                 throw new ArgumentException(SR.Format(SR.InvalidEx2BoundArgument, name, value, 0, 255));
         }
 
-        private static long MakeArgb(byte alpha, byte red, byte green, byte blue)
-        {
-            return (long)(unchecked((uint)(red << ARGBRedShift |
-                         green << ARGBGreenShift |
-                         blue << ARGBBlueShift |
-                         alpha << ARGBAlphaShift))) & 0xffffffff;
-        }
+        private static long MakeArgb(byte alpha, byte red, byte green, byte blue) =>
+            (long)unchecked((uint)(red << ARGBRedShift |
+                green << ARGBGreenShift |
+                blue << ARGBBlueShift |
+                alpha << ARGBAlphaShift)) & 0xffffffff;
 
-        public static Color FromArgb(int argb)
-        {
-            return new Color((long)argb & 0xffffffff, s_stateARGBValueValid, null, (KnownColor)0);
-        }
+        public static Color FromArgb(int argb) => new Color(argb & 0xffffffff, StateARGBValueValid, null, 0);
 
         public static Color FromArgb(int alpha, int red, int green, int blue)
         {
@@ -448,28 +439,26 @@ namespace System.Drawing
             CheckByte(red, nameof(red));
             CheckByte(green, nameof(green));
             CheckByte(blue, nameof(blue));
-            return new Color(MakeArgb((byte)alpha, (byte)red, (byte)green, (byte)blue), s_stateARGBValueValid, null, (KnownColor)0);
+            return new Color(MakeArgb((byte)alpha, (byte)red, (byte)green, (byte)blue), StateARGBValueValid, null, (KnownColor)0);
         }
 
         public static Color FromArgb(int alpha, Color baseColor)
         {
             CheckByte(alpha, nameof(alpha));
             // unchecked - because we already checked that alpha is a byte in CheckByte above
-            return new Color(MakeArgb(unchecked((byte)alpha), baseColor.R, baseColor.G, baseColor.B), s_stateARGBValueValid, null, (KnownColor)0);
+            return new Color(MakeArgb(unchecked((byte)alpha), baseColor.R, baseColor.G, baseColor.B), StateARGBValueValid, null, (KnownColor)0);
         }
 
-        public static Color FromArgb(int red, int green, int blue)
-        {
-            return FromArgb(255, red, green, blue);
-        }
+        public static Color FromArgb(int red, int green, int blue) => FromArgb(255, red, green, blue);
 
         public static Color FromKnownColor(KnownColor color)
         {
             var value = (int)color;
             if (value < (int)KnownColor.ActiveBorder || value > (int)KnownColor.MenuHighlight)
             {
-                return Color.FromName(color.ToString());
+                return FromName(color.ToString());
             }
+
             return new Color(color);
         }
 
@@ -482,14 +471,14 @@ namespace System.Drawing
                 return color;
             }
             // otherwise treat it as a named color
-            return new Color(s_notDefinedValue, s_stateNameValid, name, (KnownColor)0);
+            return new Color(NotDefinedValue, StateNameValid, name, (KnownColor)0);
         }
 
         public float GetBrightness()
         {
-            float r = (float)R / 255.0f;
-            float g = (float)G / 255.0f;
-            float b = (float)B / 255.0f;
+            float r = R / 255.0f;
+            float g = G / 255.0f;
+            float b = B / 255.0f;
 
             float max, min;
 
@@ -510,9 +499,9 @@ namespace System.Drawing
             if (R == G && G == B)
                 return 0; // 0 makes as good an UNDEFINED value as any
 
-            float r = (float)R / 255.0f;
-            float g = (float)G / 255.0f;
-            float b = (float)B / 255.0f;
+            float r = R / 255.0f;
+            float g = G / 255.0f;
+            float b = B / 255.0f;
 
             float max, min;
             float delta;
@@ -551,14 +540,14 @@ namespace System.Drawing
 
         public float GetSaturation()
         {
-            float r = (float)R / 255.0f;
-            float g = (float)G / 255.0f;
-            float b = (float)B / 255.0f;
+            float r = R / 255.0f;
+            float g = G / 255.0f;
+            float b = B / 255.0f;
 
-            float max, min;
-            float l, s = 0;
+            float s = 0;
 
-            max = r; min = r;
+            float max = r;
+            float min = r;
 
             if (g > max) max = g;
             if (b > max) max = b;
@@ -571,7 +560,7 @@ namespace System.Drawing
             //
             if (max != min)
             {
-                l = (max + min) / 2;
+                float l = (max + min) / 2;
 
                 if (l <= .5)
                 {
@@ -585,23 +574,17 @@ namespace System.Drawing
             return s;
         }
 
-        public int ToArgb()
-        {
-            return unchecked((int)Value);
-        }
+        public int ToArgb() => unchecked((int)Value);
 
-        public KnownColor ToKnownColor()
-        {
-            return (KnownColor)knownColor;
-        }
+        public KnownColor ToKnownColor() => (KnownColor)knownColor;
 
         public override string ToString()
         {
-            if ((state & s_stateNameValid) != 0 || (state & s_stateKnownColorValid) != 0)
+            if ((state & StateNameValid) != 0 || (state & StateKnownColorValid) != 0)
             {
                 return nameof(Color) + " [" + Name + "]";
             }
-            else if ((state & s_stateValueMask) != 0)
+            else if ((state & StateValueMask) != 0)
             {
                 return nameof(Color) + " [A=" + A.ToString() + ", R=" + R.ToString() + ", G=" + G.ToString() + ", B=" + B.ToString() + "]";
             }
@@ -611,43 +594,30 @@ namespace System.Drawing
             }
         }
 
-        public static bool operator ==(Color left, Color right)
-        {
-            if (left.value == right.value
+        public static bool operator ==(Color left, Color right) =>
+            left.value == right.value
                 && left.state == right.state
-                && left.knownColor == right.knownColor)
-            {
-                if (left.name == right.name)
-                {
-                    return true;
-                }
+                && left.knownColor == right.knownColor
+                && left.name == right.name;
 
-                if (ReferenceEquals(left.name, null) || ReferenceEquals(right.name, null))
-                {
-                    return false;
-                }
+        public static bool operator !=(Color left, Color right) => !(left == right);
 
-                return left.name.Equals(right.name);
-            }
-
-            return false;
-        }
-
-        public static bool operator !=(Color left, Color right)
-        {
-            return !(left == right);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is Color && this == (Color)obj;
-        }
+        public override bool Equals(object obj) => obj is Color && this == (Color)obj;
 
         public override int GetHashCode()
         {
-            return unchecked(value.GetHashCode() ^
-                    state.GetHashCode() ^
-                    knownColor.GetHashCode());
+            // Three cases:
+            // 1. We don't have a name. All relevant data, including this fact, is in the remaining fields.
+            // 2. We have a known name. The name will be the same instance of any other with the same
+            // knownColor value, so we can ignore it for hashing. Note this also hashes different to
+            // an unnamed color with the same ARGB value.
+            // 3. Have an unknown name. Will differ from other unknown-named colors only by name, so we
+            // can usefully use the names hash code alone.
+            if (name != null & !IsKnownColor)
+                return name.GetHashCode();
+
+            return HashHelpers.Combine(
+                HashHelpers.Combine(value.GetHashCode(), state.GetHashCode()), knownColor.GetHashCode());
         }
     }
 }

@@ -12,6 +12,12 @@
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_netstandard1.3_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="AutoResetEventTests.cs" />
@@ -46,10 +52,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="ExecutionContextTests.netstandard1.7.cs" />
+    <Compile Include="HostExecutionContextTests.cs" />
+    <Compile Include="HostExecutionContextManagerTests.cs" />
     <Compile Include="MonitorTests.netstandard1.7.cs" />
     <Compile Include="ReaderWriterLockTests.cs" />
+    <Compile Include="SynchronizationContextTests.netstandard1.7.cs" />
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -57,7 +67,6 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-    <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\pkg\System.Threading.pkgproj"/>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>

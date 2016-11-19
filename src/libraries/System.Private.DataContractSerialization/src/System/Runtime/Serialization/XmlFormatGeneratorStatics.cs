@@ -2,30 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
-using System.Security;
 using System.Xml;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-
 
 namespace System.Runtime.Serialization
 {
-    /// <SecurityNote>
-    /// Critical - Class holds static instances used for code generation during serialization. 
-    ///            Static fields are marked SecurityCritical or readonly to prevent
-    ///            data from being modified or leaked to other components in appdomain.
-    /// Safe - All get-only properties marked safe since they only need to be protected for write.
-    /// </SecurityNote>
     internal static class XmlFormatGeneratorStatics
     {
-        [SecurityCritical]
         private static MethodInfo s_writeStartElementMethod2;
         internal static MethodInfo WriteStartElementMethod2
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeStartElementMethod2 == null)
@@ -37,11 +25,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_writeStartElementMethod3;
         internal static MethodInfo WriteStartElementMethod3
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeStartElementMethod3 == null)
@@ -53,11 +39,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_writeEndElementMethod;
         internal static MethodInfo WriteEndElementMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeEndElementMethod == null)
@@ -69,11 +53,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_writeNamespaceDeclMethod;
         internal static MethodInfo WriteNamespaceDeclMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeNamespaceDeclMethod == null)
@@ -85,12 +67,13 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static PropertyInfo s_extensionDataProperty;
+        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ?? 
+                                                              (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData"));
 
-        [SecurityCritical]
         private static ConstructorInfo s_dictionaryEnumeratorCtor;
         internal static ConstructorInfo DictionaryEnumeratorCtor
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_dictionaryEnumeratorCtor == null)
@@ -99,11 +82,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_ienumeratorMoveNextMethod;
         internal static MethodInfo MoveNextMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_ienumeratorMoveNextMethod == null)
@@ -115,11 +96,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_ienumeratorGetCurrentMethod;
         internal static MethodInfo GetCurrentMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_ienumeratorGetCurrentMethod == null)
@@ -131,11 +110,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getItemContractMethod;
         internal static MethodInfo GetItemContractMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getItemContractMethod == null)
@@ -147,11 +124,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_isStartElementMethod2;
         internal static MethodInfo IsStartElementMethod2
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_isStartElementMethod2 == null)
@@ -163,11 +138,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_isStartElementMethod0;
         internal static MethodInfo IsStartElementMethod0
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_isStartElementMethod0 == null)
@@ -179,11 +152,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getUninitializedObjectMethod;
         internal static MethodInfo GetUninitializedObjectMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getUninitializedObjectMethod == null)
@@ -195,11 +166,20 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
+        private static MethodInfo s_onDeserializationMethod;
+        internal static MethodInfo OnDeserializationMethod
+        {
+            get
+            {
+                if (s_onDeserializationMethod == null)
+                    s_onDeserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization");
+                return s_onDeserializationMethod;
+            }
+        }
+
         private static PropertyInfo s_nodeTypeProperty;
         internal static PropertyInfo NodeTypeProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_nodeTypeProperty == null)
@@ -211,11 +191,14 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
+        private static ConstructorInfo s_extensionDataObjectCtor;
+        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
+                                                                   (s_extensionDataObjectCtor =
+                                                                       typeof (ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, new Type[] {}, null));
+
         private static ConstructorInfo s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_hashtableCtor == null)
@@ -224,11 +207,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getStreamingContextMethod;
         internal static MethodInfo GetStreamingContextMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getStreamingContextMethod == null)
@@ -240,11 +221,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getCollectionMemberMethod;
         internal static MethodInfo GetCollectionMemberMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getCollectionMemberMethod == null)
@@ -256,11 +235,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_storeCollectionMemberInfoMethod;
         internal static MethodInfo StoreCollectionMemberInfoMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_storeCollectionMemberInfoMethod == null)
@@ -272,11 +249,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_storeIsGetOnlyCollectionMethod;
         internal static MethodInfo StoreIsGetOnlyCollectionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_storeIsGetOnlyCollectionMethod == null)
@@ -288,11 +263,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_throwNullValueReturnedForGetOnlyCollectionExceptionMethod;
         internal static MethodInfo ThrowNullValueReturnedForGetOnlyCollectionExceptionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_throwNullValueReturnedForGetOnlyCollectionExceptionMethod == null)
@@ -307,7 +280,6 @@ namespace System.Runtime.Serialization
         private static MethodInfo s_throwArrayExceededSizeExceptionMethod;
         internal static MethodInfo ThrowArrayExceededSizeExceptionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_throwArrayExceededSizeExceptionMethod == null)
@@ -319,11 +291,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_incrementItemCountMethod;
         internal static MethodInfo IncrementItemCountMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_incrementItemCountMethod == null)
@@ -335,12 +305,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-
-        [SecurityCritical]
         private static MethodInfo s_internalDeserializeMethod;
         internal static MethodInfo InternalDeserializeMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_internalDeserializeMethod == null)
@@ -352,11 +319,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_moveToNextElementMethod;
         internal static MethodInfo MoveToNextElementMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_moveToNextElementMethod == null)
@@ -368,11 +333,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getMemberIndexMethod;
         internal static MethodInfo GetMemberIndexMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getMemberIndexMethod == null)
@@ -384,11 +347,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getMemberIndexWithRequiredMembersMethod;
         internal static MethodInfo GetMemberIndexWithRequiredMembersMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getMemberIndexWithRequiredMembersMethod == null)
@@ -400,11 +361,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_throwRequiredMemberMissingExceptionMethod;
         internal static MethodInfo ThrowRequiredMemberMissingExceptionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_throwRequiredMemberMissingExceptionMethod == null)
@@ -416,11 +375,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_skipUnknownElementMethod;
         internal static MethodInfo SkipUnknownElementMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_skipUnknownElementMethod == null)
@@ -432,11 +389,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_readIfNullOrRefMethod;
         internal static MethodInfo ReadIfNullOrRefMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_readIfNullOrRefMethod == null)
@@ -448,11 +403,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_readAttributesMethod;
         internal static MethodInfo ReadAttributesMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_readAttributesMethod == null)
@@ -464,11 +417,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_resetAttributesMethod;
         internal static MethodInfo ResetAttributesMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_resetAttributesMethod == null)
@@ -480,11 +431,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getObjectIdMethod;
         internal static MethodInfo GetObjectIdMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getObjectIdMethod == null)
@@ -496,11 +445,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getArraySizeMethod;
         internal static MethodInfo GetArraySizeMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getArraySizeMethod == null)
@@ -512,11 +459,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_addNewObjectMethod;
         internal static MethodInfo AddNewObjectMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_addNewObjectMethod == null)
@@ -528,11 +473,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_addNewObjectWithIdMethod;
         internal static MethodInfo AddNewObjectWithIdMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_addNewObjectWithIdMethod == null)
@@ -544,11 +487,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getExistingObjectMethod;
         internal static MethodInfo GetExistingObjectMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getExistingObjectMethod == null)
@@ -560,11 +501,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_ensureArraySizeMethod;
         internal static MethodInfo EnsureArraySizeMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_ensureArraySizeMethod == null)
@@ -576,11 +515,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_trimArraySizeMethod;
         internal static MethodInfo TrimArraySizeMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_trimArraySizeMethod == null)
@@ -592,11 +529,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_checkEndOfArrayMethod;
         internal static MethodInfo CheckEndOfArrayMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_checkEndOfArrayMethod == null)
@@ -608,12 +543,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-
-        [SecurityCritical]
         private static MethodInfo s_getArrayLengthMethod;
         internal static MethodInfo GetArrayLengthMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getArrayLengthMethod == null)
@@ -625,11 +557,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_createSerializationExceptionMethod;
         internal static MethodInfo CreateSerializationExceptionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_createSerializationExceptionMethod == null)
@@ -644,7 +574,6 @@ namespace System.Runtime.Serialization
         private static MethodInfo s_readSerializationInfoMethod;
         internal static MethodInfo ReadSerializationInfoMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_readSerializationInfoMethod == null)
@@ -653,11 +582,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_createUnexpectedStateExceptionMethod;
         internal static MethodInfo CreateUnexpectedStateExceptionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_createUnexpectedStateExceptionMethod == null)
@@ -669,11 +596,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_internalSerializeReferenceMethod;
         internal static MethodInfo InternalSerializeReferenceMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_internalSerializeReferenceMethod == null)
@@ -685,11 +610,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_internalSerializeMethod;
         internal static MethodInfo InternalSerializeMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_internalSerializeMethod == null)
@@ -701,11 +624,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_writeNullMethod;
         internal static MethodInfo WriteNullMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeNullMethod == null)
@@ -717,11 +638,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_incrementArrayCountMethod;
         internal static MethodInfo IncrementArrayCountMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_incrementArrayCountMethod == null)
@@ -733,11 +652,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_incrementCollectionCountMethod;
         internal static MethodInfo IncrementCollectionCountMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_incrementCollectionCountMethod == null)
@@ -749,11 +666,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_incrementCollectionCountGenericMethod;
         internal static MethodInfo IncrementCollectionCountGenericMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_incrementCollectionCountGenericMethod == null)
@@ -765,11 +680,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getDefaultValueMethod;
         internal static MethodInfo GetDefaultValueMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getDefaultValueMethod == null)
@@ -786,11 +699,9 @@ namespace System.Runtime.Serialization
             return GetDefaultValueMethod.MakeGenericMethod(type).Invoke(null, Array.Empty<object>());
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getNullableValueMethod;
         internal static MethodInfo GetNullableValueMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getNullableValueMethod == null)
@@ -802,11 +713,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_throwRequiredMemberMustBeEmittedMethod;
         internal static MethodInfo ThrowRequiredMemberMustBeEmittedMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_throwRequiredMemberMustBeEmittedMethod == null)
@@ -818,11 +727,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getHasValueMethod;
         internal static MethodInfo GetHasValueMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getHasValueMethod == null)
@@ -837,7 +744,6 @@ namespace System.Runtime.Serialization
         private static MethodInfo s_writeISerializableMethod;
         internal static MethodInfo WriteISerializableMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeISerializableMethod == null)
@@ -847,11 +753,9 @@ namespace System.Runtime.Serialization
         }
 
 
-        [SecurityCritical]
         private static MethodInfo s_isMemberTypeSameAsMemberValue;
         internal static MethodInfo IsMemberTypeSameAsMemberValue
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_isMemberTypeSameAsMemberValue == null)
@@ -863,11 +767,13 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
+        private static MethodInfo s_writeExtensionDataMethod;
+        internal static MethodInfo WriteExtensionDataMethod => s_writeExtensionDataMethod ?? 
+                                                               (s_writeExtensionDataMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers));
+
         private static MethodInfo s_writeXmlValueMethod;
         internal static MethodInfo WriteXmlValueMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_writeXmlValueMethod == null)
@@ -879,11 +785,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_readXmlValueMethod;
         internal static MethodInfo ReadXmlValueMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_readXmlValueMethod == null)
@@ -895,11 +799,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static PropertyInfo s_namespaceProperty;
         internal static PropertyInfo NamespaceProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_namespaceProperty == null)
@@ -911,11 +813,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static FieldInfo s_contractNamespacesField;
         internal static FieldInfo ContractNamespacesField
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_contractNamespacesField == null)
@@ -927,11 +827,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static FieldInfo s_memberNamesField;
         internal static FieldInfo MemberNamesField
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_memberNamesField == null)
@@ -943,11 +841,13 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
+        private static MethodInfo s_extensionDataSetExplicitMethodInfo;
+        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ?? 
+                                                                         (s_extensionDataSetExplicitMethodInfo = typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod));
+
         private static PropertyInfo s_childElementNamespacesProperty;
         internal static PropertyInfo ChildElementNamespacesProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_childElementNamespacesProperty == null)
@@ -959,11 +859,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static PropertyInfo s_collectionItemNameProperty;
         internal static PropertyInfo CollectionItemNameProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_collectionItemNameProperty == null)
@@ -975,11 +873,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static PropertyInfo s_childElementNamespaceProperty;
         internal static PropertyInfo ChildElementNamespaceProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_childElementNamespaceProperty == null)
@@ -991,11 +887,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getDateTimeOffsetMethod;
         internal static MethodInfo GetDateTimeOffsetMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getDateTimeOffsetMethod == null)
@@ -1007,11 +901,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_getDateTimeOffsetAdapterMethod;
         internal static MethodInfo GetDateTimeOffsetAdapterMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_getDateTimeOffsetAdapterMethod == null)
@@ -1052,11 +944,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static MethodInfo s_throwInvalidDataContractExceptionMethod;
         internal static MethodInfo ThrowInvalidDataContractExceptionMethod
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_throwInvalidDataContractExceptionMethod == null)
@@ -1068,11 +958,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static PropertyInfo s_serializeReadOnlyTypesProperty;
         internal static PropertyInfo SerializeReadOnlyTypesProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_serializeReadOnlyTypesProperty == null)
@@ -1084,11 +972,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static PropertyInfo s_classSerializationExceptionMessageProperty;
         internal static PropertyInfo ClassSerializationExceptionMessageProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_classSerializationExceptionMessageProperty == null)
@@ -1100,11 +986,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
         private static PropertyInfo s_collectionSerializationExceptionMessageProperty;
         internal static PropertyInfo CollectionSerializationExceptionMessageProperty
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_collectionSerializationExceptionMessageProperty == null)

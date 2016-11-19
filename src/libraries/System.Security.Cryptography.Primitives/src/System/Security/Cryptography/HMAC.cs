@@ -2,16 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Diagnostics;
-
 namespace System.Security.Cryptography
 {
     public abstract class HMAC : KeyedHashAlgorithm
     {
-        protected HMAC()
+        private int _blockSizeValue = 64;
+
+        protected int BlockSizeValue
         {
+            get
+            {
+                return _blockSizeValue;
+            }
+            
+            set
+            {
+                _blockSizeValue = value;
+            }
+        }
+
+        protected HMAC() { }
+
+        static public new HMAC Create()
+        {
+            return Create("System.Security.Cryptography.HMAC");
+        }
+
+        static public new HMAC Create(string algorithmName)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public String HashName

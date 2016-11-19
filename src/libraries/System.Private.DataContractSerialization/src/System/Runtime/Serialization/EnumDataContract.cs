@@ -22,19 +22,8 @@ namespace System.Runtime.Serialization
     internal sealed class EnumDataContract : DataContract
 #endif
     {
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-        ///            Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         private EnumDataContractCriticalHelper _helper;
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         public EnumDataContract() : base(new EnumDataContractCriticalHelper())
         {
             _helper = base.Helper as EnumDataContractCriticalHelper;
@@ -42,22 +31,12 @@ namespace System.Runtime.Serialization
 
         public XmlQualifiedName BaseContractName { get; set; }
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
             _helper = base.Helper as EnumDataContractCriticalHelper;
         }
         public List<DataMember> Members
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical Members property
-            /// Safe - Members only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.Members; }
             set { _helper.Members = value; }
@@ -65,11 +44,6 @@ namespace System.Runtime.Serialization
 
         public List<long> Values
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical Values property
-            /// Safe - Values only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.Values; }
             set { _helper.Values = value; }
@@ -77,11 +51,6 @@ namespace System.Runtime.Serialization
 
         public bool IsFlags
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical IsFlags property
-            /// Safe - IsFlags only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsFlags; }
             set { _helper.IsFlags = value; }
@@ -89,11 +58,6 @@ namespace System.Runtime.Serialization
 
         public bool IsULong
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical IsULong property
-            /// Safe - IsULong only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsULong; }
             set { _helper.IsULong = value; }
@@ -101,11 +65,6 @@ namespace System.Runtime.Serialization
 
         public XmlDictionaryString[] ChildElementNames
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical ChildElementNames property
-            /// Safe - ChildElementNames only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.ChildElementNames; }
             set { _helper.ChildElementNames = value; }
@@ -115,12 +74,7 @@ namespace System.Runtime.Serialization
         {
             get { return false; }
         }
-        [SecurityCritical]
 
-        /// <SecurityNote>
-        /// Critical - holds all state used for (de)serializing enums.
-        ///            since the data is cached statically, we lock down access to it.
-        /// </SecurityNote>
         private class EnumDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static Dictionary<Type, XmlQualifiedName> s_typeToName;

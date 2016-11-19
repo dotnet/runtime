@@ -40,21 +40,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Normalization.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.Normalization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\normaliz\Interop.Idna.cs">
-      <Link>Common\Interop\Windows\normaliz\Interop.Idna.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Windows.cs">
       <Link>Common\System\StringNormalizationExtensions.Windows.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'  AND '$(TargetGroup)'==''">
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
-      <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs">
-      <Link>Common\System\Globalization\IdnMapping.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetGroup)'=='' ">
@@ -64,12 +51,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
       <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
-      <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Unix.cs">
       <Link>Common\System\StringNormalizationExtensions.Unix.cs</Link>
     </Compile>
@@ -78,6 +59,9 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+  </ItemGroup>  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

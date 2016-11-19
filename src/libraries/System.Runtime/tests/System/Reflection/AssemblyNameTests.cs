@@ -30,6 +30,20 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void Verify_EscapedCodeBase()
+        {
+            AssemblyName n = new AssemblyName("MyAssemblyName");
+            Assert.Null(n.EscapedCodeBase);
+
+            n.CodeBase = @"file:///d:/temp/MyAssemblyName1.dll";
+            Assert.NotNull(n.EscapedCodeBase);
+            Assert.Equal(n.EscapedCodeBase, n.CodeBase);
+
+            n.CodeBase = @"file:///c:/program files/MyAssemblyName.dll";
+            Assert.Equal(n.EscapedCodeBase, Uri.EscapeUriString(n.CodeBase));
+        }
+
+        [Fact]
         public static void Verify_HashAlgorithm()
         {
             AssemblyName an = new AssemblyName("MyAssemblyName");

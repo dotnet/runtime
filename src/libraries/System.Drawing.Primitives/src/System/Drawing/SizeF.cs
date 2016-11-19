@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Numerics.Hashing;
+
 namespace System.Drawing
 {
     /**
@@ -71,39 +73,27 @@ namespace System.Drawing
         ///       Performs vector addition of two <see cref='System.Drawing.SizeF'/> objects.
         ///    </para>
         /// </summary>
-        public static SizeF operator +(SizeF sz1, SizeF sz2)
-        {
-            return Add(sz1, sz2);
-        }
+        public static SizeF operator +(SizeF sz1, SizeF sz2) => Add(sz1, sz2);
 
         /// <summary>
         ///    <para>
         ///       Contracts a <see cref='System.Drawing.SizeF'/> by another <see cref='System.Drawing.SizeF'/>
         ///    </para>
         /// </summary>        
-        public static SizeF operator -(SizeF sz1, SizeF sz2)
-        {
-            return Subtract(sz1, sz2);
-        }
+        public static SizeF operator -(SizeF sz1, SizeF sz2) => Subtract(sz1, sz2);
 
         /// <summary>
         ///    Tests whether two <see cref='System.Drawing.SizeF'/> objects
         ///    are identical.
         /// </summary>
-        public static bool operator ==(SizeF sz1, SizeF sz2)
-        {
-            return sz1.Width == sz2.Width && sz1.Height == sz2.Height;
-        }
+        public static bool operator ==(SizeF sz1, SizeF sz2) => sz1.Width == sz2.Width && sz1.Height == sz2.Height;
 
         /// <summary>
         ///    <para>
         ///       Tests whether two <see cref='System.Drawing.SizeF'/> objects are different.
         ///    </para>
         /// </summary>
-        public static bool operator !=(SizeF sz1, SizeF sz2)
-        {
-            return !(sz1 == sz2);
-        }
+        public static bool operator !=(SizeF sz1, SizeF sz2) => !(sz1 == sz2);
 
         /// <summary>
         ///    <para>
@@ -111,10 +101,7 @@ namespace System.Drawing
         ///    <see cref='System.Drawing.PointF'/>.
         ///    </para>
         /// </summary>
-        public static explicit operator PointF(SizeF size)
-        {
-            return new PointF(size.Width, size.Height);
-        }
+        public static explicit operator PointF(SizeF size) => new PointF(size.Width, size.Height);
 
         /// <summary>
         ///    <para>
@@ -122,17 +109,12 @@ namespace System.Drawing
         ///       width and height.
         ///    </para>
         /// </summary>
-        public bool IsEmpty
-        {
-            get
-            {
-                return _width == 0 && _height == 0;
-            }
-        }
+        public bool IsEmpty => _width == 0 && _height == 0;
 
         /**
          * Horizontal dimension
          */
+
         /// <summary>
         ///    <para>
         ///       Represents the horizontal component of this
@@ -141,19 +123,14 @@ namespace System.Drawing
         /// </summary>
         public float Width
         {
-            get
-            {
-                return _width;
-            }
-            set
-            {
-                _width = value;
-            }
+            get { return _width; }
+            set { _width = value; }
         }
 
         /**
          * Vertical dimension
          */
+
         /// <summary>
         ///    <para>
         ///       Represents the vertical component of this
@@ -162,14 +139,8 @@ namespace System.Drawing
         /// </summary>
         public float Height
         {
-            get
-            {
-                return _height;
-            }
-            set
-            {
-                _height = value;
-            }
+            get { return _height; }
+            set { _height = value; }
         }
 
         /// <summary>
@@ -177,10 +148,7 @@ namespace System.Drawing
         ///       Performs vector addition of two <see cref='System.Drawing.SizeF'/> objects.
         ///    </para>
         /// </summary>
-        public static SizeF Add(SizeF sz1, SizeF sz2)
-        {
-            return new SizeF(sz1.Width + sz2.Width, sz1.Height + sz2.Height);
-        }
+        public static SizeF Add(SizeF sz1, SizeF sz2) => new SizeF(sz1.Width + sz2.Width, sz1.Height + sz2.Height);
 
         /// <summary>
         ///    <para>
@@ -188,10 +156,7 @@ namespace System.Drawing
         ///       .
         ///    </para>
         /// </summary>        
-        public static SizeF Subtract(SizeF sz1, SizeF sz2)
-        {
-            return new SizeF(sz1.Width - sz2.Width, sz1.Height - sz2.Height);
-        }
+        public static SizeF Subtract(SizeF sz1, SizeF sz2) => new SizeF(sz1.Width - sz2.Width, sz1.Height - sz2.Height);
 
         /// <summary>
         ///    <para>
@@ -210,20 +175,11 @@ namespace System.Drawing
             return (comp.Width == Width) && (comp.Height == Height);
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => HashHelpers.Combine(Width.GetHashCode(), Height.GetHashCode());
 
-        public PointF ToPointF()
-        {
-            return (PointF)this;
-        }
+        public PointF ToPointF() => (PointF)this;
 
-        public Size ToSize()
-        {
-            return Size.Truncate(this);
-        }
+        public Size ToSize() => Size.Truncate(this);
 
         /// <summary>
         ///    <para>
@@ -231,10 +187,7 @@ namespace System.Drawing
         ///    <see cref='System.Drawing.SizeF'/>.
         ///    </para>
         /// </summary>
-        public override string ToString()
-        {
-            return "{Width=" + _width.ToString() + ", Height=" + _height.ToString() + "}";
-        }
+        public override string ToString() => "{Width=" + _width.ToString() + ", Height=" + _height.ToString() + "}";
     }
 }
 

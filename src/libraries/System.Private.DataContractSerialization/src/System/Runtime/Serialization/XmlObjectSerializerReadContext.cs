@@ -23,6 +23,8 @@ namespace System.Runtime.Serialization
         internal Attributes attributes;
         private HybridObjectCache _deserializedObjects;
         private XmlSerializableReader _xmlSerializableReader;
+        private XmlDocument _xmlDocument;
+        private Attributes _attributesInXmlData;
         private object _getOnlyCollectionValue;
         private bool _isGetOnlyCollection;
 
@@ -35,6 +37,8 @@ namespace System.Runtime.Serialization
                 return _deserializedObjects;
             }
         }
+
+        private XmlDocument Document => _xmlDocument ?? (_xmlDocument = new XmlDocument());
 
 
         internal override bool IsGetOnlyCollection
@@ -294,7 +298,6 @@ namespace System.Runtime.Serialization
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex])));
         }
 
-        [SecuritySafeCritical]
         private static bool IsBitSet(byte[] bytes, int bitIndex)
         {
             throw new NotImplementedException();
@@ -316,6 +319,9 @@ namespace System.Runtime.Serialization
 
         internal void HandleUnknownElement(XmlReaderDelegator xmlReader, ExtensionDataObject extensionData, int memberIndex)
         {
+            if (extensionData.Members == null)
+                extensionData.Members = new List<ExtensionDataMember>();
+            extensionData.Members.Add(ReadExtensionDataMember(xmlReader, memberIndex));
         }
 
 #if USE_REFEMIT
@@ -436,6 +442,18 @@ namespace System.Runtime.Serialization
             object retObj = DeserializedObjects.GetObject(id);
             if (retObj == null)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DeserializedObjectWithIdNotFound, id)));
+            return retObj;
+        }
+
+        private object GetExistingObjectOrExtensionData(string id)
+        {
+            object retObj = DeserializedObjects.GetObject(id);
+            if (retObj == null)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                    XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DeserializedObjectWithIdNotFound, id)));
+            }
+
             return retObj;
         }
 
@@ -606,6 +624,469 @@ namespace System.Runtime.Serialization
             return (attributes.XsiTypeName == null) ? null : ResolveDataContractFromKnownTypes(attributes.XsiTypeName, attributes.XsiTypeNamespace, null /*memberTypeContract*/);
         }
 
+        private ExtensionDataMember ReadExtensionDataMember(XmlReaderDelegator xmlReader, int memberIndex)
+        {
+            var member = new ExtensionDataMember
+            {
+                Name = xmlReader.LocalName,
+                Namespace = xmlReader.NamespaceURI,
+                MemberIndex = memberIndex
+            };
+
+            member.Value = xmlReader.UnderlyingExtensionDataReader != null ? xmlReader.UnderlyingExtensionDataReader.GetCurrentNode() : ReadExtensionDataValue(xmlReader);
+            return member;
+        }
+
+        public IDataNode ReadExtensionDataValue(XmlReaderDelegator xmlReader)
+        {
+            ReadAttributes(xmlReader);
+            IncrementItemCount(1);
+            IDataNode dataNode = null;
+            if (attributes.Ref != Globals.NewObjectId)
+            {
+                xmlReader.Skip();
+                object o = GetExistingObjectOrExtensionData(attributes.Ref);
+                dataNode = (o is IDataNode) ? (IDataNode)o : new DataNode<object>(o);
+                dataNode.Id = attributes.Ref;
+            }
+            else if (attributes.XsiNil)
+            {
+                xmlReader.Skip();
+                dataNode = null;
+            }
+            else
+            {
+                string dataContractName = null;
+                string dataContractNamespace = null;
+                if (attributes.XsiTypeName != null)
+                {
+                    dataContractName = attributes.XsiTypeName;
+                    dataContractNamespace = attributes.XsiTypeNamespace;
+                }
+
+                if (IsReadingCollectionExtensionData(xmlReader))
+                {
+                    Read(xmlReader);
+                    dataNode = ReadUnknownCollectionData(xmlReader, dataContractName, dataContractNamespace);
+                }
+                else if (attributes.FactoryTypeName != null)
+                {
+                    Read(xmlReader);
+                    dataNode = ReadUnknownISerializableData(xmlReader, dataContractName, dataContractNamespace);
+                }
+                else if (IsReadingClassExtensionData(xmlReader))
+                {
+                    Read(xmlReader);
+                    dataNode = ReadUnknownClassData(xmlReader, dataContractName, dataContractNamespace);
+                }
+                else
+                {
+                    DataContract dataContract = ResolveDataContractFromTypeName();
+
+                    if (dataContract == null)
+                        dataNode = ReadExtensionDataValue(xmlReader, dataContractName, dataContractNamespace);
+                    else if (dataContract is XmlDataContract)
+                        dataNode = ReadUnknownXmlData(xmlReader, dataContractName, dataContractNamespace);
+                    else
+                    {
+                        if (dataContract.IsISerializable)
+                        {
+                            Read(xmlReader);
+                            dataNode = ReadUnknownISerializableData(xmlReader, dataContractName, dataContractNamespace);
+                        }
+                        else if (dataContract is PrimitiveDataContract)
+                        {
+                            if (attributes.Id == Globals.NewObjectId)
+                            {
+                                Read(xmlReader);
+                                xmlReader.MoveToContent();
+                                dataNode = ReadUnknownPrimitiveData(xmlReader, dataContract.UnderlyingType, dataContractName, dataContractNamespace);
+                                xmlReader.ReadEndElement();
+                            }
+                            else
+                            {
+                                dataNode = new DataNode<object>(xmlReader.ReadElementContentAsAnyType(dataContract.UnderlyingType));
+                                InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+                            }
+                        }
+                        else if (dataContract is EnumDataContract)
+                        {
+                            dataNode = new DataNode<object>(((EnumDataContract)dataContract).ReadEnumValue(xmlReader));
+                            InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+                        }
+                        else if (dataContract is ClassDataContract)
+                        {
+                            Read(xmlReader);
+                            dataNode = ReadUnknownClassData(xmlReader, dataContractName, dataContractNamespace);
+                        }
+                        else if (dataContract is CollectionDataContract)
+                        {
+                            Read(xmlReader);
+                            dataNode = ReadUnknownCollectionData(xmlReader, dataContractName, dataContractNamespace);
+                        }
+                    }
+                }
+            }
+            return dataNode;
+        }
+
+        protected virtual void StartReadExtensionDataValue(XmlReaderDelegator xmlReader)
+        {
+        }
+
+        private IDataNode ReadExtensionDataValue(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            StartReadExtensionDataValue(xmlReader);
+
+            if (attributes.UnrecognizedAttributesFound)
+                return ReadUnknownXmlData(xmlReader, dataContractName, dataContractNamespace);
+
+            IDictionary<string, string> namespacesInScope = xmlReader.GetNamespacesInScope(XmlNamespaceScope.ExcludeXml);
+            Read(xmlReader);
+            xmlReader.MoveToContent();
+
+            switch (xmlReader.NodeType)
+            {
+                case XmlNodeType.Text:
+                    return ReadPrimitiveExtensionDataValue(xmlReader, dataContractName, dataContractNamespace);
+                case XmlNodeType.Element:
+                    if (xmlReader.NamespaceURI.StartsWith(Globals.DataContractXsdBaseNamespace, StringComparison.Ordinal))
+                        return ReadUnknownClassData(xmlReader, dataContractName, dataContractNamespace);
+                    else
+                        return ReadAndResolveUnknownXmlData(xmlReader, namespacesInScope, dataContractName, dataContractNamespace);
+
+                case XmlNodeType.EndElement:
+                    {
+                        // NOTE: cannot distinguish between empty class or IXmlSerializable and typeof(object) 
+                        IDataNode objNode = ReadUnknownPrimitiveData(xmlReader, Globals.TypeOfObject, dataContractName, dataContractNamespace);
+                        xmlReader.ReadEndElement();
+                        objNode.IsFinalValue = false;
+                        return objNode;
+                    }
+                default:
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+            }
+        }
+
+        protected virtual IDataNode ReadPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            Type valueType = xmlReader.ValueType;
+            if (valueType == Globals.TypeOfString)
+            {
+                // NOTE: cannot distinguish other primitives from string (default XmlReader ValueType)
+                IDataNode stringNode = new DataNode<object>(xmlReader.ReadContentAsString());
+                InitializeExtensionDataNode(stringNode, dataContractName, dataContractNamespace);
+                stringNode.IsFinalValue = false;
+                xmlReader.ReadEndElement();
+                return stringNode;
+            }
+
+            IDataNode objNode = ReadUnknownPrimitiveData(xmlReader, valueType, dataContractName, dataContractNamespace);
+            xmlReader.ReadEndElement();
+            return objNode;
+        }
+
+        protected void InitializeExtensionDataNode(IDataNode dataNode, string dataContractName, string dataContractNamespace)
+        {
+            dataNode.DataContractName = dataContractName;
+            dataNode.DataContractNamespace = dataContractNamespace;
+            dataNode.ClrAssemblyName = attributes.ClrAssembly;
+            dataNode.ClrTypeName = attributes.ClrType;
+            AddNewObject(dataNode);
+            dataNode.Id = attributes.Id;
+        }
+
+        private IDataNode ReadUnknownPrimitiveData(XmlReaderDelegator xmlReader, Type type, string dataContractName, string dataContractNamespace)
+        {
+            IDataNode dataNode = xmlReader.ReadExtensionData(type);
+            InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+            return dataNode;
+        }
+
+        private ClassDataNode ReadUnknownClassData(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            var dataNode = new ClassDataNode();
+            InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+
+            int memberIndex = 0;
+            XmlNodeType nodeType;
+            while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
+            {
+                if (nodeType != XmlNodeType.Element)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+
+                if (dataNode.Members == null)
+                    dataNode.Members = new List<ExtensionDataMember>();
+                dataNode.Members.Add(ReadExtensionDataMember(xmlReader, memberIndex++));
+            }
+            xmlReader.ReadEndElement();
+            return dataNode;
+        }
+
+        private CollectionDataNode ReadUnknownCollectionData(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            var dataNode = new CollectionDataNode();
+            InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+
+            int arraySize = attributes.ArraySZSize;
+            XmlNodeType nodeType;
+            while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
+            {
+                if (nodeType != XmlNodeType.Element)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+
+                if (dataNode.ItemName == null)
+                {
+                    dataNode.ItemName = xmlReader.LocalName;
+                    dataNode.ItemNamespace = xmlReader.NamespaceURI;
+                }
+                if (xmlReader.IsStartElement(dataNode.ItemName, dataNode.ItemNamespace))
+                {
+                    if (dataNode.Items == null)
+                        dataNode.Items = new List<IDataNode>();
+                    dataNode.Items.Add(ReadExtensionDataValue(xmlReader));
+                }
+                else
+                    SkipUnknownElement(xmlReader);
+            }
+            xmlReader.ReadEndElement();
+
+            if (arraySize != -1)
+            {
+                dataNode.Size = arraySize;
+                if (dataNode.Items == null)
+                {
+                    if (dataNode.Size > 0)
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArraySizeAttributeIncorrect, arraySize, 0)));
+                }
+                else if (dataNode.Size != dataNode.Items.Count)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArraySizeAttributeIncorrect, arraySize, dataNode.Items.Count)));
+            }
+            else
+            {
+                if (dataNode.Items != null)
+                {
+                    dataNode.Size = dataNode.Items.Count;
+                }
+                else
+                {
+                    dataNode.Size = 0;
+                }
+            }
+
+            return dataNode;
+        }
+
+        private ISerializableDataNode ReadUnknownISerializableData(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            var dataNode = new ISerializableDataNode();
+            InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+
+            dataNode.FactoryTypeName = attributes.FactoryTypeName;
+            dataNode.FactoryTypeNamespace = attributes.FactoryTypeNamespace;
+
+            XmlNodeType nodeType;
+            while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
+            {
+                if (nodeType != XmlNodeType.Element)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+
+                if (xmlReader.NamespaceURI.Length != 0)
+                {
+                    SkipUnknownElement(xmlReader);
+                    continue;
+                }
+
+                var member = new ISerializableDataMember();
+                member.Name = xmlReader.LocalName;
+                member.Value = ReadExtensionDataValue(xmlReader);
+                if (dataNode.Members == null)
+                    dataNode.Members = new List<ISerializableDataMember>();
+                dataNode.Members.Add(member);
+            }
+            xmlReader.ReadEndElement();
+            return dataNode;
+        }
+
+        private IDataNode ReadUnknownXmlData(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            XmlDataNode dataNode = new XmlDataNode();
+            InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+            dataNode.OwnerDocument = Document;
+
+            if (xmlReader.NodeType == XmlNodeType.EndElement)
+                return dataNode;
+
+            IList<XmlAttribute> xmlAttributes = null;
+            IList<XmlNode> xmlChildNodes = null;
+
+            XmlNodeType nodeType = xmlReader.MoveToContent();
+            if (nodeType != XmlNodeType.Text)
+            {
+                while (xmlReader.MoveToNextAttribute())
+                {
+                    string ns = xmlReader.NamespaceURI;
+                    if (ns != Globals.SerializationNamespace && ns != Globals.SchemaInstanceNamespace)
+                    {
+                        if (xmlAttributes == null)
+                            xmlAttributes = new List<XmlAttribute>();
+                        xmlAttributes.Add((XmlAttribute)Document.ReadNode(xmlReader.UnderlyingReader));
+                    }
+                }
+                Read(xmlReader);
+            }
+
+            while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
+            {
+                if (xmlReader.EOF)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnexpectedEndOfFile)));
+
+                if (xmlChildNodes == null)
+                    xmlChildNodes = new List<XmlNode>();
+                xmlChildNodes.Add(Document.ReadNode(xmlReader.UnderlyingReader));
+            }
+            xmlReader.ReadEndElement();
+
+            dataNode.XmlAttributes = xmlAttributes;
+            dataNode.XmlChildNodes = xmlChildNodes;
+            return dataNode;
+        }
+
+        // Pattern-recognition logic: the method reads XML elements into DOM. To recognize as an array, it requires that 
+        // all items have the same name and namespace. To recognize as an ISerializable type, it requires that all
+        // items be unqualified. If the XML only contains elements (no attributes or other nodes) is recognized as a 
+        // class/class hierarchy. Otherwise it is deserialized as XML.
+        private IDataNode ReadAndResolveUnknownXmlData(XmlReaderDelegator xmlReader, IDictionary<string, string> namespaces,
+            string dataContractName, string dataContractNamespace)
+        {
+            bool couldBeISerializableData = true;
+            bool couldBeCollectionData = true;
+            bool couldBeClassData = true;
+            string elementNs = null, elementName = null;
+            var xmlChildNodes = new List<XmlNode>();
+            IList<XmlAttribute> xmlAttributes = null;
+            if (namespaces != null)
+            {
+                xmlAttributes = new List<XmlAttribute>();
+                foreach (KeyValuePair<string, string> prefixNsPair in namespaces)
+                {
+                    xmlAttributes.Add(AddNamespaceDeclaration(prefixNsPair.Key, prefixNsPair.Value));
+                }
+            }
+
+            XmlNodeType nodeType;
+            while ((nodeType = xmlReader.NodeType) != XmlNodeType.EndElement)
+            {
+                if (nodeType == XmlNodeType.Element)
+                {
+                    string ns = xmlReader.NamespaceURI;
+                    string name = xmlReader.LocalName;
+                    if (couldBeISerializableData)
+                        couldBeISerializableData = (ns.Length == 0);
+                    if (couldBeCollectionData)
+                    {
+                        if (elementName == null)
+                        {
+                            elementName = name;
+                            elementNs = ns;
+                        }
+                        else
+                            couldBeCollectionData = (String.CompareOrdinal(elementName, name) == 0) &&
+                                (String.CompareOrdinal(elementNs, ns) == 0);
+                    }
+                }
+                else if (xmlReader.EOF)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnexpectedEndOfFile)));
+                else if (IsContentNode(xmlReader.NodeType))
+                    couldBeClassData = couldBeISerializableData = couldBeCollectionData = false;
+
+                if (_attributesInXmlData == null) _attributesInXmlData = new Attributes();
+                _attributesInXmlData.Read(xmlReader);
+
+                XmlNode childNode = Document.ReadNode(xmlReader.UnderlyingReader);
+                xmlChildNodes.Add(childNode);
+
+                if (namespaces == null)
+                {
+                    if (_attributesInXmlData.XsiTypeName != null)
+                        childNode.Attributes.Append(AddNamespaceDeclaration(_attributesInXmlData.XsiTypePrefix, _attributesInXmlData.XsiTypeNamespace));
+                    if (_attributesInXmlData.FactoryTypeName != null)
+                        childNode.Attributes.Append(AddNamespaceDeclaration(_attributesInXmlData.FactoryTypePrefix, _attributesInXmlData.FactoryTypeNamespace));
+                }
+            }
+            xmlReader.ReadEndElement();
+
+            if (elementName != null && couldBeCollectionData)
+                return ReadUnknownCollectionData(CreateReaderOverChildNodes(xmlAttributes, xmlChildNodes), dataContractName, dataContractNamespace);
+            else if (couldBeISerializableData)
+                return ReadUnknownISerializableData(CreateReaderOverChildNodes(xmlAttributes, xmlChildNodes), dataContractName, dataContractNamespace);
+            else if (couldBeClassData)
+                return ReadUnknownClassData(CreateReaderOverChildNodes(xmlAttributes, xmlChildNodes), dataContractName, dataContractNamespace);
+            else
+            {
+                XmlDataNode dataNode = new XmlDataNode();
+                InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
+                dataNode.OwnerDocument = Document;
+                dataNode.XmlChildNodes = xmlChildNodes;
+                dataNode.XmlAttributes = xmlAttributes;
+                return dataNode;
+            }
+        }
+
+        private bool IsContentNode(XmlNodeType nodeType)
+        {
+            switch (nodeType)
+            {
+                case XmlNodeType.Whitespace:
+                case XmlNodeType.SignificantWhitespace:
+                case XmlNodeType.Comment:
+                case XmlNodeType.ProcessingInstruction:
+                case XmlNodeType.DocumentType:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        internal XmlReaderDelegator CreateReaderOverChildNodes(IList<XmlAttribute> xmlAttributes, IList<XmlNode> xmlChildNodes)
+        {
+            XmlNode wrapperElement = CreateWrapperXmlElement(Document, xmlAttributes, xmlChildNodes, null, null, null);
+            XmlReaderDelegator nodeReader = CreateReaderDelegatorForReader(new XmlNodeReader(wrapperElement));
+            nodeReader.MoveToContent();
+            Read(nodeReader);
+            return nodeReader;
+        }
+
+        internal static XmlNode CreateWrapperXmlElement(XmlDocument document, IList<XmlAttribute> xmlAttributes, IList<XmlNode> xmlChildNodes, string prefix, string localName, string ns)
+        {
+            localName = localName ?? "wrapper";
+            ns = ns ?? string.Empty;
+            XmlNode wrapperElement = document.CreateElement(prefix, localName, ns);
+            if (xmlAttributes != null)
+            {
+                for (int i = 0; i < xmlAttributes.Count; i++)
+                {
+                    wrapperElement.Attributes.Append((XmlAttribute) xmlAttributes[i]);
+                }
+            }
+            if (xmlChildNodes != null)
+            {
+                for (int i = 0; i < xmlChildNodes.Count; i++)
+                {
+                    wrapperElement.AppendChild(xmlChildNodes[i]);
+                }
+            }
+            return wrapperElement;
+        }
+
+        private XmlAttribute AddNamespaceDeclaration(string prefix, string ns)
+        {
+            XmlAttribute attribute = (prefix == null || prefix.Length == 0) ?
+                Document.CreateAttribute(null, Globals.XmlnsPrefix, Globals.XmlnsNamespace) :
+                Document.CreateAttribute(Globals.XmlnsPrefix, prefix, Globals.XmlnsNamespace);
+            attribute.Value = ns;
+            return attribute;
+        }
 
 #if USE_REFEMIT
         public static Exception CreateUnexpectedStateException(XmlNodeType expectedState, XmlReaderDelegator xmlReader)

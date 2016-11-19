@@ -147,6 +147,8 @@
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="AesManagedTests.cs" />
     <Compile Include="AsymmetricSignatureFormatterTests.cs" />
+    <Compile Include="BlockSizeValueTests.cs" />
+    <Compile Include="CryptoConfigTests.cs" />
     <Compile Include="DefaultDSAProvider.cs" />
     <Compile Include="DESProvider.cs" />
     <Compile Include="DESTests.cs" />
@@ -209,6 +211,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSASignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSASignatureFormatter.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\Interop\Unix\" />
