@@ -8,6 +8,7 @@ using Xunit;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace System.CodeDom.Tests
 {
@@ -91,7 +92,7 @@ namespace System.CodeDom.Tests
         public static async Task Writes_ProducesExpectedOutput(string newline)
         {
             var sb = new StringBuilder();
-            var sw = new StringWriter(sb);
+            var sw = new StringWriter(sb, CultureInfo.InvariantCulture);
             var itw = new IndentedTextWriter(sw, "t");
             itw.Indent = 1;
             itw.NewLine = newline;
