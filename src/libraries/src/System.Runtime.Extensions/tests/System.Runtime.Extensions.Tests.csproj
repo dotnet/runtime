@@ -119,7 +119,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
     <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
     <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
