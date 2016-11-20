@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
+using System.Dynamic.Utils;
 using System.Reflection;
 
 namespace System.Linq.Expressions
@@ -15,6 +16,7 @@ namespace System.Linq.Expressions
 
             public BinaryExpressionProxy(BinaryExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -36,6 +38,7 @@ namespace System.Linq.Expressions
 
             public BlockExpressionProxy(BlockExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -54,6 +57,7 @@ namespace System.Linq.Expressions
 
             public CatchBlockProxy(CatchBlock node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -69,6 +73,7 @@ namespace System.Linq.Expressions
 
             public ConditionalExpressionProxy(ConditionalExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -87,6 +92,7 @@ namespace System.Linq.Expressions
 
             public ConstantExpressionProxy(ConstantExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -103,6 +109,7 @@ namespace System.Linq.Expressions
 
             public DebugInfoExpressionProxy(DebugInfoExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -124,6 +131,7 @@ namespace System.Linq.Expressions
 
             public DefaultExpressionProxy(DefaultExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -139,6 +147,7 @@ namespace System.Linq.Expressions
 
             public GotoExpressionProxy(GotoExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -157,6 +166,7 @@ namespace System.Linq.Expressions
 
             public IndexExpressionProxy(IndexExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -175,6 +185,7 @@ namespace System.Linq.Expressions
 
             public InvocationExpressionProxy(InvocationExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -192,6 +203,7 @@ namespace System.Linq.Expressions
 
             public LabelExpressionProxy(LabelExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -209,6 +221,7 @@ namespace System.Linq.Expressions
 
             public LambdaExpressionProxy(LambdaExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -229,6 +242,7 @@ namespace System.Linq.Expressions
 
             public ListInitExpressionProxy(ListInitExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -246,6 +260,7 @@ namespace System.Linq.Expressions
 
             public LoopExpressionProxy(LoopExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -264,6 +279,7 @@ namespace System.Linq.Expressions
 
             public MemberExpressionProxy(MemberExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -281,6 +297,7 @@ namespace System.Linq.Expressions
 
             public MemberInitExpressionProxy(MemberInitExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -298,6 +315,7 @@ namespace System.Linq.Expressions
 
             public MethodCallExpressionProxy(MethodCallExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -316,6 +334,7 @@ namespace System.Linq.Expressions
 
             public NewArrayExpressionProxy(NewArrayExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -332,6 +351,7 @@ namespace System.Linq.Expressions
 
             public NewExpressionProxy(NewExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -350,6 +370,7 @@ namespace System.Linq.Expressions
 
             public ParameterExpressionProxy(ParameterExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -367,6 +388,7 @@ namespace System.Linq.Expressions
 
             public RuntimeVariablesExpressionProxy(RuntimeVariablesExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -383,6 +405,7 @@ namespace System.Linq.Expressions
 
             public SwitchCaseProxy(SwitchCase node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -396,6 +419,7 @@ namespace System.Linq.Expressions
 
             public SwitchExpressionProxy(SwitchExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -415,6 +439,7 @@ namespace System.Linq.Expressions
 
             public TryExpressionProxy(TryExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -434,6 +459,7 @@ namespace System.Linq.Expressions
 
             public TypeBinaryExpressionProxy(TypeBinaryExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
@@ -451,6 +477,7 @@ namespace System.Linq.Expressions
 
             public UnaryExpressionProxy(UnaryExpression node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 

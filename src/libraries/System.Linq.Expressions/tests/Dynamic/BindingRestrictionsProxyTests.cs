@@ -170,5 +170,13 @@ namespace System.Dynamic.Tests
             Assert.Equal(3, notAndAlso.Count);
             Assert.True(notAndAlso.All(ex => exps.Contains(ex)));
         }
+
+        [Fact]
+        public void ThrowOnNullToCtor()
+        {
+            var tie = Assert.Throws<TargetInvocationException>(() => BindingRestrictionsProxyCtor.Invoke(new object[] {null}));
+            ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
+            Assert.Equal("node", ane.ParamName);
+        }
     }
 }
