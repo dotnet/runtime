@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Compiler
                 ParameterExpression p1 = Expression.Variable(b.Left.Type.GetNonNullableType(), name: null);
                 ParameterExpression p2 = Expression.Variable(b.Right.Type.GetNonNullableType(), name: null);
                 MethodCallExpression mc = Expression.Call(null, b.Method, p1, p2);
-                Type resultType = null;
+                Type resultType;
                 if (b.IsLiftedToNull)
                 {
                     resultType = mc.Type.GetNullableType();

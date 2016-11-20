@@ -710,7 +710,7 @@ namespace System.Linq.Expressions.Interpreter
     /// </summary>
     internal sealed class LeaveExceptionHandlerInstruction : IndexedBranchInstruction
     {
-        private static LeaveExceptionHandlerInstruction[] s_cache = new LeaveExceptionHandlerInstruction[2 * CacheSize];
+        private static readonly LeaveExceptionHandlerInstruction[] s_cache = new LeaveExceptionHandlerInstruction[2 * CacheSize];
 
         private readonly bool _hasValue;
 

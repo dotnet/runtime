@@ -78,10 +78,7 @@ namespace System.Linq.Expressions.Compiler
             Indexes = new ReadOnlyDictionary<Expression, int>(indexes);
         }
 
-        internal ParameterExpression ParentVariable
-        {
-            get { return Parent != null ? Parent.SelfVariable : null; }
-        }
+        internal ParameterExpression ParentVariable => Parent?.SelfVariable;
 
         internal static object[] GetParent(object[] locals)
         {

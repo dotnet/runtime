@@ -203,9 +203,7 @@ namespace System.Linq.Expressions
 
         private Flow GetFlow(Flow flow)
         {
-            Flow last;
-
-            last = CheckBreak(_flow);
+            Flow last = CheckBreak(_flow);
             flow = CheckBreak(flow);
 
             // Get the biggest flow that is requested None < Space < NewLine

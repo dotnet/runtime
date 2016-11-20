@@ -181,10 +181,7 @@ namespace System.Linq.Expressions.Compiler
             /// <remarks>
             /// This is a performance optimization to lower the overall number of temporaries needed.
             /// </remarks>
-            internal int Mark()
-            {
-                return _usedTemps != null ? _usedTemps.Count : 0;
-            }
+            internal int Mark() => _usedTemps?.Count ?? 0;
 
             /// <summary>
             /// Frees temporaries created since the last marking using <see cref="Mark"/>.

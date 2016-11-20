@@ -158,11 +158,8 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(fieldName, nameof(fieldName));
 
             // bind to public names first
-            FieldInfo fi = expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (fi == null)
-            {
-                fi = expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            }
+            FieldInfo fi = expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
+                           ?? expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (fi == null)
             {
                 throw Error.InstanceFieldNotDefinedForType(fieldName, expression.Type);
@@ -184,11 +181,8 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
 
             // bind to public names first
-            FieldInfo fi = type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (fi == null)
-            {
-                fi = type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            }
+            FieldInfo fi = type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
+                           ?? type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
 
             if (fi == null)
             {
@@ -212,11 +206,8 @@ namespace System.Linq.Expressions
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
             // bind to public names first
-            PropertyInfo pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (pi == null)
-            {
-                pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            }
+            PropertyInfo pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
+                              ?? expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (pi == null)
             {
                 throw Error.InstancePropertyNotDefinedForType(propertyName, expression.Type, nameof(propertyName));
@@ -236,11 +227,8 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
             // bind to public names first
-            PropertyInfo pi = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (pi == null)
-            {
-                pi = type.GetProperty(propertyName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            }
+            PropertyInfo pi = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
+                              ?? type.GetProperty(propertyName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (pi == null)
             {
                 throw Error.PropertyNotDefinedForType(propertyName, type, nameof(propertyName));
