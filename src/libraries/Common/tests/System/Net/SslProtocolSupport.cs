@@ -29,7 +29,7 @@ namespace System.Net.Test.Common
             {
                 foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
                 {
-                    if ((protocol & SupportedSslProtocols) != 0)
+                    if (protocol != 0 && (protocol & SupportedSslProtocols) == protocol)
                     {
                         yield return new object[] { protocol };
                     }
@@ -48,7 +48,7 @@ namespace System.Net.Test.Common
             {
                 foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
                 {
-                    if ((protocol & UnsupportedSslProtocols) != 0)
+                    if (protocol != 0 && (protocol & UnsupportedSslProtocols) == protocol)
                     {
                         yield return new object[] { protocol };
                     }
