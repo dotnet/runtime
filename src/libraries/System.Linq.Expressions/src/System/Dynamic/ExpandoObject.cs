@@ -789,7 +789,7 @@ namespace System.Dynamic
 
                 result = new DynamicMetaObject(
                     Expression.Block(
-                        new[] { value },
+                        new TrueReadOnlyCollection<ParameterExpression>(value),
                         Expression.Condition(
                             tryGetValue,
                             result.Expression,

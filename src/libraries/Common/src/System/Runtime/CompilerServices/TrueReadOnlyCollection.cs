@@ -12,7 +12,7 @@ namespace System.Runtime.CompilerServices
         /// Creates instance of TrueReadOnlyCollection, wrapping passed in array.
         /// !!! DOES NOT COPY THE ARRAY !!!
         /// </summary>
-        public TrueReadOnlyCollection(T[] list)
+        public TrueReadOnlyCollection(params T[] list)
             : base(list)
         {
         }
