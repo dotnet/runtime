@@ -68,18 +68,18 @@ namespace System.Threading
     {
         private static readonly ExecutionContext Default = new ExecutionContext();
 
-        private readonly Dictionary<IAsyncLocal, object> m_localValues;
+        private readonly IAsyncLocalValueMap m_localValues;
         private readonly IAsyncLocal[] m_localChangeNotifications;
         private readonly bool m_isFlowSuppressed;
 
         private ExecutionContext()
         {
-            m_localValues = new Dictionary<IAsyncLocal, object>();
+            m_localValues = AsyncLocalValueMap.Empty;
             m_localChangeNotifications = Array.Empty<IAsyncLocal>();
         }
 
         private ExecutionContext(
-            Dictionary<IAsyncLocal, object> localValues,
+            IAsyncLocalValueMap localValues,
             IAsyncLocal[] localChangeNotifications,
             bool isFlowSuppressed)
         {
@@ -290,16 +290,7 @@ namespace System.Threading
             if (previousValue == newValue)
                 return;
 
-            //
-            // Allocate a new Dictionary containing a copy of the old values, plus the new value.  We have to do this manually to 
-            // minimize allocations of IEnumerators, etc.
-            //
-            Dictionary<IAsyncLocal, object> newValues = new Dictionary<IAsyncLocal, object>(current.m_localValues.Count + (hadPreviousValue ? 0 : 1));
-
-            foreach (KeyValuePair<IAsyncLocal, object> pair in current.m_localValues)
-                newValues.Add(pair.Key, pair.Value);
-
-            newValues[local] = newValue;
+            IAsyncLocalValueMap newValues = current.m_localValues.Set(local, newValue);
 
             //
             // Either copy the change notification array, or create a new one, depending on whether we need to add a new item.
@@ -694,7 +685,7 @@ namespace System.Threading
         }
         private Flags _flags;
 
-        private Dictionary<IAsyncLocal, object> _localValues;
+        private IAsyncLocalValueMap _localValues;
         private List<IAsyncLocal> _localChangeNotifications;
 
         internal bool isNewCapture 
@@ -859,12 +850,9 @@ namespace System.Threading
             if (previousValue == newValue)
                 return;
 
-            if (current._localValues == null)
-                current._localValues = new Dictionary<IAsyncLocal, object>();
-            else
-                current._localValues = new Dictionary<IAsyncLocal, object>(current._localValues);
-
-            current._localValues[local] = newValue;
+            current._localValues = current._localValues == null ?
+                AsyncLocalValueMap.Create(local, newValue) :
+                current._localValues.Set(local, newValue);
 
             if (needChangeNotifications)
             {
@@ -1427,7 +1415,7 @@ namespace System.Threading
 #endif // #if FEATURE_REMOTING
             }
 
-            Dictionary<IAsyncLocal, object> localValues = null;
+            IAsyncLocalValueMap localValues = null;
             List<IAsyncLocal> localChangeNotifications = null;
             if (!ecCurrent.IsNull)
             {
