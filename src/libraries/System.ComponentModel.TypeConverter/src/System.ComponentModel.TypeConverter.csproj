@@ -241,6 +241,7 @@
     <Compile Include="System\ComponentModel\Design\Serialization\ResolveNameEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
+    <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
 
     <!-- Random pieces of code required to build  -->
     <Compile Include="System\misc.cs" />
