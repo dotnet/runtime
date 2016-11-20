@@ -2057,7 +2057,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		g_free (name);
 	}
 
-	etype = cmethod->klass->generic_class->context.class_inst->type_argv [0];
+	etype = mono_class_get_context (cmethod->klass)->class_inst->type_argv [0];
 	size = mono_class_value_size (mono_class_from_mono_type (etype), NULL);
 	g_assert (size);
 	len = 16 / size;
