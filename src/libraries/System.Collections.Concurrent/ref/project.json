@@ -4,6 +4,7 @@
     "System.Threading.Tasks": "4.0.11"
   },
   "frameworks": {
-    "netstandard1.3": {}
+    "netstandard1.3": {},
+    "netcoreapp1.1": {}
   }
 }
