@@ -164,7 +164,7 @@ namespace System.Linq.Expressions
             // temp
             ParameterExpression temp = Parameter(Operand.Type, name: null);
             return Block(
-                new[] { temp },
+                new  TrueReadOnlyCollection<ParameterExpression>(temp),
                 Assign(temp, Operand),
                 Assign(Operand, FunctionalOp(temp)),
                 temp
@@ -192,7 +192,7 @@ namespace System.Linq.Expressions
                     // temp1 = value
                     // temp1.member = op(temp1.member)
                     return Block(
-                        new[] { temp1 },
+                        new TrueReadOnlyCollection<ParameterExpression>(temp1),
                         initTemp1,
                         Assign(member, FunctionalOp(member))
                     );
@@ -206,7 +206,7 @@ namespace System.Linq.Expressions
                 // temp2
                 ParameterExpression temp2 = Parameter(member.Type, name: null);
                 return Block(
-                    new[] { temp1, temp2 },
+                    new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
                     initTemp1,
                     Assign(temp2, member),
                     Assign(member, FunctionalOp(temp2)),

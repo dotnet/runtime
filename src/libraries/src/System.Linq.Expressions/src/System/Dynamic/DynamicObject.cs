@@ -587,7 +587,7 @@ namespace System.Dynamic
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
-                        new[] { result, callArgs },
+                        new TrueReadOnlyCollection<ParameterExpression>(result, callArgs),
                         methodName != nameof(DynamicObject.TryBinaryOperation) ? Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)) : Expression.Assign(callArgs, callArgsValue[0]),
                         Expression.Condition(
                             Expression.Call(
@@ -645,7 +645,7 @@ namespace System.Dynamic
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
-                        new[] { result, callArgs },
+                        new TrueReadOnlyCollection<ParameterExpression>(result, callArgs),
                         Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
                         Expression.Condition(
                             Expression.Call(
@@ -706,7 +706,7 @@ namespace System.Dynamic
                 //
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
-                        new[] { callArgs },
+                        new TrueReadOnlyCollection<ParameterExpression>(callArgs),
                         Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
                         Expression.Condition(
                             Expression.Call(
