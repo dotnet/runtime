@@ -1526,6 +1526,11 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
 //     None.
 void CodeGen::genProduceReg(GenTree* tree)
 {
+#ifdef DEBUG
+    assert((tree->gtDebugFlags & GTF_DEBUG_NODE_CG_PRODUCED) == 0);
+    tree->gtDebugFlags |= GTF_DEBUG_NODE_CG_PRODUCED;
+#endif
+
     if (tree->gtFlags & GTF_SPILL)
     {
         // Code for GT_COPY node gets generated as part of consuming regs by its parent.
