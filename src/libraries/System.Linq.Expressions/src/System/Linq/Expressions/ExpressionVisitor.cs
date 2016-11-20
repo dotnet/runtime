@@ -32,14 +32,7 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        public virtual Expression Visit(Expression node)
-        {
-            if (node != null)
-            {
-                return node.Accept(this);
-            }
-            return null;
-        }
+        public virtual Expression Visit(Expression node) => node?.Accept(this);
 
         /// <summary>
         /// Dispatches the list of expressions to one of the more specialized visit methods in this class.

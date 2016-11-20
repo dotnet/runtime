@@ -670,7 +670,7 @@ namespace System.Linq.Expressions
         {
             Out("catch (");
             Out(node.Test.Name);
-            if (node.Variable != null && !string.IsNullOrEmpty(node.Variable.Name))
+            if (!string.IsNullOrEmpty(node.Variable?.Name))
             {
                 Out(' ');
                 Out(node.Variable.Name);

@@ -149,15 +149,14 @@ namespace System.Linq.Expressions.Compiler
         private sealed class LocalBoxStorage : Storage
         {
             private readonly LocalBuilder _boxLocal;
-            private readonly Type _boxType;
             private readonly FieldInfo _boxValueField;
 
             internal LocalBoxStorage(LambdaCompiler compiler, ParameterExpression variable)
                 : base(compiler, variable)
             {
-                _boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
-                _boxValueField = _boxType.GetField("Value");
-                _boxLocal = compiler.GetNamedLocal(_boxType, variable);
+                Type boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
+                _boxValueField = boxType.GetField("Value");
+                _boxLocal = compiler.GetNamedLocal(boxType, variable);
             }
 
             internal override void EmitLoad()

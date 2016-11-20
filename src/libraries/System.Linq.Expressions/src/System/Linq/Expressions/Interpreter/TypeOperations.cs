@@ -197,14 +197,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object dflt = frame.Pop();
                 object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(dflt);
-                }
-                else
-                {
-                    frame.Push(obj);
-                }
+                frame.Push(obj ?? dflt);
                 return +1;
             }
         }

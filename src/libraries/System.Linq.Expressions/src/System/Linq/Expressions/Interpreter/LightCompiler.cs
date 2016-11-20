@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private readonly StackGuard _guard = new StackGuard();
 
-        private static LocalDefinition[] s_emptyLocals = Array.Empty<LocalDefinition>();
+        private static readonly LocalDefinition[] s_emptyLocals = Array.Empty<LocalDefinition>();
 
         public LightCompiler()
         {
@@ -2037,7 +2037,7 @@ namespace System.Linq.Expressions.Interpreter
                     enterTryInstr.SetTryHandler(
                         new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex,
                             startOfFinally.TargetIndex, _instructions.Count,
-                            exHandlers != null ? exHandlers.ToArray() : null));
+                            exHandlers?.ToArray()));
                     PopLabelBlock(LabelScopeKind.Finally);
                 }
                 else

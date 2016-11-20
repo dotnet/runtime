@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Interpreter
         internal InterpretedFrame _parent;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        private int[] _continuations;
+        private readonly int[] _continuations;
         private int _continuationIndex;
         private int _pendingContinuation;
         private object _pendingValue;
