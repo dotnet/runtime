@@ -129,6 +129,9 @@
   <data name="Arg_InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
   </data>
+  <data name="Arg_InvalidType" xml:space="preserve">
+    <value>Invalid type.</value>
+  </data>  
   <data name="Arg_OutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
