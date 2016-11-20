@@ -1768,6 +1768,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	int instance_size = base_instance_size;
 	int class_size, min_align;
 	int *field_offsets;
+	gboolean *fields_has_references;
 
 	/*
 	 * We want to avoid doing complicated work inside locks, so we compute all the required
@@ -1897,6 +1898,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	 * Compute field layout and total size (not considering static fields)
 	 */
 	field_offsets = g_new0 (int, top);
+	fields_has_references = g_new0 (gboolean, top);
 	int first_field_idx = mono_class_has_static_metadata (klass) ? mono_class_get_first_field_idx (klass) : 0;
 	switch (layout) {
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
@@ -1934,7 +1936,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				ftype = mono_type_get_underlying_type (field->type);
 				ftype = mono_type_get_basic_type_from_generic (ftype);
 				if (gc_aware_layout) {
-					if (type_has_references (klass, ftype)) {
+					fields_has_references [i] = type_has_references (klass, ftype);
+					if (fields_has_references [i]) {
 						if (pass == 1)
 							continue;
 					} else {
@@ -2098,14 +2101,14 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		/* Might be already set using cached info */
 		if (klass->instance_size != instance_size) {
 			/* Emit info to help debugging */
-			g_print ("%s %s\n", klass->name_space, klass->name);
+			g_print ("%s\n", mono_class_full_name (klass));
 			g_print ("%d %d %d %d\n", klass->instance_size, instance_size, klass->blittable, blittable);
 			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->packing_size, packing_size);
 			g_print ("%d %d\n", klass->min_align, min_align);
 			for (i = 0; i < top; ++i) {
 				field = &klass->fields [i];
 				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-					printf ("  %s %d %d\n", klass->fields [i].name, klass->fields [i].offset, field_offsets [i]);
+					printf ("  %s %d %d %d\n", klass->fields [i].name, klass->fields [i].offset, field_offsets [i], fields_has_references [i]);
 			}
 		}
 		g_assert (klass->instance_size == instance_size);
@@ -2198,6 +2201,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	mono_loader_unlock ();
 
 	g_free (field_offsets);
+	g_free (fields_has_references);
 }
 
 static MonoMethod*
