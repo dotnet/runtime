@@ -155,6 +155,53 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, MemberData(nameof(OnePerType))]
+        public void ThrowOnNullToCtor(object sourceObject)
+        {
+            var type = sourceObject.GetType();
+            var viewType = GetDebugViewType(type);
+            var ctor = viewType.GetConstructors().Single();
+            var tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] {null}));
+            ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
+            Assert.Equal(ctor.GetParameters()[0].Name, ane.ParamName);
+        }
+
+        private static IEnumerable<object[]> OnePerType()
+        {
+            HashSet<Type> seenTypes = new HashSet<Type>();
+            foreach (var candidate in
+                BinaryExpressionProxy()
+                    .Concat(BlockExpressionProxy())
+                    .Concat(CatchBlockProxy())
+                    .Concat(ConditionalExpressionProxy())
+                    .Concat(ConstantExpressionProxy())
+                    .Concat(DebugInfoExpressionProxy())
+                    .Concat(DefaultExpressionProxy())
+                    .Concat(GotoExpressionProxy())
+                    .Concat(IndexExpressionProxy())
+                    .Concat(InvocationExpressionProxy())
+                    .Concat(LabelExpressionProxy())
+                    .Concat(LambdaExpressionProxy())
+                    .Concat(ListInitExpressionProxy())
+                    .Concat(LoopExpressionProxy())
+                    .Concat(MemberExpressionProxy())
+                    .Concat(MemberInitExpressionProxy())
+                    .Concat(MethodCallExpressionProxy())
+                    .Concat(NewArrayExpressionProxy())
+                    .Concat(NewExpressionProxy())
+                    .Concat(ParameterExpressionProxy())
+                    .Concat(RuntimeVariablesExpressionProxy())
+                    .Concat(SwitchCaseExpressionProxy())
+                    .Concat(SwitchExpressionProxy())
+                    .Concat(TryExpressionProxy())
+                    .Concat(TypeBinaryExpressionProxy())
+                    .Concat(UnaryExpressionProxy()))
+            {
+                if (seenTypes.Add(candidate[0].GetType()))
+                    yield return candidate;
+            }
+        }
+
         private static IEnumerable<object[]> BinaryExpressionProxy()
         {
             yield return new object[] {Expression.Assign(Expression.Variable(typeof(int)), Expression.Constant(-1))};
