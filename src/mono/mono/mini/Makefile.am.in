@@ -484,12 +484,13 @@ test_sources = 			\
 	generics.cs		\
 	generics-variant-types.il\
 	basic-simd.cs \
+	basic-vectors.cs \
 	aot-tests.cs \
 	gc-test.cs \
 	gshared.cs
 
 
-regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
+regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe basic-vectors.exe
 
 if INSTALL_MOBILE_STATIC
 regtests= \
@@ -621,6 +622,9 @@ CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649
 
 basic-simd.exe: basic-simd.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll
+
+basic-vectors.exe: basic-vectors.cs TestDriver.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/System.Numerics.dll
 
 nacl.exe: nacl.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll

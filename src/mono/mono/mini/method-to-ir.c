@@ -5441,7 +5441,7 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoCla
 	return TRUE;
 }
 
-static MonoInst*
+MonoInst*
 mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck)
 {
 	MonoInst *ins;
@@ -6809,6 +6809,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 * all inputs:
 		 * http://everything2.com/?node_id=1051618
 		 */
+	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality")) {
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		MONO_INST_NEW (cfg, ins, OP_PCEQ);
+		ins->dreg = alloc_preg (cfg);
+		ins->type = STACK_I4;
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	} else if (((!strcmp (cmethod->klass->image->assembly->aname.name, "MonoMac") ||
 	            !strcmp (cmethod->klass->image->assembly->aname.name, "monotouch")) &&
 				!strcmp (cmethod->klass->name_space, "XamCore.ObjCRuntime") &&
@@ -10028,7 +10035,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Common call */
-			INLINE_FAILURE ("call");
+			if (!(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+				INLINE_FAILURE ("call");
 			ins = mono_emit_method_call_full (cfg, cmethod, fsig, tail_call, sp, virtual_ ? sp [0] : NULL,
 											  imt_arg, vtable_arg);
 
@@ -11501,6 +11509,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoInst *load;
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+
+					if (sp [0]->opcode == OP_LDADDR && klass->simd_type && cfg->opt & MONO_OPT_SIMD) {
+						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
+						if (ins) {
+							*sp++ = ins;
+							ins_flag = 0;
+							ip += 5;
+							break;
+						}
+					}
 
 					if (mini_is_gsharedvt_klass (klass)) {
 						MonoInst *offset_ins;

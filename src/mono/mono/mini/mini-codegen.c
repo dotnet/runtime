@@ -2635,6 +2635,19 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 			ins->sreg1 = last_ins->sreg1;
 		}
 		break;
+	case OP_LOADX_MEMBASE:
+		if (last_ins && last_ins->opcode == OP_STOREX_MEMBASE &&
+			ins->inst_basereg == last_ins->inst_destbasereg &&
+			ins->inst_offset == last_ins->inst_offset) {
+			if (ins->dreg == last_ins->sreg1) {
+				MONO_DELETE_INS (bb, ins);
+				break;
+			} else {
+				ins->opcode = OP_XMOVE;
+				ins->sreg1 = last_ins->sreg1;
+			}
+		}
+		break;
 	case OP_MOVE:
 	case OP_FMOVE:
 		/*

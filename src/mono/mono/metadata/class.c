@@ -1970,6 +1970,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				real_size = field_offsets [i] + size;
 			}
 
+			/* Make SIMD types as big as a SIMD register since they can be stored into using simd stores */
+			if (klass->simd_type)
+				real_size = MAX (real_size, sizeof (MonoObject) + 16);
 			instance_size = MAX (real_size, instance_size);
        
 			if (instance_size & (min_align - 1)) {
@@ -5981,6 +5984,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
 		if (!strncmp (name, "Vector", 6))
 			klass->simd_type = !strcmp (name + 6, "2d") || !strcmp (name + 6, "2ul") || !strcmp (name + 6, "2l") || !strcmp (name + 6, "4f") || !strcmp (name + 6, "4ui") || !strcmp (name + 6, "4i") || !strcmp (name + 6, "8s") || !strcmp (name + 6, "8us") || !strcmp (name + 6, "16b") || !strcmp (name + 6, "16sb");
+	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics") && !strcmp (nspace, "System.Numerics")) {
+		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
+			klass->simd_type = 1;
+	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (nspace, "System.Numerics")) {
+		if (!strcmp (name, "Vector`1"))
+			klass->simd_type = 1;
 	}
 
 	mono_loader_unlock ();
@@ -6086,6 +6095,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->this_arg.byref = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
+	klass->simd_type = gklass->simd_type;
 
 	klass->cast_class = klass->element_class = klass;
 

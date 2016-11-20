@@ -361,6 +361,24 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				return NULL;
 			}
 		}
+		if ((arg1->opcode == OP_PCONST) && (arg2->opcode == OP_PCONST) && ins->next) {
+			MonoInst *next = ins->next;
+
+			if (next->opcode == OP_LCEQ) {
+				gboolean res = arg1->inst_p0 == arg2->inst_p0;
+				if (overwrite) {
+					NULLIFY_INS (ins);
+					next->opcode = OP_ICONST;
+					next->inst_c0 = res;
+					MONO_INST_NULLIFY_SREGS (next);
+				} else {
+					ALLOC_DEST (cfg, dest, ins);
+					dest->opcode = OP_ICONST;
+					dest->inst_c0 = res;
+				}
+				break;
+			}
+		}
 		break;
 	}
 	case OP_FMOVE:
