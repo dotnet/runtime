@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using AstUtils = System.Linq.Expressions.Utils;
 
@@ -19,6 +20,21 @@ namespace System.Dynamic
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object>, INotifyPropertyChanged
     {
+        private static readonly MethodInfo ExpandoTryGetValue =
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryGetValue));
+
+        private static readonly MethodInfo ExpandoTrySetValue =
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTrySetValue));
+
+        private static readonly MethodInfo ExpandoTryDeleteValue =
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryDeleteValue));
+
+        private static readonly MethodInfo ExpandoPromoteClass =
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoPromoteClass));
+
+        private static readonly MethodInfo ExpandoCheckVersion =
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoCheckVersion));
+
         internal readonly object LockObject;                          // the readonly field is used for locking the Expando object
         private ExpandoData _data;                                    // the data currently being held by the Expando object
         private int _count;                                           // the count of available members
@@ -773,7 +789,7 @@ namespace System.Dynamic
                 ParameterExpression value = Expression.Parameter(typeof(object), "value");
 
                 Expression tryGetValue = Expression.Call(
-                    typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryGetValue)),
+                    ExpandoTryGetValue,
                     GetLimitedSelf(),
                     Expression.Constant(klass, typeof(object)),
                     AstUtils.Constant(index),
@@ -844,7 +860,7 @@ namespace System.Dynamic
                     originalClass,
                     new DynamicMetaObject(
                         Expression.Call(
-                            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTrySetValue)),
+                            ExpandoTrySetValue,
                             GetLimitedSelf(),
                             Expression.Constant(klass, typeof(object)),
                             AstUtils.Constant(index),
@@ -864,7 +880,7 @@ namespace System.Dynamic
                 int index = Value.Class.GetValueIndex(binder.Name, binder.IgnoreCase, Value);
 
                 Expression tryDelete = Expression.Call(
-                    typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryDeleteValue)),
+                    ExpandoTryDeleteValue,
                     GetLimitedSelf(),
                     Expression.Constant(Value.Class, typeof(object)),
                     AstUtils.Constant(index),
@@ -913,7 +929,7 @@ namespace System.Dynamic
                     ifTestSucceeds = Expression.Block(
                         Expression.Call(
                             null,
-                            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoPromoteClass)),
+                            ExpandoPromoteClass,
                             GetLimitedSelf(),
                             Expression.Constant(originalClass, typeof(object)),
                             Expression.Constant(klass, typeof(object))
@@ -926,7 +942,7 @@ namespace System.Dynamic
                     Expression.Condition(
                         Expression.Call(
                             null,
-                            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoCheckVersion)),
+                            ExpandoCheckVersion,
                             GetLimitedSelf(),
                             Expression.Constant(originalClass ?? klass, typeof(object))
                         ),
