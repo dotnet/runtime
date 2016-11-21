@@ -11,4 +11,4 @@ EXE1 = test13
 Description
 = Tests the PAL implementation of the _vsnprintf function.
 = Tests _vsnprintf with hex numbers (uppercase).
-= This test is modeled after _snprintf.
+= This test is modeled after sprintf_s.

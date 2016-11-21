@@ -43,7 +43,6 @@
 #cmakedefine01 HAVE_LOCALTIME_R
 #cmakedefine01 HAVE_GMTIME_R
 #cmakedefine01 HAVE_TIMEGM
-#cmakedefine01 HAVE__SNWPRINTF
 #cmakedefine01 HAVE_POLL
 #cmakedefine01 HAVE_STATVFS
 #cmakedefine01 HAVE_THREAD_SELF

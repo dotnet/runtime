@@ -11,4 +11,4 @@ EXE1 = test15
 Description
 = Tests the PAL implementation of the _vsnprintf function.
 = Tests _vsnprintf with exponential format doubles (uppercase).
-= This test is modeled after _snprintf.
+= This test is modeled after sprintf_s.

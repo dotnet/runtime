@@ -11,4 +11,4 @@ EXE1 = test16
 Description
 = Tests the PAL implementation of the _vsnprintf function.
 = Tests _vsnprintf with decimal point format doubles.
-= This test is modeled after _snprintf.
+= This test is modeled after sprintf_s.

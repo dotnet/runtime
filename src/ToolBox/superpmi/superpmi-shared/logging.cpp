@@ -262,9 +262,9 @@ void Logger::LogVprintf(const char *function, const char *file, int line,
             const char *timeStr = "";
 #endif // FEATURE_PAL
 
-            const char *logEntryFmtStr = "%s - %s [%s:%d] - %s - %s\r\n";
-            size_t logEntryBuffSize = _snprintf(nullptr, 0, logEntryFmtStr,
-                                                timeStr, function, file, line, logLevelStr, fullMsg) + 1;
+            const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
+            size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) +
+                                      strlen(file) + 10 + strlen(logLevelStr) + strlen(fullMsg);
 
             char *logEntry = new char[logEntryBuffSize];
             sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr,

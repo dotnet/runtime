@@ -92,7 +92,7 @@ int __cdecl swprintf_s (
 
     va_start(arglist, format);
 
-    ret = _vswprintf_s(string, sizeInWords, format, arglist);
+    ret = vswprintf_s(string, sizeInWords, format, arglist);
 
     va_end(arglist);
 

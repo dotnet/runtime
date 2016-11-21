@@ -8,7 +8,7 @@
 
 *
 *Purpose:
-*       The _snprintf() flavor takes a count argument that is
+*       The sprintf_s() flavor takes a count argument that is
 *       the max number of bytes that should be written to the
 *       user's buffer.
 *
