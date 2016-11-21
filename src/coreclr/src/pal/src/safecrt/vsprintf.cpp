@@ -119,7 +119,7 @@ int __cdecl _vsnprintf_helper (
         return -1;
 }
 
-int __cdecl _vsprintf_s (
+int __cdecl vsprintf_s (
         char *string,
         size_t sizeInBytes,
         const char *format,

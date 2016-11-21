@@ -75,7 +75,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     ZeroMemory( lpCommandLine, MAX_PATH );
-    if ( _snprintf( lpCommandLine, MAX_PATH-1, "childprocess ") < 0 )
+    if ( sprintf_s( lpCommandLine, MAX_PATH-1, "childprocess ") < 0 )
     {
         Fail ("Error: Insufficient lpCommandline for\n");
     }

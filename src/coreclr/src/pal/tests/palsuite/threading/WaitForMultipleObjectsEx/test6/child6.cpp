@@ -80,11 +80,11 @@ int __cdecl main(int argc, char **argv)
         }
     }
 
-    _snprintf(szEventName, 128, "%s_Event", szTestName);
+    sprintf_s(szEventName, 128, "%s_Event", szTestName);
     szEventName[127] = 0;
-    _snprintf(szMutexName, 128, "%s_Mutex", szTestName);
+    sprintf_s(szMutexName, 128, "%s_Mutex", szTestName);
     szMutexName[127] = 0;
-    _snprintf(szSemName, 128, "%s_Semaphore", szTestName);
+    sprintf_s(szSemName, 128, "%s_Semaphore", szTestName);
     szSemName[127] = 0;
 
     iRet = MultiByteToWideChar(CP_ACP, 0, szEventName, strlen(szEventName)+1, wszEventName, 128);

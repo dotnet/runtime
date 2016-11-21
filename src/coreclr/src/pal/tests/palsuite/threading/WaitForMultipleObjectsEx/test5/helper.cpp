@@ -64,7 +64,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Open the event to tell test thread we are ready. */
-    if (_snprintf(szEventName, MAX_LONGPATH-1, "%s%d", szcHelperProcessReadyEvName, dwProcessId) < 0)
+    if (sprintf_s(szEventName, MAX_LONGPATH-1, "%s%d", szcHelperProcessReadyEvName, dwProcessId) < 0)
     {
         Fail ("helper.main: Insufficient event name string length for pid=%d\n", dwProcessId);
     }
@@ -81,7 +81,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Open the event to let test thread tell us to exit. */
-    if (_snprintf(szEventName, MAX_LONGPATH-1, "%s%d", szcHelperProcessFinishEvName, dwProcessId) < 0)
+    if (sprintf_s(szEventName, MAX_LONGPATH-1, "%s%d", szcHelperProcessFinishEvName, dwProcessId) < 0)
     {
         Fail ("helper.main: Insufficient event name string length for pid=%d\n", dwProcessId);
     }
