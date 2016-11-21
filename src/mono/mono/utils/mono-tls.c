@@ -98,6 +98,14 @@
 #define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@TPOFF, %0" : "=r" (foo)); offset = foo; } while (0)
 #endif
 
+#elif defined(TARGET_X86) && !defined(TARGET_MACH) && !defined(HOST_WIN32) && defined(__GNUC__)
+
+#if defined(PIC)
+#define MONO_THREAD_VAR_OFFSET(var,offset) do { int tmp; __asm ("call 1f; 1: popl %0; addl $_GLOBAL_OFFSET_TABLE_+[.-1b], %0; movl " #var "@gotntpoff(%0), %1" : "=r" (tmp), "=r" (offset)); } while (0)
+#else
+#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("movl $" #var "@ntpoff, %0" : "=r" (offset))
+#endif
+
 #else
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
@@ -116,6 +124,8 @@ static __thread gpointer mono_tls_lmf_addr MONO_TLS_FAST;
 #else
 
 #if defined(TARGET_AMD64) && (defined(TARGET_MACH) || defined(HOST_WIN32))
+#define MONO_THREAD_VAR_OFFSET(key,offset) (offset) = (gint32)key
+#elif defined(TARGET_X86) && (defined(TARGET_MACH) || defined(HOST_WIN32))
 #define MONO_THREAD_VAR_OFFSET(key,offset) (offset) = (gint32)key
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
