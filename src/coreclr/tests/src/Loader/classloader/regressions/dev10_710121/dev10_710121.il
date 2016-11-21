@@ -21,12 +21,18 @@ The bug related to populating MethodDesc slots in generic dictionaries at runtim
 .class public DerivedDerived
 		extends class Derived`2<string,string>
 {
-  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed { }
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+  {
+    ret
+  }
 }
 .class public Derived`2<T0, T1> 
 		extends class Base`2<int32,!T1>
 {
-  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed { }
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+  {
+    ret
+  }
 }
 .class public Base`2<T0, T1> 
 {
@@ -40,7 +46,10 @@ The bug related to populating MethodDesc slots in generic dictionaries at runtim
     call string [mscorlib]System.String::Concat(object,object)
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed { }
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+  {
+    ret
+  }
 }
 
 
