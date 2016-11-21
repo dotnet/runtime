@@ -93,6 +93,8 @@ GTNODE(SIMD_CHK         , "simdChk"      ,GenTreeBoundsChk   ,0,GTK_SPECIAL|GTK_
 
 GTNODE(ALLOCOBJ         , "allocObj"     ,GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP)      // object allocator
 
+GTNODE(INIT_VAL         , "initVal"      ,GenTreeOp          ,0,GTK_UNOP)               // Initialization value for an initBlk
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------

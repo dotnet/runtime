@@ -3781,8 +3781,9 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ADDR, GT_ARR_BOUNDS_CHECK,
-                                                 GT_OBJ, // May reference heap memory.
-                                                 GT_BLK, // May reference heap memory.
+                                                 GT_OBJ,      // May reference heap memory.
+                                                 GT_BLK,      // May reference heap memory.
+                                                 GT_INIT_VAL, // Not strictly a pass-through.
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
@@ -4940,9 +4941,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 }
 #endif // DEBUG
             }
-            // Initblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we
-            // want to be able to give VN's to.
-            tree->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
         }
         else
         {
@@ -4950,6 +4948,9 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
             // TODO-CQ: Why not be complete, and get this case right?
             fgMutateHeap(tree DEBUGARG("INITBLK - non local"));
         }
+        // Initblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we
+        // want to be able to give VN's to.
+        tree->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
     }
     else
     {
@@ -6282,17 +6283,12 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     }
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
-                else if (!varTypeIsStruct(tree) && vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) &&
-                         (funcApp.m_func == VNF_PtrToArrElem))
+                else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
-                    // TODO-1stClassStructs: The above condition need not exclude struct types, but it is
-                    // excluded for now to minimize diffs.
                     fgValueNumberArrIndexVal(tree, &funcApp, addrXvnp.GetLiberal());
                 }
-                else if (!varTypeIsStruct(tree) && addr->IsFieldAddr(this, &obj, &staticOffset, &fldSeq2))
+                else if (addr->IsFieldAddr(this, &obj, &staticOffset, &fldSeq2))
                 {
-                    // TODO-1stClassStructs: The above condition need not exclude struct types, but it is
-                    // excluded for now to minimize diffs.
                     if (fldSeq2 == FieldSeqStore::NotAField())
                     {
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
@@ -6712,7 +6708,7 @@ void Compiler::fgValueNumberCastTree(GenTreePtr tree)
     bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
-    assert(genActualType(castToType) == tree->TypeGet()); // Insure that the resultType is correct
+    assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Insure that the resultType is correct
 
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
