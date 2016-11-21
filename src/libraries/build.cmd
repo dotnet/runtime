@@ -9,7 +9,7 @@ if NOT [%ERRORLEVEL%]==[0] exit /b 1
 call %~dp0build-managed.cmd -FilterToOSGroup=Windows_NT %*
 if NOT [%ERRORLEVEL%]==[0] exit /b 1
 call %~dp0build-tests.cmd %*
-if NOT [%ERRORLEVEL%]==[0] exit /b 1
+exit /b %ERRORLEVEL%
 
 :Usage
 echo.

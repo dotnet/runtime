@@ -227,6 +227,8 @@
   <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="CleanAllProjects">
     <RemoveDir Directories="$(BinDir)" />
+    <!-- Temporarily outside BinDir -->
+    <RemoveDir Directories="$(PackageInstallPath)" />
   </Target>
 
   <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->

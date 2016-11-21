@@ -67,6 +67,8 @@
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
+    <!-- Temporarily outside BinDir -->
+    <PackageInstallPath>$(ProjectDir)bin.localpkg/</PackageInstallPath>
   </PropertyGroup>
 
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
@@ -84,7 +86,6 @@
   
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <!-- Packaging.targets is only included when full build.cmd is invoked. -->
-    <PackageInstallPath>$(BinDir)localpkg/</PackageInstallPath>
   </PropertyGroup>
 
   <!-- Import packaging props -->
