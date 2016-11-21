@@ -1897,6 +1897,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("it is a struct\n");
             assert(varTypeIsStruct(varDsc));
             break;
+        case DNER_IsStructArg:
+            JITDUMP("it is a struct arg\n");
+            assert(varTypeIsStruct(varDsc));
+            break;
         case DNER_BlockOp:
             JITDUMP("written in a block op\n");
             varDsc->lvLclBlockOpAddr = 1;
