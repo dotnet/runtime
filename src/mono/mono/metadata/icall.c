@@ -4665,147 +4665,31 @@ ves_icall_System_Reflection_Assembly_GetAotId (MonoError *error)
 	return res;
 }
 
-static MonoObjectHandle
-create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build, guint32 revision, MonoError *error)
-{
-	static MonoMethod *create_version = NULL;
-	if (!create_version) {
-		MonoMethodDesc *desc = mono_method_desc_new (":.ctor(int,int,int,int)", FALSE);
-		create_version = mono_method_desc_search_in_class (desc, mono_class_get_system_version_class ());
-		g_assert (create_version);
-		mono_method_desc_free (desc);
-	}
-	MonoObjectHandle result = NULL_HANDLE;
-
-	mono_error_init (error);
-
-	gpointer args [4];
-	args [0] = &major;
-	args [1] = &minor;
-	args [2] = &build;
-	args [3] = &revision;
-	result = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, mono_class_get_system_version_class (), error));
-	if (!is_ok (error))
-		goto leave;
-
-	mono_runtime_invoke_checked (create_version, MONO_HANDLE_RAW (result), args, error);
-	if (!is_ok (error))
-		goto leave;
-
-leave:
-	return result;
-}
-
-static MonoReflectionAssemblyNameHandle
+static MonoAssemblyName*
 create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, MonoTableInfo *t, int i, MonoError *error)
 {
 	mono_error_init (error);
+	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 
-	static MonoMethod *create_culture = NULL;
-	if (!create_culture) {
-		MonoMethodDesc *desc = mono_method_desc_new (
-			"System.Globalization.CultureInfo:CreateCulture(string,bool)", TRUE);
-		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
-		g_assert (create_culture);
-		mono_method_desc_free (desc);
-	}
-
-	guint32 cols [MONO_ASSEMBLYREF_SIZE];
-
-	mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
-
-	MonoReflectionAssemblyNameHandle aname =
-		MONO_HANDLE_NEW (MonoReflectionAssemblyName,
-				 mono_object_new_checked (domain, mono_class_get_assembly_name_class (), error));
-	if (!is_ok (error))
-		goto leave;
-
-	MONO_HANDLE_SET (aname, name, mono_string_new_handle (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]), error));
-	if (!is_ok (error))
-		goto leave;
-
-	gint32 aname_major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION],
-		aname_minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION],
-		aname_build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER],
-		aname_revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
-	MONO_HANDLE_SETVAL (aname, major, gint32, aname_major);
-	MONO_HANDLE_SETVAL (aname, minor, gint32, aname_minor);
-	MONO_HANDLE_SETVAL (aname, build, gint32, aname_build);
-	MONO_HANDLE_SETVAL (aname, revision, gint32, aname_revision);
-	MONO_HANDLE_SETVAL (aname, flags, guint32, cols [MONO_ASSEMBLYREF_FLAGS]);
-	MONO_HANDLE_SETVAL (aname, versioncompat, guint32, 1 /* SameMachine (default) */);
-	MONO_HANDLE_SETVAL (aname, hashalg, guint32, ASSEMBLY_HASH_SHA1 /* SHA1 (default) */);
-
-	MonoObjectHandle version = create_version (domain, aname_major, aname_minor, aname_build, aname_revision, error);
-	if (!is_ok (error))
-		goto leave;
-
-	MONO_HANDLE_SET (aname, version, version);
-
-	gpointer args [2];
-	MonoBoolean assembly_ref = 1;
-	args [0] = mono_string_new_checked (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]), error);
-	args [1] = &assembly_ref;
-	if (!is_ok (error))
-		goto leave;
-
-	MonoObjectHandle cultureInfo = MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (create_culture, NULL, args, error));
-	if (!is_ok (error))
-		goto leave;
-	MONO_HANDLE_SET (aname, cultureInfo, cultureInfo);
-
+	mono_assembly_get_assemblyref (image, i, aname);
+	aname->hash_alg = ASSEMBLY_HASH_SHA1 /* SHA1 (default) */;
+	/* name and culture are pointers into the image tables, but we need
+	 * real malloc'd strings (so that we can g_free() them later from
+	 * Mono.RuntimeMarshal.FreeAssemblyName) */
+	aname->name = g_strdup (aname->name);
+	aname->culture = g_strdup  (aname->culture);
+	/* Don't need the hash value in managed */
+	aname->hash_value = NULL;
+	aname->hash_len = 0;
+	g_assert (aname->public_key == NULL);
 		
-	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-		const gchar *pkey_ptr = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
-		guint32 pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
-
-		if ((cols [MONO_ASSEMBLYREF_FLAGS] & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG)) {
-			/* public key token isn't copied - the class library will 
-			   automatically generate it from the public key if required */
-			MonoArrayHandle pkey = mono_array_new_handle (domain, mono_defaults.byte_class, pkey_len, error);
-			if (!is_ok (error))
-				goto leave;
-
-			memcpy (mono_array_addr (MONO_HANDLE_RAW(pkey), guint8, 0), pkey_ptr, pkey_len);
-			MONO_HANDLE_SET (aname, publicKey, pkey);
-		} else {
-			MonoArrayHandle keyToken = mono_array_new_handle (domain, mono_defaults.byte_class, pkey_len, error);
-			if (!is_ok (error))
-				goto leave;
-
-			memcpy (mono_array_addr (MONO_HANDLE_RAW(keyToken), guint8, 0), pkey_ptr, pkey_len);
-			MONO_HANDLE_SET (aname, keyToken, keyToken);
-		}
-	} else {
-		MonoArrayHandle keyToken = mono_array_new_handle (domain, mono_defaults.byte_class, 0, error);
-		if (!is_ok (error))
-			goto leave;
-
-		MONO_HANDLE_SET (aname, keyToken, keyToken);
-	}
-		
-leave:
 	/* note: this function doesn't return the codebase on purpose (i.e. it can
 	   be used under partial trust as path information isn't present). */
 	return aname;
 }
 
-static void
-fill_referenced_assemblies (MonoDomain *domain, MonoImage *image, MonoTableInfo *t, int i, MonoArrayHandle referencedAssemblies, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER();
-	mono_error_init (error);
-
-	MonoReflectionAssemblyNameHandle aname = create_referenced_assembly_name (domain, image, t, i, error);
-	if (!is_ok (error))
-		goto leave;
-	MONO_HANDLE_ARRAY_SETREF (referencedAssemblies, i, aname);
-leave:
-	HANDLE_FUNCTION_RETURN();
-}
-
-ICALL_EXPORT MonoArrayHandle
-ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAssemblyHandle assembly, MonoError *error) 
+ICALL_EXPORT GPtrArray*
+ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflectionAssemblyHandle assembly, MonoError *error) 
 {
 	mono_error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
@@ -4815,13 +4699,13 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	int count = t->rows;
 
-	MonoArrayHandle result = mono_array_new_handle (domain, mono_class_get_assembly_name_class (), count, error);
-	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
+	GPtrArray *result = g_ptr_array_sized_new (count);
 
 	for (int i = 0; i < count; i++) {
-		fill_referenced_assemblies (domain, image, t, i, result, error);
+		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, t, i, error);
 		if (!is_ok (error))
 			break;
+		g_ptr_array_add (result, aname);
 	}
 	return result;
 }
@@ -5621,9 +5505,11 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssemblyHandle asse
 }
 
 ICALL_EXPORT void
-ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname)
+ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, gboolean free_struct)
 {
 	mono_assembly_name_free (aname);
+	if (free_struct)
+		g_free (aname);
 }
 
 ICALL_EXPORT gboolean
