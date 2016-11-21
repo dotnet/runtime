@@ -28,7 +28,7 @@ namespace System.Dynamic
     public sealed class CallInfo
     {
         /// <summary>
-        /// Creates a new PositionalArgumentInfo.
+        /// Creates a new CallInfo that represents arguments in the dynamic binding process.
         /// </summary>
         /// <param name="argCount">The number of arguments.</param>
         /// <param name="argNames">The argument names.</param>
