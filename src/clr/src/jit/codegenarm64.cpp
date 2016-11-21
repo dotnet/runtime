@@ -3346,6 +3346,10 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
+    if (initVal->OperIsInitVal())
+    {
+        initVal = initVal->gtGetOp1();
+    }
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
@@ -3512,27 +3516,38 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 // str tempReg, [R14, #8]
 void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 {
-    // Make sure we got the arguments of the cpobj operation in the right registers
-    GenTreePtr dstAddr = cpObjNode->Addr();
-    GenTreePtr source  = cpObjNode->Data();
-    noway_assert(source->gtOper == GT_IND);
-    GenTreePtr srcAddr = source->gtGetOp1();
+    GenTreePtr dstAddr       = cpObjNode->Addr();
+    GenTreePtr source        = cpObjNode->Data();
+    var_types  srcAddrType   = TYP_BYREF;
+    bool       sourceIsLocal = false;
+
+    assert(source->isContained());
+    if (source->gtOper == GT_IND)
+    {
+        GenTree* srcAddr = source->gtGetOp1();
+        assert(!srcAddr->isContained());
+        srcAddrType = srcAddr->TypeGet();
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        sourceIsLocal = true;
+    }
 
     bool dstOnStack = dstAddr->OperIsLocalAddr();
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
-    assert(!srcAddr->isContained());
 
     // This GenTree node has data about GC pointers, this means we're dealing
     // with CpObj.
     assert(cpObjNode->gtGcPtrCount > 0);
 #endif // DEBUG
 
-    // Consume these registers.
+    // Consume the operands and get them into the right registers.
     // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
     genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddr->TypeGet());
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
     // Temp register used to perform the sequence of loads and stores.
@@ -3604,12 +3619,7 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
     // Make sure we got the arguments of the cpblk operation in the right registers
     unsigned   blockSize = cpBlkNode->Size();
     GenTreePtr dstAddr   = cpBlkNode->Addr();
-    GenTreePtr source    = cpBlkNode->Data();
-    noway_assert(source->gtOper == GT_IND);
-    GenTreePtr srcAddr = source->gtGetOp1();
-
     assert(!dstAddr->isContained());
-    assert(!srcAddr->isContained());
 
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
