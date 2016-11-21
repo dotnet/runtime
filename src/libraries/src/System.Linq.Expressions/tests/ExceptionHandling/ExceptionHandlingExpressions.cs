@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
 
@@ -309,9 +310,9 @@ namespace System.Linq.Expressions.Tests
         [InlineData(false)]
         public void NonExceptionDerivedExceptionWrapped(bool useInterpreter)
         {
-            Action throwWrapped = Expression.Lambda<Action>(Expression.Throw(Expression.Constant(""))).Compile(useInterpreter);
-            Exception ex = Assert.ThrowsAny<Exception>(throwWrapped);
-            Assert.Equal("System.Runtime.CompilerServices.RuntimeWrappedException", ex.GetType().FullName);
+            Action throwWrapped = Expression.Lambda<Action>(Expression.Throw(Expression.Constant("Hello"))).Compile(useInterpreter);
+            var rwe = Assert.Throws<RuntimeWrappedException>(throwWrapped);
+            Assert.Equal("Hello", rwe.WrappedException);
         }
 
         [Fact]
