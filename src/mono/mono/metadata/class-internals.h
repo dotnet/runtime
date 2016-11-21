@@ -317,6 +317,7 @@ struct _MonoClass {
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* setup_fields () has finished */
 	guint has_failure : 1; /* See mono_class_get_exception_data () for a MonoErrorBoxed with the details */
+	guint is_array_special_interface : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -1101,6 +1102,8 @@ typedef struct {
 	MonoClass *argumenthandle_class;
 	MonoClass *monitor_class;
 	MonoClass *generic_ilist_class;
+	MonoClass *generic_icollection_class;
+	MonoClass *generic_ienumerable_class;
 	MonoClass *generic_nullable_class;
 	MonoClass *handleref_class;
 	MonoClass *attribute_class;

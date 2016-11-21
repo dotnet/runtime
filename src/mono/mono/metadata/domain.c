@@ -673,6 +673,13 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.uint64_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "UInt64");
 
+	//XXX find a better place, which kinda doesn't exists as those types depend on each other.
+	mono_defaults.uint32_class->cast_class = mono_defaults.int32_class;
+	mono_defaults.uint16_class->cast_class = mono_defaults.int16_class;
+	mono_defaults.sbyte_class->cast_class = mono_defaults.byte_class;
+	mono_defaults.uint64_class->cast_class = mono_defaults.int64_class;
+
+
 	mono_defaults.single_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Single");
 
@@ -801,10 +808,27 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_class_init (mono_defaults.array_class);
 	mono_defaults.generic_nullable_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "Nullable`1");
-	mono_defaults.generic_ilist_class = mono_class_load_from_name (
-	        mono_defaults.corlib, "System.Collections.Generic", "IList`1");
 	mono_defaults.generic_ireadonlylist_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
+
+	//IList, ICollection, IEnumerable
+	mono_defaults.generic_ilist_class = mono_class_load_from_name (
+	        mono_defaults.corlib, "System.Collections.Generic", "IList`1");
+	mono_defaults.generic_icollection_class = mono_class_load_from_name (
+	        mono_defaults.corlib, "System.Collections.Generic", "ICollection`1");
+	mono_defaults.generic_ienumerable_class = mono_class_load_from_name (
+	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerable`1");
+
+	//XXX This is a hack, there's probably a better place to do this. Probably in mono_class_create_from_typedef
+	mono_defaults.generic_ilist_class->is_array_special_interface = 1;
+	mono_defaults.generic_icollection_class->is_array_special_interface = 1;
+	mono_defaults.generic_ienumerable_class->is_array_special_interface = 1;
+
+	//FIXME IEnumerator needs to be special because GetEnumerator uses magic under the hood
+	MonoClass *tmp = mono_class_load_from_name (
+	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
+	tmp->is_array_special_interface = 1;
+
 
 	mono_defaults.threadpool_wait_callback_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");

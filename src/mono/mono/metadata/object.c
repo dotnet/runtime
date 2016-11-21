@@ -75,6 +75,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (activation_services, System.Runtime.Remoti
 #define ldstr_unlock() mono_os_mutex_unlock (&ldstr_section)
 static mono_mutex_t ldstr_section;
 
+
 /**
  * mono_runtime_object_init:
  * @this_obj: the object to initialize
@@ -6476,6 +6477,15 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoVTable *vt;
+	static gboolean inited = FALSE;
+	static int special_array_iface_tests, special_array_iface_tests_fails;
+	if (!inited) {
+		inited = TRUE;
+		mono_counters_register ("Special array interfaces type tests",
+				MONO_COUNTER_METADATA | MONO_COUNTER_INT, &special_array_iface_tests);
+		mono_counters_register ("Special array interface type tests fails",
+				MONO_COUNTER_METADATA | MONO_COUNTER_INT, &special_array_iface_tests_fails);
+	}
 
 	mono_error_init (error);
 
@@ -6489,8 +6499,17 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 			return obj;
 		}
 
+		/* casting an array one of the invariant interfaces that must act as such */
+		if (klass->is_array_special_interface) {
+			++special_array_iface_tests;
+			if (mono_class_is_assignable_from (klass, vt->klass))
+				return obj;
+			else
+				++special_array_iface_tests_fails;
+		}
+
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
-		if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
+		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
 			return obj;
 	} else {
 		MonoClass *oklass = vt->klass;

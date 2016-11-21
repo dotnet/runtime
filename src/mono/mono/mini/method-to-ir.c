@@ -15152,7 +15152,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	NEW_BBLOCK (cfg, first_bb);
 	cfg->cbb = first_bb;
 
-	if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
+	if (!context_used && (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || klass->is_array_special_interface)) {
 		if (is_isinst)
 			ret = emit_isinst_with_cache_nonshared (cfg, source, klass);
 		else

@@ -48,6 +48,8 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
 
+#define ENABLE_LAZY_ARRAY_IFACES TRUE
+
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -2985,6 +2987,18 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 	if (i >= 0)
 		return i;
 	
+	if (itf->is_array_special_interface && klass->rank < 2) {
+		MonoClass *gtd = mono_class_get_generic_type_definition (itf);
+
+		for (i = 0; i < klass->interface_offsets_count; i++) {
+			// printf ("\t%s\n", mono_type_get_full_name (klass->interfaces_packed [i]));
+			if (mono_class_get_generic_type_definition (klass->interfaces_packed [i]) == gtd) {
+				*non_exact_match = TRUE;
+				return klass->interface_offsets_packed [i];
+			}
+		}
+	}
+
 	if (!mono_class_has_variant_generic_params (itf))
 		return -1;
 
@@ -3139,7 +3153,7 @@ get_implicit_generic_array_interfaces (MonoClass *klass, int *num, int *is_enume
 	gboolean internal_enumerator;
 	gboolean eclass_is_valuetype;
 
-	if (!mono_defaults.generic_ilist_class) {
+	if (!mono_defaults.generic_ilist_class || ENABLE_LAZY_ARRAY_IFACES) {
 		*num = 0;
 		return NULL;
 	}
@@ -6084,12 +6098,14 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
+
 	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
 		g_assert (gclass->context.class_inst);
 		g_assert (gclass->context.class_inst->type_argc > 0);
 		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
 			klass->simd_type = 1;
 	}
+	klass->is_array_special_interface = gklass->is_array_special_interface;
 
 	klass->cast_class = klass->element_class = klass;
 
@@ -8436,6 +8452,23 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return FALSE;
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, klass->interface_id))
 			return TRUE;
+
+		if (klass->is_array_special_interface && oklass->rank == 1) {
+			//XXX we could offset this by having the cast target computed at JIT time
+			//XXX we could go even further and emit a wrapper that would do the extra type check
+			MonoClass *iface_klass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+			MonoClass *obj_klass = oklass->cast_class; //This gets us the cast class of element type of the array
+
+			// If the target we're trying to cast to is a valuetype, we must account of weird valuetype equivalences such as IntEnum <> int or uint <> int
+			// We can't apply it for ref types as this would go wrong with arrays - IList<byte[]> would have byte tested
+			if (iface_klass->valuetype)
+				iface_klass = iface_klass->cast_class;
+
+			//array covariant casts only operates on scalar to scalar
+			//This is so int[] can't be casted to IComparable<int>[]
+			if (!(obj_klass->valuetype && !iface_klass->valuetype) && mono_class_is_assignable_from (iface_klass, obj_klass))
+				return TRUE;
+		}
 
 		if (mono_class_has_variant_generic_params (klass)) {
 			int i;
