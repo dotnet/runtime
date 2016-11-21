@@ -169,10 +169,15 @@
           DependsOnTargets="FilterProjects;UpdateVersionsOnTestProjectJson"
           BeforeTargets="RestorePackages">
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's..." />
+      
+      <ItemGroup>
+        <GenerateForProject Include="src\tests.builds">
+          <UndefineProperties>%(Project.UndefineProperties);OSGroup</UndefineProperties>
+        </GenerateForProject>
+      </ItemGroup>
       <MSBuild Targets="GenerateAllTestProjectJsons"
-               Projects="src\tests.builds"
-               Properties="GenerateIndependentOfOSGroup=true"
-               />
+               Projects="@(GenerateForProject)"
+               /> 
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's...done" />
   </Target>
 
