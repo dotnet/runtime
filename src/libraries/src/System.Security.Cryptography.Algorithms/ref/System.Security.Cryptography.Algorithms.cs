@@ -585,6 +585,17 @@ namespace System.Security.Cryptography
         protected sealed override byte[] HashFinal() { throw null; }
         public sealed override void Initialize() { }
     }
+    public partial class SignatureDescription {
+        public SignatureDescription() { }
+        public SignatureDescription(System.Security.SecurityElement el) { }
+        public string DeformatterAlgorithm { get { throw null; } set { } }
+        public string DigestAlgorithm { get { throw null;} set { } }
+        public string FormatterAlgorithm { get { throw null;} set { } }
+        public string KeyAlgorithm { get { throw null;} set { } }
+        public virtual System.Security.Cryptography.AsymmetricSignatureDeformatter CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
+        public virtual System.Security.Cryptography.HashAlgorithm CreateDigest() { throw null; }
+        public virtual System.Security.Cryptography.AsymmetricSignatureFormatter CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
+    }
     public abstract partial class TripleDES : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected TripleDES() { }
