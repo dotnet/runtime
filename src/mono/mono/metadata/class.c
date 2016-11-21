@@ -1639,8 +1639,11 @@ mono_class_setup_fields (MonoClass *klass)
 		/* The def_value of fields is compute lazily during vtable creation */
 	}
 
-	if (!mono_class_has_failure (klass))
+	if (!mono_class_has_failure (klass)) {
+		mono_loader_lock ();
 		mono_class_layout_fields (klass, instance_size, packing_size, FALSE);
+		mono_loader_unlock ();
+	}
 
 	init_list = g_slist_remove (init_list, klass);
 	mono_native_tls_set_value (setup_fields_tls_id, init_list);
