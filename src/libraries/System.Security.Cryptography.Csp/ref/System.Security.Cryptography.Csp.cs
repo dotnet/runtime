@@ -54,6 +54,8 @@ namespace System.Security.Cryptography
         public CspParameters(int dwTypeIn, string strProviderNameIn) { }
         public CspParameters(int dwTypeIn, string strProviderNameIn, string strContainerNameIn) { }
         public System.Security.Cryptography.CspProviderFlags Flags { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Security.SecureString KeyPassword { get { throw null; } set { } }
         public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
     }
     [System.FlagsAttribute]

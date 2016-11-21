@@ -11,9 +11,11 @@ namespace System.IO.Tests
         [Fact]
         public static void InvalidPathChars_MatchesGetInvalidPathChars()
         {
+#pragma warning disable 0618
             Assert.NotNull(Path.InvalidPathChars);
             Assert.Equal(Path.GetInvalidPathChars(), Path.InvalidPathChars);
             Assert.Same(Path.InvalidPathChars, Path.InvalidPathChars);
+#pragma warning restore 0618
         }
     }
 }
