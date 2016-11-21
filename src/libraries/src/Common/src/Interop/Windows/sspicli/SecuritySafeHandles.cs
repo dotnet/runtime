@@ -436,48 +436,16 @@ namespace System.Net.Security
     // Implementation of handles that are dependent on DeleteSecurityContext
     //
 #if DEBUG
-    internal abstract class SafeDeleteContext : DebugSafeHandle
+    internal abstract partial class SafeDeleteContext : DebugSafeHandle
     {
 #else
-    internal abstract class SafeDeleteContext : SafeHandle
+    internal abstract partial class SafeDeleteContext : SafeHandle
     {
 #endif
         private const string dummyStr = " ";
         private static readonly byte[] s_dummyBytes = new byte[] { 0 };
 
-        //
-        // ATN: _handle is internal since it is used on PInvokes by other wrapper methods.
-        //      However all such wrappers MUST manually and reliably adjust refCounter of SafeDeleteContext handle.
-        //
-        internal Interop.SspiCli.CredHandle _handle;
-
         protected SafeFreeCredentials _EffectiveCredential;
-
-        protected SafeDeleteContext() : base(IntPtr.Zero, true)
-        {
-            _handle = new Interop.SspiCli.CredHandle();
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                return IsClosed || _handle.IsZero;
-            }
-        }
-
-        public override string ToString()
-        {
-            return _handle.ToString();
-        }
-
-#if DEBUG
-        //This method should never be called for this type
-        public new IntPtr DangerousGetHandle()
-        {
-            throw new InvalidOperationException();
-        }
-#endif
 
         //-------------------------------------------------------------------
         internal unsafe static int InitializeSecurityContext(
@@ -925,7 +893,7 @@ namespace System.Net.Security
                                         outFreeContextBuffer);
 
                         if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshaling OUT buffer");
-                        
+
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
                         outSecBuffer.type = outUnmanagedBuffer[0].BufferType;
@@ -1209,7 +1177,7 @@ namespace System.Net.Security
 #endif
                     }
                 }
-                
+
                 // TODO: (#3114): Optimizations to remove the unnecesary allocation of a CredHandle, remove the AddRef
                 // if refContext was previously null, refactor the code to unify CompleteAuthToken and ApplyControlToken.
                 Interop.SspiCli.CredHandle contextHandle = new Interop.SspiCli.CredHandle();

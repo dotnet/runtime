@@ -7,9 +7,9 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetModuleHandle.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleHandle.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
@@ -23,7 +23,9 @@
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDiagnosticListenerExtensions.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\WinHttpException.cs" />
+    <CompileItem Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCertificateHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpChannelBinding.cs" />

@@ -53,8 +53,6 @@
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
-    <!-- layout depends on package reports so only build if packages were built -->
-    <Project Include="layout\dir.proj" Condition="'$(BuildPackages)'=='true'"/>
   </ItemGroup>
 
   <Import Project="dir.targets" />

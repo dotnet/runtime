@@ -122,7 +122,7 @@ namespace System.IO
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
             Debug.Assert(resultHandler != null);
 
-            _oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+            _oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
 
             string normalizedSearchPattern = PathHelpers.NormalizeSearchPattern(searchPattern);
 
@@ -163,15 +163,15 @@ namespace System.IO
             PathHelpers.ThrowIfEmptyOrRootedPath(_searchCriteria);
             string searchPath = Path.Combine(_searchData.FullPath, _searchCriteria);
 
-            Interop.mincore.WIN32_FIND_DATA data = new Interop.mincore.WIN32_FIND_DATA();
+            Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
 
             // Open a Find handle
-            _hnd = Interop.mincore.FindFirstFile(searchPath, ref data);
+            _hnd = Interop.Kernel32.FindFirstFile(searchPath, ref data);
 
             if (_hnd.IsInvalid)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND && errorCode != Interop.mincore.Errors.ERROR_NO_MORE_FILES)
+                if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND && errorCode != Interop.Errors.ERROR_NO_MORE_FILES)
                 {
                     HandleError(errorCode, _searchData.FullPath);
                 }
@@ -251,7 +251,7 @@ namespace System.IO
             }
             finally
             {
-                Interop.mincore.SetErrorMode(_oldMode);
+                Interop.Kernel32.SetErrorMode(_oldMode);
                 base.Dispose(disposing);
             }
         }
@@ -259,7 +259,7 @@ namespace System.IO
         [SecuritySafeCritical]
         public override bool MoveNext()
         {
-            Interop.mincore.WIN32_FIND_DATA data = new Interop.mincore.WIN32_FIND_DATA();
+            Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
             switch (state)
             {
                 case STATE_INIT:
@@ -306,11 +306,11 @@ namespace System.IO
                             string searchPath = Path.Combine(_searchData.FullPath, _searchCriteria);
 
                             // Open a Find handle
-                            _hnd = Interop.mincore.FindFirstFile(searchPath, ref data);
+                            _hnd = Interop.Kernel32.FindFirstFile(searchPath, ref data);
                             if (_hnd.IsInvalid)
                             {
                                 int errorCode = Marshal.GetLastWin32Error();
-                                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.mincore.Errors.ERROR_NO_MORE_FILES || errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_NO_MORE_FILES || errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                                     continue;
 
                                 _hnd.Dispose();
@@ -338,7 +338,7 @@ namespace System.IO
                         if (_hnd != null)
                         {
                             // Keep asking for more matching files/dirs, add it to the list
-                            while (Interop.mincore.FindNextFile(_hnd, ref data))
+                            while (Interop.Kernel32.FindNextFile(_hnd, ref data))
                             {
                                 TSource result;
                                 if (IsResultIncluded(ref data, out result))
@@ -357,8 +357,8 @@ namespace System.IO
                             // ERROR_FILE_NOT_FOUND is valid here because if the top level
                             // dir doesn't contain any subdirs and matching files then
                             // we will get here with this errorcode from the _searchList walk
-                            if ((errorCode != 0) && (errorCode != Interop.mincore.Errors.ERROR_NO_MORE_FILES)
-                                && (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND))
+                            if ((errorCode != 0) && (errorCode != Interop.Errors.ERROR_NO_MORE_FILES)
+                                && (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND))
                             {
                                 HandleError(errorCode, _searchData.FullPath);
                             }
@@ -384,7 +384,7 @@ namespace System.IO
         }
 
         [SecurityCritical]
-        private bool IsResultIncluded(ref Interop.mincore.WIN32_FIND_DATA findData, out TSource result)
+        private bool IsResultIncluded(ref Interop.Kernel32.WIN32_FIND_DATA findData, out TSource result)
         {
             Debug.Assert(findData.cFileName.Length != 0 && !Path.IsPathRooted(findData.cFileName),
                 "Expected file system enumeration to not have empty file/directory name and not have rooted name");
@@ -404,11 +404,11 @@ namespace System.IO
         {
             string searchPath = Path.Combine(localSearchData.FullPath, "*");
             SafeFindHandle hnd = null;
-            Interop.mincore.WIN32_FIND_DATA data = new Interop.mincore.WIN32_FIND_DATA();
+            Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
             try
             {
                 // Get all files and dirs
-                hnd = Interop.mincore.FindFirstFile(searchPath, ref data);
+                hnd = Interop.Kernel32.FindFirstFile(searchPath, ref data);
 
                 if (hnd.IsInvalid)
                 {
@@ -417,7 +417,7 @@ namespace System.IO
                     // This could happen if the dir doesn't contain any files.
                     // Continue with the recursive search though, eventually
                     // _searchList will become empty
-                    if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.mincore.Errors.ERROR_NO_MORE_FILES || errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_NO_MORE_FILES || errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                         return;
 
                     HandleError(errorCode, localSearchData.FullPath);
@@ -441,7 +441,7 @@ namespace System.IO
 
                         _searchList.Add(searchDataSubDir);
                     }
-                } while (Interop.mincore.FindNextFile(hnd, ref data));
+                } while (Interop.Kernel32.FindNextFile(hnd, ref data));
 
                 // Reverse the items just added to maintain FIFO order
                 if (_searchList.Count > initialCount)
@@ -487,7 +487,7 @@ namespace System.IO
         /// is set to the created result object, otherwise it is set to null.
         /// </summary>
         [SecurityCritical]
-        internal abstract bool IsResultIncluded(string fullPath, string userPath, ref Interop.mincore.WIN32_FIND_DATA findData, out TSource result);
+        internal abstract bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out TSource result);
     }
 
     internal static class SearchResultHandler
@@ -541,7 +541,7 @@ namespace System.IO
             }
 
             [SecurityCritical]
-            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.mincore.WIN32_FIND_DATA findData, out string result)
+            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out string result)
             {
                 if ((_includeFiles && Win32FileSystemEnumerableHelpers.IsFile(ref findData)) ||
                     (_includeDirs && Win32FileSystemEnumerableHelpers.IsDir(ref findData)))
@@ -558,7 +558,7 @@ namespace System.IO
         private sealed class FileInfoResultHandler : SearchResultHandler<FileInfo>
         {
             [SecurityCritical]
-            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.mincore.WIN32_FIND_DATA findData, out FileInfo result)
+            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out FileInfo result)
             {
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
                 {
@@ -575,7 +575,7 @@ namespace System.IO
         private sealed class DirectoryInfoResultHandler : SearchResultHandler<DirectoryInfo>
         {
             [SecurityCritical]
-            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.mincore.WIN32_FIND_DATA findData, out DirectoryInfo result)
+            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out DirectoryInfo result)
             {
                 if (Win32FileSystemEnumerableHelpers.IsDir(ref findData))
                 {
@@ -592,7 +592,7 @@ namespace System.IO
         private sealed class FileSystemInfoResultHandler : SearchResultHandler<FileSystemInfo>
         {
             [SecurityCritical]
-            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.mincore.WIN32_FIND_DATA findData, out FileSystemInfo result)
+            internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out FileSystemInfo result)
             {
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
                 {
@@ -616,17 +616,17 @@ namespace System.IO
     internal static class Win32FileSystemEnumerableHelpers
     {
         [SecurityCritical]  // auto-generated
-        internal static bool IsDir(ref Interop.mincore.WIN32_FIND_DATA data)
+        internal static bool IsDir(ref Interop.Kernel32.WIN32_FIND_DATA data)
         {
             // Don't add "." nor ".."
-            return (0 != (data.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY))
+            return (0 != (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY))
                                                 && !data.cFileName.Equals(".") && !data.cFileName.Equals("..");
         }
 
         [SecurityCritical]  // auto-generated
-        internal static bool IsFile(ref Interop.mincore.WIN32_FIND_DATA data)
+        internal static bool IsFile(ref Interop.Kernel32.WIN32_FIND_DATA data)
         {
-            return 0 == (data.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
+            return 0 == (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
         }
     }
 }

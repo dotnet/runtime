@@ -5,8 +5,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Security;
-
 
 namespace System.Runtime.Serialization
 {
@@ -173,11 +171,6 @@ namespace System.Runtime.Serialization
             return min;
         }
 
-
-        /// <SecurityNote>
-        /// Review - Static fields are marked SecurityCritical or readonly to prevent
-        ///          data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         internal static readonly int[] primes =
         {
             3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,

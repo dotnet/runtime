@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions
@@ -229,7 +230,7 @@ namespace System.Linq.Expressions
                 Expression e4 = temp2;
 
                 return Expression.Block(
-                    new ParameterExpression[] { temp1, temp2 },
+                    new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
                     e1, e2, e3, e4
                 );
             }
@@ -420,7 +421,7 @@ namespace System.Linq.Expressions
             Debug.Assert(opTrueFalse != null);
 
             return Block(
-                new[] { left },
+                new TrueReadOnlyCollection<ParameterExpression>(left),
                 Assign(left, Left),
                 Condition(
                     Property(left, "HasValue"),
@@ -428,7 +429,7 @@ namespace System.Linq.Expressions
                         Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
                         left,
                         Block(
-                            new[] { right },
+                            new TrueReadOnlyCollection<ParameterExpression>(right),
                             Assign(right, Right),
                             Condition(
                                 Property(right, "HasValue"),
@@ -751,15 +752,9 @@ namespace System.Linq.Expressions
             // nullable but not null, then this is treated as a call to x.HasValue
             // and is legal even if there is no equality operator defined on the
             // type of x.
-            if (IsNullConstant(left) && !IsNullConstant(right) && right.Type.IsNullableType())
-            {
-                return true;
-            }
-            if (IsNullConstant(right) && !IsNullConstant(left) && left.Type.IsNullableType())
-            {
-                return true;
-            }
-            return false;
+            return IsNullConstant(left)
+                ? !IsNullConstant(right) && right.Type.IsNullableType()
+                : IsNullConstant(right) && left.Type.IsNullableType();
         }
 
         // Note: this has different meaning than ConstantCheck.IsNull
@@ -800,7 +795,6 @@ namespace System.Linq.Expressions
             if (IsValidLiftedConditionalLogicalOperator(left, right, pms))
             {
                 left = left.GetNonNullableType();
-                right = left.GetNonNullableType();
             }
             MethodInfo opTrue = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_True");
             MethodInfo opFalse = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_False");

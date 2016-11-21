@@ -24,6 +24,8 @@
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Threading\HostExecutionContext.cs" />
+    <Compile Include="System\Threading\HostExecutionContextManager.cs" />
     <Compile Include="System\Threading\LockCookie.cs" />
     <Compile Include="System\Threading\ReaderWriterLock.cs" />
   </ItemGroup>

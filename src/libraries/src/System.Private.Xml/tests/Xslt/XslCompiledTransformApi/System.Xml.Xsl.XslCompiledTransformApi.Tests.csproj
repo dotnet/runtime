@@ -34,8 +34,8 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
-    <ProjectReference Include="$(CommonTestPath)\System\Xml\xmlDiff\XmlDiff.csproj" />
-    <ProjectReference Include="..\xslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />
     <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

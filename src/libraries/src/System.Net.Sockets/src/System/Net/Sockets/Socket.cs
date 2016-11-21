@@ -3633,7 +3633,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref remoteEP);
 
             // Set up the result and set it to collect the context.
-            OverlappedAsyncResult asyncResult = new OverlappedAsyncResult(this, state, callback);
+            var asyncResult = new OriginalAddressOverlappedAsyncResult(this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
 
             // Start the ReceiveFrom.
@@ -3657,7 +3657,7 @@ namespace System.Net.Sockets
             return asyncResult;
         }
 
-        private void DoBeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
+        private void DoBeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OriginalAddressOverlappedAsyncResult asyncResult)
         {
             EndPoint oldEndPoint = _rightEndPoint;
 

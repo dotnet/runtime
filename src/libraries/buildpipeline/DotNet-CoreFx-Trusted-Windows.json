@@ -219,6 +219,61 @@
     {
       "enabled": true,
       "continueOnError": false,
+      "alwaysRun": true,
+      "displayName": "Copy Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "*.log\ncorefx\\*.log\ncorefx\\src\\*.log",
+        "ArtifactName": "BuildLogs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Zip",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "dc66d2f0-a7ba-11e5-ae62-3deab86d85e3",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "pathToZipFolder": "corefx\\bin",
+        "pathToZipFile": "bin.zip",
+        "overwrite": "false"
+      }
+    },
+    {
+      "enabled": false,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Copy Publish Artifact: bin",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "bin.zip",
+        "ArtifactName": "bin",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
       "timeoutInMinutes": 0,
@@ -290,61 +345,6 @@
         "definitionType": "task"
       },
       "inputs": {}
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": true,
-      "displayName": "Copy Publish Artifact: BuildLogs",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "*.log\ncorefx\\*.log\ncorefx\\src\\*.log",
-        "ArtifactName": "BuildLogs",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Zip",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "dc66d2f0-a7ba-11e5-ae62-3deab86d85e3",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "pathToZipFolder": "corefx\\bin",
-        "pathToZipFile": "bin.zip",
-        "overwrite": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Copy Publish Artifact: bin",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "bin.zip",
-        "ArtifactName": "bin",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
     },
     {
       "enabled": false,
@@ -508,7 +508,9 @@
       "labelSources": "0",
       "reportBuildStatus": "true",
       "fetchDepth": "0",
-      "gitLfsSupport": "false"
+      "gitLfsSupport": "false",
+      "skipSyncSource": "false",
+      "cleanOptions": "0"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",
@@ -538,6 +540,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097399
+    "revision": 418097423
   }
 }

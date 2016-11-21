@@ -23,6 +23,9 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\BeginEndAwaitableAdapter.cs">
       <Link>Common\System\Threading\Tasks\BeginEndAwaitableAdapter.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
+      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>

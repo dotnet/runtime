@@ -5,6 +5,7 @@
 using System.Xml;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Xml.Serialization;
 
 
 namespace System.Runtime.Serialization
@@ -29,6 +30,11 @@ namespace System.Runtime.Serialization
         internal XmlReader UnderlyingReader
         {
             get { return reader; }
+        }
+
+        internal ExtensionDataReader UnderlyingExtensionDataReader
+        {
+            get { return reader as ExtensionDataReader; }
         }
 
         internal int AttributeCount
@@ -218,6 +224,132 @@ namespace System.Runtime.Serialization
                 reader.ReadEndElement();
         }
 
+        private Exception CreateInvalidPrimitiveTypeException(Type type)
+        {
+            return new InvalidDataContractException(SR.Format(
+                type.IsInterface ? SR.InterfaceTypeCannotBeCreated : SR.InvalidPrimitiveType,
+                DataContract.GetClrTypeFullName(type)));
+        }
+
+        public object ReadElementContentAsAnyType(Type valueType)
+        {
+            Read();
+            object o = ReadContentAsAnyType(valueType);
+            ReadEndElement();
+            return o;
+        }
+
+        internal object ReadContentAsAnyType(Type valueType)
+        {
+            switch (Type.GetTypeCode(valueType))
+            {
+                case TypeCode.Boolean:
+                    return ReadContentAsBoolean();
+                case TypeCode.Char:
+                    return ReadContentAsChar();
+                case TypeCode.Byte:
+                    return ReadContentAsUnsignedByte();
+                case TypeCode.Int16:
+                    return ReadContentAsShort();
+                case TypeCode.Int32:
+                    return ReadContentAsInt();
+                case TypeCode.Int64:
+                    return ReadContentAsLong();
+                case TypeCode.Single:
+                    return ReadContentAsSingle();
+                case TypeCode.Double:
+                    return ReadContentAsDouble();
+                case TypeCode.Decimal:
+                    return ReadContentAsDecimal();
+                case TypeCode.DateTime:
+                    return ReadContentAsDateTime();
+                case TypeCode.String:
+                    return ReadContentAsString();
+
+                case TypeCode.SByte:
+                    return ReadContentAsSignedByte();
+                case TypeCode.UInt16:
+                    return ReadContentAsUnsignedShort();
+                case TypeCode.UInt32:
+                    return ReadContentAsUnsignedInt();
+                case TypeCode.UInt64:
+                    return ReadContentAsUnsignedLong();
+                case TypeCode.Empty:
+                case TypeCode.DBNull:
+                case TypeCode.Object:
+                default:
+                    if (valueType == Globals.TypeOfByteArray)
+                        return ReadContentAsBase64();
+                    else if (valueType == Globals.TypeOfObject)
+                        return new object();
+                    else if (valueType == Globals.TypeOfTimeSpan)
+                        return ReadContentAsTimeSpan();
+                    else if (valueType == Globals.TypeOfGuid)
+                        return ReadContentAsGuid();
+                    else if (valueType == Globals.TypeOfUri)
+                        return ReadContentAsUri();
+                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                        return ReadContentAsQName();
+                    break;
+            }
+            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
+        }
+
+        internal IDataNode ReadExtensionData(Type valueType)
+        {
+            switch (Type.GetTypeCode(valueType))
+            {
+                case TypeCode.Boolean:
+                    return new DataNode<bool>(ReadContentAsBoolean());
+                case TypeCode.Char:
+                    return new DataNode<char>(ReadContentAsChar());
+                case TypeCode.Byte:
+                    return new DataNode<byte>(ReadContentAsUnsignedByte());
+                case TypeCode.Int16:
+                    return new DataNode<short>(ReadContentAsShort());
+                case TypeCode.Int32:
+                    return new DataNode<int>(ReadContentAsInt());
+                case TypeCode.Int64:
+                    return new DataNode<long>(ReadContentAsLong());
+                case TypeCode.Single:
+                    return new DataNode<float>(ReadContentAsSingle());
+                case TypeCode.Double:
+                    return new DataNode<double>(ReadContentAsDouble());
+                case TypeCode.Decimal:
+                    return new DataNode<decimal>(ReadContentAsDecimal());
+                case TypeCode.DateTime:
+                    return new DataNode<DateTime>(ReadContentAsDateTime());
+                case TypeCode.String:
+                    return new DataNode<string>(ReadContentAsString());
+                case TypeCode.SByte:
+                    return new DataNode<sbyte>(ReadContentAsSignedByte());
+                case TypeCode.UInt16:
+                    return new DataNode<ushort>(ReadContentAsUnsignedShort());
+                case TypeCode.UInt32:
+                    return new DataNode<uint>(ReadContentAsUnsignedInt());
+                case TypeCode.UInt64:
+                    return new DataNode<ulong>(ReadContentAsUnsignedLong());
+                case TypeCode.Empty:
+                case TypeCode.DBNull:
+                case TypeCode.Object:
+                default:
+                    if (valueType == Globals.TypeOfByteArray)
+                        return new DataNode<byte[]>(ReadContentAsBase64());
+                    else if (valueType == Globals.TypeOfObject)
+                        return new DataNode<object>(new object());
+                    else if (valueType == Globals.TypeOfTimeSpan)
+                        return new DataNode<TimeSpan>(ReadContentAsTimeSpan());
+                    else if (valueType == Globals.TypeOfGuid)
+                        return new DataNode<Guid>(ReadContentAsGuid());
+                    else if (valueType == Globals.TypeOfUri)
+                        return new DataNode<Uri>(ReadContentAsUri());
+                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                        return new DataNode<XmlQualifiedName>(ReadContentAsQName());
+                    break;
+            }
+            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
+        }
+
         private void ThrowConversionException(string value, string type)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, type))));
@@ -235,6 +367,11 @@ namespace System.Runtime.Serialization
 #endif
         {
             return ToChar(ReadElementContentAsInt());
+        }
+
+        internal virtual char ReadContentAsChar()
+        {
+            return ToChar(ReadContentAsInt());
         }
 
         private char ToChar(int value)
@@ -295,6 +432,13 @@ namespace System.Runtime.Serialization
             return reader.ReadElementContentAsFloat();
         }
 
+        internal float ReadContentAsSingle()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, "Float");
+
+            return reader.ReadContentAsFloat();
+        }
 
 #if USE_REFEMIT
         public double ReadElementContentAsDouble()
@@ -308,6 +452,13 @@ namespace System.Runtime.Serialization
             return reader.ReadElementContentAsDouble();
         }
 
+        internal double ReadContentAsDouble()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, "Double");
+
+            return reader.ReadContentAsDouble();
+        }
 
 #if USE_REFEMIT
         public decimal ReadElementContentAsDecimal()
@@ -321,6 +472,13 @@ namespace System.Runtime.Serialization
             return reader.ReadElementContentAsDecimal();
         }
 
+        internal decimal ReadContentAsDecimal()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, "Decimal");
+
+            return reader.ReadContentAsDecimal();
+        }
 
 #if USE_REFEMIT
         public virtual byte[] ReadElementContentAsBase64()
@@ -338,6 +496,21 @@ namespace System.Runtime.Serialization
             else
             {
                 return dictionaryReader.ReadElementContentAsBase64();
+            }
+        }
+
+        public virtual byte[] ReadContentAsBase64()
+        {
+            if (isEndOfEmptyElement)
+                return new byte[0];
+
+            if (dictionaryReader == null)
+            {
+                return ReadContentAsBase64(reader.ReadContentAsString());
+            }
+            else
+            {
+                return dictionaryReader.ReadContentAsBase64();
             }
         }
 
@@ -375,6 +548,13 @@ namespace System.Runtime.Serialization
             return XmlConvert.ToDateTime(reader.ReadElementContentAsString(), XmlDateTimeSerializationMode.RoundtripKind);
         }
 
+        internal virtual DateTime ReadContentAsDateTime()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, "DateTime");
+
+            return reader.ReadContentAsDateTime();
+        }
 
 #if USE_REFEMIT
         public int ReadElementContentAsInt()
@@ -408,6 +588,13 @@ namespace System.Runtime.Serialization
             return reader.ReadElementContentAsLong();
         }
 
+        internal long ReadContentAsLong()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, "Int64");
+
+            return reader.ReadContentAsLong();
+        }
 
 #if USE_REFEMIT
         public short ReadElementContentAsShort()
@@ -416,6 +603,11 @@ namespace System.Runtime.Serialization
 #endif
         {
             return ToShort(ReadElementContentAsInt());
+        }
+
+        internal short ReadContentAsShort()
+        {
+            return ToShort(ReadContentAsInt());
         }
 
         private short ToShort(int value)
@@ -434,6 +626,11 @@ namespace System.Runtime.Serialization
 #endif
         {
             return ToByte(ReadElementContentAsInt());
+        }
+
+        internal byte ReadContentAsUnsignedByte()
+        {
+            return ToByte(ReadContentAsInt());
         }
 
         private byte ToByte(int value)
@@ -455,6 +652,11 @@ namespace System.Runtime.Serialization
             return ToSByte(ReadElementContentAsInt());
         }
 
+        internal SByte ReadContentAsSignedByte()
+        {
+            return ToSByte(ReadContentAsInt());
+        }
+
         private SByte ToSByte(int value)
         {
             if (value < SByte.MinValue || value > SByte.MaxValue)
@@ -472,6 +674,11 @@ namespace System.Runtime.Serialization
 #endif
         {
             return ToUInt32(ReadElementContentAsLong());
+        }
+
+        internal UInt32 ReadContentAsUnsignedInt()
+        {
+            return ToUInt32(ReadContentAsLong());
         }
 
         private UInt32 ToUInt32(long value)
@@ -501,6 +708,15 @@ namespace System.Runtime.Serialization
             return XmlConverter.ToUInt64(str);
         }
 
+        internal virtual UInt64 ReadContentAsUnsignedLong()
+        {
+            string str = reader.ReadContentAsString();
+
+            if (str == null || str.Length == 0)
+                ThrowConversionException(string.Empty, "UInt64");
+
+            return XmlConverter.ToUInt64(str);
+        }
 
 #if USE_REFEMIT
         [CLSCompliant(false)]
@@ -512,6 +728,10 @@ namespace System.Runtime.Serialization
             return ToUInt16(ReadElementContentAsInt());
         }
 
+        internal UInt16 ReadContentAsUnsignedShort()
+        {
+            return ToUInt16(ReadContentAsInt());
+        }
 
         private UInt16 ToUInt16(int value)
         {
@@ -532,6 +752,12 @@ namespace System.Runtime.Serialization
                 ThrowNotAtElement();
 
             string str = reader.ReadElementContentAsString();
+            return XmlConverter.ToTimeSpan(str);
+        }
+
+        internal TimeSpan ReadContentAsTimeSpan()
+        {
+            string str = reader.ReadContentAsString();
             return XmlConverter.ToTimeSpan(str);
         }
 
@@ -563,6 +789,26 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal Guid ReadContentAsGuid()
+        {
+            string str = reader.ReadContentAsString();
+            try
+            {
+                return Guid.Parse(str);
+            }
+            catch (ArgumentException exception)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(str, "Guid", exception));
+            }
+            catch (FormatException exception)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(str, "Guid", exception));
+            }
+            catch (OverflowException exception)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(str, "Guid", exception));
+            }
+        }
 
 #if USE_REFEMIT
         public Uri ReadElementContentAsUri()
@@ -588,6 +834,22 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal Uri ReadContentAsUri()
+        {
+            string str = ReadContentAsString();
+            try
+            {
+                return new Uri(str, UriKind.RelativeOrAbsolute);
+            }
+            catch (ArgumentException exception)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(str, "Uri", exception));
+            }
+            catch (FormatException exception)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(str, "Uri", exception));
+            }
+        }
 
 #if USE_REFEMIT
         public XmlQualifiedName ReadElementContentAsQName()
@@ -637,7 +899,7 @@ namespace System.Runtime.Serialization
 #else
         internal bool TryReadBooleanArray(XmlObjectSerializerReadContext context,
 #endif
-        XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
+            XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, out bool[] array)
         {
             if (dictionaryReader == null)
@@ -671,7 +933,7 @@ namespace System.Runtime.Serialization
 #else
         internal virtual bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
 #endif
-        XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
+            XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, out DateTime[] array)
         {
             if (dictionaryReader == null)
@@ -901,6 +1163,59 @@ namespace System.Runtime.Serialization
         }
 
         // IXmlTextParser members
+        internal bool Normalized
+        {
+            get
+            {
+                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                if (xmlTextReader == null)
+                {
+                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    return (xmlTextParser == null) ? false : xmlTextParser.Normalized;
+                }
+                else
+                    return xmlTextReader.Normalization;
+            }
+            set
+            {
+                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                if (xmlTextReader == null)
+                {
+                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    if (xmlTextParser != null)
+                        xmlTextParser.Normalized = value;
+                }
+                else
+                    xmlTextReader.Normalization = value;
+            }
+        }
+
+        internal WhitespaceHandling WhitespaceHandling
+        {
+            get
+            {
+                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                if (xmlTextReader == null)
+                {
+                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    return (xmlTextParser == null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
+                }
+                else
+                    return xmlTextReader.WhitespaceHandling;
+            }
+            set
+            {
+                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                if (xmlTextReader == null)
+                {
+                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    if (xmlTextParser != null)
+                        xmlTextParser.WhitespaceHandling = value;
+                }
+                else
+                    xmlTextReader.WhitespaceHandling = value;
+            }
+        }
 
         // delegating properties and methods
         internal string Name { get { return reader.Name; } }

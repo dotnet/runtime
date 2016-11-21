@@ -1,7 +1,7 @@
 Recommended reading to better understand this document:
-[.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md)
-[Project-Guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md)
-[Package-Projects](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/package-projects.md)
+[.NET Standard](https://github.com/dotnet/standard/blob/master/docs/faq.md)
+| [Project-Guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md)
+| [Package-Projects](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/package-projects.md)
 
 #Add APIs
 - [Determining versions and targets](#determining-versions-and-targets)

@@ -5,13 +5,10 @@
     <Project Include="System.Runtime.WindowsRuntime.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-<!--
-    Need to take a new CoreFX drop so we can pull the new packages and avoid direct csproj references to System.Runtime/Extensions
     <Project Include="System.Runtime.WindowsRuntime.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>uap101aot</TargetGroup>
     </Project>
--->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

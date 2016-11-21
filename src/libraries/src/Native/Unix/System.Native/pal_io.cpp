@@ -1171,3 +1171,22 @@ extern "C" char* SystemNative_RealPath(const char* path)
     assert(path != nullptr);
     return realpath(path, nullptr);
 }
+
+extern "C" int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
+{
+    if (offset < 0 || length < 0) 
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    struct flock lockArgs;
+    lockArgs.l_type = lockType;
+    lockArgs.l_whence = SEEK_SET;
+    lockArgs.l_start = offset;
+    lockArgs.l_len = length;
+    
+    int32_t ret;
+    while (CheckInterrupted(ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)));
+    return ret;
+}

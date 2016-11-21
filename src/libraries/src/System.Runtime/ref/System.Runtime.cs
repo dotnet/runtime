@@ -83,8 +83,10 @@ namespace System
         public static string BaseDirectory { get { throw null; } }
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { throw null; }
+#if netcoreapp11
         public static string TargetFrameworkName { get { throw null; } }
         public static object GetData(string name) { throw null; }
+#endif
     }
     
     public partial class EntryPointNotFoundException : System.TypeLoadException
@@ -2212,6 +2214,21 @@ namespace System
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
     }
+
+    public abstract partial class TimeZone
+    {
+        protected TimeZone() { }
+        public static System.TimeZone CurrentTimeZone { get { throw null; } }
+        public abstract string DaylightName { get; }
+        public abstract string StandardName { get; }
+        public abstract System.Globalization.DaylightTime GetDaylightChanges(int year);
+        public abstract System.TimeSpan GetUtcOffset(System.DateTime time);
+        public virtual bool IsDaylightSavingTime(System.DateTime time) { throw null; }
+        public static bool IsDaylightSavingTime(System.DateTime time, System.Globalization.DaylightTime daylightTimes) { throw null; }
+        public virtual System.DateTime ToLocalTime(System.DateTime time) { throw null; }
+        public virtual System.DateTime ToUniversalTime(System.DateTime time) { throw null; }
+    }
+    
     public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TimeZoneInfo() { }
@@ -2227,6 +2244,9 @@ namespace System
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTimeOffset ConvertTime(System.DateTimeOffset dateTimeOffset, System.TimeZoneInfo destinationTimeZone) { throw null; }
+        public static System.DateTime ConvertTimeBySystemTimeZoneId(System.DateTime dateTime, string destinationTimeZoneId) { throw null; }
+        public static System.DateTime ConvertTimeBySystemTimeZoneId(System.DateTime dateTime, string sourceTimeZoneId, string destinationTimeZoneId) { throw null; }
+        public static System.DateTimeOffset ConvertTimeBySystemTimeZoneId(System.DateTimeOffset dateTimeOffset, string destinationTimeZoneId) { throw null; }
         public static System.DateTime ConvertTimeFromUtc(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { throw null; }
         public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime) { throw null; }
         public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone) { throw null; }
@@ -3168,16 +3188,14 @@ namespace System.Runtime.ConstrainedExecution
 
 namespace System.Runtime.InteropServices
 {
-    [System.Security.SecurityCriticalAttribute]
     public abstract partial class CriticalHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
         protected System.IntPtr handle;
         protected CriticalHandle(System.IntPtr invalidHandleValue) { }
         public bool IsClosed { get { throw null; } }
         public abstract bool IsInvalid { get; }
-        [System.Security.SecuritySafeCriticalAttribute]
+        public void Close() { }
         public void Dispose() { }
-        [System.Security.SecurityCriticalAttribute]
         protected virtual void Dispose(bool disposing) { }
         ~CriticalHandle() { }
         protected abstract bool ReleaseHandle();
@@ -4316,6 +4334,20 @@ namespace System.Globalization
         public static System.Globalization.CultureInfo ReadOnly(System.Globalization.CultureInfo ci) { throw null; }
         public override string ToString() { throw null; }
     }
+    public sealed partial class IdnMapping
+    {
+        public IdnMapping() { }
+        public bool AllowUnassigned { get { throw null; } set { } }
+        public bool UseStd3AsciiRules { get { throw null; } set { } }
+        public override bool Equals(object obj) { throw null; }
+        public string GetAscii(string unicode) { throw null; }
+        public string GetAscii(string unicode, int index) { throw null; }
+        public string GetAscii(string unicode, int index, int count) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public string GetUnicode(string ascii) { throw null; }
+        public string GetUnicode(string ascii, int index) { throw null; }
+        public string GetUnicode(string ascii, int index, int count) { throw null; }
+    }    
     public partial class CultureNotFoundException : System.ArgumentException, System.Runtime.Serialization.ISerializable
     {
         public CultureNotFoundException() { }
@@ -4509,6 +4541,7 @@ namespace System.IO
         public FileLoadException(string message, string fileName) { }
         public FileLoadException(string message, string fileName, System.Exception inner) { }
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
@@ -4525,6 +4558,7 @@ namespace System.IO
         public string FileName { get { throw null; } }
         public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     public enum HandleInheritability
@@ -4602,6 +4636,14 @@ namespace System.IO
     }
     public partial class FileStream : System.IO.Stream
     {
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access) { }
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle) { }
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize) { }
+        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize, bool isAsync) { }
@@ -4666,6 +4708,7 @@ namespace System.Reflection
         protected Assembly() { }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { get; }
+        public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { get { throw null; } }
         public virtual MethodInfo EntryPoint { get { throw null; } }
         public virtual string FullName { get { throw null; } }
@@ -4683,6 +4726,9 @@ namespace System.Reflection
         public static bool operator !=(System.Reflection.Assembly left, System.Reflection.Assembly right) { throw null; }
         public static System.Reflection.Assembly GetAssembly(System.Type type) { throw null; }
         public static System.Reflection.Assembly GetCallingAssembly() { throw null; }
+        public virtual System.IO.FileStream GetFile(string name) { throw null; }
+        public virtual System.IO.FileStream[] GetFiles() { throw null; }
+        public virtual System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Reflection.ManifestResourceInfo GetManifestResourceInfo(string resourceName) { throw null; }
         public virtual string[] GetManifestResourceNames() { throw null; }
@@ -4704,7 +4750,7 @@ namespace System.Reflection
         public static System.Reflection.Assembly LoadFrom(String assemblyFile) { throw null; }
         public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule) { throw null; }
-        public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
+        public virtual System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
         [ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead.")]
         public static Assembly LoadWithPartialName(string partialName) { throw null; }
         public static System.Reflection.Assembly GetEntryAssembly() { throw null; }
@@ -4840,6 +4886,7 @@ namespace System.Reflection
         public System.Reflection.AssemblyContentType ContentType { get { throw null; } set { } }
         public System.Globalization.CultureInfo CultureInfo { get { throw null; } set { } }
         public string CultureName { get { throw null; } set { } }
+        public string EscapedCodeBase { get { throw null; } }
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
@@ -5324,6 +5371,7 @@ namespace System.Reflection
         public bool IsStatic { get { throw null; } }
         public bool IsVirtual { get { throw null; } }
         public virtual bool IsSecurityCritical { get { throw null; } }
+        public virtual bool IsSecuritySafeCritical { get { throw null; } }
         public virtual bool IsSecurityTransparent { get { throw null; } }
         public abstract System.RuntimeMethodHandle MethodHandle { get; }
         public virtual System.Reflection.MethodImplAttributes MethodImplementationFlags { get { throw null; } }
@@ -5764,6 +5812,7 @@ namespace System.Reflection
     public partial class StrongNameKeyPair : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public StrongNameKeyPair(byte[] keyPairArray) { }
+        public StrongNameKeyPair(System.IO.FileStream keyPairFile) { }
         protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public StrongNameKeyPair(string keyPairContainer) { }
         public byte[] PublicKey { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
@@ -6113,7 +6162,7 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public sealed partial class FirstChanceExceptionEventArgs : EventArgs
+    public partial class FirstChanceExceptionEventArgs : EventArgs
     {
         public FirstChanceExceptionEventArgs(Exception exception) { }
         public Exception Exception { get { throw null; } }

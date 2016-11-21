@@ -20,27 +20,27 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), @"xsd10\");
+        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), "xsd10");
 
         [Theory]
-        [InlineData(@"attributeGroup\attgC007.xsd", 1, 1, 1, 2)]
-        [InlineData(@"attributeGroup\attgC024.xsd", 2, 3, 2, 0)]
-        [InlineData(@"attributeGroup\attgC026.xsd", 1, 4, 1, 0)]
-        [InlineData(@"complexType\ctA001.xsd", 1, 2, 1, 0)]
-        [InlineData(@"complexType\ctA002.xsd", 1, 3, 1, 0)]
-        [InlineData(@"complexType\ctA003.xsd", 1, 3, 1, 0)]
-        [InlineData(@"particles\particlesA006.xsd", 1, 2, 1, 0)]
-        [InlineData(@"particles\particlesA002.xsd", 1, 2, 1, 0)]
-        [InlineData(@"particles\particlesA007.xsd", 1, 2, 1, 0)]
-        [InlineData(@"particles\particlesA010.xsd", 1, 2, 1, 0)]
-        [InlineData(@"simpleType\bug102159_1.xsd", 1, 2, 3, 0)]
-        [InlineData(@"simpleType\stE064.xsd", 1, 1, 1, 0)]
-        [InlineData(@"wildcards\wildG007.xsd", 1, 1, 2, 0)]
-        [InlineData(@"wildcards\wildG010.xsd", 3, 1, 5, 0)]
-        public void v1(String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA)
+        [InlineData("attributeGroup", "attgC007.xsd", 1, 1, 1, 2)]
+        [InlineData("attributeGroup", "attgC024.xsd", 2, 3, 2, 0)]
+        [InlineData("attributeGroup", "attgC026.xsd", 1, 4, 1, 0)]
+        [InlineData("complexType", "ctA001.xsd", 1, 2, 1, 0)]
+        [InlineData("complexType", "ctA002.xsd", 1, 3, 1, 0)]
+        [InlineData("complexType", "ctA003.xsd", 1, 3, 1, 0)]
+        [InlineData("PARTICLES", "particlesA006.xsd", 1, 2, 1, 0)]
+        [InlineData("PARTICLES", "particlesA002.xsd", 1, 2, 1, 0)]
+        [InlineData("PARTICLES", "particlesA007.xsd", 1, 2, 1, 0)]
+        [InlineData("PARTICLES", "particlesA010.xsd", 1, 2, 1, 0)]
+        [InlineData("simpleType", "bug102159_1.xsd", 1, 2, 3, 0)]
+        [InlineData("simpleType", "stE064.xsd", 1, 1, 1, 0)]
+        [InlineData("Wildcards", "wildG007.xsd", 1, 1, 2, 0)]
+        [InlineData("Wildcards", "wildG010.xsd", 3, 1, 5, 0)]
+        public void v1(String testDir, String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA)
         {
             Initialize();
-            string xsd = path + testFile;
+            string xsd = Path.Combine(path, testDir, testFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
@@ -77,25 +77,25 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [InlineData(@"attributeGroup\attgC007", 1, 1, 1, 2)]
-        [InlineData(@"attributeGroup\attgC024", 2, 3, 2, 0)]
-        [InlineData(@"attributeGroup\attgC026", 1, 4, 1, 0)]
-        [InlineData(@"complexType\ctA001", 1, 2, 1, 0)]
-        [InlineData(@"complexType\ctA002", 1, 3, 1, 0)]
-        [InlineData(@"complexType\ctA003", 1, 3, 1, 0)]
-        [InlineData(@"particles\particlesA006", 1, 2, 1, 0)]
-        [InlineData(@"particles\particlesA002", 1, 2, 1, 0)]
-        [InlineData(@"particles\particlesA007", 1, 2, 1, 0)]
-        [InlineData(@"particles\particlesA010", 1, 2, 1, 0)]
-        [InlineData(@"simpleType\bug102159_1", 1, 2, 3, 0)]
-        [InlineData(@"simpleType\stE064", 1, 1, 1, 0)]
-        [InlineData(@"wildcards\wildG007", 1, 1, 2, 0)]
-        [InlineData(@"wildcards\wildG010", 3, 1, 5, 0)]
-        public void v2(String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA)
+        [InlineData("attributeGroup", "attgC007", 1, 1, 1, 2)]
+        [InlineData("attributeGroup", "attgC024", 2, 3, 2, 0)]
+        [InlineData("attributeGroup", "attgC026", 1, 4, 1, 0)]
+        [InlineData("complexType", "ctA001", 1, 2, 1, 0)]
+        [InlineData("complexType", "ctA002", 1, 3, 1, 0)]
+        [InlineData("complexType", "ctA003", 1, 3, 1, 0)]
+        [InlineData("PARTICLES", "particlesA006", 1, 2, 1, 0)]
+        [InlineData("PARTICLES", "particlesA002", 1, 2, 1, 0)]
+        [InlineData("PARTICLES", "particlesA007", 1, 2, 1, 0)]
+        [InlineData("PARTICLES", "particlesA010", 1, 2, 1, 0)]
+        [InlineData("simpleType", "bug102159_1", 1, 2, 3, 0)]
+        [InlineData("simpleType", "stE064", 1, 1, 1, 0)]
+        [InlineData("Wildcards", "wildG007", 1, 1, 2, 0)]
+        [InlineData("Wildcards", "wildG010", 3, 1, 5, 0)]
+        public void v2(String testDir, String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA)
         {
             Initialize();
-            string xsd = path + testFile + ".xsd";
-            string xml = path + testFile + ".xml";
+            string xsd = Path.Combine(path, testDir, testFile + ".xsd");
+            string xml = Path.Combine(path, testDir, testFile + ".xml");
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
@@ -139,27 +139,27 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), @"xsd10\");
+        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), "xsd10");
 
         [Theory]
-        [InlineData(@"attributeGroup\attgC007.xsd", 1, 1, 1, 2, 0, 0)]
-        [InlineData(@"attributeGroup\attgC024.xsd", 2, 3, 2, 0, 1, 1)]
-        [InlineData(@"attributeGroup\attgC026.xsd", 1, 4, 1, 0, 0, 0)]
-        [InlineData(@"complexType\ctA001.xsd", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"complexType\ctA002.xsd", 1, 3, 1, 0, 0, 0)]
-        [InlineData(@"complexType\ctA003.xsd", 1, 3, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA006.xsd", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA002.xsd", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA007.xsd", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA010.xsd", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"simpleType\bug102159_1.xsd", 1, 2, 3, 0, 0, 0)]
-        [InlineData(@"simpleType\stE064.xsd", 1, 1, 1, 0, 0, 0)]
-        [InlineData(@"wildcards\wildG007.xsd", 1, 1, 2, 0, 0, 0)]
-        [InlineData(@"wildcards\wildG010.xsd", 3, 1, 5, 0, 3, 1)]
-        public void v1(String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA, int expCountGER, int expCountGERC)
+        [InlineData("attributeGroup", "attgC007.xsd", 1, 1, 1, 2, 0, 0)]
+        [InlineData("attributeGroup", "attgC024.xsd", 2, 3, 2, 0, 1, 1)]
+        [InlineData("attributeGroup", "attgC026.xsd", 1, 4, 1, 0, 0, 0)]
+        [InlineData("complexType", "ctA001.xsd", 1, 2, 1, 0, 0, 0)]
+        [InlineData("complexType", "ctA002.xsd", 1, 3, 1, 0, 0, 0)]
+        [InlineData("complexType", "ctA003.xsd", 1, 3, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA006.xsd", 1, 2, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA002.xsd", 1, 2, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA007.xsd", 1, 2, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA010.xsd", 1, 2, 1, 0, 0, 0)]
+        [InlineData("simpleType", "bug102159_1.xsd", 1, 2, 3, 0, 0, 0)]
+        [InlineData("simpleType", "stE064.xsd", 1, 1, 1, 0, 0, 0)]
+        [InlineData("Wildcards", "wildG007.xsd", 1, 1, 2, 0, 0, 0)]
+        [InlineData("Wildcards", "wildG010.xsd", 3, 1, 5, 0, 3, 1)]
+        public void v1(String testDir, String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA, int expCountGER, int expCountGERC)
         {
             Initialize();
-            string xsd = path + testFile;
+            string xsd = Path.Combine(path, testDir, testFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
@@ -206,25 +206,25 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [InlineData(@"attributeGroup\attgC007", 1, 1, 1, 2, 0, 0)]
-        [InlineData(@"attributeGroup\attgC024", 2, 3, 2, 0, 1, 1)]
-        [InlineData(@"attributeGroup\attgC026", 1, 4, 1, 0, 0, 0)]
-        [InlineData(@"complexType\ctA001", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"complexType\ctA002", 1, 3, 1, 0, 0, 0)]
-        [InlineData(@"complexType\ctA003", 1, 3, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA006", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA002", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA007", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"particles\particlesA010", 1, 2, 1, 0, 0, 0)]
-        [InlineData(@"simpleType\bug102159_1", 1, 2, 3, 0, 0, 0)]
-        [InlineData(@"simpleType\stE064", 1, 1, 1, 0, 0, 0)]
-        [InlineData(@"wildcards\wildG007", 1, 1, 2, 0, 0, 0)]
-        [InlineData(@"wildcards\wildG010", 3, 1, 5, 0, 3, 1)]
-        public void v2(String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA, int expCountGER, int expCountGERC)
+        [InlineData("attributeGroup", "attgC007", 1, 1, 1, 2, 0, 0)]
+        [InlineData("attributeGroup", "attgC024", 2, 3, 2, 0, 1, 1)]
+        [InlineData("attributeGroup", "attgC026", 1, 4, 1, 0, 0, 0)]
+        [InlineData("complexType", "ctA001", 1, 2, 1, 0, 0, 0)]
+        [InlineData("complexType", "ctA002", 1, 3, 1, 0, 0, 0)]
+        [InlineData("complexType", "ctA003", 1, 3, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA006", 1, 2, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA002", 1, 2, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA007", 1, 2, 1, 0, 0, 0)]
+        [InlineData("PARTICLES", "particlesA010", 1, 2, 1, 0, 0, 0)]
+        [InlineData("simpleType", "bug102159_1", 1, 2, 3, 0, 0, 0)]
+        [InlineData("simpleType", "stE064", 1, 1, 1, 0, 0, 0)]
+        [InlineData("Wildcards", "wildG007", 1, 1, 2, 0, 0, 0)]
+        [InlineData("Wildcards", "wildG010", 3, 1, 5, 0, 3, 1)]
+        public void v2(String testDir, String testFile, int expCount, int expCountGT, int expCountGE, int expCountGA, int expCountGER, int expCountGERC)
         {
             Initialize();
-            string xsd = path + testFile + ".xsd";
-            string xml = path + testFile + ".xml";
+            string xsd = Path.Combine(path, testDir, testFile + ".xsd");
+            string xml = Path.Combine(path, testDir, testFile + ".xml");
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
@@ -279,23 +279,23 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), @"xsd10\");
+        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), "xsd10");
 
         [Theory]
-        [InlineData(@"attributeGroup\attgC007.xsd", 1)]
-        [InlineData(@"attributeGroup\attgC024.xsd", 2)]
-        [InlineData(@"attributeGroup\attgC026.xsd", 1)]
-        [InlineData(@"complexType\ctA001.xsd", 1)]
-        [InlineData(@"complexType\ctA002.xsd", 1)]
-        [InlineData(@"complexType\ctA003.xsd", 1)]
-        [InlineData(@"simpleType\bug102159_1.xsd", 1)]
-        [InlineData(@"simpleType\stE064.xsd", 1)]
-        [InlineData(@"wildcards\wildG007.xsd", 1)]
-        [InlineData(@"wildcards\wildG010.xsd", 3)]
-        public void v1(String TestFile, int expCount)
+        [InlineData("attributeGroup", "attgC007.xsd", 1)]
+        [InlineData("attributeGroup", "attgC024.xsd", 2)]
+        [InlineData("attributeGroup", "attgC026.xsd", 1)]
+        [InlineData("complexType", "ctA001.xsd", 1)]
+        [InlineData("complexType", "ctA002.xsd", 1)]
+        [InlineData("complexType", "ctA003.xsd", 1)]
+        [InlineData("simpleType", "bug102159_1.xsd", 1)]
+        [InlineData("simpleType", "stE064.xsd", 1)]
+        [InlineData("Wildcards", "wildG007.xsd", 1)]
+        [InlineData("Wildcards", "wildG010.xsd", 3)]
+        public void v1(String testDir, String TestFile, int expCount)
         {
             Initialize();
-            string xsd = path + TestFile;
+            string xsd = Path.Combine(path, testDir, TestFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
@@ -343,25 +343,25 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [InlineData(@"attributeGroup\attgC007", 1)]
-        [InlineData(@"attributeGroup\attgC024", 2)]
-        [InlineData(@"attributeGroup\attgC026", 1)]
-        [InlineData(@"complexType\ctA001", 1)]
-        [InlineData(@"complexType\ctA002", 1)]
-        [InlineData(@"complexType\ctA003", 1)]
-        [InlineData(@"particles\particlesA006", 1)]
-        [InlineData(@"particles\particlesA002", 1)]
-        [InlineData(@"particles\particlesA007", 1)]
-        [InlineData(@"particles\particlesA010", 1)]
-        [InlineData(@"simpleType\bug102159_1", 1)]
-        [InlineData(@"simpleType\stE064", 1)]
-        [InlineData(@"wildcards\wildG007", 1)]
-        [InlineData(@"wildcards\wildG010", 3)]
-        public void v2(String testFile, int expCount)
+        [InlineData("attributeGroup", "attgC007", 1)]
+        [InlineData("attributeGroup", "attgC024", 2)]
+        [InlineData("attributeGroup", "attgC026", 1)]
+        [InlineData("complexType", "ctA001", 1)]
+        [InlineData("complexType", "ctA002", 1)]
+        [InlineData("complexType", "ctA003", 1)]
+        [InlineData("PARTICLES", "particlesA006", 1)]
+        [InlineData("PARTICLES", "particlesA002", 1)]
+        [InlineData("PARTICLES", "particlesA007", 1)]
+        [InlineData("PARTICLES", "particlesA010", 1)]
+        [InlineData("simpleType", "bug102159_1", 1)]
+        [InlineData("simpleType", "stE064", 1)]
+        [InlineData("Wildcards", "wildG007", 1)]
+        [InlineData("Wildcards", "wildG010", 3)]
+        public void v2(String testDir, String testFile, int expCount)
         {
             Initialize();
-            string xsd = path + testFile + ".xsd";
-            string xml = path + testFile + ".xml";
+            string xsd = Path.Combine(path, testDir, testFile + ".xsd");
+            string xml = Path.Combine(path, testDir, testFile + ".xml");
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
@@ -415,19 +415,19 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), @"xsd10\");
-        private static string testData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlSchemaCollection\");
+        private static string path = Path.Combine(FilePathUtil.GetStandardPath(), "xsd10");
+        private static string testData = Path.Combine(FilePathUtil.GetTestDataPath(), "XmlSchemaCollection");
 
         [Theory]
-        [InlineData(@"schema\schE1_a.xsd", 2, 3, 3)]
-        [InlineData(@"schema\schE3.xsd", 1, 1, 0)]
-        [InlineData(@"schema\schB8.xsd", 1, 1, 1)]
-        [InlineData(@"schema\schB1_a.xsd", 1, 3, 3)]
-        [InlineData(@"schema\schM2_a.xsd", 1, 3, 3)]
-        [InlineData(@"schema\schH2_a.xsd", 1, 3, 3)]
-        public void AddValid_Import_Include_Redefine(String testFile, int expCount, int expCountGT, int expCountGE)
+        [InlineData("SCHEMA", "schE1_a.xsd", 2, 3, 3)]
+        [InlineData("SCHEMA", "schE3.xsd", 1, 1, 0)]
+        [InlineData("SCHEMA", "schB8.xsd", 1, 1, 1)]
+        [InlineData("SCHEMA", "schB1_a.xsd", 1, 3, 3)]
+        [InlineData("SCHEMA", "schM2_a.xsd", 1, 3, 3)]
+        [InlineData("SCHEMA", "schH2_a.xsd", 1, 3, 3)]
+        public void AddValid_Import_Include_Redefine(String testDir, String testFile, int expCount, int expCountGT, int expCountGE)
         {
-            string xsd = path + testFile;
+            string xsd = Path.Combine(path, testDir, testFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
@@ -450,11 +450,11 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [InlineData(@"schema\schE9.xsd", 1, 1)]
-        [InlineData(@"schema\schA7_a.xsd", 2, 2)]
-        public void AddEditInvalidImport(String testFile, int expCountGT, int expCountGE)
+        [InlineData("SCHEMA", "schE9.xsd", 1, 1)]
+        [InlineData("SCHEMA", "schA7_a.xsd", 2, 2)]
+        public void AddEditInvalidImport(String testDir, String testFile, int expCountGT, int expCountGE)
         {
-            string xsd = path + testFile;
+            string xsd = Path.Combine(path, testDir, testFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), null);
@@ -508,7 +508,7 @@ namespace System.Xml.Tests
         [InlineData("include_v1_a.xsd", 3, 3)]
         public void AddEditInvalidIncludeSchema(String testFile, int expCountGT, int expCountGE)
         {
-            string xsd = testData + testFile;
+            string xsd = Path.Combine(testData, testFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
@@ -558,15 +558,15 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [InlineData(@"schema\schH3.xsd")]
-        [InlineData(@"schema\schF3_a.xsd")]
-        [InlineData(@"schema\schE1i.xsd")]
-        [InlineData(@"schema\schB4_a.xsd")]
-        [InlineData(@"schema\schB1i.xsd")]
-        public void AddInvalid_Import_Include(String testFile)
+        [InlineData("SCHEMA", "schH3.xsd")]
+        [InlineData("SCHEMA", "schF3_a.xsd")]
+        [InlineData("SCHEMA", "schE1i.xsd")]
+        [InlineData("SCHEMA", "schB4_a.xsd")]
+        [InlineData("SCHEMA", "schB1i.xsd")]
+        public void AddInvalid_Import_Include(String testDir, String testFile)
         {
             Initialize();
-            string xsd = path + testFile;
+            string xsd = Path.Combine(path, testDir, testFile);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();

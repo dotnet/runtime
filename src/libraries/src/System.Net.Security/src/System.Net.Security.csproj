@@ -32,12 +32,9 @@
     <Compile Include="System\PinnableBufferCache.cs" />
     <Compile Include="System\Net\FixedSizeReader.cs" />
     <Compile Include="System\Net\HelperAsyncResults.cs" />
-    <Compile Include="System\Net\SecurityStatusPal.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
-    <Compile Include="System\Net\Security\SecurityBuffer.cs" />
-    <Compile Include="System\Net\Security\SecurityBufferType.cs" />
     <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
@@ -51,15 +48,11 @@
     <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
     <!-- NegotiateStream -->
     <Compile Include="System\Net\BufferAsyncResult.cs" />
-    <Compile Include="System\Net\ContextFlagsPal.cs" />
     <Compile Include="System\Net\NTAuthentication.cs" />
     <Compile Include="System\Net\StreamFramer.cs" />
-    <Compile Include="System\Net\Security\SSPIHandleCache.cs" />
-
     <Compile Include="System\Net\Security\NegotiateStream.cs" />
     <Compile Include="System\Net\Security\NegoState.cs" />
     <Compile Include="System\Net\Security\InternalNegotiateStream.cs" />
-    <Compile Include="System\Net\NegotiationInfoClass.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
@@ -120,18 +113,48 @@
     <Compile Include="$(CommonPath)\System\IO\Error.cs">
       <Link>Common\System\IO\Error.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.cs">
+      <Link>Common\System\Net\Security\SecurityBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.cs">
+      <Link>Common\System\Net\Security\SecurityBufferType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SSPIHandleCache.cs">
+      <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextFlagsPal.cs">
+      <Link>Common\System\Net\ContextFlagsPal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\NegotiationInfoClass.cs">
+      <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.cs">
+      <Link>Common\System\Net\NTAuthentication.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
+      <Link>Common\System\Net\SecurityStatusPal.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net463' ">
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.Windows.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
-    <Compile Include="System\Net\SecurityStatusAdapterPal.Windows.cs" />
-    <Compile Include="System\Net\Security\SecurityContextTokenHandle.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Windows.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Windows.cs" />
     <!-- NegotiateStream -->
-    <Compile Include="System\Net\ContextFlagsAdapterPal.Windows.cs" />
-    <Compile Include="System\Net\Security\NegotiateStreamPal.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Net\SecurityStatusAdapterPal.Windows.cs">
+      <Link>Common\System\Net\SecurityStatusAdapterPal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Windows.cs">
+      <Link>Common\System\Net\ContextFlagsAdapterPal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Windows.cs">
+      <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityContextTokenHandle.cs">
+      <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
+    </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -145,8 +168,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.Alerts.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
@@ -183,6 +206,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\BidirectionalDictionary.cs">
       <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SafeDeleteContext.cs">
+      <Link>Common\Interop\Windows\sspicli\SafeDeleteContext.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfo.cs">
       <Link>Common\Interop\Windows\sspicli\SecurityPackageInfo.cs</Link>
@@ -221,8 +247,13 @@
       <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
     </Compile>
     <!-- NegotiateStream -->
-    <Compile Include="System\Net\ContextFlagsAdapterPal.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Unix.cs">
+      <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
+    </Compile>
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Unix.cs">
+      <Link>Common\System\Net\Security\NegotiateStreamPal.Unix.cs</Link>
+    </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

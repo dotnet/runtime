@@ -38,5 +38,12 @@ namespace System.Diagnostics
         public bool UseShellExecute { get; set; }
 
         public string[] Verbs => Array.Empty<string>();
+
+        [CLSCompliant(false)]
+        public SecureString Password
+        {
+            get { throw new PlatformNotSupportedException(); }
+            set { throw new PlatformNotSupportedException(); }
+        }
     }
 }

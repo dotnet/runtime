@@ -18,6 +18,7 @@ internal static partial class Interop
         internal const string ProcUptimeFilePath = RootPath + "uptime";
         private const string StatFileName = "/stat";
         private const string MapsFileName = "/maps";
+        private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
 
         internal struct ParsedStat
@@ -92,6 +93,11 @@ internal static partial class Interop
         internal static string GetTaskDirectoryPathForProcess(int pid)
         {
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + TaskDirectoryName;
+        }
+
+        internal static string GetFileDescriptorDirectoryPathForProcess(int pid)
+        {
+            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + FileDescriptorDirectoryName;
         }
 
         internal static IEnumerable<ParsedMapsModule> ParseMapsModules(int pid)

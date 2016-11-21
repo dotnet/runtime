@@ -13,6 +13,11 @@ namespace System.Security.Cryptography
             return new RandomNumberGeneratorImplementation();
         }
 
+        public static RandomNumberGenerator Create(string rngName)
+        {
+            return (RandomNumberGenerator)CryptoConfig.CreateFromName(rngName);
+        }
+
         public void Dispose()
         {
             Dispose(true);

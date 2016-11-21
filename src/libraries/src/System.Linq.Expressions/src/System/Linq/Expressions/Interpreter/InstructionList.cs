@@ -299,7 +299,7 @@ namespace System.Linq.Expressions.Interpreter
                 _maxStackDepth,
                 _maxContinuationDepth,
                 _instructions.ToArray(),
-                (_objects != null) ? _objects.ToArray() : null,
+                _objects?.ToArray(),
                 BuildRuntimeLabels(),
                 _debugCookies
             );
@@ -326,13 +326,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoad(bool value)
         {
-            if ((bool)value)
+            if (value)
             {
-                Emit(s_true ?? (s_true = new LoadObjectInstruction(value)));
+                Emit(s_true ?? (s_true = new LoadObjectInstruction(Utils.BoxedTrue)));
             }
             else
             {
-                Emit(s_false ?? (s_false = new LoadObjectInstruction(value)));
+                Emit(s_false ?? (s_false = new LoadObjectInstruction(Utils.BoxedFalse)));
             }
         }
 
@@ -656,12 +656,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitGetArrayItem()
         {
-            Emit(GetArrayItemInstruction.Instruction);
+            Emit(GetArrayItemInstruction.Instance);
         }
 
         public void EmitSetArrayItem()
         {
-            Emit(new SetArrayItemInstruction());
+            Emit(SetArrayItemInstruction.Instance);
         }
 
         public void EmitNewArray(Type elementType)

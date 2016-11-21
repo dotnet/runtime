@@ -71,31 +71,31 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\mincore\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
       <Link>Common\Interop\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentThreadId.cs">
       <Link>Common\Interop\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventRegister.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EventRegister.cs">
       <Link>Common\Interop\Interop.EventRegister.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventUnregister.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EventUnregister.cs">
       <Link>Common\Interop\Interop.EventUnregister.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventWrite.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EventWrite.cs">
       <Link>Common\Interop\Interop.EventWrite.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventSetInformation.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EventSetInformation.cs">
       <Link>Common\Interop\Interop.EventSetInformation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventWriteTransfer.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EventWriteTransfer.cs">
       <Link>Common\Interop\Interop.EventWriteTransfer.cs</Link>
     </Compile>
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />

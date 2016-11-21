@@ -7,7 +7,6 @@ using System.Globalization;
 using System.IO;
 using System.Runtime;
 using System.Runtime.Serialization;
-using System.Security;
 using System.Text;
 using System.Xml;
 
@@ -33,7 +32,6 @@ namespace System.Runtime.Serialization.Json
         // This array was part of a perf improvement for escaping characters < WHITESPACE.
         private static readonly string[] s_escapedJsonStringTable = CreateEscapedJsonStringTable();
 
-        [SecurityCritical]
         private static BinHexEncoding s_binHexEncoding;
 
         private string _attributeText;
@@ -156,7 +154,6 @@ namespace System.Runtime.Serialization.Json
 
         private static BinHexEncoding BinHexEncoding
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_binHexEncoding == null)
@@ -167,38 +164,17 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private bool HasOpenAttribute
-        {
-            get
-            {
-                return (_isWritingDataTypeAttribute || _isWritingServerTypeAttribute || IsWritingNameAttribute || _isWritingXmlnsAttribute);
-            }
-        }
+        private bool HasOpenAttribute => (_isWritingDataTypeAttribute || _isWritingServerTypeAttribute || IsWritingNameAttribute || _isWritingXmlnsAttribute);
 
-        private bool IsClosed
-        {
-            get { return (WriteState == WriteState.Closed); }
-        }
+        private bool IsClosed => (WriteState == WriteState.Closed);
 
-        private bool IsWritingCollection
-        {
-            get { return (_depth > 0) && (_scopes[_depth] == JsonNodeType.Collection); }
-        }
+        private bool IsWritingCollection => (_depth > 0) && (_scopes[_depth] == JsonNodeType.Collection);
 
-        private bool IsWritingNameAttribute
-        {
-            get { return (_nameState & NameState.IsWritingNameAttribute) == NameState.IsWritingNameAttribute; }
-        }
+        private bool IsWritingNameAttribute => (_nameState & NameState.IsWritingNameAttribute) == NameState.IsWritingNameAttribute;
 
-        private bool IsWritingNameWithMapping
-        {
-            get { return (_nameState & NameState.IsWritingNameWithMapping) == NameState.IsWritingNameWithMapping; }
-        }
+        private bool IsWritingNameWithMapping => (_nameState & NameState.IsWritingNameWithMapping) == NameState.IsWritingNameWithMapping;
 
-        private bool WrittenNameWithMapping
-        {
-            get { return (_nameState & NameState.WrittenNameWithMapping) == NameState.WrittenNameWithMapping; }
-        }
+        private bool WrittenNameWithMapping => (_nameState & NameState.WrittenNameWithMapping) == NameState.WrittenNameWithMapping;
 
         protected override void Dispose(bool disposing)
         {
@@ -1394,7 +1370,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [SecuritySafeCritical]
         private unsafe void WriteEscapedJsonString(string str)
         {
             fixed (char* chars = str)
@@ -1617,7 +1592,6 @@ namespace System.Runtime.Serialization.Json
 
         private class JsonNodeWriter : XmlUTF8NodeWriter
         {
-            [SecurityCritical]
             internal unsafe void WriteChars(char* chars, int charCount)
             {
                 base.UnsafeWriteUTF8Chars(chars, charCount);

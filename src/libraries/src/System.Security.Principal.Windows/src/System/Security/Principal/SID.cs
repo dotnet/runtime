@@ -398,15 +398,15 @@ nameof(binaryForm));
 
             int Error = Win32.CreateSidFromString(sddlForm, out resultSid);
 
-            if (Error == Interop.mincore.Errors.ERROR_INVALID_SID)
+            if (Error == Interop.Errors.ERROR_INVALID_SID)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue, nameof(sddlForm));
             }
-            else if (Error == Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY)
+            else if (Error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
             {
                 throw new OutOfMemoryException();
             }
-            else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
+            else if (Error != Interop.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.CreateSidFromString returned unrecognized error {0}", Error));
                 throw new Win32Exception(Error);
@@ -493,16 +493,16 @@ nameof(binaryForm));
 
                 ErrorCode = Win32.GetWindowsAccountDomainSid(domainSid, out resultDomainSid);
 
-                if (ErrorCode == Interop.mincore.Errors.ERROR_INSUFFICIENT_BUFFER)
+                if (ErrorCode == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                 {
                     throw new OutOfMemoryException();
                 }
-                else if (ErrorCode == Interop.mincore.Errors.ERROR_NON_ACCOUNT_SID)
+                else if (ErrorCode == Interop.Errors.ERROR_NON_ACCOUNT_SID)
                 {
                     // this means that the domain sid is not valid
                     throw new ArgumentException(SR.IdentityReference_NotAWindowsDomain, nameof(domainSid));
                 }
-                else if (ErrorCode != Interop.mincore.Errors.ERROR_SUCCESS)
+                else if (ErrorCode != Interop.Errors.ERROR_SUCCESS)
                 {
                     Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.GetWindowsAccountDomainSid returned unrecognized error {0}", ErrorCode));
                     throw new Win32Exception(ErrorCode);
@@ -521,11 +521,11 @@ nameof(binaryForm));
 
             Error = Win32.CreateWellKnownSid(sidType, domainSid, out resultSid);
 
-            if (Error == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+            if (Error == Interop.Errors.ERROR_INVALID_PARAMETER)
             {
                 throw new ArgumentException(new Win32Exception(Error).Message, "sidType/domainSid");
             }
-            else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
+            else if (Error != Interop.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.CreateWellKnownSid returned unrecognized error {0}", Error));
                 throw new Win32Exception(Error);
@@ -718,15 +718,15 @@ nameof(binaryForm));
 
             Error = Win32.GetWindowsAccountDomainSid(this, out ResultSid);
 
-            if (Error == Interop.mincore.Errors.ERROR_INSUFFICIENT_BUFFER)
+            if (Error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
             {
                 throw new OutOfMemoryException();
             }
-            else if (Error == Interop.mincore.Errors.ERROR_NON_ACCOUNT_SID)
+            else if (Error == Interop.Errors.ERROR_NON_ACCOUNT_SID)
             {
                 ResultSid = null;
             }
-            else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
+            else if (Error != Interop.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.GetWindowsAccountDomainSid returned unrecognized error {0}", Error));
                 throw new Win32Exception(Error);
@@ -944,7 +944,7 @@ nameof(binaryForm));
 
                 someFailed = false;
                 uint ReturnCode;
-                ReturnCode = Interop.mincore.LsaLookupSids(LsaHandle, sourceSids.Count, SidArrayPtr, ref ReferencedDomainsPtr, ref NamesPtr);
+                ReturnCode = Interop.Advapi32.LsaLookupSids(LsaHandle, sourceSids.Count, SidArrayPtr, ref ReferencedDomainsPtr, ref NamesPtr);
 
                 //
                 // Make a decision regarding whether it makes sense to proceed
@@ -967,7 +967,7 @@ nameof(binaryForm));
                 }
                 else if (ReturnCode != 0)
                 {
-                    int win32ErrorCode = Interop.mincore.RtlNtStatusToDosError(unchecked((int)ReturnCode));
+                    int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(unchecked((int)ReturnCode));
 
                     Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupSids returned {0}", win32ErrorCode));
                     throw new Win32Exception(win32ErrorCode);

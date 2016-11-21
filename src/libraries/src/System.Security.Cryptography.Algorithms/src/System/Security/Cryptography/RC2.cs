@@ -20,10 +20,16 @@ namespace System.Security.Cryptography
             BlockSizeValue = 64;
         }
 
-        public static RC2 Create()
+        public static new RC2 Create()
         {
             return new RC2Implementation();
         }
+
+        public static new RC2 Create(string AlgName)
+        {
+            return (RC2)CryptoConfig.CreateFromName(AlgName);
+        }
+
 
         public override int KeySize
         {

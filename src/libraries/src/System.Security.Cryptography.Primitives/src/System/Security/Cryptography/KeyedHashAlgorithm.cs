@@ -2,15 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 namespace System.Security.Cryptography
 {
     public abstract class KeyedHashAlgorithm : HashAlgorithm
     {
-        protected KeyedHashAlgorithm()
+        protected KeyedHashAlgorithm() { }
+
+        public static new KeyedHashAlgorithm Create()
         {
+            return Create("System.Security.Cryptography.KeyedHashAlgorithm");
+        }
+
+        public static new KeyedHashAlgorithm Create(string algName)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public virtual byte[] Key
@@ -43,4 +48,3 @@ namespace System.Security.Cryptography
         protected byte[] KeyValue;
     }
 }
-

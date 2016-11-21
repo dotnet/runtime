@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((bool)value ? ScriptingRuntimeHelpers.Boolean_False : ScriptingRuntimeHelpers.Boolean_True);
+                    frame.Push(!(bool)value);
                 }
                 return +1;
             }

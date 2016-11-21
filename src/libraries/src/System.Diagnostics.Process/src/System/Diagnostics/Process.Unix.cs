@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -34,6 +35,18 @@ namespace System.Diagnostics
         public static void LeaveDebugMode()
         {
             // Nop.
+        }
+
+        [CLSCompliant(false)]
+        public static Process Start(string fileName, string userName, SecureString password, string domain)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [CLSCompliant(false)]
+        public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
+        { 
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>Stops the associated process immediately.</summary>

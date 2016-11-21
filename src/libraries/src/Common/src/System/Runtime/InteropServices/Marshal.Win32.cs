@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     {
         public static int GetLastWin32Error()
         {
-            return Interop.mincore.GetLastError();
+            return Interop.Kernel32.GetLastError();
         }
     }
 }

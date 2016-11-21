@@ -16,9 +16,14 @@ namespace System.Security.Cryptography
     {
         protected SHA384() { }
 
-        public static SHA384 Create()
+        public static new SHA384 Create()
         {
             return new Implementation();
+        }
+
+        public static new SHA384 Create(string hashName)
+        {
+            return (SHA384)CryptoConfig.CreateFromName(hashName);
         }
 
         private sealed class Implementation : SHA384

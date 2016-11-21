@@ -39,7 +39,7 @@ namespace System.Xml.Tests
             val.XmlResolver = new XmlUrlResolver(); //Adding this as the default resolver is null and not XmlUrlResolver anymore
 
             val.Initialize();
-            val.ValidateElement("foo", "", null, "t:type1", null, "uri:tempuri " + TestData + XSDFILE_TARGET_NAMESPACE, null);
+            val.ValidateElement("foo", "", null, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
             val.ValidateEndOfAttributes(null);
             val.ValidateElement("bar", "", null);
             val.ValidateEndOfAttributes(null);
@@ -74,7 +74,7 @@ namespace System.Xml.Tests
             if (schemaLocation)
             {
                 manager.AddNamespace("t", "uri:tempuri");
-                val.ValidateElement("foo", "", null, "t:type1", null, "uri:tempuri " + TestData + XSDFILE_TARGET_NAMESPACE, null);
+                val.ValidateElement("foo", "", null, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
             }
             else
             {
@@ -104,7 +104,7 @@ namespace System.Xml.Tests
             val.XmlResolver = res;
 
             val.Initialize();
-            val.AddSchema(XmlSchema.Read(XmlReader.Create(TestData + XSDFILE_VALIDATE_ATTRIBUTE), null)); // this schema has xs:import
+            val.AddSchema(XmlSchema.Read(XmlReader.Create(Path.Combine(TestData, XSDFILE_VALIDATE_ATTRIBUTE)), null)); // this schema has xs:import
             val.ValidateElement("NoAttributesElement", "", null);
 
             Assert.True(!holder.IsCalledResolveUri);
@@ -131,7 +131,7 @@ namespace System.Xml.Tests
             val.XmlResolver = res;
             val.Initialize();
 
-            val.ValidateElement("foo", "", null, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("foo", "", null, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
             val.SkipToEndElement(null);
 
             Assert.True(holder.IsCalledResolveUri);
@@ -141,7 +141,7 @@ namespace System.Xml.Tests
             holder.IsCalledGetEntity = false;
             holder.IsCalledResolveUri = false;
 
-            val.ValidateElement("foo", "", null, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("foo", "", null, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
 
             Assert.True(!holder.IsCalledResolveUri);
             Assert.True(!holder.IsCalledGetEntity);
@@ -167,7 +167,7 @@ namespace System.Xml.Tests
             val.XmlResolver = res;
             val.Initialize();
 
-            val.ValidateElement("foo", "", null, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("foo", "", null, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
             val.SkipToEndElement(null);
 
             Assert.True(holder.IsCalledResolveUri);
@@ -178,7 +178,7 @@ namespace System.Xml.Tests
 
             try
             {
-                val.ValidateElement("bar", "", null, "t:type1", null, "uri:tempuri " + TestData + XSDFILE_TARGET_NAMESPACE, null);
+                val.ValidateElement("bar", "", null, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
                 Assert.True(false);
             }
             catch (XmlSchemaValidationException)

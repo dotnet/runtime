@@ -8,12 +8,12 @@ namespace System.Diagnostics
     {
         private static bool QueryPerformanceFrequency(out long value)
         {
-            return Interop.mincore.QueryPerformanceFrequency(out value);
+            return Interop.Kernel32.QueryPerformanceFrequency(out value);
         }
 
         private static bool QueryPerformanceCounter(out long value)
         {
-            return Interop.mincore.QueryPerformanceCounter(out value);
+            return Interop.Kernel32.QueryPerformanceCounter(out value);
         }
     }
 }

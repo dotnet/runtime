@@ -98,7 +98,7 @@ namespace System.Xml.Tests
 
             if (schemaSetStatus != "empty")
             {
-                sch.Add("", TestData + XSDFILE_NO_TARGET_NAMESPACE);
+                sch.Add("", Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
                 if (schemaSetStatus == "compiled")
                     sch.Compile();
             }
@@ -340,7 +340,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
-            Uri u = new Uri(Path.GetFullPath(TestData) + XSDFILE_TARGET_NAMESPACE);
+            Uri u = new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.Combine(Path.GetFullPath(TestData), XSDFILE_TARGET_NAMESPACE));
             XmlSchema s1;
             XmlSchemaSet schemas = new XmlSchemaSet();
             schemas.XmlResolver = new XmlUrlResolver();

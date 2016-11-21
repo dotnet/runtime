@@ -971,28 +971,45 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                int count = 0;
-
                 int acquiredLocks = 0;
                 try
                 {
                     // Acquire all locks
                     AcquireAllLocks(ref acquiredLocks);
 
-                    // Compute the count, we allow overflow
-                    for (int i = 0; i < _tables._countPerLock.Length; i++)
-                    {
-                        count += _tables._countPerLock[i];
-                    }
+                    return GetCountInternal();
                 }
                 finally
                 {
                     // Release locks that have been acquired earlier
                     ReleaseLocks(0, acquiredLocks);
                 }
-
-                return count;
             }
+        }
+
+        /// <summary>
+        /// Gets the number of key/value pairs contained in the <see
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>. Should only be used after all locks
+        /// have been aquired.
+        /// </summary>
+        /// <exception cref="T:System.OverflowException">The dictionary contains too many
+        /// elements.</exception>
+        /// <value>The number of key/value pairs contained in the <see
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>.</value>
+        /// <remarks>Count has snapshot semantics and represents the number of items in the <see
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>
+        /// at the moment when Count was accessed.</remarks>
+        private int GetCountInternal()
+        {
+            int count = 0;
+
+            // Compute the count, we allow overflow
+            for (int i = 0; i < _tables._countPerLock.Length; i++)
+            {
+                count += _tables._countPerLock[i];
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -1882,8 +1899,11 @@ namespace System.Collections.Concurrent
             try
             {
                 AcquireAllLocks(ref locksAcquired);
-                List<TKey> keys = new List<TKey>();
 
+                int count = GetCountInternal();
+                if (count < 0) throw new OutOfMemoryException();
+
+                List<TKey> keys = new List<TKey>(count);
                 for (int i = 0; i < _tables._buckets.Length; i++)
                 {
                     Node current = _tables._buckets[i];
@@ -1911,8 +1931,11 @@ namespace System.Collections.Concurrent
             try
             {
                 AcquireAllLocks(ref locksAcquired);
-                List<TValue> values = new List<TValue>();
 
+                int count = GetCountInternal();
+                if (count < 0) throw new OutOfMemoryException();
+
+                List<TValue> values = new List<TValue>(count);
                 for (int i = 0; i < _tables._buckets.Length; i++)
                 {
                     Node current = _tables._buckets[i];

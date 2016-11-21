@@ -377,7 +377,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                if (LoadXSL("xmlResolver_main.xsl") == 1)
+                if (LoadXSL("XmlResolver_Main.xsl") == 1)
                 {
                     xslt.XmlResolver = null;
                     if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
@@ -659,13 +659,13 @@ namespace System.Xml.Tests
             FileStream s2;
 
             // check immediately after load and after transform
-            if (LoadXSL("XmlResolver_main.xsl") == 1)
+            if (LoadXSL("XmlResolver_Main.xsl") == 1)
             {
-                s2 = new FileStream(FullFilePath("XmlResolver_main.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
+                s2 = new FileStream(FullFilePath("XmlResolver_Main.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
                 s2.Dispose();
                 if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
                 {
-                    s2 = new FileStream(FullFilePath("XmlResolver_main.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
+                    s2 = new FileStream(FullFilePath("XmlResolver_Main.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
                     s2.Dispose();
                     return;
                 }
@@ -683,13 +683,13 @@ namespace System.Xml.Tests
 
             // check immediately after load and after transform
 
-            if(LoadXSL("XmlResolver_main.xsl") == TEST_PASS)
+            if(LoadXSL("XmlResolver_Main.xsl") == TEST_PASS)
             {
-                s2 = new FileStream(FullFilePath("XmlResolver_main.xsl"), FileMode.Open, FileAccess.ReadWrite);
+                s2 = new FileStream(FullFilePath("XmlResolver_Main.xsl"), FileMode.Open, FileAccess.ReadWrite);
                 s2.Dispose();
                 if((Transform("fruits.xml") == TEST_PASS) && (CheckResult(428.8541842246)== TEST_PASS))
                 {
-                    s2 = new FileStream(FullFilePath("XmlResolver_main.xsl"), FileMode.Open, FileAccess.ReadWrite);
+                    s2 = new FileStream(FullFilePath("XmlResolver_Main.xsl"), FileMode.Open, FileAccess.ReadWrite);
                     s2.Dispose();
                     return;
                 }
@@ -707,7 +707,7 @@ namespace System.Xml.Tests
             FileStream s2;
 
             // check immediately after load and after transform
-            if (LoadXSL("XmlResolver_main.xsl") == 1)
+            if (LoadXSL("XmlResolver_Main.xsl") == 1)
             {
                 s2 = new FileStream(FullFilePath("XmlResolver_sub.xsl"), FileMode.Open, FileAccess.Read);
                 s2.Dispose();
@@ -731,7 +731,7 @@ namespace System.Xml.Tests
             FileStream s2;
 
             // check immediately after load and after transform
-            if(LoadXSL("XmlResolver_main.xsl") == TEST_PASS)
+            if(LoadXSL("XmlResolver_Main.xsl") == TEST_PASS)
             {
                 s2 = new FileStream(FullFilePath("XmlResolver_sub.xsl"), FileMode.Open, FileAccess.ReadWrite);
                 s2.Dispose();
@@ -888,7 +888,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                LoadXSL_Resolver("xmlResolver_main.xsl", null);
+                LoadXSL_Resolver("XmlResolver_Main.xsl", null);
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
@@ -914,7 +914,7 @@ namespace System.Xml.Tests
             CustomNullResolver myResolver = new CustomNullResolver(null);
             try
             {
-                LoadXSL_Resolver("xmlResolver_main.xsl", myResolver);
+                LoadXSL_Resolver("XmlResolver_Main.xsl", myResolver);
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
@@ -970,12 +970,12 @@ namespace System.Xml.Tests
 
             try
             {
-                LoadXSL_Resolver("xmlResolver_main.xsl", myResolver);
+                LoadXSL_Resolver("XmlResolver_Main.xsl", myResolver);
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
                 CheckExpectedError(e.InnerException, "System.Data.Sqlxml", "Xslt_CantResolve", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl", false)).ToString() });
-                if (LoadXSL("xmlResolver_main.xsl") == 1)
+                if (LoadXSL("XmlResolver_Main.xsl") == 1)
                 {
                     if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
                         return;
@@ -1006,11 +1006,11 @@ namespace System.Xml.Tests
 
             CustomNullResolver myResolver = new CustomNullResolver(null);
 
-            if ((LoadXSL("xmlResolver_main.xsl") == 1))
+            if ((LoadXSL("XmlResolver_Main.xsl") == 1))
             {
                 try
                 {
-                    LoadXSL_Resolver("xmlResolver_main.xsl", myResolver);
+                    LoadXSL_Resolver("XmlResolver_Main.xsl", myResolver);
                 }
                 catch (System.Xml.Xsl.XsltCompileException e)
                 {
@@ -1029,9 +1029,9 @@ namespace System.Xml.Tests
         [Theory(Skip = "Resolving of External URIs is no longer allowed")]
         public void LoadGeneric9()
         {
-            if ((LoadXSL_Resolver("xmlResolver_Main.xsl", GetDefaultCredResolver()) == 1))
+            if ((LoadXSL_Resolver("XmlResolver_Main.xsl", GetDefaultCredResolver()) == 1))
             {
-                if ((LoadXSL("xmlResolver_Main.xsl") == 1) && (Transform("fruits.xml") == 1)
+                if ((LoadXSL("XmlResolver_Main.xsl") == 1) && (Transform("fruits.xml") == 1)
                     && (CheckResult(428.8541842246) == 1))
                     return;
             }
@@ -1347,6 +1347,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load with \"\\\\\"")]
+        [PlatformSpecific(TestPlatforms.Windows)] //Not a valid path on Unix
         [InlineData()]
         [Theory]
         public void LoadUrl5()
@@ -1925,7 +1926,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                if (LoadXSL("xmlResolver_main.xsl") == 1)
+                if (LoadXSL("XmlResolver_Main.xsl") == 1)
                 {
                     if ((TransformResolver("fruits.xml", null) == 1) && (CheckResult(428.8541842246) == 1))
                         return;
@@ -2127,6 +2128,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Output file is invalid")]
+        [PlatformSpecific(TestPlatforms.Windows)] //Output file name is valid on Unix
         [InlineData()]
         [Theory]
         public void TransformStrStr5()
@@ -2298,7 +2300,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation("Output filename is \'.\', \'..\', and \'\\\\\'")]
+        //[Variation("Output filename is \'.\' and \'..\')]
         [InlineData()]
         [Theory]
         public void TransformStrStr12()
@@ -2325,19 +2327,29 @@ namespace System.Xml.Tests
                     iCount++;
                 }
 
-                try
-                {
-                    xslt.Transform(szFullFilename, "\\\\");
-                }
-                catch (System.Exception)
-                {
-                    iCount++;
-                }
             }
 
-            if (iCount.Equals(3))
+            if (iCount.Equals(2))
                 return;
             _output.WriteLine("Exception not generated for invalid ouput destinations");
+            Assert.True(false);
+        }
+
+        //[Variation("Output filename is \'\\\\\'")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData()]
+        [Theory]
+        public void TransformStrStr12_win()
+        {
+            String szFullFilename = FullFilePath("fruits.xml");
+
+            if (LoadXSL("showParam.xsl") == 1)
+            {
+                Assert.Throws<System.ArgumentException>(() => xslt.Transform(szFullFilename, "\\\\"));
+                return;
+            }
+
+            _output.WriteLine("Exception not generated for invalid ouput destination");
             Assert.True(false);
         }
 
@@ -2421,7 +2433,7 @@ namespace System.Xml.Tests
 
             try
             {
-                if (LoadXSL("xmlResolver_main.xsl") == 1)
+                if (LoadXSL("XmlResolver_Main.xsl") == 1)
                 {
                     xslt.Transform(szFullFilename, "out.xml", null);
                     if (CheckResult(428.8541842246) == 1)

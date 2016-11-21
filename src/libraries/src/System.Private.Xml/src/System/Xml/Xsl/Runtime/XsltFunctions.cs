@@ -231,7 +231,7 @@ namespace System.Xml.Xsl.Runtime
             else if (name.Namespace == XmlReservedNs.NsMsxsl && name.Name == "version")
             {
                 // msxsl:version
-                return new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String), null /*typeof(XsltLibrary).GetTypeInfo().Assembly.ImageRuntimeVersion*/); //BinCompat TODO
+                return new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String), typeof(XsltLibrary).GetTypeInfo().Assembly.ImageRuntimeVersion);
             }
             // If the property name is not recognized, return the empty string
             return new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String), string.Empty);

@@ -19,8 +19,10 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private const int internalWriteSize = 16384;
-
+        private const int InternalWriteSize = 16384;
+        private bool _assertUIEnabled; 
+        private bool _settingsInitialized;
+        private string _logFileName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with 
@@ -29,6 +31,34 @@ namespace System.Diagnostics
         public DefaultTraceListener()
             : base("Default")
         {
+        }
+
+        public bool AssertUiEnabled 
+        {
+            get 
+            { 
+                if (!_settingsInitialized) InitializeSettings();
+                return _assertUIEnabled; 
+            }
+            set 
+            { 
+                if (!_settingsInitialized) InitializeSettings();
+                _assertUIEnabled = value; 
+            }
+        }
+
+        public string LogFileName 
+        {
+            get 
+            { 
+                if (!_settingsInitialized) InitializeSettings();
+                return _logFileName; 
+            }
+            set 
+            { 
+                if (!_settingsInitialized) InitializeSettings();
+                _logFileName = value; 
+            }
         }
 
         /// <devdoc>
@@ -53,6 +83,14 @@ namespace System.Diagnostics
         {
             // UIAssert is not enabled.
             WriteAssert(String.Empty, message, detailMessage);
+        }
+
+         private void InitializeSettings() 
+         {
+            // don't use the property setters here to avoid infinite recursion.
+            _assertUIEnabled = DiagnosticsConfiguration.AssertUIEnabled;
+            _logFileName = DiagnosticsConfiguration.LogFileName;
+            _settingsInitialized = true;
         }
 
         private void WriteAssert(string stackTrace, string message, string detailMessage)
@@ -81,16 +119,16 @@ namespace System.Diagnostics
 
             // really huge messages mess up both VS and dbmon, so we chop it up into 
             // reasonable chunks if it's too big
-            if (message == null || message.Length <= internalWriteSize)
+            if (message == null || message.Length <= InternalWriteSize)
             {
                 Debug.Write(message);
             }
             else
             {
                 int offset;
-                for (offset = 0; offset < message.Length - internalWriteSize; offset += internalWriteSize)
+                for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
                 {
-                    Debug.Write(message.Substring(offset, internalWriteSize));
+                    Debug.Write(message.Substring(offset, InternalWriteSize));
                 }
                 Debug.Write(message.Substring(offset));
             }

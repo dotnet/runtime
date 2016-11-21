@@ -277,6 +277,18 @@ namespace System.Threading
             return (int)timeoutMilliseconds;
         }
 
+        [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        public CompressedStack GetCompressedStack()
+        {
+            throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
+        }
+
+        [Obsolete("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        public void SetCompressedStack(CompressedStack stack)
+        {
+            throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
+        }
+
 #if !NETNATIVE
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
         public static int GetDomainID() => GetDomain().Id;

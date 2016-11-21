@@ -194,23 +194,26 @@ namespace System
         //
         private bool CheckForUnicode(string data)
         {
-            bool hasUnicode = false;
-            char[] chars = new char[data.Length];
-            int count = 0;
-
-            chars = UriHelper.UnescapeString(data, 0, data.Length, chars, ref count, c_DummyChar, c_DummyChar,
-                c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, null, false);
-
-            for (int i = 0; i < count; ++i)
+            for (int i = 0; i < data.Length; i++)
             {
-                if (chars[i] > '\x7f')
+                char c = data[i];
+                if (c == '%')
                 {
-                    // Unicode 
-                    hasUnicode = true;
-                    break;
+                    if (i + 2 < data.Length)
+                    {
+                        if (UriHelper.EscapedAscii(data[i + 1], data[i + 2]) > 0x7F)
+                        {
+                            return true;
+                        }
+                        i += 2;
+                    }
+                }
+                else if (c > 0x7F)
+                {
+                    return true;
                 }
             }
-            return hasUnicode;
+            return false;
         }
 
         // Does this string have any %6A sequences that are 3986 Unreserved characters?  These should be un-escaped.

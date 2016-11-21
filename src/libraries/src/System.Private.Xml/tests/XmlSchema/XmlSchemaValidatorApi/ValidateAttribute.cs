@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.IO;
 using System.Xml;
 using System.Xml.Schema;
 using Xunit;
@@ -161,7 +162,7 @@ namespace System.Xml.Tests
             XmlSchemaSet schemas = new XmlSchemaSet();
             XmlSchemaInfo info = new XmlSchemaInfo();
 
-            schemas.Add("", TestData + XSDFILE_200_DEF_ATTRIBUTES);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_200_DEF_ATTRIBUTES));
             schemas.Compile();
             val = CreateValidator(schemas);
 

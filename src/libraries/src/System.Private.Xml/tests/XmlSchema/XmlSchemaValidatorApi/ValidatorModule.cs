@@ -19,7 +19,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private string m_TestData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlSchemaValidatorApi\");
+        private string m_TestData = Path.Combine(FilePathUtil.GetTestDataPath(), "XmlSchemaValidatorAPI");
 
         public string TestData
         {
@@ -71,7 +71,7 @@ namespace System.Xml.Tests
             schemas.XmlResolver = new XmlUrlResolver();
 
             if (!path.StartsWith("file://") && !path.StartsWith("http://"))
-                path = this.TestData + path;
+                path = Path.Combine(this.TestData, path);
 
             schemas.Add(targetNamespace, path);
             schemas.Compile();

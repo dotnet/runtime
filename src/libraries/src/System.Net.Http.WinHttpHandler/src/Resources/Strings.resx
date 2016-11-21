@@ -165,4 +165,19 @@
   <data name="net_http_buffer_insufficient_length" xml:space="preserve">
     <value>The buffer was not long enough.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Can not access a closed Stream.</value>
+  </data>
+  <data name="net_http_content_stream_already_read" xml:space="preserve">
+    <value>The stream was already consumed. It cannot be read again.</value>
+  </data>
 </root>

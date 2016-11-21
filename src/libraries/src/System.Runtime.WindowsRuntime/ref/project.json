@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
+    "Microsoft.TargetingPack.Private.WinRT": "1.0.3",
     "System.Runtime": "4.1.0",
     "System.IO": "4.1.0",
     "System.Threading.Tasks": "4.0.11"

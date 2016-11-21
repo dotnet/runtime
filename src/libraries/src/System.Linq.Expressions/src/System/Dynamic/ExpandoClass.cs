@@ -19,7 +19,7 @@ namespace System.Dynamic
 
         private const int EmptyHashCode = 6551;                     // hash code of the empty ExpandoClass.
 
-        internal static ExpandoClass Empty = new ExpandoClass();    // The empty Expando class - all Expando objects start off w/ this class.
+        internal static readonly ExpandoClass Empty = new ExpandoClass();    // The empty Expando class - all Expando objects start off w/ this class.
 
         /// <summary>
         /// Constructs the empty ExpandoClass.  This is the class used when an

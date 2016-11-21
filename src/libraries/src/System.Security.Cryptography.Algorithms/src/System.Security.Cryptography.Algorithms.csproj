@@ -39,6 +39,7 @@
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\DES.cs" />
     <Compile Include="System\Security\Cryptography\DSA.cs" />
@@ -233,8 +234,8 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\ErrorCodeHelper.cs">
       <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+      <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
       <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
@@ -427,6 +428,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- ToDo: Remove once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj">
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

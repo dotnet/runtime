@@ -18,9 +18,9 @@ namespace System.Reflection.Metadata.Tests
             {
                 File.WriteAllBytes(tempFile.Path, peImage);
 
-                using (SafeLibraryHandle libHandle = global::Interop.mincore.LoadLibraryExW(tempFile.Path, IntPtr.Zero, 0))
+                using (SafeLibraryHandle libHandle = global::Interop.Kernel32.LoadLibraryExW(tempFile.Path, IntPtr.Zero, 0))
                 {
-                    byte* peImagePtr = (byte*)global::Interop.mincore.GetModuleHandle(Path.GetFileName(tempFile.Path));
+                    byte* peImagePtr = (byte*)global::Interop.Kernel32.GetModuleHandle(Path.GetFileName(tempFile.Path));
 
                     Assert.True(peImagePtr != null);
                     Assert.Equal('M', (char)peImagePtr[0]);

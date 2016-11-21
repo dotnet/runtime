@@ -32,6 +32,9 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>ProductionCode\Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>

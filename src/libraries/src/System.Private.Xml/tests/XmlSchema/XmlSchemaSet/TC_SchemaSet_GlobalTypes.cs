@@ -185,7 +185,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema schema1 = ss.Add(null, TestData._Root + uri1);
+            XmlSchema schema1 = ss.Add(null, Path.Combine(TestData._Root, uri1));
             ss.Compile();
             CError.Compare(ss.GlobalTypes.Count, 3, "Types Count"); //+1 for anyType
             CError.Compare(ss.GlobalTypes.Contains(new XmlQualifiedName(type1, ns1)), true, "Contains1");
@@ -221,8 +221,8 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "xsdauthor.xsd");
-            XmlSchema schema1 = ss.Add(null, TestData._Root + uri1);
+            ss.Add(null, Path.Combine(TestData._Root, "xsdauthor.xsd"));
+            XmlSchema schema1 = ss.Add(null, Path.Combine(TestData._Root, uri1));
             ss.Compile();
             CError.Compare(ss.GlobalTypes.Count, 3, "Types Count"); //+1 for anyType
             CError.Compare(ss.GlobalTypes.Contains(new XmlQualifiedName(type1, ns1)), true, "Contains1");

@@ -4,3 +4,4 @@
 
 // These types were moved down to System.Runtime
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Text.NormalizationForm))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.IdnMapping))]

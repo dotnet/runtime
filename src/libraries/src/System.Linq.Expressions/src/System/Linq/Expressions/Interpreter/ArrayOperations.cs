@@ -95,9 +95,9 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class GetArrayItemInstruction : Instruction
     {
-        internal static readonly GetArrayItemInstruction Instruction = new GetArrayItemInstruction();
+        internal static readonly GetArrayItemInstruction Instance = new GetArrayItemInstruction();
 
-        internal GetArrayItemInstruction() { }
+        private GetArrayItemInstruction() { }
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -114,9 +114,9 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class SetArrayItemInstruction : Instruction
     {
-        internal static readonly SetArrayItemInstruction Instruction = new SetArrayItemInstruction();
+        internal static readonly SetArrayItemInstruction Instance = new SetArrayItemInstruction();
 
-        internal SetArrayItemInstruction() { }
+        private SetArrayItemInstruction() { }
 
         public override int ConsumedStack => 3;
         public override int ProducedStack => 0;

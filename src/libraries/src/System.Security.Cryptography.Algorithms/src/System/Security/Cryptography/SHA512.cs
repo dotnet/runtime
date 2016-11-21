@@ -16,9 +16,14 @@ namespace System.Security.Cryptography
     {
         protected SHA512() { }
 
-        public static SHA512 Create()
+        public static new SHA512 Create()
         {
             return new Implementation();
+        }
+
+        public static new SHA512 Create(string hashName)
+        {
+            return (SHA512)CryptoConfig.CreateFromName(hashName);
         }
 
         private sealed class Implementation : SHA512

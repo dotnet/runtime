@@ -89,7 +89,7 @@ Sample System.Net.Security.pkgproj
 </Project>
 ```
 
-Sample \ref .builds file defining a constant used to filter API that were added on top of the netstandard1.7 ones and are available only in netcoreapp1.1: 
+Sample \ref .builds file defining a constant used to filter API that were added on top of the netstandard1.7 ones and are available only in netcoreapp1.1:
 
 ```
 <?xml version="1.0" encoding="utf-8"?>
@@ -237,11 +237,11 @@ The primary thing that the library author needs to do in order to ensure the cor
 ### Which version of dotnet/netstandard should I select?
 TL;DR - choose the lowest version that doesn't result in build errors for both the library projects and package project.
 
-NETStandard/DotNet are *open* ended portable identifiers.  They allow a package to place an asset in a folder and that asset can be reused on any framework that supports that version of NETStandard/DotNet.  This is in contrast to the previous *closed* set portable-a+b+c identifiers which only applied to the frameworks listed in the set.  For more information see [.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md).
+NETStandard/DotNet are *open* ended portable identifiers.  They allow a package to place an asset in a folder and that asset can be reused on any framework that supports that version of NETStandard/DotNet.  This is in contrast to the previous *closed* set portable-a+b+c identifiers which only applied to the frameworks listed in the set.  For more information see [.NET  Standard](https://github.com/dotnet/standard/blob/master/docs/faq.md).
 
 Libraries should select a version of DotNet/NETStandard that supports the most frameworks.  This means the library should choose the lowest version that provides all the API needed to implement their functionality.  Eventually this will be the same moniker used for package resolution in the library project, AKA in `frameworks` section for the libraries project.json.
 
-In CoreFx we don't always use the package resolution for dependencies, sometimes we must use project references.  Additionally we aren't building all projects with the NETStandard/DotNet identifier.  This issue is tracked with https://github.com/dotnet/corefx/issues/2427.  As a result we calculate the version as an added safegaurd based on seeds.  These seeds are listed in [Generations.json](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.Build.Tasks.Packaging/src/PackageFiles/Generations.json) and rarely change.  They are a record of what libraries shipped in-box and are unchangeable for a particular framework supporting a generation.  Occasionally an API change can be made even to these in-box libraries and shipped out-of-band, for example by adding a new type and putting that type in a hybrid facade.  This is the only case when it is permitted to update Generations.json. 
+In CoreFx we don't always use the package resolution for dependencies, sometimes we must use project references.  Additionally we aren't building all projects with the NETStandard/DotNet identifier.  This issue is tracked with https://github.com/dotnet/corefx/issues/2427.  As a result we calculate the version as an added safegaurd based on seeds.  These seeds are listed in [Generations.json](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.Build.Tasks.Packaging/src/PackageFiles/Generations.json) and rarely change.  They are a record of what libraries shipped in-box and are unchangeable for a particular framework supporting a generation.  Occasionally an API change can be made even to these in-box libraries and shipped out-of-band, for example by adding a new type and putting that type in a hybrid facade.  This is the only case when it is permitted to update Generations.json.
 
 In addition to the minimum API version required by implementation, reference assemblies should only claim the NETStandard/DotNet version of the minimum implementation assembly.  Just because a reference assembly only depends on API in NETStandard1.0, if its implementations only apply to frameworks supporting NETStandard1.4, it should use NETStandard1.4.
 

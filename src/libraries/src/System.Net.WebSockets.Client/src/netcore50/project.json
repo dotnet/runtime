@@ -2,7 +2,7 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.3",
         "System.Collections": "4.0.11",
         "System.Diagnostics.Debug": "4.0.11",
         "System.Diagnostics.Tools": "4.0.1",
