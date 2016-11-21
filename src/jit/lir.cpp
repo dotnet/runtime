@@ -257,7 +257,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned blockWeight, u
     assert(m_range->Contains(m_user));
     assert(m_range->Contains(*m_edge));
 
-    GenTree* node = *m_edge;
+    GenTree* const node = *m_edge;
 
     if (lclNum == BAD_VAR_NUM)
     {
@@ -268,9 +268,11 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned blockWeight, u
     compiler->lvaTable[lclNum].incRefCnts(blockWeight, compiler);
     compiler->lvaTable[lclNum].incRefCnts(blockWeight, compiler);
 
-    GenTreeLclVar* store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    assert(store != nullptr);
+    assert(store->gtOp1 == node);
 
-    GenTree* load =
+    GenTree* const load =
         new (compiler, GT_LCL_VAR) GenTreeLclVar(store->TypeGet(), store->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
 
     m_range->InsertAfter(node, store, load);
