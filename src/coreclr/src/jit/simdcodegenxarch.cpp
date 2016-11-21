@@ -1141,15 +1141,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
             }
             else
             {
-                // We need two additional XMM registers as scratch.
-                regMaskTP floatRsvdRegs = (simdNode->gtRsvdRegs & RBM_ALLFLOAT);
-                assert(floatRsvdRegs != RBM_NONE);
-                assert(genCountBits(floatRsvdRegs) == 2);
-
-                regMaskTP tmpRegMask = genFindLowestBit(floatRsvdRegs);
-                floatRsvdRegs &= ~tmpRegMask;
-                regNumber tmpReg1 = genRegNumFromMask(tmpRegMask);
-                regNumber tmpReg2 = genRegNumFromMask(floatRsvdRegs);
+                // We need one additional SIMD register to store the result of the SIMD compare.
+                regNumber tmpReg1 = genRegNumFromMask(simdNode->gtRsvdRegs & RBM_ALLFLOAT);
 
                 // tmpReg1 = (op1Reg == op2Reg)
                 // Call this value of tmpReg1 as 'compResult' for further reference below.
@@ -1180,54 +1173,12 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                     inst_RV_RV(ins, tmpReg1, otherReg, simdType, emitActualTypeSize(simdType));
                 }
 
-                // If we have 32 bytes, start by anding the two 16-byte halves to get a 16-byte result.
-                if (compiler->canUseAVX() && (simdType == TYP_SIMD32))
-                {
-                    // Reduce tmpReg1 from 256-bits to 128-bits bitwise-Anding the lower and uppper 128-bits
-                    //
-                    // Generated code sequence
-                    // - vextractf128 tmpReg2, tmpReg1, 0x01
-                    //       tmpReg2[128..255] <- 0
-                    //       tmpReg2[0..127]   <- tmpReg1[128..255]
-                    // - vandps tmpReg1, tempReg2
-                    //       This will zero-out upper portion of tmpReg1 and
-                    //       lower portion of tmpReg1 is and of upper and lower 128-bit comparison result.
-                    getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg2, tmpReg1, 0x01);
-                    inst_RV_RV(INS_andps, tmpReg1, tmpReg2, simdType, emitActualTypeSize(simdType));
-                }
-                // Next, if we have more than 8 bytes, and the two 8-byte halves to get a 8-byte result.
-                if (simdType != TYP_SIMD8)
-                {
-                    // tmpReg2 = Shuffle(tmpReg1, (1,0,3,2))
-                    // Note: vpshufd is a 128-bit only instruction. Therefore, explicitly pass EA_16BYTE
-                    getEmitter()->emitIns_R_R_I(INS_pshufd, EA_16BYTE, tmpReg2, tmpReg1, 0x4E);
-
-                    // tmpReg1 = BitwiseAnd(tmpReg1, tmpReg2)
-                    //
-                    // Note that what we have computed is as follows at this point:
-                    // tmpReg1[0] = compResult[0] & compResult[2]
-                    // tmpReg1[1] = compResult[1] & compResult[3]
-                    inst_RV_RV(INS_andps, tmpReg1, tmpReg2, simdType, emitActualTypeSize(simdType));
-                }
-                // At this point, we have either reduced the result to 8 bytes: tmpReg1[0] and tmpReg1[1],
-                // OR we have a Vector2 (TYP_SIMD8) in tmpReg1, which has only those two fields.
-
-                // tmpReg2 = Shuffle(tmpReg1, (0,0,0,1))
-                // tmpReg2[0] = compResult[1] & compResult[3]
-                getEmitter()->emitIns_R_R_I(INS_pshufd, EA_16BYTE, tmpReg2, tmpReg1, 0x1);
-
-                // tmpReg1 = BitwiseAnd(tmpReg1, tmpReg2)
-                // That is tmpReg1[0] = compResult[0] & compResult[1] & compResult[2] & compResult[3]
-                inst_RV_RV(INS_pand, tmpReg1, tmpReg2, simdType, emitActualTypeSize(simdType)); // ??? INS_andps??
-
                 regNumber intReg;
                 if (targetReg == REG_NA)
                 {
                     // If we are not materializing result into a register,
                     // we would have reserved an int type internal register.
-                    regMaskTP intRsvdRegs = (simdNode->gtRsvdRegs & RBM_ALLINT);
-                    assert(genCountBits(intRsvdRegs) == 1);
-                    intReg = genRegNumFromMask(intRsvdRegs);
+                    intReg = genRegNumFromMask(simdNode->gtRsvdRegs & RBM_ALLINT);
                 }
                 else
                 {
@@ -1238,12 +1189,18 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                     assert(genCountBits(simdNode->gtRsvdRegs & RBM_ALLINT) == 0);
                 }
 
-                // intReg = lower 32-bits of tmpReg1 = compResult[0] & compResult[1] & compResult[2] & compResult[3]
-                // (Note that for mov_xmm2i, the int register is always in the reg2 position.
-                inst_RV_RV(INS_mov_xmm2i, tmpReg1, intReg, TYP_INT);
-
-                //   cmp intReg, 0xFFFFFFFF
-                getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, intReg, 0xFFFFFFFF);
+                inst_RV_RV(INS_pmovmskb, intReg, tmpReg1, simdType, emitActualTypeSize(simdType));
+                // There's no pmovmskw/pmovmskd/pmovmskq but they're not needed anyway. Vector compare
+                // instructions produce "all ones"/"all zeroes" components and pmovmskb extracts a
+                // subset of each component's ones/zeroes. In the end we need to know if the result is
+                // "all ones" where the number of ones is given by the vector byte size, not by the
+                // vector component count. So, for AVX registers we need to compare to 0xFFFFFFFF and
+                // for SSE registers we need to compare to 0x0000FFFF.
+                // Note that -1 is used instead of 0xFFFFFFFF, on x64 emit doesn't correctly recognize
+                // that 0xFFFFFFFF can be encoded in a single byte and emits the longer 3DFFFFFFFF
+                // encoding instead of 83F8FF.
+                getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, intReg,
+                                          emitActualTypeSize(simdType) == 32 ? -1 : 0x0000FFFF);
             }
 
             if (targetReg != REG_NA)
@@ -1251,12 +1208,12 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 // If we need to materialize result into a register,  targetReg needs to
                 // be set to 1 on true and zero on false.
                 // Equality:
-                //   cmp targetReg, 0xFFFFFFFF
+                //   cmp targetReg, 0xFFFFFFFF or 0xFFFF
                 //   sete targetReg
                 //   movzx targetReg, targetReg
                 //
                 // InEquality:
-                //   cmp targetReg, 0xFFFFFFFF
+                //   cmp targetReg, 0xFFFFFFFF or 0xFFFF
                 //   setne targetReg
                 //   movzx targetReg, targetReg
                 //
