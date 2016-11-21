@@ -360,4 +360,38 @@ namespace System.Linq.Expressions.Tests
         public override ExpressionType NodeType => CustomNodeType;
         public override Type Type => CustomType;
     }
+
+    public struct Number : IEquatable<Number>
+    {
+        private readonly int _value;
+
+        public Number(int value)
+        {
+            _value = value;
+        }
+
+        public static readonly Number MinValue = new Number(int.MinValue);
+        public static readonly Number MaxValue = new Number(int.MaxValue);
+
+        public static Number operator +(Number l, Number r) => new Number(l._value + r._value);
+        public static Number operator -(Number l, Number r) => new Number(l._value - r._value);
+        public static Number operator *(Number l, Number r) => new Number(l._value * r._value);
+        public static Number operator /(Number l, Number r) => new Number(l._value / r._value);
+        public static Number operator %(Number l, Number r) => new Number(l._value % r._value);
+
+        public static Number operator &(Number l, Number r) => new Number(l._value & r._value);
+        public static Number operator |(Number l, Number r) => new Number(l._value | r._value);
+        public static Number operator ^(Number l, Number r) => new Number(l._value ^ r._value);
+
+        public static bool operator >(Number l, Number r) => l._value > r._value;
+        public static bool operator >=(Number l, Number r) => l._value >= r._value;
+        public static bool operator <(Number l, Number r) => l._value < r._value;
+        public static bool operator <=(Number l, Number r) => l._value <= r._value;
+        public static bool operator ==(Number l, Number r) => l._value == r._value;
+        public static bool operator !=(Number l, Number r) => l._value != r._value;
+
+        public override bool Equals(object obj) => obj is Number && Equals((Number)obj);
+        public bool Equals(Number other) => _value == other._value;
+        public override int GetHashCode() => _value;
+    }
 }
