@@ -66,6 +66,9 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <ProjectReference Include="../../System.Security.Cryptography.Primitives/src/System.Security.Cryptography.Primitives.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
