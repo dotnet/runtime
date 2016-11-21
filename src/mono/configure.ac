@@ -815,7 +815,7 @@ elif test x$with_runtime_preset = xmobile_static; then
    mono_feature_disable_reflection_emit='yes'
    mono_feature_disable_appdomains='yes'
 
-   AOT_BUILD_FLAGS="--aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_BUILD_FLAGS="-O=gsharedvt --aot=full,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--full-aot"
 elif test x$with_runtime_preset = xbitcode_mobile_static; then
    DISABLE_MCS_DOCS_default=yes
@@ -849,16 +849,12 @@ else
    with_profile4_x_default=yes
 fi
 
-# Have a default AOT mode for mobile_static
-if test "x$AOT_BUILD_FLAGS" = "x"; then :
-   AOT_BUILD_FLAGS="--aot=full,$INVARIANT_AOT_OPTIONS"
-   AOT_RUN_FLAGS="--full-aot"
+if test "x$AOT_BUILD_FLAGS" != "x"; then :
+   AC_SUBST(AOT_BUILD_FLAGS)
+   AC_SUBST(AOT_RUN_FLAGS)
+   # For llvmonlycheck + fullaotcheck
+   AC_SUBST(INVARIANT_AOT_OPTIONS)
 fi
-
-AC_SUBST(AOT_BUILD_FLAGS)
-AC_SUBST(AOT_RUN_FLAGS)
-# For llvmonlycheck + fullaotcheck
-AC_SUBST(INVARIANT_AOT_OPTIONS)
 
 AC_SUBST(TEST_PROFILE)
 
