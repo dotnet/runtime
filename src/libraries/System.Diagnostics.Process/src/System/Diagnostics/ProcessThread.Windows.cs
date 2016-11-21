@@ -14,9 +14,9 @@ namespace System.Diagnostics
         {
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION))
                 {
-                    if (Interop.mincore.SetThreadIdealProcessor(threadHandle, value) < 0)
+                    if (Interop.Kernel32.SetThreadIdealProcessor(threadHandle, value) < 0)
                     {
                         throw new Win32Exception();
                     }
@@ -43,10 +43,10 @@ namespace System.Diagnostics
         {
             get
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION))
                 {
                     bool disabled;
-                    if (!Interop.mincore.GetThreadPriorityBoost(threadHandle, out disabled))
+                    if (!Interop.Kernel32.GetThreadPriorityBoost(threadHandle, out disabled))
                     {
                         throw new Win32Exception();
                     }
@@ -55,9 +55,9 @@ namespace System.Diagnostics
             }
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION))
                 {
-                    if (!Interop.mincore.SetThreadPriorityBoost(threadHandle, !value))
+                    if (!Interop.Kernel32.SetThreadPriorityBoost(threadHandle, !value))
                         throw new Win32Exception();
                 }
             }
@@ -72,9 +72,9 @@ namespace System.Diagnostics
         {
             get
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION))
                 {
-                    int value = Interop.mincore.GetThreadPriority(threadHandle);
+                    int value = Interop.Kernel32.GetThreadPriority(threadHandle);
                     if (value == 0x7fffffff)
                     {
                         throw new Win32Exception();
@@ -84,9 +84,9 @@ namespace System.Diagnostics
             }
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION))
                 {
-                    if (!Interop.mincore.SetThreadPriority(threadHandle, (int)value))
+                    if (!Interop.Kernel32.SetThreadPriority(threadHandle, (int)value))
                     {
                         throw new Win32Exception();
                     }
@@ -104,9 +104,9 @@ namespace System.Diagnostics
         {
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION | Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION | Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION))
                 {
-                    if (Interop.mincore.SetThreadAffinityMask(threadHandle, value) == IntPtr.Zero)
+                    if (Interop.Kernel32.SetThreadAffinityMask(threadHandle, value) == IntPtr.Zero)
                     {
                         throw new Win32Exception();
                     }
@@ -155,10 +155,10 @@ namespace System.Diagnostics
         /// <summary>Gets timing information for the thread.</summary>
         private ProcessThreadTimes GetThreadTimes()
         {
-            using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
+            using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION))
             {
                 var threadTimes = new ProcessThreadTimes();
-                if (!Interop.mincore.GetThreadTimes(threadHandle,
+                if (!Interop.Kernel32.GetThreadTimes(threadHandle,
                     out threadTimes._create, out threadTimes._exit,
                     out threadTimes._kernel, out threadTimes._user))
                 {

@@ -2538,6 +2538,95 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(original, converted);
     }
 
+    [Fact]
+    public static void XmlReflectionImporterTest()
+    {
+        string membername = "Action";
+        XmlReflectionImporter importer = new XmlReflectionImporter("http://www.contoso.com/");
+        XmlReflectionMember[] members = new XmlReflectionMember[1];
+        XmlReflectionMember member = members[0] = new XmlReflectionMember();
+        member.MemberType = typeof(AttributedURI);
+        member.MemberName = membername;
+        XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
+        Assert.Equal(1, mappings.Count);
+        XmlMemberMapping xmp = mappings[0];
+        Assert.Equal(membername, xmp.ElementName);
+        Assert.False(xmp.CheckSpecified);
+    }
+
+    [Fact]
+    public static void XmlSerializerImplementationTest()
+    {
+        Employee emp = new Employee() { EmployeeName = "Allice" };
+        SerializeIm sm = new SerializeIm();
+        Func<XmlSerializer> serializerfunc = () => sm.GetSerializer(typeof(Employee));
+        string expected = "<?xml version=\"1.0\"?>\r\n<Employee xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EmployeeName>Allice</EmployeeName>\r\n</Employee>";
+        SerializeAndDeserialize(emp, expected, serializerfunc);
+    }
+
+    [Fact]
+    public static void XmlSerializerVersionAttributeTest()
+    {
+        XmlSerializerVersionAttribute attr = new XmlSerializerVersionAttribute();
+        Assert.Null(attr.Type);
+        XmlSerializerVersionAttribute attr2 = new XmlSerializerVersionAttribute(typeof(Employee));
+        Assert.Equal(typeof(Employee), attr2.Type);
+    }
+
+    [Fact]
+    public static void XmlSerializerAssemblyAttributeTest()
+    {
+        object[] attrs = typeof(AssemblyAttrTestClass).GetCustomAttributes(typeof(XmlSerializerAssemblyAttribute), false);
+        XmlSerializerAssemblyAttribute attr = (XmlSerializerAssemblyAttribute)attrs[0];
+        Assert.NotNull(attr);
+        Assert.Equal("AssemblyAttrTestClass", attr.AssemblyName);
+    }
+
+    [Fact]
+    public static void CodeIdentifierTest()
+    {
+        CodeIdentifiers cds = new CodeIdentifiers(true);
+        cds.AddReserved(typeof(Employee).Name);
+        cds.Add("test", new TestData());
+        cds.AddUnique("test2", new TestData());
+    }
+
+    [Fact]
+    public static void IXmlTextParserTest()
+    {
+        string xmlFileContent = @"<root><date>2003-01-08T15:00:00-00:00</date></root>";
+        Stream sm = GenerateStreamFromString(xmlFileContent);
+        XmlTextReader reader = new XmlTextReader(sm);
+        MyXmlTextParser text = new MyXmlTextParser(reader);
+    }
+
+    [Fact]
+    public static void SoapSchemaMemberTest()
+    {
+        string ns = "http://www.w3.org/2001/XMLSchema";
+        SoapSchemaMember member = new SoapSchemaMember();
+        member.MemberName = "System.DateTime";
+        member.MemberType = new XmlQualifiedName("dateTime", ns);
+        SoapSchemaMember[] members = new SoapSchemaMember[] { member };
+        var schemas = new XmlSchemas();
+        XmlSchemaImporter importer = new XmlSchemaImporter(schemas);
+        string name = "mydatetime";
+        var mapping = importer.ImportMembersMapping(name, ns, members);
+        Assert.NotNull(mapping);
+        Assert.Equal(name, mapping.ElementName);
+        Assert.Equal(name, mapping.XsdElementName);
+        Assert.Equal(1, mapping.Count);
+    }
+
+    private static Stream GenerateStreamFromString(string s)
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream);
+        writer.Write(s);
+        writer.Flush();
+        stream.Position = 0;
+        return stream;
+    }
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {

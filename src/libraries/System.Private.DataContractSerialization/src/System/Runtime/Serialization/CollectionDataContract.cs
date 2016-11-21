@@ -36,14 +36,8 @@ namespace System.Runtime.Serialization
         [DataMember(Name = "key")]
         public K Key
         {
-            get
-            {
-                return _kvpKey;
-            }
-            set
-            {
-                _kvpKey = value;
-            }
+            get { return _kvpKey; }
+            set { _kvpKey = value; }
         }
 
         [DataMember(Name = "value")]
@@ -147,85 +141,41 @@ namespace System.Runtime.Serialization
     internal sealed class CollectionDataContract : DataContract
 #endif
     {
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - XmlDictionaryString representing the XML element name for collection items.
-        ///            statically cached and used from IL generated code.
-        /// </SecurityNote>
         private XmlDictionaryString _collectionItemName;
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - XmlDictionaryString representing the XML namespace for collection items.
-        ///            statically cached and used from IL generated code.
-        /// </SecurityNote>
+        
         private XmlDictionaryString _childElementNamespace;
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - internal DataContract representing the contract for collection items.
-        ///            statically cached and used from IL generated code.
-        /// </SecurityNote>
+        
         private DataContract _itemContract;
-        [SecurityCritical]
 
-        /// <SecurityNote>
-        /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-        ///            Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         private CollectionDataContractCriticalHelper _helper;
 
-        [SecuritySafeCritical]
         public CollectionDataContract(CollectionKind kind) : base(new CollectionDataContractCriticalHelper(kind))
         {
             InitCollectionDataContract(this);
         }
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal CollectionDataContract(Type type) : base(new CollectionDataContractCriticalHelper(type))
         {
             InitCollectionDataContract(this);
         }
-        [SecuritySafeCritical]
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
         private CollectionDataContract(Type type, CollectionKind kind, Type itemType, MethodInfo getEnumeratorMethod, MethodInfo addMethod, ConstructorInfo constructor)
                     : base(new CollectionDataContractCriticalHelper(type, kind, itemType, getEnumeratorMethod, addMethod, constructor))
         {
             InitCollectionDataContract(GetSharedTypeContract(type));
         }
-        [SecuritySafeCritical]
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
         private CollectionDataContract(Type type, CollectionKind kind, Type itemType, MethodInfo getEnumeratorMethod, MethodInfo addMethod, ConstructorInfo constructor, bool isConstructorCheckRequired)
                     : base(new CollectionDataContractCriticalHelper(type, kind, itemType, getEnumeratorMethod, addMethod, constructor, isConstructorCheckRequired))
         {
             InitCollectionDataContract(GetSharedTypeContract(type));
         }
-        [SecuritySafeCritical]
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
         private CollectionDataContract(Type type, string invalidCollectionInSharedContractMessage) : base(new CollectionDataContractCriticalHelper(type, invalidCollectionInSharedContractMessage))
         {
             InitCollectionDataContract(GetSharedTypeContract(type));
         }
-        [SecurityCritical]
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical fields; called from all constructors
-        /// </SecurityNote>
         private void InitCollectionDataContract(DataContract sharedTypeContract)
         {
             _helper = base.Helper as CollectionDataContractCriticalHelper;
@@ -239,33 +189,18 @@ namespace System.Runtime.Serialization
 
         private static Type[] KnownInterfaces
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical knownInterfaces property
-            /// Safe - knownInterfaces only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return CollectionDataContractCriticalHelper.KnownInterfaces; }
         }
 
         internal CollectionKind Kind
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical kind property
-            /// Safe - kind only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.Kind; }
         }
 
         public Type ItemType
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical itemType property
-            /// Safe - itemType only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.ItemType; }
             set { _helper.ItemType = value; }
@@ -273,19 +208,11 @@ namespace System.Runtime.Serialization
 
         public DataContract ItemContract
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical itemContract property
-            /// Safe - itemContract only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
                 return _itemContract ?? _helper.ItemContract;
             }
-            /// <SecurityNote>
-            /// Critical - sets the critical itemContract property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             {
                 _itemContract = value;
@@ -295,74 +222,39 @@ namespace System.Runtime.Serialization
 
         internal DataContract SharedTypeContract
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical sharedTypeContract property
-            /// Safe - sharedTypeContract only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.SharedTypeContract; }
         }
 
         public string ItemName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical itemName property
-            /// Safe - itemName only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.ItemName; }
-            /// <SecurityNote>
-            /// Critical - sets the critical itemName property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.ItemName = value; }
         }
 
         public XmlDictionaryString CollectionItemName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical collectionItemName property
-            /// Safe - collectionItemName only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
-            get
-            { return _collectionItemName; }
+            get { return _collectionItemName; }
             set { _collectionItemName = value; }
         }
 
         public string KeyName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical keyName property
-            /// Safe - keyName only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.KeyName; }
-            /// <SecurityNote>
-            /// Critical - sets the critical keyName property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.KeyName = value; }
         }
 
         public string ValueName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical valueName property
-            /// Safe - valueName only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.ValueName; }
-            /// <SecurityNote>
-            /// Critical - sets the critical valueName property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.ValueName = value; }
         }
@@ -374,11 +266,6 @@ namespace System.Runtime.Serialization
 
         public XmlDictionaryString ChildElementNamespace
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical childElementNamespace property
-            /// Safe - childElementNamespace only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
                 if (_childElementNamespace == null)
@@ -403,78 +290,42 @@ namespace System.Runtime.Serialization
 
         internal bool IsConstructorCheckRequired
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical isConstructorCheckRequired property
-            /// Safe - isConstructorCheckRequired only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsConstructorCheckRequired; }
-            /// <SecurityNote>
-            /// Critical - sets the critical isConstructorCheckRequired property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.IsConstructorCheckRequired = value; }
         }
 
         internal MethodInfo GetEnumeratorMethod
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical getEnumeratorMethod property
-            /// Safe - getEnumeratorMethod only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.GetEnumeratorMethod; }
         }
 
         internal MethodInfo AddMethod
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical addMethod property
-            /// Safe - addMethod only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.AddMethod; }
         }
 
         internal ConstructorInfo Constructor
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical constructor property
-            /// Safe - constructor only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.Constructor; }
         }
 
         public override DataContractDictionary KnownDataContracts
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical knownDataContracts property
-            /// Safe - knownDataContracts only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.KnownDataContracts; }
-            /// <SecurityNote>
-            /// Critical - sets the critical knownDataContracts property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.KnownDataContracts = value; }
         }
 
         internal string InvalidCollectionInSharedContractMessage
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical invalidCollectionInSharedContractMessage property
-            /// Safe - invalidCollectionInSharedContractMessage only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.InvalidCollectionInSharedContractMessage; }
         }
@@ -486,11 +337,6 @@ namespace System.Runtime.Serialization
         internal XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
 #endif
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical xmlFormatWriterDelegate property
-            /// Safe - xmlFormatWriterDelegate only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
 #if NET_NATIVE
@@ -529,11 +375,6 @@ namespace System.Runtime.Serialization
         internal XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
 #endif
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical xmlFormatReaderDelegate property
-            /// Safe - xmlFormatReaderDelegate only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
 #if NET_NATIVE
@@ -572,11 +413,6 @@ namespace System.Runtime.Serialization
         internal XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
 #endif
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical xmlFormatReaderDelegate property
-            /// Safe - xmlFormatReaderDelegate only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             {
 #if NET_NATIVE
@@ -623,11 +459,6 @@ namespace System.Runtime.Serialization
             return _helper.GetEnumeratorForCollection(obj, out enumeratorReturnType);
         }
 
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds all state used for (de)serializing collections.
-        ///            since the data is cached statically, we lock down access to it.
-        /// </SecurityNote>
         private class CollectionDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static Type[] s_knownInterfaces;
@@ -858,10 +689,7 @@ namespace System.Runtime.Serialization
                 set { _valueName = value; }
             }
 
-            internal bool IsDictionary
-            {
-                get { return KeyName != null; }
-            }
+            internal bool IsDictionary => KeyName != null;
 
             public XmlDictionaryString ChildElementNamespace
             {
@@ -869,24 +697,14 @@ namespace System.Runtime.Serialization
                 set { _childElementNamespace = value; }
             }
 
-            internal MethodInfo GetEnumeratorMethod
-            {
-                get { return _getEnumeratorMethod; }
-            }
+            internal MethodInfo GetEnumeratorMethod => _getEnumeratorMethod;
 
-            internal MethodInfo AddMethod
-            {
-                get { return _addMethod; }
-            }
+            internal MethodInfo AddMethod => _addMethod;
 
-            internal ConstructorInfo Constructor
-            {
-                get { return _constructor; }
-            }
+            internal ConstructorInfo Constructor => _constructor;
 
             internal override DataContractDictionary KnownDataContracts
             {
-                [SecurityCritical]
                 get
                 {
                     if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
@@ -903,20 +721,14 @@ namespace System.Runtime.Serialization
                     }
                     return _knownDataContracts;
                 }
-                [SecurityCritical]
+
                 set
                 { _knownDataContracts = value; }
             }
 
-            internal string InvalidCollectionInSharedContractMessage
-            {
-                get { return _invalidCollectionInSharedContractMessage; }
-            }
+            internal string InvalidCollectionInSharedContractMessage => _invalidCollectionInSharedContractMessage;
 
-            internal bool ItemNameSetExplicit
-            {
-                get { return _itemNameSetExplicit; }
-            }
+            internal bool ItemNameSetExplicit => _itemNameSetExplicit;
 
             internal XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
             {
@@ -1501,10 +1313,6 @@ namespace System.Runtime.Serialization
             return this;
         }
 
-        /// <SecurityNote>
-        /// Critical - sets the critical IsConstructorCheckRequired property on CollectionDataContract 
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         private void CheckConstructor()
         {
             if (this.Constructor == null)

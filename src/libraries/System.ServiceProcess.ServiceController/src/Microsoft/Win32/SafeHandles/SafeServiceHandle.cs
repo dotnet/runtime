@@ -23,7 +23,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            return Interop.mincore.CloseServiceHandle(handle);
+            return Interop.Advapi32.CloseServiceHandle(handle);
         }
     }
 }

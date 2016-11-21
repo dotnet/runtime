@@ -301,8 +301,8 @@ namespace System.Xml.Tests
             XmlSchemaSet schemas = new XmlSchemaSet();
             XmlSchemaParticle[] result;
 
-            schemas.Add("", TestData + XSDFILE_GET_EXPECTED_PARTICLES);
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_GET_EXPECTED_PARTICLES));
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas);
 
             val.Initialize();
@@ -338,8 +338,8 @@ namespace System.Xml.Tests
             XmlSchemaSet schemas = new XmlSchemaSet();
             XmlSchemaParticle[] result;
 
-            schemas.Add("", TestData + XSDFILE_GET_EXPECTED_PARTICLES);
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_GET_EXPECTED_PARTICLES));
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas);
 
             val.Initialize();
@@ -561,7 +561,7 @@ namespace System.Xml.Tests
                                                               "        </xs:complexType>\n" +
                                                               "    </xs:element>\n" +
                                                               "</xs:schema>")));
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas);
 
             val.Initialize();

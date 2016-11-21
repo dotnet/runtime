@@ -111,7 +111,7 @@ namespace System.Security.AccessControl
 
             error = Win32.GetSecurityInfo(resourceType, name, handle, includeSections, out rawSD);
 
-            if (error != Interop.mincore.Errors.ERROR_SUCCESS)
+            if (error != Interop.Errors.ERROR_SUCCESS)
             {
                 System.Exception exception = null;
 
@@ -122,33 +122,33 @@ namespace System.Security.AccessControl
 
                 if (exception == null)
                 {
-                    if (error == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                    if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                     {
                         exception = new UnauthorizedAccessException();
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_INVALID_OWNER)
+                    else if (error == Interop.Errors.ERROR_INVALID_OWNER)
                     {
                         exception = new InvalidOperationException(SR.AccessControl_InvalidOwner);
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_INVALID_PRIMARY_GROUP)
+                    else if (error == Interop.Errors.ERROR_INVALID_PRIMARY_GROUP)
                     {
                         exception = new InvalidOperationException(SR.AccessControl_InvalidGroup);
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+                    else if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
                     {
                         exception = new InvalidOperationException(SR.Format(SR.AccessControl_UnexpectedError, error));
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_INVALID_NAME)
+                    else if (error == Interop.Errors.ERROR_INVALID_NAME)
                     {
                         exception = new ArgumentException(
                              SR.Argument_InvalidName,
 nameof(name));
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                    else if (error == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     {
                         exception = (name == null ? new FileNotFoundException() : new FileNotFoundException(name));
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_NO_SECURITY_ON_OBJECT)
+                    else if (error == Interop.Errors.ERROR_NO_SECURITY_ON_OBJECT)
                     {
                         exception = new NotSupportedException(SR.AccessControl_NoAssociatedSecurity);
                     }
@@ -253,7 +253,7 @@ nameof(name));
 
                 error = Win32.SetSecurityInfo(_resourceType, name, handle, securityInfo, owner, group, sacl, dacl);
 
-                if (error != Interop.mincore.Errors.ERROR_SUCCESS)
+                if (error != Interop.Errors.ERROR_SUCCESS)
                 {
                     System.Exception exception = null;
 
@@ -264,33 +264,33 @@ nameof(name));
 
                     if (exception == null)
                     {
-                        if (error == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                        if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                         {
                             exception = new UnauthorizedAccessException();
                         }
-                        else if (error == Interop.mincore.Errors.ERROR_INVALID_OWNER)
+                        else if (error == Interop.Errors.ERROR_INVALID_OWNER)
                         {
                             exception = new InvalidOperationException(SR.AccessControl_InvalidOwner);
                         }
-                        else if (error == Interop.mincore.Errors.ERROR_INVALID_PRIMARY_GROUP)
+                        else if (error == Interop.Errors.ERROR_INVALID_PRIMARY_GROUP)
                         {
                             exception = new InvalidOperationException(SR.AccessControl_InvalidGroup);
                         }
-                        else if (error == Interop.mincore.Errors.ERROR_INVALID_NAME)
+                        else if (error == Interop.Errors.ERROR_INVALID_NAME)
                         {
                             exception = new ArgumentException(
                                  SR.Argument_InvalidName,
 nameof(name));
                         }
-                        else if (error == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
+                        else if (error == Interop.Errors.ERROR_INVALID_HANDLE)
                         {
                             exception = new NotSupportedException(SR.AccessControl_InvalidHandle);
                         }
-                        else if (error == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                        else if (error == Interop.Errors.ERROR_FILE_NOT_FOUND)
                         {
                             exception = new FileNotFoundException();
                         }
-                        else if (error == Interop.mincore.Errors.ERROR_NO_SECURITY_ON_OBJECT)
+                        else if (error == Interop.Errors.ERROR_NO_SECURITY_ON_OBJECT)
                         {
                             exception = new NotSupportedException(SR.AccessControl_NoAssociatedSecurity);
                         }

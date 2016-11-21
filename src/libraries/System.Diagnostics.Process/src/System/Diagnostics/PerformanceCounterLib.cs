@@ -55,7 +55,7 @@ namespace System.Diagnostics
                     {
                         if (s_computerName == null)
                         {
-                            s_computerName = Interop.mincore.GetComputerName();
+                            s_computerName = Interop.Kernel32.GetComputerName();
                         }
                     }
                 }
@@ -269,16 +269,16 @@ namespace System.Diagnostics
                         error = e.HResult;
                         switch (error)
                         {
-                            case Interop.mincore.RPCStatus.RPC_S_CALL_FAILED:
-                            case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
-                            case Interop.mincore.RPCStatus.RPC_S_SERVER_UNAVAILABLE:
+                            case Interop.Advapi32.RPCStatus.RPC_S_CALL_FAILED:
+                            case Interop.Errors.ERROR_INVALID_HANDLE:
+                            case Interop.Advapi32.RPCStatus.RPC_S_SERVER_UNAVAILABLE:
                                 Init();
-                                goto case Interop.mincore.WaitOptions.WAIT_TIMEOUT;
+                                goto case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT;
 
-                            case Interop.mincore.WaitOptions.WAIT_TIMEOUT:
-                            case Interop.mincore.Errors.ERROR_NOT_READY:
-                            case Interop.mincore.Errors.ERROR_LOCK_FAILED:
-                            case Interop.mincore.Errors.ERROR_BUSY:
+                            case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT:
+                            case Interop.Errors.ERROR_NOT_READY:
+                            case Interop.Errors.ERROR_LOCK_FAILED:
+                            case Interop.Errors.ERROR_BUSY:
                                 --waitRetries;
                                 if (waitSleep == 0)
                                 {

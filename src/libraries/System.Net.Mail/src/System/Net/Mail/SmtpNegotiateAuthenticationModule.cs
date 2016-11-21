@@ -34,7 +34,7 @@ namespace System.Net.Mail
                         _sessions[sessionCookie] =
                             clientContext =
                             new NTAuthentication(false, "Negotiate", credential, spn,
-                                                 ContextFlags.Connection | ContextFlags.InitIntegrity, channelBindingToken);
+                                                 ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBindingToken);
                     }
 
                     byte[] byteResp;

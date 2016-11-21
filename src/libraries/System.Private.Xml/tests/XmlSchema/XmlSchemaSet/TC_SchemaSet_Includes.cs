@@ -5,6 +5,7 @@
 using Xunit;
 using Xunit.Abstractions;
 using System;
+using System.IO;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
@@ -40,7 +41,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema schema = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
             CError.Compare(sc.Count, param1, "AddCount"); //compare the count
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -74,7 +75,7 @@ namespace System.Xml.Tests
 
             try
             {
-                schema = sc.Add(null, TestData._Root + "include_v2.xsd");
+                schema = sc.Add(null, Path.Combine(TestData._Root, "include_v2.xsd"));
             }
             catch (XmlSchemaException)
             {
@@ -96,7 +97,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v8_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v8_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -123,7 +124,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v9_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v9_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -151,7 +152,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v10_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v10_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -184,7 +185,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v11_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v11_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -227,7 +228,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema a = ss.Add(null, TestData._Root + "include_v12_a.xsd");
+            XmlSchema a = ss.Add(null, Path.Combine(TestData._Root, "include_v12_a.xsd"));
             CError.Compare(ss.Count, 1, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -268,7 +269,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema schema = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
             CError.Compare(sc.Count, param1, "AddCount"); //compare the count
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -315,7 +316,7 @@ namespace System.Xml.Tests
 
             try
             {
-                schema = sc.Add(null, TestData._Root + "include_v2.xsd");
+                schema = sc.Add(null, Path.Combine(TestData._Root, "include_v2.xsd"));
             }
             catch (XmlSchemaException)
             {
@@ -346,7 +347,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v8_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v8_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -377,7 +378,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v9_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v9_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -409,7 +410,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v10_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v10_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -446,7 +447,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v11_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v11_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -493,7 +494,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema a = ss.Add(null, TestData._Root + "include_v12_a.xsd");
+            XmlSchema a = ss.Add(null, Path.Combine(TestData._Root, "include_v12_a.xsd"));
             CError.Compare(ss.Count, 1, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -539,7 +540,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema schema = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
             CError.Compare(sc.Count, param1, "AddCount"); //compare the count
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -586,7 +587,7 @@ namespace System.Xml.Tests
 
             try
             {
-                schema = sc.Add(null, TestData._Root + "include_v2.xsd");
+                schema = sc.Add(null, Path.Combine(TestData._Root, "include_v2.xsd"));
             }
             catch (XmlSchemaException)
             {
@@ -617,7 +618,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v8_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v8_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -648,7 +649,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v9_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v9_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -680,7 +681,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v10_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v10_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -717,7 +718,7 @@ namespace System.Xml.Tests
             sc.XmlResolver = new XmlUrlResolver();
             int elem_count = 0;
 
-            XmlSchema schema = sc.Add(null, TestData._Root + "include_v11_a.xsd");
+            XmlSchema schema = sc.Add(null, Path.Combine(TestData._Root, "include_v11_a.xsd"));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -764,7 +765,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema a = ss.Add(null, TestData._Root + "include_v12_a.xsd");
+            XmlSchema a = ss.Add(null, Path.Combine(TestData._Root, "include_v12_a.xsd"));
             CError.Compare(ss.Count, 1, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 

@@ -72,16 +72,16 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetNativeSystemInfo.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)'=='true' AND '$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81'">
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetSystemInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

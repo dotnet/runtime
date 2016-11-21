@@ -232,7 +232,7 @@ namespace System.Net.WebSockets
         {
             lock (_lock)
             {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
+                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, validStates);
             }
         }
 
@@ -250,7 +250,7 @@ namespace System.Net.WebSockets
         // Must be called with Lock taken.
         public void CheckValidState(WebSocketState[] validStates)
         {
-            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
+            ClientWebSocket.ThrowIfInvalidState(_state, _disposed, validStates);
         }
 
         public void UpdateState(WebSocketState value)

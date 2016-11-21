@@ -1365,11 +1365,8 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     Debug.Assert(href != null);
-                    //BinCompat TODO
-                    throw new FileLoadException("Can't load assembly from Uri", ResolveUri(href, _input.BaseUri).ToString());
-
-                    //asmLocation = Assembly.LoadFrom(ResolveUri(href, input.BaseUri).ToString()).Location;
-                    //scriptClass.refAssembliesByHref = true;
+                    asmLocation = Assembly.LoadFrom(ResolveUri(href, _input.BaseUri).ToString()).Location;
+                    scriptClass.refAssembliesByHref = true;
                 }
 
                 if (asmLocation != null)

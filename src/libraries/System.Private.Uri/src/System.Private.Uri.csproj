@@ -36,7 +36,7 @@
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs">
       <Link>Common\System\StringNormalizationExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs">
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs" Condition="'$(TargetGroup)'=='uap101aot'">
       <Link>Common\System\Globalization\IdnMapping.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs">
@@ -66,34 +66,31 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OutputDebugString.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.OutputDebugString.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OutputDebugString.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.OutputDebugString.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Windows.cs">
       <Link>Common\System\StringNormalizationExtensions.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs" Condition="'$(TargetGroup)'=='uap101aot'">
       <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetLastError.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetLastError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Normalization.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.Normalization.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Normalization.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Normalization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Idna.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.Idna.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\normaliz\Interop.Idna.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+      <Link>Common\Interop\Windows\normaliz\Interop.Idna.cs</Link>
+  </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Unix.cs">
       <Link>Common\System\StringNormalizationExtensions.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
-      <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
@@ -137,9 +134,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
       <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
     </Compile>
@@ -158,8 +152,8 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs" Condition="'$(TargetsUnix)'=='true'">
       <Link>Common\System\Runtime\InteropServices\Marshal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetLastError.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization.Json
             return new XmlQualifiedName(name, ns);
         }
 
-        internal char ReadContentAsChar()
+        internal override char ReadContentAsChar()
         {
             return XmlConvert.ToChar(ReadContentAsString());
         }
@@ -91,7 +91,7 @@ namespace System.Runtime.Serialization.Json
             return XmlConvert.ToChar(ReadElementContentAsString());
         }
 
-        public byte[] ReadContentAsBase64()
+        public override byte[] ReadContentAsBase64()
         {
             if (isEndOfEmptyElement)
                 return Array.Empty<byte>();
@@ -135,7 +135,7 @@ namespace System.Runtime.Serialization.Json
             return buffer;
         }
 
-        internal DateTime ReadContentAsDateTime()
+        internal override DateTime ReadContentAsDateTime()
         {
             return ParseJsonDate(ReadContentAsString(), _dateTimeFormat);
         }
@@ -291,7 +291,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         // Overridden because base reader relies on XmlConvert.ToUInt64 for conversion to ulong
-        internal ulong ReadContentAsUnsignedLong()
+        internal override ulong ReadContentAsUnsignedLong()
         {
             string value = reader.ReadContentAsString();
 

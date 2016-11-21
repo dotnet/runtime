@@ -21,6 +21,9 @@
     <Compile Include="System\Net\HeaderInfo.cs" />
     <Compile Include="System\Net\HeaderInfoTable.cs" />
     <Compile Include="System\Net\NetEventSource.WebHeaderCollection.cs" />
+    <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
+      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>

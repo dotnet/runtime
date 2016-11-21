@@ -141,6 +141,12 @@
         "unix-x64": {
             "#import": [ "unix" ]
         },
+        "unix-arm": {
+            "#import": [ "unix" ]
+        },
+        "unix-arm64": {
+            "#import": [ "unix" ]
+        },
 
         "osx": {
             "#import": [ "unix" ]
@@ -175,6 +181,12 @@
         },
         "linux-x64": {
             "#import": [ "linux", "unix-x64" ]
+        },
+        "linux-arm": {
+            "#import": [ "linux", "unix-arm" ]
+        },
+        "linux-arm64": {
+            "#import": [ "linux", "unix-arm64" ]
         },
 
         "rhel": {
@@ -267,12 +279,24 @@
         "debian-x64": {
             "#import": [ "debian", "linux-x64" ]
         },
+        "debian-arm": {
+            "#import": [ "debian", "linux-arm" ]
+        },
+        "debian-arm64": {
+            "#import": [ "debian", "linux-arm64" ]
+        },
 
         "debian.8": {
             "#import": [ "debian" ]
         },
         "debian.8-x64": {
             "#import": [ "debian.8", "debian-x64" ]
+        },
+        "debian.8-arm": {
+            "#import": [ "debian.8", "debian-arm" ]
+        },
+        "debian.8-arm64": {
+            "#import": [ "debian.8", "debian-arm64" ]
         },
 
         "ubuntu": {

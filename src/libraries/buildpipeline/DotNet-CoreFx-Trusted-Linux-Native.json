@@ -685,13 +685,17 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(DockerTag)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 60,
   "repository": {
     "properties": {
       "labelSources": "0",
-      "reportBuildStatus": "true"
+      "reportBuildStatus": "true",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "false",
+      "cleanOptions": "0"
     },
     "id": "58fa2458-e392-4373-ba2b-dd3ef0c2d7ce",
     "type": "TfsGit",
@@ -721,6 +725,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097399
+    "revision": 418097423
   }
 }

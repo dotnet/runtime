@@ -22,8 +22,8 @@ namespace System
             Contract.EndContractBlock();
 
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
-            Interop.mincore.SetLastError(Interop.ERROR_SUCCESS);
-            bool result = Interop.mincore.IsNormalizedString((int)normalizationForm, strInput, strInput.Length);
+            Interop.Kernel32.SetLastError(Interop.ERROR_SUCCESS);
+            bool result = Interop.Kernel32.IsNormalizedString((int)normalizationForm, strInput, strInput.Length);
 
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
@@ -56,10 +56,10 @@ namespace System
             Contract.EndContractBlock();
 
             // we depend on Win32 last error when calling NormalizeString
-            Interop.mincore.SetLastError(Interop.ERROR_SUCCESS);
+            Interop.Kernel32.SetLastError(Interop.ERROR_SUCCESS);
 
             // Guess our buffer size first
-            int iLength = Interop.mincore.NormalizeString((int)normalizationForm, strInput, strInput.Length, null, 0);
+            int iLength = Interop.Kernel32.NormalizeString((int)normalizationForm, strInput, strInput.Length, null, 0);
 
             int lastError = Marshal.GetLastWin32Error();
             // Could have an error (actually it'd be quite hard to have an error here)
@@ -91,8 +91,8 @@ namespace System
                 cBuffer = new char[iLength];
 
                 // Reset last error
-                Interop.mincore.SetLastError(Interop.ERROR_SUCCESS);
-                iLength = Interop.mincore.NormalizeString((int)normalizationForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
+                Interop.Kernel32.SetLastError(Interop.ERROR_SUCCESS);
+                iLength = Interop.Kernel32.NormalizeString((int)normalizationForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
                 lastError = Marshal.GetLastWin32Error();
 
                 if (lastError == Interop.ERROR_SUCCESS || lastError == Interop.LAST_ERROR_TRASH_VALUE)

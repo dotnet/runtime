@@ -1,0 +1,1044 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Microsoft.Win32.SafeHandles;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Security.Authentication.ExtendedProtection;
+using System.Threading;
+
+internal static partial class Interop
+{
+    internal static partial class HttpApi
+    {
+        internal static readonly HTTPAPI_VERSION s_version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
+        internal static readonly bool s_supported = InitHttpApi(s_version);
+        internal static IPEndPoint s_any = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
+        internal static IPEndPoint s_ipv6Any = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort);
+        internal const int IPv4AddressSize = 16;
+        internal const int IPv6AddressSize = 28;
+
+        private unsafe static bool InitHttpApi(HTTPAPI_VERSION version)
+        {
+            uint statusCode = HttpInitialize(version, (uint)HTTP_FLAGS.HTTP_INITIALIZE_SERVER, null);
+            return statusCode == ERROR_SUCCESS;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct HTTP_VERSION
+        {
+            internal ushort MajorVersion;
+            internal ushort MinorVersion;
+        }
+
+        internal enum HTTP_RESPONSE_INFO_TYPE
+        {
+            HttpResponseInfoTypeMultipleKnownHeaders,
+            HttpResponseInfoTypeAuthenticationProperty,
+            HttpResponseInfoTypeQosProperty,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_RESPONSE_INFO
+        {
+            internal HTTP_RESPONSE_INFO_TYPE Type;
+            internal uint Length;
+            internal void* pInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_RESPONSE_HEADERS
+        {
+            internal ushort UnknownHeaderCount;
+            internal HTTP_UNKNOWN_HEADER* pUnknownHeaders;
+            internal ushort TrailerCount;
+            internal HTTP_UNKNOWN_HEADER* pTrailers;
+            internal HTTP_KNOWN_HEADER KnownHeaders;
+            internal HTTP_KNOWN_HEADER KnownHeaders_02;
+            internal HTTP_KNOWN_HEADER KnownHeaders_03;
+            internal HTTP_KNOWN_HEADER KnownHeaders_04;
+            internal HTTP_KNOWN_HEADER KnownHeaders_05;
+            internal HTTP_KNOWN_HEADER KnownHeaders_06;
+            internal HTTP_KNOWN_HEADER KnownHeaders_07;
+            internal HTTP_KNOWN_HEADER KnownHeaders_08;
+            internal HTTP_KNOWN_HEADER KnownHeaders_09;
+            internal HTTP_KNOWN_HEADER KnownHeaders_10;
+            internal HTTP_KNOWN_HEADER KnownHeaders_11;
+            internal HTTP_KNOWN_HEADER KnownHeaders_12;
+            internal HTTP_KNOWN_HEADER KnownHeaders_13;
+            internal HTTP_KNOWN_HEADER KnownHeaders_14;
+            internal HTTP_KNOWN_HEADER KnownHeaders_15;
+            internal HTTP_KNOWN_HEADER KnownHeaders_16;
+            internal HTTP_KNOWN_HEADER KnownHeaders_17;
+            internal HTTP_KNOWN_HEADER KnownHeaders_18;
+            internal HTTP_KNOWN_HEADER KnownHeaders_19;
+            internal HTTP_KNOWN_HEADER KnownHeaders_20;
+            internal HTTP_KNOWN_HEADER KnownHeaders_21;
+            internal HTTP_KNOWN_HEADER KnownHeaders_22;
+            internal HTTP_KNOWN_HEADER KnownHeaders_23;
+            internal HTTP_KNOWN_HEADER KnownHeaders_24;
+            internal HTTP_KNOWN_HEADER KnownHeaders_25;
+            internal HTTP_KNOWN_HEADER KnownHeaders_26;
+            internal HTTP_KNOWN_HEADER KnownHeaders_27;
+            internal HTTP_KNOWN_HEADER KnownHeaders_28;
+            internal HTTP_KNOWN_HEADER KnownHeaders_29;
+            internal HTTP_KNOWN_HEADER KnownHeaders_30;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_KNOWN_HEADER
+        {
+            internal ushort RawValueLength;
+            internal sbyte* pRawValue;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_UNKNOWN_HEADER
+        {
+            internal ushort NameLength;
+            internal ushort RawValueLength;
+            internal sbyte* pName;
+            internal sbyte* pRawValue;
+        }
+
+        internal enum HTTP_DATA_CHUNK_TYPE : int
+        {
+            HttpDataChunkFromMemory = 0,
+            HttpDataChunkFromFileHandle = 1,
+            HttpDataChunkFromFragmentCache = 2,
+            HttpDataChunkMaximum = 3,
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 32)]
+        internal unsafe struct HTTP_DATA_CHUNK
+        {
+            internal HTTP_DATA_CHUNK_TYPE DataChunkType;
+            internal uint p0;
+            internal byte* pBuffer;
+            internal uint BufferLength;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_RESPONSE
+        {
+            internal uint Flags;
+            internal HTTP_VERSION Version;
+            internal ushort StatusCode;
+            internal ushort ReasonLength;
+            internal sbyte* pReason;
+            internal HTTP_RESPONSE_HEADERS Headers;
+            internal ushort EntityChunkCount;
+            internal HTTP_DATA_CHUNK* pEntityChunks;
+            internal ushort ResponseInfoCount;
+            internal HTTP_RESPONSE_INFO* pResponseInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_REQUEST_INFO
+        {
+            internal HTTP_REQUEST_INFO_TYPE InfoType;
+            internal uint InfoLength;
+            internal void* pInfo;
+        }
+
+        internal enum HTTP_REQUEST_INFO_TYPE
+        {
+            HttpRequestInfoTypeAuth,
+            HttpRequestInfoTypeChannelBind,
+            HttpRequestInfoTypeSslProtocol,
+            HttpRequestInfoTypeSslTokenBinding
+        }
+
+        internal enum HTTP_VERB : int
+        {
+            HttpVerbUnparsed = 0,
+            HttpVerbUnknown = 1,
+            HttpVerbInvalid = 2,
+            HttpVerbOPTIONS = 3,
+            HttpVerbGET = 4,
+            HttpVerbHEAD = 5,
+            HttpVerbPOST = 6,
+            HttpVerbPUT = 7,
+            HttpVerbDELETE = 8,
+            HttpVerbTRACE = 9,
+            HttpVerbCONNECT = 10,
+            HttpVerbTRACK = 11,
+            HttpVerbMOVE = 12,
+            HttpVerbCOPY = 13,
+            HttpVerbPROPFIND = 14,
+            HttpVerbPROPPATCH = 15,
+            HttpVerbMKCOL = 16,
+            HttpVerbLOCK = 17,
+            HttpVerbUNLOCK = 18,
+            HttpVerbSEARCH = 19,
+            HttpVerbMaximum = 20,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct SOCKADDR
+        {
+            internal ushort sa_family;
+            internal byte sa_data;
+            internal byte sa_data_02;
+            internal byte sa_data_03;
+            internal byte sa_data_04;
+            internal byte sa_data_05;
+            internal byte sa_data_06;
+            internal byte sa_data_07;
+            internal byte sa_data_08;
+            internal byte sa_data_09;
+            internal byte sa_data_10;
+            internal byte sa_data_11;
+            internal byte sa_data_12;
+            internal byte sa_data_13;
+            internal byte sa_data_14;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_TRANSPORT_ADDRESS
+        {
+            internal SOCKADDR* pRemoteAddress;
+            internal SOCKADDR* pLocalAddress;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_REQUEST_HEADERS
+        {
+            internal ushort UnknownHeaderCount;
+            internal HTTP_UNKNOWN_HEADER* pUnknownHeaders;
+            internal ushort TrailerCount;
+            internal HTTP_UNKNOWN_HEADER* pTrailers;
+            internal HTTP_KNOWN_HEADER KnownHeaders;
+            internal HTTP_KNOWN_HEADER KnownHeaders_02;
+            internal HTTP_KNOWN_HEADER KnownHeaders_03;
+            internal HTTP_KNOWN_HEADER KnownHeaders_04;
+            internal HTTP_KNOWN_HEADER KnownHeaders_05;
+            internal HTTP_KNOWN_HEADER KnownHeaders_06;
+            internal HTTP_KNOWN_HEADER KnownHeaders_07;
+            internal HTTP_KNOWN_HEADER KnownHeaders_08;
+            internal HTTP_KNOWN_HEADER KnownHeaders_09;
+            internal HTTP_KNOWN_HEADER KnownHeaders_10;
+            internal HTTP_KNOWN_HEADER KnownHeaders_11;
+            internal HTTP_KNOWN_HEADER KnownHeaders_12;
+            internal HTTP_KNOWN_HEADER KnownHeaders_13;
+            internal HTTP_KNOWN_HEADER KnownHeaders_14;
+            internal HTTP_KNOWN_HEADER KnownHeaders_15;
+            internal HTTP_KNOWN_HEADER KnownHeaders_16;
+            internal HTTP_KNOWN_HEADER KnownHeaders_17;
+            internal HTTP_KNOWN_HEADER KnownHeaders_18;
+            internal HTTP_KNOWN_HEADER KnownHeaders_19;
+            internal HTTP_KNOWN_HEADER KnownHeaders_20;
+            internal HTTP_KNOWN_HEADER KnownHeaders_21;
+            internal HTTP_KNOWN_HEADER KnownHeaders_22;
+            internal HTTP_KNOWN_HEADER KnownHeaders_23;
+            internal HTTP_KNOWN_HEADER KnownHeaders_24;
+            internal HTTP_KNOWN_HEADER KnownHeaders_25;
+            internal HTTP_KNOWN_HEADER KnownHeaders_26;
+            internal HTTP_KNOWN_HEADER KnownHeaders_27;
+            internal HTTP_KNOWN_HEADER KnownHeaders_28;
+            internal HTTP_KNOWN_HEADER KnownHeaders_29;
+            internal HTTP_KNOWN_HEADER KnownHeaders_30;
+            internal HTTP_KNOWN_HEADER KnownHeaders_31;
+            internal HTTP_KNOWN_HEADER KnownHeaders_32;
+            internal HTTP_KNOWN_HEADER KnownHeaders_33;
+            internal HTTP_KNOWN_HEADER KnownHeaders_34;
+            internal HTTP_KNOWN_HEADER KnownHeaders_35;
+            internal HTTP_KNOWN_HEADER KnownHeaders_36;
+            internal HTTP_KNOWN_HEADER KnownHeaders_37;
+            internal HTTP_KNOWN_HEADER KnownHeaders_38;
+            internal HTTP_KNOWN_HEADER KnownHeaders_39;
+            internal HTTP_KNOWN_HEADER KnownHeaders_40;
+            internal HTTP_KNOWN_HEADER KnownHeaders_41;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_SSL_CLIENT_CERT_INFO
+        {
+            internal uint CertFlags;
+            internal uint CertEncodedSize;
+            internal byte* pCertEncoded;
+            internal void* Token;
+            internal byte CertDeniedByMapper;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_SSL_INFO
+        {
+            internal ushort ServerCertKeySize;
+            internal ushort ConnectionKeySize;
+            internal uint ServerCertIssuerSize;
+            internal uint ServerCertSubjectSize;
+            internal sbyte* pServerCertIssuer;
+            internal sbyte* pServerCertSubject;
+            internal HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo;
+            internal uint SslClientCertNegotiated;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_REQUEST
+        {
+            internal uint Flags;
+            internal ulong ConnectionId;
+            internal ulong RequestId;
+            internal ulong UrlContext;
+            internal HTTP_VERSION Version;
+            internal HTTP_VERB Verb;
+            internal ushort UnknownVerbLength;
+            internal ushort RawUrlLength;
+            internal sbyte* pUnknownVerb;
+            internal sbyte* pRawUrl;
+            internal HTTP_COOKED_URL CookedUrl;
+            internal HTTP_TRANSPORT_ADDRESS Address;
+            internal HTTP_REQUEST_HEADERS Headers;
+            internal ulong BytesReceived;
+            internal ushort EntityChunkCount;
+            internal HTTP_DATA_CHUNK* pEntityChunks;
+            internal ulong RawConnectionId;
+            internal HTTP_SSL_INFO* pSslInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_REQUEST_V2
+        {
+            internal HTTP_REQUEST RequestV1;
+            internal ushort RequestInfoCount;
+            internal HTTP_REQUEST_INFO* pRequestInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_COOKED_URL
+        {
+            internal ushort FullUrlLength;
+            internal ushort HostLength;
+            internal ushort AbsPathLength;
+            internal ushort QueryStringLength;
+            internal ushort* pFullUrl;
+            internal ushort* pHost;
+            internal ushort* pAbsPath;
+            internal ushort* pQueryString;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct HTTP_REQUEST_CHANNEL_BIND_STATUS
+        {
+            internal IntPtr ServiceName;
+            internal IntPtr ChannelToken;
+            internal uint ChannelTokenSize;
+            internal uint Flags;
+        }
+
+        internal enum HTTP_SERVER_PROPERTY
+        {
+            HttpServerAuthenticationProperty,
+            HttpServerLoggingProperty,
+            HttpServerQosProperty,
+            HttpServerTimeoutsProperty,
+            HttpServerQueueLengthProperty,
+            HttpServerStateProperty,
+            HttpServer503VerbosityProperty,
+            HttpServerBindingProperty,
+            HttpServerExtendedAuthenticationProperty,
+            HttpServerListenEndpointProperty,
+            HttpServerChannelBindProperty,
+            HttpServerProtectionLevelProperty,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct HTTP_REQUEST_TOKEN_BINDING_INFO
+        {
+            public byte* TokenBinding;
+            public uint TokenBindingSize;
+            public byte* TlsUnique;
+            public uint TlsUniqueSize;
+            public IntPtr KeyType;
+        }
+
+        internal enum TOKENBINDING_HASH_ALGORITHM : byte
+        {
+            TOKENBINDING_HASH_ALGORITHM_SHA256 = 4,
+        }
+
+        internal enum TOKENBINDING_SIGNATURE_ALGORITHM : byte
+        {
+            TOKENBINDING_SIGNATURE_ALGORITHM_RSA = 1,
+            TOKENBINDING_SIGNATURE_ALGORITHM_ECDSAP256 = 3,
+        }
+
+        internal enum TOKENBINDING_TYPE : byte
+        {
+            TOKENBINDING_TYPE_PROVIDED = 0,
+            TOKENBINDING_TYPE_REFERRED = 1,
+        }
+
+        internal enum TOKENBINDING_EXTENSION_FORMAT
+        {
+            TOKENBINDING_EXTENSION_FORMAT_UNDEFINED = 0,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct TOKENBINDING_IDENTIFIER
+        {
+            public TOKENBINDING_TYPE bindingType;
+            public TOKENBINDING_HASH_ALGORITHM hashAlgorithm;
+            public TOKENBINDING_SIGNATURE_ALGORITHM signatureAlgorithm;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct TOKENBINDING_RESULT_DATA
+        {
+            public uint identifierSize;
+            public TOKENBINDING_IDENTIFIER* identifierData;
+            public TOKENBINDING_EXTENSION_FORMAT extensionFormat;
+            public uint extensionSize;
+            public IntPtr extensionData;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct TOKENBINDING_RESULT_LIST
+        {
+            public uint resultCount;
+            public TOKENBINDING_RESULT_DATA* resultData;
+        }
+
+        [Flags]
+        internal enum HTTP_FLAGS : uint
+        {
+            NONE = 0x00000000,
+            HTTP_RECEIVE_REQUEST_FLAG_COPY_BODY = 0x00000001,
+            HTTP_RECEIVE_SECURE_CHANNEL_TOKEN = 0x00000001,
+            HTTP_SEND_RESPONSE_FLAG_DISCONNECT = 0x00000001,
+            HTTP_SEND_RESPONSE_FLAG_MORE_DATA = 0x00000002,
+            HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA = 0x00000004,
+            HTTP_SEND_RESPONSE_FLAG_RAW_HEADER = 0x00000004,
+            HTTP_SEND_REQUEST_FLAG_MORE_DATA = 0x00000001,
+            HTTP_PROPERTY_FLAG_PRESENT = 0x00000001,
+            HTTP_INITIALIZE_SERVER = 0x00000001,
+            HTTP_INITIALIZE_CBT = 0x00000004,
+            HTTP_SEND_RESPONSE_FLAG_OPAQUE = 0x00000040,
+        }
+
+        private const int HttpHeaderRequestMaximum = (int)HttpRequestHeader.UserAgent + 1;
+        private const int HttpHeaderResponseMaximum = (int)HttpResponseHeader.WwwAuthenticate + 1;
+
+        internal static class HTTP_REQUEST_HEADER_ID
+        {
+            internal static string ToString(int position)
+            {
+                return s_strings[position];
+            }
+
+            private static readonly string[] s_strings = {
+                    "Cache-Control",
+                    "Connection",
+                    "Date",
+                    "Keep-Alive",
+                    "Pragma",
+                    "Trailer",
+                    "Transfer-Encoding",
+                    "Upgrade",
+                    "Via",
+                    "Warning",
+
+                    "Allow",
+                    "Content-Length",
+                    "Content-Type",
+                    "Content-Encoding",
+                    "Content-Language",
+                    "Content-Location",
+                    "Content-MD5",
+                    "Content-Range",
+                    "Expires",
+                    "Last-Modified",
+
+                    "Accept",
+                    "Accept-Charset",
+                    "Accept-Encoding",
+                    "Accept-Language",
+                    "Authorization",
+                    "Cookie",
+                    "Expect",
+                    "From",
+                    "Host",
+                    "If-Match",
+
+                    "If-Modified-Since",
+                    "If-None-Match",
+                    "If-Range",
+                    "If-Unmodified-Since",
+                    "Max-Forwards",
+                    "Proxy-Authorization",
+                    "Referer",
+                    "Range",
+                    "Te",
+                    "Translate",
+                    "User-Agent",
+                };
+        }
+
+        internal enum HTTP_TIMEOUT_TYPE
+        {
+            EntityBody,
+            DrainEntityBody,
+            RequestQueue,
+            IdleConnection,
+            HeaderWait,
+            MinSendRate,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct HTTP_TIMEOUT_LIMIT_INFO
+        {
+            internal HTTP_FLAGS Flags;
+            internal ushort EntityBody;
+            internal ushort DrainEntityBody;
+            internal ushort RequestQueue;
+            internal ushort IdleConnection;
+            internal ushort HeaderWait;
+            internal uint MinSendRate;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct HTTPAPI_VERSION
+        {
+            internal ushort HttpApiMajorVersion;
+            internal ushort HttpApiMinorVersion;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct HTTP_BINDING_INFO
+        {
+            internal HTTP_FLAGS Flags;
+            internal IntPtr RequestQueueHandle;
+        }
+
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpInitialize(HTTPAPI_VERSION version, uint flags, void* pReserved);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal static extern uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, IntPtr pPropertyInfo, uint propertyInfoLength);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpCreateServerSession(HTTPAPI_VERSION version, ulong* serverSessionId, uint reserved);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpCreateUrlGroup(ulong serverSessionId, ulong* urlGroupId, uint reserved);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal static extern uint HttpCloseUrlGroup(ulong urlGroupId);
+
+        [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern unsafe uint HttpCreateRequestQueue(HTTPAPI_VERSION version, string pName,
+            Interop.Kernel32.SECURITY_ATTRIBUTES* pSecurityAttributes, uint flags, out HttpRequestQueueV2Handle pReqQueueHandle);
+
+        [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern uint HttpAddUrlToUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, ulong context, uint pReserved);
+
+        [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern uint HttpRemoveUrlFromUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, uint flags);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpReceiveHttpRequest(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_REQUEST* pRequestBuffer, uint requestBufferLength, uint* pBytesReturned, NativeOverlapped* pOverlapped);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpWaitForDisconnect(SafeHandle requestQueueHandle, ulong connectionId, NativeOverlapped* pOverlapped);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpReceiveRequestEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, void* pEntityBuffer, uint entityBufferLength, out uint bytesReturned, NativeOverlapped* pOverlapped);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal static extern unsafe uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal static extern uint HttpCancelHttpRequest(SafeHandle requestQueueHandle, ulong requestId, IntPtr pOverlapped);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal static extern uint HttpCloseServerSession(ulong serverSessionId);
+
+        internal sealed class SafeLocalFreeChannelBinding : ChannelBinding
+        {
+            private const int LMEM_FIXED = 0;
+            private int _size;
+
+            private SafeLocalFreeChannelBinding() { }
+
+            public override int Size
+            {
+                get { return _size; }
+            }
+
+            public static SafeLocalFreeChannelBinding LocalAlloc(int cb)
+            {
+                SafeLocalFreeChannelBinding result = HttpApi.LocalAlloc(LMEM_FIXED, (UIntPtr)cb);
+                if (result.IsInvalid)
+                {
+                    result.SetHandleAsInvalid();
+                    throw new OutOfMemoryException();
+                }
+
+                result._size = cb;
+                return result;
+            }
+
+            override protected bool ReleaseHandle()
+            {
+                return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
+            }
+        }
+
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static extern SafeLocalFreeChannelBinding LocalAlloc(int uFlags, UIntPtr sizetdwBytes);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
+
+        [DllImport(Libraries.HttpApi, SetLastError = true)]
+        internal unsafe static extern uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
+
+        [Flags]
+        internal enum FileCompletionNotificationModes : byte
+        {
+            None = 0,
+            SkipCompletionPortOnSuccess = 1,
+            SkipSetEventOnHandle = 2
+        }
+
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static unsafe extern bool SetFileCompletionNotificationModes(SafeHandle handle, FileCompletionNotificationModes modes);
+
+        internal static readonly string[] HttpVerbs = new string[]
+        {
+            null,
+            "Unknown",
+            "Invalid",
+            "OPTIONS",
+            "GET",
+            "HEAD",
+            "POST",
+            "PUT",
+            "DELETE",
+            "TRACE",
+            "CONNECT",
+            "TRACK",
+            "MOVE",
+            "COPY",
+            "PROPFIND",
+            "PROPPATCH",
+            "MKCOL",
+            "LOCK",
+            "UNLOCK",
+            "SEARCH",
+        };
+
+        internal static class HTTP_RESPONSE_HEADER_ID
+        {
+            internal enum Enum
+            {
+                HttpHeaderCacheControl = 0,    // general-header [section 4.5]
+                HttpHeaderConnection = 1,    // general-header [section 4.5]
+                HttpHeaderDate = 2,    // general-header [section 4.5]
+                HttpHeaderKeepAlive = 3,    // general-header [not in rfc]
+                HttpHeaderPragma = 4,    // general-header [section 4.5]
+                HttpHeaderTrailer = 5,    // general-header [section 4.5]
+                HttpHeaderTransferEncoding = 6,    // general-header [section 4.5]
+                HttpHeaderUpgrade = 7,    // general-header [section 4.5]
+                HttpHeaderVia = 8,    // general-header [section 4.5]
+                HttpHeaderWarning = 9,    // general-header [section 4.5]
+
+                HttpHeaderAllow = 10,   // entity-header  [section 7.1]
+                HttpHeaderContentLength = 11,   // entity-header  [section 7.1]
+                HttpHeaderContentType = 12,   // entity-header  [section 7.1]
+                HttpHeaderContentEncoding = 13,   // entity-header  [section 7.1]
+                HttpHeaderContentLanguage = 14,   // entity-header  [section 7.1]
+                HttpHeaderContentLocation = 15,   // entity-header  [section 7.1]
+                HttpHeaderContentMd5 = 16,   // entity-header  [section 7.1]
+                HttpHeaderContentRange = 17,   // entity-header  [section 7.1]
+                HttpHeaderExpires = 18,   // entity-header  [section 7.1]
+                HttpHeaderLastModified = 19,   // entity-header  [section 7.1]
+
+
+                // Response Headers
+
+                HttpHeaderAcceptRanges = 20,   // response-header [section 6.2]
+                HttpHeaderAge = 21,   // response-header [section 6.2]
+                HttpHeaderEtag = 22,   // response-header [section 6.2]
+                HttpHeaderLocation = 23,   // response-header [section 6.2]
+                HttpHeaderProxyAuthenticate = 24,   // response-header [section 6.2]
+                HttpHeaderRetryAfter = 25,   // response-header [section 6.2]
+                HttpHeaderServer = 26,   // response-header [section 6.2]
+                HttpHeaderSetCookie = 27,   // response-header [not in rfc]
+                HttpHeaderVary = 28,   // response-header [section 6.2]
+                HttpHeaderWwwAuthenticate = 29,   // response-header [section 6.2]
+
+                HttpHeaderResponseMaximum = 30,
+
+
+                HttpHeaderMaximum = 41
+            }
+
+            private static readonly string[] s_strings =
+            {
+                "Cache-Control",
+                "Connection",
+                "Date",
+                "Keep-Alive",
+                "Pragma",
+                "Trailer",
+                "Transfer-Encoding",
+                "Upgrade",
+                "Via",
+                "Warning",
+
+                "Allow",
+                "Content-Length",
+                "Content-Type",
+                "Content-Encoding",
+                "Content-Language",
+                "Content-Location",
+                "Content-MD5",
+                "Content-Range",
+                "Expires",
+                "Last-Modified",
+
+                "Accept-Ranges",
+                "Age",
+                "ETag",
+                "Location",
+                "Proxy-Authenticate",
+                "Retry-After",
+                "Server",
+                "Set-Cookie",
+                "Vary",
+                "WWW-Authenticate",
+            };
+
+            private readonly static Dictionary<string, int> s_hashtable = CreateTable();
+
+            private static Dictionary<string, int> CreateTable()
+            {
+                var table = new Dictionary<string, int>((int)Enum.HttpHeaderResponseMaximum);
+                for (int i = 0; i < (int)Enum.HttpHeaderResponseMaximum; i++)
+                {
+                    table.Add(s_strings[i], i);
+                }
+                return table;
+            }
+
+            internal static int IndexOfKnownHeader(string headerName)
+            {
+                int index;
+                return s_hashtable.TryGetValue(headerName, out index) ? index : -1;
+            }
+
+            internal static string ToString(int position)
+            {
+                return s_strings[position];
+            }
+        }
+
+        private unsafe static string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
+        {
+            if (NetEventSource.IsEnabled) { NetEventSource.Enter(null); }
+
+            string header = null;
+
+            HTTP_KNOWN_HEADER* pKnownHeader = (&request->Headers.KnownHeaders) + headerIndex;
+
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pKnownHeader:0x{(IntPtr)pKnownHeader}");
+                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue} RawValueLength:{pKnownHeader->RawValueLength}");
+            }
+
+            // For known headers, when header value is empty, RawValueLength will be 0 and 
+            // pRawValue will point to empty string
+            if (pKnownHeader->pRawValue != null)
+            {
+                header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
+            }
+
+            if (NetEventSource.IsEnabled) { NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}"); }
+            return header;
+        }
+
+        internal unsafe static string GetKnownHeader(HTTP_REQUEST* request, int headerIndex)
+        {
+            return GetKnownHeader(request, 0, headerIndex);
+        }
+
+        internal unsafe static string GetKnownHeader(byte[] memoryBlob, IntPtr originalAddress, int headerIndex)
+        {
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                return GetKnownHeader((HTTP_REQUEST*)pMemoryBlob, pMemoryBlob - (byte*)originalAddress, headerIndex);
+            }
+        }
+
+        private unsafe static string GetVerb(HTTP_REQUEST* request, long fixup)
+        {
+            string verb = null;
+
+            if ((int)request->Verb > (int)HTTP_VERB.HttpVerbUnknown && (int)request->Verb < (int)HTTP_VERB.HttpVerbMaximum)
+            {
+                verb = HttpVerbs[(int)request->Verb];
+            }
+            else if (request->Verb == HTTP_VERB.HttpVerbUnknown && request->pUnknownVerb != null)
+            {
+                verb = new string(request->pUnknownVerb + fixup, 0, request->UnknownVerbLength);
+            }
+
+            return verb;
+        }
+
+        internal unsafe static string GetVerb(HTTP_REQUEST* request)
+        {
+            return GetVerb(request, 0);
+        }
+
+        internal unsafe static string GetVerb(byte[] memoryBlob, IntPtr originalAddress)
+        {
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                return GetVerb((HTTP_REQUEST*)pMemoryBlob, pMemoryBlob - (byte*)originalAddress);
+            }
+        }
+
+        // Server API
+
+        internal unsafe static WebHeaderCollection GetHeaders(byte[] memoryBlob, IntPtr originalAddress)
+        {
+            NetEventSource.Enter(null);
+
+            // Return value.
+            WebHeaderCollection headerCollection = new WebHeaderCollection();
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                long fixup = pMemoryBlob - (byte*)originalAddress;
+                int index;
+
+                // unknown headers
+                if (request->Headers.UnknownHeaderCount != 0)
+                {
+                    HTTP_UNKNOWN_HEADER* pUnknownHeader = (HTTP_UNKNOWN_HEADER*)(fixup + (byte*)request->Headers.pUnknownHeaders);
+                    for (index = 0; index < request->Headers.UnknownHeaderCount; index++)
+                    {
+                        // For unknown headers, when header value is empty, RawValueLength will be 0 and 
+                        // pRawValue will be null.
+                        if (pUnknownHeader->pName != null && pUnknownHeader->NameLength > 0)
+                        {
+                            string headerName = new string(pUnknownHeader->pName + fixup, 0, pUnknownHeader->NameLength);
+                            string headerValue;
+                            if (pUnknownHeader->pRawValue != null && pUnknownHeader->RawValueLength > 0)
+                            {
+                                headerValue = new string(pUnknownHeader->pRawValue + fixup, 0, pUnknownHeader->RawValueLength);
+                            }
+                            else
+                            {
+                                headerValue = string.Empty;
+                            }
+                            headerCollection.Add(headerName, headerValue);
+                        }
+                        pUnknownHeader++;
+                    }
+                }
+
+                // known headers
+                HTTP_KNOWN_HEADER* pKnownHeader = &request->Headers.KnownHeaders;
+                for (index = 0; index < HttpHeaderRequestMaximum; index++)
+                {
+                    // For known headers, when header value is empty, RawValueLength will be 0 and 
+                    // pRawValue will point to empty string ("\0")
+                    if (pKnownHeader->pRawValue != null)
+                    {
+                        string headerValue = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
+                        headerCollection.Add(HTTP_REQUEST_HEADER_ID.ToString(index), headerValue);
+                    }
+                    pKnownHeader++;
+                }
+            }
+
+            NetEventSource.Exit(null);
+            return headerCollection;
+        }
+
+
+        internal unsafe static uint GetChunks(byte[] memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
+        {
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, $"HttpApi::GetChunks() memoryBlob:{memoryBlob}");
+            }
+
+            // Return value.
+            uint dataRead = 0;
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                long fixup = pMemoryBlob - (byte*)originalAddress;
+
+                if (request->EntityChunkCount > 0 && dataChunkIndex < request->EntityChunkCount && dataChunkIndex != -1)
+                {
+                    HTTP_DATA_CHUNK* pDataChunk = (HTTP_DATA_CHUNK*)(fixup + (byte*)&request->pEntityChunks[dataChunkIndex]);
+
+                    fixed (byte* pReadBuffer = buffer)
+                    {
+                        byte* pTo = &pReadBuffer[offset];
+
+                        while (dataChunkIndex < request->EntityChunkCount && dataRead < size)
+                        {
+                            if (dataChunkOffset >= pDataChunk->BufferLength)
+                            {
+                                dataChunkOffset = 0;
+                                dataChunkIndex++;
+                                pDataChunk++;
+                            }
+                            else
+                            {
+                                byte* pFrom = pDataChunk->pBuffer + dataChunkOffset + fixup;
+
+                                uint bytesToRead = pDataChunk->BufferLength - (uint)dataChunkOffset;
+                                if (bytesToRead > (uint)size)
+                                {
+                                    bytesToRead = (uint)size;
+                                }
+                                for (uint i = 0; i < bytesToRead; i++)
+                                {
+                                    *(pTo++) = *(pFrom++);
+                                }
+                                dataRead += bytesToRead;
+                                dataChunkOffset += bytesToRead;
+                            }
+                        }
+                    }
+                }
+                //we're finished.
+                if (dataChunkIndex == request->EntityChunkCount)
+                {
+                    dataChunkIndex = -1;
+                }
+            }
+
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Exit(null);
+            }
+            return dataRead;
+        }
+
+        internal unsafe static HTTP_VERB GetKnownVerb(byte[] memoryBlob, IntPtr originalAddress)
+        {
+            NetEventSource.Enter(null);
+
+            // Return value.
+            HTTP_VERB verb = HTTP_VERB.HttpVerbUnknown;
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                if ((int)request->Verb > (int)HTTP_VERB.HttpVerbUnparsed && (int)request->Verb < (int)HTTP_VERB.HttpVerbMaximum)
+                {
+                    verb = request->Verb;
+                }
+            }
+
+            NetEventSource.Exit(null);
+            return verb;
+        }
+
+        internal unsafe static IPEndPoint GetRemoteEndPoint(byte[] memoryBlob, IntPtr originalAddress)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+
+            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
+            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
+
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
+                CopyOutAddress(address, ref v4address, ref v6address);
+            }
+
+            IPEndPoint endpoint = null;
+            if (v4address != null)
+            {
+                endpoint = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort).Create(v4address) as IPEndPoint;
+            }
+            else if (v6address != null)
+            {
+                endpoint = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort).Create(v6address) as IPEndPoint;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
+            return endpoint;
+        }
+
+        internal unsafe static IPEndPoint GetLocalEndPoint(byte[] memoryBlob, IntPtr originalAddress)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+
+            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
+            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
+
+            fixed (byte* pMemoryBlob = memoryBlob)
+            {
+                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+                IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
+                CopyOutAddress(address, ref v4address, ref v6address);
+            }
+
+            IPEndPoint endpoint = null;
+            if (v4address != null)
+            {
+                endpoint = s_any.Create(v4address) as IPEndPoint;
+            }
+            else if (v6address != null)
+            {
+                endpoint = s_ipv6Any.Create(v6address) as IPEndPoint;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
+            return endpoint;
+        }
+
+        private unsafe static void CopyOutAddress(IntPtr address, ref SocketAddress v4address, ref SocketAddress v6address)
+        {
+            if (address != IntPtr.Zero)
+            {
+                ushort addressFamily = *((ushort*)address);
+                if (addressFamily == (ushort)AddressFamily.InterNetwork)
+                {
+                    v6address = null;
+                    for (int index = 2; index < IPv4AddressSize; index++)
+                    {
+                        v4address[index] = ((byte*)address)[index];
+                    }
+                    return;
+                }
+                if (addressFamily == (ushort)AddressFamily.InterNetworkV6)
+                {
+                    v4address = null;
+                    for (int index = 2; index < IPv6AddressSize; index++)
+                    {
+                        v6address[index] = ((byte*)address)[index];
+                    }
+                    return;
+                }
+            }
+
+            v4address = null;
+            v6address = null;
+        }
+    }
+}
+

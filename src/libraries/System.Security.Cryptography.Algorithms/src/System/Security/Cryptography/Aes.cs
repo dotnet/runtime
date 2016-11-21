@@ -19,9 +19,14 @@ namespace System.Security.Cryptography
             ModeValue = CipherMode.CBC;
         }
 
-        public static Aes Create()
+        public static new Aes Create()
         {
             return new AesImplementation();
+        }
+
+        public static new Aes Create(string algorithmName)
+        {
+            return (Aes)CryptoConfig.CreateFromName(algorithmName);
         }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };

@@ -345,7 +345,7 @@ namespace System.Diagnostics.Tests
         private static string GetFileVersionLanguage(uint langid)
         {
             var lang = new StringBuilder(256);
-            Interop.mincore.VerLanguageName(langid, lang, (uint)lang.Capacity);
+            Interop.Kernel32.VerLanguageName(langid, lang, (uint)lang.Capacity);
             return lang.ToString();
         }
     }

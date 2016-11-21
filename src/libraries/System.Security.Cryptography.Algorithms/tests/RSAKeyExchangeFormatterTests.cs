@@ -32,6 +32,42 @@ namespace System.Security.Cryptography.Rsa.Tests
             InvalidDeformatterArguments(new RSAPKCS1KeyExchangeDeformatter());
         }
 
+        [Fact]
+        public static void RSAOAEPFormatterRng()
+        {
+            using (RSA key = RSA.Create())
+            {
+                RSAOAEPKeyExchangeFormatter keyex = new RSAOAEPKeyExchangeFormatter(key);
+                Assert.Null(keyex.Rng);
+                keyex.Rng = RandomNumberGenerator.Create();
+                Assert.NotNull(keyex.Rng);
+            }
+        }
+
+        [Fact]
+        public static void RSAPKCS1FormatterRng()
+        {
+            using (RSA key = RSA.Create())
+            {
+                RSAPKCS1KeyExchangeFormatter keyex = new RSAPKCS1KeyExchangeFormatter(key);
+                Assert.Null(keyex.Rng);
+                keyex.Rng = RandomNumberGenerator.Create();
+                Assert.NotNull(keyex.Rng);
+            }
+        }
+
+        [Fact]
+        public static void RSAPKCS1DeformatterRng()
+        {
+            using (RSA key = RSA.Create())
+            {
+                RSAPKCS1KeyExchangeDeformatter keyex = new RSAPKCS1KeyExchangeDeformatter(key);
+                Assert.Null(keyex.RNG);
+                keyex.RNG = RandomNumberGenerator.Create();
+                Assert.NotNull(keyex.RNG);
+            }
+        }
+
         private static void InvalidFormatterArguments(AsymmetricKeyExchangeFormatter formatter)
         {
             Assert.Throws<ArgumentNullException>(() => formatter.SetKey(null));

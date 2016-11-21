@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions
 {
-    internal static class CachedReflectionInfo
+    internal static partial class CachedReflectionInfo
     {
         private static Type[] s_ArrayOfType_Bool;
         public  static Type[]   ArrayOfType_Bool =>

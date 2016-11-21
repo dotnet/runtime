@@ -812,7 +812,7 @@ namespace System.Linq.Expressions.Compiler
 
                 TypeCode tc = typeFrom.GetTypeCode();
 
-                MethodInfo method = null;
+                MethodInfo method;
 
                 switch (tc)
                 {
@@ -958,13 +958,11 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
-            Label labIfNull = default(Label);
-            Label labEnd = default(Label);
-            LocalBuilder locFrom = null;
-            LocalBuilder locTo = null;
-            locFrom = il.DeclareLocal(typeFrom);
+            Label labIfNull;
+            Label labEnd;
+            LocalBuilder locFrom = il.DeclareLocal(typeFrom);
             il.Emit(OpCodes.Stloc, locFrom);
-            locTo = il.DeclareLocal(typeTo);
+            LocalBuilder locTo = il.DeclareLocal(typeTo);
             // test for null
             il.Emit(OpCodes.Ldloca, locFrom);
             il.EmitHasValue(typeFrom);
@@ -994,8 +992,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(!typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
-            LocalBuilder locTo = null;
-            locTo = il.DeclareLocal(typeTo);
+            LocalBuilder locTo = il.DeclareLocal(typeTo);
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked);
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
@@ -1021,8 +1018,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(typeFrom.IsNullableType());
             Debug.Assert(!typeTo.IsNullableType());
             Debug.Assert(typeTo.GetTypeInfo().IsValueType);
-            LocalBuilder locFrom = null;
-            locFrom = il.DeclareLocal(typeFrom);
+            LocalBuilder locFrom = il.DeclareLocal(typeFrom);
             il.Emit(OpCodes.Stloc, locFrom);
             il.Emit(OpCodes.Ldloca, locFrom);
             il.EmitGetValue(typeFrom);

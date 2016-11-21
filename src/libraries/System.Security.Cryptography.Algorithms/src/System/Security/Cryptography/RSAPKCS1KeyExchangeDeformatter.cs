@@ -7,6 +7,7 @@ namespace System.Security.Cryptography
     public class RSAPKCS1KeyExchangeDeformatter : AsymmetricKeyExchangeDeformatter
     {
         private RSA _rsaKey;
+        private RandomNumberGenerator RngValue;
 
         public RSAPKCS1KeyExchangeDeformatter() { }
 
@@ -16,6 +17,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;
+        }
+
+        public RandomNumberGenerator RNG {
+            get { return RngValue; }
+            set { RngValue = value; }
         }
 
         public override string Parameters

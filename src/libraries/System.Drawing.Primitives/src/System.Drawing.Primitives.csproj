@@ -29,6 +29,9 @@
     <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
     <Compile Include="System\Drawing\KnownColor.cs" />
     <Compile Include="System\Drawing\KnownColorTable.cs" />
     <Compile Include="System\Drawing\SystemColors.cs" />

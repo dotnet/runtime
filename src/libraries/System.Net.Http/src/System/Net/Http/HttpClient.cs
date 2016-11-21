@@ -19,8 +19,6 @@ namespace System.Net.Http
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
         private const HttpCompletionOption defaultCompletionOption = HttpCompletionOption.ResponseContentRead;
 
-        private static readonly Task<Stream> s_nullStreamTask = Task.FromResult(Stream.Null);
-
         private volatile bool _operationStarted;
         private volatile bool _disposed;
 
@@ -29,7 +27,7 @@ namespace System.Net.Http
 
         private Uri _baseAddress;
         private TimeSpan _timeout;
-        private long _maxResponseContentBufferSize;
+        private int _maxResponseContentBufferSize;
 
         #endregion Fields
 
@@ -91,7 +89,9 @@ namespace System.Net.Http
                         SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
                 }
                 CheckDisposedOrStarted();
-                _maxResponseContentBufferSize = value;
+
+                Debug.Assert(HttpContent.MaxBufferSize <= int.MaxValue);
+                _maxResponseContentBufferSize = (int)value;
             }
         }
 
@@ -127,30 +127,105 @@ namespace System.Net.Http
 
         #region Simple Get Overloads
 
-        public Task<string> GetStringAsync(string requestUri)
+        public Task<string> GetStringAsync(string requestUri) =>
+            GetStringAsync(CreateUri(requestUri));
+
+        public Task<string> GetStringAsync(Uri requestUri) =>
+            GeStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
+
+        private async Task<string> GeStringAsyncCore(Task<HttpResponseMessage> getTask)
         {
-            return GetStringAsync(CreateUri(requestUri));
+            // Wait for the response message.
+            using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))
+            {
+                // Make sure it completed successfully.
+                responseMessage.EnsureSuccessStatusCode();
+
+                // Get the response content.
+                HttpContent c = responseMessage.Content;
+                if (c != null)
+                {
+                    HttpContentHeaders headers = c.Headers;
+
+                    // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
+                    // stream to which we copy all of the data from the response.
+                    using (Stream responseStream = await c.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
+                    {
+                        await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                        if (buffer.Length > 0)
+                        {
+                            // Decode and return the data from the buffer.
+                            return HttpContent.ReadBufferAsString(buffer.GetBuffer(), headers);
+                        }
+                    }
+                }
+
+                // No content to return.
+                return string.Empty;
+            }
         }
 
-        public Task<string> GetStringAsync(Uri requestUri)
-        {
-            return GetContentAsync(
-                GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
-                content => content != null ? content.ReadBufferedContentAsString() : string.Empty);
-        }
+        public Task<byte[]> GetByteArrayAsync(string requestUri) =>
+            GetByteArrayAsync(CreateUri(requestUri));
 
-        public Task<byte[]> GetByteArrayAsync(string requestUri)
-        {
-            return GetByteArrayAsync(CreateUri(requestUri));
-        }
+        public Task<byte[]> GetByteArrayAsync(Uri requestUri) =>
+            GetByteArrayAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
 
-        public Task<byte[]> GetByteArrayAsync(Uri requestUri)
+        private async Task<byte[]> GetByteArrayAsyncCore(Task<HttpResponseMessage> getTask)
         {
-            return GetContentAsync(
-                GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
-                content => content != null ? content.ReadBufferedContentAsByteArray() : Array.Empty<byte>());
-        }
+            // Wait for the response message.
+            using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))
+            {
+                // Make sure it completed successfully.
+                responseMessage.EnsureSuccessStatusCode();
+                
+                // Get the response content.
+                HttpContent c = responseMessage.Content;
+                if (c != null)
+                {
+                    HttpContentHeaders headers = c.Headers;
+                    using (Stream responseStream = await c.ReadAsStreamAsync().ConfigureAwait(false))
+                    {
+                        long? contentLength = headers.ContentLength;
+                        Stream buffer; // declared here to share the state machine field across both if/else branches
 
+                        if (contentLength.HasValue)
+                        {
+                            // If we got a content length, then we assume that it's correct and create a MemoryStream
+                            // to which the content will be transferred.  That way, assuming we actually get the exact
+                            // amount we were expecting, we can simply return the MemoryStream's underlying buffer.
+                            buffer = new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault());
+                            await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                            if (buffer.Length > 0)
+                            {
+                                return ((HttpContent.LimitMemoryStream)buffer).GetSizedBuffer();
+                            }
+                        }
+                        else
+                        {
+                            // If we didn't get a content length, then we assume we're going to have to grow
+                            // the buffer potentially several times and that it's unlikely the underlying buffer
+                            // at the end will be the exact size needed, in which case it's more beneficial to use
+                            // ArrayPool buffers and copy out to a new array at the end.
+                            buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
+                            try
+                            {
+                                await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                                if (buffer.Length > 0)
+                                {
+                                    return ((HttpContent.LimitArrayPoolWriteStream)buffer).ToArray();
+                                }
+                            }
+                            finally { buffer.Dispose(); }
+                        }
+                    }
+                }
+
+                // No content to return.
+                return Array.Empty<byte>();
+            }
+        }
 
         // Unbuffered by default
         public Task<Stream> GetStreamAsync(string requestUri)
@@ -161,23 +236,15 @@ namespace System.Net.Http
         // Unbuffered by default
         public Task<Stream> GetStreamAsync(Uri requestUri)
         {
-            return GetContentAsync(
-                GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead), 
-                content => content != null ? content.ReadAsStreamAsync() : s_nullStreamTask);
+            return FinishGetStreamAsync(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
         }
 
-        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, T> readAs)
+        private async Task<Stream> FinishGetStreamAsync(Task<HttpResponseMessage> getTask)
         {
             HttpResponseMessage response = await getTask.ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            return readAs(response.Content);
-        }
-
-        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, Task<T>> readAsAsync)
-        {
-            HttpResponseMessage response = await getTask.ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            return await readAsAsync(response.Content).ConfigureAwait(false);
+            HttpContent c = response.Content;
+            return c != null ? await c.ReadAsStreamAsync().ConfigureAwait(false) : Stream.Null;
         }
 
         #endregion Simple Get Overloads
@@ -328,20 +395,38 @@ namespace System.Net.Http
             PrepareRequestMessage(request);
             // PrepareRequestMessage will resolve the request address against the base address.
 
-            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                _pendingRequestsCts.Token);
+            // We need a CancellationTokenSource to use with the request.  We always have the global
+            // _pendingRequestsCts to use, plus we may have a token provided by the caller, and we may
+            // have a timeout.  If we have a timeout or a caller-provided token, we need to create a new
+            // CTS (we can't, for example, timeout the pending requests CTS, as that could cancel other
+            // unrelated operations).  Otherwise, we can use the pending requests CTS directly.
+            CancellationTokenSource cts;
+            bool disposeCts;
+            bool hasTimeout = _timeout != s_infiniteTimeout;
+            if (hasTimeout || cancellationToken.CanBeCanceled)
+            {
+                disposeCts = true;
+                cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
+                if (hasTimeout)
+                {
+                    cts.CancelAfter(_timeout);
+                }
+            }
+            else
+            {
+                disposeCts = false;
+                cts = _pendingRequestsCts;
+            }
 
-            SetTimeout(linkedCts);
-
-            return FinishSendAsync(
-                base.SendAsync(request, linkedCts.Token), 
-                request, 
-                linkedCts, 
-                completionOption == HttpCompletionOption.ResponseContentRead);
+            // Initiate the send
+            Task<HttpResponseMessage> sendTask = base.SendAsync(request, cts.Token);
+            return completionOption == HttpCompletionOption.ResponseContentRead ?
+                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts) :
+                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts);
         }
 
-        private async Task<HttpResponseMessage> FinishSendAsync(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource linkedCts, bool bufferResponseContent)
+        private async Task<HttpResponseMessage> FinishSendAsyncBuffered(
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
         {
             HttpResponseMessage response = null;
             try
@@ -354,7 +439,7 @@ namespace System.Net.Http
                 }
 
                 // Buffer the response content if we've been asked to and we have a Content to buffer.
-                if (bufferResponseContent && response.Content != null)
+                if (response.Content != null)
                 {
                     await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize).ConfigureAwait(false);
                 }
@@ -365,33 +450,67 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 response?.Dispose();
-
-                // If the cancellation token was canceled, we consider the exception to be caused by the
-                // cancellation (e.g. WebException when reading from canceled response stream).
-                if (linkedCts.IsCancellationRequested && e is HttpRequestException)
-                {
-                    LogSendError(request, linkedCts, nameof(SendAsync), null);
-                    throw new OperationCanceledException(linkedCts.Token);
-                }
-                else
-                {
-                    LogSendError(request, linkedCts, nameof(SendAsync), e);
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
-                    throw;
-                }
+                HandleFinishSendAsyncError(e, cts);
+                throw;
             }
             finally
             {
-                try
+                HandleFinishSendAsyncCleanup(request, cts, disposeCts);
+            }
+        }
+
+        private async Task<HttpResponseMessage> FinishSendAsyncUnbuffered(
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+        {
+            try
+            {
+                HttpResponseMessage response = await sendTask.ConfigureAwait(false);
+                if (response == null)
                 {
-                    // When a request completes, dispose the request content so the user doesn't have to. This also
-                    // helps ensure that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
-                    // that can also be sent only once).
-                    request.Content?.Dispose();
+                    throw new InvalidOperationException(SR.net_http_handler_noresponse);
                 }
-                finally
+
+                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
+                return response;
+            }
+            catch (Exception e)
+            {
+                HandleFinishSendAsyncError(e, cts);
+                throw;
+            }
+            finally
+            {
+                HandleFinishSendAsyncCleanup(request, cts, disposeCts);
+            }
+        }
+
+        private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+
+            // If the cancellation token was canceled, we consider the exception to be caused by the
+            // cancellation (e.g. WebException when reading from canceled response stream).
+            if (cts.IsCancellationRequested && e is HttpRequestException)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Canceled");
+                throw new OperationCanceledException(cts.Token);
+            }
+        }
+
+        private void HandleFinishSendAsyncCleanup(HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+        {
+            try
+            {
+                // When a request completes, dispose the request content so the user doesn't have to. This also
+                // helps ensure that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
+                // that can also be sent only once).
+                request.Content?.Dispose();
+            }
+            finally
+            {
+                if (disposeCts)
                 {
-                    linkedCts.Dispose();
+                    cts.Dispose();
                 }
             }
         }
@@ -528,34 +647,6 @@ namespace System.Net.Http
             if (!HttpUtilities.IsHttpUri(baseAddress))
             {
                 throw new ArgumentException(SR.net_http_client_http_baseaddress_required, parameterName);
-            }
-        }
-
-        private void SetTimeout(CancellationTokenSource cancellationTokenSource)
-        {
-            Debug.Assert(cancellationTokenSource != null);
-
-            if (_timeout != s_infiniteTimeout)
-            {
-                cancellationTokenSource.CancelAfter(_timeout);
-            }
-        }
-
-        private void LogSendError(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
-            string method, Exception e)
-        {
-            Debug.Assert(request != null);
-            if (NetEventSource.IsEnabled)
-            {
-                if (cancellationTokenSource.IsCancellationRequested)
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_canceled, NetEventSource.GetHashCode(request))}");
-                }
-                else
-                {
-                    Debug.Assert(e != null);
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_error, NetEventSource.GetHashCode(request), e)}");
-                }
             }
         }
 

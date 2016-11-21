@@ -19,7 +19,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == '' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\RegistryAclExtensions.cs" />
     <Compile Include="System\Security\AccessControl\RegistrySecurity.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
   </ItemGroup>

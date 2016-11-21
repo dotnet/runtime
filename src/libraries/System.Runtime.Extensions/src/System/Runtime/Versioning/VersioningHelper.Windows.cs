@@ -6,6 +6,6 @@ namespace System.Runtime.Versioning
 {
     public static partial class VersioningHelper
     {
-        private static int GetCurrentProcessId() => unchecked((int)Interop.mincore.GetCurrentProcessId());
+        private static int GetCurrentProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
     }
 }

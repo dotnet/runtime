@@ -6,12 +6,12 @@ namespace System.ServiceProcess
 {
     public enum ServiceControllerStatus
     {
-        ContinuePending = Interop.mincore.ServiceControlStatus.STATE_CONTINUE_PENDING,
-        Paused = Interop.mincore.ServiceControlStatus.STATE_PAUSED,
-        PausePending = Interop.mincore.ServiceControlStatus.STATE_PAUSE_PENDING,
-        Running = Interop.mincore.ServiceControlStatus.STATE_RUNNING,
-        StartPending = Interop.mincore.ServiceControlStatus.STATE_START_PENDING,
-        Stopped = Interop.mincore.ServiceControlStatus.STATE_STOPPED,
-        StopPending = Interop.mincore.ServiceControlStatus.STATE_STOP_PENDING
+        ContinuePending = Interop.Advapi32.ServiceControlStatus.STATE_CONTINUE_PENDING,
+        Paused = Interop.Advapi32.ServiceControlStatus.STATE_PAUSED,
+        PausePending = Interop.Advapi32.ServiceControlStatus.STATE_PAUSE_PENDING,
+        Running = Interop.Advapi32.ServiceControlStatus.STATE_RUNNING,
+        StartPending = Interop.Advapi32.ServiceControlStatus.STATE_START_PENDING,
+        Stopped = Interop.Advapi32.ServiceControlStatus.STATE_STOPPED,
+        StopPending = Interop.Advapi32.ServiceControlStatus.STATE_STOP_PENDING
     }
 }

@@ -11,7 +11,7 @@ internal partial class Interop
 {
     internal partial class SspiCli
     {
-        [DllImport(Interop.Libraries.Sspi)]
+        [DllImport(Interop.Libraries.SspiCli)]
         internal static extern int LsaConnectUntrusted(out SafeLsaHandle LsaHandle);
     }
 }

@@ -173,6 +173,7 @@
     <Compile Include="System\Runtime\CompilerServices\CallSiteHelpers.cs" />
     <Compile Include="System\Runtime\CompilerServices\DynamicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DebugInfoGenerator.cs" />
+    <Compile Include="System\Dynamic\Utils\CachedReflectionInfo.cs" />
     <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
     <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs" />
@@ -239,8 +240,10 @@
     <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Statements.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Unary.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Bindings.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.ChildRewriter.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Generated.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.SpilledExpressionBlock.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Temps.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\VariableBinder.cs" />
     <Compile Include="System\Runtime\CompilerServices\Closure.cs" />

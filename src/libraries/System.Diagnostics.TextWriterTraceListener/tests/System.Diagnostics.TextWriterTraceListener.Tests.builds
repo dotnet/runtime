@@ -5,6 +5,15 @@
     <Project Include="System.Diagnostics.TextWriterTraceListener.Tests.csproj" />
     <Project Include="System.Diagnostics.TextWriterTraceListener.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
+    </Project>
+    <Project Include="System.Diagnostics.TextWriterTraceListener.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
+    <Project Include="System.Diagnostics.TextWriterTraceListener.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
   </ItemGroup>

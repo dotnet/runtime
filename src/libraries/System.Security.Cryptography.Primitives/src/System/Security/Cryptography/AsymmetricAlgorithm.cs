@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 namespace System.Security.Cryptography
 {
     public abstract class AsymmetricAlgorithm : IDisposable
@@ -12,8 +9,16 @@ namespace System.Security.Cryptography
         protected int KeySizeValue;
         protected KeySizes[] LegalKeySizesValue;
 
-        protected AsymmetricAlgorithm()
+        protected AsymmetricAlgorithm() { }
+
+        public static AsymmetricAlgorithm Create()
         {
+            return Create("System.Security.Cryptography.AsymmetricAlgorithm");
+        }
+
+        public static AsymmetricAlgorithm Create(string algName)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public virtual int KeySize

@@ -10,6 +10,7 @@ using System;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
+using System.IO;
 
 namespace System
 {
@@ -37,6 +38,8 @@ namespace System
         }
 
         public string DynamicDirectory => null;
+
+        public void SetDynamicBase(string path) { }
 
         public string FriendlyName
         {
@@ -95,8 +98,8 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(assemblyFile));
             }
-
-            Assembly assembly = Assembly.LoadFrom(assemblyFile);
+            string fullPath = Path.GetFullPath(assemblyFile);
+            Assembly assembly = Assembly.LoadFile(fullPath);
             return ExecuteAssembly(assembly, args);
         }
 
@@ -260,7 +263,12 @@ namespace System
             }
         }
 
-        // TODO: #9327
-        public event ResolveEventHandler AssemblyResolve;
+        public event ResolveEventHandler AssemblyResolve
+        {
+            add { AssemblyLoadContext.AssemblyResolve += value; }
+            remove { AssemblyLoadContext.AssemblyResolve -= value; }
+        }
+
+        public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
     }
 }

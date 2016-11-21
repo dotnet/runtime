@@ -56,6 +56,11 @@ def osShortName = ['Windows 10': 'win10',
                    'Fedora24' : 'fedora24',
                    'RHEL7.2' : 'rhel7.2']
 
+def buildArchConfiguration = ['Debug': 'x86',
+                              'Release': 'x64']
+
+def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
+                                       'Release': 'win7-x64']
 // **************************
 // Define code coverage build
 // **************************
@@ -359,7 +364,7 @@ def osShortName = ['Windows 10': 'win10',
                 // On Windows we use the packer to put together everything. On *nix we use tar
                 steps {
                     if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os=${osGroup} -- /p:WithoutCategories=IgnoreForCI")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -TestNugetRuntimeId:${testNugetRuntimeIdConfiguration[configurationGroup]} -- /p:WithoutCategories=IgnoreForCI")
                         batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                     }
                     else {

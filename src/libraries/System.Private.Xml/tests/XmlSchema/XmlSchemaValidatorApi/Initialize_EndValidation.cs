@@ -137,7 +137,7 @@ namespace System.Xml.Tests
             val.EndValidation();
 
             val.Initialize();
-            val.ValidateElement("foo", "", info, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("foo", "", info, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
             val.ValidateEndOfAttributes(null);
             val.ValidateElement("bar", "", info);
             val.ValidateEndOfAttributes(null);
@@ -176,7 +176,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -203,7 +203,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -246,7 +246,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -271,7 +271,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -315,7 +315,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -340,7 +340,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -364,7 +364,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -450,7 +450,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);

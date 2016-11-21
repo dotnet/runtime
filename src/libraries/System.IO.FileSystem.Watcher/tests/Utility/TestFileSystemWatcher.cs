@@ -9,6 +9,14 @@ namespace System.IO.Tests
     /// </summary>
     public class TestFileSystemWatcher : FileSystemWatcher
     {
+        public TestFileSystemWatcher() : base()
+        {
+        }
+
+        public TestFileSystemWatcher(string path, string filter) : base(path, filter)
+        {
+        }
+
         public void CallOnChanged(FileSystemEventArgs e)
         {
             this.OnChanged(e);

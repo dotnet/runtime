@@ -104,15 +104,15 @@ namespace System.Security.AccessControl
 
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     exception = new IOException(SR.Format(SR.Arg_RegKeyNotFound, errorCode));
                     break;
 
-                case Interop.mincore.Errors.ERROR_INVALID_NAME:
+                case Interop.Errors.ERROR_INVALID_NAME:
                     exception = new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(name)));
                     break;
 
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     exception = new ArgumentException(SR.AccessControl_InvalidHandle);
                     break;
 

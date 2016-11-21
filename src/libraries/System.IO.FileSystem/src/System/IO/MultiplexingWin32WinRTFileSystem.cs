@@ -20,8 +20,8 @@ namespace System.IO
                 (IFileSystemObject)caller;
         }
 
-        public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
-        public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
+        public override int MaxPath { get { return Interop.Kernel32.MAX_PATH; } }
+        public override int MaxDirectoryPath { get { return Interop.Kernel32.MAX_DIRECTORY_PATH; } }
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
@@ -183,12 +183,12 @@ namespace System.IO
             do
             {
                 // first use GetFileAttributesEx as it is faster than FindFirstFile and requires minimum permissions
-                Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
-                if (Interop.mincore.GetFileAttributesEx(fullPath, Interop.mincore.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+                Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+                if (Interop.Kernel32.GetFileAttributesEx(fullPath, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
                     // got the attributes
-                    if ((data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0 ||
-                        (data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                    if ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0 ||
+                        (data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) == 0)
                     {
                         // we have a directory or a file that is not a reparse point
                         // useWinRt = false;
@@ -197,17 +197,17 @@ namespace System.IO
                     else
                     {
                         // we need to get the find data to determine if it is a placeholder file
-                        Interop.mincore.WIN32_FIND_DATA findData = new Interop.mincore.WIN32_FIND_DATA();
-                        using (SafeFindHandle handle = Interop.mincore.FindFirstFile(fullPath, ref findData))
+                        Interop.Kernel32.WIN32_FIND_DATA findData = new Interop.Kernel32.WIN32_FIND_DATA();
+                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(fullPath, ref findData))
                         {
                             if (!handle.IsInvalid)
                             {
                                 // got the find data, use WinRT for placeholder files
 
-                                Debug.Assert((findData.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
-                                Debug.Assert((findData.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0);
+                                Debug.Assert((findData.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
+                                Debug.Assert((findData.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0);
 
-                                useWinRt = findData.dwReserved0 == Interop.mincore.IOReparseOptions.IO_REPARSE_TAG_FILE_PLACEHOLDER;
+                                useWinRt = findData.dwReserved0 == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_FILE_PLACEHOLDER;
                                 break;
                             }
                         }
@@ -215,15 +215,15 @@ namespace System.IO
                 }
 
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error != Interop.mincore.Errors.ERROR_SUCCESS);
+                Debug.Assert(error != Interop.Errors.ERROR_SUCCESS);
 
-                if (error == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                 {
                     // The path was not accessible with Win32, so try WinRT
                     useWinRt = true;
                     break;
                 }
-                else if (error != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && error != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                else if (error != Interop.Errors.ERROR_PATH_NOT_FOUND && error != Interop.Errors.ERROR_FILE_NOT_FOUND)
                 {
                     // We hit some error other than ACCESS_DENIED or NOT_FOUND,
                     // Default to Win32 to provide most accurate error behavior

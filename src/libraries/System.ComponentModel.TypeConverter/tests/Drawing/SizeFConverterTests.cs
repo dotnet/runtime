@@ -98,7 +98,7 @@ namespace System.ComponentModel.TypeConverterTests
         [MemberData(nameof(SizeFData))]
         public void ConvertFrom(float width, float height)
         {
-            TestConvertFromString(new SizeF(width, height), $"{width:G9}, {height:G9}");
+            TestConvertFromString(new SizeF(width, height), FormattableString.Invariant($"{width:G9}, {height:G9}"));
         }
 
         [Theory]
@@ -136,7 +136,7 @@ namespace System.ComponentModel.TypeConverterTests
         [MemberData(nameof(SizeFData))]
         public void ConvertTo(float width, float height)
         {
-            TestConvertToString(new SizeF(width, height), $"{width:G9}, {height:G9}");
+            TestConvertToString(new SizeF(width, height), FormattableString.Invariant($"{width:G9}, {height:G9}"));
         }
 
         [Theory]
@@ -153,7 +153,8 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void ConvertTo_NullCulture()
         {
-            Assert.Equal("1, 1", Converter.ConvertTo(null, null, new SizeF(1, 1), typeof(string)));
+            string listSep = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+            Assert.Equal($"1{listSep} 1", Converter.ConvertTo(null, null, new SizeF(1, 1), typeof(string)));
         }
 
         [Fact]
@@ -203,7 +204,7 @@ namespace System.ComponentModel.TypeConverterTests
         [MemberData(nameof(SizeFData))]
         public void ConvertFromInvariantString(float width, float height)
         {
-            var point = (SizeF)Converter.ConvertFromInvariantString($"{width:G9}, {height:G9}");
+            var point = (SizeF)Converter.ConvertFromInvariantString(FormattableString.Invariant($"{width:G9}, {height:G9}"));
             Assert.Equal(width, point.Width);
             Assert.Equal(height, point.Height);
         }
@@ -248,7 +249,7 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertToInvariantString(float width, float height)
         {
             var str = Converter.ConvertToInvariantString(new SizeF(width, height));
-            Assert.Equal($"{width:G9}, {height:G9}", str);
+            Assert.Equal(FormattableString.Invariant($"{width:G9}, {height:G9}"), str);
         }
 
         [Theory]

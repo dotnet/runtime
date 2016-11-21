@@ -10,6 +10,16 @@ namespace System.Security.Cryptography
     {
         protected HashAlgorithm() { }
 
+        public static HashAlgorithm Create()
+        {
+            return Create("System.Security.Cryptography.HashAlgorithm");
+        }
+
+        public static HashAlgorithm Create(string hashName)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public virtual int HashSize
         {
             get
@@ -90,6 +100,11 @@ namespace System.Security.Cryptography
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public void Clear() 
+        {
+            (this as IDisposable).Dispose();
         }
 
         protected virtual void Dispose(bool disposing)

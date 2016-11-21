@@ -52,7 +52,7 @@ namespace System.IO
             get
             {
                 // GetDriveType can't fail
-                return (DriveType)Interop.mincore.GetDriveType(Name);
+                return (DriveType)Interop.Kernel32.GetDriveType(Name);
             }
         }
 
@@ -67,10 +67,10 @@ namespace System.IO
                 StringBuilder fileSystemName = new StringBuilder(fileSystemNameLen);
                 int serialNumber, maxFileNameLen, fileSystemFlags;
 
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    bool r = Interop.mincore.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
+                    bool r = Interop.Kernel32.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
                     if (!r)
                     {
                         throw Error.GetExceptionForLastWin32DriveError(Name);
@@ -78,7 +78,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
                 return fileSystemName.ToString();
             }
@@ -90,16 +90,16 @@ namespace System.IO
             get
             {
                 long userBytes, totalBytes, freeBytes;
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    bool r = Interop.mincore.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
+                    bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
                     if (!r)
                         throw Error.GetExceptionForLastWin32DriveError(Name);
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
                 return userBytes;
             }
@@ -111,16 +111,16 @@ namespace System.IO
             get
             {
                 long userBytes, totalBytes, freeBytes;
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    bool r = Interop.mincore.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
+                    bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
                     if (!r)
                         throw Error.GetExceptionForLastWin32DriveError(Name);
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
                 return freeBytes;
             }
@@ -134,16 +134,16 @@ namespace System.IO
                 // Don't cache this, to handle variable sized floppy drives
                 // or other various removable media drives.
                 long userBytes, totalBytes, freeBytes;
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    bool r = Interop.mincore.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
+                    bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
                     if (!r)
                         throw Error.GetExceptionForLastWin32DriveError(Name);
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
                 return totalBytes;
             }
@@ -174,45 +174,45 @@ namespace System.IO
                 StringBuilder fileSystemName = new StringBuilder(fileSystemNameLen);
                 int serialNumber, maxFileNameLen, fileSystemFlags;
 
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    bool r = Interop.mincore.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
+                    bool r = Interop.Kernel32.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
                     if (!r)
                     {
                         int errorCode = Marshal.GetLastWin32Error();
                         // Win9x appears to return ERROR_INVALID_DATA when a
                         // drive doesn't exist.
-                        if (errorCode == Interop.mincore.Errors.ERROR_INVALID_DATA)
-                            errorCode = Interop.mincore.Errors.ERROR_INVALID_DRIVE;
+                        if (errorCode == Interop.Errors.ERROR_INVALID_DATA)
+                            errorCode = Interop.Errors.ERROR_INVALID_DRIVE;
                         throw Error.GetExceptionForWin32DriveError(errorCode, Name);
                     }
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
                 return volumeName.ToString();
             }
             [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
-                uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
                 try
                 {
-                    bool r = Interop.mincore.SetVolumeLabel(Name, value);
+                    bool r = Interop.Kernel32.SetVolumeLabel(Name, value);
                     if (!r)
                     {
                         int errorCode = Marshal.GetLastWin32Error();
                         // Provide better message
-                        if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                        if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                             throw new UnauthorizedAccessException(SR.InvalidOperation_SetVolumeLabelFailed);
                         throw Error.GetExceptionForWin32DriveError(errorCode, Name);
                     }
                 }
                 finally
                 {
-                    Interop.mincore.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetErrorMode(oldMode);
                 }
             }
         }

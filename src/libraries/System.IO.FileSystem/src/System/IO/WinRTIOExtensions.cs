@@ -55,8 +55,8 @@ namespace System.IO
             if (isDirectory)
             {
                 // WinRT remaps all ERROR_PATH_NOT_FOUND to ERROR_FILE_NOT_FOUND
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
-                    errorCode = Interop.mincore.Errors.ERROR_PATH_NOT_FOUND;
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
             }
             else
             {
@@ -66,16 +66,16 @@ namespace System.IO
                 //   probably be consistent w/ every other directory.
                 // This remaps the error for non-existent drives which is incorrect
                 // but we need to preserve it for compatibility
-                if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && filePath.Equals(Directory.InternalGetDirectoryRoot(filePath)))
-                    errorCode = Interop.mincore.Errors.ERROR_ACCESS_DENIED;
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && filePath.Equals(Directory.InternalGetDirectoryRoot(filePath)))
+                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
 
                 // Known issue: WinRT pre-check's the find data of a fullPath before trying to create it, if the type doesn't match
                 // (IE: open file on a directory) it will return E_INVALIDARG instead of ERROR_ACCESS_DENIED
 
                 // CreateFile returns ERROR_PATH_NOT_FOUND when given a fullPath that ends in a backslash.
                 // WinRT remaps all ERROR_PATH_NOT_FOUND to ERROR_FILE_NOT_FOUND
-                if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND && filePath.Length > 0 && filePath[filePath.Length - 1] == Path.DirectorySeparatorChar)
-                    errorCode = Interop.mincore.Errors.ERROR_PATH_NOT_FOUND;
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND && filePath.Length > 0 && filePath[filePath.Length - 1] == Path.DirectorySeparatorChar)
+                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
             }
 
             // Known issue: We still can't handle ERROR_SHARING_VIOLATION because WinRT APIs are mapping this to ERROR_ACCESS_DENIED

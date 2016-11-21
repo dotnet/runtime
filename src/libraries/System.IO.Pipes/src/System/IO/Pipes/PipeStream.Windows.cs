@@ -32,7 +32,7 @@ namespace System.IO.Pipes
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             // Check that this handle is infact a handle to a pipe.
-            if (Interop.mincore.GetFileType(safePipeHandle) != Interop.mincore.FileTypes.FILE_TYPE_PIPE)
+            if (Interop.Kernel32.GetFileType(safePipeHandle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)
             {
                 throw new IOException(SR.IO_InvalidPipeHandle);
             }
@@ -62,8 +62,8 @@ namespace System.IO.Pipes
             if (r == -1)
             {
                 // If the other side has broken the connection, set state to Broken and return 0
-                if (errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE ||
-                    errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED)
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE ||
+                    errorCode == Interop.Errors.ERROR_PIPE_NOT_CONNECTED)
                 {
                     State = PipeState.Broken;
                     r = 0;
@@ -73,7 +73,7 @@ namespace System.IO.Pipes
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, String.Empty);
                 }
             }
-            _isMessageComplete = (errorCode != Interop.mincore.Errors.ERROR_MORE_DATA);
+            _isMessageComplete = (errorCode != Interop.Errors.ERROR_MORE_DATA);
 
             Debug.Assert(r >= 0, "PipeStream's ReadCore is likely broken.");
 
@@ -108,8 +108,8 @@ namespace System.IO.Pipes
                 {
                     // One side has closed its handle or server disconnected.
                     // Set the state to Broken and do some cleanup work
-                    case Interop.mincore.Errors.ERROR_BROKEN_PIPE:
-                    case Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED:
+                    case Interop.Errors.ERROR_BROKEN_PIPE:
+                    case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
                         State = PipeState.Broken;
 
                         unsafe
@@ -123,7 +123,7 @@ namespace System.IO.Pipes
                         UpdateMessageCompletion(true);
                         return s_zeroTask;
 
-                    case Interop.mincore.Errors.ERROR_IO_PENDING:
+                    case Interop.Errors.ERROR_IO_PENDING:
                         break;
 
                     default:
@@ -171,7 +171,7 @@ namespace System.IO.Pipes
             // call when using overlapped structures!  You must not pass in a non-null 
             // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design 
             // NT behavior.
-            if (r == -1 && errorCode != Interop.mincore.Errors.ERROR_IO_PENDING)
+            if (r == -1 && errorCode != Interop.Errors.ERROR_IO_PENDING)
             {
                 completionSource.ReleaseResources();
                 throw WinIOError(errorCode);
@@ -192,7 +192,7 @@ namespace System.IO.Pipes
             }
 
             // Block until other end of the pipe has read everything.
-            if (!Interop.mincore.FlushFileBuffers(_handle))
+            if (!Interop.Kernel32.FlushFileBuffers(_handle))
             {
                 throw WinIOError(Marshal.GetLastWin32Error());
             }
@@ -211,12 +211,12 @@ namespace System.IO.Pipes
                 if (_isFromExistingHandle)
                 {
                     int pipeFlags;
-                    if (!Interop.mincore.GetNamedPipeInfo(_handle, out pipeFlags, IntPtr.Zero, IntPtr.Zero,
+                    if (!Interop.Kernel32.GetNamedPipeInfo(_handle, out pipeFlags, IntPtr.Zero, IntPtr.Zero,
                             IntPtr.Zero))
                     {
                         throw WinIOError(Marshal.GetLastWin32Error());
                     }
-                    if ((pipeFlags & Interop.mincore.PipeOptions.PIPE_TYPE_MESSAGE) != 0)
+                    if ((pipeFlags & Interop.Kernel32.PipeOptions.PIPE_TYPE_MESSAGE) != 0)
                     {
                         return PipeTransmissionMode.Message;
                     }
@@ -247,7 +247,7 @@ namespace System.IO.Pipes
                 }
 
                 int inBufferSize;
-                if (!Interop.mincore.GetNamedPipeInfo(_handle, IntPtr.Zero, IntPtr.Zero, out inBufferSize, IntPtr.Zero))
+                if (!Interop.Kernel32.GetNamedPipeInfo(_handle, IntPtr.Zero, IntPtr.Zero, out inBufferSize, IntPtr.Zero))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
@@ -279,7 +279,7 @@ namespace System.IO.Pipes
                 {
                     outBufferSize = _outBufferSize;
                 }
-                else if (!Interop.mincore.GetNamedPipeInfo(_handle, IntPtr.Zero, out outBufferSize,
+                else if (!Interop.Kernel32.GetNamedPipeInfo(_handle, IntPtr.Zero, out outBufferSize,
                     IntPtr.Zero, IntPtr.Zero))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
@@ -319,7 +319,7 @@ namespace System.IO.Pipes
                 unsafe
                 {
                     int pipeReadType = (int)value << 1;
-                    if (!Interop.mincore.SetNamedPipeHandleState(_handle, &pipeReadType, IntPtr.Zero, IntPtr.Zero))
+                    if (!Interop.Kernel32.SetNamedPipeHandleState(_handle, &pipeReadType, IntPtr.Zero, IntPtr.Zero))
                     {
                         throw WinIOError(Marshal.GetLastWin32Error());
                     }
@@ -357,11 +357,11 @@ namespace System.IO.Pipes
             {
                 if (_isAsync)
                 {
-                    r = Interop.mincore.ReadFile(handle, p + offset, count, IntPtr.Zero, overlapped);
+                    r = Interop.Kernel32.ReadFile(handle, p + offset, count, IntPtr.Zero, overlapped);
                 }
                 else
                 {
-                    r = Interop.mincore.ReadFile(handle, p + offset, count, out numBytesRead, IntPtr.Zero);
+                    r = Interop.Kernel32.ReadFile(handle, p + offset, count, out numBytesRead, IntPtr.Zero);
                 }
             }
 
@@ -370,7 +370,7 @@ namespace System.IO.Pipes
                 errorCode = Marshal.GetLastWin32Error();
 
                 // In message mode, the ReadFile can inform us that there is more data to come.
-                if (errorCode == Interop.mincore.Errors.ERROR_MORE_DATA)
+                if (errorCode == Interop.Errors.ERROR_MORE_DATA)
                 {
                     return numBytesRead;
                 }
@@ -407,11 +407,11 @@ namespace System.IO.Pipes
             {
                 if (_isAsync)
                 {
-                    r = Interop.mincore.WriteFile(handle, p + offset, count, IntPtr.Zero, overlapped);
+                    r = Interop.Kernel32.WriteFile(handle, p + offset, count, IntPtr.Zero, overlapped);
                 }
                 else
                 {
-                    r = Interop.mincore.WriteFile(handle, p + offset, count, out numBytesWritten, IntPtr.Zero);
+                    r = Interop.Kernel32.WriteFile(handle, p + offset, count, out numBytesWritten, IntPtr.Zero);
                 }
             }
 
@@ -429,13 +429,13 @@ namespace System.IO.Pipes
         }
 
         [SecurityCritical]
-        internal unsafe static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
+        internal unsafe static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             if ((inheritability & HandleInheritability.Inheritable) != 0)
             {
-                secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (uint)sizeof(Interop.mincore.SECURITY_ATTRIBUTES);
+                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
+                secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
                 secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }
             return secAttrs;
@@ -448,13 +448,13 @@ namespace System.IO.Pipes
         private void UpdateReadMode()
         {
             int flags;
-            if (!Interop.mincore.GetNamedPipeHandleState(SafePipeHandle, out flags, IntPtr.Zero, IntPtr.Zero,
+            if (!Interop.Kernel32.GetNamedPipeHandleState(SafePipeHandle, out flags, IntPtr.Zero, IntPtr.Zero,
                     IntPtr.Zero, IntPtr.Zero, 0))
             {
                 throw WinIOError(Marshal.GetLastWin32Error());
             }
 
-            if ((flags & Interop.mincore.PipeOptions.PIPE_READMODE_MESSAGE) != 0)
+            if ((flags & Interop.Kernel32.PipeOptions.PIPE_READMODE_MESSAGE) != 0)
             {
                 _readMode = PipeTransmissionMode.Message;
             }
@@ -473,17 +473,17 @@ namespace System.IO.Pipes
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_BROKEN_PIPE:
-                case Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED:
-                case Interop.mincore.Errors.ERROR_NO_DATA:
+                case Interop.Errors.ERROR_BROKEN_PIPE:
+                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
+                case Interop.Errors.ERROR_NO_DATA:
                     // Other side has broken the connection
                     _state = PipeState.Broken;
                     return new IOException(SR.IO_PipeBroken, Win32Marshal.MakeHRFromErrorCode(errorCode));
 
-                case Interop.mincore.Errors.ERROR_HANDLE_EOF:
+                case Interop.Errors.ERROR_HANDLE_EOF:
                     return Error.GetEndOfFile();
 
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     // For invalid handles, detect the error and mark our handle
                     // as invalid to give slightly better error messages.  Also
                     // help ensure we avoid handle recycling bugs.

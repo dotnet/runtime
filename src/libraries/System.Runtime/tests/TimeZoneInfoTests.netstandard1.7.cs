@@ -240,6 +240,25 @@ namespace System.Tests
             Assert.True(utc.HasSameRules(custom));
         }
 
+        [Fact]
+        public static void ConvertTimeBySystemTimeZoneIdTests()
+        {
+            DateTime now = DateTime.Now;
+            DateTime utcNow = TimeZoneInfo.ConvertTimeToUtc(now);
+
+            Assert.Equal(now, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(utcNow, TimeZoneInfo.Local.Id));
+            Assert.Equal(utcNow, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(now, TimeZoneInfo.Utc.Id));
+
+            Assert.Equal(now, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(utcNow, TimeZoneInfo.Utc.Id, TimeZoneInfo.Local.Id));
+            Assert.Equal(utcNow, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(now, TimeZoneInfo.Local.Id, TimeZoneInfo.Utc.Id));
+
+            DateTimeOffset offsetNow = new DateTimeOffset(now);
+            DateTimeOffset utcOffsetNow = new DateTimeOffset(utcNow);
+
+            Assert.Equal(offsetNow, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(utcOffsetNow, TimeZoneInfo.Local.Id));
+            Assert.Equal(utcOffsetNow, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(offsetNow, TimeZoneInfo.Utc.Id));
+        }
+
         private static TimeZoneInfo CreateCustomLondonTimeZone()
         {
             TimeZoneInfo.TransitionTime start = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 1, 0, 0), 3, 5, DayOfWeek.Sunday);

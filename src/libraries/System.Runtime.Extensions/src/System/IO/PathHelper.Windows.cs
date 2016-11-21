@@ -215,7 +215,7 @@ namespace System.IO
             fixed (char* pathStart = path)
             {
                 uint result = 0;
-                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, fullPath.CharCapacity, fullPath.GetHandle(), IntPtr.Zero)) > fullPath.CharCapacity)
+                while ((result = Interop.Kernel32.GetFullPathNameW(pathStart + startIndex, fullPath.CharCapacity, fullPath.GetHandle(), IntPtr.Zero)) > fullPath.CharCapacity)
                 {
                     // Reported size (which does not include the null) is greater than the buffer size. Increase the capacity.
                     fullPath.EnsureCharCapacity(result);
@@ -226,7 +226,7 @@ namespace System.IO
                     // Failure, get the error and throw
                     int errorCode = Marshal.GetLastWin32Error();
                     if (errorCode == 0)
-                        errorCode = Interop.mincore.Errors.ERROR_BAD_PATHNAME;
+                        errorCode = Interop.Errors.ERROR_BAD_PATHNAME;
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                 }
 
@@ -320,7 +320,7 @@ namespace System.IO
 
             while (!success)
             {
-                uint result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
+                uint result = Interop.Kernel32.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
 
                 // Replace any temporary null we added
                 if (inputBuffer[foundIndex] == '\0') inputBuffer[foundIndex] = '\\';
@@ -329,7 +329,7 @@ namespace System.IO
                 {
                     // Look to see if we couldn't find the file
                     int error = Marshal.GetLastWin32Error();
-                    if (error != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND && error != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                    if (error != Interop.Errors.ERROR_FILE_NOT_FOUND && error != Interop.Errors.ERROR_PATH_NOT_FOUND)
                     {
                         // Some other failure, give up
                         break;
@@ -354,7 +354,7 @@ namespace System.IO
                 {
                     // Not enough space. The result count for this API does not include the null terminator.
                     outputBuffer.EnsureCharCapacity(result);
-                    result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
+                    result = Interop.Kernel32.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
                 }
                 else
                 {

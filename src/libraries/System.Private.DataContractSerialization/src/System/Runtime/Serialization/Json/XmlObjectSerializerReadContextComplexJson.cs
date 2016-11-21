@@ -7,13 +7,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Xml;
-using System.Security;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
-#if !NET_NATIVE
-using ExtensionDataObject = System.Object;
-#endif
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -23,6 +20,7 @@ namespace System.Runtime.Serialization.Json
     internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
 #endif
     {
+        private string _extensionDataValueType;
         private DataContractJsonSerializer _jsonSerializer;
         private DateTimeFormat _dateTimeFormat;
         private bool _useSimpleDictionaryFormat;
@@ -95,6 +93,69 @@ namespace System.Runtime.Serialization.Json
             get
             {
                 return _useSimpleDictionaryFormat;
+            }
+        }
+
+        protected override void StartReadExtensionDataValue(XmlReaderDelegator xmlReader)
+        {
+            _extensionDataValueType = xmlReader.GetAttribute(JsonGlobals.typeString);
+        }
+
+        protected override IDataNode ReadPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        {
+            IDataNode dataNode;
+
+            switch (_extensionDataValueType)
+            {
+                case null:
+                case JsonGlobals.stringString:
+                    dataNode = new DataNode<string>(xmlReader.ReadContentAsString());
+                    break;
+                case JsonGlobals.booleanString:
+                    dataNode = new DataNode<bool>(xmlReader.ReadContentAsBoolean());
+                    break;
+                case JsonGlobals.numberString:
+                    dataNode = ReadNumericalPrimitiveExtensionDataValue(xmlReader);
+                    break;
+                default:
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                        XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, _extensionDataValueType)));
+            }
+
+            xmlReader.ReadEndElement();
+            return dataNode;
+        }
+
+        private IDataNode ReadNumericalPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader)
+        {
+            TypeCode type;
+            object numericalValue = JsonObjectDataContract.ParseJsonNumber(xmlReader.ReadContentAsString(), out type);
+            switch (type)
+            {
+                case TypeCode.Byte:
+                    return new DataNode<byte>((byte)numericalValue);
+                case TypeCode.SByte:
+                    return new DataNode<sbyte>((sbyte)numericalValue);
+                case TypeCode.Int16:
+                    return new DataNode<short>((short)numericalValue);
+                case TypeCode.Int32:
+                    return new DataNode<int>((int)numericalValue);
+                case TypeCode.Int64:
+                    return new DataNode<long>((long)numericalValue);
+                case TypeCode.UInt16:
+                    return new DataNode<ushort>((ushort)numericalValue);
+                case TypeCode.UInt32:
+                    return new DataNode<uint>((uint)numericalValue);
+                case TypeCode.UInt64:
+                    return new DataNode<ulong>((ulong)numericalValue);
+                case TypeCode.Single:
+                    return new DataNode<float>((float)numericalValue);
+                case TypeCode.Double:
+                    return new DataNode<double>((double)numericalValue);
+                case TypeCode.Decimal:
+                    return new DataNode<decimal>((decimal)numericalValue);
+                default:
+                    throw new InvalidOperationException(SR.ParseJsonNumberReturnInvalidNumber);
             }
         }
 
@@ -328,7 +389,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [SecuritySafeCritical]
         private static bool IsBitSet(byte[] bytes, int bitIndex)
         {
             return BitFlagsGenerator.IsBitSet(bytes, bitIndex);

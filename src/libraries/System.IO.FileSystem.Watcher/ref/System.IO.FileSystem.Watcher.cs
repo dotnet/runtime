@@ -22,7 +22,7 @@ namespace System.IO
         public string Name { get { throw null; } }
     }
     public delegate void FileSystemEventHandler(object sender, System.IO.FileSystemEventArgs e);
-    public partial class FileSystemWatcher : System.ComponentModel.Component
+    public partial class FileSystemWatcher : System.ComponentModel.Component, System.ComponentModel.ISupportInitialize
     {
         public FileSystemWatcher() { }
         public FileSystemWatcher(string path) { }
@@ -45,6 +45,11 @@ namespace System.IO
         protected void OnRenamed(System.IO.RenamedEventArgs e) { }
         public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType) { throw null; }
         public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType, int timeout) { throw null; }
+        public override System.ComponentModel.ISite Site { get { throw null; } set { } }
+        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { throw null; } set { } }
+        public void BeginInit() { }
+        protected override void Dispose(bool disposing) { }
+        public void EndInit() { }
     }
     [Serializable]
     public partial class InternalBufferOverflowException : System.SystemException

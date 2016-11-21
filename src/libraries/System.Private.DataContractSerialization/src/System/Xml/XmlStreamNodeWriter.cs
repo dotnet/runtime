@@ -5,7 +5,6 @@
 using System.IO;
 using System.Text;
 using System.Runtime.Serialization;
-using System.Security;
 using System.Threading.Tasks;
 
 namespace System.Xml
@@ -244,11 +243,6 @@ namespace System.Xml
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        ///            caller needs to validate arguments
-        /// </SecurityNote>
-        [SecurityCritical]
         unsafe protected void UnsafeWriteBytes(byte* bytes, int byteCount)
         {
             FlushBuffer();
@@ -268,11 +262,6 @@ namespace System.Xml
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe protected void WriteUTF8Char(int ch)
         {
             if (ch < 0x80)
@@ -311,11 +300,6 @@ namespace System.Xml
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe protected void WriteUTF8Chars(string value)
         {
             int count = value.Length;
@@ -328,11 +312,6 @@ namespace System.Xml
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        ///            caller needs to validate arguments
-        /// </SecurityNote>
-        [SecurityCritical]
         unsafe protected void UnsafeWriteUTF8Chars(char* chars, int charCount)
         {
             const int charChunkSize = bufferLength / maxBytesPerChar;
@@ -355,11 +334,6 @@ namespace System.Xml
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        ///            caller needs to validate arguments
-        /// </SecurityNote>
-        [SecurityCritical]
         unsafe protected void UnsafeWriteUnicodeChars(char* chars, int charCount)
         {
             const int charChunkSize = bufferLength / 2;
@@ -382,11 +356,6 @@ namespace System.Xml
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        ///            caller needs to validate arguments
-        /// </SecurityNote>
-        [SecurityCritical]
         unsafe protected int UnsafeGetUnicodeChars(char* chars, int charCount, byte[] buffer, int offset)
         {
             char* charsMax = chars + charCount;
@@ -400,11 +369,6 @@ namespace System.Xml
             return charCount * 2;
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        ///            caller needs to validate arguments
-        /// </SecurityNote>
-        [SecurityCritical]
         unsafe protected int UnsafeGetUTF8Length(char* chars, int charCount)
         {
             char* charsMax = chars + charCount;
@@ -427,11 +391,6 @@ namespace System.Xml
             return (int)(chars - (charsMax - charCount)) + GetByteCount(chArray);
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        ///            caller needs to validate arguments
-        /// </SecurityNote>
-        [SecurityCritical]
         unsafe protected int UnsafeGetUTF8Chars(char* chars, int charCount, byte[] buffer, int offset)
         {
             if (charCount > 0)
