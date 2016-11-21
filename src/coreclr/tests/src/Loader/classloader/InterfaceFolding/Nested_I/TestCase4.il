@@ -18,8 +18,11 @@
 {
   .class interface nested family abstract auto ansi I`1<T>
   { .method public hidebysig newslot abstract virtual instance string  Foo() cil managed {} }
-  
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed {}
+
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+  {
+    ret
+  }
 }
 
 .class private abstract auto ansi beforefieldinit B`2<V,W>
@@ -43,12 +46,19 @@
     ldstr      "B::Bar2"
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed {}
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+  {
+    ret
+  }
 }
 
 .class private auto ansi beforefieldinit C extends class B`2<class C,class C>
-{ .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed {} }
-
+{
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+  {
+    ret
+  }
+}
 
 .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
 {
