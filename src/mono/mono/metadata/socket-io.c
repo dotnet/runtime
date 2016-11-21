@@ -1242,7 +1242,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 
 	if (ret == -1) {
 #ifdef HOST_WIN32
-		*werror = WSAGetLastError ();
+		*werror = errno > 0 && errno < WSABASEERR ? errno + WSABASEERR : errno;
 #else
 		*werror = errno_to_WSA (errno, __func__);
 #endif
@@ -1868,7 +1868,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 	
 	if (ret == -1) {
 #ifdef HOST_WIN32
-		*werror = WSAGetLastError ();
+		*werror = errno > 0 && errno < WSABASEERR ? errno + WSABASEERR : errno;
 #else
 		*werror = errno_to_WSA (errno, __func__);
 #endif
