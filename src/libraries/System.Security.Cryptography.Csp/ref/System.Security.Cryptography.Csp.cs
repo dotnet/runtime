@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     public sealed partial class AesCryptoServiceProvider : System.Security.Cryptography.Aes
     {
         public AesCryptoServiceProvider() { }
+        public override int FeedbackSize { get { throw null; } set { } }
         public override int BlockSize { get { throw null; } set { } }
         public override byte[] IV { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
@@ -199,6 +200,7 @@ namespace System.Security.Cryptography
     public sealed partial class TripleDESCryptoServiceProvider : System.Security.Cryptography.TripleDES
     {
         public TripleDESCryptoServiceProvider() { }
+        public override int FeedbackSize { get { throw null; } set { } }
         public override int BlockSize { get { throw null; } set { } }
         public override byte[] IV { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
