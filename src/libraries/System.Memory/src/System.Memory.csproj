@@ -16,7 +16,9 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Pinnable.cs" />
     <Compile Include="System\ReadOnlySpan.cs" />
+    <Compile Include="System\ReadOnlySpanExtensions.cs" />
     <Compile Include="System\Span.cs" />
+    <Compile Include="System\SpanExtensions.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
