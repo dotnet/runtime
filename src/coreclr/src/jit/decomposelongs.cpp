@@ -1108,7 +1108,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
             case GT_RSZ:
             {
                 Range().Remove(gtLong);
-                Range().Remove(loOp1);
 
                 if (count < 32)
                 {
@@ -1119,8 +1118,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
                     hiOp1                = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->gtOp.gtOp2);
                     unsigned hiOp1LclNum = hiOp1->AsLclVarCommon()->gtLclNum;
-                    Range().Remove(hiOp1);
-                    GenTree* hiCopy = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
+                    GenTree* hiCopy      = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
 
                     GenTree* shiftByHi = m_compiler->gtNewIconNode(count, TYP_INT);
                     GenTree* shiftByLo = m_compiler->gtNewIconNode(count, TYP_INT);
@@ -1134,12 +1132,13 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     GenTree* loOp = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loOp1, hiCopy);
                     loResult      = m_compiler->gtNewOperNode(GT_RSH_LO, TYP_INT, loOp, shiftByLo);
 
-                    Range().InsertBefore(tree, loOp1, hiCopy, loOp);
+                    Range().InsertBefore(tree, hiCopy, loOp);
                     Range().InsertBefore(tree, shiftByLo, loResult);
-                    Range().InsertBefore(tree, hiOp1, shiftByHi, hiResult);
+                    Range().InsertBefore(tree, shiftByHi, hiResult);
                 }
                 else
                 {
+                    Range().Remove(loOp1);
                     Range().Remove(hiOp1);
                     assert(count >= 32);
                     if (count < 64)
