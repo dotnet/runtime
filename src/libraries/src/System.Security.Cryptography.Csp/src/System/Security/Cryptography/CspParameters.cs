@@ -48,6 +48,13 @@ namespace System.Security.Cryptography
             }
         }
 
+        [CLSCompliantAttribute(false)]
+        public SecureString KeyPassword
+        {
+            get { return null; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public CspParameters() : this(CapiHelper.DefaultRsaProviderType, null, null) { }
 
         public CspParameters(int dwTypeIn) : this(dwTypeIn, null, null) { }
