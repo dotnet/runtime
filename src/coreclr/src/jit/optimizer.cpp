@@ -4371,14 +4371,18 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     }
 
     // We've previously made a decision whether to have separate return epilogs, or branch to one.
-    // There's a GCInfo limitation in the x86 case, so that there can be no more than 4 separate epilogs.
-    // (I thought this was x86-specific, but it's not if-d.  On other architectures, the decision should be made as a
-    // heuristic tradeoff; perhaps we're just choosing to live with 4 as the limit.)
-    if (fgReturnCount + loopRetCount > 4)
+    // There's a GCInfo limitation in the x86 case, so that there can be no more than SET_EPILOGCNT_MAX separate
+    // epilogs.  Other architectures have a limit of 4 here for "historical reasons", but this should be revisited
+    // (or return blocks should not be considered part of the loop, rendering this issue moot).
+    unsigned epilogLimit = 4;
+#ifdef JIT32_GCENCODER
+    epilogLimit = SET_EPILOGCNT_MAX;
+#endif // JIT32_GCENCODER
+    if (fgReturnCount + loopRetCount > epilogLimit)
     {
         JITDUMP("Loop cloning: rejecting loop because it has %d returns; if added to previously-existing %d returns, "
-                "would exceed the limit of 4.\n",
-                loopRetCount, fgReturnCount);
+                "would exceed the limit of %d.\n",
+                loopRetCount, fgReturnCount, epilogLimit);
         return false;
     }
 
