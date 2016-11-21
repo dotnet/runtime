@@ -17,6 +17,8 @@
 #define NUM_YEAR_MONTH_PATTERNS 8
 
 #define idx2string(idx) (locale_strings + (idx))
+#define pattern2string(idx) (patterns + (idx))
+#define dtidx2string(idx) (datetime_strings + (idx))
 
 /* need to change this if the string data ends up to not fit in a 64KB array. */
 typedef guint16 stridx_t;

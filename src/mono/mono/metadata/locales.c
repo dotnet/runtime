@@ -133,7 +133,7 @@ create_names_array_idx (const guint16 *names, int ml, MonoError *error)
 	return_val_if_nok (error, NULL);
 
 	for(i = 0; i < ml; i++)
-		mono_array_setref (ret, i, mono_string_new (domain, idx2string (names [i])));
+		mono_array_setref (ret, i, mono_string_new (domain, dtidx2string (names [i])));
 
 	return ret;
 }
@@ -162,7 +162,7 @@ create_names_array_idx_dynamic (const guint16 *names, int ml, MonoError *error)
 	return_val_if_nok (error, NULL);
 
 	for(i = 0; i < len; i++)
-		mono_array_setref (ret, i, mono_string_new (domain, idx2string (names [i])));
+		mono_array_setref (ret, i, mono_string_new (domain, pattern2string (names [i])));
 
 	return ret;
 }
@@ -207,7 +207,7 @@ ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData
 	return_val_and_set_pending_if_nok (&error, FALSE);
 	MONO_OBJECT_SETREF (this_obj, LongDatePatterns, long_date_patterns);
 
-	MONO_OBJECT_SETREF (this_obj, MonthDayPattern, mono_string_new (domain, idx2string (dfe->month_day_pattern)));
+	MONO_OBJECT_SETREF (this_obj, MonthDayPattern, mono_string_new (domain, pattern2string (dfe->month_day_pattern)));
 
 	MonoArray *day_names = create_names_array_idx (dfe->day_names, NUM_DAYS, &error);
 	return_val_and_set_pending_if_nok (&error, FALSE);
