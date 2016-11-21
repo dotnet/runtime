@@ -219,9 +219,6 @@ struct _MonoException {
 	MonoArray  *native_trace_ips;
 };
 
-/* Safely access System.Exception from native code */
-TYPED_HANDLE_DECL (MonoException);
-
 typedef struct {
 	MonoException base;
 } MonoSystemException;

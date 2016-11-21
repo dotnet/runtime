@@ -4,13 +4,14 @@
 #include <glib.h>
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/handle.h>
 #include <mono/utils/mono-error.h>
 
 MonoException *
 mono_get_exception_type_initialization_checked (const gchar *type_name, MonoException *inner, MonoError *error);
 
-MonoException *
-mono_get_exception_reflection_type_load_checked (MonoArray *types, MonoArray *exceptions, MonoError *error);
+MonoExceptionHandle
+mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArrayHandle exceptions, MonoError *error);
 
 MonoException *
 mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception, MonoError *error);

@@ -130,6 +130,13 @@ Icall macros
 	return (VAL);				\
 	} while (0)
 
+#define HANDLE_FUNCTION_RETURN_OBJ(HANDLE)			\
+	do {							\
+		void* __result = (MONO_HANDLE_RAW (HANDLE));	\
+		CLEAR_ICALL_FRAME;				\
+		return __result;				\
+	} while (0); } while (0);
+
 #ifdef MONO_NEEDS_STACK_WATERMARK
 
 static void
@@ -297,6 +304,10 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		(DEST) =  __result;					\
 	} while (0)
 
+#define MONO_HANDLE_ARRAY_GETREF(DEST, HANDLE, IDX) do {		\
+		mono_handle_array_getref (MONO_HANDLE_CAST(MonoObject, (DEST)), (HANDLE), (IDX)); \
+	} while (0)
+
 #define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
 	mono_handle_assign (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_CAST(MonoObject, (SRCH)))
 
@@ -306,6 +317,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 TYPED_HANDLE_DECL (MonoString);
 TYPED_HANDLE_DECL (MonoArray);
 TYPED_HANDLE_DECL (MonoObject);
+TYPED_HANDLE_DECL (MonoException);
 
 #define NULL_HANDLE_STRING MONO_HANDLE_CAST(MonoString, NULL_HANDLE)
 
@@ -316,7 +328,7 @@ Init values to it.
 extern const MonoObjectHandle mono_null_value_handle;
 
 static inline void
-mono_handle_assign (MonoObjectHandle dest, MonoObjectHandle src)
+mono_handle_assign (MonoObjectHandleOut dest, MonoObjectHandle src)
 {
 	mono_gc_wbarrier_generic_store (&dest->__obj, MONO_HANDLE_RAW(src));
 }
@@ -326,6 +338,12 @@ MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, M
 MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
 
 uintptr_t mono_array_handle_length (MonoArrayHandle arr);
+
+static inline void
+mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index)
+{
+	mono_gc_wbarrier_generic_store (&dest->__obj, mono_array_get (MONO_HANDLE_RAW (array),gpointer, index));
+}
 
 #define mono_handle_class(o) mono_object_class (MONO_HANDLE_RAW (o))
 
@@ -337,7 +355,8 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned);
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle);
 
-
+void
+mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len);
 
 /* Pins the MonoArray using a gchandle and returns a pointer to the
  * element with the given index (where each element is of the given
@@ -347,6 +366,9 @@ gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, uint32_t *gchandle);
 
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out))
+
+void
+mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
 
 G_END_DECLS
 
