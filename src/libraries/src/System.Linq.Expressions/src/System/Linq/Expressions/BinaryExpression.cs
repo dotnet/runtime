@@ -1670,7 +1670,7 @@ namespace System.Linq.Expressions
                 {
                     return new SimpleBinaryExpression(ExpressionType.AddChecked, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.AddChecked, "op_Addition", left, right, liftToNull: false);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.AddChecked, "op_Addition", left, right, liftToNull: true);
             }
             return GetMethodBasedBinaryOperator(ExpressionType.AddChecked, left, right, method, liftToNull: true);
         }
