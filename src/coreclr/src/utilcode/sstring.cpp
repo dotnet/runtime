@@ -2211,7 +2211,7 @@ void SString::VPrintf(const WCHAR *format, va_list args)
         else
         if (errno!=0 && errno!=EBADF && errno!=ERANGE)
         {
-            CONSISTENCY_CHECK_MSG(FALSE, "_vsnwprintf failed. Potential globalization bug.");
+            CONSISTENCY_CHECK_MSG(FALSE, "_vsnwprintf_s failed. Potential globalization bug.");
             ThrowHR(HRESULT_FROM_WIN32(ERROR_NO_UNICODE_TRANSLATION));
         }
     }
@@ -2293,7 +2293,7 @@ void SString::PVPrintf(const WCHAR *format, va_list args)
         else
         if (errno!=0 && errno!=EBADF && errno!=ERANGE)
         {
-            CONSISTENCY_CHECK_MSG(FALSE, "_vsnwprintf failed. Potential globalization bug.");
+            CONSISTENCY_CHECK_MSG(FALSE, "_vsnwprintf_s failed. Potential globalization bug.");
             ThrowHR(HRESULT_FROM_WIN32(ERROR_NO_UNICODE_TRANSLATION));
         }
     }

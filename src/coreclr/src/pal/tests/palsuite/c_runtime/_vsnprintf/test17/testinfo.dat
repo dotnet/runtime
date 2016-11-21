@@ -11,4 +11,4 @@ EXE1 = test17
 Description
 = Tests the PAL implementation of the _vsnprintf function.
 = Tests _vsnprintf with compact format doubles (lowercase).
-= This test is modeled after _snprintf.
+= This test is modeled after sprintf_s.

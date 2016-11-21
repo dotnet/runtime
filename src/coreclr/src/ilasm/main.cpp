@@ -768,7 +768,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     for(iFile = 0; iFile < NumDeltaFiles; iFile++)
                                     {
                                         wcscpy_s(wzNewOutputFilename,MAX_FILENAME_LENGTH+16,wzOutputFilename);
-                                        exitval = (int)StringCchPrintfW(&wzNewOutputFilename[wcslen(wzNewOutputFilename)], 32,
+                                        exitval = _snwprintf_s(&wzNewOutputFilename[wcslen(wzNewOutputFilename)], 32, _TRUNCATE,
                                                  W(".%d"),iFile+1);
                                         MakeProperSourceFileName(pwzDeltaFiles[iFile], uCodePage, wzInputFilename, szInputFilename);
                                         if(pAsm->m_fReportProgress)

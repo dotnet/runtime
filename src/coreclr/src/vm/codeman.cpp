@@ -6153,12 +6153,12 @@ __forceinline bool Nirvana_PrintMethodDescWorker(__in_ecount(iBuffer) char * szB
 
     if (*pNamespace != 0)
     {
-        if(FAILED(StringCchPrintfA(szBuffer, iBuffer, "%s.%s.%s", pNamespace, pClassName, pSigString)))
+        if (_snprintf_s(szBuffer, iBuffer, _TRUNCATE, "%s.%s.%s", pNamespace, pClassName, pSigString) == -1)
             return false;
     }
     else
     {
-        if(FAILED(StringCchPrintfA(szBuffer, iBuffer, "%s.%s", pClassName, pSigString)))
+        if (_snprintf_s(szBuffer, iBuffer, _TRUNCATE, "%s.%s", pClassName, pSigString) == -1)
             return false;
     }
 

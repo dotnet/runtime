@@ -42,11 +42,11 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
         else
         {
             // The resource ID wasn't found in our array. Fall back on returning the ID as a string.
-            len = _snwprintf(szBuffer, iMax - 1, W("[Undefined resource string ID:0x%X]"), iResourceID);
-            if ((len < 0) || (len == (iMax - 1)))
-            {
-                // Add string terminator if the result of _snwprintf didn't fit the buffer.
-                szBuffer[iMax - 1] = W('\0');
+            len = _snwprintf_s(szBuffer, iMax, _TRUNCATE, W("[Undefined resource string ID:0x%X]"), iResourceID);
+            if (len < 0)
+            {   
+                // The only possible failure is that that string didn't fit the buffer. So the buffer contains 
+                // partial string terminated by '\0'
                 len = iMax - 1;
             }
         }

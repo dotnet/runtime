@@ -6,7 +6,7 @@
 *vswprint.c - print formatted data into a string from var arg list
 *
 *Purpose:
-*       defines vswprintf(), _vswprintf_c and _vsnwprintf() - print formatted output to
+*       defines vswprintf_s() and _vsnwprintf_s() - print formatted output to
 *       a string, get the data from an argument ptr instead of explicit
 *       arguments.
 *
@@ -23,19 +23,10 @@
 typedef int (*WOUTPUTFN)(miniFILE *, const wchar_t *, va_list);
 
 static int _vswprintf_helper( WOUTPUTFN outfn, wchar_t *string, size_t count, const wchar_t *format, va_list ap );
-static int _vscwprintf_helper (WOUTPUTFN outfn, const wchar_t *format, va_list ap );
 
 /***
-*ifndef _COUNT_
-*int _vswprintf(string, format, ap) - print formatted data to string from arg ptr
-*else
-*ifndef _SWPRINTFS_ERROR_RETURN_FIX
-*int _vsnwprintf(string, cnt, format, ap) - print formatted data to string from arg ptr
-*else
-*int _vswprintf_c(string, cnt, format, ...) - print formatted data to string
-*endif
-*endif
-*
+*int vswprintf_s(string, sizeInWords, format, ap) - print formatted data to string from arg ptr
+*int _vsnwprintf_s(string, sizeInWords, cnt, format, ap) - print formatted data to string from arg ptr
 *Purpose:
 *       Prints formatted data, but to a string and gets data from an argument
 *       pointer.
@@ -47,21 +38,10 @@ static int _vscwprintf_helper (WOUTPUTFN outfn, const wchar_t *format, va_list a
 *       the stack so that other routines can assume that _iob[] entries are in
 *       are in DGROUP and, thus, are near.
 *
-*ifdef _COUNT_
-*ifndef _SWPRINTFS_ERROR_RETURN_FIX
-*       The _vsnwprintf() flavor takes a count argument that is
+*       The _vsnwprintf_s() flavor takes a count argument that is
 *       the max number of bytes that should be written to the
 *       user's buffer.
 *       We don't expose this function directly in the headers.
-*else
-*       The _vswprintf_c() flavor does the same thing as the _snwprintf
-*       above, but, it also fixes an issue in the return value in the case
-*       when there isn't enough space to write the null terminator
-*       We don't fix this issue in _vsnwprintf because of backward
-*       compatibility. In new code, however, _vsnwprintf is #defined to
-*       _vswprintf_c so users get the fix.
-*
-*endif
 *
 *       Multi-thread: (1) Since there is no stream, this routine must never try
 *       to get the stream lock (i.e., there is no stream lock either).  (2)
@@ -70,9 +50,8 @@ static int _vscwprintf_helper (WOUTPUTFN outfn, const wchar_t *format, va_list a
 *
 *Entry:
 *       wchar_t *string - place to put destination string
-*ifdef _COUNT_
+*       size_t sizeInWords - size of the string buffer in wchar_t units
 *       size_t count - max number of bytes to put in buffer
-*endif
 *       wchar_t *format - format string, describes format of data
 *       va_list ap - varargs argument pointer
 *
@@ -133,7 +112,7 @@ int __cdecl _vswprintf_helper (
         return -1;
 }
 
-int __cdecl _vswprintf_s (
+int __cdecl vswprintf_s (
         wchar_t *string,
         size_t sizeInWords,
         const wchar_t *format,
@@ -230,53 +209,3 @@ int __cdecl _vsnwprintf_s (
 
     return (retvalue < 0 ? -1 : retvalue);
 }
-
-/***
-* _vscwprintf() - counts the number of character needed to print the formatted
-* data
-*
-*Purpose:
-*       Counts the number of characters in the fotmatted data.
-*
-*Entry:
-*       wchar_t *format - format string, describes format of data
-*       va_list ap - varargs argument pointer
-*
-*Exit:
-*       returns number of characters needed to print formatted data.
-*
-*Exceptions:
-*
-*******************************************************************************/
-
-#ifndef _COUNT_
-
-int __cdecl _vscwprintf_helper (
-        WOUTPUTFN woutfn,
-        const wchar_t *format,
-        va_list ap
-        )
-{
-        miniFILE str;
-        miniFILE *outfile = &str;
-        int retval;
-
-        _VALIDATE_RETURN( (format != NULL), EINVAL, -1);
-
-        outfile->_cnt = INT_MAX; //MAXSTR;
-        outfile->_flag = _IOWRT|_IOSTRG;
-        outfile->_ptr = outfile->_base = NULL;
-
-        retval = woutfn(outfile, format, ap);
-        return(retval);
-}
-
-int __cdecl _vscwprintf (
-        const wchar_t *format,
-        va_list ap
-        )
-{
-        return _vscwprintf_helper(_woutput_s, format, ap);
-}
-
-#endif  /* _COUNT_ */

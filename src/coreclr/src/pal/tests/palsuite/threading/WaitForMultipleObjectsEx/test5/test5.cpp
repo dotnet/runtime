@@ -176,7 +176,7 @@ Setup()
         }
 
         /* Create the event to let helper process tell us it is ready. */
-        if (_snprintf(szEventName, MAX_PATH-1, "%s%d",
+        if (sprintf_s(szEventName, MAX_PATH-1, "%s%d",
             szcHelperProcessReadyEvName, helper_process[i].pi.dwProcessId) < 0)
         {
             Fail ("test5.Setup: Insufficient event name string length for %s\n", szcHelperProcessReadyEvName);
@@ -194,7 +194,7 @@ Setup()
         }
 
         /* Create the event to tell helper process to exit. */
-        if (_snprintf(szEventName, MAX_PATH-1, "%s%d",
+        if (sprintf_s(szEventName, MAX_PATH-1, "%s%d",
             szcHelperProcessFinishEvName, helper_process[i].pi.dwProcessId) < 0)
         {
             Fail ("test5.Setup: Insufficient event name string length for %s\n", szcHelperProcessFinishEvName);

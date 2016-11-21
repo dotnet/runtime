@@ -849,8 +849,6 @@ STDAPI_(LPWSTR) StrCatBuffW(LPWSTR pszDest, LPCWSTR pszSrc, int cchDestBuffSize)
 
 #define lstrcmpW                PAL_wcscmp
 #define lstrcmpiW               _wcsicmp
-#define wnsprintfW              _snwprintf // note: not 100% compatible (wsprintf should be subset of sprintf...)
-#define wvnsprintfW             _vsnwprintf // note: not 100% compatible (wsprintf should be subset of sprintf...)
 
 #ifdef UNICODE
 #define StrCpy                  StrCpyW
@@ -869,7 +867,6 @@ STDAPI_(LPWSTR) StrCatBuffW(LPWSTR pszDest, LPCWSTR pszSrc, int cchDestBuffSize)
 
 #define lstrcmp                 lstrcmpW
 #define lstrcmpi                lstrcmpiW
-#define wnsprintf               wnsprintfW
 #endif
 
 
@@ -896,10 +893,7 @@ Remember to fix the errcode defintion in safecrt.h.
 */
 
 #define _wcslwr_s _wcslwr_unsafe
-#define _snwprintf_s _snwprintf_unsafe
-#define _vsnwprintf_s _vsnwprintf_unsafe
 #define _snprintf_s _snprintf_unsafe
-#define _vsnprintf_s _vsnprintf_unsafe
 #define swscanf_s swscanf
 #define sscanf_s sscanf
 
@@ -909,12 +903,8 @@ Remember to fix the errcode defintion in safecrt.h.
 #define _strlwr_s _strlwr_unsafe
 
 #define _vscprintf _vscprintf_unsafe
-#define _vscwprintf _vscwprintf_unsafe
 
-#define sprintf_s _snprintf
-#define swprintf_s _snwprintf
 #define vsprintf_s _vsnprintf
-#define vswprintf_s _vsnwprintf
 
 extern "C++" {
 
@@ -978,51 +968,6 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
 
         guess *= 2;
     }
-}
-
-inline int __cdecl _vscwprintf_unsafe(const WCHAR *_Format, va_list _ArgList)
-{
-    int guess = 256;
-
-    for (;;)
-    {
-        WCHAR *buf = (WCHAR *)malloc(guess * sizeof(WCHAR));
-        if (buf == nullptr)
-            return 0;
-
-        va_list apcopy;
-        va_copy(apcopy, _ArgList);
-        int ret = _vsnwprintf(buf, guess, _Format, apcopy);
-        free(buf);
-        va_end(apcopy);
-
-        if ((ret != -1) && (ret < guess))
-            return ret;
-
-        guess *= 2;
-    }
-}
-
-inline int __cdecl _vsnwprintf_unsafe(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, va_list _ArgList)
-{
-    if (_Count == _TRUNCATE) _Count = _SizeInWords - 1;
-    int ret = _vsnwprintf(_Dst, _Count, _Format, _ArgList);
-    _Dst[_SizeInWords - 1] = L'\0';
-    if (ret < 0 && errno == 0)
-    {
-        errno = ERANGE;
-    }
-    return ret;
-}
-
-inline int __cdecl _snwprintf_unsafe(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, ...)
-{
-    int ret;
-    va_list _ArgList;
-    va_start(_ArgList, _Format);
-    ret = _vsnwprintf_unsafe(_Dst, _SizeInWords, _Count, _Format, _ArgList);
-    va_end(_ArgList);
-    return ret;
 }
 
 inline int __cdecl _vsnprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Count, const char *_Format, va_list _ArgList)

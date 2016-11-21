@@ -34,7 +34,7 @@ static const WCHAR* getTime(const FILETIME* time, __out_ecount (buffLen) WCHAR* 
         return badTime;
 
 #ifdef FEATURE_PAL
-    int length = _snwprintf(buff, buffLen, W("%02d:%02d:%02d"), systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
+    int length = _snwprintf_s(buff, buffLen, _TRUNCATE, W("%02d:%02d:%02d"), systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
     if (length <= 0)
         return badTime;
 #else // FEATURE_PAL
