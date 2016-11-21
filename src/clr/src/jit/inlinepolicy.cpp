@@ -449,15 +449,15 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
 
             // Now that we know size and forceinline state,
             // update candidacy.
-            if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
-            {
-                // Candidate based on small size
-                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
-            }
-            else if (m_IsForceInline)
+            if (m_IsForceInline)
             {
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            {
+                // Candidate based on small size
+                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
             else if (m_CodeSize <= m_RootCompiler->m_inlineStrategy->GetMaxInlineILSize())
             {
