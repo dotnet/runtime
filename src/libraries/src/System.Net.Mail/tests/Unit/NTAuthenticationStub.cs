@@ -48,7 +48,7 @@ namespace System.Net
             s_isCompleted = s_type.GetProperty("IsCompleted", NonPublicInstance).GetMethod;
         }
 
-        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlags requestedContextFlags, ChannelBinding channelBinding)
+        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
         {
             _instance = s_ntAuthentication.Invoke(new object[] { isServer, package, credential, spn, requestedContextFlags, channelBinding });
         }
@@ -106,7 +106,7 @@ namespace System.Net
     }
 
     [Flags]
-    internal enum ContextFlags
+    internal enum ContextFlagsPal
     {
         None = 0,
         Delegate = 0x00000001,
