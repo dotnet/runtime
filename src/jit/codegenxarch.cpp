@@ -515,7 +515,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     GenTree* rmOp  = op2;
 
     // Set rmOp to the contained memory operand (if any)
-    if (op1->isContained() || (!op2->isContained() && (op2->gtRegNum == targetReg)))
+    if (op1->isContained() || (!op2->isContained() && (op2->gtRegNum == REG_RAX)))
     {
         regOp = op2;
         rmOp  = op1;
@@ -523,9 +523,9 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     assert(!regOp->isContained());
 
     // Setup targetReg when neither of the source operands was a matching register
-    if (regOp->gtRegNum != targetReg)
+    if (regOp->gtRegNum != REG_RAX)
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, regOp->gtRegNum, targetType);
+        inst_RV_RV(ins_Copy(targetType), REG_RAX, regOp->gtRegNum, targetType);
     }
 
     instruction ins;
