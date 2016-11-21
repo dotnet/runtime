@@ -2095,7 +2095,7 @@ PAL_GetTransportPipeName(char *name, DWORD id, const char *suffix)
     // also try to use 0 as the value.
     _ASSERTE(ret == TRUE || disambiguationKey == 0);
 
-    int chars = _snprintf(name, MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, PipeNameFormat, id, disambiguationKey, suffix);
+    int chars = snprintf(name, MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, PipeNameFormat, id, disambiguationKey, suffix);
     _ASSERTE(chars > 0 && chars < MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH);
 }
 

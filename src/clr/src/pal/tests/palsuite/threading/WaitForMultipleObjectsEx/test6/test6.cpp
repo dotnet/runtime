@@ -156,14 +156,14 @@ DWORD PALAPI TestThread(PVOID pArg)
         
     dwThreadNum = (DWORD)pArg;
 
-    _snprintf (szTestName, 128, "Test6_%u", dwThreadNum);
+    sprintf_s (szTestName, 128, "Test6_%u", dwThreadNum);
     szTestName[127] = 0;
 
-    _snprintf(szEventName, 128, "%s_Event", szTestName);
+    sprintf_s(szEventName, 128, "%s_Event", szTestName);
     szEventName[127] = 0;
-    _snprintf(szMutexName, 128, "%s_Mutex", szTestName);
+    sprintf_s(szMutexName, 128, "%s_Mutex", szTestName);
     szMutexName[127] = 0;
-    _snprintf(szSemName, 128, "%s_Semaphore", szTestName);
+    sprintf_s(szSemName, 128, "%s_Semaphore", szTestName);
     szSemName[127] = 0;
 
     iRet = MultiByteToWideChar(CP_ACP, 0, szEventName, strlen(szEventName)+1, wszEventName, 128);
@@ -323,7 +323,7 @@ DWORD PALAPI TestThread(PVOID pArg)
             si.cb = sizeof(si);
             ZeroMemory ( &pi, sizeof(pi) );
         
-            _snprintf (szCmd, 128, "child6 -event %s", szTestName);
+            sprintf_s (szCmd, 128, "child6 -event %s", szTestName);
             szCmd[127] = 0;
 
             bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
@@ -363,7 +363,7 @@ DWORD PALAPI TestThread(PVOID pArg)
             si.cb = sizeof(si);
             ZeroMemory ( &pi, sizeof(pi) );
 
-            _snprintf (szCmd, 128, "child6 -semaphore %s", szTestName);
+            sprintf_s (szCmd, 128, "child6 -semaphore %s", szTestName);
             szCmd[127] = 0;
         
             bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 
@@ -423,7 +423,7 @@ DWORD PALAPI TestThread(PVOID pArg)
             si.cb = sizeof(si);
             ZeroMemory ( &pi, sizeof(pi) );            
             
-            _snprintf (szCmd, 128, "child6 -mutex %s -exitcode %d", szTestName, iDesiredExitCode);
+            sprintf_s (szCmd, 128, "child6 -mutex %s -exitcode %d", szTestName, iDesiredExitCode);
             szCmd[127] = 0;
         
             bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
@@ -527,7 +527,7 @@ DWORD PALAPI TestThread(PVOID pArg)
             si.cb = sizeof(si);
             ZeroMemory ( &pi, sizeof(pi) );
         
-            _snprintf (szCmd, 128, "child6 -mutex_and_named_event %s", szTestName);
+            sprintf_s (szCmd, 128, "child6 -mutex_and_named_event %s", szTestName);
             szCmd[127] = 0;
 
             bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 

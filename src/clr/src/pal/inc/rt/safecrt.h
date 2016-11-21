@@ -409,7 +409,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tmakepath_s    _makepath_s
 #define _tsplitpath_s   _splitpath_s
 #define _stprintf_s     sprintf_s
-#define _vstprintf_s    vsprintf_s
 #define _sntprintf_s    _snprintf_s
 #define _vsntprintf_s   _vsnprintf_s
 #define _tscanf_s       scanf_s
@@ -428,8 +427,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tmakepath_s    _wmakepath_s
 #define _tsplitpath_s   _wsplitpath_s
 #define _stprintf_s     swprintf_s
-#define _vstprintf_s    vswprintf_s
-#define _sntprintf_s    _snwprintf_s
 #define _vsntprintf_s   _vsnwprintf_s
 #define _tscanf_s       wscanf_s
 #define _tsscanf_s      swscanf_s
@@ -447,9 +444,7 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tmakepath_s    _makepath_s
 #define _tsplitpath_s   _splitpath_s
 #define _stprintf_s     sprintf_s
-#define _vstprintf_s    vsprintf_s
 #define _sntprintf_s    _snprintf_s
-#define _vsntprintf_s   _vsnprintf_s
 #define _tscanf_s       scanf_s
 #define _tsscanf_s      sscanf_s
 #define _tsnscanf_s     _snscanf_s
@@ -3222,7 +3217,7 @@ int __cdecl vswprintf_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Format, 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
 template <size_t _SizeInWords>
 inline
-int __cdecl swprintf_s(char (&_Dst)[_SizeInWords], const char *_Format, ...)
+int __cdecl swprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, ...)
 {
     int ret;
     va_list _ArgList;
@@ -3234,7 +3229,7 @@ int __cdecl swprintf_s(char (&_Dst)[_SizeInWords], const char *_Format, ...)
 
 template <size_t _SizeInWords>
 inline
-int __cdecl vswprintf_s(char (&_Dst)[_SizeInWords], const char *_Format, va_list _ArgList)
+int __cdecl vswprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, va_list _ArgList)
 {
     return vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
 }
@@ -3288,14 +3283,12 @@ int __cdecl _vsnprintf_s(char (&_Dst)[_SizeInBytes], size_t _Count, const char *
 
 /* _snwprintf_s, _vsnwprintf_s */
 _SAFECRT__EXTERN_C
-int __cdecl _snwprintf_s(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, ...);
-_SAFECRT__EXTERN_C
 int __cdecl _vsnwprintf_s(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, va_list _ArgList);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
 template <size_t _SizeInWords>
 inline
-int __cdecl _snwprintf_s(char (&_Dst)[_SizeInWords], size_t _Count, const char *_Format, ...)
+int __cdecl _snwprintf_s(WCHAR (&_Dst)[_SizeInWords], size_t _Count, const WCHAR *_Format, ...)
 {
     int ret;
     va_list _ArgList;
