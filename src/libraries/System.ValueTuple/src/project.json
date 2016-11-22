@@ -2,10 +2,10 @@
   "frameworks": {
     "netstandard1.0": {
       "dependencies": {
-        "System.Collections": "4.0.11",
-        "System.Diagnostics.Debug": "4.0.11",
-        "System.Resources.ResourceManager": "4.0.1",
-        "System.Runtime": "4.1.0"
+        "System.Collections": "4.3.0",
+        "System.Diagnostics.Debug": "4.3.0",
+        "System.Resources.ResourceManager": "4.3.0",
+        "System.Runtime": "4.3.0"
       }
     },
     "portable-net40+sl4+win8+wp8": {
