@@ -31,6 +31,10 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-counters.h>
+
+static int img_set_cache_hit, img_set_cache_miss, img_set_count;
+
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -1646,6 +1650,10 @@ mono_metadata_init (void)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_os_mutex_init_recursive (&image_sets_mutex);
+
+	mono_counters_register ("ImgSet Cache Hit", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_hit);
+	mono_counters_register ("ImgSet Cache Miss", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_miss);
+	mono_counters_register ("ImgSet Count", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_count);
 }
 
 /**
@@ -2397,6 +2405,95 @@ image_sets_unlock (void)
 	mono_os_mutex_unlock (&image_sets_mutex);
 }
 
+static int
+compare_pointers (const void *a, const void *b)
+{
+	return (size_t)a - (size_t)b;
+}
+
+//1103, 1327, 1597
+#define HASH_TABLE_SIZE 1103
+static MonoImageSet *img_set_cache [HASH_TABLE_SIZE];
+
+static guint32
+mix_hash (uintptr_t source)
+{
+	unsigned int hash = source;
+
+	// Actual hash
+	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
+
+	// Mix in highest bits on 64-bit systems only
+	if (sizeof (source) > 4)
+		hash = hash ^ (source >> 32);
+
+	return hash;
+}
+
+static guint32
+hash_images (MonoImage **images, int nimages)
+{
+	guint32 res = 0;
+	int i;
+	for (i = 0; i < nimages; ++i)
+		res += mix_hash ((size_t)images [i]);
+
+	return res;
+}
+
+static gboolean
+compare_img_set (MonoImageSet *set, MonoImage **images, int nimages)
+{
+	int j, k;
+
+	if (set->nimages != nimages)
+		return FALSE;
+
+	for (j = 0; j < nimages; ++j) {
+		for (k = 0; k < nimages; ++k)
+			if (set->images [k] == images [j])
+				break; // Break on match
+
+		// If we iterated all the way through set->images, images[j] was *not* found.
+		if (k == nimages)
+			break; // Break on "image not found"
+	}
+
+	// If we iterated all the way through images without breaking, all items in images were found in set->images
+	return j == nimages;
+}
+
+
+static MonoImageSet*
+img_set_cache_get (MonoImage **images, int nimages)
+{
+	guint32 hash_code = hash_images (images, nimages);
+	int index = hash_code % HASH_TABLE_SIZE;
+	MonoImageSet *img = img_set_cache [index];
+	if (!img || !compare_img_set (img, images, nimages)) {
+		++img_set_cache_miss;
+		return NULL;
+	}
+	++img_set_cache_hit;
+	return img;
+}
+
+static void
+img_set_cache_add (MonoImageSet *set)
+{
+	guint32 hash_code = hash_images (set->images, set->nimages);
+	int index = hash_code % HASH_TABLE_SIZE;
+	img_set_cache [index] = set;	
+}
+
+static void
+img_set_cache_remove (MonoImageSet *is)
+{
+	guint32 hash_code = hash_images (is->images, is->nimages);
+	int index = hash_code % HASH_TABLE_SIZE;
+	if (img_set_cache [index] == is)
+		img_set_cache [index] = NULL;
+}
 /*
  * get_image_set:
  *
@@ -2417,6 +2514,10 @@ get_image_set (MonoImage **images, int nimages)
 	// FIXME: Is corlib the correct thing to return here? If so, why? This may be an artifact of generic instances previously defaulting to allocating from corlib.
 	if (nimages == 0)
 		return mscorlib_image_set;
+
+	set = img_set_cache_get (images, nimages);
+	if (set)
+		return set;
 
 	image_sets_lock ();
 
@@ -2472,6 +2573,9 @@ get_image_set (MonoImage **images, int nimages)
 			set->images [i]->image_sets = g_slist_prepend (set->images [i]->image_sets, set);
 
 		g_ptr_array_add (image_sets, set);
+		++img_set_count;
+
+		img_set_cache_add (set);
 	}
 
 	if (nimages == 1 && images [0] == mono_defaults.corlib) {
@@ -2504,6 +2608,8 @@ delete_image_set (MonoImageSet *set)
 	g_ptr_array_remove (image_sets, set);
 
 	image_sets_unlock ();
+
+	img_set_cache_remove (set);
 
 	if (set->mempool)
 		mono_mempool_destroy (set->mempool);
