@@ -5984,6 +5984,17 @@
       <resources></resources>
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
     </project>
+    <project dir="class/Mono.Btls.Interface" library="Mono.Btls.Interface-monodroid">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -d:SECURITY_DEP -r:./../../class/lib/monodroid/System.dll -r:./../../class/lib/monodroid/Mono.Security.dll</flags>
+      <output>Mono.Btls.Interface.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/monodroid/Mono.Btls.Interface.dll</library_output>
+      <fx_version>2.1</fx_version>
+      <profile>monodroid</profile>
+      <resources></resources>
+      <response>Mono.Btls.Interface.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.Security.Cryptography.X509Certificates" library="Facades_System.Security.Cryptography.X509Certificates-monodroid">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../../class/lib/monodroid/mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/monodroid/System.dll -r:./../../../class/lib/monodroid/System.Core.dll</flags>
@@ -7413,17 +7424,6 @@
       <profile>monodroid</profile>
       <resources></resources>
       <response>System.Security.Cryptography.Cng.dll.sources</response>
-    </project>
-    <project dir="class/Mono.Btls.Interface" library="Mono.Btls.Interface-monodroid">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -d:SECURITY_DEP -r:./../../class/lib/monodroid/System.dll -r:./../../class/lib/monodroid/Mono.Security.dll</flags>
-      <output>Mono.Btls.Interface.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/monodroid/Mono.Btls.Interface.dll</library_output>
-      <fx_version>2.1</fx_version>
-      <profile>monodroid</profile>
-      <resources></resources>
-      <response>Mono.Btls.Interface.dll.sources</response>
     </project>
     <project dir="class/corlib" library="corlib-monotouch">
       <boot>true</boot>
