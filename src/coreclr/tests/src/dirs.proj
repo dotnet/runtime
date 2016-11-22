@@ -25,22 +25,12 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Project Include="JIT\RyuJit\DoWhileBndChk.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-
-<!--      <Project Include="JIT\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      -->
-      <!--
-          <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
+      <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
       <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-        </Project>
-        -->
+      </Project>
     </ItemGroup>
   </Target>
 
