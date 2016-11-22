@@ -54,6 +54,7 @@
       <Name>System.Globalization.Extensions</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
