@@ -3180,6 +3180,7 @@ namespace System.Runtime.ConstrainedExecution
         public System.Runtime.ConstrainedExecution.Cer Cer { get { throw null; } }
         public System.Runtime.ConstrainedExecution.Consistency ConsistencyGuarantee { get { throw null; } }
     }
+    [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, Inherited = false)]
     public sealed partial class PrePrepareMethodAttribute : System.Attribute
     {
         public PrePrepareMethodAttribute() { }
