@@ -26,6 +26,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
             KeySizeValue = 256;
             BlockSizeValue = 128;
+            FeedbackSizeValue = BlockSizeValue;
         }
 
         private static readonly KeySizes[] s_legalBlockSizes =

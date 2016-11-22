@@ -16,6 +16,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
             KeySizeValue = 64;
             BlockSizeValue = 64;
+            FeedbackSizeValue = BlockSizeValue;
         }
 
         public static new DES Create()
