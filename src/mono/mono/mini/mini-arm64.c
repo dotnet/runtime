@@ -748,7 +748,11 @@ mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, int dreg,
 gboolean
 mono_arch_have_fast_tls (void)
 {
+#ifdef TARGET_IOS
 	return FALSE;
+#else
+	return TRUE;
+#endif
 }
 
 static guint8*
@@ -765,15 +769,6 @@ emit_tls_get (guint8 *code, int dreg, int tls_offset)
 }
 
 static guint8*
-emit_tls_get_reg (guint8 *code, int dreg, int offset_reg)
-{
-	g_assert (offset_reg != ARMREG_IP0);
-	arm_mrs (code, ARMREG_IP0, ARM_MRS_REG_TPIDR_EL0);
-	arm_ldrx_reg (code, dreg, ARMREG_IP0, offset_reg);
-	return code;
-}
-
-static guint8*
 emit_tls_set (guint8 *code, int sreg, int tls_offset)
 {
 	int tmpreg = ARMREG_IP0;
@@ -786,18 +781,6 @@ emit_tls_set (guint8 *code, int sreg, int tls_offset)
 		code = emit_addx_imm (code, tmpreg, tmpreg, tls_offset);
 		arm_strx (code, sreg, tmpreg, 0);
 	}
-	return code;
-}
-
-
-static guint8*
-emit_tls_set_reg (guint8 *code, int sreg, int offset_reg)
-{
-	int tmpreg = ARMREG_IP0;
-
-	g_assert (sreg != tmpreg);
-	arm_mrs (code, tmpreg, ARM_MRS_REG_TPIDR_EL0);
-	arm_strx_reg (code, sreg, tmpreg, offset_reg);
 	return code;
 }
 
@@ -3646,20 +3629,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI8_MEMBASE_REG:
 			code = emit_strx (code, sreg1, ins->inst_destbasereg, ins->inst_offset);
 			break;
-
 		case OP_TLS_GET:
 			code = emit_tls_get (code, dreg, ins->inst_offset);
-			break;
-		case OP_TLS_GET_REG:
-			code = emit_tls_get_reg (code, dreg, sreg1);
 			break;
 		case OP_TLS_SET:
 			code = emit_tls_set (code, sreg1, ins->inst_offset);
 			break;
-		case OP_TLS_SET_REG:
-			code = emit_tls_set_reg (code, sreg1, sreg2);
-			break;
-
 			/* Atomic */
 		case OP_MEMORY_BARRIER:
 			arm_dmb (code, 0);

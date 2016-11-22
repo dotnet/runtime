@@ -247,9 +247,7 @@ br_reg: src1:i len:8
 bigmul: len:8 dest:l src1:i src2:i
 bigmul_un: len:8 dest:l src1:i src2:i
 tls_get: dest:i len:32
-tls_get_reg: dest:i src1:i len:32
 tls_set: src1:i len:32
-tls_set_reg: src1:i src2:i len:32
 
 # 32 bit opcodes
 int_add: dest:i src1:i src2:i len:4

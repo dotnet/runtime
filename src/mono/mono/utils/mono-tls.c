@@ -106,6 +106,12 @@
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("movl $" #var "@ntpoff, %0" : "=r" (offset))
 #endif
 
+#elif defined(TARGET_ARM64) && !defined(PIC)
+
+#define MONO_THREAD_VAR_OFFSET(var,offset) \
+	__asm ( "mov %0, #0\n add %0, %0, #:tprel_hi12:" #var "\n add %0, %0, #:tprel_lo12_nc:" #var "\n" \
+		: "=r" (offset))
+
 #else
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
