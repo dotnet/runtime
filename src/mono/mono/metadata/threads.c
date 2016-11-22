@@ -4433,15 +4433,14 @@ mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* The thread may already be stopping */
-	if (thread == NULL)
+	if (!thread)
+		return NULL;
+	if (!thread->interruption_requested)
+		return NULL;
+	if (!bypass_abort_protection && is_running_protected_wrapper ())
 		return NULL;
 
-	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
-		MonoException* exc = mono_thread_execute_interruption ();
-		if (exc)
-			return exc;
-	}
-	return NULL;
+	return mono_thread_execute_interruption ();
 }
 
 /*

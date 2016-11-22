@@ -597,7 +597,7 @@ worker_kill (ThreadPoolWorkingThread *thread)
 	if (thread == mono_thread_internal_current ())
 		return;
 
-	mono_thread_internal_stop ((MonoInternalThread*) thread);
+	mono_thread_internal_abort ((MonoInternalThread*) thread);
 }
 
 static void
@@ -630,7 +630,7 @@ worker_thread (gpointer data)
 	while (!mono_runtime_is_shutting_down ()) {
 		tpdomain = NULL;
 
-		if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
+		if ((thread->state & (ThreadState_AbortRequested | ThreadState_SuspendRequested)) != 0) {
 			domains_unlock ();
 			mono_thread_interruption_checkpoint ();
 			domains_lock ();
