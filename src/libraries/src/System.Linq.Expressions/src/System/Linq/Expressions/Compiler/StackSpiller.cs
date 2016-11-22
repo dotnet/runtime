@@ -685,8 +685,6 @@ namespace System.Linq.Expressions.Compiler
                         comma.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
                     }
 
-                    comma.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew)); 
-
                     for (int i = 0; i < count; i++)
                     {
                         ChildRewriter cr = cloneCrs[i];
