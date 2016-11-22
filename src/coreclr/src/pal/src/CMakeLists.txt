@@ -32,6 +32,9 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
   set(PAL_CMAKE_PLATFORM_ARCH_ARM64 1)
   add_definitions(-D_ARM64_)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+  set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
+  add_definitions(-D_X86_)
 else()
   message(FATAL_ERROR "Only ARM and AMD64 is supported")
 endif()
@@ -61,6 +64,8 @@ elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DBIT64=1)
   add_definitions(-D_WIN64=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  add_definitions(-DBIT32=1)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ALPINE_LINUX)
@@ -98,6 +103,13 @@ elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
     arch/arm64/debugbreak.S
     arch/arm64/exceptionhelper.S
     arch/arm64/processor.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  set(ARCH_SOURCES
+    #arch/i386/context2.S
+    #arch/i386/debugbreak.S
+    #arch/i386/exceptionhelper.S
+    arch/i386/processor.cpp
   )
 endif()
 
