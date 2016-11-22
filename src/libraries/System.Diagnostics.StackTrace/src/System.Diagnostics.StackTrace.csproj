@@ -48,9 +48,6 @@
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='uap101aot'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.CoreCLR.cs" />

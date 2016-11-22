@@ -948,6 +948,22 @@ namespace System
     {
         public ContextStaticAttribute() { }
     }
+    public static class StringNormalizationExtensions
+    {
+        public static bool IsNormalized(this string value) { throw null; }
+        [System.Security.SecurityCritical]
+        public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static String Normalize(this string value) { throw null; }
+        [System.Security.SecurityCritical]
+        public static String Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+    }
+}
+namespace System.Globalization
+{
+    public static partial class GlobalizationExtensions
+    {
+        public static System.StringComparer GetStringComparer(this System.Globalization.CompareInfo compareInfo, System.Globalization.CompareOptions options) { throw null; }
+    }
 }
 namespace System.Collections
 {

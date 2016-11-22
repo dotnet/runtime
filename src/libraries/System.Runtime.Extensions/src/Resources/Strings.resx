@@ -522,4 +522,7 @@
   <data name="Argument_InvalidElementValue" xml:space="preserve">
     <value>Invalid element value '{0}'.</value>
   </data>
+  <data name="Argument_InvalidFlag" xml:space="preserve">
+    <value>Value of flags is invalid.</value>
+  </data>
 </root>
