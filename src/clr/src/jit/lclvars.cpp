@@ -385,8 +385,9 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
                 if (simdBaseType != TYP_UNKNOWN)
                 {
                     assert(varTypeIsSIMD(type));
-                    varDsc->lvSIMDType = true;
-                    varDsc->lvBaseType = simdBaseType;
+                    varDsc->lvSIMDType  = true;
+                    varDsc->lvBaseType  = simdBaseType;
+                    varDsc->lvExactSize = genTypeSize(type);
                 }
             }
 #endif // FEATURE_SIMD
