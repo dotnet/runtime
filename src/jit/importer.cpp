@@ -3344,9 +3344,9 @@ GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
 
             op1 = nullptr;
 
-#ifdef LEGACY_BACKEND
+#if defined(LEGACY_BACKEND)
             if (IsTargetIntrinsic(intrinsicID))
-#else
+#elif !defined(_TARGET_X86_)
             // Intrinsics that are not implemented directly by target instructions will
             // be re-materialized as users calls in rationalizer. For prefixed tail calls,
             // don't do this optimization, because
@@ -3354,6 +3354,11 @@ GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
             //  b) It will be non-trivial task or too late to re-materialize a surviving
             //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
             if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
+#else
+            // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
+            // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
+            // code generation for certain EH constructs.
+            if (!IsIntrinsicImplementedByUserCall(intrinsicID))
 #endif
             {
                 switch (sig->numArgs)
