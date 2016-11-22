@@ -9427,15 +9427,18 @@
       <Member MemberType="Field" Name="DirectorySeparatorChar" />
       <Member MemberType="Field" Name="PathSeparator" />
       <Member MemberType="Field" Name="VolumeSeparatorChar" />
+      <Member MemberType="Field" Name="InvalidPathChars" />
       <Member Name="ChangeExtension(System.String,System.String)" />
       <Member Name="Combine(System.String,System.String)" />
-      <Member Name="Combine(System.String,System.String,System.String)"  />
+      <Member Name="Combine(System.String,System.String,System.String)" />
+      <Member Name="Combine(System.String,System.String,System.String,System.String)" />
       <Member Name="Combine(System.String[])"  />
       <Member Name="GetDirectoryName(System.String)" />
       <Member Name="GetExtension(System.String)" />
       <Member Name="GetFileName(System.String)" />
       <Member Name="GetFileNameWithoutExtension(System.String)" />
       <Member Name="GetFullPath(System.String)" />
+      <Member Name="GetRelativePath(System.String,System.String)" />
       <Member Name="GetInvalidPathChars" />
       <Member Name="GetInvalidFileNameChars"  />
       <Member Name="GetPathRoot(System.String)" />
