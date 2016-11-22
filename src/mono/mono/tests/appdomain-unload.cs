@@ -16,6 +16,13 @@ public class Bar : MarshalByRefObject {
 		Console.WriteLine ("in " + Thread.GetDomain ().FriendlyName);
 		return x + 1;
 	}
+
+	public void start_wait () {
+		Action a = delegate () {
+			Thread.Sleep (10000);
+		};
+		a.BeginInvoke (null, null);
+	}
 }
 
 [Serializable]
@@ -263,6 +270,16 @@ public class Tests
 		} catch (Exception e) {
 			return 0;
 		}
+	}
+
+	public static int test_0_abort_wait () {
+		AppDomain domain = AppDomain.CreateDomain ("AbortWait");
+		Bar bar = (Bar)domain.CreateInstanceAndUnwrap (typeof (Tests).Assembly.FullName, "Bar");
+		int x;
+
+		bar.start_wait ();
+		AppDomain.Unload (domain);
+		return 0;
 	}
 
 	// FIXME: This does not work yet, because the thread is finalized too
