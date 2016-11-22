@@ -21,6 +21,11 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+    
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <!-- UAP 10.1 is currently incorrectly mapped by NuGet to ns1.4 -->
+      <Value>UAP,Version=v10.1</Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
