@@ -1103,7 +1103,7 @@ namespace System {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            for (int i = startIndex, end = startIndex + count; i < end; i++)
+            for (int i = startIndex; i < startIndex + count; i++)
             {
                 array[i] = value;
             }
