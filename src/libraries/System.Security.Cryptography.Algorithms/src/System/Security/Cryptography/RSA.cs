@@ -133,6 +133,9 @@ namespace System.Security.Cryptography
             return VerifyHash(hash, signature, hashAlgorithm, padding);
         }
 
+        public override string KeyExchangeAlgorithm => "RSA";
+        public override string SignatureAlgorithm => "RSA";
+
         private static Exception HashAlgorithmNameNullOrEmpty()
         {
             return new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");

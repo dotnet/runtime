@@ -65,8 +65,11 @@ namespace System.Linq.Expressions.Compiler
                 base(binding, spiller)
             {
                 _bindings = binding.Bindings;
-                _bindingRewriters = new BindingRewriter[_bindings.Count];
-                for (int i = 0; i < _bindings.Count; i++)
+
+                int count = _bindings.Count;
+                _bindingRewriters = new BindingRewriter[count];
+
+                for (int i = 0; i < count; i++)
                 {
                     BindingRewriter br = BindingRewriter.Create(_bindings[i], spiller, stack);
                     _action |= br.Action;
@@ -81,8 +84,9 @@ namespace System.Linq.Expressions.Compiler
                     case RewriteAction.None:
                         return _binding;
                     case RewriteAction.Copy:
-                        MemberBinding[] newBindings = new MemberBinding[_bindings.Count];
-                        for (int i = 0; i < _bindings.Count; i++)
+                        int count = _bindings.Count;
+                        MemberBinding[] newBindings = new MemberBinding[count];
+                        for (int i = 0; i < count; i++)
                         {
                             newBindings[i] = _bindingRewriters[i].AsBinding();
                         }
@@ -98,10 +102,11 @@ namespace System.Linq.Expressions.Compiler
                 Expression member = MemberExpression.Make(target, _binding.Member);
                 Expression memberTemp = _spiller.MakeTemp(member.Type);
 
-                Expression[] block = new Expression[_bindings.Count + 2];
+                int count = _bindings.Count;
+                Expression[] block = new Expression[count + 2];
                 block[0] = new AssignBinaryExpression(memberTemp, member);
 
-                for (int i = 0; i < _bindings.Count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     BindingRewriter br = _bindingRewriters[i];
                     block[i + 1] = br.AsExpression(memberTemp);
@@ -110,14 +115,14 @@ namespace System.Linq.Expressions.Compiler
                 // We need to copy back value types.
                 if (memberTemp.Type.GetTypeInfo().IsValueType)
                 {
-                    block[_bindings.Count + 1] = Expression.Block(
+                    block[count + 1] = Expression.Block(
                         typeof(void),
                         new AssignBinaryExpression(MemberExpression.Make(target, _binding.Member), memberTemp)
                     );
                 }
                 else
                 {
-                    block[_bindings.Count + 1] = Utils.Empty;
+                    block[count + 1] = Utils.Empty;
                 }
 
                 return MakeBlock(block);
@@ -134,8 +139,10 @@ namespace System.Linq.Expressions.Compiler
             {
                 _inits = binding.Initializers;
 
-                _childRewriters = new ChildRewriter[_inits.Count];
-                for (int i = 0; i < _inits.Count; i++)
+                int count = _inits.Count;
+                _childRewriters = new ChildRewriter[count];
+
+                for (int i = 0; i < count; i++)
                 {
                     ElementInit init = _inits[i];
 
@@ -154,8 +161,9 @@ namespace System.Linq.Expressions.Compiler
                     case RewriteAction.None:
                         return _binding;
                     case RewriteAction.Copy:
-                        ElementInit[] newInits = new ElementInit[_inits.Count];
-                        for (int i = 0; i < _inits.Count; i++)
+                        int count = _inits.Count;
+                        ElementInit[] newInits = new ElementInit[count];
+                        for (int i = 0; i < count; i++)
                         {
                             ChildRewriter cr = _childRewriters[i];
                             if (cr.Action == RewriteAction.None)
@@ -179,10 +187,11 @@ namespace System.Linq.Expressions.Compiler
                 Expression member = MemberExpression.Make(target, _binding.Member);
                 Expression memberTemp = _spiller.MakeTemp(member.Type);
 
-                Expression[] block = new Expression[_inits.Count + 2];
+                int count = _inits.Count;
+                Expression[] block = new Expression[count + 2];
                 block[0] = new AssignBinaryExpression(memberTemp, member);
 
-                for (int i = 0; i < _inits.Count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     ChildRewriter cr = _childRewriters[i];
                     Result add = cr.Finish(new InstanceMethodCallExpressionN(_inits[i].AddMethod, memberTemp, cr[0, -1]));
@@ -192,14 +201,14 @@ namespace System.Linq.Expressions.Compiler
                 // We need to copy back value types
                 if (memberTemp.Type.GetTypeInfo().IsValueType)
                 {
-                    block[_inits.Count + 1] = Expression.Block(
+                    block[count + 1] = Expression.Block(
                         typeof(void),
                         new AssignBinaryExpression(MemberExpression.Make(target, _binding.Member), memberTemp)
                     );
                 }
                 else
                 {
-                    block[_inits.Count + 1] = Utils.Empty;
+                    block[count + 1] = Utils.Empty;
                 }
 
                 return MakeBlock(block);
