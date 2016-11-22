@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-using System.Threading;
-
 namespace System.Buffers
 {
     /// <summary>
@@ -22,9 +19,6 @@ namespace System.Buffers
     /// </remarks>
     public abstract class ArrayPool<T>
     {
-        /// <summary>The lazily-initialized shared pool instance.</summary>
-        private static ArrayPool<T> s_sharedInstance = null;
-
         /// <summary>
         /// Retrieves a shared <see cref="ArrayPool{T}"/> instance.
         /// </summary>
@@ -36,28 +30,31 @@ namespace System.Buffers
         /// existing buffer being taken from the pool if an appropriate buffer is available or in a new 
         /// buffer being allocated if one is not available.
         /// </remarks>
-        public static ArrayPool<T> Shared
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return Volatile.Read(ref s_sharedInstance) ?? EnsureSharedCreated(); }
-        }
+        public static ArrayPool<T> Shared => SharedPool.Value;
 
-        /// <summary>Ensures that <see cref="s_sharedInstance"/> has been initialized to a pool and returns it.</summary>
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ArrayPool<T> EnsureSharedCreated()
+        /// <summary>Stores a cached pool instance for T[].</summary>
+        /// <remarks>
+        /// Separated out into a nested class to enable lazy-initialization of the pool provided by
+        /// the runtime, only forced when Shared is used (and not when Create is called or when
+        /// other non-Shared accesses happen).
+        /// </remarks>
+        private static class SharedPool
         {
-            Interlocked.CompareExchange(ref s_sharedInstance, Create(), null);
-            return s_sharedInstance;
+            /// <summary>Per-type cached pool.</summary>
+            /// <remarks>
+            /// byte[] and char[] are the most commonly pooled array types. For these we use a special pool type
+            /// optimized for very fast access speeds, at the expense of more memory consumption.
+            /// </remarks>
+            internal readonly static ArrayPool<T> Value =
+                typeof(T) == typeof(byte) || typeof(T) == typeof(char) ? new TlsOverPerCoreLockedStacksArrayPool<T>() :
+                Create();
         }
 
         /// <summary>
         /// Creates a new <see cref="ArrayPool{T}"/> instance using default configuration options.
         /// </summary>
         /// <returns>A new <see cref="ArrayPool{T}"/> instance.</returns>
-        public static ArrayPool<T> Create()
-        {
-            return new DefaultArrayPool<T>();
-        }
+        public static ArrayPool<T> Create() => new ConfigurableArrayPool<T>();
 
         /// <summary>
         /// Creates a new <see cref="ArrayPool{T}"/> instance using custom configuration options.
@@ -72,10 +69,8 @@ namespace System.Buffers
         /// The created pool will group arrays into buckets, with no more than <paramref name="maxArraysPerBucket"/>
         /// in each bucket and with those arrays not exceeding <paramref name="maxArrayLength"/> in length.
         /// </remarks>
-        public static ArrayPool<T> Create(int maxArrayLength, int maxArraysPerBucket)
-        {
-            return new DefaultArrayPool<T>(maxArrayLength, maxArraysPerBucket);
-        }
+        public static ArrayPool<T> Create(int maxArrayLength, int maxArraysPerBucket) =>
+            new ConfigurableArrayPool<T>(maxArrayLength, maxArraysPerBucket);
 
         /// <summary>
         /// Retrieves a buffer that is at least the requested length.
