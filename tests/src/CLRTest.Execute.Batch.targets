@@ -95,7 +95,7 @@ IF NOT "!ERRORLEVEL!"=="0" (
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).cmd"
-    DependsOnTargets="FetchExternalProperties;$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript">
+    DependsOnTargets="FetchExternalProperties;$(BatchScriptSnippetGen);GetJitDisasmBatchScript;GetIlasmRoundTripBatchScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -326,6 +326,8 @@ REM Environment Variables
 $(BatchEnvironmentVariables)
 
 $(BatchCLRTestEnvironmentCompatibilityCheck)
+
+$(JitDisasmBatchScript)
 
 REM IlasmRoundTrip Script
 $(IlasmRoundTripBatchScript)

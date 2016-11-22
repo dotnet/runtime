@@ -54,7 +54,8 @@
 
    <!-- list of nuget package sources passed to dnu --> 
    <ItemGroup> 
-     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. --> 
+     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
+     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
      <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" /> 
      <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" /> 
    </ItemGroup> 
