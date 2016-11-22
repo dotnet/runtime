@@ -1889,6 +1889,16 @@ typedef struct _CONTEXT {
 // support any other values in the ExtendedRegisters) but we might as well be as accurate as we can.
 #define CONTEXT_EXREG_XMM_OFFSET 160
 
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+
+    // TODO WIP x86/Linux, need to fix this.
+    PDWORD Ebx;
+    PDWORD Esi;
+    PDWORD Edi;
+    PDWORD Ebp;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
 #elif defined(_PPC_)
 
 //
@@ -3282,6 +3292,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 #define PAL_CS_NATIVE_DATA_SIZE 80
 #elif defined(__linux__) && defined(_ARM64_)
 #define PAL_CS_NATIVE_DATA_SIZE 116
+#elif defined(__linux__) && defined(__i386__)
+#define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__linux__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__NetBSD__) && defined(__amd64__)
