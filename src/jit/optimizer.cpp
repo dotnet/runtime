@@ -3164,25 +3164,9 @@ void Compiler::optUnrollLoops()
                 // Now redirect any branches within the newly-cloned iteration
                 for (block = head->bbNext; block != bottom; block = block->bbNext)
                 {
-                    if (BasicBlock* oldDest = block->bbJumpDest)
-                    {
-                        BasicBlock* newBlock = blockMap[block];
-                        BasicBlock* newDest;
-                        if (!blockMap.Lookup(oldDest, &newDest))
-                        {
-                            // This was a loop exit; route to the same exit
-                            newDest = oldDest;
-                        }
-
-                        newBlock->bbJumpDest = newDest;
-                    }
-                    else if (block->bbJumpKind == BBJ_SWITCH)
-                    {
-                        BasicBlock* newBlock = blockMap[block];
-                        assert(newBlock->bbJumpKind == BBJ_SWITCH);
-                        optCopyBlkDest(block, newBlock);
-                        optRedirectBlock(newBlock, &blockMap);
-                    }
+                    BasicBlock* newBlock = blockMap[block];
+                    optCopyBlkDest(block, newBlock);
+                    optRedirectBlock(newBlock, &blockMap);
                 }
 
                 /* update the new value for the unrolled iterator */
