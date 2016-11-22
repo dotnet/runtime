@@ -43,6 +43,7 @@
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\DES.cs" />
     <Compile Include="System\Security\Cryptography\DSA.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.Xml.cs" />
     <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureFormatter.cs" />
@@ -51,6 +52,7 @@
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanPublicKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsa.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
@@ -74,6 +76,7 @@
     <Compile Include="System\Security\Cryptography\RijndaelManaged.cs" />
     <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RSA.cs" />
+    <Compile Include="System\Security\Cryptography\RSA.Xml.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPaddingMode.cs" />
     <Compile Include="System\Security\Cryptography\RSAOAEPKeyExchangeDeformatter.cs" />
