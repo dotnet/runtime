@@ -14,6 +14,7 @@ namespace System
     {
         public static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
+        public static bool IsWindows8x { get; } = IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsOpenSUSE { get; } = IsDistroAndVersion("opensuse");
