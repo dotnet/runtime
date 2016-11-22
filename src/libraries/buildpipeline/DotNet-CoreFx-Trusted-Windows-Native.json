@@ -437,6 +437,9 @@
     },
     "Git": {
       "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
+    },
+    "Build.Clean": {
+      "value": "all"
     }
   },
   "demands": [
