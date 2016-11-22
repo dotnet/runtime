@@ -816,6 +816,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitCastReferenceToEnum(Type toType)
         {
+            Debug.Assert(_instructions[_instructions.Count - 1] == NullCheckInstruction.Instance);
             Emit(new CastReferenceToEnumInstruction(toType));
         }
 
