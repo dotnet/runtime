@@ -2564,7 +2564,7 @@ get_image_set (MonoImage **images, int nimages)
 		mono_os_mutex_init_recursive (&set->lock);
 		for (i = 0; i < nimages; ++i)
 			set->images [i] = images [i];
-		set->gclass_cache = g_hash_table_new_full (mono_generic_class_hash, mono_generic_class_equal, NULL, (GDestroyNotify)free_generic_class);
+		set->gclass_cache = mono_conc_hashtable_new_full (mono_generic_class_hash, mono_generic_class_equal, NULL, (GDestroyNotify)free_generic_class);
 		set->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
 		set->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
 		set->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
@@ -2593,7 +2593,7 @@ delete_image_set (MonoImageSet *set)
 {
 	int i;
 
-	g_hash_table_destroy (set->gclass_cache);
+	mono_conc_hashtable_destroy (set->gclass_cache);
 	g_hash_table_destroy (set->ginst_cache);
 	g_hash_table_destroy (set->gmethod_cache);
 	g_hash_table_destroy (set->gsignature_cache);
@@ -2954,7 +2954,7 @@ mono_metadata_clean_for_image (MonoImage *image)
 		MonoImageSet *set = (MonoImageSet *)l->data;
 
 		mono_image_set_lock (set);
-		g_hash_table_foreach_steal (set->gclass_cache, steal_gclass_in_image, &gclass_data);
+		mono_conc_hashtable_foreach_steal (set->gclass_cache, steal_gclass_in_image, &gclass_data);
 		g_hash_table_foreach_steal (set->ginst_cache, steal_ginst_in_image, &ginst_data);
 		g_hash_table_foreach_remove (set->gmethod_cache, inflated_method_in_image, image);
 		g_hash_table_foreach_remove (set->gsignature_cache, inflated_signature_in_image, image);
@@ -3196,17 +3196,13 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	collect_data_free (&data);
 
-	mono_image_set_lock (set);
-
-	gclass = (MonoGenericClass *)g_hash_table_lookup (set->gclass_cache, &helper);
+	gclass = (MonoGenericClass *)mono_conc_hashtable_lookup (set->gclass_cache, &helper);
 
 	/* A tripwire just to keep us honest */
 	g_assert (!helper.cached_class);
 
-	if (gclass) {
-		mono_image_set_unlock (set);
+	if (gclass)
 		return gclass;
-	}
 
 	gclass = mono_image_set_new0 (set, MonoGenericClass, 1);
 	if (is_dynamic)
@@ -3220,11 +3216,17 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	if (inst == mono_class_get_generic_container (container_class)->context.class_inst && !is_tb_open)
 		gclass->cached_class = container_class;
 
-	g_hash_table_insert (set->gclass_cache, gclass, gclass);
+	mono_image_set_lock (set);
+
+	MonoGenericClass *gclass2 = mono_conc_hashtable_insert (set->gclass_cache, gclass, gclass);
+	if (!gclass2)
+		gclass2 = gclass;
+
+	// g_hash_table_insert (set->gclass_cache, gclass, gclass);
 
 	mono_image_set_unlock (set);
 
-	return gclass;
+	return gclass2;
 }
 
 /*
