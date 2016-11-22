@@ -284,6 +284,8 @@ struct _MonoClass {
 	guint blittable       : 1; /* class is blittable */
 	guint unicode         : 1; /* class uses unicode char when marshalled */
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
+	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
+
 	/* next byte */
 	guint8 min_align;
 
@@ -317,7 +319,6 @@ struct _MonoClass {
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* setup_fields () has finished */
 	guint has_failure : 1; /* See mono_class_get_exception_data () for a MonoErrorBoxed with the details */
-	guint is_array_special_interface : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
