@@ -675,6 +675,12 @@ worker_thread (gpointer data)
 		g_assert (tpdomain->threadpool_jobs >= 0);
 		tpdomain->threadpool_jobs ++;
 
+		/*
+		 * This is needed so there is always an lmf frame in the runtime invoke call below,
+		 * so ThreadAbortExceptions are caught even if the thread is in native code.
+		 */
+		mono_defaults.threadpool_perform_wait_callback_method->save_lmf = TRUE;
+
 		domains_unlock ();
 
 		mono_thread_push_appdomain_ref (tpdomain->domain);
