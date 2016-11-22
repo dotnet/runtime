@@ -99,7 +99,7 @@ fi
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetJitDisasmBashScript;GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -307,6 +307,7 @@ $(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
+$(JitDisasmBashScript)
 # IlasmRoundTrip Script
 $(IlasmRoundTripBashScript)
 # PreCommands
