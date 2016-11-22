@@ -53,6 +53,7 @@ namespace System
         array,
         length,
         start,
+        text,
         obj,
     }
 }

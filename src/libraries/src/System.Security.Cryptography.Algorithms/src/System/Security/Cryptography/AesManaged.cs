@@ -17,6 +17,12 @@ namespace System.Security.Cryptography
             _impl = Aes.Create();
         }
 
+        public override int FeedbackSize
+        {
+            get { return _impl.FeedbackSize; }
+            set { _impl.FeedbackSize = value; }
+        }
+
         public override int BlockSize
         {
             get { return _impl.BlockSize; }

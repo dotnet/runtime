@@ -1000,6 +1000,12 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastValueTypeAsDateTime(bool useInterpreter)
+        {
+            CheckGenericWithStructRestrictionCastValueTypeHelper<DateTime>(useInterpreter);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void ConvertValueTypeCastGenericWithStructRestrictionAsEnum(bool useInterpreter)
         {
             CheckValueTypeCastGenericWithStructRestrictionHelper<E>(useInterpreter);
@@ -1009,6 +1015,12 @@ namespace System.Linq.Expressions.Tests
         public static void ConvertValueTypeCastGenericWithStructRestrictionAsStruct(bool useInterpreter)
         {
             CheckValueTypeCastGenericWithStructRestrictionHelper<S>(useInterpreter);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertValueTypeCastGenericWithDateTime(bool useInterpreter)
+        {
+            CheckValueTypeCastGenericWithStructRestrictionHelper<DateTime>(useInterpreter);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -2335,10 +2347,10 @@ namespace System.Linq.Expressions.Tests
                 Assert.Throws<NullReferenceException>(() => f());
             else
             {
-                Ts expected = default(Ts);
+                Ts expected;
                 try
                 {
-                    expected = f();
+                    expected = (Ts)value;
                 }
                 catch(InvalidCastException)
                 {
@@ -2351,5 +2363,80 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        public static IEnumerable<Type> EnumerableTypes()
+        {
+            yield return typeof(ByteEnum);
+            yield return typeof(SByteEnum);
+            yield return typeof(Int16Enum);
+            yield return typeof(UInt16Enum);
+            yield return typeof(Int32Enum);
+            yield return typeof(UInt32Enum);
+            yield return typeof(Int64Enum);
+            yield return typeof(UInt64Enum);
+            yield return NonCSharpTypes.CharEnumType;
+            yield return NonCSharpTypes.BoolEnumType;
+        }
+
+        public static IEnumerable<object[]> EnumerableTypeArgs() => EnumerableTypes().Select(t => new object[] {t});
+
+        public static IEnumerable<object[]> EnumerableTypesAndIncompatibleObjects()
+            => from value in EnumerableTypes().Select(Activator.CreateInstance)
+                from type in EnumerableTypes()
+                where type != value.GetType()
+                select new[] {type, value};
+
+        public static IEnumerable<object[]> EnumerableTypesAndIncompatibleUnderlyingObjects()
+            => from value in EnumerableTypes().Select(t => Activator.CreateInstance(Enum.GetUnderlyingType(t)))
+                from type in EnumerableTypes()
+                where Enum.GetUnderlyingType(type) != value.GetType()
+                select new[] {type, value};
+
+        [Theory, PerCompilationType(nameof(EnumerableTypeArgs))]
+        public static void CanCastReferenceToUnderlyingTypeToEnumType(Type type, bool useInterpreter)
+        {
+            object value = Activator.CreateInstance(type);
+            var exp = Expression.Lambda<Func<bool>>(
+                Expression.Equal(
+                    Expression.Default(type),
+                    Expression.Convert(Expression.Constant(value, typeof(object)), type)));
+            var func = exp.Compile(useInterpreter);
+            Assert.True(func());
+        }
+
+        [Theory, PerCompilationType(nameof(EnumerableTypesAndIncompatibleObjects))]
+        public static void CannotCastReferenceToWrongUnderlyingTypeEnum(Type type, object value, bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.Convert(Expression.Constant(value, typeof(object)), type),
+                    Expression.Empty()));
+            var act = exp.Compile(useInterpreter);
+            Assert.Throws<InvalidCastException>(act);
+        }
+
+        [Theory, PerCompilationType(nameof(EnumerableTypeArgs))]
+        public static void CanCastUnderlyingTypeToEnumType(Type type, bool useInterpreter)
+        {
+            Type underlying = Enum.GetUnderlyingType(type);
+            object value = Activator.CreateInstance(underlying);
+            var exp = Expression.Lambda<Func<bool>>(
+                Expression.Equal(
+                    Expression.Default(type),
+                    Expression.Convert(Expression.Constant(value, underlying), type)));
+            var func = exp.Compile(useInterpreter);
+            Assert.True(func());
+        }
+
+        [Theory, PerCompilationType(nameof(EnumerableTypesAndIncompatibleUnderlyingObjects))]
+        public static void CannotCastWrongUnderlyingTypeEnum(Type type, object value, bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.Convert(Expression.Constant(value, typeof(object)), type),
+                    Expression.Empty()));
+            var act = exp.Compile(useInterpreter);
+            Assert.Throws<InvalidCastException>(act);
+        }
     }
 }

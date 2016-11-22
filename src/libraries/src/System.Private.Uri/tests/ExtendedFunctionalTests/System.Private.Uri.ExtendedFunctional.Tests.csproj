@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0febe054-68ac-446f-b999-9068736d3cec}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Private.Uri.Tests</AssemblyName>
+    <AssemblyName>System.Private.Uri.ExtendedFunctional.Tests</AssemblyName>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

@@ -426,6 +426,10 @@
     <TargetingPackReference Include="System.Core" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.net46.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <!-- TODO: Remove this after a package update -->
+    <ProjectReference Include="../../System.Security.Cryptography.Primitives/src/System.Security.Cryptography.Primitives.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

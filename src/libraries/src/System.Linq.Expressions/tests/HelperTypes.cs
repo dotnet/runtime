@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -346,6 +347,52 @@ namespace System.Linq.Expressions.Tests
     public enum Int64Enum : long { A = Int64.MaxValue }
     public enum UInt64Enum : ulong { A = UInt64.MaxValue }
 
+    public static class NonCSharpTypes
+    {
+        private static Type _charEnumType;
+        private static Type _boolEnumType;
+
+        private static ModuleBuilder GetModuleBuilder()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            return assembly.DefineDynamicModule("Name");
+        }
+
+        public static Type CharEnumType
+        {
+            get
+            {
+                if (_charEnumType == null)
+                {
+                    EnumBuilder eb = GetModuleBuilder().DefineEnum("CharEnumType", TypeAttributes.Public, typeof(char));
+                    eb.DefineLiteral("A", 'A');
+                    eb.DefineLiteral("B", 'B');
+                    eb.DefineLiteral("C", 'C');
+                    _charEnumType = eb.CreateTypeInfo().AsType();
+                }
+
+                return _charEnumType;
+            }
+        }
+
+        public static Type BoolEnumType
+        {
+            get
+            {
+                if (_boolEnumType == null)
+                {
+                    EnumBuilder eb = GetModuleBuilder().DefineEnum("BoolEnumType", TypeAttributes.Public, typeof(bool));
+                    eb.DefineLiteral("False", false);
+                    eb.DefineLiteral("True", true);
+                    _boolEnumType = eb.CreateTypeInfo().AsType();
+                }
+
+                return _boolEnumType;
+            }
+        }
+    }
+
     public class FakeExpression : Expression
     {
         public FakeExpression(ExpressionType customNodeType, Type customType)
@@ -359,5 +406,39 @@ namespace System.Linq.Expressions.Tests
 
         public override ExpressionType NodeType => CustomNodeType;
         public override Type Type => CustomType;
+    }
+
+    public struct Number : IEquatable<Number>
+    {
+        private readonly int _value;
+
+        public Number(int value)
+        {
+            _value = value;
+        }
+
+        public static readonly Number MinValue = new Number(int.MinValue);
+        public static readonly Number MaxValue = new Number(int.MaxValue);
+
+        public static Number operator +(Number l, Number r) => new Number(l._value + r._value);
+        public static Number operator -(Number l, Number r) => new Number(l._value - r._value);
+        public static Number operator *(Number l, Number r) => new Number(l._value * r._value);
+        public static Number operator /(Number l, Number r) => new Number(l._value / r._value);
+        public static Number operator %(Number l, Number r) => new Number(l._value % r._value);
+
+        public static Number operator &(Number l, Number r) => new Number(l._value & r._value);
+        public static Number operator |(Number l, Number r) => new Number(l._value | r._value);
+        public static Number operator ^(Number l, Number r) => new Number(l._value ^ r._value);
+
+        public static bool operator >(Number l, Number r) => l._value > r._value;
+        public static bool operator >=(Number l, Number r) => l._value >= r._value;
+        public static bool operator <(Number l, Number r) => l._value < r._value;
+        public static bool operator <=(Number l, Number r) => l._value <= r._value;
+        public static bool operator ==(Number l, Number r) => l._value == r._value;
+        public static bool operator !=(Number l, Number r) => l._value != r._value;
+
+        public override bool Equals(object obj) => obj is Number && Equals((Number)obj);
+        public bool Equals(Number other) => _value == other._value;
+        public override int GetHashCode() => _value;
     }
 }

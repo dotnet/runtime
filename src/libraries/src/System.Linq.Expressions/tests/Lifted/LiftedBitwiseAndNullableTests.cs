@@ -116,6 +116,19 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseAndNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyBitwiseAndNullableNumber(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
         #endregion
 
         #region Helpers
@@ -266,6 +279,20 @@ namespace System.Linq.Expressions.Tests
             Func<ushort?> f = e.Compile(useInterpreter);
 
             Assert.Equal(a & b, f());
+        }
+
+        private static void VerifyBitwiseAndNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.And(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            Number? expected = a & b;
+            Assert.Equal(expected, f());
         }
 
         #endregion

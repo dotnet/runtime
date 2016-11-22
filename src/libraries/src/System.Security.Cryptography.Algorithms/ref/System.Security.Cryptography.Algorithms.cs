@@ -18,6 +18,7 @@ namespace System.Security.Cryptography
     public sealed partial class AesManaged : System.Security.Cryptography.Aes
     {
         public AesManaged() { }
+        public override int FeedbackSize { get { throw null; } set { } }
         public override int BlockSize { get { throw null; } set { } }
         public override byte[] IV { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
