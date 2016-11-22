@@ -2490,7 +2490,7 @@ namespace System
         public bool IsCOMObject { get { throw null; } }
         public virtual bool IsConstructedGenericType { get { throw null; } }
         public bool IsContextful { get { throw null; } }
-        public bool IsEnum { get { throw null; } }
+        public virtual bool IsEnum { get { throw null; } }
         public bool IsExplicitLayout { get { throw null; } }
         public virtual bool IsGenericParameter { get { throw null; } }
         public virtual bool IsGenericType { get { throw null; } }
@@ -2528,7 +2528,7 @@ namespace System
         public System.Reflection.ConstructorInfo TypeInitializer { get { throw null; } }
         public abstract System.Type UnderlyingSystemType { get; }
         public override bool Equals(object o) { throw null; }
-        public bool Equals(System.Type o) { throw null; }
+        public virtual bool Equals(System.Type o) { throw null; }
         public virtual System.Type[] FindInterfaces(System.Reflection.TypeFilter filter, object filterCriteria) { throw null; }
         public virtual System.Reflection.MemberInfo[] FindMembers(System.Reflection.MemberTypes memberType, System.Reflection.BindingFlags bindingAttr, System.Reflection.MemberFilter filter, object filterCriteria) { throw null; }
         public virtual int GetArrayRank() { throw null; }
