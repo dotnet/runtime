@@ -2,11 +2,11 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.IO.Pipes": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.1",
-        "System.Security.AccessControl": "4.0.0",
-        "System.Security.Principal.Windows": "4.0.0"
+        "Microsoft.NETCore.Platforms": "1.1.0",
+        "System.IO.Pipes": "4.3.0",
+        "System.Resources.ResourceManager": "4.3.0",
+        "System.Security.AccessControl": "4.3.0",
+        "System.Security.Principal.Windows": "4.3.0"
       }
     },
     "net46": {

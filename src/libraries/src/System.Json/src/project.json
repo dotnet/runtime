@@ -2,13 +2,13 @@
   "frameworks": {
     "netstandard1.0": {
       "dependencies": {
-        "System.Collections": "4.0.11",
-        "System.Diagnostics.Debug": "4.0.11",
-        "System.IO": "4.1.0",
-        "System.Linq": "4.1.0",
-        "System.Runtime": "4.1.0",
-        "System.Runtime.Extensions": "4.1.0",
-        "System.Resources.ResourceManager": "4.0.1"
+        "System.Collections": "4.3.0",
+        "System.Diagnostics.Debug": "4.3.0",
+        "System.IO": "4.3.0",
+        "System.Linq": "4.3.0",
+        "System.Runtime": "4.3.0",
+        "System.Runtime.Extensions": "4.3.0",
+        "System.Resources.ResourceManager": "4.3.0"
       }
     }
   }
