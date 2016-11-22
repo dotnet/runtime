@@ -157,6 +157,21 @@ namespace System.Linq.Expressions.Tests
                 return base.Visit(node);
             }
 
+            protected override MemberBinding VisitMemberBinding(MemberBinding node)
+            {
+                var property = node.Member as PropertyInfo;
+                if (property != null)
+                {
+                    Visit(property.PropertyType);
+                }
+                else
+                {
+                    Visit(((FieldInfo)node.Member).FieldType);
+                }
+
+                return base.VisitMemberBinding(node);
+            }
+
             private void Visit(Type type)
             {
                 var ti = type.GetTypeInfo();
