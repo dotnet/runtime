@@ -28,7 +28,7 @@ namespace Crasher
 							}
 						}
 						Thread.Sleep(rnd.Next(100, 1000));
-					} while ((DateTime.Now - start) < TimeSpan.FromSeconds (30));
+					} while ((DateTime.Now - start) < TimeSpan.FromSeconds (10));
 				});
 			}
 

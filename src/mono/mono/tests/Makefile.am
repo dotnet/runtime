@@ -864,6 +864,12 @@ CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe	\
 	appdomain-thread-abort.exe
 
+# appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
+LLVM_DISABLED_TESTS = \
+	appdomain-threadpool-unload.exe
+
+LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
+
 # The two finalizer tests only work under sgen
 # gc-altstack.exe fails under boehm because it has no support for altstack
 # bug-459094.exe creates an extremely deep directory tree
@@ -886,7 +892,8 @@ DISABLED_TESTS=			\
 	$(PROFILE_DISABLED_TESTS) \
 	$(if $(AOT),$(AOT_DISABLED_TESTS)) \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
-	$(if $(CI_PR),$CI_PR_DISABLED_TESTS)
+	$(if $(CI_PR),$CI_PR_DISABLED_TESTS) \
+	$(if $(LLVM),$(LLVM_DISABLED_TESTS))
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
