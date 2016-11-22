@@ -673,7 +673,7 @@ namespace System.Linq.Expressions.Compiler
                 case RewriteAction.SpillStack:
                     bool isRefNew = IsRefInstance(node.NewExpression);
 
-                    var comma = new ArrayBuilder<Expression>(inits.Count + 2 + (isRefNew ? 1 : 0));
+                    var comma = new ArrayBuilder<Expression>(count + 2 + (isRefNew ? 1 : 0));
                     
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
                     comma.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
