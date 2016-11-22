@@ -2856,6 +2856,7 @@ void Compiler::optUnrollLoops()
         genTreeOps testOper;     // type of loop test (i.e. GT_LE, GT_GE, etc.)
         bool       unsTest;      // Is the comparison u/int
 
+        unsigned loopRetCount;  // number of BBJ_RETURN blocks in loop
         unsigned totalIter;     // total number of iterations in the constant loop
         unsigned loopFlags;     // actual lpFlags
         unsigned requiredFlags; // required lpFlags
@@ -3038,12 +3039,18 @@ void Compiler::optUnrollLoops()
             block         = head->bbNext;
             auto tryIndex = block->bbTryIndex;
 
+            loopRetCount = 0;
             for (;; block = block->bbNext)
             {
                 if (block->bbTryIndex != tryIndex)
                 {
                     // Unrolling would require cloning EH regions
                     goto DONE_LOOP;
+                }
+
+                if (block->bbJumpKind == BBJ_RETURN)
+                {
+                    ++loopRetCount;
                 }
 
                 /* Visit all the statements in the block */
@@ -3063,19 +3070,25 @@ void Compiler::optUnrollLoops()
                 }
             }
 
+#ifdef JIT32_GCENCODER
+            if (fgReturnCount + loopRetCount * (totalIter - 1) > SET_EPILOGCNT_MAX)
+            {
+                // Jit32 GC encoder can't report more than SET_EPILOGCNT_MAX epilogs.
+                goto DONE_LOOP;
+            }
+#endif // !JIT32_GCENCODER
+
             /* Compute the estimated increase in code size for the unrolled loop */
 
             ClrSafeInt<unsigned> fixedLoopCostSz(8);
 
-            ClrSafeInt<int> unrollCostSz((loopCostSz * ClrSafeInt<unsigned>(totalIter)) -
-                                         (loopCostSz + fixedLoopCostSz));
+            ClrSafeInt<int> unrollCostSz = ClrSafeInt<int>(loopCostSz * ClrSafeInt<unsigned>(totalIter)) -
+                                           ClrSafeInt<int>(loopCostSz + fixedLoopCostSz);
 
             /* Don't unroll if too much code duplication would result. */
 
             if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
             {
-                /* prevent this loop from being revisited */
-                optLoopTable[lnum].lpFlags |= LPFLG_DONT_UNROLL;
                 goto DONE_LOOP;
             }
 
@@ -3261,6 +3274,9 @@ void Compiler::optUnrollLoops()
 
             optLoopTable[lnum].lpFlags |= LPFLG_REMOVED;
             optLoopTable[lnum].lpHead = optLoopTable[lnum].lpBottom = nullptr;
+
+            // Note if we created new BBJ_RETURNs
+            fgReturnCount += loopRetCount * (totalIter - 1);
         }
 
     DONE_LOOP:;
@@ -4371,14 +4387,18 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     }
 
     // We've previously made a decision whether to have separate return epilogs, or branch to one.
-    // There's a GCInfo limitation in the x86 case, so that there can be no more than 4 separate epilogs.
-    // (I thought this was x86-specific, but it's not if-d.  On other architectures, the decision should be made as a
-    // heuristic tradeoff; perhaps we're just choosing to live with 4 as the limit.)
-    if (fgReturnCount + loopRetCount > 4)
+    // There's a GCInfo limitation in the x86 case, so that there can be no more than SET_EPILOGCNT_MAX separate
+    // epilogs.  Other architectures have a limit of 4 here for "historical reasons", but this should be revisited
+    // (or return blocks should not be considered part of the loop, rendering this issue moot).
+    unsigned epilogLimit = 4;
+#ifdef JIT32_GCENCODER
+    epilogLimit = SET_EPILOGCNT_MAX;
+#endif // JIT32_GCENCODER
+    if (fgReturnCount + loopRetCount > epilogLimit)
     {
         JITDUMP("Loop cloning: rejecting loop because it has %d returns; if added to previously-existing %d returns, "
-                "would exceed the limit of 4.\n",
-                loopRetCount, fgReturnCount);
+                "would exceed the limit of %d.\n",
+                loopRetCount, fgReturnCount, epilogLimit);
         return false;
     }
 
