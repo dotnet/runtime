@@ -5794,9 +5794,7 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 
 	error_init (error);
 
-	mono_image_lock (image);
-	type = (MonoType *)g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
-	mono_image_unlock (image);
+	type = (MonoType *)mono_conc_hashtable_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
 	if (type)
 		return type;
 
@@ -5820,12 +5818,12 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	mono_metadata_free_type (type);
 
 	mono_image_lock (image);
-	type = (MonoType *)g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
+
 	/* We might leak some data in the image mempool if found */
-	if (!type) {
-		g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
+	type = mono_conc_hashtable_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
+	if (!type)
 		type = type2;
-	}
+
 	mono_image_unlock (image);
 
 	return type;
