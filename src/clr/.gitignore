@@ -295,6 +295,8 @@ Makefile
 
 # Cross compilation
 cross/rootfs/*
+# add x86 as it is ignored in 'Build results'
+!cross/x86
 
 #python import files
 *.pyc
