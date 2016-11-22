@@ -634,10 +634,11 @@ namespace System.Linq.Expressions.Compiler
             RewriteAction action = newResult.Action;
 
             ReadOnlyCollection<ElementInit> inits = node.Initializers;
+            int count = inits.Count;
 
-            ChildRewriter[] cloneCrs = new ChildRewriter[inits.Count];
+            ChildRewriter[] cloneCrs = new ChildRewriter[count];
 
-            for (int i = 0; i < inits.Count; i++)
+            for (int i = 0; i < count; i++)
             {
                 ElementInit init = inits[i];
 
@@ -654,10 +655,10 @@ namespace System.Linq.Expressions.Compiler
                 case RewriteAction.None:
                     break;
                 case RewriteAction.Copy:
-                    ElementInit[] newInits = new ElementInit[inits.Count];
-                    for (int i = 0; i < inits.Count; i++)
+                    ElementInit[] newInits = new ElementInit[count];
+                    for (int i = 0; i < count; i++)
                     {
-                        var cr = cloneCrs[i];
+                        ChildRewriter cr = cloneCrs[i];
                         if (cr.Action == RewriteAction.None)
                         {
                             newInits[i] = inits[i];
@@ -672,28 +673,29 @@ namespace System.Linq.Expressions.Compiler
                 case RewriteAction.SpillStack:
                     bool isRefNew = IsRefInstance(node.NewExpression);
 
-                    var commaBuilder = new ArrayBuilder<Expression>(inits.Count + 2 + (isRefNew ? 1 : 0));
+                    var comma = new ArrayBuilder<Expression>(inits.Count + 2 + (isRefNew ? 1 : 0));
                     
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
-                    commaBuilder.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
+                    comma.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
 
                     ParameterExpression refTempNew = tempNew;
                     if (isRefNew)
                     {
                         refTempNew = MakeTemp(tempNew.Type.MakeByRefType());
-                        commaBuilder.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
+                        comma.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
                     }
 
-                    for (int i = 0; i < inits.Count; i++)
+                    comma.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew)); 
+
+                    for (int i = 0; i < count; i++)
                     {
                         ChildRewriter cr = cloneCrs[i];
                         Result add = cr.Finish(new InstanceMethodCallExpressionN(inits[i].AddMethod, refTempNew, cr[0, -1]));
-                        commaBuilder.UncheckedAdd(add.Node);
+                        comma.UncheckedAdd(add.Node);
                     }
 
-                    commaBuilder.UncheckedAdd(tempNew);
+                    comma.UncheckedAdd(tempNew);
 
-                    Expression[] comma = commaBuilder.ToArray();
                     expr = MakeBlock(comma);
                     break;
                 default:
@@ -713,10 +715,11 @@ namespace System.Linq.Expressions.Compiler
             RewriteAction action = result.Action;
 
             ReadOnlyCollection<MemberBinding> bindings = node.Bindings;
+            int count = bindings.Count;
 
-            BindingRewriter[] bindingRewriters = new BindingRewriter[bindings.Count];
+            BindingRewriter[] bindingRewriters = new BindingRewriter[count];
 
-            for (int i = 0; i < bindings.Count; i++)
+            for (int i = 0; i < count; i++)
             {
                 MemberBinding binding = bindings[i];
 
@@ -732,8 +735,8 @@ namespace System.Linq.Expressions.Compiler
                 case RewriteAction.None:
                     break;
                 case RewriteAction.Copy:
-                    MemberBinding[] newBindings = new MemberBinding[bindings.Count];
-                    for (int i = 0; i < bindings.Count; i++)
+                    MemberBinding[] newBindings = new MemberBinding[count];
+                    for (int i = 0; i < count; i++)
                     {
                         newBindings[i] = bindingRewriters[i].AsBinding();
                     }
@@ -742,28 +745,27 @@ namespace System.Linq.Expressions.Compiler
                 case RewriteAction.SpillStack:
                     bool isRefNew = IsRefInstance(node.NewExpression);
 
-                    var commaBuilder = new ArrayBuilder<Expression>(bindings.Count + 2 + (isRefNew ? 1 : 0));
+                    var comma = new ArrayBuilder<Expression>(count + 2 + (isRefNew ? 1 : 0));
 
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
-                    commaBuilder.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
+                    comma.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
 
                     ParameterExpression refTempNew = tempNew;
                     if (isRefNew)
                     {
                         refTempNew = MakeTemp(tempNew.Type.MakeByRefType());
-                        commaBuilder.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
+                        comma.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
                     }
 
-                    for (int i = 0; i < bindings.Count; i++)
+                    for (int i = 0; i < count; i++)
                     {
                         BindingRewriter cr = bindingRewriters[i];
                         Expression initExpr = cr.AsExpression(refTempNew);
-                        commaBuilder.UncheckedAdd(initExpr);
+                        comma.UncheckedAdd(initExpr);
                     }
 
-                    commaBuilder.UncheckedAdd(tempNew);
+                    comma.UncheckedAdd(tempNew);
 
-                    Expression[] comma = commaBuilder.ToArray();
                     expr = MakeBlock(comma);
                     break;
                 default:

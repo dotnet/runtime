@@ -14,12 +14,17 @@ namespace System.Security.Cryptography
         protected int KeySizeValue;
         protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected AsymmetricAlgorithm() { }
+        public virtual string KeyExchangeAlgorithm { get { throw null; } }
         public virtual int KeySize { get { throw null; } set { } }
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public static System.Security.Cryptography.AsymmetricAlgorithm Create() { throw null; }
         public static System.Security.Cryptography.AsymmetricAlgorithm Create(string algName) { throw null; }
+        public virtual string SignatureAlgorithm { get { throw null; } }
+        public void Clear() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public virtual void FromXmlString(string xmlString) { }
+        public virtual string ToXmlString(bool includePrivateParameters) { throw null; }
     }
     public enum CipherMode
     {

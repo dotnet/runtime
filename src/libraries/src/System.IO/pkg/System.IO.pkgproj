@@ -6,9 +6,6 @@
       <SupportedFramework>net463;netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.csproj">
-      <TargetGroup>net462</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.csproj">
       <TargetGroup>net463</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.IO.pkgproj" />

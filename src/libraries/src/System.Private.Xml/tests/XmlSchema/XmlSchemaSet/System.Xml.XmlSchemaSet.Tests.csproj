@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9EDAADA8-B658-430F-97EE-CCA494883D86}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.XmlSchema.XmlSchemaSet.Tests</AssemblyName>
+    <AssemblyName>System.Xml.XmlSchemaSet.Tests</AssemblyName>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <RootNamespace>System.Xml.Tests</RootNamespace>
   </PropertyGroup>

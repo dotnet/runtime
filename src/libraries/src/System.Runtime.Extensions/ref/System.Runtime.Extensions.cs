@@ -1532,7 +1532,9 @@ namespace System.Net
     public static partial class WebUtility
     {
         public static string HtmlDecode(string value) { throw null; }
+        public static void HtmlDecode(string value, System.IO.TextWriter output) { }
         public static string HtmlEncode(string value) { throw null; }
+        public static void HtmlEncode(string value, System.IO.TextWriter output) { }
         public static string UrlDecode(string encodedValue) { throw null; }
         public static byte[] UrlDecodeToBytes(byte[] encodedValue, int offset, int count) { throw null; }
         public static string UrlEncode(string value) { throw null; }
