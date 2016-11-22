@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
@@ -343,6 +344,7 @@ namespace System.Linq.Expressions.Interpreter
             // Start to run the try/catch/finally blocks
             Instruction[] instructions = frame.Interpreter.Instructions.Instructions;
             ExceptionHandler exHandler;
+            object unwrappedException;
             try
             {
                 // run the try block
@@ -361,10 +363,10 @@ namespace System.Linq.Expressions.Interpreter
                     frame.InstructionIndex += instructions[index].Run(frame);
                 }
             }
-            catch (Exception exception) when (_tryHandler.HasHandler(frame, ref exception, out exHandler))
+            catch (Exception exception) when (_tryHandler.HasHandler(frame, exception, out exHandler, out unwrappedException))
             {
-                Debug.Assert(!(exception is RethrowException));
-                frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, exception, gotoExceptionHandler: true);
+                Debug.Assert(!(unwrappedException is RethrowException));
+                frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, unwrappedException, gotoExceptionHandler: true);
 
 #if FEATURE_THREAD_ABORT
                 // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
@@ -752,6 +754,7 @@ namespace System.Linq.Expressions.Interpreter
         internal static readonly ThrowInstruction VoidThrow = new ThrowInstruction(false, false);
         internal static readonly ThrowInstruction Rethrow = new ThrowInstruction(true, true);
         internal static readonly ThrowInstruction VoidRethrow = new ThrowInstruction(false, true);
+        private static ConstructorInfo _runtimeWrappedExceptionCtor;
 
         private readonly bool _hasResult, _rethrow;
 
@@ -767,14 +770,25 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object ex = frame.Pop();
+            Exception ex = WrapThrownObject(frame.Pop());
             if (_rethrow)
             {
                 throw new RethrowException();
             }
 
-            // If ex is null then throwing it will result in an appropriate NullReferenceException.
-            throw ex == null ? null : ex as Exception ?? Error.InterpreterCannotThrowNonExceptions();
+            throw ex;
+        }
+
+        private static Exception WrapThrownObject(object thrown) =>
+            thrown == null ? null : (thrown as Exception ?? RuntimeWrap(thrown));
+
+        private static RuntimeWrappedException RuntimeWrap(object thrown)
+        {
+            ConstructorInfo ctor = _runtimeWrappedExceptionCtor
+                ?? (_runtimeWrappedExceptionCtor = typeof(RuntimeWrappedException)
+                .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+                .First(c => c.GetParameters().Length == 1));
+            return (RuntimeWrappedException)ctor.Invoke(new [] {thrown});
         }
     }
 

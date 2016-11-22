@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal bool HasHandler(InterpretedFrame frame, ref Exception exception, out ExceptionHandler handler)
+        internal bool HasHandler(InterpretedFrame frame, Exception exception, out ExceptionHandler handler, out object unwrappedException)
         {
 #if DEBUG
             if (exception is RethrowException)
@@ -124,6 +124,7 @@ namespace System.Linq.Expressions.Interpreter
                 // Want to assert that this case isn't hit, but an assertion failure here will be eaten because
                 // we are in an exception filter. Therefore return true here and assert in the catch block.
                 handler = null;
+                unwrappedException = exception;
                 return true;
             }
 #endif
@@ -131,23 +132,29 @@ namespace System.Linq.Expressions.Interpreter
 
             if (IsCatchBlockExist)
             {
-                Type exceptionType = exception.GetType();
+                RuntimeWrappedException rwe = exception as RuntimeWrappedException;
+                unwrappedException = rwe != null ? rwe.WrappedException : exception;
+                Type exceptionType = unwrappedException.GetType();
                 for (int i = 0; i != _handlers.Length; ++i)
                 {
                     ExceptionHandler candidate = _handlers[i];
-                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref exception, candidate.Filter)))
+                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
                     {
                         handler = candidate;
                         return true;
                     }
                 }
             }
+            else
+            {
+                unwrappedException = null;
+            }
 
             handler = null;
             return false;
         }
 
-        internal bool FilterPasses(InterpretedFrame frame, ref Exception exception, ExceptionFilter filter)
+        internal bool FilterPasses(InterpretedFrame frame, ref object exception, ExceptionFilter filter)
         {
             Interpreter interpreter = frame.Interpreter;
             Instruction[] instructions = interpreter.Instructions.Instructions;
