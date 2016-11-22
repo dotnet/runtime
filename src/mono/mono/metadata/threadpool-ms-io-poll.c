@@ -117,11 +117,7 @@ poll_mark_bad_fds (mono_pollfd *poll_fds, gint poll_fds_size)
 			ready++;
 			break;
 		case -1:
-#if !defined(HOST_WIN32)
 			if (errno == EBADF)
-#else
-			if (WSAGetLastError () == WSAEBADF)
-#endif
 			{
 				poll_fds [i].revents |= MONO_POLLNVAL;
 				ready++;
@@ -163,37 +159,21 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 		 *  ENOMEM: we're doomed anyway
 		 *
 		 */
-#if !defined(HOST_WIN32)
 		switch (errno)
-#else
-		switch (WSAGetLastError ())
-#endif
 		{
-#if !defined(HOST_WIN32)
 		case EINTR:
-#else
-		case WSAEINTR:
-#endif
 		{
 			mono_thread_internal_check_for_interruption_critical (mono_thread_internal_current ());
 			ready = 0;
 			break;
 		}
-#if !defined(HOST_WIN32)
 		case EBADF:
-#else
-		case WSAEBADF:
-#endif
 		{
 			ready = poll_mark_bad_fds (poll_fds, poll_fds_size);
 			break;
 		}
 		default:
-#if !defined(HOST_WIN32)
 			g_error ("poll_event_wait: mono_poll () failed, error (%d) %s", errno, g_strerror (errno));
-#else
-			g_error ("poll_event_wait: mono_poll () failed, error (%d)\n", WSAGetLastError ());
-#endif
 			break;
 		}
 	}
