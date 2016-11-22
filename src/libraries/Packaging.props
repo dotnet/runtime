@@ -22,9 +22,17 @@
     <!-- by default all packages will use the same version which revs with respect to product version -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">4.4.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+    <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
 
   <Import Condition="Exists('pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="pkg/baseline/baseline.props" />
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <!-- desktop assemblies must version past NETStandard refs -->
+      <Value>.NETFramework,Version=v4.6;.NETFramework,Version=v4.6.1;.NETFramework,Version=v4.6.2;.NETFramework,Version=v4.6.3</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
