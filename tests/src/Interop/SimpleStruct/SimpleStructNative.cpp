@@ -30,7 +30,7 @@ DLL_EXPORT BOOL _cdecl CdeclSimpleStructByRef(Sstr *p)
 {
   p->a = 100;
   p->b=1;
-  strncpy(p->str,"after",6);
+  strcpy_s(p->str, 7, "after");
   return TRUE;
 }
 
