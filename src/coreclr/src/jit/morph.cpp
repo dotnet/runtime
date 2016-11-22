@@ -7060,13 +7060,14 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
         }
 #endif // _TARGET_X86_
 
-#if !defined(_TARGET_X86_)
-        if (call->NeedsNullCheck())
-#else
-        // When targeting x86, we always need to perform a null check on the `this` argument before tail calling to a
-        // virtual dispatch stub.
+#if defined(_TARGET_X86_)
+        // When targeting x86, the runtime requires that we perforrm a null check on the `this` argument before tail
+        // calling to a virtual dispatch stub. This requirement is a consequence of limitations in the runtime's
+        // ability to map an AV to a NullReferenceException if the AV occurs in a dispatch stub.
         if (call->NeedsNullCheck() || call->IsVirtualStub())
-#endif // !defined(_TARGET_X86_)
+#else
+        if (call->NeedsNullCheck())
+#endif // defined(_TARGET_X86_)
         {
             // clone "this" if "this" has no side effects.
             if ((thisPtr == nullptr) && !(objp->gtFlags & GTF_SIDE_EFFECT))
