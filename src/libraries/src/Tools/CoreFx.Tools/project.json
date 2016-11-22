@@ -1,0 +1,19 @@
+﻿{
+  "dependencies": {
+    "NETStandard.Library": "1.6.0"
+  },
+  "frameworks": {
+    "netstandard1.5": {
+      "dependencies": {
+        "Microsoft.Build.Framework": "14.3.0",
+        "Microsoft.Build.Tasks.Core": "14.3.0",
+        "Microsoft.Build.Utilities.Core": "14.3.0"
+      }
+    },
+    "net45": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
+      }
+    }
+  }
+}
