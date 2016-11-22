@@ -89,7 +89,7 @@ int TP_slen(LPWSTR str)
 	return len;
 }
 
-int TP_scmp_s(LPSTR str1, LPSTR str2)
+int TP_scmp_s(LPCSTR str1, LPCSTR str2)
 {
 	// < 0 str1 less than str2
 	// 0  str1 identical to str2
