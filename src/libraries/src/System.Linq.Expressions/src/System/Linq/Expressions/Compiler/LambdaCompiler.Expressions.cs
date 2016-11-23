@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Compiler
             switch (node.NodeType)
             {
                 case ExpressionType.Assign:
-                    EmitAssign((BinaryExpression)node, CompilationFlags.EmitAsVoidType);
+                    EmitAssign((AssignBinaryExpression)node, CompilationFlags.EmitAsVoidType);
                     break;
                 case ExpressionType.Block:
                     Emit((BlockExpression)node, UpdateEmitAsTypeFlag(flags, CompilationFlags.EmitAsVoidType));
@@ -244,8 +244,10 @@ namespace System.Linq.Expressions.Compiler
             EmitGetIndexCall(node, objectType);
         }
 
-        private void EmitIndexAssignment(BinaryExpression node, CompilationFlags flags)
+        private void EmitIndexAssignment(AssignBinaryExpression node, CompilationFlags flags)
         {
+            Debug.Assert(!node.IsByRef);
+
             var index = (IndexExpression)node.Left;
 
             CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
@@ -690,12 +692,20 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Cgt_Un);
         }
 
-        private void EmitVariableAssignment(BinaryExpression node, CompilationFlags flags)
+        private void EmitVariableAssignment(AssignBinaryExpression node, CompilationFlags flags)
         {
             var variable = (ParameterExpression)node.Left;
             CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
 
-            EmitExpression(node.Right);
+            if (node.IsByRef)
+            {
+                EmitAddress(node.Right, node.Right.Type);
+            }
+            else
+            {
+                EmitExpression(node.Right);
+            }
+
             if (emitAs != CompilationFlags.EmitAsVoidType)
             {
                 _ilg.Emit(OpCodes.Dup);
@@ -723,10 +733,10 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitAssignBinaryExpression(Expression expr)
         {
-            EmitAssign((BinaryExpression)expr, CompilationFlags.EmitAsDefaultType);
+            EmitAssign((AssignBinaryExpression)expr, CompilationFlags.EmitAsDefaultType);
         }
 
-        private void EmitAssign(BinaryExpression node, CompilationFlags emitAs)
+        private void EmitAssign(AssignBinaryExpression node, CompilationFlags emitAs)
         {
             switch (node.Left.NodeType)
             {
@@ -766,8 +776,10 @@ namespace System.Linq.Expressions.Compiler
             _scope.EmitVariableAccess(this, node.Variables);
         }
 
-        private void EmitMemberAssignment(BinaryExpression node, CompilationFlags flags)
+        private void EmitMemberAssignment(AssignBinaryExpression node, CompilationFlags flags)
         {
+            Debug.Assert(!node.IsByRef);
+
             MemberExpression lvalue = (MemberExpression)node.Left;
             MemberInfo member = lvalue.Member;
 
@@ -933,15 +945,9 @@ namespace System.Linq.Expressions.Compiler
             return;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void EmitExtensionExpression(Expression expr)
         {
-            var byRef = expr as RefExpression;
-            if (byRef != null)
-            {
-                EmitAddress(byRef.Operand, byRef.Operand.Type);
-                return;
-            }
-
             throw Error.ExtensionNotReduced();
         }
 

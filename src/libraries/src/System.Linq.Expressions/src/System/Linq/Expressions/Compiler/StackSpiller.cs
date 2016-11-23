@@ -682,7 +682,7 @@ namespace System.Linq.Expressions.Compiler
                     if (isRefNew)
                     {
                         refTempNew = MakeTemp(tempNew.Type.MakeByRefType());
-                        comma.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
+                        comma.UncheckedAdd(new ByRefAssignBinaryExpression(refTempNew, tempNew));
                     }
 
                     for (int i = 0; i < count; i++)
@@ -752,7 +752,7 @@ namespace System.Linq.Expressions.Compiler
                     if (isRefNew)
                     {
                         refTempNew = MakeTemp(tempNew.Type.MakeByRefType());
-                        comma.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
+                        comma.UncheckedAdd(new ByRefAssignBinaryExpression(refTempNew, tempNew));
                     }
 
                     for (int i = 0; i < count; i++)
