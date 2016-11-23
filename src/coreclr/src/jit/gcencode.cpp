@@ -1303,7 +1303,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
         ReturnKind returnKind = getReturnKind();
         _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
         _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-        _ASSERTE((returnKind < SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+        _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
         header->returnKind = returnKind;
     }
 
