@@ -312,5 +312,32 @@ namespace System.Net.Mail.Tests
 
             Assert.True(task.Wait(1000));
         }
+
+        [Fact]
+        public void TestCredentialsCopyInAsyncContext()
+        {
+            SmtpServer server = new SmtpServer();
+            SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            CredentialCache cache = new CredentialCache();
+            cache.Add("localhost", server.EndPoint.Port, "NTLM", CredentialCache.DefaultNetworkCredentials);
+
+            client.Credentials = cache;
+
+            Thread t = new Thread(server.Run);
+            t.Start();
+            Task task = client.SendMailAsync(msg);
+            t.Join();
+
+            server.Stop();
+
+            Assert.Equal("<foo@example.com>", server.MailFrom);
+            Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("hello", server.Subject);
+            Assert.Equal("howdydoo", server.Body);
+
+            Assert.True(task.Wait(1000));
+        }
     }
 }
