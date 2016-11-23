@@ -46,6 +46,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionArray array)
             {
+                ContractUtils.RequiresNotNull(array, nameof(array));
                 _array = array;
             }
 
@@ -90,6 +91,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionList list)
             {
+                ContractUtils.RequiresNotNull(list, nameof(list));
                 _list = list;
             }
 
