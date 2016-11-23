@@ -3511,7 +3511,7 @@ public:
     void fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loadw);
     void fgMorphBlocks();
 
-    bool fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(const char* msg));
+    bool fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(const char* msg));
 
     void fgCheckArgCnt();
     void fgSetOptions();
