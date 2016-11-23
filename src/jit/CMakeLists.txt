@@ -7,7 +7,7 @@ include_directories("../inc")
 # Enable the following for UNIX altjit on Windows
 # add_definitions(-DALT_JIT)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
   add_definitions(-DFEATURE_SIMD)
   add_definitions(-DFEATURE_AVX_SUPPORT)
 endif ()
@@ -195,19 +195,17 @@ endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
-set(JIT_BASE_NAME clrjit)
-if (CLR_BUILD_JIT32)
-  set(JIT_BASE_NAME ryujit)
-endif()
-
-if(WIN32)
-  add_definitions(-DFX_VER_INTERNALNAME_STR=${JIT_BASE_NAME}.dll)
-endif(WIN32)
-
 add_subdirectory(dll)
 add_subdirectory(crossgen)
 add_subdirectory(standalone)
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_ARM)
+if (CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_subdirectory(protojit)
-endif (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_ARM)
+endif (CLR_CMAKE_PLATFORM_ARCH_ARM)
+
+if (CLR_CMAKE_PLATFORM_ARCH_I386)
+    add_subdirectory(legacyjit)
+    if (NOT CLR_BUILD_JIT32)
+        add_subdirectory(compatjit)
+    endif ()
+endif (CLR_CMAKE_PLATFORM_ARCH_I386)

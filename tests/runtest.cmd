@@ -170,8 +170,8 @@ xcopy /s "%__BinDir%" "%CORE_ROOT%"
 :SkipCoreRootSetup
 
 
-if defined __Exclude (if not exist %__Exclude% echo %__MsgPrefix%Error: Exclusion .targets file not found && exit /b 1)
-if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script not found && exit /b 1)
+if defined __Exclude (if not exist %__Exclude% echo %__MsgPrefix%Error: Exclusion file %__Exclude% not found && exit /b 1)
+if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
 
 REM These log files are created automatically by the test run process. Q: what do they depend on being set?
 set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
