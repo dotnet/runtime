@@ -7,7 +7,7 @@ class Driver
 {
 	static DateTime targetTime;
 	static bool finished() {
-		DateTime now = DateTime.Now;
+		DateTime now = DateTime.UtcNow;
 		return now > targetTime;
 	}
 
@@ -15,7 +15,7 @@ class Driver
 	{
 		int gcCount = 0;
 		int joinCount = 0;
-		targetTime = DateTime.Now.AddSeconds(30);
+		targetTime = DateTime.UtcNow.AddSeconds(30);
 
 		Thread gcThread = new Thread (() => {
 			while (!finished()) {
