@@ -45,6 +45,10 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
+    
+    <!-- Temporarily outside BinDir -->
+    <PackageInstallPath>$(ProjectDir)bin.localpkg/</PackageInstallPath>
+    
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
@@ -67,8 +71,6 @@
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
-    <!-- Temporarily outside BinDir -->
-    <PackageInstallPath>$(ProjectDir)bin.localpkg/</PackageInstallPath>
   </PropertyGroup>
 
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
@@ -82,10 +84,6 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap101' or '$(TargetGroup)' == 'uap101aot'">
     <SupportsUWP>true</SupportsUWP>
     <BlockReflectionAttribute>true</BlockReflectionAttribute>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
-    <!-- Packaging.targets is only included when full build.cmd is invoked. -->
   </PropertyGroup>
 
   <!-- Import packaging props -->
@@ -106,8 +104,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <!-- PackagesDrops is passed in via the commandline "/p:PackagesDrops=[drop location]" -->
-    <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackageInstallPath)" />
+    <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'  and '$(RestoreForTestsAgainstPackagesOnly)' == 'true'" Include="$(PackageInstallPath)" />
   </ItemGroup>
   
   <!-- This is the directory where we dynamically generate project.json's for our test build package dependencies -->
@@ -144,7 +141,7 @@
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     
-    <DnuRestoreCommandForBuildTestsAgainstPackages Condition="'$(BuildTestsAgainstPackages)' == 'true'">$(DnuRestoreCommand) --packages "$(PackageInstallPath)" --source $(PackagesDir)</DnuRestoreCommandForBuildTestsAgainstPackages>
+    <DnuRestoreCommandForBuildTestsAgainstPackages Condition="'$(BuildTestsAgainstPackages)' == 'true' and '$(RestoreForTestsAgainstPackagesOnly)' == 'true'">$(DnuRestoreCommand) --packages "$(PackageInstallPath)" --source $(PackagesDir)</DnuRestoreCommandForBuildTestsAgainstPackages>
     
     <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(UseNuGetHttpCache)'!='true'">$(DnuRestoreCommand) --no-cache</DnuRestoreCommand>
@@ -152,7 +149,7 @@
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
     
-    <DnuRestoreCommand Condition="'$(BuildTestsAgainstPackages)' == 'true'">$(DnuRestoreCommandForBuildTestsAgainstPackages)</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(BuildTestsAgainstPackages)' == 'true' and '$(RestoreForTestsAgainstPackagesOnly)' == 'true'">$(DnuRestoreCommandForBuildTestsAgainstPackages)</DnuRestoreCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -593,11 +590,11 @@
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
-
+    
     <!-- When testing against packages, we want to run against just the localpackages cache -->
     <PackagesDir Condition="'$(BuildTestsAgainstPackages)'=='true'">$(PackageInstallPath)</PackagesDir>
     <!-- PackageDrops is set to the bin folder where packages are built to generate the new test project.json for these -->
-    <PackagesDrops>$(PackageOutputPath)</PackagesDrops>
+    <PackagesDrops Condition="'$(PackagesDrops)'==''">$(PackageOutputPath)</PackagesDrops>
   </PropertyGroup>
 
   <PropertyGroup>
