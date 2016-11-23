@@ -91,6 +91,13 @@ namespace System.Linq.Expressions.Compiler
             private bool _done;
 
             /// <summary>
+            /// Indicates whether a child expression represents a ByRef value and
+            /// requires use of a <see cref="ByRefAssignBinaryExpression" /> node
+            /// to perform spilling.
+            /// </summary>
+            private bool[] _byRefs;
+
+            /// <summary>
             /// Creates a new child rewriter instance using the specified initial
             /// evaluation <see cref="stack"/> state and the number of child
             /// expressions specified in <see cref="count"/>.
@@ -203,7 +210,7 @@ namespace System.Linq.Expressions.Compiler
                             if (ShouldSaveToTemp(current))
                             {
                                 Expression temp;
-                                clone[i] = _self.ToTemp(current, out temp);
+                                clone[i] = _self.ToTemp(current, out temp, _byRefs?[i] ?? false);
                                 comma.Add(temp);
                             }
                         }
@@ -295,6 +302,62 @@ namespace System.Linq.Expressions.Compiler
             /// calls to <see cref="Add"/>.
             /// </summary>
             internal RewriteAction Action => _action;
+
+            /// <summary>
+            /// Marks the child expression representing the instance as a ByRef value.
+            /// </summary>
+            /// <param name="expression">
+            /// The child expression representing the instance.
+            /// </param>
+            internal void MarkRefInstance(Expression expr)
+            {
+                if (IsRefInstance(expr))
+                {
+                    MarkRef(0);
+                }
+            }
+
+            /// <summary>
+            /// Marks child expressions representing arguments bound to parameters of
+            /// the specified <paramref name="method"/> as ByRef values if needed.
+            /// </summary>
+            /// <param name="method">
+            /// The method containing the parameters bound to the arguments held by
+            /// child expressions tracked by this rewriter.
+            /// </param>
+            /// <param name="startIndex">
+            /// The index of the child expression representing the first argument. This
+            /// value is typically 0 for static methods and 1 for instance methods.
+            /// </param>
+            internal void MarkRefArgs(MethodBase method, int startIndex)
+            {
+                var parameters = method.GetParametersCached();
+
+                for (int i = 0, n = parameters.Length; i < n;  i++)
+                {
+                    if (parameters[i].ParameterType.IsByRef)
+                    {
+                        MarkRef(startIndex + i);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Marks the child expression in at the specified <paramref name="index"/>
+            /// as having a ByRef value.
+            /// </summary>
+            /// <param name="index">
+            /// The index of the child expression holding a ByRef value.
+            /// </param>
+            private void MarkRef(int index)
+            {
+                if (_byRefs == null)
+                {
+                    _byRefs = new bool[_expressions.Length];
+                }
+
+                _byRefs[index] = true;
+            }
 
             /// <summary>
             /// Rewrites the parent <paramref name="expression"/> where any stack spilled

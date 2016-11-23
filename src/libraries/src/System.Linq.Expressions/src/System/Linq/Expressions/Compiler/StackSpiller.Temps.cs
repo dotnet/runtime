@@ -63,11 +63,13 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         /// <param name="expression">The expression to store in a temporary variable.</param>
         /// <param name="save">An expression that assigns the <paramref name="expression"/> to the created temporary variable.</param>
+        /// <param name="byRef">Indicates whether the <paramref name="expression"/> represents a ByRef value.</param>
         /// <returns>The temporary variable holding the result of evaluating <paramref name="expression"/>.</returns>
-        private ParameterExpression ToTemp(Expression expression, out Expression save)
+        private ParameterExpression ToTemp(Expression expression, out Expression save, bool byRef)
         {
-            ParameterExpression temp = MakeTemp(expression.Type);
-            save = Expression.Assign(temp, expression);
+            Type tempType = byRef ? expression.Type.MakeByRefType() : expression.Type;
+            ParameterExpression temp = MakeTemp(tempType);
+            save = AssignBinaryExpression.Make(temp, expression, byRef);
             return temp;
         }
 
