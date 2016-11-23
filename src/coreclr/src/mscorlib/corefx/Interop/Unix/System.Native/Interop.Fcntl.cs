@@ -11,8 +11,8 @@ internal static partial class Interop
     {
         internal enum LockType : short
         {
-            F_UNLCK = 2,    // unlock
-            F_WRLCK = 3     // exclusive or write lock
+            F_WRLCK = 1,    // exclusive or write lock
+            F_UNLCK = 2     // unlock
         }
         
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LockFileRegion", SetLastError=true)]
