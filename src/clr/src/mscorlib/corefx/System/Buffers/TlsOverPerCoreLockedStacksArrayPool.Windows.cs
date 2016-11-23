@@ -14,7 +14,7 @@ namespace System.Buffers
         private static int ExecutionId
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return Win32Native.GetCurrentProcessorNumber(); }
+            get { return GetCurrentProcessorNumber(); }
         }
     }
 }
