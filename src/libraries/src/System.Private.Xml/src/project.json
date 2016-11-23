@@ -9,7 +9,7 @@
       "dependencies": {
         "Microsoft.CSharp": "4.4.0-beta-24721-02",
         "Microsoft.NETCore.Platforms": "1.2.0-beta-24721-02",
-        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24723-02",
+        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24723-03",
         "Microsoft.Win32.Registry": "4.4.0-beta-24721-02",
         "System.Collections": "4.4.0-beta-24721-02",
         "System.Collections.NonGeneric": "4.4.0-beta-24721-02",
@@ -55,7 +55,7 @@
       "dependencies": {
         "Microsoft.CSharp": "4.4.0-beta-24721-02",
         "Microsoft.NETCore.Platforms": "1.2.0-beta-24721-02",
-        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24723-02",
+        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24723-03",
         "Microsoft.Win32.Registry": "4.4.0-beta-24721-02",
         "System.Collections": "4.4.0-beta-24721-02",
         "System.Collections.NonGeneric": "4.4.0-beta-24721-02",
