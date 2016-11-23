@@ -1086,7 +1086,7 @@ namespace System {
             }
         }
 
-        public static void Fill<T>(T[] array, int startIndex, int count, T value)
+        public static void Fill<T>(T[] array, T value, int startIndex, int count)
         {
             if (array == null)
             {
