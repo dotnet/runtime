@@ -15253,14 +15253,15 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 // Returns false if 'stmt' is still in the block (even if other statements were removed).
 //
 
-bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(const char* msg))
+bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(const char* msg))
 {
-    noway_assert(stmt->gtOper == GT_STMT);
+    assert(block != nullptr);
+    assert(stmt != nullptr);
 
     compCurBB   = block;
     compCurStmt = stmt;
 
-    GenTreePtr morph = fgMorphTree(stmt->gtStmt.gtStmtExpr);
+    GenTree* morph = fgMorphTree(stmt->gtStmtExpr);
 
     // Bug 1106830 - During the CSE phase we can't just remove
     // morph->gtOp.gtOp2 as it could contain CSE expressions.
@@ -15269,7 +15270,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(cons
     //
     if (!optValnumCSE_phase)
     {
-        /* Check for morph as a GT_COMMA with an unconditional throw */
+        // Check for morph as a GT_COMMA with an unconditional throw
         if (fgIsCommaThrow(morph, true))
         {
 #ifdef DEBUG
@@ -15281,12 +15282,12 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(cons
                 printf("\n");
             }
 #endif
-            /* Use the call as the new stmt */
+            // Use the call as the new stmt
             morph = morph->gtOp.gtOp1;
             noway_assert(morph->gtOper == GT_CALL);
         }
 
-        /* we can get a throw as a statement root*/
+        // we can get a throw as a statement root
         if (fgIsThrow(morph))
         {
 #ifdef DEBUG
@@ -15301,15 +15302,13 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(cons
         }
     }
 
-    stmt->gtStmt.gtStmtExpr = morph;
+    stmt->gtStmtExpr = morph;
 
-    /* Can the entire tree be removed ? */
-
+    // Can the entire tree be removed?
     bool removedStmt = fgCheckRemoveStmt(block, stmt);
 
-    /* Or this is the last statement of a conditional branch that was just folded */
-
-    if ((!removedStmt) && (stmt->gtNext == nullptr) && !fgRemoveRestOfBlock)
+    // Or this is the last statement of a conditional branch that was just folded?
+    if (!removedStmt && (stmt->getNextStmt() == nullptr) && !fgRemoveRestOfBlock)
     {
         if (fgFoldConditional(block))
         {
@@ -15322,11 +15321,16 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(cons
 
     if (!removedStmt)
     {
-        /* Have to re-do the evaluation order since for example
-         * some later code does not expect constants as op1 */
+        if (lvaLocalVarRefCounted)
+        {
+            // fgMorphTree may have introduced new lclVar references. Bump the ref counts if requested.
+            lvaRecursiveIncRefCounts(stmt->gtStmtExpr);
+        }
+
+        // Have to re-do the evaluation order since for example some later code does not expect constants as op1
         gtSetStmtInfo(stmt);
 
-        /* Have to re-link the nodes for this statement */
+        // Have to re-link the nodes for this statement
         fgSetStmtSeq(stmt);
     }
 
@@ -15341,18 +15345,13 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(cons
 
     if (fgRemoveRestOfBlock)
     {
-        /* Remove the rest of the stmts in the block */
-
-        while (stmt->gtNext)
+        // Remove the rest of the stmts in the block
+        for (stmt = stmt->getNextStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
         {
-            stmt = stmt->gtNext;
-            noway_assert(stmt->gtOper == GT_STMT);
-
             fgRemoveStmt(block, stmt);
         }
 
-        // The rest of block has been removed
-        // and we will always throw an exception
+        // The rest of block has been removed and we will always throw an exception.
 
         // Update succesors of block
         fgRemoveBlockAsPred(block);
