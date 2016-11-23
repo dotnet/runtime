@@ -2920,7 +2920,7 @@ mono_get_unique_iid (MonoClass *klass)
 }
 
 static void
-collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError *error)
+collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, GHashTable **ifaces, MonoError *error)
 {
 	int i;
 	MonoClass *ic;
@@ -2933,14 +2933,19 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError
 
 		if (*res == NULL)
 			*res = g_ptr_array_new ();
+		if (*ifaces == NULL)
+			*ifaces = g_hash_table_new (NULL, NULL);
+		if (g_hash_table_lookup (*ifaces, ic))
+			continue;
 		g_ptr_array_add (*res, ic);
+		g_hash_table_insert (*ifaces, ic, ic);
 		mono_class_init (ic);
 		if (mono_class_has_failure (ic)) {
 			mono_error_set_type_load_class (error, ic, "Error Loading class");
 			return;
 		}
 
-		collect_implemented_interfaces_aux (ic, res, error);
+		collect_implemented_interfaces_aux (ic, res, ifaces, error);
 		return_if_nok (error);
 	}
 }
@@ -2949,8 +2954,11 @@ GPtrArray*
 mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error)
 {
 	GPtrArray *res = NULL;
+	GHashTable *ifaces = NULL;
 
-	collect_implemented_interfaces_aux (klass, &res, error);
+	collect_implemented_interfaces_aux (klass, &res, &ifaces, error);
+	if (ifaces)
+		g_hash_table_destroy (ifaces);
 	if (!mono_error_ok (error)) {
 		if (res)
 			g_ptr_array_free (res, TRUE);
@@ -2960,7 +2968,8 @@ mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error)
 }
 
 static int
-compare_interface_ids (const void *p_key, const void *p_element) {
+compare_interface_ids (const void *p_key, const void *p_element)
+{
 	const MonoClass *key = (const MonoClass *)p_key;
 	const MonoClass *element = *(const MonoClass **)p_element;
 	
@@ -2969,7 +2978,8 @@ compare_interface_ids (const void *p_key, const void *p_element) {
 
 /*FIXME verify all callers if they should switch to mono_class_interface_offset_with_variance*/
 int
-mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
+mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
+{
 	MonoClass **result = (MonoClass **)mono_binary_search (
 			itf,
 			klass->interfaces_packed,
@@ -2994,7 +3004,8 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
  * FIXME figure out MS disambiguation rules and fix this function.
  */
 int
-mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match) {
+mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match)
+{
 	int i = mono_class_interface_offset (klass, itf);
 	*non_exact_match = FALSE;
 	if (i >= 0)
@@ -3014,7 +3025,8 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 }
 
 static void
-print_implemented_interfaces (MonoClass *klass) {
+print_implemented_interfaces (MonoClass *klass)
+{
 	char *name;
 	MonoError error;
 	GPtrArray *ifaces = NULL;
