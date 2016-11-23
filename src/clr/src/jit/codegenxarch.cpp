@@ -571,10 +571,11 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     assert(!dividendLo->isContained());
     assert(!dividendHi->isContained());
 
-    GenTreeIntCon* const divisor = node->gtOp2->AsIntCon();
-    assert(!divisor->isContained());
-    assert(divisor->gtIconVal >= 2);
-    assert(divisor->gtIconVal <= 0x3fffffff);
+    GenTree* const divisor = node->gtOp2;
+    assert(divisor->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
+    assert(!divisor->gtSkipReloadOrCopy()->isContained());
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal >= 2);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal <= 0x3fffffff);
 
     // dividendLo must be in RAX; dividendHi must be in RDX
     genCopyRegIfNeeded(dividendLo, REG_EAX);
