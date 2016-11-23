@@ -239,18 +239,6 @@ namespace System.Linq.Expressions.Compiler
             return node;
         }
 
-        protected internal override Expression VisitExtension(Expression node)
-        {
-            var byRef = node as RefExpression;
-
-            if (byRef != null)
-            {
-                return byRef.Update(Visit(byRef.Operand));
-            }
-
-            return base.VisitExtension(node);
-        }
-
         private void Reference(ParameterExpression node, VariableStorageKind storage)
         {
             CompilerScope definition = null;

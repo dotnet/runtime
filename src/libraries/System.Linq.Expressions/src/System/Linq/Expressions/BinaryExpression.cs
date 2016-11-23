@@ -467,16 +467,40 @@ namespace System.Linq.Expressions
     }
 
     // Optimized assignment node, only holds onto children
-    internal sealed class AssignBinaryExpression : BinaryExpression
+    internal class AssignBinaryExpression : BinaryExpression
     {
         internal AssignBinaryExpression(Expression left, Expression right)
             : base(left, right)
         {
         }
 
+        public static AssignBinaryExpression Make(Expression left, Expression right, bool byRef)
+        {
+            if (byRef)
+            {
+                return new ByRefAssignBinaryExpression(left, right);
+            }
+            else
+            {
+                return new AssignBinaryExpression(left, right);
+            }
+        }
+
+        internal virtual bool IsByRef => false;
+
         public sealed override Type Type => Left.Type;
 
         public sealed override ExpressionType NodeType => ExpressionType.Assign;
+    }
+
+    internal class ByRefAssignBinaryExpression : AssignBinaryExpression
+    {
+        internal ByRefAssignBinaryExpression(Expression left, Expression right)
+            : base(left, right)
+        {
+        }
+
+        internal override bool IsByRef => true;
     }
 
     // Coalesce with conversion

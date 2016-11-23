@@ -92,7 +92,8 @@ namespace System.Linq.Expressions.Compiler
 
             /// <summary>
             /// Indicates whether a child expression represents a ByRef value and
-            /// requires stack spilling using a <see cref="RefExpression" /> node.
+            /// requires use of a <see cref="ByRefAssignBinaryExpression" /> node
+            /// to perform spilling.
             /// </summary>
             private bool[] _byRefs;
 

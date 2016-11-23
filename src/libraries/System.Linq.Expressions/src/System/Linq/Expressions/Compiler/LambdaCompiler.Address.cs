@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 // NB: Stack spilling can generate ref locals.
 
-                if (node.Type == type.MakeByRefType())
+                if (node.Type.IsByRef && node.Type.GetElementType() == type)
                 {
                     EmitExpression(node);
                 }

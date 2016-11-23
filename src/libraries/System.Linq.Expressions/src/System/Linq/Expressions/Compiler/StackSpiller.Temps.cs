@@ -67,13 +67,9 @@ namespace System.Linq.Expressions.Compiler
         /// <returns>The temporary variable holding the result of evaluating <paramref name="expression"/>.</returns>
         private ParameterExpression ToTemp(Expression expression, out Expression save, bool byRef)
         {
-            if (byRef)
-            {
-                expression = new RefExpression(expression);
-            }
-
-            ParameterExpression temp = MakeTemp(expression.Type);
-            save = Expression.Assign(temp, expression);
+            Type tempType = byRef ? expression.Type.MakeByRefType() : expression.Type;
+            ParameterExpression temp = MakeTemp(tempType);
+            save = AssignBinaryExpression.Make(temp, expression, byRef);
             return temp;
         }
 
@@ -223,35 +219,6 @@ namespace System.Linq.Expressions.Compiler
             {
                 Debug.Assert(_usedTemps == null || _usedTemps.Count == 0);
             }
-        }
-    }
-
-    /// <summary>
-    /// An extension expression node used to obtain a reference to the
-    /// specified operand, much like `ref x` in C#. This node is used by
-    /// the stack spiller when spilling value type instances or arguments
-    /// passed to ref parameters.
-    /// </summary>
-    internal sealed class RefExpression : Expression
-    {
-        public RefExpression(Expression operand)
-        {
-            Operand = operand;
-        }
-
-        public Expression Operand { get; }
-        public override ExpressionType NodeType => ExpressionType.Extension;
-        public override bool CanReduce => false;
-        public override Type Type => Operand.Type.MakeByRefType();
-
-        internal Expression Update(Expression operand)
-        {
-            if (Operand != operand)
-            {
-                return new RefExpression(operand);
-            }
-
-            return this;
         }
     }
 }
