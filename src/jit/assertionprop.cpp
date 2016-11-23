@@ -4683,9 +4683,8 @@ GenTreePtr Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTreePtr stmt
             newStmt     = fgInsertStmtNearEnd(block, sideEffList);
             sideEffList = nullptr;
         }
-        fgMorphBlockStmt(block, newStmt DEBUGARG(__FUNCTION__));
-        gtSetStmtInfo(newStmt);
-        fgSetStmtSeq(newStmt);
+
+        fgMorphBlockStmt(block, newStmt->AsStmt() DEBUGARG(__FUNCTION__));
     }
 
     // Transform the relop's operands to be both zeroes.
@@ -4909,9 +4908,7 @@ GenTreePtr Compiler::optVNAssertionPropCurStmt(BasicBlock* block, GenTreePtr stm
 
     if (optAssertionPropagatedCurrentStmt)
     {
-        fgMorphBlockStmt(block, stmt DEBUGARG("optVNAssertionPropCurStmt"));
-        gtSetStmtInfo(stmt);
-        fgSetStmtSeq(stmt);
+        fgMorphBlockStmt(block, stmt->AsStmt() DEBUGARG("optVNAssertionPropCurStmt"));
     }
 
     // Check if propagation removed statements starting from current stmt.
@@ -5108,13 +5105,7 @@ void Compiler::optAssertionPropMain()
                 }
 #endif
                 // Re-morph the statement.
-                fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
-
-                // Recalculate the gtCostSz, etc...
-                gtSetStmtInfo(stmt);
-
-                // Re-thread the nodes
-                fgSetStmtSeq(stmt);
+                fgMorphBlockStmt(block, stmt->AsStmt() DEBUGARG("optAssertionPropMain"));
             }
 
             // Check if propagation removed statements starting from current stmt.

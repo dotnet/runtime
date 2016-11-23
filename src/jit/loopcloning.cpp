@@ -698,7 +698,7 @@ void LoopCloneContext::CondToStmtInBlock(Compiler*                       comp,
     comp->fgInsertStmtAtEnd(block, stmt);
 
     // Remorph.
-    comp->fgMorphBlockStmt(block, stmt DEBUGARG("Loop cloning condition"));
+    comp->fgMorphBlockStmt(block, stmt->AsStmt() DEBUGARG("Loop cloning condition"));
 }
 
 //--------------------------------------------------------------------------------------------------
