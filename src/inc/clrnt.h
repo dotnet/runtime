@@ -835,18 +835,13 @@ RtlVirtualUnwind_Unsafe(
 //  X86
 //
 
-#if defined(_TARGET_X86_)
-
-#pragma warning(push)
-#pragma warning (disable:4035)        // disable 4035 (function must return something)
-#define PcTeb 0x18
-#pragma warning(pop)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
 typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
 #ifdef _TARGET_ARM_
 #include "daccess.h"

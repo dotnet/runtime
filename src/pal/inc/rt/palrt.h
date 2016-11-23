@@ -1516,7 +1516,7 @@ typedef struct _DISPATCHER_CONTEXT {
     ULONG64 Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
-#else
+#elif defined(_AMD64_)
 
 typedef struct _DISPATCHER_CONTEXT {
     ULONG64 ControlPc;
@@ -1529,6 +1529,24 @@ typedef struct _DISPATCHER_CONTEXT {
     PVOID HandlerData;
     PUNWIND_HISTORY_TABLE HistoryTable;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(_X86_)
+
+typedef struct _DISPATCHER_CONTEXT {
+    DWORD ControlPc;
+    DWORD ImageBase;
+    PRUNTIME_FUNCTION FunctionEntry;
+    DWORD EstablisherFrame;
+    DWORD TargetIp;
+    PCONTEXT ContextRecord;
+    PEXCEPTION_ROUTINE LanguageHandler;
+    PVOID HandlerData;
+    PUNWIND_HISTORY_TABLE HistoryTable;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#else
+
+#error Unknown architecture for defining DISPATCHER_CONTEXT.
 
 #endif
 
