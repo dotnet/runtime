@@ -665,9 +665,6 @@
     },
     "VsoCorefxGitUrl": {
       "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepoName)/"
-    },
-    "Build.Clean": {
-      "value": "all"
     }
   },
   "demands": [
