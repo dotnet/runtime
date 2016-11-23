@@ -310,8 +310,9 @@ namespace System.Linq.Expressions.Interpreter
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
             //Console.WriteLine(node.DebugView);
-            foreach (ParameterExpression p in node.Parameters)
+            for (int i = 0, n = node.ParameterCount; i < n; i++)
             {
+                ParameterExpression p = node.GetParameter(i);
                 LocalDefinition local = _locals.DefineLocal(p, 0);
                 _instructions.EmitInitializeParameter(local.Index);
             }
@@ -2770,16 +2771,32 @@ namespace System.Linq.Expressions.Interpreter
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                PushParameters(node.Parameters);
+                IEnumerable<ParameterExpression> parameters = Array.Empty<ParameterExpression>();
+
+                int count = node.ParameterCount;
+
+                if (count > 0)
+                {
+                    var parameterList = new List<ParameterExpression>(count);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        parameterList.Add(node.GetParameter(i));
+                    }
+
+                    parameters = parameterList;
+                }
+
+                PushParameters(parameters);
 
                 base.VisitLambda(node);
 
-                PopParameters(node.Parameters);
+                PopParameters(parameters);
 
                 return node;
             }
 
-            private void PushParameters(ICollection<ParameterExpression> parameters)
+            private void PushParameters(IEnumerable<ParameterExpression> parameters)
             {
                 foreach (ParameterExpression param in parameters)
                 {
@@ -2795,7 +2812,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            private void PopParameters(ICollection<ParameterExpression> parameters)
+            private void PopParameters(IEnumerable<ParameterExpression> parameters)
             {
                 foreach (ParameterExpression param in parameters)
                 {

@@ -118,8 +118,8 @@ namespace System.Linq.Expressions.Compiler
                     newBody = Expression.Block(_tm.Temps, newBody);
                 }
 
-                // Clone the lambda, replacing the body and variables.
-                return new Expression<T>(newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
+                // Clone the lambda, replacing the body & variables.
+                return Expression<T>.Create(newBody, lambda.Name, lambda.TailCall, new ParameterList(lambda));
             }
 
             return lambda;

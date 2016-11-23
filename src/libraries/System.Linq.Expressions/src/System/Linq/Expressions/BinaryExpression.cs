@@ -1407,7 +1407,7 @@ namespace System.Linq.Expressions
                 throw Error.UserDefinedOperatorMustNotBeVoid(conversion, nameof(conversion));
             }
             ParameterInfo[] pms = method.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1559,7 +1559,7 @@ namespace System.Linq.Expressions
             Debug.Assert(typeof(System.MulticastDelegate).IsAssignableFrom(delegateType) && delegateType != typeof(System.MulticastDelegate));
             MethodInfo mi = delegateType.GetMethod("Invoke");
             ParameterInfo[] pms = mi.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
