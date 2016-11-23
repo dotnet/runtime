@@ -97,8 +97,41 @@ namespace System.Threading.ThreadPools.Tests
 
                 Assert.True(ThreadPool.SetMinThreads(0, 0));
                 VerifyMinThreads(0, 0);
-                Assert.True(ThreadPool.SetMaxThreads(0, 0));
-                VerifyMaxThreads(0, 0);
+                Assert.True(ThreadPool.SetMaxThreads(1, 1));
+                VerifyMaxThreads(1, 1);
+                Assert.True(ThreadPool.SetMinThreads(1, 1));
+                VerifyMinThreads(1, 1);
+            }
+            finally
+            {
+                resetThreadCounts();
+            }
+        }
+
+        // TODO: Enable this test after CoreCLR packages including the fix for this issue are updated
+        //[Fact]
+        // Desktop framework doesn't check for this and instead, hits an assertion failure
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
+        {
+            int minw, minc, maxw, maxc;
+            ThreadPool.GetMinThreads(out minw, out minc);
+            ThreadPool.GetMaxThreads(out maxw, out maxc);
+            Action resetThreadCounts =
+                () =>
+                {
+                    Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
+                    VerifyMaxThreads(maxw, maxc);
+                    Assert.True(ThreadPool.SetMinThreads(minw, minc));
+                    VerifyMinThreads(minw, minc);
+                };
+
+            try
+            {
+                Assert.True(ThreadPool.SetMinThreads(0, 0));
+                VerifyMinThreads(0, 0);
+                Assert.False(ThreadPool.SetMaxThreads(0, 0));
+                VerifyMaxThreads(maxw, maxc);
             }
             finally
             {
