@@ -52,7 +52,6 @@ namespace System.Net.Mail
         private ContextAwareResult _operationCompletedResult = null;
         private AsyncOperation _asyncOp = null;
         private static AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
-        private static NetworkCredential s_defaultNetworkCredential = CredentialCache.DefaultNetworkCredentials;
         private const int DefaultPort = 25;
         internal string clientDomain = null;
         private bool _disposed = false;
@@ -243,7 +242,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return ReferenceEquals(_transport.Credentials, s_defaultNetworkCredential) ? true : false;
+                return ReferenceEquals(_transport.Credentials, CredentialCache.DefaultNetworkCredentials);
             }
             set
             {
@@ -252,7 +251,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                _transport.Credentials = value ? s_defaultNetworkCredential : null;
+                _transport.Credentials = value ? CredentialCache.DefaultNetworkCredentials : null;
             }
         }
 
@@ -674,7 +673,7 @@ namespace System.Net.Mail
                     CredentialCache cache;
                     // Skip token capturing if no credentials are used or they don't include a default one.
                     // Also do capture the token if ICredential is not of CredentialCache type so we don't know what the exact credential response will be.
-                    _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, s_defaultNetworkCredential) || (cache = Credentials as CredentialCache) == null || IsSNCInCredentialCache(cache));
+                    _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null || IsSystemNetworkCredentialInCache(cache));
 
                     _asyncOp = AsyncOperationManager.CreateOperation(userToken);
                     switch (DeliveryMethod)
@@ -749,13 +748,15 @@ namespace System.Net.Mail
             }
         }
 
-        private bool IsSNCInCredentialCache(CredentialCache cache)
+        private bool IsSystemNetworkCredentialInCache(CredentialCache cache)
         {
             // Check if SystemNetworkCredential is in given cache.
-            foreach (var credential in cache)
+            foreach (NetworkCredential credential in cache)
             {
-                if (ReferenceEquals(credential, s_defaultNetworkCredential))
+                if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
+                {
                     return true;
+                }
             }
 
             return false;
