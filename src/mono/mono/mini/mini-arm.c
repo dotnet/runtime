@@ -322,10 +322,54 @@ mono_arm_patchable_bl (guint8 *code, int cond)
 	return code;
 }
 
+#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID) && !defined(__native_client__)
+#define HAVE_AEABI_READ_TP 1
+#endif
+
+#ifdef HAVE_AEABI_READ_TP
+gpointer __aeabi_read_tp (void);
+#endif
+
 gboolean
 mono_arch_have_fast_tls (void)
 {
+#ifdef HAVE_AEABI_READ_TP
+	static gboolean have_fast_tls = FALSE;
+        static gboolean inited = FALSE;
+	gpointer tp1, tp2;
+
+	if (mini_get_debug_options ()->use_fallback_tls)
+		return FALSE;
+
+	if (inited)
+		return have_fast_tls;
+
+	tp1 = __aeabi_read_tp ();
+	asm volatile("mrc p15, 0, %0, c13, c0, 3" : "=r" (tp2));
+
+	have_fast_tls = tp1 && tp1 == tp2;
+	inited = TRUE;
+	return have_fast_tls;
+#else
 	return FALSE;
+#endif
+}
+
+static guint8*
+emit_tls_get (guint8 *code, int dreg, int tls_offset)
+{
+	ARM_MRC (code, 15, 0, dreg, 13, 0, 3);
+	ARM_LDR_IMM (code, dreg, dreg, tls_offset);
+	return code;
+}
+
+static guint8*
+emit_tls_set (guint8 *code, int sreg, int tls_offset)
+{
+	int tp_reg = (sreg != ARMREG_R0) ? ARMREG_R0 : ARMREG_R1;
+	ARM_MRC (code, 15, 0, tp_reg, 13, 0, 3);
+	ARM_STR_IMM (code, sreg, tp_reg, tls_offset);
+	return code;
 }
 
 /*
@@ -339,9 +383,13 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
 	int i;
 
-	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-						 (gpointer)"mono_get_lmf_addr");
-	code = emit_call_seq (cfg, code);
+	if (mono_arch_have_fast_tls () && mono_tls_get_tls_offset (TLS_KEY_LMF_ADDR) != -1) {
+		code = emit_tls_get (code, ARMREG_R0, mono_tls_get_tls_offset (TLS_KEY_LMF_ADDR));
+	} else {
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+							 (gpointer)"mono_tls_get_lmf_addr");
+		code = emit_call_seq (cfg, code);
+	}
 	/* we build the MonoLMF structure on the stack - see mini-arm.h */
 	/* lmf_offset is the offset from the previous stack pointer,
 	 * alloc_size is the total stack space allocated, so the offset
@@ -4148,6 +4196,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
 				ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
 			}
+			break;
+		case OP_TLS_GET:
+			code = emit_tls_get (code, ins->dreg, ins->inst_offset);
+			break;
+		case OP_TLS_SET:
+			code = emit_tls_set (code, ins->sreg1, ins->inst_offset);
 			break;
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_CAS_I4:

@@ -401,7 +401,7 @@ gboolean
 mono_arm_is_hard_float (void);
 
 gboolean
-mono_arm_have_tls_get (void);
+mono_arm_have_fast_tls (void);
 
 void
 mono_arm_unaligned_stack (MonoMethod *method);

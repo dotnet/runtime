@@ -1090,6 +1090,16 @@ typedef union {
 #define ARM_MCR(p, coproc, opc1, rt, crn, crm, opc2) \
 	ARM_MCR_COND ((p), (coproc), (opc1), (rt), (crn), (crm), (opc2), ARMCOND_AL)
 
+/* MRC */
+#define ARM_DEF_MRC_COND(coproc, opc1, rt, crn, crm, opc2, cond)	\
+	ARM_DEF_COND ((cond)) | ((0xe << 24) | (((opc1) & 0x7) << 21) | (1 << 20) | (((crn) & 0xf) << 16) | (((rt) & 0xf) << 12) | (((coproc) & 0xf) << 8) | (((opc2) & 0x7) << 5) | (1 << 4) | (((crm) & 0xf) << 0))
+
+#define ARM_MRC_COND(p, coproc, opc1, rt, crn, crm, opc2, cond)	\
+	ARM_EMIT(p, ARM_DEF_MRC_COND ((coproc), (opc1), (rt), (crn), (crm), (opc2), (cond)))
+
+#define ARM_MRC(p, coproc, opc1, rt, crn, crm, opc2) \
+	ARM_MRC_COND ((p), (coproc), (opc1), (rt), (crn), (crm), (opc2), ARMCOND_AL)
+
 /* ARMv7VE */
 #define ARM_SDIV_COND(p, rd, rn, rm, cond) ARM_EMIT (p, (((cond) << 28) | (0xe << 23) | (0x1 << 20) | ((rd) << 16) | (0xf << 12) | ((rm) << 8) | (0x0 << 5) | (0x1 << 4) | ((rn) << 0)))
 #define ARM_SDIV(p, rd, rn, rm) ARM_SDIV_COND ((p), (rd), (rn), (rm), ARMCOND_AL)

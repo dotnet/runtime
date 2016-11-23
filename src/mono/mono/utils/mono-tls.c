@@ -112,6 +112,10 @@
 	__asm ( "mov %0, #0\n add %0, %0, #:tprel_hi12:" #var "\n add %0, %0, #:tprel_lo12_nc:" #var "\n" \
 		: "=r" (offset))
 
+#elif defined(TARGET_ARM) && defined(__ARM_EABI__) && !defined(PIC)
+
+#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("     ldr     %0, 1f; b 2f; 1: .word " #var "(tpoff); 2:" : "=r" (offset))
+
 #else
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
