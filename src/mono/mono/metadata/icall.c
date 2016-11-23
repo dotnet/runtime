@@ -4665,138 +4665,47 @@ ves_icall_System_Reflection_Assembly_GetAotId (MonoError *error)
 	return res;
 }
 
-static MonoObject*
-create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build, guint32 revision, MonoError *error)
+static MonoAssemblyName*
+create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, MonoTableInfo *t, int i, MonoError *error)
 {
-	static MonoMethod *create_version = NULL;
-	MonoObject *result;
-	gpointer args [4];
-
 	mono_error_init (error);
-	
+	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 
-	if (!create_version) {
-		MonoMethodDesc *desc = mono_method_desc_new (":.ctor(int,int,int,int)", FALSE);
-		create_version = mono_method_desc_search_in_class (desc, mono_class_get_system_version_class ());
-		g_assert (create_version);
-		mono_method_desc_free (desc);
-	}
-
-	args [0] = &major;
-	args [1] = &minor;
-	args [2] = &build;
-	args [3] = &revision;
-	result = mono_object_new_checked (domain, mono_class_get_system_version_class (), error);
-	return_val_if_nok (error, NULL);
-
-	mono_runtime_invoke_checked (create_version, result, args, error);
-	return_val_if_nok (error, NULL);
-
-	return result;
+	mono_assembly_get_assemblyref (image, i, aname);
+	aname->hash_alg = ASSEMBLY_HASH_SHA1 /* SHA1 (default) */;
+	/* name and culture are pointers into the image tables, but we need
+	 * real malloc'd strings (so that we can g_free() them later from
+	 * Mono.RuntimeMarshal.FreeAssemblyName) */
+	aname->name = g_strdup (aname->name);
+	aname->culture = g_strdup  (aname->culture);
+	/* Don't need the hash value in managed */
+	aname->hash_value = NULL;
+	aname->hash_len = 0;
+	g_assert (aname->public_key == NULL);
+		
+	/* note: this function doesn't return the codebase on purpose (i.e. it can
+	   be used under partial trust as path information isn't present). */
+	return aname;
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAssembly *assembly) 
+ICALL_EXPORT GPtrArray*
+ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflectionAssemblyHandle assembly, MonoError *error) 
 {
-	MonoError error;
-	MonoArray *result;
-	MonoDomain *domain = mono_object_domain (assembly);
-	int i, count = 0;
-	static MonoMethod *create_culture = NULL;
-	MonoImage *image = assembly->assembly->image;
-	MonoTableInfo *t;
-	MonoObject *o;
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
+	MonoAssembly *ass = MONO_HANDLE_GETVAL(assembly, assembly);
+	MonoImage *image = ass->image;
 
-	t = &assembly->assembly->image->tables [MONO_TABLE_ASSEMBLYREF];
-	count = t->rows;
+	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+	int count = t->rows;
 
-	result = mono_array_new_checked (domain, mono_class_get_assembly_name_class (), count, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	GPtrArray *result = g_ptr_array_sized_new (count);
 
-
-	if (count > 0 && !create_culture) {
-		MonoMethodDesc *desc = mono_method_desc_new (
-			"System.Globalization.CultureInfo:CreateCulture(string,bool)", TRUE);
-		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
-		g_assert (create_culture);
-		mono_method_desc_free (desc);
-	}
-
-	for (i = 0; i < count; i++) {
-		MonoObject *version;
-		MonoReflectionAssemblyName *aname;
-		guint32 cols [MONO_ASSEMBLYREF_SIZE];
-
-		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
-
-		aname = (MonoReflectionAssemblyName *) mono_object_new_checked (
-			domain, mono_class_get_assembly_name_class (), &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-
-		MONO_OBJECT_SETREF (aname, name, mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME])));
-
-		aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
-		aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
-		aname->build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
-		aname->revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
-		aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
-		aname->versioncompat = 1; /* SameMachine (default) */
-		aname->hashalg = ASSEMBLY_HASH_SHA1; /* SHA1 (default) */
-
-		version = create_version (domain, aname->major, aname->minor, aname->build, aname->revision, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-
-		MONO_OBJECT_SETREF (aname, version, version);
-
-		if (create_culture) {
-			gpointer args [2];
-			MonoBoolean assembly_ref = 1;
-			args [0] = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]));
-			args [1] = &assembly_ref;
-
-			o = mono_runtime_invoke_checked (create_culture, NULL, args, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-
-			MONO_OBJECT_SETREF (aname, cultureInfo, o);
-		}
-		
-		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-			const gchar *pkey_ptr = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
-			guint32 pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
-
-			if ((cols [MONO_ASSEMBLYREF_FLAGS] & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG)) {
-				/* public key token isn't copied - the class library will 
-		   		automatically generate it from the public key if required */
-				MonoArray *pkey = mono_array_new_checked (domain, mono_defaults.byte_class, pkey_len, &error);
-				if (mono_error_set_pending_exception (&error))
-					return NULL;
-
-				MONO_OBJECT_SETREF (aname, publicKey, pkey);
-				memcpy (mono_array_addr (pkey, guint8, 0), pkey_ptr, pkey_len);
-			} else {
-				MonoArray *keyToken = mono_array_new_checked (domain, mono_defaults.byte_class, pkey_len, &error);
-				if (mono_error_set_pending_exception (&error))
-					return NULL;
-
-				MONO_OBJECT_SETREF (aname, keyToken, keyToken);
-				memcpy (mono_array_addr (keyToken, guint8, 0), pkey_ptr, pkey_len);
-			}
-		} else {
-			MonoArray *keyToken = mono_array_new_checked (domain, mono_defaults.byte_class, 0, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-
-			MONO_OBJECT_SETREF (aname, keyToken, keyToken);
-		}
-		
-		/* note: this function doesn't return the codebase on purpose (i.e. it can
-		         be used under partial trust as path information isn't present). */
-
-		mono_array_setref (result, i, aname);
+	for (int i = 0; i < count; i++) {
+		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, t, i, error);
+		if (!is_ok (error))
+			break;
+		g_ptr_array_add (result, aname);
 	}
 	return result;
 }
@@ -4913,10 +4822,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
 			mono_assembly_load_reference (assembly->assembly->image, i - 1);
 			if (assembly->assembly->image->references [i - 1] == (gpointer)-1) {
-				char *msg = g_strdup_printf ("Assembly %d referenced from assembly %s not found ", i - 1, assembly->assembly->image->name);
-				MonoException *ex = mono_get_exception_file_not_found2 (msg, NULL);
-				g_free (msg);
-				mono_set_pending_exception (ex);
+				mono_error_set_assembly_load (&error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->assembly->image->name);
+				mono_error_set_pending_exception (&error);
 				return FALSE;
 			}
 			MonoReflectionAssembly *assm_obj;
@@ -5057,8 +4964,9 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 			if (mono_error_set_pending_exception (&error))
 				return NULL;
 			if (!m) {
-				MonoString *fname = mono_string_new (mono_domain_get (), mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
-				mono_set_pending_exception (mono_get_exception_file_not_found2 (NULL, fname));
+				const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
+				mono_error_set_assembly_load (&error, g_strdup (filename), "%s", "");
+				mono_error_set_pending_exception (&error);
 				return NULL;
 			}
 			MonoReflectionModule *rm = mono_module_get_object_checked (domain, m, &error);
@@ -5278,114 +5186,6 @@ ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethod *rfield)
 	return mono_security_core_clr_method_level (method, TRUE);
 }
 
-static void
-fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version, gboolean default_publickey, gboolean default_token, MonoError *error)
-{
-	static MonoMethod *create_culture = NULL;
-	MonoObject *obj;
-	gpointer args [2];
-	guint32 pkey_len;
-	const char *pkey_ptr;
-	gchar *codebase;
-	MonoBoolean assembly_ref = 0;
-
-	mono_error_init (error);
-
-	MONO_OBJECT_SETREF (aname, name, mono_string_new (domain, name->name));
-	aname->major = name->major;
-	aname->minor = name->minor;
-	aname->build = name->build;
-	aname->flags = name->flags;
-	aname->revision = name->revision;
-	aname->hashalg = name->hash_alg;
-	aname->versioncompat = 1; /* SameMachine (default) */
-	aname->processor_architecture = name->arch;
-
-	if (by_default_version) {
-		MonoObject *version;
-
-		version = create_version (domain, name->major, name->minor, name->build, name->revision, error);
-		return_if_nok (error);
-
-		MONO_OBJECT_SETREF (aname, version, version);
-	}
-
-	codebase = NULL;
-	if (absolute != NULL && *absolute != '\0') {
-		gchar *result;
-
-		codebase = g_strdup (absolute);
-
-		mono_icall_make_platform_path (codebase);
-
-		const gchar *prepend = mono_icall_get_file_path_prefix (codebase);
-
-		result = g_strconcat (prepend, codebase, NULL);
-		g_free (codebase);
-		codebase = result;
-	}
-
-	if (codebase) {
-		MONO_OBJECT_SETREF (aname, codebase, mono_string_new (domain, codebase));
-		g_free (codebase);
-	}
-
-	if (!create_culture) {
-		MonoMethodDesc *desc = mono_method_desc_new ("System.Globalization.CultureInfo:CreateCulture(string,bool)", TRUE);
-		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
-		g_assert (create_culture);
-		mono_method_desc_free (desc);
-	}
-
-	if (name->culture) {
-		args [0] = mono_string_new (domain, name->culture);
-		args [1] = &assembly_ref;
-
-		obj = mono_runtime_invoke_checked (create_culture, NULL, args, error);
-		return_if_nok (error);
-
-		MONO_OBJECT_SETREF (aname, cultureInfo, obj);
-	}
-
-	if (name->public_key) {
-		pkey_ptr = (char*)name->public_key;
-		pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
-
-		MonoArray *pkey = mono_array_new_checked (domain, mono_defaults.byte_class, pkey_len, error);
-		return_if_nok (error);
-		MONO_OBJECT_SETREF (aname, publicKey, pkey);
-		memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
-		aname->flags |= ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG;
-	} else if (default_publickey) {
-		MonoArray *pkey = mono_array_new_checked (domain, mono_defaults.byte_class, 0, error);
-		return_if_nok (error);
-		MONO_OBJECT_SETREF (aname, publicKey, pkey);
-		aname->flags |= ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG;
-	}
-
-	/* MonoAssemblyName keeps the public key token as an hexadecimal string */
-	if (name->public_key_token [0]) {
-		int i, j;
-		char *p;
-
-		MonoArray *keyToken = mono_array_new_checked (domain, mono_defaults.byte_class, 8, error);
-		return_if_nok (error);
-		
-		MONO_OBJECT_SETREF (aname, keyToken, keyToken);
-		p = mono_array_addr (keyToken, char, 0);
-
-		for (i = 0, j = 0; i < 8; i++) {
-			*p = g_ascii_xdigit_value (name->public_key_token [j++]) << 4;
-			*p |= g_ascii_xdigit_value (name->public_key_token [j++]);
-			p++;
-		}
-	} else if (default_token) {
-		MonoArray *keyToken = mono_array_new_checked (domain, mono_defaults.byte_class, 0, error);
-		return_if_nok (error);
-		MONO_OBJECT_SETREF (aname, keyToken, keyToken);
-	}
-}
-
 ICALL_EXPORT MonoString *
 ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssembly *assembly)
 {
@@ -5408,19 +5208,19 @@ ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly *mass)
 }
 
 ICALL_EXPORT void
-ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname, MonoReflectionAssemblyName *aname)
+ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle fname, MonoAssemblyName *name, MonoStringHandleOut normalized_codebase, MonoError *error)
 {
-	MonoError error;
 	char *filename;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	char *codebase = NULL;
 	gboolean res;
 	MonoImage *image;
-	MonoAssemblyName name;
 	char *dirname;
 
-	filename = mono_string_to_utf8_checked (fname, &error);
-	if (mono_error_set_pending_exception (&error))
-		return;
+	mono_error_init (error);
+
+	filename = mono_string_handle_to_utf8 (fname, error);
+	return_if_nok (error);
 
 	dirname = g_path_get_dirname (filename);
 	replace_shadow_path (mono_domain_get (), dirname, &filename);
@@ -5429,27 +5229,37 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	image = mono_image_open (filename, &status);
 
 	if (!image){
-		MonoException *exc;
-
-		g_free (filename);
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			exc = mono_get_exception_bad_image_format2 (NULL, fname);
+			mono_error_set_bad_image_name (error, g_strdup (filename), "%s", "");
 		else
-			exc = mono_get_exception_file_not_found2 (NULL, fname);
-		mono_set_pending_exception (exc);
+			mono_error_set_assembly_load (error, g_strdup (filename), "%s", "");
+		g_free (filename);
 		return;
 	}
 
-	res = mono_assembly_fill_assembly_name (image, &name);
+	res = mono_assembly_fill_assembly_name_full (image, name, TRUE);
 	if (!res) {
 		mono_image_close (image);
 		g_free (filename);
-		mono_set_pending_exception (mono_get_exception_argument ("assemblyFile", "The file does not contain a manifest"));
+		mono_error_set_argument (error, "assemblyFile", "The file does not contain a manifest");
 		return;
 	}
 
-	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename, TRUE, FALSE, TRUE, &error);
-	mono_error_set_pending_exception (&error);
+	if (filename != NULL && *filename != '\0') {
+		gchar *result;
+
+		codebase = g_strdup (filename);
+
+		mono_icall_make_platform_path (codebase);
+
+		const gchar *prepend = mono_icall_get_file_path_prefix (codebase);
+
+		result = g_strconcat (prepend, codebase, NULL);
+		g_free (codebase);
+		codebase = result;
+	}
+	MONO_HANDLE_ASSIGN (normalized_codebase, mono_string_new_handle (mono_domain_get (), codebase, error));
+	g_free (codebase);
 
 	mono_image_close (image);
 	g_free (filename);
@@ -5695,9 +5505,11 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssemblyHandle asse
 }
 
 ICALL_EXPORT void
-ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname)
+ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, gboolean free_struct)
 {
 	mono_assembly_name_free (aname);
+	if (free_struct)
+		g_free (aname);
 }
 
 ICALL_EXPORT gboolean

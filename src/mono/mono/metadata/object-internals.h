@@ -1211,6 +1211,9 @@ typedef struct {
 	guint32     processor_architecture;
 } MonoReflectionAssemblyName;
 
+/* Safely access System.Reflection.AssemblyName from native code */
+TYPED_HANDLE_DECL (MonoReflectionAssemblyName);
+
 typedef struct {
 	MonoObject  obj;
 	MonoString *name;
@@ -1396,6 +1399,9 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 
 void
 mono_release_type_locks (MonoInternalThread *thread);
+
+char *
+mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 
 char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);

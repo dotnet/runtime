@@ -84,7 +84,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 163
+#define MONO_CORLIB_VERSION 164
 
 typedef struct
 {
@@ -1978,9 +1978,9 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_name (&error, name, "");
+			mono_error_set_bad_image_name (&error, g_strdup (name), "");
 		else
-			mono_error_set_exception_instance (&error, mono_get_exception_file_not_found2 (NULL, fname));
+			mono_error_set_assembly_load (&error, g_strdup (name), "%s", "");
 		goto leave;
 	}
 

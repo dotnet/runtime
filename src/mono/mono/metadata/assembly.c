@@ -799,7 +799,7 @@ mono_assembly_binding_unlock (void)
 }
 
 gboolean
-mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
+mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname, gboolean copyBlobs)
 {
 	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
 	guint32 cols [MONO_ASSEMBLY_SIZE];
@@ -813,7 +813,11 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	aname->hash_len = 0;
 	aname->hash_value = NULL;
 	aname->name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
+	if (copyBlobs)
+		aname->name = g_strdup (aname->name);
 	aname->culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
+	if (copyBlobs)
+		aname->culture = g_strdup (aname->culture);
 	aname->flags = cols [MONO_ASSEMBLY_FLAGS];
 	aname->major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
 	aname->minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
@@ -844,6 +848,16 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 
 	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
 		aname->public_key = (guchar*)mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+		if (copyBlobs) {
+			const gchar *pkey_end;
+			int len = mono_metadata_decode_blob_size ((const gchar*) aname->public_key, &pkey_end);
+			pkey_end += len; /* move to end */
+			size_t size = pkey_end - (const gchar*)aname->public_key;
+			guchar *tmp = g_new (guchar, size);
+			memcpy (tmp, aname->public_key, size);
+			aname->public_key = tmp;
+		}
+
 	}
 	else
 		aname->public_key = 0;
@@ -874,6 +888,12 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	}
 
 	return TRUE;
+}
+
+gboolean
+mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
+{
+	return mono_assembly_fill_assembly_name_full (image, aname, FALSE);
 }
 
 /**
