@@ -1960,8 +1960,10 @@ combinedScenarios.each { scenario ->
 
                                         if (scenario == 'jitdiff') {
                                             // retrive jit-dasm output for base commit, and run jit-diff
-
-                                            Utilities.addArchival(newJob, "bin/tests/${osGroup}.${arch}.${configuration}/dasm/**")
+                                            if (!isBuildOnly) {
+                                                // if this is a build only job, we want to keep the default (build) artifacts for the flow job
+                                                Utilities.addArchival(newJob, "bin/tests/${osGroup}.${arch}.${configuration}/dasm/**")
+                                            }
                                         }
                                         
                                         if (!isBuildOnly) {
