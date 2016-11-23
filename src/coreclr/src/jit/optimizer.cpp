@@ -4242,7 +4242,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTreePtr insertBefore
     GenTreePtr logCall = gtNewHelperCallNode(CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, TYP_VOID);
     GenTreePtr stmt    = fgNewStmtFromTree(logCall);
     fgInsertStmtBefore(block, insertBefore, stmt);
-    fgMorphBlockStmt(block, stmt DEBUGARG("Debug log loop cloning"));
+    fgMorphBlockStmt(block, stmt->AsStmt() DEBUGARG("Debug log loop cloning"));
 }
 #endif
 
