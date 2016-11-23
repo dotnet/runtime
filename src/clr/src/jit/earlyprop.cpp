@@ -612,7 +612,8 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
                                                         additionNode->gtFlags & (GTF_EXCEPT | GTF_DONT_CSE);
 
                                                     // Re-morph the statement.
-                                                    fgMorphBlockStmt(compCurBB, curStmt->AsStmt() DEBUGARG("optFoldNullCheck"));
+                                                    fgMorphBlockStmt(compCurBB,
+                                                                     curStmt->AsStmt() DEBUGARG("optFoldNullCheck"));
                                                 }
                                             }
                                         }
