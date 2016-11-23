@@ -2,19 +2,19 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.11",
-        "System.Collections.Concurrent": "4.0.12",
-        "System.Diagnostics.Contracts": "4.0.1",
-        "System.Diagnostics.Debug": "4.0.11",
-        "System.Diagnostics.Tools": "4.0.1",
-        "System.Diagnostics.Tracing": "4.1.0",
-        "System.Linq": "4.1.0",
-        "System.Resources.ResourceManager": "4.0.1",
-        "System.Runtime": "4.1.0",
-        "System.Runtime.Extensions": "4.1.0",
-        "System.Threading": "4.0.11",
-        "System.Threading.Tasks": "4.0.11"
+        "Microsoft.NETCore.Platforms": "1.1.0",
+        "System.Collections": "4.3.0",
+        "System.Collections.Concurrent": "4.3.0",
+        "System.Diagnostics.Contracts": "4.3.0",
+        "System.Diagnostics.Debug": "4.3.0",
+        "System.Diagnostics.Tools": "4.3.0",
+        "System.Diagnostics.Tracing": "4.3.0",
+        "System.Linq": "4.3.0",
+        "System.Resources.ResourceManager": "4.3.0",
+        "System.Runtime": "4.3.0",
+        "System.Runtime.Extensions": "4.3.0",
+        "System.Threading": "4.3.0",
+        "System.Threading.Tasks": "4.3.0"
       }
     },
     "net46": {

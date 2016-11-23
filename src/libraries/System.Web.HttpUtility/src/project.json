@@ -2,16 +2,16 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections.Specialized": "4.0.1",
-        "System.Diagnostics.Debug": "4.0.11",
-        "System.Diagnostics.Tools": "4.0.1",
-        "System.Diagnostics.Tracing": "4.1.0",
-        "System.Resources.ResourceManager": "4.0.1",
-        "System.Runtime": "4.1.0",
-        "System.Runtime.Extensions": "4.1.0",
-        "System.Text.Encoding": "4.0.11",
-        "System.Threading": "4.0.11"
+        "Microsoft.NETCore.Platforms": "1.1.0",
+        "System.Collections.Specialized": "4.3.0",
+        "System.Diagnostics.Debug": "4.3.0",
+        "System.Diagnostics.Tools": "4.3.0",
+        "System.Diagnostics.Tracing": "4.3.0",
+        "System.Resources.ResourceManager": "4.3.0",
+        "System.Runtime": "4.3.0",
+        "System.Runtime.Extensions": "4.3.0",
+        "System.Text.Encoding": "4.3.0",
+        "System.Threading": "4.3.0"
       }
     },
     "net46": {

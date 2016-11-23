@@ -30,6 +30,7 @@
       <Project>{F75E3008-0562-42DF-BE72-C1384F12157E}</Project>
       <Name>System.Net.Http.WinHttpHandler</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Net.Http\pkg\System.Net.Http.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

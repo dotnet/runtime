@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Data.SqlClient": "4.1.0",
-    "System.Data.Common": "4.1.0"
+    "System.Data.SqlClient": "4.3.0",
+    "System.Data.Common": "4.3.0"
   },
   "frameworks": {
     "netstandard1.2": {}
