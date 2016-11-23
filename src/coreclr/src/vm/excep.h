@@ -425,7 +425,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, Typ
 #include "eexcp.h"
 #include "exinfo.h"
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 struct FrameHandlerExRecord
 {
     EXCEPTION_REGISTRATION_RECORD   m_ExReg;
@@ -460,7 +460,7 @@ struct NestedHandlerExRecord : public FrameHandlerExRecord
     }
 };
 
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
 #if defined(ENABLE_CONTRACTS_IMPL)
 

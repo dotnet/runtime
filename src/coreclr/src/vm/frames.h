@@ -1112,7 +1112,7 @@ class FaultingExceptionFrame : public Frame
 {
     friend class CheckAsmOffsets;
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     DWORD                   m_Esp;
     CalleeSavedRegisters    m_regs;
     TADDR                   m_ReturnAddress;
@@ -1154,7 +1154,7 @@ public:
         return FRAME_ATTR_EXCEPTION | FRAME_ATTR_FAULTED;
     }
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     CalleeSavedRegisters *GetCalleeSavedRegisters()
     {
         LIMITED_METHOD_DAC_CONTRACT;
