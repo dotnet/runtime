@@ -441,4 +441,18 @@ namespace System.Linq.Expressions.Tests
         public bool Equals(Number other) => _value == other._value;
         public override int GetHashCode() => _value;
     }
+
+    public static class ExpressionAssert
+    {
+        public static void Verify(this LambdaExpression expression, string il, string instructions)
+        {
+#if FEATURE_COMPILE
+            expression.VerifyIL(il);
+#endif
+
+#if FEATURE_INTERPRET
+            expression.VerifyInstructions(instructions);
+#endif
+        }
+    }
 }
