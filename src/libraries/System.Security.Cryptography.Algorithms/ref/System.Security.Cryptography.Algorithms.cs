@@ -318,6 +318,16 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
         public static new System.Security.Cryptography.MD5 Create(string algName) { throw null; }
     }
+    public abstract class MaskGenerationMethod
+    {
+        public abstract byte[] GenerateMask(byte[] rgbSeed, int cbReturn);
+    }
+    public class PKCS1MaskGenerationMethod : MaskGenerationMethod
+    {
+        public PKCS1MaskGenerationMethod() { }
+        public string HashName { get { throw null; } set { } }
+        public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn) { throw null; }
+    }
     public abstract partial class RandomNumberGenerator : System.IDisposable
     {
         protected RandomNumberGenerator() { }
