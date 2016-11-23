@@ -1073,6 +1073,42 @@ namespace System {
             return Array.FindIndex(array, match) != -1;
         }
 
+        public static void Fill<T>(T[] array, T value)
+        {
+            if (array == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            }
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = value;
+            }
+        }
+
+        public static void Fill<T>(T[] array, T value, int startIndex, int count)
+        {
+            if (array == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            }
+
+            if (startIndex < 0 || startIndex > array.Length)
+            {
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+            }
+
+            if (count < 0 || startIndex > array.Length - count)
+            {
+                ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+            }
+
+            for (int i = startIndex; i < startIndex + count; i++)
+            {
+                array[i] = value;
+            }
+        }
+
         public static T Find<T>(T[] array, Predicate<T> match) {
             if( array == null) {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
