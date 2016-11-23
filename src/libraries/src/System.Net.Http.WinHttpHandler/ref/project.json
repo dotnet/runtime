@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "System.Net.Http": "4.1.0",
-    "System.Net.Primitives": "4.0.11",
-    "System.Runtime": "4.1.0",
-    "System.Security.Cryptography.X509Certificates": "4.1.0",
-    "System.Threading.Tasks": "4.0.11"
+    "System.Net.Http": "4.3.0",
+    "System.Net.Primitives": "4.3.0",
+    "System.Runtime": "4.3.0",
+    "System.Security.Cryptography.X509Certificates": "4.3.0",
+    "System.Threading.Tasks": "4.3.0"
   },
   "frameworks": {
     "netstandard1.3": {}

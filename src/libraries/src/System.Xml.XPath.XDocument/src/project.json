@@ -21,7 +21,7 @@
         "System.Runtime.Extensions": "4.4.0-beta-24721-02",
         "System.Threading": "4.4.0-beta-24721-02",
         "System.Xml.ReaderWriter": {
-          "version": "4.0.11",
+          "version": "4.3.0",
           "exclude": "compile"
         }
       }

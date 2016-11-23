@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.0",
-    "System.Collections.Concurrent": "4.0.12",
-    "System.Threading.Tasks": "4.0.11"
+    "System.Runtime": "4.3.0",
+    "System.Collections.Concurrent": "4.3.0",
+    "System.Threading.Tasks": "4.3.0"
   },
   "frameworks": {
     "netstandard1.1": {}

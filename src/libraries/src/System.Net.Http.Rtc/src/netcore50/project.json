@@ -2,11 +2,11 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.NETCore.Targets": "1.0.1",
-        "System.ObjectModel": "4.0.12",
-        "System.Net.Http": "4.1.0",
-        "System.Runtime": "4.1.0"
+        "Microsoft.NETCore.Platforms": "1.1.0",
+        "Microsoft.NETCore.Targets": "1.1.0",
+        "System.ObjectModel": "4.3.0",
+        "System.Net.Http": "4.3.0",
+        "System.Runtime": "4.3.0"
       }
     }
   }

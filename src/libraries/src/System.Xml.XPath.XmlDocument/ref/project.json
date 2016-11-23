@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.0",
-    "System.Xml.XmlDocument": "4.0.1",
-    "System.Xml.XPath": "4.0.1",
-    "System.Xml.ReaderWriter": "4.0.11"
+    "System.Runtime": "4.3.0",
+    "System.Xml.XmlDocument": "4.3.0",
+    "System.Xml.XPath": "4.3.0",
+    "System.Xml.ReaderWriter": "4.3.0"
   },
   "frameworks": {
     "netstandard1.7": {}

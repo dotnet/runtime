@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.0",
-    "System.Security.Cryptography.Encoding": "4.0.0",
-    "System.Security.Cryptography.X509Certificates": "4.1.0"
+    "System.Runtime": "4.3.0",
+    "System.Security.Cryptography.Encoding": "4.3.0",
+    "System.Security.Cryptography.X509Certificates": "4.3.0"
   },
   "frameworks": {
     "netstandard1.3": {}
