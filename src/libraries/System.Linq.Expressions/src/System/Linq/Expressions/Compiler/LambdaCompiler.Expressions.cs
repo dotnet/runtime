@@ -946,7 +946,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
-        private void EmitExtensionExpression(Expression expr)
+        private static void EmitExtensionExpression(Expression expr)
         {
             throw Error.ExtensionNotReduced();
         }
