@@ -1216,6 +1216,12 @@ ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj)
 	InterlockedCompareExchangePointer ((volatile gpointer *)&this_obj->internal_thread, internal, NULL);
 }
 
+MonoThread *
+ves_icall_System_Threading_Thread_GetCurrentThread (void)
+{
+	return mono_thread_current ();
+}
+
 HANDLE
 ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 												   MonoObject *start)
