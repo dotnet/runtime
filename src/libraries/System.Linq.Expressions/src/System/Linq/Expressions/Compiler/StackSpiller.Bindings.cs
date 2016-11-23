@@ -98,7 +98,6 @@ namespace System.Linq.Expressions.Compiler
             internal override Expression AsExpression(Expression target)
             {
                 RequireNoValueProperty();
-                RequireNotRefInstance(target);
 
                 Expression member = MemberExpression.Make(target, _binding.Member);
                 Expression memberTemp = _spiller.MakeTemp(member.Type);
@@ -184,7 +183,6 @@ namespace System.Linq.Expressions.Compiler
             internal override Expression AsExpression(Expression target)
             {
                 RequireNoValueProperty();
-                RequireNotRefInstance(target);
 
                 Expression member = MemberExpression.Make(target, _binding.Member);
                 Expression memberTemp = _spiller.MakeTemp(member.Type);
@@ -243,8 +241,6 @@ namespace System.Linq.Expressions.Compiler
 
             internal override Expression AsExpression(Expression target)
             {
-                RequireNotRefInstance(target);
-
                 Expression member = MemberExpression.Make(target, _binding.Member);
                 Expression memberTemp = _spiller.MakeTemp(member.Type);
 
