@@ -2050,7 +2050,7 @@ public:
             assert(m_pCompiler->fgRemoveRestOfBlock == false);
 
             /* re-morph the statement */
-            m_pCompiler->fgMorphBlockStmt(blk, stm DEBUGARG("optValnumCSE"));
+            m_pCompiler->fgMorphBlockStmt(blk, stm->AsStmt() DEBUGARG("optValnumCSE"));
 
         } while (lst != nullptr);
     }
