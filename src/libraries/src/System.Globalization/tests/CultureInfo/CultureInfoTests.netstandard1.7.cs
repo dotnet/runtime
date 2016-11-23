@@ -82,8 +82,12 @@ namespace System.Globalization.Tests
         [Fact]
         public void InstalledUICultureTest()
         {
-            // as we didn't change current UI culture, Installed UI culture should match current UI culture
-            Assert.Equal(CultureInfo.CurrentUICulture, CultureInfo.InstalledUICulture);
+            var c1 = CultureInfo.InstalledUICulture;
+            var c2 = CultureInfo.InstalledUICulture;
+
+            // we cannot expect the value we get for InstalledUICulture without reading the OS.
+            // instead we test ensuring the value doesn't change if we requested it multiple times.
+            Assert.Equal(c1.Name, c2.Name);
         }
         
         [Theory]
