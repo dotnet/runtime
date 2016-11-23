@@ -82,6 +82,7 @@ namespace System.Security.Cryptography
         public static void AddOID(string oid, params string[] names) { }
         public static object CreateFromName(string name) { throw null; }
         public static object CreateFromName(string name, params object[] args) { throw null; }
+        public static byte[] EncodeOID(string str) { throw null; }
         public static string MapNameToOID(string name) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
