@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 
 namespace System.Security.Cryptography
@@ -30,6 +31,8 @@ namespace System.Security.Cryptography
 
         private static volatile Dictionary<string, string> s_defaultOidHT = null;
         private static volatile Dictionary<string, object> s_defaultNameHT = null;
+
+        private static readonly char[] SepArray = { '.' }; // valid ASN.1 separators
 
         // CoreFx does not support AllowOnlyFipsAlgorithms
         public static bool AllowOnlyFipsAlgorithms => false;
@@ -438,6 +441,126 @@ namespace System.Security.Cryptography
             }
 
             return oidName;
+        }
+
+        public static byte[] EncodeOID(string str)
+        {
+            if (str == null)
+                throw new ArgumentNullException(nameof(str));
+
+            string[] oidString = str.Split(SepArray);
+            uint[] oidNums = new uint[oidString.Length];
+            for (int i = 0; i < oidString.Length; i++)
+            {
+                oidNums[i] = (uint)int.Parse(oidString[i], CultureInfo.InvariantCulture);
+            }
+
+            // Handle the first two oidNums special
+            if (oidNums.Length < 2)
+                throw new CryptographicUnexpectedOperationException(SR.Cryptography_InvalidOID);
+
+            uint firstTwoOidNums = (oidNums[0] * 40) + oidNums[1];
+
+            // Determine length of output array
+            int encodedOidNumsLength = 2; // Reserve first two bytes for later
+            EncodeSingleOidNum(firstTwoOidNums, null, ref encodedOidNumsLength);
+            for (int i = 2; i < oidNums.Length; i++)
+            {
+                EncodeSingleOidNum(oidNums[i], null, ref encodedOidNumsLength);
+            }
+
+            // Allocate the array to receive encoded oidNums
+            byte[] encodedOidNums = new byte[encodedOidNumsLength];
+            int encodedOidNumsIndex = 2;
+
+            // Encode each segment
+            EncodeSingleOidNum(firstTwoOidNums, encodedOidNums, ref encodedOidNumsIndex);
+            for (int i = 2; i < oidNums.Length; i++)
+            {
+                EncodeSingleOidNum(oidNums[i], encodedOidNums, ref encodedOidNumsIndex);
+            }
+
+            Debug.Assert(encodedOidNumsIndex == encodedOidNumsLength);
+
+            // Final return value is 06 <length> encodedOidNums[]
+            if (encodedOidNumsIndex - 2 > 0x7f)
+                throw new CryptographicUnexpectedOperationException(SR.Cryptography_Config_EncodedOIDError);
+
+            encodedOidNums[0] = (byte)0x06;
+            encodedOidNums[1] = (byte)(encodedOidNumsIndex - 2);
+
+            return encodedOidNums;
+        }
+
+        private static void EncodeSingleOidNum(uint value, byte[] destination, ref int index)
+        {
+            // Write directly to destination starting at index, and update index based on how many bytes written.
+            // If destination is null, just return updated index.
+            if (unchecked((int)value) < 0x80)
+            {
+                if (destination != null)
+                {
+                    destination[index++] = (byte)value;
+                }
+                else
+                {
+                    index += 1;
+                }
+            }
+            else if (value < 0x4000)
+            {
+                if (destination != null)
+                {
+                    destination[index++] = (byte)((value >> 7) | 0x80);
+                    destination[index++] = (byte)(value & 0x7f);
+                }
+                else
+                {
+                    index += 2;
+                }
+            }
+            else if (value < 0x200000)
+            {
+                if (destination != null)
+                {
+                    destination[index++] = (byte)((value >> 14) | 0x80);
+                    destination[index++] = (byte)((value >> 7) | 0x80);
+                    destination[index++] = (byte)(value & 0x7f);
+                }
+                else
+                {
+                    index += 3;
+                }
+            }
+            else if (value < 0x10000000)
+            {
+                if (destination != null)
+                {
+                    destination[index++] = (byte)((value >> 21) | 0x80);
+                    destination[index++] = (byte)((value >> 14) | 0x80);
+                    destination[index++] = (byte)((value >> 7) | 0x80);
+                    destination[index++] = (byte)(value & 0x7f);
+                }
+                else
+                {
+                    index += 4;
+                }
+            }
+            else
+            {
+                if (destination != null)
+                {
+                    destination[index++] = (byte)((value >> 28) | 0x80);
+                    destination[index++] = (byte)((value >> 21) | 0x80);
+                    destination[index++] = (byte)((value >> 14) | 0x80);
+                    destination[index++] = (byte)((value >> 7) | 0x80);
+                    destination[index++] = (byte)(value & 0x7f);
+                }
+                else
+                {
+                    index += 5;
+                }
+            }
         }
     }
 }
