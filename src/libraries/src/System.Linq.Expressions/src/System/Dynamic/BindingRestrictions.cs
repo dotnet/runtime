@@ -348,6 +348,7 @@ namespace System.Dynamic
 
             public BindingRestrictionsProxy(BindingRestrictions node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 
