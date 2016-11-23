@@ -239,7 +239,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) NO_WAY(msg)
 
-#if defined(_HOST_X86_)
+#if defined(_HOST_X86_) && !defined(FEATURE_PAL)
 
 // While debugging in an Debugger, the "int 3" will cause the program to break
 // Outside, the exception handler will just filter out the "int 3".
