@@ -66,12 +66,19 @@ namespace System.Runtime.CompilerServices
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                if (node.Parameters.Count > 0)
+                if (node.ParameterCount > 0)
                 {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                    var parameters = new HashSet<ParameterExpression>();
+
+                    for (int i = 0, n = node.ParameterCount; i < n; i++)
+                    {
+                        parameters.Add(node.GetParameter(i));
+                    }
+
+                    _shadowedVars.Push(parameters);
                 }
                 Expression b = Visit(node.Body);
-                if (node.Parameters.Count > 0)
+                if (node.ParameterCount > 0)
                 {
                     _shadowedVars.Pop();
                 }
@@ -79,7 +86,7 @@ namespace System.Runtime.CompilerServices
                 {
                     return node;
                 }
-                return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
+                return node.Rewrite(b, parameters: null);
             }
 
             protected internal override Expression VisitBlock(BlockExpression node)
