@@ -710,10 +710,15 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_PROFILER_TAILCALL_TRASH;
 #endif // defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
 
-#if defined(_TARGET_AMD64_)
         case CORINFO_HELP_ASSIGN_BYREF:
+#if defined(_TARGET_AMD64_)
             // this helper doesn't trash RSI and RDI
             return RBM_CALLEE_TRASH_NOGC & ~(RBM_RSI | RBM_RDI);
+#elif defined(_TARGET_X86_)
+            // This helper only trashes ECX.
+            return RBM_ECX;
+#else
+            return RBM_CALLEE_TRASH_NOGC;
 #endif // defined(_TARGET_AMD64_)
 
         default:
