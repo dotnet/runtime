@@ -532,7 +532,9 @@ BOOL ThreadpoolMgr::SetMaxThreadsHelper(DWORD MaxWorkerThreads,
     CrstHolder csh(&WorkerCriticalSection);
 
     if (MaxWorkerThreads >= (DWORD)MinLimitTotalWorkerThreads &&
-       MaxIOCompletionThreads >= (DWORD)MinLimitTotalCPThreads)
+        MaxIOCompletionThreads >= (DWORD)MinLimitTotalCPThreads &&
+        MaxWorkerThreads != 0 &&
+        MaxIOCompletionThreads != 0)
     {
         BEGIN_SO_INTOLERANT_CODE(GetThread());
 
