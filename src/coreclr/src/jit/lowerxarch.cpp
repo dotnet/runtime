@@ -2754,14 +2754,14 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             else
             {
 
-                // Need two SIMD registers as scratch.
+                // Need one SIMD register as scratch.
                 // See genSIMDIntrinsicRelOp() for details on code sequence generate and
-                // the need for two scratch registers.
+                // the need for one scratch register.
                 //
                 // Note these intrinsics produce a BOOL result, hence internal float
                 // registers reserved are guaranteed to be different from target
                 // integer register without explicitly specifying.
-                info->internalFloatCount = 2;
+                info->internalFloatCount = 1;
                 info->setInternalCandidates(lsra, lsra->allSIMDRegs());
             }
             break;
