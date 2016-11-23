@@ -1335,10 +1335,8 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     LPCUTF8 methodName = MethodDescPtr->GetName();
     EECodeInfo codeInfo(pCode);
     TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
-    
-#ifdef _TARGET_ARM_
-    pCode &= ~1; // clear thumb flag for debug info
-#endif    
+
+    pCode = PCODEToPINSTR(pCode);
 
     /* Get module name */
     const Module* mod = MethodDescPtr->GetMethodTable()->GetModule();
@@ -1431,7 +1429,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
         return;
     }
 
-    CodeHeader* pCH = ((CodeHeader*)(pCode & ~1)) - 1;
+    CodeHeader* pCH = (CodeHeader*)pCode - 1;
     CalledMethod* pCalledMethods = reinterpret_cast<CalledMethod*>(pCH->GetCalledMethods());
     /* Collect addresses of thunks called by method */
     if (!CollectCalledMethods(pCalledMethods))
@@ -1603,7 +1601,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     for (int i = 1 + method.GetCount(); i < SymbolCount; i++)
     {
         ++pShdr;
-        pShdr->sh_addr = SymbolNames[i].m_value;
+        pShdr->sh_addr = PCODEToPINSTR(SymbolNames[i].m_value);
         pShdr->sh_size = 8;
     }
 
@@ -2231,10 +2229,7 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize)
         sym[i].st_name = SymbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
         sym[i].st_other = 0;
-        sym[i].st_value = SymbolNames[i].m_value - addr;
-#ifdef _TARGET_ARM_
-        sym[i].st_value |= 1; // for THUMB code
-#endif    
+        sym[i].st_value = PINSTRToPCODE(SymbolNames[i].m_value - addr);
         sym[i].st_shndx = textSectionIndex;
         sym[i].st_size = SymbolNames[i].m_size;
     }
@@ -2246,7 +2241,11 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize)
         sym[i].st_other = 0;
         sym[i].st_shndx = SectionNamesCount + (i - (1 + method.GetCount())); // .thunks section index
         sym[i].st_size = 8;
+#ifdef _TARGET_ARM_
+        sym[i].st_value = 1; // for THUMB code
+#else
         sym[i].st_value = 0;
+#endif
     }
     return true;
 }
