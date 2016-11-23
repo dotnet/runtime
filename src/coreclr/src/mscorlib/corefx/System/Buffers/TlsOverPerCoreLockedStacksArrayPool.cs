@@ -46,6 +46,11 @@ namespace System.Buffers
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
         private static T[][] t_tlsBuckets;
+        /// <summary>
+        /// Cached processor number used as a hint for which per-core stack to access.
+        /// </summary>
+        [ThreadStatic]
+        private static int? t_cachedProcessorNumber;
 
         /// <summary>Initialize the pool.</summary>
         public TlsOverPerCoreLockedStacksArrayPool()
@@ -67,6 +72,19 @@ namespace System.Buffers
 
         /// <summary>Gets an ID for the pool to use with events.</summary>
         private int Id => GetHashCode();
+
+        /// <summary>Gets the processor number associated with the current thread.</summary>
+        /// <remarks>Uses a cached value if one exists on the current thread.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetCurrentProcessorNumber()
+        {
+            int? num = t_cachedProcessorNumber;
+            if (!num.HasValue)
+            {
+                t_cachedProcessorNumber = num = Win32Native.GetCurrentProcessorNumber();
+            }
+            return num.GetValueOrDefault();
+        }
 
         public override T[] Rent(int minimumLength)
         {
@@ -265,7 +283,7 @@ namespace System.Buffers
             public bool TryPush(T[] array)
             {
                 bool enqueued = false;
-                Monitor.Enter(this);
+                MonitorEnterWithProcNumberFlush(this);
                 if (_count < MaxBuffersPerArraySizePerCore)
                 {
                     _arrays[_count++] = array;
@@ -279,7 +297,7 @@ namespace System.Buffers
             public T[] TryPop()
             {
                 T[] arr = null;
-                Monitor.Enter(this);
+                MonitorEnterWithProcNumberFlush(this);
                 if (_count > 0)
                 {
                     arr = _arrays[--_count];
@@ -287,6 +305,21 @@ namespace System.Buffers
                 }
                 Monitor.Exit(this);
                 return arr;
+            }
+
+            /// <summary>
+            /// Enters the monitor on the object.  If there is any contention while trying
+            /// to acquire the monitor, it flushes the cached processor number so that subsequent
+            /// attempts to access the per-core stacks will use an updated processor number.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void MonitorEnterWithProcNumberFlush(object obj)
+            {
+                if (!Monitor.TryEnter(obj))
+                {
+                    t_cachedProcessorNumber = null;
+                    Monitor.Enter(obj);
+                }
             }
         }
     }
