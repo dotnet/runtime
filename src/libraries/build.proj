@@ -106,7 +106,7 @@
       <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
     </IsRestoreRequired>
 
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] $(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')" />
+    <Message Importance="High" Condition="'$(RestoreRequired)' == 'true' and '$(BuildTestsAgainstPackages)' != 'true'" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] $(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')" />
     
     <!-- This is to restore the test-runtime project.json up front which contains the latest packages to be tested to avoid download contention within nuget. -->
     <Exec Command="$(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')"
