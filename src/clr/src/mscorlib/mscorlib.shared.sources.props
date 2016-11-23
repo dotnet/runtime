@@ -428,7 +428,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\UnitySerializationHolder.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\UnhandledExceptionEventArgs.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\UnhandledExceptionEventHandler.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\UnSafeCharBuffer.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Version.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Void.cs" />
