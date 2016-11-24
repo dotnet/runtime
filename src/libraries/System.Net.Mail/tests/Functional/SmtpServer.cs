@@ -51,19 +51,28 @@ namespace System.Net.Mail.Tests
 
         public void Run()
         {
-            string s;
-            using (TcpClient client = _server.AcceptTcpClient())
+            try
             {
-                Trace("connection", EndPoint.Port);
-                using (NetworkStream ns = client.GetStream())
+                string s;
+                using (TcpClient client = _server.AcceptTcpClient())
                 {
-                    WriteNS(ns, "220 localhost\r\n");
-                    using (StreamReader r = new StreamReader(ns, Encoding.UTF8))
+                    Trace("connection", EndPoint.Port);
+                    using (NetworkStream ns = client.GetStream())
                     {
-                        while ((s = r.ReadLine()) != null && Dispatch(ns, r, s))
-                            ;
+                        WriteNS(ns, "220 localhost\r\n");
+                        using (StreamReader r = new StreamReader(ns, Encoding.UTF8))
+                        {
+                            while ((s = r.ReadLine()) != null && Dispatch(ns, r, s))
+                                ;
+                        }
                     }
                 }
+            }
+            catch (SocketException e)
+            {
+                // The _server might have been stopped.
+                if (e.SocketErrorCode != SocketError.Interrupted)
+                    throw;
             }
         }
 
