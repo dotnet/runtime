@@ -64,16 +64,5 @@ namespace System.Dynamic.Utils
         }
 
         public static TypeCode GetTypeCode(this Type type) => Type.GetTypeCode(type);
-
-        public static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
-        {
-            foreach (MethodInfo method in type.GetRuntimeMethods())
-            {
-                if (method.IsStatic)
-                {
-                    yield return method;
-                }
-            }
-        }
     }
 }
