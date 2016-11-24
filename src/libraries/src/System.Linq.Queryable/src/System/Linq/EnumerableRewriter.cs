@@ -171,16 +171,25 @@ namespace System.Linq
                 }
                 if (equiv == null)
                 {
-                    var interfacesWithInfo = info.ImplementedInterfaces.Select(i => new { Type = i, Info = i.GetTypeInfo() }).ToArray();
+                    var interfacesWithInfo = info.ImplementedInterfaces.Select(IntrospectionExtensions.GetTypeInfo).ToArray();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
-                        .Where(i => i.Info.IsGenericType && i.Info.GenericTypeArguments.Length == 1)
-                        .Select(i => new { Type = i.Type, Info = i.Info, GenType = i.Info.GetGenericTypeDefinition() });
-                    Type typeArg = singleTypeGenInterfacesWithGetType.Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>)).Select(i => i.Info.GenericTypeArguments[0]).Distinct().SingleOrDefault();
+                        .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
+                        .Select(i => new {Info = i, GenType = i.GetGenericTypeDefinition() })
+                        .ToArray();
+                    Type typeArg = singleTypeGenInterfacesWithGetType
+                        .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
+                        .Select(i => i.Info.GenericTypeArguments[0])
+                        .Distinct()
+                        .SingleOrDefault();
                     if (typeArg != null)
                         equiv = typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
                     else
                     {
-                        typeArg = singleTypeGenInterfacesWithGetType.Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>)).Select(i => i.Info.GenericTypeArguments[0]).Distinct().Single();
+                        typeArg = singleTypeGenInterfacesWithGetType
+                            .Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>))
+                            .Select(i => i.Info.GenericTypeArguments[0])
+                            .Distinct()
+                            .Single();
                         equiv = typeof(IEnumerable<>).MakeGenericType(typeArg);
                     }
                 }
