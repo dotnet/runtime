@@ -6009,9 +6009,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics") && !strcmp (nspace, "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
 			klass->simd_type = 1;
-	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (nspace, "System.Numerics")) {
-		if (!strcmp (name, "Vector`1"))
-			klass->simd_type = 1;
 	}
 
 	mono_loader_unlock ();
@@ -6068,6 +6065,12 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 	}
 }
 
+gboolean
+mono_type_is_primitive (MonoType *type)
+{
+	return (type->type >= MONO_TYPE_BOOLEAN && type->type <= MONO_TYPE_R8) ||
+			type-> type == MONO_TYPE_I || type->type == MONO_TYPE_U;
+}
 
 /*
  * Create the `MonoClass' for an instantiation of a generic type.
@@ -6106,7 +6109,13 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->this_arg.byref = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
-	klass->simd_type = gklass->simd_type;
+
+	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
+		g_assert (gclass->context.class_inst);
+		g_assert (gclass->context.class_inst->type_argc > 0);
+		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
+			klass->simd_type = 1;
+	}
 
 	klass->cast_class = klass->element_class = klass;
 

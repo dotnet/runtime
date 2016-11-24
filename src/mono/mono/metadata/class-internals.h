@@ -1310,6 +1310,9 @@ mono_type_is_valid_enum_basetype (MonoType * type);
 MONO_API gboolean
 mono_class_is_valid_enum (MonoClass *klass);
 
+gboolean
+mono_type_is_primitive (MonoType *type);
+
 MonoType *
 mono_type_get_checked        (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 

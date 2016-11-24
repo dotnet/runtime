@@ -2054,12 +2054,6 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		return NULL;
 	}
 
-	if (cfg->verbose_level > 1) {
-		char *name = mono_method_full_name (cmethod, TRUE);
-		printf ("  SIMD intrinsic %s\n", name);
-		g_free (name);
-	}
-
 	etype = mono_class_get_context (cmethod->klass)->class_inst->type_argv [0];
 	size = mono_class_value_size (mono_class_from_mono_type (etype), NULL);
 	g_assert (size);
@@ -2067,6 +2061,12 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 
 	if (!MONO_TYPE_IS_PRIMITIVE (etype))
 		return NULL;
+
+	if (cfg->verbose_level > 1) {
+		char *name = mono_method_full_name (cmethod, TRUE);
+		printf ("  SIMD intrinsic %s\n", name);
+		g_free (name);
+	}
 
 	switch (intrins->name) {
 	case SN_get_Count:

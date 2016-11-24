@@ -327,6 +327,8 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_VMOVE;
 	case MONO_TYPE_GENERICINST:
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+			return OP_XMOVE;
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
 	case MONO_TYPE_VAR:

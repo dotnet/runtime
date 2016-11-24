@@ -365,6 +365,8 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+			return OP_STOREX_MEMBASE;
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
 	case MONO_TYPE_VAR:
