@@ -483,12 +483,7 @@ namespace System.Dynamic.Utils
             bool retryForLifted = !AreEquivalent(nnExprType, convertFrom) || !AreEquivalent(nnConvType, convertToType);
 
             // try exact match on types
-            IEnumerable<MethodInfo> eMethods = nnExprType.GetStaticMethods();
-            if (retryForLifted)
-            {
-                // If this may be scanned again for a lifted match, store it in a list.
-                eMethods = new List<MethodInfo>(eMethods);
-            }
+            MethodInfo[] eMethods = nnExprType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             MethodInfo method = FindConversionOperator(eMethods, convertFrom, convertToType, implicitOnly);
             if (method != null)
@@ -496,11 +491,7 @@ namespace System.Dynamic.Utils
                 return method;
             }
 
-            IEnumerable<MethodInfo> cMethods = nnConvType.GetStaticMethods();
-            if (retryForLifted)
-            {
-                cMethods = new List<MethodInfo>(cMethods);
-            }
+            MethodInfo[] cMethods = nnConvType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             method = FindConversionOperator(cMethods, convertFrom, convertToType, implicitOnly);
             if (method != null)
@@ -520,7 +511,7 @@ namespace System.Dynamic.Utils
             return null;
         }
 
-        private static MethodInfo FindConversionOperator(IEnumerable<MethodInfo> methods, Type typeFrom, Type typeTo, bool implicitOnly)
+        private static MethodInfo FindConversionOperator(MethodInfo[] methods, Type typeFrom, Type typeTo, bool implicitOnly)
         {
             foreach (MethodInfo mi in methods)
             {
