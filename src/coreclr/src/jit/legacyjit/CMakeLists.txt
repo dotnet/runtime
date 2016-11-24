@@ -1,24 +1,29 @@
-project(protojit)
+project(legacyjit)
 
+add_definitions(-DLEGACY_BACKEND)
 add_definitions(-DALT_JIT)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
-add_definitions(-DFEATURE_READYTORUN_COMPILER)
+# Note that legacy back-end does not define FEATURE_READYTORUN_COMPILER.
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
+# No SIMD in legacy back-end.
+remove_definitions(-DFEATURE_SIMD)
+remove_definitions(-DFEATURE_AVX_SUPPORT)
+
 if(WIN32)
-  add_definitions(-DFX_VER_INTERNALNAME_STR=protojit.dll)
+  add_definitions(-DFX_VER_INTERNALNAME_STR=legacyjit.dll)
 endif(WIN32)
 
-add_library_clr(protojit
+add_library_clr(legacyjit
    SHARED
    ${SHARED_LIB_SOURCES}
 )
 
-add_dependencies(protojit jit_exports)
+add_dependencies(legacyjit jit_exports)
 
-set_property(TARGET protojit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
-set_property(TARGET protojit APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
+set_property(TARGET legacyjit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
+set_property(TARGET legacyjit APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
 
 set(RYUJIT_LINK_LIBRARIES
    utilcodestaticnohost
@@ -49,9 +54,9 @@ else()
     )
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-target_link_libraries(protojit
+target_link_libraries(legacyjit
    ${RYUJIT_LINK_LIBRARIES}
 )
 
 # add the install targets
-install_clr(protojit)
+install_clr(legacyjit)

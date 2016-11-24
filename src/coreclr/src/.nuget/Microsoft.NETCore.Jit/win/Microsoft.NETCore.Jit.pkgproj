@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(BinDir)clrjit.dll" />
+    <ArchitectureSpecificNativeFile Condition="'$(PackagePlatform)' == 'x86'" Include="$(BinDir)compatjit.dll" />
     <CrossArchitectureSpecificNativeFile Include="$(BinDir)$(CrossTargetComponentFolder)\clrjit.dll" />
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>

@@ -109,8 +109,12 @@ if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=
 if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "altjitcrossgen"      (set __AltJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "buildstandalonegc"    (set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "compatjitcrossgen"   (set __CompatJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "legacyjitcrossgen"   (set __LegacyJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildstandalonegc"   (set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+@REM The following can be deleted once the CI system that passes it is updated to not pass it.
+if /i "%1" == "altjitcrossgen"      (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set __UnprocessedBuildArgs=!__args!
@@ -370,9 +374,14 @@ set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft
 if %__BuildNativeCoreLib% EQU 1 (
     echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    if "%__AltJitCrossgen%"=="1" (
+    if "%__CompatJitCrossgen%"=="1" (
+        set COMPlus_UseWindowsX86CoreLegacyJit=1
+    )
+
+    if "%__LegacyJitCrossgen%"=="1" (
+        set COMPlus_AltJit=*
         set COMPlus_AltJitNgen=*
-        set COMPlus_AltJitName=protojit.dll
+        set COMPlus_AltJitName=legacyjit.dll
     )
 
     echo "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll"
@@ -397,7 +406,12 @@ if %__BuildNativeCoreLib% EQU 1 (
     "!__CrossgenExe!" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "!__CrossGenCoreLibLog!" 2>&1
     set err=!errorlevel!
 
-    if "%__AltJitCrossgen%"=="1" (
+    if "%__CompatJitCrossgen%"=="1" (
+        set COMPlus_UseWindowsX86CoreLegacyJit=
+    )
+
+    if "%__LegacyJitCrossgen%"=="1" (
+        set COMPlus_AltJit=
         set COMPlus_AltJitNgen=
         set COMPlus_AltJitName=
     )
