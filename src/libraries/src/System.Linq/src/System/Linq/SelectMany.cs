@@ -21,18 +21,7 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(selector));
             }
 
-            return SelectManyIterator1(source, selector);
-        }
-
-        private static IEnumerable<TResult> SelectManyIterator1<TSource, TResult>(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
-        {
-            foreach (TSource element in source)
-            {
-                foreach (TResult subElement in selector(element))
-                {
-                    yield return subElement;
-                }
-            }
+            return new SelectManyIterator1<TSource, TResult>(source, selector);
         }
 
         public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TResult>> selector)
@@ -135,14 +124,14 @@ namespace System.Linq
             }
         }
 
-        private sealed class SelectManyIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
+        private sealed class SelectManyIterator1<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, IEnumerable<TResult>> _selector;
             private IEnumerator<TSource> _sourceEnumerator;
             private IEnumerator<TResult> _subEnumerator;
 
-            internal SelectManyIterator(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
+            internal SelectManyIterator1(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(selector != null);
@@ -153,7 +142,7 @@ namespace System.Linq
 
             public override Iterator<TResult> Clone()
             {
-                return new SelectManyIterator<TSource, TResult>(_source, _selector);
+                return new SelectManyIterator1<TSource, TResult>(_source, _selector);
             }
 
             public override void Dispose()
