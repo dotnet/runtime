@@ -778,6 +778,7 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 			else
 				modules[i + 1] = module->address_start;
 		}
+		mono_w32process_module_free ((MonoW32ProcessModule *)mods_iter->data);
 		mods_iter = g_slist_next (mods_iter);
 		count++;
 	}
@@ -785,9 +786,6 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 	/* count + 1 to leave slot 0 for the main module */
 	*needed = sizeof(gpointer) * (count + 1);
 
-	for (mods_iter = mods; mods_iter; mods_iter = g_slist_next (mods_iter)) {
-		mono_w32process_module_free ((MonoW32ProcessModule *)mods_iter->data);
-	}
 	g_slist_free (mods);
 	g_free (proc_name);
 
