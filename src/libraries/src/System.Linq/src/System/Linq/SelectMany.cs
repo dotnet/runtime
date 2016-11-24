@@ -203,6 +203,7 @@ namespace System.Linq
                         if (!_subEnumerator.MoveNext())
                         {
                             _subEnumerator.Dispose();
+                            _subEnumerator = null;
                             _state = 2;
                             goto case 2;
                         }
