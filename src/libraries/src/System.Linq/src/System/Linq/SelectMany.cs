@@ -21,7 +21,7 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(selector));
             }
 
-            return new SelectManyIterator1<TSource, TResult>(source, selector);
+            return new SelectManySingleSelectorIterator<TSource, TResult>(source, selector);
         }
 
         public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TResult>> selector)
@@ -36,10 +36,10 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(selector));
             }
 
-            return SelectManyIterator2(source, selector);
+            return SelectManyIterator(source, selector);
         }
 
-        private static IEnumerable<TResult> SelectManyIterator2<TSource, TResult>(IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TResult>> selector)
+        private static IEnumerable<TResult> SelectManyIterator<TSource, TResult>(IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TResult>> selector)
         {
             int index = -1;
             foreach (TSource element in source)
@@ -73,10 +73,10 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(resultSelector));
             }
 
-            return SelectManyIterator3(source, collectionSelector, resultSelector);
+            return SelectManyIterator(source, collectionSelector, resultSelector);
         }
 
-        private static IEnumerable<TResult> SelectManyIterator3<TSource, TCollection, TResult>(IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
+        private static IEnumerable<TResult> SelectManyIterator<TSource, TCollection, TResult>(IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
         {
             int index = -1;
             foreach (TSource element in source)
@@ -110,10 +110,10 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(resultSelector));
             }
 
-            return SelectManyIterator4(source, collectionSelector, resultSelector);
+            return SelectManyIterator(source, collectionSelector, resultSelector);
         }
 
-        private static IEnumerable<TResult> SelectManyIterator4<TSource, TCollection, TResult>(IEnumerable<TSource> source, Func<TSource, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
+        private static IEnumerable<TResult> SelectManyIterator<TSource, TCollection, TResult>(IEnumerable<TSource> source, Func<TSource, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
         {
             foreach (TSource element in source)
             {
@@ -124,14 +124,14 @@ namespace System.Linq
             }
         }
 
-        private sealed class SelectManyIterator1<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
+        private sealed class SelectManySingleSelectorIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, IEnumerable<TResult>> _selector;
             private IEnumerator<TSource> _sourceEnumerator;
             private IEnumerator<TResult> _subEnumerator;
 
-            internal SelectManyIterator1(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
+            internal SelectManySingleSelectorIterator(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(selector != null);
@@ -142,7 +142,7 @@ namespace System.Linq
 
             public override Iterator<TResult> Clone()
             {
-                return new SelectManyIterator1<TSource, TResult>(_source, _selector);
+                return new SelectManySingleSelectorIterator<TSource, TResult>(_source, _selector);
             }
 
             public override void Dispose()
