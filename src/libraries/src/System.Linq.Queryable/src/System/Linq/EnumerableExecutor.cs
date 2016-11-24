@@ -32,7 +32,7 @@ namespace System.Linq
 
         internal override object ExecuteBoxed()
         {
-            return this.Execute();
+            return Execute();
         }
 
         internal T Execute()

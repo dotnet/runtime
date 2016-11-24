@@ -21,7 +21,7 @@ namespace System.Linq
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            Expression obj = this.Visit(m.Object);
+            Expression obj = Visit(m.Object);
             ReadOnlyCollection<Expression> args = Visit(m.Arguments);
 
             // check for args changed
@@ -40,14 +40,14 @@ namespace System.Linq
                 {
                     // convert Queryable method to Enumerable method
                     MethodInfo seqMethod = FindEnumerableMethod(mInfo.Name, args, typeArgs);
-                    args = this.FixupQuotedArgs(seqMethod, args);
+                    args = FixupQuotedArgs(seqMethod, args);
                     return Expression.Call(obj, seqMethod, args);
                 }
                 else
                 {
                     // rebind to new method
                     MethodInfo method = FindMethod(mInfo.DeclaringType, mInfo.Name, args, typeArgs);
-                    args = this.FixupQuotedArgs(method, args);
+                    args = FixupQuotedArgs(method, args);
                     return Expression.Call(obj, method, args);
                 }
             }
@@ -103,7 +103,7 @@ namespace System.Linq
                     List<Expression> exprs = new List<Expression>(na.Expressions.Count);
                     for (int i = 0, n = na.Expressions.Count; i < n; i++)
                     {
-                        exprs.Add(this.FixupQuotedExpression(elementType, na.Expressions[i]));
+                        exprs.Add(FixupQuotedExpression(elementType, na.Expressions[i]));
                     }
                     expression = Expression.NewArrayInit(elementType, exprs);
                 }

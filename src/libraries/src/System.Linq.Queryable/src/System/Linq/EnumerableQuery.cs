@@ -27,18 +27,12 @@ namespace System.Linq
     }
 
     // Must remain public for Silverlight
-    public class EnumerableQuery<T> : EnumerableQuery, IOrderedQueryable<T>, IQueryable, IQueryProvider, IEnumerable<T>, IEnumerable
+    public class EnumerableQuery<T> : EnumerableQuery, IOrderedQueryable<T>, IQueryProvider
     {
         private readonly Expression _expression;
         private IEnumerable<T> _enumerable;
 
-        IQueryProvider IQueryable.Provider
-        {
-            get
-            {
-                return (IQueryProvider)this;
-            }
-        }
+        IQueryProvider IQueryable.Provider => this;
 
         // Must remain public for Silverlight
         public EnumerableQuery(IEnumerable<T> enumerable)
@@ -80,18 +74,18 @@ namespace System.Linq
             Type iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
             if (iqType == null)
                 throw Error.ArgumentNotValid(nameof(expression));
-            return EnumerableQuery.Create(iqType.GetGenericArguments()[0], expression);
+            return Create(iqType.GetGenericArguments()[0], expression);
         }
 
-        IQueryable<S> IQueryProvider.CreateQuery<S>(Expression expression)
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
         {
             if (expression == null)
                 throw Error.ArgumentNull(nameof(expression));
-            if (!typeof(IQueryable<S>).IsAssignableFrom(expression.Type))
+            if (!typeof(IQueryable<TElement>).IsAssignableFrom(expression.Type))
             {
                 throw Error.ArgumentNotValid(nameof(expression));
             }
-            return new EnumerableQuery<S>(expression);
+            return new EnumerableQuery<TElement>(expression);
         }
 
         // Baselining as Safe for Mix demo so that interface can be transparent. Marking this
@@ -109,23 +103,23 @@ namespace System.Linq
         }
 
         // see above
-        S IQueryProvider.Execute<S>(Expression expression)
+        TElement IQueryProvider.Execute<TElement>(Expression expression)
         {
             if (expression == null)
                 throw Error.ArgumentNull(nameof(expression));
-            if (!typeof(S).IsAssignableFrom(expression.Type))
+            if (!typeof(TElement).IsAssignableFrom(expression.Type))
                 throw Error.ArgumentNotValid(nameof(expression));
-            return new EnumerableExecutor<S>(expression).Execute();
+            return new EnumerableExecutor<TElement>(expression).Execute();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
 
         private IEnumerator<T> GetEnumerator()
