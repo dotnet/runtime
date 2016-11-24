@@ -73,6 +73,14 @@ Abstract:
     ASSIGN_REG(X26)        \
     ASSIGN_REG(X27)        \
     ASSIGN_REG(X28)
+#elif defined(_X86_)
+#define ASSIGN_UNWIND_REGS \
+    ASSIGN_REG(Eip)        \
+    ASSIGN_REG(Esp)        \
+    ASSIGN_REG(Ebp)        \
+    ASSIGN_REG(Ebx)        \
+    ASSIGN_REG(Esi)        \
+    ASSIGN_REG(Edi)
 #else
 #error unsupported architecture
 #endif
@@ -122,6 +130,13 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_64_R13, winContext->R13);
     unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
     unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
+#elif defined(_X86_)
+    unw_set_reg(cursor, UNW_REG_IP, winContext->Eip);
+    unw_set_reg(cursor, UNW_REG_SP, winContext->Esp);
+    unw_set_reg(cursor, UNW_X86_EBP, winContext->Ebp);
+    unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
+    unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
+    unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
 #endif
 }
 #endif
@@ -137,6 +152,13 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
+#elif defined(_X86_)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
+    unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
+    unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
+    unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
+    unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
 #elif defined(_ARM_)
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
@@ -196,6 +218,11 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_X86_64_R13, &contextPointers->R13);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R15, &contextPointers->R15);
+#elif defined(_X86_)
+    GetContextPointer(cursor, unwContext, UNW_X86_EBX, &contextPointers->Ebx);
+    GetContextPointer(cursor, unwContext, UNW_X86_EBP, &contextPointers->Ebp);
+    GetContextPointer(cursor, unwContext, UNW_X86_ESI, &contextPointers->Esi);
+    GetContextPointer(cursor, unwContext, UNW_X86_EDI, &contextPointers->Edi);
 #elif defined(_ARM_)
     GetContextPointer(cursor, unwContext, UNW_ARM_R4, &contextPointers->R4);
     GetContextPointer(cursor, unwContext, UNW_ARM_R5, &contextPointers->R5);
