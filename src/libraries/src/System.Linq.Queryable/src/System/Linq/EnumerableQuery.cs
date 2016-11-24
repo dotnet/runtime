@@ -16,13 +16,13 @@ namespace System.Linq
         internal static IQueryable Create(Type elementType, IEnumerable sequence)
         {
             Type seqType = typeof(EnumerableQuery<>).MakeGenericType(elementType);
-            return (IQueryable)Activator.CreateInstance(seqType, new object[] { sequence });
+            return (IQueryable)Activator.CreateInstance(seqType, sequence);
         }
 
         internal static IQueryable Create(Type elementType, Expression expression)
         {
             Type seqType = typeof(EnumerableQuery<>).MakeGenericType(elementType);
-            return (IQueryable)Activator.CreateInstance(seqType, new object[] { expression });
+            return (IQueryable)Activator.CreateInstance(seqType, expression);
         }
     }
 

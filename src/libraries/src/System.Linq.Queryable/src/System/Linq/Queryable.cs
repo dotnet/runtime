@@ -65,9 +65,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OfType_TResult_1(typeof(TResult)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.OfType_TResult_1(typeof(TResult)), source.Expression));
         }
 
         public static IQueryable<TResult> Cast<TResult>(this IQueryable source)
@@ -77,9 +75,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Cast_TResult_1(typeof(TResult)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Cast_TResult_1(typeof(TResult)), source.Expression));
         }
 
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
@@ -192,15 +188,7 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector)
-                        }
-                    ));
+                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
@@ -218,16 +206,7 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                        }
-                    ));
+                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector)
@@ -245,14 +224,7 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector) }
-                    ));
+                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
@@ -270,15 +242,7 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
@@ -528,9 +492,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_4(typeof(TSource), typeof(TKey), typeof(TElement)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_4(typeof(TSource), typeof(TKey), typeof(TElement)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector)
@@ -546,9 +508,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_4(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_4(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector)));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector)
@@ -578,9 +538,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TResult_4(typeof(TSource), typeof(TKey), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TResult_4(typeof(TSource), typeof(TKey), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
@@ -596,9 +554,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_5(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_5(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source)
@@ -608,9 +564,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Distinct_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Distinct_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source, IEqualityComparer<TSource> comparer)
@@ -758,9 +712,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.First_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.First_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource First<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -784,9 +736,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.FirstOrDefault_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.FirstOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -810,9 +760,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Last_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Last_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource Last<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -836,9 +784,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LastOrDefault_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.LastOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -862,9 +808,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Single_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Single_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource Single<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -888,9 +832,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SingleOrDefault_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.SingleOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -940,9 +882,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.DefaultIfEmpty_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.DefaultIfEmpty_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source, TSource defaultValue)
@@ -988,9 +928,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Reverse_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Reverse_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
@@ -1032,9 +970,7 @@ namespace System.Linq
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Any_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Any_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static bool Any<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -1072,9 +1008,7 @@ namespace System.Linq
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Count_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Count_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static int Count<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -1098,9 +1032,7 @@ namespace System.Linq
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LongCount_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.LongCount_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static long LongCount<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -1124,9 +1056,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Min_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Min_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TResult Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
@@ -1150,9 +1080,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Max_TSource_1(typeof(TSource)),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Max_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TResult Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
@@ -1176,9 +1104,7 @@ namespace System.Linq
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Int32_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Int32_1, source.Expression));
         }
 
         public static int? Sum(this IQueryable<int?> source)
@@ -1188,9 +1114,7 @@ namespace System.Linq
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableInt32_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableInt32_1, source.Expression));
         }
 
         public static long Sum(this IQueryable<long> source)
@@ -1200,9 +1124,7 @@ namespace System.Linq
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Int64_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Int64_1, source.Expression));
         }
 
         public static long? Sum(this IQueryable<long?> source)
@@ -1212,9 +1134,7 @@ namespace System.Linq
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableInt64_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableInt64_1, source.Expression));
         }
 
         public static float Sum(this IQueryable<float> source)
@@ -1224,9 +1144,7 @@ namespace System.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Single_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Single_1, source.Expression));
         }
 
         public static float? Sum(this IQueryable<float?> source)
@@ -1236,9 +1154,7 @@ namespace System.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableSingle_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableSingle_1, source.Expression));
         }
 
         public static double Sum(this IQueryable<double> source)
@@ -1248,9 +1164,7 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Double_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Double_1, source.Expression));
         }
 
         public static double? Sum(this IQueryable<double?> source)
@@ -1260,9 +1174,7 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableDouble_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableDouble_1, source.Expression));
         }
 
         public static decimal Sum(this IQueryable<decimal> source)
@@ -1272,9 +1184,7 @@ namespace System.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Decimal_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Decimal_1, source.Expression));
         }
 
         public static decimal? Sum(this IQueryable<decimal?> source)
@@ -1284,9 +1194,7 @@ namespace System.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableDecimal_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableDecimal_1, source.Expression));
         }
 
         public static int Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
@@ -1436,9 +1344,7 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Int32_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Int32_1, source.Expression));
         }
 
         public static double? Average(this IQueryable<int?> source)
@@ -1448,9 +1354,7 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableInt32_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableInt32_1, source.Expression));
         }
 
         public static double Average(this IQueryable<long> source)
@@ -1460,9 +1364,7 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Int64_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Int64_1, source.Expression));
         }
 
         public static double? Average(this IQueryable<long?> source)
@@ -1472,9 +1374,7 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableInt64_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableInt64_1, source.Expression));
         }
 
         public static float Average(this IQueryable<float> source)
@@ -1484,9 +1384,7 @@ namespace System.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Single_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Single_1, source.Expression));
         }
 
         public static float? Average(this IQueryable<float?> source)
@@ -1496,9 +1394,7 @@ namespace System.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableSingle_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableSingle_1, source.Expression));
         }
 
         public static double Average(this IQueryable<double> source)
@@ -1508,9 +1404,7 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Double_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Double_1, source.Expression));
         }
 
         public static double? Average(this IQueryable<double?> source)
@@ -1520,9 +1414,7 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableDouble_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableDouble_1, source.Expression));
         }
 
         public static decimal Average(this IQueryable<decimal> source)
@@ -1532,9 +1424,7 @@ namespace System.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Decimal_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Decimal_1, source.Expression));
         }
 
         public static decimal? Average(this IQueryable<decimal?> source)
@@ -1544,9 +1434,7 @@ namespace System.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableDecimal_1,
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableDecimal_1, source.Expression));
         }
 
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
@@ -1728,9 +1616,7 @@ namespace System.Linq
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Aggregate_TSource_TAccumulate_TResult_4(typeof(TSource), typeof(TAccumulate), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector) }
-                    ));
+                    CachedReflectionInfo.Aggregate_TSource_TAccumulate_TResult_4(typeof(TSource), typeof(TAccumulate), typeof(TResult)), source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
         }
     }
 }
