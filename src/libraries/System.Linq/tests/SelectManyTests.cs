@@ -423,29 +423,41 @@ namespace System.Linq.Tests
             var iterator = source.SelectMany(_ => subCollection);
 
             int index = 0; // How much have we gone into the iterator?
-            foreach (int item in iterator)
+            IEnumerator<int> e = iterator.GetEnumerator();
+
+            using (e)
             {
-                Assert.Equal(subState[subIndex], item); // Verify Current.
-                Assert.Equal(index / subLength, subIndex);
+                while (e.MoveNext())
+                {
+                    int item = e.Current;
 
-                Assert.False(sourceDisposed); // Not yet.
+                    Assert.Equal(subState[subIndex], item); // Verify Current.
+                    Assert.Equal(index / subLength, subIndex);
 
-                // This represents whehter the sub-collection we're iterating thru right now
-                // has been disposed. Also not yet.
-                Assert.False(subCollectionDisposed[subIndex]);
+                    Assert.False(sourceDisposed); // Not yet.
 
-                // However, all of the sub-collections before us should have been disposed.
-                // Their indices should also be maxed out.
-                Assert.All(subState.Take(subIndex), s => Assert.Equal(subLength + 1, s));
-                Assert.All(subCollectionDisposed.Take(subIndex), t => Assert.True(t));
+                    // This represents whehter the sub-collection we're iterating thru right now
+                    // has been disposed. Also not yet.
+                    Assert.False(subCollectionDisposed[subIndex]);
 
-                index++;
+                    // However, all of the sub-collections before us should have been disposed.
+                    // Their indices should also be maxed out.
+                    Assert.All(subState.Take(subIndex), s => Assert.Equal(subLength + 1, s));
+                    Assert.All(subCollectionDisposed.Take(subIndex), t => Assert.True(t));
+
+                    index++;
+                }
             }
 
             Assert.True(sourceDisposed);
             Assert.Equal(sourceLength, subIndex);
             Assert.All(subState, s => Assert.Equal(subLength + 1, s));
             Assert.All(subCollectionDisposed, t => Assert.True(t));
+
+            // Make sure the iterator's enumerator has been disposed properly.
+            Assert.Equal(0, e.Current); // Default value.
+            Assert.False(e.MoveNext());
+            Assert.Equal(0, e.Current);
         }
 
         public static IEnumerable<object[]> DisposeAfterEnumerationData()
