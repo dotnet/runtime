@@ -6479,7 +6479,6 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *arg2 G_GN
 	return mono_class_from_generic_parameter_internal (param);
 }
 
-
 MonoClass *
 mono_ptr_class_get (MonoType *type)
 {
@@ -6549,45 +6548,51 @@ mono_ptr_class_get (MonoType *type)
 static MonoClass *
 mono_fnptr_class_get (MonoMethodSignature *sig)
 {
-	MonoClass *result;
+	MonoClass *result, *cached;
 	static GHashTable *ptr_hash = NULL;
 
 	/* FIXME: These should be allocate from a mempool as well, but which one ? */
 
 	mono_loader_lock ();
-
 	if (!ptr_hash)
 		ptr_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	
-	if ((result = (MonoClass *)g_hash_table_lookup (ptr_hash, sig))) {
-		mono_loader_unlock ();
-		return result;
-	}
-	result = g_new0 (MonoClass, 1);
+	cached = (MonoClass *)g_hash_table_lookup (ptr_hash, sig);
+	mono_loader_unlock ();
+	if (cached)
+		return cached;
 
-	classes_size += sizeof (MonoClassPointer);
-	++class_pointer_count;
+	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
 	result->class_kind = MONO_CLASS_POINTER;
 
-	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
-
 	result->image = mono_defaults.corlib; /* need to fix... */
-	result->inited = TRUE;
 	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
 	result->cast_class = result->element_class = result;
-	result->blittable = TRUE;
-
 	result->byval_arg.type = MONO_TYPE_FNPTR;
 	result->this_arg.type = result->byval_arg.type;
 	result->this_arg.data.method = result->byval_arg.data.method = sig;
 	result->this_arg.byref = TRUE;
 	result->blittable = TRUE;
+	result->inited = TRUE;
 
 	mono_class_setup_supertypes (result);
+
+	mono_loader_lock ();
+
+	cached = (MonoClass *)g_hash_table_lookup (ptr_hash, sig);
+	if (cached) {
+		g_free (result);
+		mono_loader_unlock ();
+		return cached;
+	}
+
+	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
+
+	classes_size += sizeof (MonoClassPointer);
+	++class_pointer_count;
 
 	g_hash_table_insert (ptr_hash, sig, result);
 
