@@ -169,8 +169,7 @@ namespace System.Linq
         private static Expression GetSourceExpression<TSource>(IEnumerable<TSource> source)
         {
             IQueryable<TSource> q = source as IQueryable<TSource>;
-            if (q != null) return q.Expression;
-            return Expression.Constant(source, typeof(IEnumerable<TSource>));
+            return q != null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
         }
 
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector)
