@@ -1425,12 +1425,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             switch (scenario) {
                 case 'default':
                     if (configuration == 'Checked') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test",
+                            "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}.*")
                     }
                     break
                 case 'pri1':
                     if (configuration == 'Release') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Priority 1 Build and Test")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Priority 1 Build and Test",
+                            "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+Priority 1 Build and Test.*")
                     }
                     break
                 case 'ilrt':
@@ -1622,7 +1624,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             switch (scenario) {
                 case 'default':
                     if (configuration == 'Checked') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test",
+                            "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}.*")
                     }
                     break
                 case 'r2r':
