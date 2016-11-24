@@ -15,7 +15,7 @@ namespace System.Linq
         internal static EnumerableExecutor Create(Expression expression)
         {
             Type execType = typeof(EnumerableExecutor<>).MakeGenericType(expression.Type);
-            return (EnumerableExecutor)Activator.CreateInstance(execType, new object[] { expression });
+            return (EnumerableExecutor)Activator.CreateInstance(execType, expression);
         }
     }
 
