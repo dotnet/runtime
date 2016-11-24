@@ -26,6 +26,9 @@ bld/
 [Oo]bj/
 msbuild.log
 
+# add back architecture directories ignored in 'Build results'
+!tests/x86
+
 # Visual Studio 2015
 .vs/
 
