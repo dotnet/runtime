@@ -186,7 +186,7 @@ namespace System.Runtime.CompilerServices
                     Expression.Condition(
                         Expression.Call(
                             CallSiteOps_SetNotMatched,
-                            @params.First()
+                            site
                         ),
                         Expression.Default(signature.ReturnLabel.Type),
                         Expression.Invoke(

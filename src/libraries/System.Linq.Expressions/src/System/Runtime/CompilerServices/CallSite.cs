@@ -667,7 +667,7 @@ namespace System.Runtime.CompilerServices
                 Expression.Block(
                     Expression.Call(
                         typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.SetNotMatched)),
-                        @params.First()
+                        @params[0]
                     ),
                     Expression.Default(invoke.GetReturnType())
                 ),
