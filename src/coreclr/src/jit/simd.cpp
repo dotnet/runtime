@@ -2391,8 +2391,9 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         {
 #if defined(_TARGET_XARCH_)
             // Right now dot product is supported only for float/double vectors and
-            // int vectors on AVX.
-            if (!varTypeIsFloating(baseType) && !(baseType == TYP_INT && canUseAVX()))
+            // int vectors on SSE4/AVX.
+            if (!varTypeIsFloating(baseType) &&
+                !(baseType == TYP_INT && getSIMDInstructionSet() >= InstructionSet_SSE3_4))
             {
                 return nullptr;
             }

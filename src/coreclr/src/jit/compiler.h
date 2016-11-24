@@ -6881,6 +6881,11 @@ private:
             return InstructionSet_AVX;
         }
 
+        if (CanUseSSE3_4())
+        {
+            return InstructionSet_SSE3_4;
+        }
+
         // min bar is SSE2
         assert(canUseSSE2());
         return InstructionSet_SSE2;
@@ -7341,6 +7346,16 @@ private:
 #endif
     }
 
+    // Whether SSE3, SSE3, SSE4.1 and SSE4.2 is available
+    bool CanUseSSE3_4() const
+    {
+#ifdef _TARGET_XARCH_
+        return opts.compCanUseSSE3_4;
+#else
+        return false;
+#endif
+    }
+
     bool canUseAVX() const
     {
 #ifdef FEATURE_AVX_SUPPORT
@@ -7453,7 +7468,8 @@ public:
         bool compUseFCOMI;
         bool compUseCMOV;
 #ifdef _TARGET_XARCH_
-        bool compCanUseSSE2; // Allow CodeGen to use "movq XMM" instructions
+        bool compCanUseSSE2;   // Allow CodeGen to use "movq XMM" instructions
+        bool compCanUseSSE3_4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
 
 #ifdef FEATURE_AVX_SUPPORT
         bool compCanUseAVX; // Allow CodeGen to use AVX 256-bit vectors for SIMD operations

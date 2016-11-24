@@ -30,6 +30,15 @@ bool IsSSE2Instruction(instruction ins)
     return (ins >= INS_FIRST_SSE2_INSTRUCTION && ins <= INS_LAST_SSE2_INSTRUCTION);
 }
 
+bool IsSSE4Instruction(instruction ins)
+{
+#ifdef LEGACY_BACKEND
+    return false;
+#else
+    return (ins >= INS_FIRST_SSE4_INSTRUCTION && ins <= INS_LAST_SSE4_INSTRUCTION);
+#endif
+}
+
 bool IsSSEOrAVXInstruction(instruction ins)
 {
 #ifdef FEATURE_AVX_SUPPORT
@@ -90,22 +99,45 @@ bool emitter::IsThreeOperandMoveAVXInstruction(instruction ins)
     return IsAVXInstruction(ins) &&
            (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps || ins == INS_movss);
 }
-#endif // FEATURE_AVX_SUPPORT
 
-// Returns true if the AVX instruction is a 4-byte opcode.
+// ------------------------------------------------------------------------------
+// Is4ByteAVXInstruction: Returns true if the AVX instruction is a 4-byte opcode.
+//
+// Arguments:
+//    ins  -  instructions
+//
 // Note that this should be true for any of the instructions in instrsXArch.h
 // that use the SSE38 or SSE3A macro.
+//
 // TODO-XArch-Cleanup: This is a temporary solution for now. Eventually this
 // needs to be addressed by expanding instruction encodings.
-bool Is4ByteAVXInstruction(instruction ins)
+bool emitter::Is4ByteAVXInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
-    return (ins == INS_dpps || ins == INS_dppd || ins == INS_insertps || ins == INS_pcmpeqq || ins == INS_pcmpgtq ||
+    return UseAVX() &&
+           (ins == INS_dpps || ins == INS_dppd || ins == INS_insertps || ins == INS_pcmpeqq || ins == INS_pcmpgtq ||
             ins == INS_vbroadcastss || ins == INS_vbroadcastsd || ins == INS_vpbroadcastb || ins == INS_vpbroadcastw ||
             ins == INS_vpbroadcastd || ins == INS_vpbroadcastq || ins == INS_vextractf128 || ins == INS_vinsertf128 ||
             ins == INS_pmulld || ins == INS_ptest || ins == INS_phaddd);
-#else
+}
+#endif // FEATURE_AVX_SUPPORT
+
+// -------------------------------------------------------------------
+// Is4ByteSSE4Instruction: Returns true if the SSE4 instruction
+// is a 4-byte opcode.
+//
+// Arguments:
+//    ins  -  instruction
+//
+// Note that this should be true for any of the instructions in instrsXArch.h
+// that use the SSE38 or SSE3A macro.
+bool emitter::Is4ByteSSE4Instruction(instruction ins)
+{
+#ifdef LEGACY_BACKEND
+    // On legacy backend SSE3_4 is not enabled.
     return false;
+#else
+    return UseSSE3_4() && (ins == INS_dpps || ins == INS_dppd || ins == INS_insertps || ins == INS_pcmpeqq ||
+                           ins == INS_pcmpgtq || ins == INS_pmulld || ins == INS_ptest || ins == INS_phaddd);
 #endif
 }
 
@@ -3769,11 +3801,14 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
 
 void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival)
 {
-    // SSE2 version requires 5 bytes and AVX version 6 bytes
+    // SSE2 version requires 5 bytes and SSE4/AVX version 6 bytes
     UNATIVE_OFFSET sz = 4;
     if (IsSSEOrAVXInstruction(ins))
     {
-        sz = UseAVX() ? 6 : 5;
+        // AVX: 3 byte VEX prefix + 1 byte opcode + 1 byte ModR/M + 1 byte immediate
+        // SSE4: 4 byte opcode + 1 byte ModR/M + 1 byte immediate
+        // SSE2: 3 byte opcode + 1 byte ModR/M + 1 byte immediate
+        sz = (UseAVX() || UseSSE3_4()) ? 6 : 5;
     }
 
 #ifdef _TARGET_AMD64_
@@ -9248,7 +9283,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     // Get the 'base' opcode
     code = insCodeRM(ins);
     code = AddVexPrefixIfNeeded(ins, code, size);
-    if (IsSSE2Instruction(ins) || IsAVXInstruction(ins))
+    if (IsSSEOrAVXInstruction(ins))
     {
         code = insEncodeRMreg(ins, code);
 
@@ -9350,6 +9385,13 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         // Output the highest word of the opcode
         dst += emitOutputWord(dst, code >> 16);
         code &= 0x0000FFFF;
+
+        if (Is4ByteSSE4Instruction(ins))
+        {
+            // Output 3rd byte of the opcode
+            dst += emitOutputByte(dst, code);
+            code &= 0xFF00;
+        }
     }
     else if (code & 0x00FF0000)
     {
@@ -9359,13 +9401,13 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
     // If byte 4 is 0xC0, then it contains the Mod/RM encoding for a 3-byte
     // encoding.  Otherwise, this is an instruction with a 4-byte encoding,
-    // and the MOd/RM encoding needs to go in the 5th byte.
+    // and the Mod/RM encoding needs to go in the 5th byte.
     // TODO-XArch-CQ: Currently, this will only support registers in the 5th byte.
     // We probably need a different mechanism to identify the 4-byte encodings.
     if ((code & 0xFF) == 0x00)
     {
-        // This case happens for AVX instructions only
-        assert(IsAVXInstruction(ins));
+        // This case happens for SSE4/AVX instructions only
+        assert(IsAVXInstruction(ins) || IsSSE4Instruction(ins));
         if ((code & 0xFF00) == 0xC000)
         {
             dst += emitOutputByte(dst, (0xC0 | regCode));
@@ -10885,7 +10927,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Output the REX prefix
             dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-            if (UseAVX() && Is4ByteAVXInstruction(ins))
+            if (Is4ByteAVXInstruction(ins))
             {
                 // We just need to output the last byte of the opcode.
                 assert((code & 0xFF) == 0);
@@ -10897,6 +10939,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 dst += emitOutputWord(dst, code >> 16);
                 code &= 0x0000FFFF;
+
+                if (Is4ByteSSE4Instruction(ins))
+                {
+                    dst += emitOutputWord(dst, code);
+                    code = 0;
+                }
             }
             else if (code & 0x00FF0000)
             {
@@ -10912,9 +10960,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                // This case occurs for AVX instructions.
+                // This case occurs for SSE4/AVX instructions.
                 // Note that regcode is left shifted by 8-bits.
-                assert(Is4ByteAVXInstruction(ins));
+                assert(Is4ByteAVXInstruction(ins) || Is4ByteSSE4Instruction(ins));
                 dst += emitOutputByte(dst, 0xC0 | (regcode >> 8));
             }
 
