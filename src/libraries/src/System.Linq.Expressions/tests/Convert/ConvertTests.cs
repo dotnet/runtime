@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -16472,6 +16473,211 @@ namespace System.Linq.Expressions.Tests
             {
                 return 0x8BADF00D;
             }
+        }
+
+        private struct HalfLiftedTo
+        {
+        }
+
+        private struct ImplicitHalfLiftedFrom
+        {
+            public bool NullEquiv { get; set; }
+
+            public static implicit operator HalfLiftedTo? (ImplicitHalfLiftedFrom source) =>
+                source.NullEquiv ? default(HalfLiftedTo?) : new HalfLiftedTo();
+        }
+
+        private struct ExplicitHalfLiftedFrom
+        {
+            public bool NullEquiv { get; set; }
+
+            public static explicit operator HalfLiftedTo? (ExplicitHalfLiftedFrom source) =>
+                source.NullEquiv ? default(HalfLiftedTo?) : new HalfLiftedTo();
+        }
+
+        private struct ImplicitHalfLiftedOverloaded
+        {
+            public static implicit operator HalfLiftedTo?(ImplicitHalfLiftedOverloaded source) => new HalfLiftedTo();
+
+            public static implicit operator HalfLiftedTo?(ImplicitHalfLiftedOverloaded? source) => new HalfLiftedTo();
+        }
+
+        private struct ImplicitHalfLiftedFromReverse
+        {
+            public static implicit operator HalfLiftedTo(ImplicitHalfLiftedFromReverse? source) => new HalfLiftedTo();
+        }
+
+        private struct HalfLiftedToTargetOperator
+        {
+            public static implicit operator HalfLiftedToTargetOperator?(HalfLiftedFromTargetOperator source) =>
+                source.NullEquiv ? default(HalfLiftedToTargetOperator?) : new HalfLiftedToTargetOperator();
+        }
+
+        private struct HalfLiftedFromTargetOperator
+        {
+            public bool NullEquiv { get; set; }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedConversionFromCSCompiler(bool useInterpreter)
+        {
+            Expression<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>> e = x => x;
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedFrom()));
+            Assert.Null(f(new ImplicitHalfLiftedFrom { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ExplicitHalfLiftedConversionFromCSCompiler(bool useInterpreter)
+        {
+            Expression<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>> e = x => (HalfLiftedTo?)x;
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ExplicitHalfLiftedFrom()));
+            Assert.Null(f(new ExplicitHalfLiftedFrom { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedOverloadedConversionFromCSCompiler(bool useInterpreter)
+        {
+            Expression<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>> e = x => x;
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
+            Assert.NotNull(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedConversion(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(ImplicitHalfLiftedFrom?));
+            Expression<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>> e =
+                Expression.Lambda<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>>(
+                    Expression.Convert(x, typeof(HalfLiftedTo?)),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedFrom()));
+            Assert.Null(f(new ImplicitHalfLiftedFrom { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ExplicitHalfLiftedConversion(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(ExplicitHalfLiftedFrom?));
+            Expression<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>> e =
+                Expression.Lambda<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>>(
+                    Expression.Convert(x, typeof(HalfLiftedTo?)),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ExplicitHalfLiftedFrom()));
+            Assert.Null(f(new ExplicitHalfLiftedFrom { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedOverloadedConversion(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(ImplicitHalfLiftedOverloaded?));
+            Expression<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>> e =
+                Expression.Lambda<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>>(
+                    Expression.Convert(x, typeof(HalfLiftedTo?)),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
+            Assert.NotNull(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedConversionExplicitlySetMethod(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(ImplicitHalfLiftedFrom?));
+            Expression<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>> e =
+                Expression.Lambda<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>>(
+                    Expression.Convert(x, typeof(HalfLiftedTo?), typeof(ImplicitHalfLiftedFrom).GetMethod("op_Implicit")),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedFrom()));
+            Assert.Null(f(new ImplicitHalfLiftedFrom { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ExplicitHalfLiftedConversionExplicitlySetMethod(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(ExplicitHalfLiftedFrom?));
+            Expression<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>> e =
+                Expression.Lambda<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>>(
+                    Expression.Convert(x, typeof(HalfLiftedTo?), typeof(ExplicitHalfLiftedFrom).GetMethod("op_Explicit")),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ExplicitHalfLiftedFrom()));
+            Assert.Null(f(new ExplicitHalfLiftedFrom { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedOverloadedConversionExplicitlySetMethod(bool useInterpreter)
+        {
+            var opMethods =
+                typeof(ImplicitHalfLiftedOverloaded).GetMethods().Where(m => m.Name == "op_Implicit").ToList();
+            MethodInfo direct =
+                opMethods.First(m => m.GetParameters()[0].ParameterType == typeof(ImplicitHalfLiftedOverloaded?));
+            MethodInfo liftNeeded =
+                opMethods.First(m => m.GetParameters()[0].ParameterType == typeof(ImplicitHalfLiftedOverloaded));
+            ParameterExpression x = Expression.Parameter(typeof(ImplicitHalfLiftedOverloaded?));
+            Expression<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>> e =
+                Expression.Lambda<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>>(
+                    Expression.Convert(x, typeof(HalfLiftedTo?), direct),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
+            Assert.NotNull(f(null));
+            e = Expression.Lambda<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>>(
+                Expression.Convert(x, typeof(HalfLiftedTo?), liftNeeded), x);
+            f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedReverseConversion(bool useInterpreter)
+        {
+            // In the case where there is a conversion from? → to, then if
+            // we want to do from? → to? we should do two conversions;
+            // from? → to → to?, since converting any value to the nullable
+            // form of its type is always possible and well-defined.
+            // The compiler correctly does this double-conversion in such cases.
+            // We should probably not allow it to be done as a single lifted operation.
+            ParameterExpression x = Expression.Parameter(typeof(ImplicitHalfLiftedFromReverse?));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(
+                x, typeof(HalfLiftedTo?), typeof(ImplicitHalfLiftedFromReverse).GetMethod("op_Implicit")));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(
+                x, typeof(HalfLiftedTo?)));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedConversionOpOnTargetFromCSCompiler(bool useInterpreter)
+        {
+            Expression<Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?>> e = x => x;
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new HalfLiftedFromTargetOperator()));
+            Assert.Null(f(new HalfLiftedFromTargetOperator { NullEquiv = true }));
+            Assert.Null(f(null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ImplicitHalfLiftedConversionOpOnTarget(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(HalfLiftedFromTargetOperator?));
+            Expression<Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?>> e =
+                Expression.Lambda<Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?>>(
+                    Expression.Convert(x, typeof(HalfLiftedToTargetOperator?)),
+                    x);
+            var f = e.Compile(useInterpreter);
+            Assert.NotNull(f(new HalfLiftedFromTargetOperator()));
+            Assert.Null(f(new HalfLiftedFromTargetOperator { NullEquiv = true }));
+            Assert.Null(f(null));
         }
 
         [Fact]
