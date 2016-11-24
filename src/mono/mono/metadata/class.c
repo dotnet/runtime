@@ -6733,7 +6733,7 @@ MonoClass *
 mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 {
 	MonoImage *image;
-	MonoClass *klass;
+	MonoClass *klass, *cached, *k;
 	MonoClass *parent = NULL;
 	GSList *list, *rootlist = NULL;
 	int nsize;
@@ -6747,37 +6747,35 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	image = eclass->image;
 
+	/* Check cache */
+	cached = NULL;
 	if (rank == 1 && !bounded) {
-		/* 
-		 * This case is very frequent not just during compilation because of calls 
-		 * from mono_class_from_mono_type (), mono_array_new (), 
+		/*
+		 * This case is very frequent not just during compilation because of calls
+		 * from mono_class_from_mono_type (), mono_array_new (),
 		 * Array:CreateInstance (), etc, so use a separate cache + a separate lock.
 		 */
 		mono_os_mutex_lock (&image->szarray_cache_lock);
 		if (!image->szarray_cache)
 			image->szarray_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		klass = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
+		cached = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
 		mono_os_mutex_unlock (&image->szarray_cache_lock);
-		if (klass)
-			return klass;
-
-		mono_loader_lock ();
 	} else {
 		mono_loader_lock ();
-
 		if (!image->array_cache)
 			image->array_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-		if ((rootlist = list = (GSList *)g_hash_table_lookup (image->array_cache, eclass))) {
-			for (; list; list = list->next) {
-				klass = (MonoClass *)list->data;
-				if ((klass->rank == rank) && (klass->byval_arg.type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
-					mono_loader_unlock ();
-					return klass;
-				}
+		rootlist = (GSList *)g_hash_table_lookup (image->array_cache, eclass);
+		for (list = rootlist; list; list = list->next) {
+			k = (MonoClass *)list->data;
+			if ((k->rank == rank) && (k->byval_arg.type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
+				cached = k;
+				break;
 			}
 		}
+		mono_loader_unlock ();
 	}
+	if (cached)
+		return cached;
 
 	parent = mono_defaults.array_class;
 	if (!parent->inited)
@@ -6801,11 +6799,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	name [nsize + rank + bounded + 1] = 0;
 	klass->name = mono_image_strdup (image, name);
 	g_free (name);
-
-	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
-
-	classes_size += sizeof (MonoClassArray);
-	++class_array_count;
 
 	klass->type_token = 0;
 	klass->parent = parent;
@@ -6888,19 +6881,37 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	klass->this_arg = klass->byval_arg;
 	klass->this_arg.byref = 1;
 
-	//WTF was this? it's wrong
-	// klass->generic_container = eclass->generic_container;
+	mono_loader_lock ();
+
+	/* Check cache again */
+	cached = NULL;
+	if (rank == 1 && !bounded) {
+		mono_os_mutex_lock (&image->szarray_cache_lock);
+		cached = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
+		mono_os_mutex_unlock (&image->szarray_cache_lock);
+	} else {
+		rootlist = (GSList *)g_hash_table_lookup (image->array_cache, eclass);
+		for (list = rootlist; list; list = list->next) {
+			k = (MonoClass *)list->data;
+			if ((k->rank == rank) && (k->byval_arg.type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
+				cached = k;
+				break;
+			}
+		}
+	}
+	if (cached) {
+		mono_loader_unlock ();
+		return cached;
+	}
+
+	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
+
+	classes_size += sizeof (MonoClassArray);
+	++class_array_count;
 
 	if (rank == 1 && !bounded) {
-		MonoClass *prev_class;
-
 		mono_os_mutex_lock (&image->szarray_cache_lock);
-		prev_class = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
-		if (prev_class)
-			/* Someone got in before us */
-			klass = prev_class;
-		else
-			g_hash_table_insert (image->szarray_cache, eclass, klass);
+		g_hash_table_insert (image->szarray_cache, eclass, klass);
 		mono_os_mutex_unlock (&image->szarray_cache_lock);
 	} else {
 		list = g_slist_append (rootlist, klass);
