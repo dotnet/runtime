@@ -455,7 +455,8 @@ namespace System.Linq.Expressions
             // check for lifted call
             if ((operand.Type.IsNullableType() || convertToType.IsNullableType()) &&
                 ParameterIsAssignable(pms[0], operand.Type.GetNonNullableType()) &&
-                TypeUtils.AreEquivalent(method.ReturnType, convertToType.GetNonNullableType()))
+                (TypeUtils.AreEquivalent(method.ReturnType, convertToType.GetNonNullableType()) ||
+                TypeUtils.AreEquivalent(method.ReturnType, convertToType)))
             {
                 return new UnaryExpression(unaryType, operand, convertToType, method);
             }

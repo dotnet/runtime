@@ -512,7 +512,9 @@ namespace System.Dynamic.Utils
             if (retryForLifted)
             {
                 return FindConversionOperator(eMethods, nnExprType, nnConvType, implicitOnly)
-                    ?? FindConversionOperator(cMethods, nnExprType, nnConvType, implicitOnly);
+                    ?? FindConversionOperator(cMethods, nnExprType, nnConvType, implicitOnly)
+                    ?? FindConversionOperator(eMethods, nnExprType, convertToType, implicitOnly)
+                    ?? FindConversionOperator(cMethods, nnExprType, convertToType, implicitOnly);
             }
 
             return null;
