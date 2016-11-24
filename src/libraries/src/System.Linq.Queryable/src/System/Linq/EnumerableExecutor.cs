@@ -30,10 +30,7 @@ namespace System.Linq
             _expression = expression;
         }
 
-        internal override object ExecuteBoxed()
-        {
-            return Execute();
-        }
+        internal override object ExecuteBoxed() => Execute();
 
         internal T Execute()
         {
