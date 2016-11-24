@@ -12,15 +12,6 @@ using System.Diagnostics;
 
 namespace System
 {
-    public class Stub
-    {
-        public static string Assembly_EscapedCodeBase()
-        {
-            return null;
-        }
-    }
-
-
     [AttributeUsage(AttributeTargets.All)]
     internal sealed class SRDescriptionAttribute : DescriptionAttribute
     {
