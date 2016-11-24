@@ -205,12 +205,9 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             {
                 result = INS_pmullw;
             }
-            else if (compiler->canUseAVX())
+            else if ((baseType == TYP_INT) && (compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4))
             {
-                if (baseType == TYP_INT)
-                {
-                    result = INS_pmulld;
-                }
+                result = INS_pmulld;
             }
             break;
 
@@ -300,7 +297,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             {
                 result = INS_pcmpeqb;
             }
-            else if (compiler->canUseAVX() && (baseType == TYP_ULONG || baseType == TYP_LONG))
+            else if ((baseType == TYP_ULONG || baseType == TYP_LONG) &&
+                     (compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4))
             {
                 result = INS_pcmpeqq;
             }
@@ -359,7 +357,7 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             {
                 result = INS_pcmpgtb;
             }
-            else if (compiler->canUseAVX() && (baseType == TYP_LONG))
+            else if ((baseType == TYP_LONG) && (compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4))
             {
                 result = INS_pcmpgtq;
             }
@@ -1052,8 +1050,14 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         {
             assert(targetReg != REG_NA);
 
-            // SSE2: vector<(u)long> relation op should be implemented in terms of TYP_INT comparison operations
-            assert(((iset == InstructionSet_AVX) || (baseType != TYP_LONG)) && (baseType != TYP_ULONG));
+#ifdef DEBUG
+            // SSE2: vector<(u)long> relational op should be implemented in terms of
+            // TYP_INT comparison operations
+            if (baseType == TYP_LONG || baseType == TYP_ULONG)
+            {
+                assert(iset >= InstructionSet_SSE3_4);
+            }
+#endif
 
             // Greater-than: Floating point vectors use "<" with swapped operands
             if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThan)
@@ -1132,9 +1136,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 simdType = TYP_SIMD16;
             }
 
-            // On AVX, we can generate optimal code for (in)equality
-            // against zero.
-            if (compiler->canUseAVX() && op2->IsIntegralConstVector(0))
+            // On SSE4/AVX, we can generate optimal code for (in)equality against zero using ptest.
+            if ((compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0))
             {
                 assert(op2->isContained());
                 inst_RV_RV(INS_ptest, op1->gtRegNum, op1->gtRegNum, simdType, emitActualTypeSize(simdType));
@@ -1269,15 +1272,20 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     regNumber tmpReg1 = REG_NA;
     regNumber tmpReg2 = REG_NA;
 
+    InstructionSet iset = compiler->getSIMDInstructionSet();
+
     // Dot product intrinsic is supported only on float/double vectors
     // and 32-byte int vectors on AVX.
     //
     // Float/Double Vectors:
-    // For SSE, or AVX with 32-byte vectors, we need an additional Xmm register
+    // For SSE, or AVX with 32-byte vectors, we need one additional Xmm register
     // different from targetReg as scratch. Note that if this is a TYP_SIMD16 or
     // smaller on AVX, then we don't need a tmpReg.
     //
     // 32-byte integer vector on AVX: we need two additional Xmm registers
+    // different from targetReg as scratch.
+    //
+    // 16-byte integer vector on SSE4: we need one additional Xmm register
     // different from targetReg as scratch.
     if (varTypeIsFloating(baseType))
     {
@@ -1298,17 +1306,25 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     else
     {
         assert(baseType == TYP_INT);
-        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        assert(iset >= InstructionSet_SSE3_4);
 
-        // Must have reserved 2 scratch registers.
-        assert(simdNode->gtRsvdRegs != RBM_NONE);
-        assert(genCountBits(simdNode->gtRsvdRegs) == 2);
-        regMaskTP tmpRegMask = genFindLowestBit(simdNode->gtRsvdRegs);
-        tmpReg1              = genRegNumFromMask(tmpRegMask);
-        tmpReg2              = genRegNumFromMask(simdNode->gtRsvdRegs & ~tmpRegMask);
+        if (iset == InstructionSet_SSE3_4)
+        {
+            // Must have reserved 1 scratch register.
+            assert(genCountBits(simdNode->gtRsvdRegs) == 1);
+            tmpReg1 = genRegNumFromMask(simdNode->gtRsvdRegs);
+        }
+        else
+        {
+            // Must have reserved 2 scratch registers.
+            assert(genCountBits(simdNode->gtRsvdRegs) == 2);
+            regMaskTP tmpRegMask = genFindLowestBit(simdNode->gtRsvdRegs);
+            tmpReg1              = genRegNumFromMask(tmpRegMask);
+            tmpReg2              = genRegNumFromMask(simdNode->gtRsvdRegs & ~tmpRegMask);
+        }
     }
 
-    if (compiler->getSIMDInstructionSet() == InstructionSet_SSE2)
+    if (iset == InstructionSet_SSE2)
     {
         // We avoid reg move if either op1Reg == targetReg or op2Reg == targetReg
         if (op1Reg == targetReg)
@@ -1365,7 +1381,7 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     }
     else
     {
-        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        assert(iset >= InstructionSet_SSE3_4);
 
         if (varTypeIsFloating(baseType))
         {
@@ -1390,9 +1406,10 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
             emitAttr emitSize = emitActualTypeSize(simdEvalType);
             if (baseType == TYP_FLOAT)
             {
+                inst_RV_RV_IV(INS_dpps, emitSize, targetReg, op2Reg, 0xf1);
+
                 // dpps computes the dot product of the upper & lower halves of the 32-byte register.
                 // Notice that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
-                inst_RV_RV_IV(INS_dpps, emitSize, targetReg, op2Reg, 0xf1);
                 // If this is TYP_SIMD32, we need to combine the lower & upper results.
                 if (simdEvalType == TYP_SIMD32)
                 {
@@ -1402,47 +1419,81 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
             }
             else if (baseType == TYP_DOUBLE)
             {
-                // On AVX, we have no 16-byte vectors of double.  Note that, if we did, we could use
-                // dppd directly.
-                assert(simdType == TYP_SIMD32);
-
-                // targetReg = targetReg * op2Reg
-                // targetReg = vhaddpd(targetReg, targetReg) ; horizontal sum of lower & upper halves
-                // tmpReg    = vextractf128(targetReg, 1)    ; Moves the upper sum into tempReg
-                // targetReg = targetReg + tmpReg1
-                inst_RV_RV(INS_mulpd, targetReg, op2Reg, simdEvalType, emitActualTypeSize(simdType));
-                inst_RV_RV(INS_haddpd, targetReg, targetReg, simdEvalType, emitActualTypeSize(simdType));
-                getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg1, targetReg, 0x01);
-                inst_RV_RV(INS_addpd, targetReg, tmpReg1, targetType, emitTypeSize(targetType));
+                if (simdEvalType == TYP_SIMD32)
+                {
+                    // targetReg = targetReg * op2Reg
+                    // targetReg = vhaddpd(targetReg, targetReg) ; horizontal sum of lower & upper halves
+                    // tmpReg    = vextractf128(targetReg, 1)    ; Moves the upper sum into tempReg
+                    // targetReg = targetReg + tmpReg1
+                    inst_RV_RV(INS_mulpd, targetReg, op2Reg, simdEvalType, emitActualTypeSize(simdType));
+                    inst_RV_RV(INS_haddpd, targetReg, targetReg, simdEvalType, emitActualTypeSize(simdType));
+                    getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg1, targetReg, 0x01);
+                    inst_RV_RV(INS_addpd, targetReg, tmpReg1, targetType, emitTypeSize(targetType));
+                }
+                else
+                {
+                    // On AVX, we have no 16-byte vectors of double.  Note that, if we did, we could use
+                    // dppd directly.
+                    assert(iset == InstructionSet_SSE3_4);
+                    inst_RV_RV_IV(INS_dppd, emitSize, targetReg, op2Reg, 0x31);
+                }
             }
         }
         else
         {
-            // Dot product of 32-byte int vector on AVX.
+            // Dot product of 32-byte int vector on SSE4/AVX.
             assert(baseType == TYP_INT);
-            assert(simdEvalType == TYP_SIMD32);
+            assert(simdEvalType == TYP_SIMD16 || simdEvalType == TYP_SIMD32);
 
-            // We need 2 scratch registers.
-            assert(tmpReg1 != REG_NA);
-            assert(tmpReg2 != REG_NA);
+#ifdef DEBUG
+            // SSE4: We need 1 scratch register.
+            // AVX2: We need 2 scratch registers.
+            if (simdEvalType == TYP_SIMD16)
+            {
+                assert(tmpReg1 != REG_NA);
+            }
+            else
+            {
+                assert(tmpReg1 != REG_NA);
+                assert(tmpReg2 != REG_NA);
+            }
+#endif
 
             // tmpReg1 = op1 * op2
-            inst_RV_RV_RV(INS_pmulld, tmpReg1, op1Reg, op2Reg, EA_32BYTE);
+            if (iset == InstructionSet_AVX)
+            {
+                // On AVX take advantage 3 operand form of pmulld
+                inst_RV_RV_RV(INS_pmulld, tmpReg1, op1Reg, op2Reg, emitTypeSize(simdEvalType));
+            }
+            else
+            {
+                inst_RV_RV(ins_Copy(simdEvalType), tmpReg1, op1Reg, simdEvalType);
+                inst_RV_RV(INS_pmulld, tmpReg1, op2Reg, simdEvalType);
+            }
 
-            // tmpReg2[127..0] = Upper 128-bits of tmpReg1
-            getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg2, tmpReg1, 0x01);
+            if (simdEvalType == TYP_SIMD32)
+            {
+                // tmpReg2[127..0] = Upper 128-bits of tmpReg1
+                getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg2, tmpReg1, 0x01);
 
-            // tmpReg1[127..0] = tmpReg1[127..0] + tmpReg2[127..0]
-            // This will compute
-            //    tmpReg1[0] = op1[0]*op2[0] + op1[4]*op2[4]
-            //    tmpReg1[1] = op1[1]*op2[1] + op1[5]*op2[5]
-            //    tmpReg1[2] = op1[2]*op2[2] + op1[6]*op2[6]
-            //    tmpReg1[4] = op1[4]*op2[4] + op1[7]*op2[7]
-            inst_RV_RV(INS_paddd, tmpReg1, tmpReg2, TYP_SIMD16, EA_16BYTE);
+                // tmpReg1[127..0] = tmpReg1[127..0] + tmpReg2[127..0]
+                // This will compute
+                //    tmpReg1[0] = op1[0]*op2[0] + op1[4]*op2[4]
+                //    tmpReg1[1] = op1[1]*op2[1] + op1[5]*op2[5]
+                //    tmpReg1[2] = op1[2]*op2[2] + op1[6]*op2[6]
+                //    tmpReg1[4] = op1[4]*op2[4] + op1[7]*op2[7]
+                inst_RV_RV(INS_paddd, tmpReg1, tmpReg2, TYP_SIMD16, EA_16BYTE);
+            }
 
-            // This horizontal add would compute
-            //   tmpReg1[0] = targetReg[2] = op1[0]*op2[0] + op1[4]*op2[4] + op1[1]*op2[1] + op1[5]*op2[5]
-            //   tmpReg1[1] = targetReg[3] = op1[2]*op2[2] + op1[6]*op2[6] + op1[4]*op2[4] + op1[7]*op2[7]
+            // This horizontal add will compute
+            //
+            // TYP_SIMD16:
+            //   tmpReg1[0] = tmpReg1[2] = op1[0]*op2[0] + op1[1]*op2[1]
+            //   tmpReg1[1] = tmpReg1[3] = op1[2]*op2[2] + op1[4]*op2[4]
+            //
+            // TYP_SIMD32:
+            //   tmpReg1[0] = tmpReg1[2] = op1[0]*op2[0] + op1[4]*op2[4] + op1[1]*op2[1] + op1[5]*op2[5]
+            //   tmpReg1[1] = tmpReg1[3] = op1[2]*op2[2] + op1[6]*op2[6] + op1[4]*op2[4] + op1[7]*op2[7]
             inst_RV_RV(INS_phaddd, tmpReg1, tmpReg1, TYP_SIMD16, EA_16BYTE);
 
             // DotProduct(op1, op2) = tmpReg1[0] = tmpReg1[0] + tmpReg1[1]
