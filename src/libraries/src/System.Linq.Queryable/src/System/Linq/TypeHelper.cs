@@ -33,20 +33,6 @@ namespace System.Linq
             return null;
         }
 
-        internal static bool IsAssignableFrom(this Type source, Type destination)
-        {
-            return source.GetTypeInfo().IsAssignableFrom(destination.GetTypeInfo());
-        }
-
-        internal static Type[] GetGenericArguments(this Type type)
-        {
-            // Note that TypeInfo distinguishes between the type parameters of definitions 
-            // and the type arguments of instantiations, but we want to mimic the behavior
-            // of the old Type.GetGenericArguments() here.
-            TypeInfo t = type.GetTypeInfo();
-            return t.IsGenericTypeDefinition ? t.GenericTypeParameters : t.GenericTypeArguments;
-        }
-
         internal static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
         {
             return type.GetRuntimeMethods().Where(m => m.IsStatic);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -52,19 +51,6 @@ namespace System.Linq
              (s_Any_TSource_2 ??
              (s_Any_TSource_2 = new Func<IQueryable<object>, Expression<Func<object, bool>>, bool>(Queryable.Any).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
-
-        private static MethodInfo s_AsQueryable_1;
-
-        public static MethodInfo AsQueryable_1 =>
-             s_AsQueryable_1 ??
-            (s_AsQueryable_1 = new Func<IEnumerable, IQueryable>(Queryable.AsQueryable).GetMethodInfo());
-
-        private static MethodInfo s_AsQueryable_TElement_1;
-
-        public static MethodInfo AsQueryable_TElement_1(Type TElement) =>
-             (s_AsQueryable_TElement_1 ??
-             (s_AsQueryable_TElement_1 = new Func<IEnumerable<object>, IQueryable<object>>(Queryable.AsQueryable).GetMethodInfo().GetGenericMethodDefinition()))
-              .MakeGenericMethod(TElement);
 
         private static MethodInfo s_Average_Int32_1;
 
