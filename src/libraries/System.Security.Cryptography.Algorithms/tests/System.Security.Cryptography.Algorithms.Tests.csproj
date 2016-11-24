@@ -164,6 +164,7 @@
     <Compile Include="Sha256ManagedTests.cs" />
     <Compile Include="Sha384ManagedTests.cs" />
     <Compile Include="Sha512ManagedTests.cs" />
+    <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AsymmetricSignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs</Link>
     </Compile>
