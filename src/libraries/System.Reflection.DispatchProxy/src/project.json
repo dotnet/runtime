@@ -18,7 +18,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24723-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24724-00",
         "System.Runtime": "4.3.0"
       }
     }
