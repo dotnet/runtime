@@ -5,7 +5,7 @@ with_mono_path = MONO_PATH=$(CLASS)
 RUNTIME = $(top_builddir)/runtime/mono-wrapper --debug
 MCS = $(with_mono_path) $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -debug:full -target:library
 
-if INSTALL_MOBILE_STATIC
+if INSTALL_AOT_ONLY
 prereq: aot
 else
 prereq: test/asm.dll
