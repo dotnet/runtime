@@ -474,7 +474,7 @@ namespace System.Dynamic.Utils
                 IsImplicitNullableConversion(source, destination);
         }
 
-        public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType, bool implicitOnly)
+        public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
             // check for implicit coercions first
             Type nnExprType = GetNonNullableType(convertFrom);
@@ -485,7 +485,7 @@ namespace System.Dynamic.Utils
             // try exact match on types
             MethodInfo[] eMethods = nnExprType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            MethodInfo method = FindConversionOperator(eMethods, convertFrom, convertToType, implicitOnly);
+            MethodInfo method = FindConversionOperator(eMethods, convertFrom, convertToType);
             if (method != null)
             {
                 return method;
@@ -493,7 +493,7 @@ namespace System.Dynamic.Utils
 
             MethodInfo[] cMethods = nnConvType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            method = FindConversionOperator(cMethods, convertFrom, convertToType, implicitOnly);
+            method = FindConversionOperator(cMethods, convertFrom, convertToType);
             if (method != null)
             {
                 return method;
@@ -502,21 +502,21 @@ namespace System.Dynamic.Utils
             // try lifted conversion
             if (retryForLifted)
             {
-                return FindConversionOperator(eMethods, nnExprType, nnConvType, implicitOnly)
-                    ?? FindConversionOperator(cMethods, nnExprType, nnConvType, implicitOnly)
-                    ?? FindConversionOperator(eMethods, nnExprType, convertToType, implicitOnly)
-                    ?? FindConversionOperator(cMethods, nnExprType, convertToType, implicitOnly);
+                return FindConversionOperator(eMethods, nnExprType, nnConvType)
+                    ?? FindConversionOperator(cMethods, nnExprType, nnConvType)
+                    ?? FindConversionOperator(eMethods, nnExprType, convertToType)
+                    ?? FindConversionOperator(cMethods, nnExprType, convertToType);
             }
 
             return null;
         }
 
-        private static MethodInfo FindConversionOperator(MethodInfo[] methods, Type typeFrom, Type typeTo, bool implicitOnly)
+        private static MethodInfo FindConversionOperator(MethodInfo[] methods, Type typeFrom, Type typeTo)
         {
             foreach (MethodInfo mi in methods)
             {
                 if (
-                    (mi.Name == "op_Implicit" || (!implicitOnly && mi.Name == "op_Explicit"))
+                    (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
                     && AreEquivalent(mi.ReturnType, typeTo)
                     )
                 {

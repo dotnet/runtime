@@ -428,7 +428,7 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetUserDefinedCoercion(ExpressionType coercionType, Expression expression, Type convertToType)
         {
-            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType, implicitOnly: false);
+            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType);
             if (method != null)
             {
                 return new UnaryExpression(coercionType, expression, convertToType, method);
