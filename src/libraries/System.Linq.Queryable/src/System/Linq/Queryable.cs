@@ -40,7 +40,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Where_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -54,7 +54,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Where_Index_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -88,7 +88,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Select_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -102,7 +102,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Select_Index_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -116,7 +116,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SelectMany_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -130,7 +130,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SelectMany_Index_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -146,7 +146,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SelectMany_Index_TSource_TCollection_TResult_3(typeof(TSource), typeof(TCollection), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector) }
+                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)
                     ));
         }
 
@@ -162,7 +162,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SelectMany_TSource_TCollection_TResult_3(typeof(TSource), typeof(TCollection), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector) }
+                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)
                     ));
         }
 
@@ -255,7 +255,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.OrderBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
@@ -269,7 +269,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.OrderBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
@@ -283,7 +283,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.OrderByDescending_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
@@ -297,7 +297,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.OrderByDescending_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
@@ -311,7 +311,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.ThenBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
@@ -325,7 +325,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.ThenBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
@@ -339,7 +339,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.ThenByDescending_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
@@ -353,7 +353,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.ThenByDescending_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
@@ -365,7 +365,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Take_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(count) }
+                    source.Expression, Expression.Constant(count)
                     ));
         }
 
@@ -379,7 +379,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.TakeWhile_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -393,7 +393,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.TakeWhile_Index_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -405,7 +405,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Skip_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(count) }
+                    source.Expression, Expression.Constant(count)
                     ));
         }
 
@@ -419,7 +419,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SkipWhile_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -433,7 +433,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SkipWhile_Index_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -447,7 +447,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.GroupBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
@@ -463,7 +463,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.GroupBy_TSource_TKey_TElement_3(typeof(TSource), typeof(TKey), typeof(TElement)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector)
                     ));
         }
 
@@ -477,7 +477,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.GroupBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
                     ));
         }
 
@@ -523,7 +523,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.GroupBy_TSource_TKey_TResult_3(typeof(TSource), typeof(TKey), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector) }
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector)
                     ));
         }
 
@@ -575,7 +575,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Distinct_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>)) }
+                    source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
@@ -589,7 +589,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Concat_TSource_2(typeof(TSource)),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
@@ -605,7 +605,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Zip_TFirst_TSecond_TResult_3(typeof(TFirst), typeof(TSecond), typeof(TResult)),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector) }
+                    source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector)
                     ));
         }
 
@@ -619,7 +619,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Union_TSource_2(typeof(TSource)),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
@@ -633,11 +633,9 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Union_TSource_3(typeof(TSource)),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
@@ -651,7 +649,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Intersect_TSource_2(typeof(TSource)),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
@@ -665,11 +663,9 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Intersect_TSource_3(typeof(TSource)),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
@@ -683,7 +679,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Except_TSource_2(typeof(TSource)),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
@@ -697,11 +693,9 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Except_TSource_3(typeof(TSource)),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
@@ -725,7 +719,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.First_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -749,7 +743,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.FirstOrDefault_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -773,7 +767,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Last_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -797,7 +791,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.LastOrDefault_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -821,7 +815,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Single_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -845,7 +839,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SingleOrDefault_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -859,7 +853,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.ElementAt_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(index) }
+                    source.Expression, Expression.Constant(index)
                     ));
         }
 
@@ -871,7 +865,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.ElementAtOrDefault_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(index) }
+                    source.Expression, Expression.Constant(index)
                     ));
         }
 
@@ -893,7 +887,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.DefaultIfEmpty_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(defaultValue, typeof(TSource)) }
+                    source.Expression, Expression.Constant(defaultValue, typeof(TSource))
                     ));
         }
 
@@ -905,7 +899,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Contains_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(item, typeof(TSource)) }
+                    source.Expression, Expression.Constant(item, typeof(TSource))
                     ));
         }
 
@@ -917,7 +911,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Contains_TSource_3(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Constant(item, typeof(TSource)), Expression.Constant(comparer, typeof(IEqualityComparer<TSource>)) }
+                    source.Expression, Expression.Constant(item, typeof(TSource)), Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
@@ -941,7 +935,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SequenceEqual_TSource_2(typeof(TSource)),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
@@ -955,11 +949,9 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.SequenceEqual_TSource_3(typeof(TSource)),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
@@ -983,7 +975,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Any_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -997,7 +989,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.All_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -1021,7 +1013,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Count_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -1045,7 +1037,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.LongCount_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
@@ -1069,7 +1061,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Min_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1093,7 +1085,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Max_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1207,7 +1199,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_Int32_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1221,7 +1213,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_NullableInt32_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1235,7 +1227,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_Int64_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1249,7 +1241,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_NullableInt64_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1263,7 +1255,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_Single_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1277,7 +1269,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_NullableSingle_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1291,7 +1283,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_Double_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1305,7 +1297,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_NullableDouble_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1319,7 +1311,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_Decimal_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1333,7 +1325,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Sum_NullableDecimal_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1447,7 +1439,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_Int32_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1461,7 +1453,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_NullableInt32_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1475,7 +1467,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_Single_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1489,7 +1481,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_NullableSingle_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1503,7 +1495,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_Int64_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1517,7 +1509,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_NullableInt64_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1531,7 +1523,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_Double_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1545,7 +1537,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_NullableDouble_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1559,7 +1551,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_Decimal_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1573,7 +1565,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Average_NullableDecimal_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
@@ -1587,7 +1579,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Aggregate_TSource_2(typeof(TSource)),
-                    new Expression[] { source.Expression, Expression.Quote(func) }
+                    source.Expression, Expression.Quote(func)
                     ));
         }
 
@@ -1601,7 +1593,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Aggregate_TSource_TAccumulate_3(typeof(TSource), typeof(TAccumulate)),
-                    new Expression[] { source.Expression, Expression.Constant(seed), Expression.Quote(func) }
+                    source.Expression, Expression.Constant(seed), Expression.Quote(func)
                     ));
         }
 
