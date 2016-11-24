@@ -47,25 +47,13 @@ namespace System.Linq
             _expression = expression;
         }
 
-        internal override Expression Expression
-        {
-            get { return _expression; }
-        }
+        internal override Expression Expression => _expression;
 
-        internal override IEnumerable Enumerable
-        {
-            get { return _enumerable; }
-        }
+        internal override IEnumerable Enumerable => _enumerable;
 
-        Expression IQueryable.Expression
-        {
-            get { return _expression; }
-        }
+        Expression IQueryable.Expression => _expression;
 
-        Type IQueryable.ElementType
-        {
-            get { return typeof(T); }
-        }
+        Type IQueryable.ElementType => typeof(T);
 
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
@@ -112,15 +100,9 @@ namespace System.Linq
             return new EnumerableExecutor<TElement>(expression).Execute();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
         private IEnumerator<T> GetEnumerator()
         {

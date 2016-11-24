@@ -111,10 +111,7 @@ namespace System.Linq
             return expression;
         }
 
-        protected override Expression VisitLambda<T>(Expression<T> node)
-        {
-            return node;
-        }
+        protected override Expression VisitLambda<T>(Expression<T> node) => node;
 
         private static Type GetPublicType(Type t)
         {
