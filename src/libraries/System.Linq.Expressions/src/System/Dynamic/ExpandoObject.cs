@@ -325,7 +325,7 @@ namespace System.Dynamic
 
             public KeyCollectionDebugView(ICollection<string> collection)
             {
-                Debug.Assert(collection != null);
+                ContractUtils.RequiresNotNull(collection, nameof(collection));
                 _collection = collection;
             }
 
@@ -464,7 +464,7 @@ namespace System.Dynamic
 
             public ValueCollectionDebugView(ICollection<object> collection)
             {
-                Debug.Assert(collection != null);
+                ContractUtils.RequiresNotNull(collection, nameof(collection));
                 _collection = collection;
             }
 

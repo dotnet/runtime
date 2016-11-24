@@ -3,24 +3,49 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Tests.Symmetric
 {
     public static class TrivialTests
     {
-        [Fact]
-        public static void TestAutomaticKey()
+        
+#if netstandard17 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(7)]
+        [InlineData(48)]
+        public static void TestBadFeedbackSize(int size)
         {
-            using (Trivial t = new Trivial())
+            using (var t = new Trivial { BlockSize = 40 })
             {
-                byte[] generatedKey = t.Key;
-                Assert.Equal(generatedKey, Trivial.GeneratedKey);
-                Assert.NotSame(generatedKey, Trivial.GeneratedKey);
+                Assert.Throws<CryptographicException>(() => t.FeedbackSize = size);
             }
         }
 
-#if netstandard17 
+        [Fact]
+        public static void TestFeedbackSizeDoesntErrorWhenBlockSizeChanged()
+        {
+            using (var t = new Trivial { BlockSize = 104 })
+            {
+                t.FeedbackSize = 96;
+                t.BlockSize = 40;
+                Assert.Equal(96, t.FeedbackSize);
+            }
+        }
+
+        [Fact]
+        public static void TestFeedbackSizeDoesntValidateFieldValue()
+        {
+            using (var t = new Trivial())
+            {
+                t.SetFeedbackSize(9);
+                Assert.Equal(9, t.FeedbackSize);
+            }
+        }
+
         [Fact]
         public static void TestClearIsDispose()
         {
@@ -36,6 +61,17 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
             }
         }
 #endif
+
+        [Fact]
+        public static void TestAutomaticKey()
+        {
+            using (Trivial t = new Trivial())
+            {
+                byte[] generatedKey = t.Key;
+                Assert.Equal(generatedKey, Trivial.GeneratedKey);
+                Assert.NotSame(generatedKey, Trivial.GeneratedKey);
+            }
+        }
 
         [Fact]
         public static void TestKey()
@@ -341,6 +377,15 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
             {
                 PaddingValue = (PaddingMode)anyValue;
             }
+
+#if netstandard17
+
+            public void SetFeedbackSize(int value)
+            {
+                FeedbackSizeValue = value;
+            }
+
+#endif
 
             public static readonly byte[] GeneratedKey = GenerateRandom(13);
             public static readonly byte[] GeneratedIV = GenerateRandom(5);

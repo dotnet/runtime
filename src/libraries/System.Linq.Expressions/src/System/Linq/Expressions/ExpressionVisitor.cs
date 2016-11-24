@@ -74,6 +74,11 @@ namespace System.Linq.Expressions
             return ExpressionVisitorUtils.VisitArguments(this, nodes);
         }
 
+        private ParameterExpression[] VisitParameters(IParameterProvider nodes, string callerName)
+        {
+            return ExpressionVisitorUtils.VisitParameters(this, nodes, callerName);
+        }
+
         /// <summary>
         /// Visits all nodes in the collection using a specified element visitor.
         /// </summary>
@@ -336,7 +341,15 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitLambda<T>(Expression<T> node)
         {
-            return node.Update(Visit(node.Body), VisitAndConvert(node.Parameters, nameof(VisitLambda)));
+            Expression body = Visit(node.Body);
+            ParameterExpression[] parameters = VisitParameters(node, nameof(VisitLambda));
+
+            if (body == node.Body && parameters == null)
+            {
+                return node;
+            }
+
+            return node.Rewrite(body, parameters);
         }
 
         /// <summary>

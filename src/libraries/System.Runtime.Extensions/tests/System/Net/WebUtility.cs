@@ -4,12 +4,14 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Text;
 using Xunit;
 
 namespace System.Net.Tests
 {
-    public class WebUtilityTests
+    public partial class WebUtilityTests
     {
         // HtmlEncode + HtmlDecode
         public static IEnumerable<object[]> HtmlDecode_TestData()

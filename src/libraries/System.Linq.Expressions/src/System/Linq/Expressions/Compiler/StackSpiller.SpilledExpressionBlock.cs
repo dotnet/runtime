@@ -16,9 +16,19 @@ namespace System.Linq.Expressions.Compiler
         /// This should not be used for rewriting BlockExpression itself, or
         /// anything else that supports jumping.
         /// </summary>
+        private static Expression MakeBlock(ArrayBuilder<Expression> expressions)
+        {
+            return new SpilledExpressionBlock(expressions.ToArray());
+        }
+
+        /// <summary>
+        /// Creates a special block that is marked as not allowing jumps in.
+        /// This should not be used for rewriting BlockExpression itself, or
+        /// anything else that supports jumping.
+        /// </summary>
         private static Expression MakeBlock(params Expression[] expressions)
         {
-            return MakeBlock((IReadOnlyList<Expression>)expressions);
+            return new SpilledExpressionBlock(expressions);
         }
 
         /// <summary>

@@ -1,0 +1,4 @@
+# This one is needed because when ApiCompat looks for the type, it will first check the v4.6.x targetting pack and find the System.Runtime.Extensions file
+# which is not the latest (the one we just built) and it will load that instead of the one built inside CoreFx.
+TypesMustExist : Type 'System.StringNormalizationExtensions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Globalization.GlobalizationExtensions' does not exist in the implementation but it does exist in the contract.

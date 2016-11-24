@@ -265,6 +265,14 @@ comparand: null
         }
 
         /// <summary>
+        /// See overload with <see cref="IArgumentProvider"/> for more information. 
+        /// </summary>
+        internal static ReadOnlyCollection<ParameterExpression> ReturnReadOnly(IParameterProvider provider, ref object collection)
+        {
+            return ExpressionUtils.ReturnReadOnly(provider, ref collection);
+        }
+
+        /// <summary>
         /// Helper which is used for specialized subtypes which use ReturnReadOnly(ref object, ...).
         /// This is the reverse version of ReturnReadOnly which takes an IArgumentProvider.
         ///

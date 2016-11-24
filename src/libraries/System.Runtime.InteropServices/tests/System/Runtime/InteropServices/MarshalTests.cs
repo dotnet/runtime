@@ -3,11 +3,128 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Collections.Generic;
+using System.Security;
 
 namespace System.Runtime.InteropServices
 {
     public static class MarshalTests
     {
+        public static readonly object[][] StringData =
+        {
+            new object[] { "pizza" },
+            new object[] { "pepperoni" },
+            new object[] { "password" },
+            new object[] { "P4ssw0rdAa1!" },
+        };
+
+        private static SecureString ToSecureString(string data)
+        {
+            var str = new SecureString();
+            foreach (char c in data)
+            {
+                str.AppendChar(c);
+            }
+            str.MakeReadOnly();
+            return str;
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void SecureStringToBSTR(string data)
+        {
+            using (SecureString str = ToSecureString(data))
+            {
+                IntPtr bstr = Marshal.SecureStringToBSTR(str);
+                try
+                {
+                    string actual = Marshal.PtrToStringBSTR(bstr);
+                    Assert.Equal(data, actual);
+                }
+                finally
+                {
+                    Marshal.ZeroFreeBSTR(bstr);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public static void SecureStringToCoTaskMemAnsi(string data)
+        {
+            using (var str = ToSecureString(data))
+            {
+                IntPtr ptr = Marshal.SecureStringToCoTaskMemAnsi(str);
+                try
+                {
+                    string actual = Marshal.PtrToStringAnsi(ptr);
+                    Assert.Equal(data, actual);
+                }
+                finally
+                {
+                    Marshal.ZeroFreeCoTaskMemAnsi(ptr);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public static void SecureStringToCoTaskMemUnicode(string data)
+        {
+            using (var str = ToSecureString(data))
+            {
+                IntPtr ptr = Marshal.SecureStringToCoTaskMemUnicode(str);
+                try
+                {
+                    string actual = Marshal.PtrToStringUni(ptr);
+                    Assert.Equal(data, actual);
+                }
+                finally
+                {
+                    Marshal.ZeroFreeCoTaskMemUnicode(ptr);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public static void SecureStringToGlobalAllocAnsi(string data)
+        {
+            using (var str = ToSecureString(data))
+            {
+                IntPtr ptr = Marshal.SecureStringToGlobalAllocAnsi(str);
+                try
+                {
+                    string actual = Marshal.PtrToStringAnsi(ptr);
+                    Assert.Equal(data, actual);
+                }
+                finally
+                {
+                    Marshal.ZeroFreeGlobalAllocAnsi(ptr);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public static void SecureStringToGlobalAllocUnicode(string data)
+        {
+            using (var str = ToSecureString(data))
+            {
+                IntPtr ptr = Marshal.SecureStringToGlobalAllocUnicode(str);
+                try
+                {
+                    string actual = Marshal.PtrToStringUni(ptr);
+                    Assert.Equal(data, actual);
+                }
+                finally
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                }
+            }
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(1)]

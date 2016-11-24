@@ -19,11 +19,11 @@
     <InboxOnTargetFramework Include="xamarinwatchos10" />
     <HarvestAdditionalPackages Include="runtime.any.System.Reflection.Extensions">
       <ExcludePaths>runtimes/aot/lib/netcore50;ref/netstandard</ExcludePaths>
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </HarvestAdditionalPackages>
     <HarvestAdditionalPackages Include="runtime.aot.System.Reflection.Extensions">
       <ExcludePaths>ref/netstandard</ExcludePaths>
-      <Version>4.0.0</Version>
+      <Version>4.3.0</Version>
     </HarvestAdditionalPackages>    
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

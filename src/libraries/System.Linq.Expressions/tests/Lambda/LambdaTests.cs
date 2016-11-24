@@ -226,20 +226,20 @@ namespace System.Linq.Expressions.Tests
             var exp = Expression.Lambda(
                 Expression.Empty()
                 );
-            Assert.IsType<Expression<Action>>(exp);
+            Assert.IsAssignableFrom<Expression<Action>>(exp);
             Assert.Equal(typeof(Action), exp.Type);
 
             exp = Expression.Lambda(
                 Expression.Constant(3)
                 );
-            Assert.IsType<Expression<Func<int>>>(exp);
+            Assert.IsAssignableFrom<Expression<Func<int>>>(exp);
             Assert.Equal(typeof(Func<int>), exp.Type);
 
             exp = Expression.Lambda(
                 Expression.Empty(),
                 Enumerable.Range(0, 16).Select(_ => Expression.Variable(typeof(int)))
                 );
-            Assert.IsType<Expression<Action<
+            Assert.IsAssignableFrom<Expression<Action<
                 int, int, int, int,
                 int, int, int, int,
                 int, int, int, int,
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Constant(false),
                 Enumerable.Range(0, 16).Select(_ => Expression.Variable(typeof(double)))
                 );
-            Assert.IsType<Expression<Func<
+            Assert.IsAssignableFrom<Expression<Func<
                 double, double, double, double,
                 double, double, double, double,
                 double, double, double, double,

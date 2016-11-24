@@ -100,7 +100,9 @@
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
+    <Compile Include="System\Dynamic\Utils\ExpressionUtils.cs" />
     <Compile Include="System\Dynamic\Utils\ExpressionVisitorUtils.cs" />
+    <Compile Include="System\Dynamic\Utils\ListParameterProvider.cs" />
     <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
     <Compile Include="System\Linq\Expressions\Common\ArrayBuilderExtensions.cs" />
@@ -126,6 +128,7 @@
     <Compile Include="System\Linq\Expressions\IDynamicExpression.cs" />
     <Compile Include="System\Linq\Expressions\IndexExpression.cs" />
     <Compile Include="System\Linq\Expressions\InvocationExpression.cs" />
+    <Compile Include="System\Linq\Expressions\IParameterProvider.cs" />
     <Compile Include="System\Linq\Expressions\LabelExpression.cs" />
     <Compile Include="System\Linq\Expressions\LabelTarget.cs" />
     <Compile Include="System\Linq\Expressions\LambdaExpression.cs" />
