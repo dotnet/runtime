@@ -47,6 +47,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -4031,6 +4032,34 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	mono_cfg_dump_close_group (cfg);
 
 	return cfg;
+}
+
+gboolean
+mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *klass, int context_used)
+{
+	int i;
+	MonoGenericContainer *container;
+	MonoGenericInst *ginst;
+
+	if (mono_class_is_ginst (klass)) {
+		container = mono_class_get_generic_container (mono_class_get_generic_class (klass)->container_class);
+		ginst = mono_class_get_generic_class (klass)->context.class_inst;
+	} else if (mono_class_is_gtd (klass) && context_used) {
+		container = mono_class_get_generic_container (klass);
+		ginst = container->context.class_inst;
+	} else {
+		return FALSE;
+	}
+
+	for (i = 0; i < container->type_argc; ++i) {
+		MonoType *type;
+		if (!(mono_generic_container_get_param_info (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT)))
+			continue;
+		type = ginst->type_argv [i];
+		if (mini_type_is_reference (type))
+			return TRUE;
+	}
+	return FALSE;
 }
 
 void*

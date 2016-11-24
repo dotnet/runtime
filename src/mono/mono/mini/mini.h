@@ -2642,6 +2642,22 @@ int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoB
 									 MonoInst *return_var, MonoInst **inline_args,
 									 guint inline_offset, gboolean is_virtual_call);
 
+//the following methods could just be renamed/moved from method-to-ir.c
+int               mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp, guchar *ip,
+									  guint real_offset, gboolean inline_always);
+
+MonoInst*         mini_emit_get_rgctx_klass (MonoCompile *cfg, int context_used, MonoClass *klass, MonoRgctxInfoType rgctx_type);
+MonoInst*         mini_emit_runtime_constant (MonoCompile *cfg, MonoJumpInfoType patch_type, gpointer data);
+void              mini_save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg, gboolean null_check);
+void              mini_reset_cast_details (MonoCompile *cfg);
+void              mini_emit_class_check (MonoCompile *cfg, int klass_reg, MonoClass *klass);
+
+MonoInst*         mini_emit_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src);
+MonoInst*         mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src);
+
+gboolean          mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *klass, int context_used);
+
+
 MonoInst         *mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins);
 void              mono_decompose_long_opts (MonoCompile *cfg);
 void              mono_decompose_vtype_opts (MonoCompile *cfg);
@@ -2652,6 +2668,8 @@ void              mono_handle_global_vregs (MonoCompile *cfg);
 void              mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts);
 void              mono_allocate_gsharedvt_vars (MonoCompile *cfg);
 void              mono_if_conversion (MonoCompile *cfg);
+
+
 
 /* Delegates */
 gpointer          mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr);
