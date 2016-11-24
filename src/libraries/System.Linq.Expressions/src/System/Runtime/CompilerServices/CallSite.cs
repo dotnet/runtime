@@ -9,10 +9,6 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 
-#if FEATURE_COMPILE
-using System.Linq.Expressions.Compiler;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     //
@@ -589,11 +585,12 @@ namespace System.Runtime.CompilerServices
             body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
 
             ParameterExpression args = Expression.Variable(typeof(object[]), "args");
+            Expression[] argsElements = arguments.Map(p => Convert(p, typeof(object)));
             vars.Add(args);
             body.Add(
                 Expression.Assign(
                     args,
-                    Expression.NewArrayInit(typeof(object), arguments.Map(p => Convert(p, typeof(object))))
+                    Expression.NewArrayInit(typeof(object), new TrueReadOnlyCollection<Expression>(argsElements))
                 )
             );
 
@@ -671,7 +668,7 @@ namespace System.Runtime.CompilerServices
                     ),
                     Expression.Default(invoke.GetReturnType())
                 ),
-                @params
+                new TrueReadOnlyCollection<ParameterExpression>(@params)
             ).Compile();
         }
 
