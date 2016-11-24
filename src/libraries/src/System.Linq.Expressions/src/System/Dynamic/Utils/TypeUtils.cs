@@ -476,11 +476,8 @@ namespace System.Dynamic.Utils
 
         public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
-            // check for implicit coercions first
             Type nnExprType = GetNonNullableType(convertFrom);
             Type nnConvType = GetNonNullableType(convertToType);
-
-            bool retryForLifted = !AreEquivalent(nnExprType, convertFrom) || !AreEquivalent(nnConvType, convertToType);
 
             // try exact match on types
             MethodInfo[] eMethods = nnExprType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
@@ -499,16 +496,16 @@ namespace System.Dynamic.Utils
                 return method;
             }
 
-            // try lifted conversion
-            if (retryForLifted)
+            if (AreEquivalent(nnExprType, convertFrom) && AreEquivalent(nnConvType, convertToType))
             {
-                return FindConversionOperator(eMethods, nnExprType, nnConvType)
-                    ?? FindConversionOperator(cMethods, nnExprType, nnConvType)
-                    ?? FindConversionOperator(eMethods, nnExprType, convertToType)
-                    ?? FindConversionOperator(cMethods, nnExprType, convertToType);
+                return null;
             }
 
-            return null;
+            // try lifted conversion
+            return FindConversionOperator(eMethods, nnExprType, nnConvType)
+                   ?? FindConversionOperator(cMethods, nnExprType, nnConvType)
+                   ?? FindConversionOperator(eMethods, nnExprType, convertToType)
+                   ?? FindConversionOperator(cMethods, nnExprType, convertToType);
         }
 
         private static MethodInfo FindConversionOperator(MethodInfo[] methods, Type typeFrom, Type typeTo)
