@@ -6081,18 +6081,9 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	if (gclass->cached_class)
 		return gclass->cached_class;
 
-	mono_loader_lock ();
-	if (gclass->cached_class) {
-		mono_loader_unlock ();
-		return gclass->cached_class;
-	}
-
 	klass = (MonoClass *)mono_image_set_alloc0 (gclass->owner, sizeof (MonoClassGenericInst));
 
 	gklass = gclass->container_class;
-
-	if (record_gclass_instantiation > 0)
-		gclass_recorded_list = g_slist_append (gclass_recorded_list, klass);
 
 	if (gklass->nested_in) {
 		/* The nested_in type should not be inflated since it's possible to produce a nested type with less generic arguments*/
@@ -6101,8 +6092,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	klass->name = gklass->name;
 	klass->name_space = gklass->name_space;
-	
-	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 	
 	klass->image = gklass->image;
 	klass->type_token = gklass->type_token;
@@ -6121,16 +6110,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	klass->cast_class = klass->element_class = klass;
 
-	if (mono_class_is_nullable (klass))
-		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
-
-	/*
-	 * We're not interested in the nested classes of a generic instance.
-	 * We use the generic type definition to look for nested classes.
-	 */
-
-	mono_generic_class_setup_parent (klass, gklass);
-
 	if (gclass->is_dynamic) {
 		/*
 		 * We don't need to do any init workf with unbaked typebuilders. Generic instances created at this point will be later unregistered and/or fixed.
@@ -6140,8 +6119,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		if (!gklass->wastypebuilder)
 			klass->inited = 1;
 
-		mono_class_setup_supertypes (klass);
-
 		if (klass->enumtype) {
 			/*
 			 * For enums, gklass->fields might not been set, but instance_size etc. is 
@@ -6150,10 +6127,29 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 			 */
 			klass->instance_size = gklass->instance_size;
 			klass->sizes.class_size = gklass->sizes.class_size;
-			mono_memory_barrier ();
 			klass->size_inited = 1;
 		}
 	}
+
+	mono_loader_lock ();
+
+	if (gclass->cached_class) {
+		mono_loader_unlock ();
+		return gclass->cached_class;
+	}
+
+	if (record_gclass_instantiation > 0)
+		gclass_recorded_list = g_slist_append (gclass_recorded_list, klass);
+
+	if (mono_class_is_nullable (klass))
+		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
+
+	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
+
+	mono_generic_class_setup_parent (klass, gklass);
+
+	if (gclass->is_dynamic)
+		mono_class_setup_supertypes (klass);
 
 	mono_memory_barrier ();
 	gclass->cached_class = klass;
