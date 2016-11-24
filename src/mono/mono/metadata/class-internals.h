@@ -909,9 +909,6 @@ typedef struct {
 
 extern MonoStats mono_stats;
 
-typedef gpointer (*MonoRemotingTrampoline)       (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error);
-typedef gpointer (*MonoDelegateTrampoline)       (MonoDomain *domain, MonoClass *klass);
-
 typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
 
 typedef gboolean (*MonoGetClassFromName) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
@@ -998,9 +995,6 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 
 const char*
 mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def_type);
-
-void
-mono_install_delegate_trampoline (MonoDelegateTrampoline func);
 
 gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
@@ -1142,9 +1136,6 @@ typedef struct {
 #else
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class, MonoError *error);
-
-void
-mono_install_remoting_trampoline (MonoRemotingTrampoline func);
 
 #define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
 #define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)

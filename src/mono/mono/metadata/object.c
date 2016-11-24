@@ -555,23 +555,15 @@ mono_release_type_locks (MonoInternalThread *thread)
 #ifndef DISABLE_REMOTING
 
 static gpointer
-default_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
+create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
 {
-	g_error ("remoting not installed");
-	return NULL;
+	if (!callbacks.create_remoting_trampoline)
+		g_error ("remoting not installed");
+	return callbacks.create_remoting_trampoline (domain, method, target, error);
 }
 
-static MonoRemotingTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
 #endif
 
-static gpointer
-default_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
 static MonoImtTrampolineBuilder imt_trampoline_builder;
 static gboolean always_build_imt_trampolines;
 
@@ -589,20 +581,6 @@ MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void)
 {
 	return &callbacks;
-}
-
-#ifndef DISABLE_REMOTING
-void
-mono_install_remoting_trampoline (MonoRemotingTrampoline func) 
-{
-	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
-}
-#endif
-
-void
-mono_install_delegate_trampoline (MonoDelegateTrampoline func) 
-{
-	arch_create_delegate_trampoline = func? func: default_delegate_trampoline;
 }
 
 void
@@ -650,10 +628,7 @@ mono_compile_method_checked (MonoMethod *method, MonoError *error)
 
 	mono_error_init (error);
 
-	if (!callbacks.compile_method) {
-		g_error ("compile method called on uninitialized runtime");
-		return NULL;
-	}
+	g_assert (callbacks.compile_method);
 	res = callbacks.compile_method (method, error);
 	return res;
 }
@@ -675,25 +650,8 @@ mono_runtime_create_delegate_trampoline (MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE
 
-	return arch_create_delegate_trampoline (mono_domain_get (), klass);
-}
-
-static MonoFreeMethodFunc default_mono_free_method = NULL;
-
-/**
- * mono_install_free_method:
- * @func: pointer to the MonoFreeMethodFunc used to release a method
- *
- * This is an internal VM routine, it is used for the engines to
- * register a handler to release the resources associated with a method.
- *
- * Methods are freed when no more references to the delegate that holds
- * them are left.
- */
-void
-mono_install_free_method (MonoFreeMethodFunc func)
-{
-	default_mono_free_method = func;
+	g_assert (callbacks.create_delegate_trampoline);
+	return callbacks.create_delegate_trampoline (mono_domain_get (), klass);
 }
 
 /**
@@ -711,8 +669,8 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 {
 	MONO_REQ_GC_NEUTRAL_MODE
 
-	if (default_mono_free_method != NULL)
-		default_mono_free_method (domain, method);
+	if (callbacks.free_method)
+		callbacks.free_method (domain, method);
 
 	mono_method_clear_object (domain, method);
 
@@ -2286,7 +2244,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		MonoMethod *cm;
 		    
 		if ((cm = klass->vtable [i])) {
-			pvt->vtable [i] = arch_create_remoting_trampoline (domain, cm, target_type, error);
+			pvt->vtable [i] = create_remoting_trampoline (domain, cm, target_type, error);
 			if (!is_ok (error))
 				goto failure;
 		} else
@@ -2300,7 +2258,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			gpointer iter = NULL;
 			while ((m = mono_class_get_methods (k, &iter)))
 				if (!pvt->vtable [m->slot]) {
-					pvt->vtable [m->slot] = arch_create_remoting_trampoline (domain, m, target_type, error);
+					pvt->vtable [m->slot] = create_remoting_trampoline (domain, m, target_type, error);
 					if (!is_ok (error))
 						goto failure;
 				}
@@ -2336,7 +2294,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			iter = NULL;
 			j = 0;
 			while ((cm = mono_class_get_methods (interf, &iter))) {
-				pvt->vtable [slot + j++] = arch_create_remoting_trampoline (domain, cm, target_type, error);
+				pvt->vtable [slot + j++] = create_remoting_trampoline (domain, cm, target_type, error);
 				if (!is_ok (error))
 					goto failure;
 			}
@@ -7827,7 +7785,7 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 		MONO_OBJECT_SETREF (delegate, target, target);
 	}
 
-	delegate->invoke_impl = arch_create_delegate_trampoline (delegate->object.vtable->domain, delegate->object.vtable->klass);
+	delegate->invoke_impl = callbacks.create_delegate_trampoline (delegate->object.vtable->domain, delegate->object.vtable->klass);
 	if (callbacks.init_delegate)
 		callbacks.init_delegate (delegate);
 	return TRUE;

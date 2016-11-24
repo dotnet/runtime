@@ -3636,6 +3636,11 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.compile_method = mono_jit_compile_method;
 	callbacks.create_jump_trampoline = mono_create_jump_trampoline;
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
+	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
+	callbacks.free_method = mono_jit_free_method;
+#ifndef DISABLE_REMOTING
+	callbacks.create_remoting_trampoline = mono_jit_create_remoting_trampoline;
+#endif
 #endif
 
 	mono_install_callbacks (&callbacks);
@@ -3711,11 +3716,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
 #ifdef JIT_TRAMPOLINES_WORK
-	mono_install_free_method (mono_jit_free_method);
-#ifndef DISABLE_REMOTING
-	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
-#endif
-	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
 	mono_install_create_domain_hook (mini_create_jit_domain_info);
 	mono_install_free_domain_hook (mini_free_jit_domain_info);
 #endif
