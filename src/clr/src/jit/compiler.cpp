@@ -2284,6 +2284,15 @@ void Compiler::compSetProcessor()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_XARCH_
+    opts.compCanUseSSE3_4 = false;
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3_4))
+    {
+        if (JitConfig.EnableSSE3_4() != 0)
+        {
+            opts.compCanUseSSE3_4 = true;
+        }
+    }
+
 #ifdef FEATURE_AVX_SUPPORT
     // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     // Note that FEATURE_AVX_SUPPORT is not enabled for ctpjit
@@ -2293,13 +2302,24 @@ void Compiler::compSetProcessor()
         if (JitConfig.EnableAVX() != 0)
         {
             opts.compCanUseAVX = true;
-            if (!compIsForInlining())
-            {
-                codeGen->getEmitter()->SetUseAVX(true);
-            }
         }
     }
 #endif // FEATURE_AVX_SUPPORT
+
+    if (!compIsForInlining())
+    {
+#ifdef FEATURE_AVX_SUPPORT
+        if (opts.compCanUseAVX)
+        {
+            codeGen->getEmitter()->SetUseAVX(true);
+        }
+        else
+#endif // FEATURE_AVX_SUPPORT
+            if (opts.compCanUseSSE3_4)
+        {
+            codeGen->getEmitter()->SetUseSSE3_4(true);
+        }
+    }
 #endif // _TARGET_XARCH_
 
 #ifdef _TARGET_AMD64_
