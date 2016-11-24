@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace System.Dynamic.Utils
 {
-    internal static class ExpressionUtils
+    internal static partial class ExpressionUtils
     {
         public static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IReadOnlyList<T> collection)
         {
@@ -66,7 +66,6 @@ namespace System.Dynamic.Utils
             // and return what is not guaranteed to be a readonly collection
             return (ReadOnlyCollection<Expression>)collection;
         }
-
 
         /// <summary>
         /// Helper which is used for specialized subtypes which use ReturnReadOnly(ref object, ...).

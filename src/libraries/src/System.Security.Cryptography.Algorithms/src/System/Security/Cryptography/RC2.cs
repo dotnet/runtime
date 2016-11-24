@@ -18,6 +18,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
             KeySizeValue = 128;
             BlockSizeValue = 64;
+            FeedbackSizeValue = BlockSizeValue;
         }
 
         public static new RC2 Create()

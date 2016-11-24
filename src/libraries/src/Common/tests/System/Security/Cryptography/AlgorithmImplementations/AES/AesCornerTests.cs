@@ -324,5 +324,115 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 }
             }
         }
+
+#if netstandard17
+        [Fact]
+        public static void PaddingMode_Validation()
+        {
+            byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
+            byte[] iv = "47d1e060ba3c8643f9f8b65feeda4b30".HexToByteArray();
+
+            byte[] plainText = "".HexToByteArray();
+            ValidatePaddingMode(plainText, Array.Empty<byte>(), PaddingMode.Zeros, 0); // no block is added in this case!
+            ValidatePaddingMode(plainText, "d5450767bcc31793fe5065251b96b715".HexToByteArray(), PaddingMode.PKCS7, 16);
+            ValidatePaddingMode(plainText, "a3d32a3a9dca71b6f961f5a8ed7e414f".HexToByteArray(), PaddingMode.ANSIX923, 16);
+            ValidatePaddingMode(plainText, Array.Empty<byte>(), PaddingMode.ISO10126, 16);
+
+            plainText = "e505a2".HexToByteArray();
+            ValidatePaddingMode(plainText, "0a2e62938b03e5822ee251117a4ce066".HexToByteArray(), PaddingMode.Zeros, 13);
+            ValidatePaddingMode(plainText, "46785bde46622b92ff7c8ebb91508a4d".HexToByteArray(), PaddingMode.PKCS7, 13);
+            ValidatePaddingMode(plainText, "43b27d41a9fde73ca5db22c0fda76cb1".HexToByteArray(), PaddingMode.ANSIX923, 13);
+            ValidatePaddingMode(plainText, Array.Empty<byte>(), PaddingMode.ISO10126, 13);
+
+            plainText = "46785bde46622b92ff7c8ebb91508a".HexToByteArray();
+            ValidatePaddingMode(plainText, "1be8aa365a15d11fc7826b3a10602d09".HexToByteArray(), PaddingMode.Zeros, 1);
+            ValidatePaddingMode(plainText, "db5b7829cce732bfe609140cf45a8843".HexToByteArray(), PaddingMode.PKCS7, 1);
+            ValidatePaddingMode(plainText, "db5b7829cce732bfe609140cf45a8843".HexToByteArray(), PaddingMode.ANSIX923, 1);
+            ValidatePaddingMode(plainText, Array.Empty<byte>(), PaddingMode.ISO10126, 1);
+        }
+
+        private static void ValidatePaddingMode(byte[] plainText, byte[] expectedCipher, PaddingMode paddingMode, int expectedPaddingSize)
+        {
+            byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
+            byte[] iv = "47d1e060ba3c8643f9f8b65feeda4b30".HexToByteArray();
+
+            using (Aes a = Aes.Create())
+            {
+                a.Key = key;
+                a.IV = iv;
+                a.Mode = CipherMode.CBC;
+                a.Padding = paddingMode;
+
+                byte[] cipher = a.Encrypt(plainText);
+
+                // we cannot validate the cipher in this padding mode as it consists of random data
+                if (paddingMode != PaddingMode.ISO10126)
+                {
+                    Assert.Equal<byte>(expectedCipher, cipher);
+                }
+
+                // decrypt it with PaddingMode.None so that we can inspect the padding manually
+                a.Padding = PaddingMode.None;
+                byte[] decrypted = a.Decrypt(cipher);
+                ValidatePadding(decrypted, paddingMode, expectedPaddingSize);
+            }
+        }
+
+        private static void ValidatePadding(byte[] buffer, PaddingMode paddingMode, int expectedPaddingSize)
+        {
+            switch (paddingMode)
+            {
+                case PaddingMode.PKCS7:
+                    ValidatePKCS7Padding(buffer, expectedPaddingSize);
+                    break;
+                case PaddingMode.ANSIX923:
+                    ValidateANSIX923Padding(buffer, expectedPaddingSize);
+                    break;
+                case PaddingMode.ISO10126:
+                    ValidateISO10126Padding(buffer, expectedPaddingSize);
+                    break;
+                case PaddingMode.Zeros:
+                    ValidateZerosPadding(buffer, expectedPaddingSize);
+                    break;
+                case PaddingMode.None:
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private static void ValidateZerosPadding(byte[] buffer, int expectedPaddingSize)
+        {
+            for (int i = buffer.Length - 1; i > buffer.Length - 1 - expectedPaddingSize; i--)
+            {
+                Assert.Equal(0, buffer[i]);
+            }
+        }
+
+        private static void ValidatePKCS7Padding(byte[] buffer, int expectedPaddingSize)
+        {
+            for (int i = buffer.Length - 1; i > buffer.Length - 1 - expectedPaddingSize; i--)
+            {
+                Assert.Equal(expectedPaddingSize, buffer[i]);
+            }
+        }
+
+        private static void ValidateANSIX923Padding(byte[] buffer, int expectedPaddingSize)
+        {
+            Assert.Equal(buffer[buffer.Length - 1], expectedPaddingSize);
+
+            for (int i = buffer.Length - expectedPaddingSize; i < buffer.Length - 1; i++)
+            {
+                Assert.Equal(0, buffer[i]);
+            }
+        }
+
+        private static void ValidateISO10126Padding(byte[] buffer, int expectedPaddingSize)
+        {
+            // there is nothing else to validate as all the other padding bytes are random.
+            Assert.Equal(buffer[buffer.Length - 1], expectedPaddingSize);
+        }
+
+#endif
     }
 }

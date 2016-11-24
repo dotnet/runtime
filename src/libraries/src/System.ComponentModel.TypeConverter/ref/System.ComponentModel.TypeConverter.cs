@@ -347,6 +347,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { throw null; }
         protected static System.ComponentModel.ISite GetSite(object component) { throw null; }
+        [ObsoleteAttribute("This method has been deprecated. Use GetInvocationTarget instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         protected static object GetInvokee(Type componentClass, object component) { throw null; }
     }
     public partial class MultilineStringConverter : System.ComponentModel.TypeConverter
@@ -697,6 +698,7 @@ namespace System.ComponentModel
         public static Type ComObjectType { get { throw null; } }
         public static System.ComponentModel.Design.IDesigner CreateDesigner(IComponent component, Type designerBaseType) { throw null; }
 #pragma warning disable 0618
+        [ObsoleteAttribute("This property has been deprecated.  Use a type description provider to supply type information for COM types instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public static IComNativeDescriptorHandler ComNativeDescriptorHandler { get; set; }        
 #pragma warning restore 0618
     }

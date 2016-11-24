@@ -373,6 +373,10 @@ namespace System
                 return ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset);
         }
 
+        // These expose the internal representation for Span-related apis use only.
+        internal Pinnable<T> Pinnable => _pinnable;
+        internal IntPtr ByteOffset => _byteOffset;
+
         //
         // If the Span was constructed from an object,
         //

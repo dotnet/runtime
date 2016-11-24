@@ -141,6 +141,9 @@
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
+  <data name="Cryptography_ECXmlSerializationFormatRequired" xml:space="preserve">
+    <value>XML serialization of an elliptic curve key requires using an overload which specifies the XML format to be used.</value>
+  </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>

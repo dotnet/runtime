@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal ILGenerator IL => _ilg;
 
-        internal ReadOnlyCollection<ParameterExpression> Parameters => _lambda.Parameters;
+        internal IParameterProvider Parameters => _lambda;
 
 #if FEATURE_COMPILE_TO_METHODBUILDER
         internal bool CanEmitBoundConstants => _method is DynamicMethod;

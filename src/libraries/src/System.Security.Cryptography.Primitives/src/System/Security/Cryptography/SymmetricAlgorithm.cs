@@ -22,6 +22,20 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        public virtual int FeedbackSize
+        {
+            get
+            {
+                return FeedbackSizeValue;
+            }
+            set
+            {
+                if (value <= 0 || value > BlockSizeValue || (value % 8) != 0)
+                    throw new CryptographicException(SR.Cryptography_InvalidFeedbackSize);
+                FeedbackSizeValue = value;
+            }
+        }
+
         public virtual int BlockSize
         {
             get
@@ -148,7 +162,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (!(value == PaddingMode.None || value == PaddingMode.PKCS7 || value == PaddingMode.Zeros))
+                if ((value < PaddingMode.None) || (value > PaddingMode.ISO10126))
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
                 PaddingValue = value;
             }
@@ -200,7 +214,7 @@ namespace System.Security.Cryptography
 
         public abstract void GenerateKey();
 
-        private bool ValidKeySize(int bitLength)
+        public bool ValidKeySize(int bitLength)
         {
             KeySizes[] validSizes = this.LegalKeySizes;
             if (validSizes == null)
@@ -213,6 +227,7 @@ namespace System.Security.Cryptography
         protected byte[] KeyValue;
         protected byte[] IVValue;
         protected int BlockSizeValue;
+        protected int FeedbackSizeValue;
         protected int KeySizeValue;
         protected KeySizes[] LegalBlockSizesValue;
         protected KeySizes[] LegalKeySizesValue;

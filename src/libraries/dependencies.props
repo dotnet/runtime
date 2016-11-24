@@ -17,18 +17,18 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>afffd8807985539626d62786a755920795509c8e</CoreFxCurrentRef>
-    <CoreClrCurrentRef>825abc44ee05aa0e5f45437ce3ceaf7165e3fc30</CoreClrCurrentRef>
-    <ExternalCurrentRef>d6bf8abc1e1f92953fb4153e0a20d26204aff10b</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>afffd8807985539626d62786a755920795509c8e</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>10ae672d2e13fb79101a4991f2643cca01208075</CoreFxCurrentRef>
+    <CoreClrCurrentRef>16a41d6c4365405c07e947d2b178689d06c97005</CoreClrCurrentRef>
+    <ExternalCurrentRef>b39262591214edb67a7510174e7b14e548dac84f</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>b39262591214edb67a7510174e7b14e548dac84f</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24717-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24717-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24716-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24718-00</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24721-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24723-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24723-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24723-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->

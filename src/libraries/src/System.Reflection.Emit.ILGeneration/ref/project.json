@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.0",
-    "System.Reflection": "4.1.0",
-    "System.Reflection.Primitives": "4.0.1"
+    "System.Runtime": "4.3.0",
+    "System.Reflection": "4.3.0",
+    "System.Reflection.Primitives": "4.3.0"
   },
   "frameworks": {
     "netstandard1.0": {}

@@ -467,16 +467,40 @@ namespace System.Linq.Expressions
     }
 
     // Optimized assignment node, only holds onto children
-    internal sealed class AssignBinaryExpression : BinaryExpression
+    internal class AssignBinaryExpression : BinaryExpression
     {
         internal AssignBinaryExpression(Expression left, Expression right)
             : base(left, right)
         {
         }
 
+        public static AssignBinaryExpression Make(Expression left, Expression right, bool byRef)
+        {
+            if (byRef)
+            {
+                return new ByRefAssignBinaryExpression(left, right);
+            }
+            else
+            {
+                return new AssignBinaryExpression(left, right);
+            }
+        }
+
+        internal virtual bool IsByRef => false;
+
         public sealed override Type Type => Left.Type;
 
         public sealed override ExpressionType NodeType => ExpressionType.Assign;
+    }
+
+    internal class ByRefAssignBinaryExpression : AssignBinaryExpression
+    {
+        internal ByRefAssignBinaryExpression(Expression left, Expression right)
+            : base(left, right)
+        {
+        }
+
+        internal override bool IsByRef => true;
     }
 
     // Coalesce with conversion
@@ -1407,7 +1431,7 @@ namespace System.Linq.Expressions
                 throw Error.UserDefinedOperatorMustNotBeVoid(conversion, nameof(conversion));
             }
             ParameterInfo[] pms = method.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1559,7 +1583,7 @@ namespace System.Linq.Expressions
             Debug.Assert(typeof(System.MulticastDelegate).IsAssignableFrom(delegateType) && delegateType != typeof(System.MulticastDelegate));
             MethodInfo mi = delegateType.GetMethod("Invoke");
             ParameterInfo[] pms = mi.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1670,7 +1694,7 @@ namespace System.Linq.Expressions
                 {
                     return new SimpleBinaryExpression(ExpressionType.AddChecked, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.AddChecked, "op_Addition", left, right, liftToNull: false);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.AddChecked, "op_Addition", left, right, liftToNull: true);
             }
             return GetMethodBasedBinaryOperator(ExpressionType.AddChecked, left, right, method, liftToNull: true);
         }

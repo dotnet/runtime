@@ -168,6 +168,19 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyAddNullableNumber(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
         #endregion
 
         #region Helpers
@@ -401,6 +414,20 @@ namespace System.Linq.Expressions.Tests
             Func<ushort?> f = e.Compile(useInterpreter);
 
             Assert.Equal((ushort?)(a + b), f());
+        }
+
+        private static void VerifyAddNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.Add(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            Number? expected = a + b;
+            Assert.Equal(expected, f());
         }
 
         #endregion
