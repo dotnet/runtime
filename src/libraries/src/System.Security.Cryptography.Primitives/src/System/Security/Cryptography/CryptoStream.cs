@@ -152,7 +152,7 @@ namespace System.Security.Cryptography
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overriden.  To be safe 
+            // since it does not call through to Flush() which a subclass might have overridden.  To be safe 
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(CryptoStream))
