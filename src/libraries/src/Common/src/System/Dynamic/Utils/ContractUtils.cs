@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Dynamic.Utils
 {
@@ -12,6 +13,7 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// Returns an exception object to be thrown when code is supposed to be unreachable.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public static Exception Unreachable
         {
             get
