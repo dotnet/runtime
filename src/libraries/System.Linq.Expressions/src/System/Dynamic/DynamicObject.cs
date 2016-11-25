@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -387,16 +388,16 @@ namespace System.Dynamic
 
             private readonly static Expression[] s_noArgs = new Expression[0]; // used in reference comparison, requires unique object identity
 
-            private static Expression[] GetConvertedArgs(params Expression[] args)
+            private static ReadOnlyCollection<Expression> GetConvertedArgs(params Expression[] args)
             {
-                ReadOnlyCollectionBuilder<Expression> paramArgs = new ReadOnlyCollectionBuilder<Expression>(args.Length);
+                var paramArgs = new Expression[args.Length];
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    paramArgs.Add(Expression.Convert(args[i], typeof(object)));
+                    paramArgs[i] = Expression.Convert(args[i], typeof(object));
                 }
 
-                return paramArgs.ToArray();
+                return new TrueReadOnlyCollection<Expression>(paramArgs);
             }
 
             /// <summary>
@@ -517,7 +518,7 @@ namespace System.Dynamic
                 //
                 ParameterExpression result = Expression.Parameter(typeof(object), null);
                 ParameterExpression callArgs = methodName != nameof(DynamicObject.TryBinaryOperation) ? Expression.Parameter(typeof(object[]), null) : Expression.Parameter(typeof(object), null);
-                Expression[] callArgsValue = GetConvertedArgs(args);
+                ReadOnlyCollection<Expression> callArgsValue = GetConvertedArgs(args);
 
                 var resultMO = new DynamicMetaObject(result, BindingRestrictions.Empty);
 
@@ -641,7 +642,7 @@ namespace System.Dynamic
 
                 ParameterExpression result = Expression.Parameter(typeof(object), null);
                 ParameterExpression callArgs = Expression.Parameter(typeof(object[]), null);
-                Expression[] callArgsValue = GetConvertedArgs(args);
+                ReadOnlyCollection<Expression> callArgsValue = GetConvertedArgs(args);
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
@@ -698,7 +699,7 @@ namespace System.Dynamic
                 //
                 DynamicMetaObject fallbackResult = fallback(null);
                 ParameterExpression callArgs = Expression.Parameter(typeof(object[]), null);
-                Expression[] callArgsValue = GetConvertedArgs(args);
+                ReadOnlyCollection<Expression> callArgsValue = GetConvertedArgs(args);
 
                 //
                 // Build a new expression like:
