@@ -1105,7 +1105,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static bool IsRefInstance(Expression instance)
         {
-            // Primitive value types are okay because they are all readonly,
+            // Primitive value types are okay because they are all read-only,
             // but we can't rely on this for non-primitive types. So we have
             // to either throw NotSupported or use ref locals.
             return instance != null && instance.Type.GetTypeInfo().IsValueType && instance.Type.GetTypeCode() == TypeCode.Object;

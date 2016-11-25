@@ -660,12 +660,12 @@ namespace System.Linq.Expressions
         internal static string PropertyWithMoreThanOneMatch(object p0, object p1) => SR.Format(SR.PropertyWithMoreThanOneMatch, p0, p1);
 
         /// <summary>
-        /// A string like "An incorrect number of type args were specified for the declaration of a Func type."
+        /// A string like "An incorrect number of type arguments were specified for the declaration of a Func type."
         /// </summary>
         internal static string IncorrectNumberOfTypeArgsForFunc => SR.IncorrectNumberOfTypeArgsForFunc;
 
         /// <summary>
-        /// A string like "An incorrect number of type args were specified for the declaration of an Action type."
+        /// A string like "An incorrect number of type arguments were specified for the declaration of an Action type."
         /// </summary>
         internal static string IncorrectNumberOfTypeArgsForAction => SR.IncorrectNumberOfTypeArgsForAction;
 
