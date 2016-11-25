@@ -25,10 +25,7 @@ namespace System.Linq.Expressions.Tests
         {
             public class Visitor : ExpressionVisitor
             {
-                protected override Expression VisitExtension(Expression node)
-                {
-                    return MarkerExtension;
-                }
+                protected override Expression VisitExtension(Expression node) => MarkerExtension;
             }
 
             public IncompleteExpressionOverride()
@@ -36,68 +33,41 @@ namespace System.Linq.Expressions.Tests
             {
             }
 
-            public Expression VisitChildren()
-            {
-                return VisitChildren(new Visitor());
-            }
+            public Expression VisitChildren() => VisitChildren(new Visitor());
         }
 
         private class ClaimedReducibleOverride : IncompleteExpressionOverride
         {
-            public override bool CanReduce
-            {
-                get { return true; }
-            }
+            public override bool CanReduce => true;
         }
 
         private class ReducesToSame : ClaimedReducibleOverride
         {
-            public override Expression Reduce()
-            {
-                return this;
-            }
+            public override Expression Reduce() => this;
         }
 
         private class ReducesToNull : ClaimedReducibleOverride
         {
-            public override Expression Reduce()
-            {
-                return null;
-            }
+            public override Expression Reduce() => null;
         }
 
         private class ReducesToLongTyped : ClaimedReducibleOverride
         {
             private class ReducedToLongTyped : IncompleteExpressionOverride
             {
-                public override Type Type
-                {
-                    get { return typeof(long); }
-                }
+                public override Type Type => typeof(long);
             }
 
-            public override Type Type
-            {
-                get { return typeof(int); }
-            }
+            public override Type Type => typeof(int);
 
-            public override Expression Reduce()
-            {
-                return new ReducedToLongTyped();
-            }
+            public override Expression Reduce() => new ReducedToLongTyped();
         }
 
         private class Reduces : ClaimedReducibleOverride
         {
-            public override Type Type
-            {
-                get { return typeof(int); }
-            }
+            public override Type Type => typeof(int);
 
-            public override Expression Reduce()
-            {
-                return new Reduces();
-            }
+            public override Expression Reduce() => new Reduces();
         }
 
         private class ReducesFromStrangeNodeType : Expression
@@ -163,14 +133,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static IEnumerable<object[]> SomeTypes
-        {
-            get
-            {
-                return new[] { typeof(int), typeof(void), typeof(object), typeof(DateTime), typeof(string), typeof(ExpressionTests), typeof(ExpressionType) }
-                    .Select(type => new object[] { type });
-            }
-        }
+        public static IEnumerable<object[]> SomeTypes => new[] { typeof(int), typeof(void), typeof(object), typeof(DateTime), typeof(string), typeof(ExpressionTests), typeof(ExpressionType) }
+    .Select(type => new object[] { type });
 
         [Fact]
         public void NodeTypeMustBeOverridden()
@@ -306,10 +270,7 @@ namespace System.Linq.Expressions.Tests
             set { }
         }
 
-        private static int Unwritable
-        {
-            get { return 0; }
-        }
+        private static int Unwritable => 0;
 
         private class UnreadableIndexableClass
         {
@@ -321,10 +282,7 @@ namespace System.Linq.Expressions.Tests
 
         private class UnwritableIndexableClass
         {
-            public int this[int index]
-            {
-                get { return 0; }
-            }
+            public int this[int index] => 0;
         }
 
         [Fact]
@@ -353,13 +311,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static IEnumerable<object[]> UnreadableExpressionData
-        {
-            get
-            {
-                return UnreadableExpressions.Concat(new Expression[1]).Select(exp => new object[] { exp });
-            }
-        }
+        public static IEnumerable<object[]> UnreadableExpressionData => UnreadableExpressions.Concat(new Expression[1]).Select(exp => new object[] { exp });
 
         public static IEnumerable<Expression> WritableExpressions
         {
@@ -385,21 +337,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static IEnumerable<object[]> UnwritableExpressionData
-        {
-            get
-            {
-                return UnwritableExpressions.Select(exp => new object[] { exp });
-            }
-        }
+        public static IEnumerable<object[]> UnwritableExpressionData => UnwritableExpressions.Select(exp => new object[] { exp });
 
-        public static IEnumerable<object[]> WritableExpressionData
-        {
-            get
-            {
-                return WritableExpressions.Select(exp => new object[] { exp });
-            }
-        }
+        public static IEnumerable<object[]> WritableExpressionData => WritableExpressions.Select(exp => new object[] { exp });
 
         [Theory, MemberData(nameof(UnreadableExpressionData))]
         public void ConfirmCannotRead(Expression unreadableExpression)
