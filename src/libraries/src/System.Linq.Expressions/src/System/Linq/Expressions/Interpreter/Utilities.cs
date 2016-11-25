@@ -144,13 +144,12 @@ namespace System.Linq.Expressions.Interpreter
                     return default(float);
                 case TypeCode.Double:
                     return default(double);
-                //case TypeCode.DBNull:
-                //    return default(DBNull);
                 case TypeCode.DateTime:
                     return default(DateTime);
                 case TypeCode.Decimal:
                     return default(decimal);
                 default:
+                    // Also covers DBNull which is a class.
                     return null;
             }
 
