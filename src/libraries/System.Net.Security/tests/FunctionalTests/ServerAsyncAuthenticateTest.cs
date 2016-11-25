@@ -79,7 +79,7 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public async Task ServerAsyncAuthenticate_UnsuportedAllServer_Fail()
+        public async Task ServerAsyncAuthenticate_UnsupportedAllServer_Fail()
         {
             await Assert.ThrowsAsync<NotSupportedException>(() =>
             {
