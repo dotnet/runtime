@@ -12,7 +12,7 @@
     <!-- MonoTouch, Xamarin.iOS, Xamarin.TVOS, and Xamarain.WatchOS don't actually support this, 
          but do support a PCL profile that contained it so we must treat as inbox -->
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
-    <!-- This dependency is not suported on AOT, but that is OK since this package is
+    <!-- This dependency is not supported on AOT, but that is OK since this package is
          restricted from AOT via runtime.json -->
     <SuppressDependencyError Include="System.Reflection.Emit.ILGeneration">
       <Version>4.0.0.0</Version>
