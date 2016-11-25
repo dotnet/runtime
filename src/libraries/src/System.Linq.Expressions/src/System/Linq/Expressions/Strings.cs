@@ -185,11 +185,6 @@ namespace System.Linq.Expressions
         internal static string KeyDoesNotExistInExpando(object p0) => SR.Format(SR.KeyDoesNotExistInExpando, p0);
 
         /// <summary>
-        /// A string like "Method precondition violated"
-        /// </summary>
-        internal static string MethodPreconditionViolated => SR.MethodPreconditionViolated;
-
-        /// <summary>
         /// A string like "Argument count must be greater than number of named arguments."
         /// </summary>
         internal static string ArgCntMustBeGreaterThanNameCnt => SR.ArgCntMustBeGreaterThanNameCnt;
