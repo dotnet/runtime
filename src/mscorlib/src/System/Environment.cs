@@ -1815,5 +1815,11 @@ namespace System {
             }
         }
 
+        internal static extern int CurrentProcessorNumber
+        {
+            [System.Security.SecuritySafeCritical]
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            get;
+        }
     }
 }
