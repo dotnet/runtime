@@ -12,7 +12,13 @@ namespace System.Linq.Expressions.Tests
 {
     internal class InlinePerCompilationTypeAttribute : DataAttribute
     {
-        private static readonly object[] s_boxedBooleans = {false, true};
+        private static readonly object[] s_boxedBooleans =
+        {
+            false,
+#if FEATURE_COMPILE && FEATURE_INTERPRET
+            true
+#endif
+        };
 
         private readonly object[] _data;
 
