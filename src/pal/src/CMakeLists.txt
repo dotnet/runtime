@@ -42,9 +42,9 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-D_TARGET_MAC64)
   set(PLATFORM_SOURCES
-    arch/i386/activationhandlerwrapper.S
-    arch/i386/context.S
-    arch/i386/dispatchexceptionwrapper.S
+    arch/amd64/activationhandlerwrapper.S
+    arch/amd64/context.S
+    arch/amd64/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
   )
@@ -85,10 +85,10 @@ add_compile_options(-fPIC)
 
 if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
   set(ARCH_SOURCES
-    arch/i386/context2.S
-    arch/i386/debugbreak.S
-    arch/i386/exceptionhelper.S
-    arch/i386/processor.cpp
+    arch/amd64/context2.S
+    arch/amd64/debugbreak.S
+    arch/amd64/exceptionhelper.S
+    arch/amd64/processor.cpp
   )
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
   set(ARCH_SOURCES
@@ -109,7 +109,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     #arch/i386/context2.S
     #arch/i386/debugbreak.S
     #arch/i386/exceptionhelper.S
-    arch/i386/processor.cpp
+    arch/amd64/processor.cpp
   )
 endif()
 

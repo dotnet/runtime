@@ -79,7 +79,7 @@ CorUnix::TLSMakeOptimizedGetter(
     }
 
     // Need to preserve %ecx, %edx, and %esi registers as specified in
-    // GetThreadGeneric(void) in vm/i386/asmhelpers.s
+    // GetThreadGeneric(void) in vm/amd64/asmhelpers.s
     p[i++] = 0x51; // push %ecx
     p[i++] = 0x52; // push %edx
     p[i++] = 0x89; // mov %esp,%eax // %eax = sp;
