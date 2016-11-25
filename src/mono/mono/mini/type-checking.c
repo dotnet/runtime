@@ -357,8 +357,41 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 	mini_save_cast_details (cfg, klass, obj_reg, FALSE);
 
 	if (mono_class_is_interface (klass)) {
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_iface_cast (cfg, vtable_reg, klass, NULL, NULL);
+		int tmp_reg = alloc_preg (cfg);
+#ifndef DISABLE_REMOTING
+		MonoBasicBlock *interface_fail_bb;
+		int klass_reg = alloc_preg (cfg);
+
+		NEW_BBLOCK (cfg, interface_fail_bb);
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, is_null_bb);
+
+		// iface bitmap check failed
+		MONO_START_BB (cfg, interface_fail_bb);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+
+		mini_emit_class_check (cfg, klass_reg, mono_defaults.transparent_proxy_class);
+
+		tmp_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
+
+		MonoInst *args [1] = { src };
+		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
+
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+#else
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, ok_result_bb);
+#endif
+		//
+		// MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		// mini_emit_iface_cast (cfg, vtable_reg, klass, NULL, NULL);
 	} else {
 		int klass_reg = alloc_preg (cfg);
 
@@ -567,7 +600,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 		else
 			ret = emit_castclass_with_cache (cfg, klass, args);
 
-	} else if (!context_used && (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass))) {
+	} else if (!context_used && (mono_class_is_marshalbyref (klass) || (mono_class_is_interface (klass) && is_isinst))) {
 		MonoInst *iargs [1];
 		int costs;
 
@@ -599,17 +632,22 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 void
 mono_decompose_typechecks (MonoCompile *cfg)
 {
+	gboolean found_typetest = FALSE;
 	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			switch (ins->opcode) {
 			case OP_ISINST:
 			case OP_CASTCLASS:
+				found_typetest = TRUE;
 				mono_decompose_typecheck (cfg, bb, ins);
 				break;
 			}
 		}
 	}
+	if ((cfg->verbose_level > 2) && found_typetest)
+		mono_print_code (cfg, "AFTER DECOMPOSE TYPE_CHECKS");
+	
 }
 
 //Those two functions will go away as we get rid of CEE_MONO_CISINST and CEE_MONO_CCASTCLASS.
