@@ -223,22 +223,10 @@ namespace System.Linq.Expressions.Interpreter
         private KeyValuePair<TKey, TValue>[] _keysAndValues;
         private Dictionary<TKey, TValue> _dict;
         private int _count;
-        private const int _arraySize = 10;
+        private const int ArraySize = 10;
 
         public HybridReferenceDictionary()
         {
-        }
-
-        public HybridReferenceDictionary(int initialCapicity)
-        {
-            if (initialCapicity > _arraySize)
-            {
-                _dict = new Dictionary<TKey, TValue>(initialCapicity);
-            }
-            else
-            {
-                _keysAndValues = new KeyValuePair<TKey, TValue>[initialCapicity];
-            }
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -389,7 +377,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        _keysAndValues = new KeyValuePair<TKey, TValue>[_arraySize];
+                        _keysAndValues = new KeyValuePair<TKey, TValue>[ArraySize];
                         index = 0;
                     }
 
