@@ -1377,7 +1377,7 @@ namespace System.Linq.Expressions.Tests
                         IP_0006: EnterFinally[0] -> 6
                         IP_0007: LeaveFinally()
                       }
-                      IP_0008: StoreField()
+                      IP_0008: StoreField(Int32 Baz)
                       IP_0009: StoreLocal(0)
                       IP_0010: LoadLocal(0)
                       IP_0011: ValueTypeCopy()
@@ -1575,7 +1575,7 @@ namespace System.Linq.Expressions.Tests
                         IP_0009: EnterFinally[0] -> 9
                         IP_0010: LeaveFinally()
                       }
-                      IP_0011: StoreField()
+                      IP_0011: StoreField(Int32 Foo)
                       IP_0012: Pop()
                       IP_0013: StoreLocal(0)
                       IP_0014: LoadLocal(0)
