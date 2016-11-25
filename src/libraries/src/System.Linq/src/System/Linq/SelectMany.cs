@@ -147,6 +147,12 @@ namespace System.Linq
 
             public override void Dispose()
             {
+                if (_subEnumerator != null)
+                {
+                    _subEnumerator.Dispose();
+                    _subEnumerator = null;
+                }
+
                 if (_sourceEnumerator != null)
                 {
                     _sourceEnumerator.Dispose();
