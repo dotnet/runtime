@@ -202,7 +202,7 @@ namespace System.Runtime.CompilerServices
 
             return Expression.Lambda<T>(
                 Expression.Block(body),
-                "CallSite.Target",
+                CallSite.CallSiteTargetMethodName,
                 true, // always compile the rules with tail call optimization
                 new TrueReadOnlyCollection<ParameterExpression>(@params)
             );

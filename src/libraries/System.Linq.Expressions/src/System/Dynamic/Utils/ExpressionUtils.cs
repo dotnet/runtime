@@ -18,7 +18,7 @@ namespace System.Dynamic.Utils
             ParameterExpression tObj = collection as ParameterExpression;
             if (tObj != null)
             {
-                // otherwise make sure only one readonly collection ever gets exposed
+                // otherwise make sure only one read-only collection ever gets exposed
                 Interlocked.CompareExchange(
                     ref collection,
                     new ReadOnlyCollection<ParameterExpression>(new ListParameterProvider(provider, tObj)),
@@ -26,7 +26,7 @@ namespace System.Dynamic.Utils
                 );
             }
 
-            // and return what is not guaranteed to be a readonly collection
+            // and return what is not guaranteed to be a read-only collection
             return (ReadOnlyCollection<ParameterExpression>)collection;
         }
     }
