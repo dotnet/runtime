@@ -639,9 +639,6 @@
   <data name="InvalidMetaObjectCreated" xml:space="preserve">
     <value>An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.</value>
   </data>
-  <data name="MethodPreconditionViolated" xml:space="preserve">
-    <value>Method precondition violated</value>
-  </data>
   <data name="AmbiguousMatchInExpandoObject" xml:space="preserve">
     <value>More than one key matching '{0}' was found in the ExpandoObject.</value>
   </data>
