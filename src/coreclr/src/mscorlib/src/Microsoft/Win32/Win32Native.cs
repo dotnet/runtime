@@ -725,9 +725,6 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32, SetLastError=true)]
         internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
-        [DllImport(KERNEL32)]
-        internal static extern int GetCurrentProcessorNumber();
-
         [DllImport(KERNEL32, CharSet=CharSet.Auto, BestFitMapping=true)]
         internal static extern int FormatMessage(int dwFlags, IntPtr lpSource,
                     int dwMessageId, int dwLanguageId, [Out]StringBuilder lpBuffer,
