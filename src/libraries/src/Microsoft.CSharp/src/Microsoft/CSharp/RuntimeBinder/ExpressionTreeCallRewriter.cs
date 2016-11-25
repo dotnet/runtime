@@ -943,7 +943,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     return GetObject(pExpr.asZEROINIT().OptionalArgument);
                 }
-                return System.Activator.CreateInstance(pExpr.type.AssociatedSystemType);
+                return Activator.CreateInstance(pExpr.type.AssociatedSystemType);
             }
 
             Debug.Assert(false, "Invalid EXPR in GetObject");
