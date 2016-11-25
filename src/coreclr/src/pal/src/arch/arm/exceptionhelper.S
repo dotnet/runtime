@@ -10,7 +10,7 @@
 
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
-    // Ported from src/pal/src/arch/i386/exceptionhelper.S
+    // Ported from src/pal/src/arch/amd64/exceptionhelper.S
     push_nonvol_reg {r7} /* FP. x64-RBP */
 
     ldr	r4,	[r0, #(CONTEXT_R4)]
