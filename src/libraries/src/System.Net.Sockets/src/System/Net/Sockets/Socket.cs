@@ -4233,7 +4233,7 @@ namespace System.Net.Sockets
                 {
                     // Disable CS0162 and CS0429: Unreachable code detected
                     //
-                    // SuportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162 or CS0429.
+                    // SupportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162 or CS0429.
                     //
                     // This is the only *Connect* API that actually supports multiple endpoint attempts, as it's responsible 
                     // for creating each Socket instance and can create one per attempt (with the instance methods, once a 
@@ -5486,7 +5486,7 @@ namespace System.Net.Sockets
 
         // Disable CS0162: Unreachable code detected
         //
-        // SuportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162.
+        // SupportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162.
 #pragma warning disable 162, 429
         private static object PostOneBeginConnect(MultipleAddressConnectAsyncResult context)
         {
