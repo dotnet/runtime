@@ -409,7 +409,7 @@ namespace System.Dynamic
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    ContractUtils.Requires(args[i] is ParameterExpression);
+                    ContractUtils.Requires(args[i] is ParameterExpression, nameof(args));
                     if (((ParameterExpression)args[i]).IsByRef)
                     {
                         if (block == null)
