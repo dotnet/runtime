@@ -581,7 +581,6 @@ while :; do
             __ConfigureOnly=1
             __SkipMSCorLib=1
             __SkipNuget=1
-            __IncludeTests=
             ;;
 
         skipconfigure)
