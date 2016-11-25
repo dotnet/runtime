@@ -1913,7 +1913,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             newArgs = null;
             EXPR newArgsTail = null;
 
-            MethodOrPropertySymbol mostDerivedMethod = ExpressionBinder.GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mp, callingObjectType);
+            MethodOrPropertySymbol mostDerivedMethod = GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mp, callingObjectType);
 
             int paramCount = mp.Params.size;
             TypeArray @params = mp.Params;

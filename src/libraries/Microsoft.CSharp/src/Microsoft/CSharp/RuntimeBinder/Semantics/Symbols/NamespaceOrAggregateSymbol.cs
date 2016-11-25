@@ -32,9 +32,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void AddDecl(Declaration decl)
         {
             Debug.Assert(decl != null);
-            Debug.Assert(this.IsNamespaceSymbol() || this.IsAggregateSymbol());
+            Debug.Assert(IsNamespaceSymbol() || IsAggregateSymbol());
             Debug.Assert(decl.IsNamespaceDeclaration() || decl.IsAggregateDeclaration());
-            Debug.Assert(!this.IsNamespaceSymbol() == !decl.IsNamespaceDeclaration());
+            Debug.Assert(!IsNamespaceSymbol() == !decl.IsNamespaceDeclaration());
 
             // If parent is set it should be set to us!
             Debug.Assert(decl.bag == null || decl.bag == this);

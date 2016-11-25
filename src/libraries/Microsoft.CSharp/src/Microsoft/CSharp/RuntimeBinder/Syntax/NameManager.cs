@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         internal NameManager(NameTable nameTable)
         {
             _names = nameTable;
-            this.InitKnownNames();
+            InitKnownNames();
         }
 
         internal Name Add(string key)
