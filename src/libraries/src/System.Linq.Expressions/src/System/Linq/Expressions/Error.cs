@@ -1045,14 +1045,14 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.PropertyWithMoreThanOneMatch(p0, p1));
         }
         /// <summary>
-        /// ArgumentException with message like "An incorrect number of type args were specified for the declaration of a Func type."
+        /// ArgumentException with message like "An incorrect number of type arguments were specified for the declaration of a Func type."
         /// </summary>
         internal static Exception IncorrectNumberOfTypeArgsForFunc(string paramName)
         {
             return new ArgumentException(Strings.IncorrectNumberOfTypeArgsForFunc, paramName);
         }
         /// <summary>
-        /// ArgumentException with message like "An incorrect number of type args were specified for the declaration of an Action type."
+        /// ArgumentException with message like "An incorrect number of type arguments were specified for the declaration of an Action type."
         /// </summary>
         internal static Exception IncorrectNumberOfTypeArgsForAction(string paramName)
         {

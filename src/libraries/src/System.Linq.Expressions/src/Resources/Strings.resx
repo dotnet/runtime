@@ -463,10 +463,10 @@
     <value>More than one property '{0}' on type '{1}' is compatible with the supplied arguments.</value>
   </data>
   <data name="IncorrectNumberOfTypeArgsForFunc" xml:space="preserve">
-    <value>An incorrect number of type args were specified for the declaration of a Func type.</value>
+    <value>An incorrect number of type arguments were specified for the declaration of a Func type.</value>
   </data>
   <data name="IncorrectNumberOfTypeArgsForAction" xml:space="preserve">
-    <value>An incorrect number of type args were specified for the declaration of an Action type.</value>
+    <value>An incorrect number of type arguments were specified for the declaration of an Action type.</value>
   </data>
   <data name="ArgumentCannotBeOfTypeVoid" xml:space="preserve">
     <value>Argument type cannot be System.Void.</value>

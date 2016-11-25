@@ -25,7 +25,7 @@ namespace System.Dynamic.Utils
                 return res;
             }
 
-            // otherwise make sure only readonly collection every gets exposed
+            // otherwise make sure only read-only collection every gets exposed
             Interlocked.CompareExchange<IReadOnlyList<T>>(
                 ref collection,
                 value.ToReadOnly(),
@@ -48,14 +48,14 @@ namespace System.Dynamic.Utils
         ///
         /// This enables users to get the ReadOnlyCollection w/o it consuming more memory than if
         /// it was just an array.  Meanwhile The DLR internally avoids accessing  which would force
-        /// the readonly collection to be created resulting in a typical memory savings.
+        /// the read-only collection to be created resulting in a typical memory savings.
         /// </summary>
         public static ReadOnlyCollection<Expression> ReturnReadOnly(IArgumentProvider provider, ref object collection)
         {
             Expression tObj = collection as Expression;
             if (tObj != null)
             {
-                // otherwise make sure only one readonly collection ever gets exposed
+                // otherwise make sure only one read-only collection ever gets exposed
                 Interlocked.CompareExchange(
                     ref collection,
                     new ReadOnlyCollection<Expression>(new ListArgumentProvider(provider, tObj)),
@@ -63,7 +63,7 @@ namespace System.Dynamic.Utils
                 );
             }
 
-            // and return what is not guaranteed to be a readonly collection
+            // and return what is not guaranteed to be a read-only collection
             return (ReadOnlyCollection<Expression>)collection;
         }
 
