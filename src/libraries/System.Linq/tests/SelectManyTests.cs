@@ -466,5 +466,15 @@ namespace System.Linq.Tests
 
             return lengths.SelectMany(l => lengths, (l1, l2) => new object[] { l1, l2 });
         }
+
+        [Theory]
+        [InlineData(new[] { int.MaxValue, 1 })]
+        [InlineData(new[] { 2, int.MaxValue - 1 })]
+        [InlineData(new[] { 123, 456, int.MaxValue - 100000, 123456 })]
+        public void ThrowOverflowExceptionOnConstituentLargeCounts(int[] counts)
+        {
+            var iterator = counts.SelectMany(c => Enumerable.Range(1, c));
+            Assert.Throws<OverflowException>(() => iterator.Count());
+        }
     }
 }
