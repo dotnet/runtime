@@ -91,14 +91,7 @@ namespace System.Collections.Generic {
             else {                
                 _size = 0;
                 _items = _emptyArray;
-                // This enumerable could be empty.  Let Add allocate a new array, if needed.
-                // Note it will also go to _defaultCapacity first, not 1, then 2, etc.
-                
-                using(IEnumerator<T> en = collection.GetEnumerator()) {
-                    while(en.MoveNext()) {
-                        Add(en.Current);                                    
-                    }
-                }
+                AddEnumerable(collection);
             }
         }
         
@@ -724,12 +717,18 @@ namespace System.Collections.Generic {
                     _size += count;
                 }                
             }
-            else {
+            else if (index < _size) {
+                // We're inserting a lazy enumerable. Call Insert on each of the constituent items.
                 using(IEnumerator<T> en = collection.GetEnumerator()) {
                     while(en.MoveNext()) {
                         Insert(index++, en.Current);                                    
                     }                
                 }
+            }
+            else
+            {
+                // We're adding a lazy enumerable because the index is at the end of this list.
+                AddEnumerable(collection);
             }
             _version++;            
         }
@@ -989,12 +988,10 @@ namespace System.Collections.Generic {
             Contract.Ensures(Contract.Result<T[]>() != null);
             Contract.Ensures(Contract.Result<T[]>().Length == Count);
 
-#if FEATURE_CORECLR
             if (_size == 0)
             {
                 return _emptyArray;
             }
-#endif
 
             T[] array = new T[_size];
             Array.Copy(_items, 0, array, 0, _size);
@@ -1029,6 +1026,37 @@ namespace System.Collections.Generic {
                 }
             }
             return true;
+        }
+
+        private void AddEnumerable(IEnumerable<T> enumerable)
+        {
+            Contract.Assert(enumerable != null);
+            Contract.Assert(!(enumerable is ICollection<T>), "We should have optimized for this beforehand.");
+
+            using (IEnumerator<T> en = enumerable.GetEnumerator())
+            {
+                T[] items = _items;
+                int size = _size;
+
+                // Read in items from the enumerator, only updating fields
+                // when we run out of space.
+
+                while (en.MoveNext())
+                {
+                    if (size == items.Length)
+                    {
+                        _size = size;
+                        EnsureCapacity(size + 1);
+                        items = _items;
+                    }
+
+                    items[size++] = en.Current;
+                }
+                
+                // Make a final update to _size and _version after we've finished adding.
+                _size = size;
+                _version++;
+            }
         }
 
         [Serializable]
