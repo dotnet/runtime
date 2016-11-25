@@ -9,10 +9,9 @@ namespace System.Linq.Expressions.Compiler
         private readonly StackGuard _guard = new StackGuard();
 
         /// <summary>
-        /// Rewrite the expression
+        /// Rewrite the expression by performing stack spilling where necessary.
         /// </summary>
-        ///
-        /// <param name="node">Expression to rewrite</param>
+        /// <param name="node">Expression to rewrite.</param>
         /// <param name="stack">State of the stack before the expression is emitted.</param>
         /// <returns>Rewritten expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode")]
@@ -24,7 +23,7 @@ namespace System.Linq.Expressions.Compiler
                 return new Result(RewriteAction.None, null);
             }
 
-            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,
             // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
             // another thread when we run out of stack space.
             if (!_guard.TryEnterOnCurrentStack())

@@ -3934,7 +3934,7 @@ namespace System.Diagnostics.Tracing
                             goto default;
                         break;
                     default:
-                        /* Contract.Assert(false, "Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
+                        /* Contract.Assert(false, "Warning: User validation code sub-optimial: Unsupported opcode " + instrs[idx] +
                             " at " + idx + " in method " + method.Name); */
                         return -1;
                 }

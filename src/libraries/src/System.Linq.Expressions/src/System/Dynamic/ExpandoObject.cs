@@ -35,7 +35,7 @@ namespace System.Dynamic
         private static readonly MethodInfo ExpandoCheckVersion =
             typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoCheckVersion));
 
-        internal readonly object LockObject;                          // the readonly field is used for locking the Expando object
+        internal readonly object LockObject;                          // the read-only field is used for locking the Expando object
         private ExpandoData _data;                                    // the data currently being held by the Expando object
         private int _count;                                           // the count of available members
 

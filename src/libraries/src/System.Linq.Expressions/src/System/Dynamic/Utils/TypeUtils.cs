@@ -755,7 +755,8 @@ namespace System.Dynamic.Utils
         public static bool IsVector(this Type type)
         {
             // Unfortunately, the IsSzArray property of System.Type is inaccessible to us,
-            // so we use a little equality comparison trick instead:
+            // so we use a little equality comparison trick instead. This omission is being
+            // tracked at https://github.com/dotnet/coreclr/issues/1877.
             return type == type.GetElementType().MakeArrayType();
         }
     }

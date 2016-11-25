@@ -40,7 +40,14 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public class CallSite
     {
-        // Cache of CallSite constructors for a given delegate type
+        /// <summary>
+        /// String used for generated CallSite methods.
+        /// </summary>
+        internal const string CallSiteTargetMethodName = "CallSite.Target";
+
+        /// <summary>
+        /// Cache of CallSite constructors for a given delegate type.
+        /// </summary>
         private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>> s_siteCtors;
 
         /// <summary>
@@ -57,7 +64,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// used by Matchmaker sites to indicate rule match.
+        /// Used by Matchmaker sites to indicate rule match.
         /// </summary>
         internal bool _match;
 
@@ -574,11 +581,12 @@ namespace System.Runtime.CompilerServices
             body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
 
             ParameterExpression args = Expression.Variable(typeof(object[]), "args");
+            Expression[] argsElements = arguments.Map(p => Convert(p, typeof(object)));
             vars.Add(args);
             body.Add(
                 Expression.Assign(
                     args,
-                    Expression.NewArrayInit(typeof(object), arguments.Map(p => Convert(p, typeof(object))))
+                    Expression.NewArrayInit(typeof(object), new TrueReadOnlyCollection<Expression>(argsElements))
                 )
             );
 
@@ -630,7 +638,7 @@ namespace System.Runtime.CompilerServices
                         body.ToReadOnly()
                     )
                 ),
-                "CallSite.Target",
+                CallSiteTargetMethodName,
                 true, // always compile the rules with tail call optimization
                 new TrueReadOnlyCollection<ParameterExpression>(@params)
             );
@@ -652,7 +660,7 @@ namespace System.Runtime.CompilerServices
                     ),
                     Expression.Default(invoke.GetReturnType())
                 ),
-                @params
+                new TrueReadOnlyCollection<ParameterExpression>(@params)
             ).Compile();
         }
 

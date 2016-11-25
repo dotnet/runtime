@@ -178,7 +178,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression1 : InvocationExpression
     {
-        private object _arg0;       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
 
         public InvocationExpression1(Expression lambda, Type returnType, Expression arg0)
             : base(lambda, returnType)
@@ -217,8 +217,8 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression2 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
 
         public InvocationExpression2(Expression lambda, Type returnType, Expression arg0, Expression arg1)
             : base(lambda, returnType)
@@ -259,9 +259,9 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression3 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-        private readonly Expression _arg2;  // storage for the 3rd arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
+        private readonly Expression _arg2;  // storage for the 3rd argument
 
         public InvocationExpression3(Expression lambda, Type returnType, Expression arg0, Expression arg1, Expression arg2)
             : base(lambda, returnType)
@@ -304,10 +304,10 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression4 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-        private readonly Expression _arg2;  // storage for the 3rd arg
-        private readonly Expression _arg3;  // storage for the 4th arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
+        private readonly Expression _arg2;  // storage for the 3rd argument
+        private readonly Expression _arg3;  // storage for the 4th argument
 
         public InvocationExpression4(Expression lambda, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
             : base(lambda, returnType)
@@ -352,11 +352,11 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression5 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-        private readonly Expression _arg2;  // storage for the 3rd arg
-        private readonly Expression _arg3;  // storage for the 4th arg
-        private readonly Expression _arg4;  // storage for the 5th arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
+        private readonly Expression _arg2;  // storage for the 3rd argument
+        private readonly Expression _arg3;  // storage for the 4th argument
+        private readonly Expression _arg4;  // storage for the 5th argument
 
         public InvocationExpression5(Expression lambda, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
             : base(lambda, returnType)
