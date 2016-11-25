@@ -25,7 +25,6 @@ namespace System.Buffers
         // - Explore dumping stale buffers from the global queue, similar to PinnableBufferCache (maybe merging them).
         // - Explore changing the size of each per-core bucket, potentially dynamically or based on other factors like array size.
         // - Explore changing number of buckets and what sizes of arrays are cached.
-        // - Measure making GetCurrentProcessorNumber an FCall rather than a P/Invoke.
         // - Investigate whether false sharing is causing any issues, in particular on LockedStack's count and the contents of its array.
         // ...
 
@@ -75,15 +74,18 @@ namespace System.Buffers
 
         /// <summary>Gets the processor number associated with the current thread.</summary>
         /// <remarks>Uses a cached value if one exists on the current thread.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetCurrentProcessorNumber()
+        private static int CurrentProcessorNumber
         {
-            int? num = t_cachedProcessorNumber;
-            if (!num.HasValue)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
             {
-                t_cachedProcessorNumber = num = Win32Native.GetCurrentProcessorNumber();
+                int? num = t_cachedProcessorNumber;
+                if (!num.HasValue)
+                {
+                    t_cachedProcessorNumber = num = Environment.CurrentProcessorNumber;
+                }
+                return num.GetValueOrDefault();
             }
-            return num.GetValueOrDefault();
         }
 
         public override T[] Rent(int minimumLength)

@@ -15,11 +15,11 @@ namespace System.Buffers
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                // On Unix, GetCurrentProcessorNumber is implemented in terms of sched_getcpu, which
+                // On Unix, CurrentProcessorNumber is implemented in terms of sched_getcpu, which
                 // doesn't exist on all platforms.  On those it doesn't exist on, GetCurrentProcessorNumber
                 // returns -1.  As a fallback in that case and to spread the threads across the buckets
                 // by default, we use the current managed thread ID as a proxy.
-                int id = GetCurrentProcessorNumber();
+                int id = CurrentProcessorNumber;
                 if (id < 0) id = Environment.CurrentManagedThreadId;
                 return id;
             }
