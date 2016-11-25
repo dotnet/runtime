@@ -43,7 +43,14 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public class CallSite
     {
-        // Cache of CallSite constructors for a given delegate type
+        /// <summary>
+        /// String used for generated CallSite methods.
+        /// </summary>
+        internal const string CallSiteTargetMethodName = "CallSite.Target";
+
+        /// <summary>
+        /// Cache of CallSite constructors for a given delegate type.
+        /// </summary>
         private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>> s_siteCtors;
 
         /// <summary>
@@ -60,7 +67,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// used by Matchmaker sites to indicate rule match.
+        /// Used by Matchmaker sites to indicate rule match.
         /// </summary>
         internal bool _match;
 
@@ -649,7 +656,7 @@ namespace System.Runtime.CompilerServices
                         body.ToReadOnly()
                     )
                 ),
-                "CallSite.Target",
+                CallSiteTargetMethodName,
                 true, // always compile the rules with tail call optimization
                 new TrueReadOnlyCollection<ParameterExpression>(@params)
             );
