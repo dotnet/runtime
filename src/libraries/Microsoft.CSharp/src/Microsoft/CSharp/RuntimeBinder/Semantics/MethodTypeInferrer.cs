@@ -531,8 +531,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:   then each such Xi is fixed. If any fixing operation fails then
             // SPEC:   CType inference fails.
 
-            NewInferenceResult res;
-            res = FixNondependentParameters();
+            NewInferenceResult res = FixNondependentParameters();
             if (res != NewInferenceResult.NoProgress)
             {
                 return res;

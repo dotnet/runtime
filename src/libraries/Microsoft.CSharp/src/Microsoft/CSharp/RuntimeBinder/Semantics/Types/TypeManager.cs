@@ -173,7 +173,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ArrayType GetArray(CType elementType, int args)
         {
             Name name;
-            ArrayType pArray;
 
             Debug.Assert(args > 0 && args < 32767);
 
@@ -189,7 +188,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // See if we already have an array type of this element type and rank.
-            pArray = _typeTable.LookupArray(name, elementType);
+            ArrayType pArray = _typeTable.LookupArray(name, elementType);
             if (pArray == null)
             {
                 // No existing array symbol. Create a new one.

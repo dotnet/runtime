@@ -131,7 +131,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_TypeParameterType:
                     TypeParameterType t = src.AsTypeParameterType();
-                    Type parentType = null;
                     if (t.IsMethodTypeParameter())
                     {
                         MethodInfo meth = t.GetOwningSymbol().AsMethodSymbol().AssociatedMemberInfo as MethodInfo;
@@ -139,7 +138,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
+                        Type parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
                         result = parentType.GetTypeInfo().GenericTypeParameters[t.GetIndexInOwnParameters()];
                     }
                     break;

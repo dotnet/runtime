@@ -800,9 +800,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return AggCastResult.Abort;
                 }
 
-                AggCastResult result;
-
-                result = bindExplicitConversionFromEnumToAggregate(aggTypeDest);
+                AggCastResult result = bindExplicitConversionFromEnumToAggregate(aggTypeDest);
                 if (result != AggCastResult.Failure)
                 {
                     return result;
