@@ -13,8 +13,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal class GlobalSymbolContext
     {
-        private PredefinedTypes _predefTypes;
-        private NameManager _nameManager;
+        private readonly PredefinedTypes _predefTypes;
+        private readonly NameManager _nameManager;
 
         public GlobalSymbolContext(NameManager namemgr)
         {

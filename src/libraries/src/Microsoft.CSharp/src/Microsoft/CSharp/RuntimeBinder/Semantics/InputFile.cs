@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         // Which aliases this INFILE is in. For source INFILESYMs, only bits kaidThisAssembly and kaidGlobal
         // should be set.
-        private HashSet<KAID> _bsetFilter;
+        private readonly HashSet<KAID> _bsetFilter;
         private KAID _aid;
 
         public bool isSource;               // If true, source code, if false, metadata

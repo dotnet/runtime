@@ -52,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             }
         }
 
-        private static KnownName[] s_predefinedNames = new KnownName[(int)PredefinedName.PN_COUNT] {
+        private static readonly KnownName[] s_predefinedNames = new KnownName[(int)PredefinedName.PN_COUNT] {
             new KnownName(".ctor", PredefinedName.PN_CTOR),
             new KnownName("Finalize", PredefinedName.PN_DTOR),
             new KnownName(".cctor", PredefinedName.PN_STATCTOR),
@@ -158,7 +158,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new KnownName("GetOrCreateEventRegistrationTokenTable", PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE)
         };
 
-        private static KnownName[] s_otherNames = new KnownName[] {
+        private static readonly KnownName[] s_otherNames = new KnownName[] {
             new KnownName("true"),
             new KnownName("false"),
             new KnownName("null"),

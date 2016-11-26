@@ -22,9 +22,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpUnaryOperationBinder"/> class.

@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal class SymbolLoader
     {
-        private NameManager _nameManager;
+        private readonly NameManager _nameManager;
 
         public PredefinedMembers PredefinedMembers { get; }
         public GlobalSymbolContext GlobalSymbolContext { get; }

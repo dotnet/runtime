@@ -30,12 +30,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             public EXPR ExprDest { get { return _exprDest; } }
             private EXPR _exprDest;
-            private ExpressionBinder _binder;
-            private EXPR _exprSrc;
-            private CType _typeSrc;
-            private CType _typeDest;
-            private EXPRTYPEORNAMESPACE _exprTypeDest;
-            private bool _needsExprDest;
+            private readonly ExpressionBinder _binder;
+            private readonly EXPR _exprSrc;
+            private readonly CType _typeSrc;
+            private readonly CType _typeDest;
+            private readonly EXPRTYPEORNAMESPACE _exprTypeDest;
+            private readonly bool _needsExprDest;
             private CONVERTTYPE _flags;
 
             /*

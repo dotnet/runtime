@@ -20,14 +20,14 @@ namespace Microsoft.CSharp.RuntimeBinder
         internal bool IsChecked { get; }
 
         internal bool IsLogicalOperation { get { return (_binopFlags & CSharpBinaryOperationFlags.LogicalOperation) != 0; } }
-        private CSharpBinaryOperationFlags _binopFlags;
+        private readonly CSharpBinaryOperationFlags _binopFlags;
 
         internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         //////////////////////////////////////////////////////////////////////
 

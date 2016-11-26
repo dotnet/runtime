@@ -21,9 +21,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
     internal class ErrorHandling
     {
-        private IErrorSink _errorSink;
-        private UserStringBuilder _userStringBuilder;
-        private CErrorFactory _errorFactory;
+        private readonly IErrorSink _errorSink;
+        private readonly UserStringBuilder _userStringBuilder;
+        private readonly CErrorFactory _errorFactory;
 
         // By default these DO NOT add related locations. To add a related location, pass an ErrArgRef.
         public void Error(ErrorCode id, params ErrArg[] args)
