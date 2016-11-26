@@ -742,11 +742,6 @@ namespace System.Linq.Expressions
         internal static string UnknownLiftType(object p0) => SR.Format(SR.UnknownLiftType, p0);
 
         /// <summary>
-        /// A string like "Cannot create instance of {0} because it contains generic parameters"
-        /// </summary>
-        internal static string IllegalNewGenericParams(object p0) => SR.Format(SR.IllegalNewGenericParams, p0);
-
-        /// <summary>
         /// A string like "variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined"
         /// </summary>
         internal static string UndefinedVariable(object p0, object p1, object p2) => SR.Format(SR.UndefinedVariable, p0, p1, p2);

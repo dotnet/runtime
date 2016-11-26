@@ -510,9 +510,6 @@
   <data name="UnknownLiftType" xml:space="preserve">
     <value>unknown lift type: '{0}'.</value>
   </data>
-  <data name="IllegalNewGenericParams" xml:space="preserve">
-    <value>Cannot create instance of {0} because it contains generic parameters</value>
-  </data>
   <data name="UndefinedVariable" xml:space="preserve">
     <value>variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined</value>
   </data>
