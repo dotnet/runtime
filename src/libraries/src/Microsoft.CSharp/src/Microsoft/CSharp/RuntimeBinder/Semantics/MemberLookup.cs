@@ -124,7 +124,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool SearchSingleType(AggregateType typeCur, out bool pfHideByName)
         {
             bool fFoundSome = false;
-            MethPropWithType mwpInsert;
 
             pfHideByName = false;
 
@@ -273,7 +272,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (symCur.IsMethodOrPropertySymbol())
                 {
-                    mwpInsert = new MethPropWithType(symCur.AsMethodOrPropertySymbol(), typeCur);
+                    MethPropWithType mwpInsert = new MethPropWithType(symCur.AsMethodOrPropertySymbol(), typeCur);
                     _methPropWithTypeList.Add(mwpInsert);
                 }
 
@@ -540,9 +539,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(swt.Sym.hasBogus() && swt.Sym.checkBogus());
 
-            MethodSymbol meth1;
-            MethodSymbol meth2;
-
             switch (swt.Sym.getKind())
             {
                 case SYMKIND.SK_EventSymbol:
@@ -551,8 +547,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_PropertySymbol:
                     if (swt.Prop().useMethInstead)
                     {
-                        meth1 = swt.Prop().methGet;
-                        meth2 = swt.Prop().methSet;
+                        MethodSymbol meth1 = swt.Prop().methGet;
+                        MethodSymbol meth2 = swt.Prop().methSet;
                         ReportBogusForEventsAndProperties(swt, meth1, meth2);
                         return;
                     }

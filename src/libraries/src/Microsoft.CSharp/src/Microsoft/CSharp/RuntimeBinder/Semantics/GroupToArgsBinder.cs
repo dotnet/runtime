@@ -183,7 +183,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 while (true)
                 {
                     bool bFoundExpanded;
-                    Result currentTypeArgsResult;
 
                     bFoundExpanded = false;
                     if (bSearchForExpanded && !fExpanded)
@@ -261,7 +260,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // Get the current type args.
-                    currentTypeArgsResult = DetermineCurrentTypeArgs();
+                    Result currentTypeArgsResult = DetermineCurrentTypeArgs();
                     if (currentTypeArgsResult != Result.Success)
                     {
                         bSearchForExpanded = (currentTypeArgsResult == Result.Failure_SearchForExpanded);
@@ -368,10 +367,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool GetResultOfBind(bool bReportErrors)
             {
                 // We looked at all the evidence, and we come to render the verdict:
-                CandidateFunctionMember pmethBest;
 
                 if (!_methList.IsEmpty())
                 {
+                    CandidateFunctionMember pmethBest;
                     if (_methList.Count == 1)
                     {
                         // We found the single best method to call.
