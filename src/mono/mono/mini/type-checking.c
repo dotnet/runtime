@@ -788,28 +788,7 @@ mini_emit_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	mini_save_cast_details (cfg, klass, obj_reg, FALSE);
 
 	if (mono_class_is_interface (klass)) {
-#ifndef DISABLE_REMOTING
-		NEW_BBLOCK (cfg, interface_fail_bb);
-	
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, ok_result_bb);
-		MONO_START_BB (cfg, interface_fail_bb);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-
-		mini_emit_class_check (cfg, klass_reg, mono_defaults.transparent_proxy_class);
-
-		tmp_reg = alloc_preg (cfg);		
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
-		
-		MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-#else
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, ok_result_bb);
-#endif
+		g_error ("not longer needed!\n");
 	} else {
 #ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, no_proxy_bb);
