@@ -466,14 +466,44 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(StaticCtor) };
             yield return new object[] { typeof(ClassWithNoDefaultCtor) };
+            yield return new object[] { typeof(int).MakePointerType() };
+
+            Type listType = typeof(List<>);
+            yield return new object[] { listType };
+            yield return new object[] { listType.MakeGenericType(listType) };
         }
 
         [Theory]
         [MemberData(nameof(Type_InvalidType_TestData))]
-        [InlineData(typeof(int*))]
         public static void Type_InvalidType_ThrowsArgumentException(Type type)
         {
             Assert.Throws<ArgumentException>("type", () => Expression.New(type));
+        }
+
+        public static IEnumerable<object[]> OpenGenericConstructors()
+        {
+            Type listType = typeof(List<>);
+            foreach (Type t in new[] {listType, listType.MakeGenericType(listType)})
+            {
+                foreach (ConstructorInfo ctor in t.GetConstructors())
+                {
+                    IEnumerable<Type> types = ctor.GetParameters().Select(p => p.ParameterType);
+                    if (!types.Any(pt => pt.ContainsGenericParameters))
+                    {
+                        yield return new object[] {ctor, types.Select(pt => Expression.Default(pt))};
+                    }
+                }
+            }
+        }
+
+        [Theory, MemberData(nameof(OpenGenericConstructors))]
+        public static void OpenGenericConstructorsInvalid(ConstructorInfo ctor, Expression[] arguments)
+        {
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(ctor, arguments));
+            if (arguments.Length == 0)
+            {
+                Assert.Throws<ArgumentException>("constructor", () => Expression.New(ctor));
+            }
         }
 
         static class StaticCtor
