@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.NegateChecked(Expression.Parameter(typeof(int), "x"));
+            UnaryExpression e = Expression.NegateChecked(Expression.Parameter(typeof(int), "x"));
             Assert.Equal("-x", e.ToString());
         }
 

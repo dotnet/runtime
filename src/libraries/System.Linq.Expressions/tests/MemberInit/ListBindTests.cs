@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Tests
         public void StaticListProperty(bool useInterpreter)
         {
             PropertyInfo property = typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.StaticListProperty));
-            var exp = Expression.Lambda<Func<ListWrapper<int>>>(
+            Expression<Func<ListWrapper<int>>> exp = Expression.Lambda<Func<ListWrapper<int>>>(
                 Expression.MemberInit(
                     Expression.New(typeof(ListWrapper<int>)),
                     Expression.ListBind(
@@ -195,7 +195,7 @@ namespace System.Linq.Expressions.Tests
         public void StaticListField(bool useInterpreter)
         {
             FieldInfo field = typeof(ListWrapper<int>).GetField(nameof(ListWrapper<int>.StaticListField));
-            var exp = Expression.Lambda<Func<ListWrapper<int>>>(
+            Expression<Func<ListWrapper<int>>> exp = Expression.Lambda<Func<ListWrapper<int>>>(
                 Expression.MemberInit(
                     Expression.New(typeof(ListWrapper<int>)),
                     Expression.ListBind(

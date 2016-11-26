@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Unbox(Expression.Parameter(typeof(object), "x"), typeof(int));
+            UnaryExpression e = Expression.Unbox(Expression.Parameter(typeof(object), "x"), typeof(int));
             Assert.Equal("Unbox(x)", e.ToString());
         }
 

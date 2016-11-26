@@ -1561,7 +1561,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.ArrayLength(Expression.Parameter(typeof(int[]), "xs"));
+            UnaryExpression e = Expression.ArrayLength(Expression.Parameter(typeof(int[]), "xs"));
             Assert.Equal("ArrayLength(xs)", e.ToString());
         }
 

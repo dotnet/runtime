@@ -13,17 +13,17 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayAccess_MultiDimensionalOf1(bool useInterpreter)
         {
-            var arrayType = typeof(int).MakeArrayType(1);
-            var arrayCtor = arrayType.GetTypeInfo().DeclaredConstructors.Single(ctor => ctor.GetParameters().Length == 2);
+            Type arrayType = typeof(int).MakeArrayType(1);
+            ConstructorInfo arrayCtor = arrayType.GetTypeInfo().DeclaredConstructors.Single(ctor => ctor.GetParameters().Length == 2);
             var arr = (System.Array)arrayCtor.Invoke(new object[] { 1, 1 });
-            var c = Expression.Constant(arr);
-            var e = Expression.ArrayAccess(c, Expression.Constant(1));
+            ConstantExpression c = Expression.Constant(arr);
+            IndexExpression e = Expression.ArrayAccess(c, Expression.Constant(1));
 
-            var set = Expression.Lambda<Action>(Expression.Assign(e, Expression.Constant(42))).Compile(useInterpreter);
+            Action set = Expression.Lambda<Action>(Expression.Assign(e, Expression.Constant(42))).Compile(useInterpreter);
             set();
             Assert.Equal(42, arr.GetValue(1));
 
-            var get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
+            Func<int> get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
             Assert.Equal(42, get());
         }
 
@@ -31,14 +31,14 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayIndex_MultiDimensionalOf1(bool useInterpreter)
         {
-            var arrayType = typeof(int).MakeArrayType(1);
-            var arrayCtor = arrayType.GetTypeInfo().DeclaredConstructors.Single(ctor => ctor.GetParameters().Length == 2);
+            Type arrayType = typeof(int).MakeArrayType(1);
+            ConstructorInfo arrayCtor = arrayType.GetTypeInfo().DeclaredConstructors.Single(ctor => ctor.GetParameters().Length == 2);
             var arr = (System.Array)arrayCtor.Invoke(new object[] { 1, 1 });
             arr.SetValue(42, 1);
-            var c = Expression.Constant(arr);
-            var e = Expression.ArrayIndex(c, Expression.Constant(1));
+            ConstantExpression c = Expression.Constant(arr);
+            BinaryExpression e = Expression.ArrayIndex(c, Expression.Constant(1));
 
-            var get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
+            Func<int> get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
             Assert.Equal(42, get());
         }
     }

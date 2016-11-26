@@ -289,7 +289,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ToStringTest()
         {
-            var e = Expression.PostDecrementAssign(Expression.Parameter(typeof(int), "x"));
+            UnaryExpression e = Expression.PostDecrementAssign(Expression.Parameter(typeof(int), "x"));
             Assert.Equal("x--", e.ToString());
         }
     }

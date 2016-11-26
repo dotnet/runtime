@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Not(Expression.Parameter(typeof(bool), "x"));
+            UnaryExpression e = Expression.Not(Expression.Parameter(typeof(bool), "x"));
             Assert.Equal("Not(x)", e.ToString());
         }
 

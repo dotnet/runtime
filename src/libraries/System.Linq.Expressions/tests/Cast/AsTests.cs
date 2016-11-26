@@ -842,7 +842,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.TypeAs(Expression.Parameter(typeof(object), "o"), typeof(string));
+            UnaryExpression e = Expression.TypeAs(Expression.Parameter(typeof(object), "o"), typeof(string));
             Assert.Equal("(o As String)", e.ToString());
         }
 

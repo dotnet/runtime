@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Tests
                 expected = value != null && value.GetType() == nonNullable;
             }
 
-            var param = Expression.Parameter(expression.Type);
+            ParameterExpression param = Expression.Parameter(expression.Type);
 
             Func<bool> func = Expression.Lambda<Func<bool>>(
                 Expression.Block(
@@ -159,7 +159,7 @@ namespace System.Linq.Expressions.Tests
             Action<string> a = x => { };
             Action<string> b = ao;
 
-            var param = Expression.Parameter(typeof(Action<string>));
+            ParameterExpression param = Expression.Parameter(typeof(Action<string>));
 
             Func<Action<string>, bool> isActStr = Expression.Lambda<Func<Action<string>, bool>>(
                 Expression.TypeEqual(param, typeof(Action<string>)),
@@ -189,7 +189,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ToStringTest()
         {
-            var e = Expression.TypeEqual(Expression.Parameter(typeof(string), "s"), typeof(string));
+            TypeBinaryExpression e = Expression.TypeEqual(Expression.Parameter(typeof(string), "s"), typeof(string));
             Assert.Equal("(s TypeEqual String)", e.ToString());
         }
     }

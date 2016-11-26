@@ -177,13 +177,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ToStringTest()
         {
-            var e1 = Expression.RuntimeVariables();
+            RuntimeVariablesExpression e1 = Expression.RuntimeVariables();
             Assert.Equal("()", e1.ToString());
 
-            var e2 = Expression.RuntimeVariables(Expression.Parameter(typeof(int), "x"));
+            RuntimeVariablesExpression e2 = Expression.RuntimeVariables(Expression.Parameter(typeof(int), "x"));
             Assert.Equal("(x)", e2.ToString());
 
-            var e3 = Expression.RuntimeVariables(Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            RuntimeVariablesExpression e3 = Expression.RuntimeVariables(Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
             Assert.Equal("(x, y)", e3.ToString());
         }
     }

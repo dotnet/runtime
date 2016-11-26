@@ -16522,7 +16522,7 @@ namespace System.Linq.Expressions.Tests
         public static void ImplicitHalfLiftedConversionFromCSCompiler(bool useInterpreter)
         {
             Expression<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>> e = x => x;
-            var f = e.Compile(useInterpreter);
+            Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ImplicitHalfLiftedFrom()));
             Assert.Null(f(new ImplicitHalfLiftedFrom { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16532,7 +16532,7 @@ namespace System.Linq.Expressions.Tests
         public static void ExplicitHalfLiftedConversionFromCSCompiler(bool useInterpreter)
         {
             Expression<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>> e = x => (HalfLiftedTo?)x;
-            var f = e.Compile(useInterpreter);
+            Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ExplicitHalfLiftedFrom()));
             Assert.Null(f(new ExplicitHalfLiftedFrom { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16542,7 +16542,7 @@ namespace System.Linq.Expressions.Tests
         public static void ImplicitHalfLiftedOverloadedConversionFromCSCompiler(bool useInterpreter)
         {
             Expression<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>> e = x => x;
-            var f = e.Compile(useInterpreter);
+            Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
             Assert.NotNull(f(null));
         }
@@ -16555,7 +16555,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>>(
                     Expression.Convert(x, typeof(HalfLiftedTo?)),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ImplicitHalfLiftedFrom()));
             Assert.Null(f(new ImplicitHalfLiftedFrom { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16569,7 +16569,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>>(
                     Expression.Convert(x, typeof(HalfLiftedTo?)),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ExplicitHalfLiftedFrom()));
             Assert.Null(f(new ExplicitHalfLiftedFrom { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16583,7 +16583,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>>(
                     Expression.Convert(x, typeof(HalfLiftedTo?)),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
             Assert.NotNull(f(null));
         }
@@ -16596,7 +16596,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?>>(
                     Expression.Convert(x, typeof(HalfLiftedTo?), typeof(ImplicitHalfLiftedFrom).GetMethod("op_Implicit")),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<ImplicitHalfLiftedFrom?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ImplicitHalfLiftedFrom()));
             Assert.Null(f(new ImplicitHalfLiftedFrom { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16610,7 +16610,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?>>(
                     Expression.Convert(x, typeof(HalfLiftedTo?), typeof(ExplicitHalfLiftedFrom).GetMethod("op_Explicit")),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<ExplicitHalfLiftedFrom?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ExplicitHalfLiftedFrom()));
             Assert.Null(f(new ExplicitHalfLiftedFrom { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16619,7 +16619,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void ImplicitHalfLiftedOverloadedConversionExplicitlySetMethod(bool useInterpreter)
         {
-            var opMethods =
+            List<MethodInfo> opMethods =
                 typeof(ImplicitHalfLiftedOverloaded).GetMethods().Where(m => m.Name == "op_Implicit").ToList();
             MethodInfo direct =
                 opMethods.First(m => m.GetParameters()[0].ParameterType == typeof(ImplicitHalfLiftedOverloaded?));
@@ -16630,7 +16630,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>>(
                     Expression.Convert(x, typeof(HalfLiftedTo?), direct),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new ImplicitHalfLiftedOverloaded()));
             Assert.NotNull(f(null));
             e = Expression.Lambda<Func<ImplicitHalfLiftedOverloaded?, HalfLiftedTo?>>(
@@ -16660,7 +16660,7 @@ namespace System.Linq.Expressions.Tests
         public static void ImplicitHalfLiftedConversionOpOnTargetFromCSCompiler(bool useInterpreter)
         {
             Expression<Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?>> e = x => x;
-            var f = e.Compile(useInterpreter);
+            Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new HalfLiftedFromTargetOperator()));
             Assert.Null(f(new HalfLiftedFromTargetOperator { NullEquiv = true }));
             Assert.Null(f(null));
@@ -16674,7 +16674,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?>>(
                     Expression.Convert(x, typeof(HalfLiftedToTargetOperator?)),
                     x);
-            var f = e.Compile(useInterpreter);
+            Func<HalfLiftedFromTargetOperator?, HalfLiftedToTargetOperator?> f = e.Compile(useInterpreter);
             Assert.NotNull(f(new HalfLiftedFromTargetOperator()));
             Assert.Null(f(new HalfLiftedFromTargetOperator { NullEquiv = true }));
             Assert.Null(f(null));

@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void UnaryArithmeticNegateNullableStackBalance(bool useInterpreter)
         {
-            var e = Expression.Lambda<Func<decimal?>>(
+            Expression<Func<decimal?>> e = Expression.Lambda<Func<decimal?>>(
                 Expression.Negate(
                     Expression.Negate(
                         Expression.Constant(1.0m, typeof(decimal?))
@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Tests
                 )
             );
 
-            var f = e.Compile(useInterpreter);
+            Func<decimal?> f = e.Compile(useInterpreter);
 
             Assert.True(f() == 1.0m);
         }

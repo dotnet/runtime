@@ -768,10 +768,10 @@ namespace System.Linq.Expressions.Tests
         {
             // NB: These were && and || in .NET 3.5 but shipped as AndAlso and OrElse in .NET 4.0; we kept the latter.
 
-            var e1 = Expression.AndAlso(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
+            BinaryExpression e1 = Expression.AndAlso(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a AndAlso b)", e1.ToString());
 
-            var e2 = Expression.OrElse(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
+            BinaryExpression e2 = Expression.OrElse(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a OrElse b)", e2.ToString());
         }
 

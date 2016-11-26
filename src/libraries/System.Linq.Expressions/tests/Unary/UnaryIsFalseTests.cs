@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.IsFalse(Expression.Parameter(typeof(bool), "x"));
+            UnaryExpression e = Expression.IsFalse(Expression.Parameter(typeof(bool), "x"));
             Assert.Equal("IsFalse(x)", e.ToString());
         }
 

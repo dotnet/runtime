@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Tests
                     ConstantExpression yExp = Expression.Constant(y);
                     Expression woAssign = withoutAssignment(xExp, yExp);
                     Type boxType = typeof(Box<>).MakeGenericType(type);
-                    var prop = boxType.GetProperty("StaticValue");
+                    PropertyInfo prop = boxType.GetProperty("StaticValue");
                     prop.SetValue(null, x);
                     Expression property = Expression.Property(null, prop);
                     Expression assignment = withAssignment(property, yExp);
@@ -312,7 +312,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ToStringData))]
         public static void ToStringTest(ExpressionType kind, string symbol, Type type)
         {
-            var e = Expression.MakeBinary(kind, Expression.Parameter(type, "a"), Expression.Parameter(type, "b"));
+            BinaryExpression e = Expression.MakeBinary(kind, Expression.Parameter(type, "a"), Expression.Parameter(type, "b"));
             Assert.Equal($"(a {symbol} b)", e.ToString());
         }
 

@@ -2715,7 +2715,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.ArrayIndex(Expression.Parameter(typeof(int[]), "xs"), Expression.Parameter(typeof(int), "i"));
+            BinaryExpression e = Expression.ArrayIndex(Expression.Parameter(typeof(int[]), "xs"), Expression.Parameter(typeof(int), "i"));
             Assert.Equal("xs[i]", e.ToString());
         }
 
