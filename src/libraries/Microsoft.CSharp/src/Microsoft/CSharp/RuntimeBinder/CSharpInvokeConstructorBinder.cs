@@ -11,11 +11,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 {
     internal sealed class CSharpInvokeConstructorBinder : DynamicMetaObjectBinder, ICSharpInvokeOrInvokeMemberBinder
     {
-        public CSharpCallFlags Flags { get { return _flags; } }
-        private CSharpCallFlags _flags;
+        public CSharpCallFlags Flags { get; }
 
-        public Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        public Type CallingContext { get; }
 
         public IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
         private List<CSharpArgumentInfo> _argumentInfo;
@@ -33,8 +31,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo)
         {
-            _flags = flags;
-            _callingContext = callingContext;
+            Flags = flags;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

@@ -15,8 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetMemberBinder : GetMemberBinder, IInvokeOnGetBinder
     {
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
         private List<CSharpArgumentInfo> _argumentInfo;
@@ -43,7 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             base(name, false /*caseInsensitive*/)
         {
             _bResultIndexed = resultIndexed;
-            _callingContext = callingContext;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }
