@@ -642,15 +642,8 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 		int costs;
 
 		iargs [0] = source;
-		if (is_isinst) {
-			MonoMethod *wrapper = mono_marshal_get_isinst (klass);
-			costs = mini_inline_method (cfg, wrapper, mono_method_signature (wrapper), iargs, 0, 0, TRUE);
-		} else {
-			MonoMethod *wrapper = mono_marshal_get_castclass (klass);
-			mini_save_cast_details (cfg, klass, source->dreg, TRUE);
-			costs = mini_inline_method (cfg, wrapper, mono_method_signature (wrapper), iargs, 0, 0, TRUE);
-			mini_reset_cast_details (cfg);
-		}
+		MonoMethod *wrapper = mono_marshal_get_isinst (klass);
+		costs = mini_inline_method (cfg, wrapper, mono_method_signature (wrapper), iargs, 0, 0, TRUE);
 		g_assert (costs > 0);
 		ret = iargs [0];
 	} else {
@@ -797,83 +790,8 @@ mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 MonoInst*
 mini_emit_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 {
-	/* This opcode takes as input an object reference and a class, and returns:
-	0) if the object is an instance of the class,
-	1) if the object is a proxy whose type cannot be determined
-	an InvalidCastException exception is thrown otherwhise*/
-	
-	MonoInst *ins;
-#ifndef DISABLE_REMOTING
-	MonoBasicBlock *end_bb, *ok_result_bb, *no_proxy_bb, *fail_1_bb;
-#else
-	MonoBasicBlock *ok_result_bb;
-#endif
-	int obj_reg = src->dreg;
-	int dreg = alloc_ireg (cfg);
-	int tmp_reg = alloc_preg (cfg);
-
-#ifndef DISABLE_REMOTING
-	int klass_reg = alloc_preg (cfg);
-	NEW_BBLOCK (cfg, end_bb);
-#endif
-
-	NEW_BBLOCK (cfg, ok_result_bb);
-
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, ok_result_bb);
-
-	mini_save_cast_details (cfg, klass, obj_reg, FALSE);
-
-	if (mono_class_is_interface (klass)) {
-		g_error ("not longer needed!\n");
-	} else {
-#ifndef DISABLE_REMOTING
-		NEW_BBLOCK (cfg, no_proxy_bb);
-
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);		
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, no_proxy_bb);
-
-		NEW_BBLOCK (cfg, fail_1_bb);
-		
-		mini_emit_isninst_cast (cfg, klass_reg, klass, fail_1_bb, ok_result_bb);
-
-		MONO_START_BB (cfg, fail_1_bb);
-
-		MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-
-		MONO_START_BB (cfg, no_proxy_bb);
-
-		mini_emit_castclass (cfg, obj_reg, klass_reg, klass, ok_result_bb);
-#else
-		g_error ("Transparent proxy support is disabled while trying to JIT code that uses it");
-#endif
-	}
-
-	MONO_START_BB (cfg, ok_result_bb);
-
-	MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
-
-#ifndef DISABLE_REMOTING
-	MONO_START_BB (cfg, end_bb);
-#endif
-
-	/* FIXME: */
-	MONO_INST_NEW (cfg, ins, OP_ICONST);
-	ins->dreg = dreg;
-	ins->type = STACK_I4;
-
-	return ins;
+	g_error ("not longer needed!");
+	return NULL;
 }
 
 //API used by method-to-ir.c
