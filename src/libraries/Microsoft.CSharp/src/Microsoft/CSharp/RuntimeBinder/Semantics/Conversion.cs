@@ -956,7 +956,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (typeSrcBase.IsTypeParameterType())
             {
                 AggregateType atsBase = typeSrcBase.AsTypeParameterType().GetEffectiveBaseClass();
-                if (atsBase != null && atsBase.getAggregate().HasConversion(this.GetSymbolLoader()))
+                if (atsBase != null && atsBase.getAggregate().HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = atsBase;
                 }
@@ -968,7 +968,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // nullable of it) as its from-type.
                 fImplicitOrExactSrc = true;
             }
-            else if (typeSrcBase.IsAggregateType() && typeSrcBase.getAggregate().HasConversion(this.GetSymbolLoader()))
+            else if (typeSrcBase.IsAggregateType() && typeSrcBase.getAggregate().HasConversion(GetSymbolLoader()))
             {
                 rgats[cats++] = typeSrcBase.AsAggregateType();
                 fIntPtrOverride2 = typeSrcBase.isPredefType(PredefinedType.PT_INTPTR) || typeSrcBase.isPredefType(PredefinedType.PT_UINTPTR);
@@ -981,14 +981,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // an explicit conversion exists from typeSrc to typeDst. An implicit is no better
                 // than an explicit.
                 AggregateType atsBase;
-                if (!fImplicitOnly && (atsBase = typeDstBase.AsTypeParameterType().GetEffectiveBaseClass()).getAggregate().HasConversion(this.GetSymbolLoader()))
+                if (!fImplicitOnly && (atsBase = typeDstBase.AsTypeParameterType().GetEffectiveBaseClass()).getAggregate().HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = atsBase;
                 }
             }
             else if (typeDstBase.IsAggregateType())
             {
-                if (typeDstBase.getAggregate().HasConversion(this.GetSymbolLoader()))
+                if (typeDstBase.getAggregate().HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = typeDstBase.AsAggregateType();
                 }
@@ -1021,7 +1021,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // In the first pass if we find types that are non-comparable, keep one of the types and keep going.
             for (int iats = 0; iats < cats; iats++)
             {
-                for (AggregateType atsCur = rgats[iats]; atsCur != null && atsCur.getAggregate().HasConversion(this.GetSymbolLoader()); atsCur = atsCur.GetBaseClass())
+                for (AggregateType atsCur = rgats[iats]; atsCur != null && atsCur.getAggregate().HasConversion(GetSymbolLoader()); atsCur = atsCur.GetBaseClass())
                 {
                     AggregateSymbol aggCur = atsCur.getAggregate();
 

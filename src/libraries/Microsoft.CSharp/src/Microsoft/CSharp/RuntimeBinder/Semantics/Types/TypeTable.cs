@@ -22,14 +22,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool Equals(KeyPair<Key1, Key2> other)
         {
-            return object.Equals(_pKey1, other._pKey1)
-                && object.Equals(_pKey2, other._pKey2);
+            return Equals(_pKey1, other._pKey1)
+                && Equals(_pKey2, other._pKey2);
         }
 
         public override bool Equals(object obj)
         {
             if (!(obj is KeyPair<Key1, Key2>)) return false;
-            return this.Equals((KeyPair<Key1, Key2>)obj);
+            return Equals((KeyPair<Key1, Key2>)obj);
         }
 
         public override int GetHashCode()
