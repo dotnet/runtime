@@ -67,7 +67,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static CONSTVAL GetInt(int value)
         {
-            CONSTVAL result = new CONSTVAL(); ;
+            CONSTVAL result = new CONSTVAL();
             result.iVal = value;
             return result;
         }

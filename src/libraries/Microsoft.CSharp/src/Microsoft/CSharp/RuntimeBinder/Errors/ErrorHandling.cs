@@ -159,7 +159,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             {
                 // Copy the strings over to another buffer.
                 string[] prgpszNew = new string[cpsz];
-                Array.Copy(prgpsz, 0, prgpszNew, 0, cpsz); ;
+                Array.Copy(prgpsz, 0, prgpszNew, 0, cpsz);
 
                 for (int i = 0; i < cpsz; i++)
                 {
