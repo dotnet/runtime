@@ -387,11 +387,48 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 #else
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, ok_result_bb);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 #endif
-		//
-		// MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		// mini_emit_iface_cast (cfg, vtable_reg, klass, NULL, NULL);
+	} else if (mono_class_is_marshalbyref (klass)) {
+#ifndef DISABLE_REMOTING
+		MonoBasicBlock *no_proxy_bb, *fail_1_bb;
+		int tmp_reg = alloc_preg (cfg);
+		int klass_reg = alloc_preg (cfg);
+
+		NEW_BBLOCK (cfg, no_proxy_bb);
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);
+
+		tmp_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+
+		tmp_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, no_proxy_bb);
+
+		NEW_BBLOCK (cfg, fail_1_bb);
+
+		mini_emit_isninst_cast (cfg, klass_reg, klass, fail_1_bb, is_null_bb);
+
+		MONO_START_BB (cfg, fail_1_bb);
+
+		MonoInst *args [1] = { src };
+		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
+
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+
+		MONO_START_BB (cfg, no_proxy_bb);
+
+		mini_emit_castclass_inst (cfg, obj_reg, klass_reg, klass, klass_inst, is_null_bb);
+#else
+		g_error ("Transparent proxy support is disabled while trying to JIT code that uses it");
+#endif
 	} else {
 		int klass_reg = alloc_preg (cfg);
 
@@ -600,7 +637,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 		else
 			ret = emit_castclass_with_cache (cfg, klass, args);
 
-	} else if (!context_used && (mono_class_is_marshalbyref (klass) || (mono_class_is_interface (klass) && is_isinst))) {
+	} else if (!context_used && is_isinst && (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass))) {
 		MonoInst *iargs [1];
 		int costs;
 
@@ -767,7 +804,7 @@ mini_emit_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	
 	MonoInst *ins;
 #ifndef DISABLE_REMOTING
-	MonoBasicBlock *end_bb, *ok_result_bb, *no_proxy_bb, *interface_fail_bb, *fail_1_bb;
+	MonoBasicBlock *end_bb, *ok_result_bb, *no_proxy_bb, *fail_1_bb;
 #else
 	MonoBasicBlock *ok_result_bb;
 #endif
