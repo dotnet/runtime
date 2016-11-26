@@ -611,13 +611,6 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
         /// </summary>
-        internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName)
-        {
-            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName);
-        }
-        /// <summary>
-        /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
-        /// </summary>
         internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName, int index)
         {
             return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName, index);
@@ -1010,13 +1003,6 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.LogicalOperatorMustHaveBooleanOperators(p0, p1));
         }
         /// <summary>
-        /// InvalidOperationException with message like "No method '{0}' exists on type '{1}'."
-        /// </summary>
-        internal static Exception MethodDoesNotExistOnType(object p0, object p1)
-        {
-            return new InvalidOperationException(Strings.MethodDoesNotExistOnType(p0, p1));
-        }
-        /// <summary>
         /// InvalidOperationException with message like "No method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static Exception MethodWithArgsDoesNotExistOnType(object p0, object p1)
@@ -1317,14 +1303,12 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.NonAbstractConstructorRequired);
         }
 
+        /// <summary>
+        /// InvalidProgramException with default message.
+        /// </summary>
         internal static Exception InvalidProgram()
         {
             return new InvalidProgramException();
-        }
-
-        internal static InvalidOperationException InterpreterCannotThrowNonExceptions()
-        {
-            return new InvalidOperationException(Strings.InterpreterCannotThrowNonExceptions);
         }
 
         private static string GetParamName(string paramName, int index)
