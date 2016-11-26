@@ -19,10 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Declaration _declFirst;
         private Declaration _declLast;
 
-        public NamespaceOrAggregateSymbol()
-        {
-        }
-
         // ----------------------------------------------------------------------------
         // NamespaceOrAggregateSymbol
         // ----------------------------------------------------------------------------
