@@ -11,12 +11,10 @@ namespace System.Reflection.Emit.Tests
     {
         public static IEnumerable<object[]> SetParent_TestData()
         {
-            yield return new object[] { TypeAttributes.NotPublic, typeof(string), typeof(string) };
             yield return new object[] { TypeAttributes.NotPublic, typeof(EmptyNonGenericClass), typeof(EmptyNonGenericClass) };
-            yield return new object[] { TypeAttributes.NotPublic, typeof(EmptyGenericClass<>), typeof(EmptyGenericClass<>) };
-            yield return new object[] { TypeAttributes.NotPublic, typeof(int?), typeof(int?) };
             yield return new object[] { TypeAttributes.NotPublic, typeof(object), typeof(object) };
             yield return new object[] { TypeAttributes.NotPublic, null, typeof(object) };
+            yield return new object[] { TypeAttributes.Abstract, typeof(EmptyGenericClass<int>), typeof(EmptyGenericClass<int>) };
             yield return new object[] { TypeAttributes.Interface | TypeAttributes.Abstract, null, null };
         }
 
@@ -25,8 +23,12 @@ namespace System.Reflection.Emit.Tests
         public void SetParent(TypeAttributes attributes, Type parent, Type expected)
         {
             TypeBuilder type = Helpers.DynamicType(attributes);
+
             type.SetParent(parent);
             Assert.Equal(expected, type.BaseType);
+
+            TypeInfo createdType = type.CreateTypeInfo();
+            Assert.Equal(expected, createdType.BaseType);
         }
 
         [Fact]
@@ -38,9 +40,30 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetParent_InterfaceType_ThrowsArgumentException()
+        [ActiveIssue(13977)]
+        public void SetParent_This_LoopsForever()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            type.SetParent(type.AsType());
+            Assert.Equal(type.AsType(), type.BaseType);
+
+            Assert.ThrowsAny<Exception>(() => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        public void SetParent_ThisIsInterface_ThrowsTypeLoadExceptionOnLoad()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Interface | TypeAttributes.Abstract);
+            type.SetParent(typeof(EmptyNonGenericClass));
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        [Theory]
+        [InlineData(TypeAttributes.NotPublic)]
+        [InlineData(TypeAttributes.Interface | TypeAttributes.Abstract)]
+        public void SetParent_InterfaceType_ThrowsArgumentException(TypeAttributes attributes)
+        {
+            TypeBuilder type = Helpers.DynamicType(attributes);
             Assert.Throws<ArgumentException>(null, () => type.SetParent(typeof(EmptyNonGenericInterface1)));
         }
 
@@ -48,9 +71,23 @@ namespace System.Reflection.Emit.Tests
         public void SetParent_ByRefType_ThrowsArgumentExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+
             type.SetParent(typeof(int).MakeByRefType());
+            Assert.Equal(typeof(int).MakeByRefType(), type.BaseType);
 
             Assert.Throws<ArgumentException>(null, () => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        public void SetParent_GenericParameter_ThrowsNotSupportedExceptionOnCreation()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            GenericTypeParameterBuilder genericType = type.DefineGenericParameters("T")[0];
+
+            type.SetParent(genericType.AsType());
+            Assert.Equal(genericType.AsType(), type.BaseType);
+
+            Assert.Throws<NotSupportedException>(() => type.CreateTypeInfo());
         }
 
         [Fact]
@@ -61,20 +98,26 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder parentType = module.DefineType("Parent", TypeAttributes.Public);
 
             type.SetParent(parentType.AsType());
+            Assert.Equal(parentType.AsType(), type.BaseType);
+
             Assert.Throws<NotSupportedException>(() => type.CreateTypeInfo());
         }
 
         [Theory]
         [InlineData(typeof(void))]
         [InlineData(typeof(EmptyNonGenericStruct))]
+        [InlineData(typeof(EmptyEnum))]
         [InlineData(typeof(EmptyGenericStruct<>))]
         [InlineData(typeof(EmptyGenericStruct<int>))]
         [InlineData(typeof(SealedClass))]
+        [InlineData(typeof(int?))]
         public void ParentNotInheritable_ThrowsTypeLoadExceptionOnCreation(Type parentType)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
 
             type.SetParent(parentType);
+            Assert.Equal(parentType, type.BaseType);
+
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
 
@@ -88,6 +131,8 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
 
             type.SetParent(parentType);
+            Assert.Equal(parentType, type.BaseType);
+
             Assert.Throws<NotSupportedException>(() => type.CreateTypeInfo());
         }
 
@@ -97,6 +142,8 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
 
             type.SetParent(typeof(EmptyGenericClass<>));
+            Assert.Equal(typeof(EmptyGenericClass<>), type.BaseType);
+
             Assert.Throws<BadImageFormatException>(() => type.CreateTypeInfo());
         }
     }
