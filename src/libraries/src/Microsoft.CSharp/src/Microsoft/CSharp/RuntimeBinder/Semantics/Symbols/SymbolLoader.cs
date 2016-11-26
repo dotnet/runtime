@@ -14,9 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         private NameManager _nameManager;
 
-        public PredefinedMembers PredefinedMembers { get; private set; }
-        public GlobalSymbolContext GlobalSymbolContext { get; private set; }
-        public ErrorHandling ErrorContext { get; private set; }
+        public PredefinedMembers PredefinedMembers { get; }
+        public GlobalSymbolContext GlobalSymbolContext { get; }
+        public ErrorHandling ErrorContext { get; }
         public SymbolTable RuntimeBinderSymbolTable { get; private set; }
 
         public SymbolLoader(

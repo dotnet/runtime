@@ -27,9 +27,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _nameManager = namemgr;
         }
 
-        public TypeManager TypeManager { get; private set; }
+        public TypeManager TypeManager { get; }
         public TypeManager GetTypes() { return TypeManager; }
-        public BSYMMGR GlobalSymbols { get; private set; }
+        public BSYMMGR GlobalSymbols { get; }
         public BSYMMGR GetGlobalSymbols() { return GlobalSymbols; }
         public NameManager GetNameManager() { return _nameManager; }
         public PredefinedTypes GetPredefTypes() { return _predefTypes; }
