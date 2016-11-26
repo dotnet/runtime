@@ -879,7 +879,7 @@ again:
 		if (!mono_w32handle_trylock_handle (handle)) {
 			/* Bummer */
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: attempt failed for %p: %s", __func__,
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: attempt failed for %p.", __func__,
 				   handle);
 
 			while (i--) {
