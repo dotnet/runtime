@@ -10,10 +10,14 @@ namespace System.Linq.Expressions.Tests
 {
     public static class CallFactoryTests
     {
-        [Fact]
-        public static void CheckCallFactoryOptimizationInstance1()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public static void CheckCallIsOptimizedInstance(int arity)
         {
-            AssertCallIsOptimizedInstance(1);
+            AssertCallIsOptimizedInstance(arity);
         }
 
         [Fact]
@@ -22,8 +26,6 @@ namespace System.Linq.Expressions.Tests
             MethodCallExpression expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I2"), Expression.Constant(0), Expression.Constant(1));
 
             AssertInstanceMethodCall(2, expr);
-
-            AssertCallIsOptimizedInstance(2);
         }
 
         [Fact]
@@ -32,8 +34,64 @@ namespace System.Linq.Expressions.Tests
             MethodCallExpression expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
 
             AssertInstanceMethodCall(3, expr);
+        }
 
-            AssertCallIsOptimizedInstance(3);
+        [Fact]
+        public static void CheckCallFactoryInstanceN()
+        {
+            const int N = 4;
+
+            ParameterExpression obj = Expression.Parameter(typeof(MS));
+            ConstantExpression[] args = Enumerable.Range(0, N).Select(i => Expression.Constant(i)).ToArray();
+
+            MethodCallExpression expr = Expression.Call(obj, typeof(MS).GetMethod("I" + N), args);
+
+            Assert.Equal("InstanceMethodCallExpressionN", expr.GetType().Name);
+
+            Assert.Same(obj, expr.Object);
+
+            Assert.Equal(N, expr.ArgumentCount);
+            for (var i = 0; i < N; i++)
+            {
+                Assert.Same(args[i], expr.GetArgument(i));
+            }
+
+            Collections.ObjectModel.ReadOnlyCollection<Expression> arguments = expr.Arguments;
+            Assert.Same(arguments, expr.Arguments);
+
+            Assert.Equal(N, arguments.Count);
+            for (var i = 0; i < N; i++)
+            {
+                Assert.Same(args[i], arguments[i]);
+            }
+
+            MethodCallExpression updated = expr.Update(obj, arguments);
+            Assert.Same(expr, updated);
+
+            var visited = (MethodCallExpression)new NopVisitor().Visit(expr);
+            Assert.Same(expr, visited);
+
+            var visitedObj = (MethodCallExpression)new VisitorObj().Visit(expr);
+            Assert.NotSame(expr, visitedObj);
+            Assert.NotSame(obj, visitedObj.Object);
+            Assert.Same(arguments, visitedObj.Arguments);
+
+            var visitedArgs = (MethodCallExpression)new VisitorArgs().Visit(expr);
+            Assert.NotSame(expr, visitedArgs);
+            Assert.Same(obj, visitedArgs.Object);
+            Assert.NotSame(arguments, visitedArgs.Arguments);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public static void CheckCallIsOptimizedStatic(int arity)
+        {
+            AssertCallIsOptimizedStatic(arity);
         }
 
         [Fact]
@@ -42,8 +100,6 @@ namespace System.Linq.Expressions.Tests
             MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S1"), Expression.Constant(0));
 
             AssertStaticMethodCall(1, expr);
-
-            AssertCallIsOptimizedStatic(1);
         }
 
         [Fact]
@@ -54,8 +110,6 @@ namespace System.Linq.Expressions.Tests
 
             AssertStaticMethodCall(2, expr1);
             AssertStaticMethodCall(2, expr2);
-
-            AssertCallIsOptimizedStatic(2);
         }
 
         [Fact]
@@ -66,8 +120,6 @@ namespace System.Linq.Expressions.Tests
 
             AssertStaticMethodCall(3, expr1);
             AssertStaticMethodCall(3, expr2);
-
-            AssertCallIsOptimizedStatic(3);
         }
 
         [Fact]
@@ -76,8 +128,6 @@ namespace System.Linq.Expressions.Tests
             MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S4"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3));
 
             AssertStaticMethodCall(4, expr);
-
-            AssertCallIsOptimizedStatic(4);
         }
 
         [Fact]
@@ -86,8 +136,44 @@ namespace System.Linq.Expressions.Tests
             MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S5"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), Expression.Constant(4));
 
             AssertStaticMethodCall(5, expr);
+        }
 
-            AssertCallIsOptimizedStatic(5);
+        [Fact]
+        public static void CheckCallFactoryStaticN()
+        {
+            const int N = 6;
+
+            ConstantExpression[] args = Enumerable.Range(0, N).Select(i => Expression.Constant(i)).ToArray();
+
+            MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S" + N), args);
+
+            Assert.Equal("MethodCallExpressionN", expr.GetType().Name);
+
+            Assert.Equal(N, expr.ArgumentCount);
+            for (var i = 0; i < N; i++)
+            {
+                Assert.Same(args[i], expr.GetArgument(i));
+            }
+
+            Collections.ObjectModel.ReadOnlyCollection<Expression> arguments = expr.Arguments;
+            Assert.Same(arguments, expr.Arguments);
+
+            Assert.Equal(N, arguments.Count);
+            for (var i = 0; i < N; i++)
+            {
+                Assert.Same(args[i], arguments[i]);
+            }
+
+            MethodCallExpression updated = expr.Update(null, arguments);
+            Assert.Same(expr, updated);
+
+            var visited = (MethodCallExpression)new NopVisitor().Visit(expr);
+            Assert.Same(expr, visited);
+
+            var visitedArgs = (MethodCallExpression)new VisitorArgs().Visit(expr);
+            Assert.NotSame(expr, visitedArgs);
+            Assert.Same(null, visitedArgs.Object);
+            Assert.NotSame(arguments, visitedArgs.Arguments);
         }
 
         [Fact]
@@ -153,12 +239,32 @@ namespace System.Linq.Expressions.Tests
         {
             int n = method.GetParameters().Length;
 
-            MethodCallExpression updated = Update(expr);
-            MethodCallExpression visited = Visit(expr);
+            MethodCallExpression updatedArgs = UpdateArgs(expr);
+            MethodCallExpression visitedArgs = VisitArgs(expr);
+            var updatedObj = default(MethodCallExpression);
+            var visitedObj = default(MethodCallExpression);
 
-            foreach (var node in new[] { expr, updated, visited })
+            MethodCallExpression[] nodes;
+
+            if (instance == null)
             {
-                Assert.Same(instance, node.Object);
+                nodes = new[] { expr, updatedArgs, visitedArgs };
+            }
+            else
+            {
+                updatedObj = UpdateObj(expr);
+                visitedObj = VisitObj(expr);
+
+                nodes = new[] { expr, updatedArgs, visitedArgs, updatedObj, visitedObj };
+            }
+
+            foreach (var node in nodes)
+            {
+                if (node != visitedObj && node != updatedObj)
+                {
+                    Assert.Same(instance, node.Object);
+                }
+
                 Assert.Same(method, node.Method);
 
                 if (method.IsStatic)
@@ -175,7 +281,10 @@ namespace System.Linq.Expressions.Tests
 
                 Assert.Equal(n, argProvider.ArgumentCount);
 
-                if (node != visited) // our visitor clones argument nodes
+                Assert.Throws<InvalidOperationException>(() => argProvider.GetArgument(-1));
+                Assert.Throws<InvalidOperationException>(() => argProvider.GetArgument(n));
+
+                if (node != visitedArgs) // our visitor clones argument nodes
                 {
                     for (var i = 0; i < n; i++)
                     {
@@ -201,7 +310,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(expected, obj.GetType().Name);
         }
 
-        private static MethodCallExpression Update(MethodCallExpression node)
+        private static MethodCallExpression UpdateArgs(MethodCallExpression node)
         {
             // Tests the call of Update to Expression.Call factories.
 
@@ -212,18 +321,48 @@ namespace System.Linq.Expressions.Tests
             return res;
         }
 
-        private static MethodCallExpression Visit(MethodCallExpression node)
+        private static MethodCallExpression UpdateObj(MethodCallExpression node)
+        {
+            // Tests the call of Update to Expression.Call factories.
+
+            MethodCallExpression res = node.Update(new VisitorObj().Visit(node.Object), node.Arguments);
+
+            Assert.NotSame(node, res);
+
+            return res;
+        }
+
+        private static MethodCallExpression VisitArgs(MethodCallExpression node)
         {
             // Tests dispatch of ExpressionVisitor into Rewrite method which calls Expression.Call factories.
 
-            return (MethodCallExpression)new Visitor().Visit(node);
+            return (MethodCallExpression)new VisitorArgs().Visit(node);
         }
 
-        class Visitor : ExpressionVisitor
+        private static MethodCallExpression VisitObj(MethodCallExpression node)
+        {
+            // Tests dispatch of ExpressionVisitor into Rewrite method which calls Expression.Call factories.
+
+            return (MethodCallExpression)new VisitorObj().Visit(node);
+        }
+
+        class NopVisitor : ExpressionVisitor
+        {
+        }
+
+        class VisitorArgs : ExpressionVisitor
         {
             protected override Expression VisitConstant(ConstantExpression node)
             {
                 return Expression.Constant(node.Value, node.Type); // clones
+            }
+        }
+
+        class VisitorObj : ExpressionVisitor
+        {
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                return Expression.Parameter(node.Type, node.Name); // clones
             }
         }
     }
@@ -243,5 +382,6 @@ namespace System.Linq.Expressions.Tests
         public static void S3(int a, int b, int c) { }
         public static void S4(int a, int b, int c, int d) { }
         public static void S5(int a, int b, int c, int d, int e) { }
+        public static void S6(int a, int b, int c, int d, int e, int f) { }
     }
 }
