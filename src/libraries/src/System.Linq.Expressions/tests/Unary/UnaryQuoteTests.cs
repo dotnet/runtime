@@ -13,9 +13,9 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void QuotePreservesTypingOfBlock(bool useInterpreter)
         {
-            var x = Parameter(typeof(int));
+            ParameterExpression x = Parameter(typeof(int));
 
-            var f1 =
+            Expression<Func<int, Type>> f1 =
                 Lambda<Func<int, Type>>(
                     Call(
                         typeof(UnaryQuoteTests).GetMethod(nameof(Quote1)),
@@ -28,9 +28,9 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Equal(typeof(void), f1.Compile(useInterpreter)(42));
 
-            var s = Parameter(typeof(string));
+            ParameterExpression s = Parameter(typeof(string));
 
-            var f2 =
+            Expression<Func<string, Type>> f2 =
                 Lambda<Func<string, Type>>(
                     Call(
                         typeof(UnaryQuoteTests).GetMethod(nameof(Quote2)),

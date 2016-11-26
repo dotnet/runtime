@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Tests
 
             internal void TypeDefOrRef(int token, byte indexType, int index)
             {
-                var type = _parent._tokenResolver.AsType(token);
+                Type type = _parent._tokenResolver.AsType(token);
                 ((TypeInner)_inner).Resolve(type);
             }
 

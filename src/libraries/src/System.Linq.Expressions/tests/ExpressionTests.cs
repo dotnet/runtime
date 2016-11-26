@@ -374,21 +374,21 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CompileIrreduciebleExtension(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Action>(new IrreducibleWithTypeAndNodeType());
+            Expression<Action> exp = Expression.Lambda<Action>(new IrreducibleWithTypeAndNodeType());
             Assert.Throws<ArgumentException>(null, () => exp.Compile(useInterpreter));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CompileIrreduciebleStrangeNodeTypeExtension(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Action>(new IrreduceibleWithTypeAndStrangeNodeType());
+            Expression<Action> exp = Expression.Lambda<Action>(new IrreduceibleWithTypeAndStrangeNodeType());
             Assert.Throws<ArgumentException>(null, () => exp.Compile(useInterpreter));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CompileReducibleStrangeNodeTypeExtension(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<int>>(new ReducesFromStrangeNodeType());
+            Expression<Func<int>> exp = Expression.Lambda<Func<int>>(new ReducesFromStrangeNodeType());
             Assert.Equal(3, exp.Compile(useInterpreter)());
         }
 
@@ -398,7 +398,7 @@ namespace System.Linq.Expressions.Tests
             var e1 = new ExtensionNoToString();
             Assert.Equal($"[{typeof(ExtensionNoToString).FullName}]", e1.ToString());
 
-            var e2 = Expression.Add(Expression.Constant(1), new ExtensionToString());
+            BinaryExpression e2 = Expression.Add(Expression.Constant(1), new ExtensionToString());
             Assert.Equal($"(1 + bar)", e2.ToString());
         }
     }

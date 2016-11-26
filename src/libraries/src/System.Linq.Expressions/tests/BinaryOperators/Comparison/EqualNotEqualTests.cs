@@ -194,14 +194,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Equal_ToString()
         {
-            var e = Expression.Equal(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e = Expression.Equal(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a == b)", e.ToString());
         }
 
         [Fact]
         public static void NotEqual_ToString()
         {
-            var e = Expression.NotEqual(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e = Expression.NotEqual(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a != b)", e.ToString());
         }
 

@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationInstance2()
         {
-            var expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I2"), Expression.Constant(0), Expression.Constant(1));
+            MethodCallExpression expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I2"), Expression.Constant(0), Expression.Constant(1));
 
             AssertInstanceMethodCall(2, expr);
 
@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationInstance3()
         {
-            var expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
+            MethodCallExpression expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
 
             AssertInstanceMethodCall(3, expr);
 
@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationStatic1()
         {
-            var expr = Expression.Call(typeof(MS).GetMethod("S1"), Expression.Constant(0));
+            MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S1"), Expression.Constant(0));
 
             AssertStaticMethodCall(1, expr);
 
@@ -49,8 +49,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationStatic2()
         {
-            var expr1 = Expression.Call(typeof(MS).GetMethod("S2"), Expression.Constant(0), Expression.Constant(1));
-            var expr2 = Expression.Call(null, typeof(MS).GetMethod("S2"), Expression.Constant(0), Expression.Constant(1));
+            MethodCallExpression expr1 = Expression.Call(typeof(MS).GetMethod("S2"), Expression.Constant(0), Expression.Constant(1));
+            MethodCallExpression expr2 = Expression.Call(null, typeof(MS).GetMethod("S2"), Expression.Constant(0), Expression.Constant(1));
 
             AssertStaticMethodCall(2, expr1);
             AssertStaticMethodCall(2, expr2);
@@ -61,8 +61,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationStatic3()
         {
-            var expr1 = Expression.Call(typeof(MS).GetMethod("S3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
-            var expr2 = Expression.Call(null, typeof(MS).GetMethod("S3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
+            MethodCallExpression expr1 = Expression.Call(typeof(MS).GetMethod("S3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
+            MethodCallExpression expr2 = Expression.Call(null, typeof(MS).GetMethod("S3"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2));
 
             AssertStaticMethodCall(3, expr1);
             AssertStaticMethodCall(3, expr2);
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationStatic4()
         {
-            var expr = Expression.Call(typeof(MS).GetMethod("S4"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3));
+            MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S4"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3));
 
             AssertStaticMethodCall(4, expr);
 
@@ -83,7 +83,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckCallFactoryOptimizationStatic5()
         {
-            var expr = Expression.Call(typeof(MS).GetMethod("S5"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), Expression.Constant(4));
+            MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S5"), Expression.Constant(0), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), Expression.Constant(4));
 
             AssertStaticMethodCall(5, expr);
 
@@ -93,10 +93,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckArrayIndexOptimization1()
         {
-            var instance = Expression.Parameter(typeof(int[]));
-            var args = new[] { Expression.Constant(0) };
-            var expr = Expression.ArrayIndex(instance, args);
-            var method = typeof(int[]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance);
+            ParameterExpression instance = Expression.Parameter(typeof(int[]));
+            ConstantExpression[] args = new[] { Expression.Constant(0) };
+            MethodCallExpression expr = Expression.ArrayIndex(instance, args);
+            MethodInfo method = typeof(int[]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance);
 
             AssertCallIsOptimized(expr, instance, method, args);
         }
@@ -104,46 +104,46 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckArrayIndexOptimization2()
         {
-            var instance = Expression.Parameter(typeof(int[,]));
-            var args = new[] { Expression.Constant(0), Expression.Constant(0) };
-            var expr = Expression.ArrayIndex(instance, args);
-            var method = typeof(int[,]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance);
+            ParameterExpression instance = Expression.Parameter(typeof(int[,]));
+            ConstantExpression[] args = new[] { Expression.Constant(0), Expression.Constant(0) };
+            MethodCallExpression expr = Expression.ArrayIndex(instance, args);
+            MethodInfo method = typeof(int[,]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance);
 
             AssertCallIsOptimized(expr, instance, method, args);
         }
 
         private static void AssertCallIsOptimizedInstance(int n)
         {
-            var method = typeof(MS).GetMethod("I" + n);
+            MethodInfo method = typeof(MS).GetMethod("I" + n);
 
             AssertCallIsOptimized(method);
         }
 
         private static void AssertCallIsOptimizedStatic(int n)
         {
-            var method = typeof(MS).GetMethod("S" + n);
+            MethodInfo method = typeof(MS).GetMethod("S" + n);
 
             AssertCallIsOptimized(method);
         }
 
         private static void AssertCallIsOptimized(MethodInfo method)
         {
-            var instance = method.IsStatic ? null : Expression.Parameter(method.DeclaringType);
+            ParameterExpression instance = method.IsStatic ? null : Expression.Parameter(method.DeclaringType);
 
-            var n = method.GetParameters().Length;
+            int n = method.GetParameters().Length;
 
             // Expression[] overload
             {
-                var args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToArray();
-                var expr = Expression.Call(instance, method, args);
+                ConstantExpression[] args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToArray();
+                MethodCallExpression expr = Expression.Call(instance, method, args);
 
                 AssertCallIsOptimized(expr, instance, method, args);
             }
 
             // IEnumerable<Expression> overload
             {
-                var args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToList();
-                var expr = Expression.Call(instance, method, args);
+                List<ConstantExpression> args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToList();
+                MethodCallExpression expr = Expression.Call(instance, method, args);
 
                 AssertCallIsOptimized(expr, instance, method, args);
             }
@@ -151,10 +151,10 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertCallIsOptimized(MethodCallExpression expr, Expression instance, MethodInfo method, IReadOnlyList<Expression> args)
         {
-            var n = method.GetParameters().Length;
+            int n = method.GetParameters().Length;
 
-            var updated = Update(expr);
-            var visited = Visit(expr);
+            MethodCallExpression updated = Update(expr);
+            MethodCallExpression visited = Visit(expr);
 
             foreach (var node in new[] { expr, updated, visited })
             {
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Tests
         {
             // Tests the call of Update to Expression.Call factories.
 
-            var res = node.Update(node.Object, node.Arguments.ToArray());
+            MethodCallExpression res = node.Update(node.Object, node.Arguments.ToArray());
 
             Assert.NotSame(node, res);
 

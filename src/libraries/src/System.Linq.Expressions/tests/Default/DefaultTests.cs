@@ -26,9 +26,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void DefaultEnumRef(bool useInterpreter)
         {
-            var x = Expression.Variable(typeof(MyEnum), "x");
+            ParameterExpression x = Expression.Variable(typeof(MyEnum), "x");
 
-            var expression = Expression.Lambda<Action>(
+            Expression<Action> expression = Expression.Lambda<Action>(
                             Expression.Block(
                             new[] { x },
                             Expression.Assign(x, Expression.Default(typeof(MyEnum))),

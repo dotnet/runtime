@@ -40,7 +40,7 @@ namespace System
                 const string versionFile = "/proc/version";
                 if (File.Exists(versionFile))
                 {
-                    var s = File.ReadAllText(versionFile);
+                    string s = File.ReadAllText(versionFile);
 
                     if (s.Contains("Microsoft") || s.Contains("WSL"))
                     {

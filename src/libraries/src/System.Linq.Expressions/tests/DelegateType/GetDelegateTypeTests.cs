@@ -61,7 +61,7 @@ namespace System.Linq.Expressions.Tests
             Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
             Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
             Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
-            var method = delType.GetMethod("Invoke");
+            Reflection.MethodInfo method = delType.GetMethod("Invoke");
             Assert.Equal(typeArgs.Last(), method.ReturnType);
             Assert.Equal(typeArgs.Take(typeArgs.Length - 1), method.GetParameters().Select(p => p.ParameterType));
         }
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions.Tests
             Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
             Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
             Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
-            var method = delType.GetMethod("Invoke");
+            Reflection.MethodInfo method = delType.GetMethod("Invoke");
             Assert.Equal(typeof(void), method.ReturnType);
             Assert.Equal(typeArgs, method.GetParameters().Select(p => p.ParameterType));
         }

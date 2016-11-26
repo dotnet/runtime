@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Tests
             {
                 return false;
             }
-            var ps = mi.GetParameters();
+            ParameterInfo[] ps = mi.GetParameters();
 
             if (ps.Length != argTypes.Length)
             {

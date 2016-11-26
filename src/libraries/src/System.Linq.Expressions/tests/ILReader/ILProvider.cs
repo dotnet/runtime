@@ -44,13 +44,13 @@ namespace System.Linq.Expressions.Tests
             StartAddress = GetStartAddress();
             EndAddress = GetEndAddress();
 
-            var n = GetNumberOfCatches();
+            int n = GetNumberOfCatches();
             if (n > 0)
             {
-                var handlerStart = GetCatchAddresses();
-                var handlerEnd = GetCatchEndAddresses();
-                var catchType = GetCatchClass();
-                var types = GetExceptionTypes();
+                int[] handlerStart = GetCatchAddresses();
+                int[] handlerEnd = GetCatchEndAddresses();
+                Type[] catchType = GetCatchClass();
+                int[] types = GetExceptionTypes();
 
                 Handlers = new HandlerInfo[n];
 
