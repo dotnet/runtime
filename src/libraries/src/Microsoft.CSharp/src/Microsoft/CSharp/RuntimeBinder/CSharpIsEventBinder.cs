@@ -13,11 +13,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder
     {
-        internal string Name { get { return _name; } }
-        private string _name;
+        internal string Name { get; }
 
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         private RuntimeBinder _binder;
 
@@ -30,8 +28,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             string name,
             Type callingContext)
         {
-            _name = name;
-            _callingContext = callingContext;
+            Name = name;
+            CallingContext = callingContext;
             _binder = RuntimeBinder.GetInstance();
         }
 

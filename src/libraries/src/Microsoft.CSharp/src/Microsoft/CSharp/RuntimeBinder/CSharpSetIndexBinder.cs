@@ -15,14 +15,11 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpSetIndexBinder : SetIndexBinder
     {
-        internal bool IsCompoundAssignment { get { return _bIsCompoundAssignment; } }
-        private bool _bIsCompoundAssignment;
+        internal bool IsCompoundAssignment { get; }
 
-        internal bool IsChecked { get { return _isChecked; } }
-        private bool _isChecked;
+        internal bool IsChecked { get; }
 
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
         private List<CSharpArgumentInfo> _argumentInfo;
@@ -44,9 +41,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
             base(BinderHelper.CreateCallInfo(argumentInfo, 2)) // discard 2 arguments: the target object and the value
         {
-            _bIsCompoundAssignment = isCompoundAssignment;
-            _isChecked = isChecked;
-            _callingContext = callingContext;
+            IsCompoundAssignment = isCompoundAssignment;
+            IsChecked = isChecked;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

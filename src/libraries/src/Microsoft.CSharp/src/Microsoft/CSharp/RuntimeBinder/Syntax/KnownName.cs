@@ -11,8 +11,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
     {
         internal class KnownName : Name
         {
-            private PredefinedName _id = PredefinedName.PN_COUNT;
-
             public KnownName(string text)
                 : base(text)
             {
@@ -21,13 +19,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             public KnownName(string text, PredefinedName id)
                 : base(text)
             {
-                _id = id;
+                PredefinedName = id;
             }
 
-            public override PredefinedName PredefinedName
-            {
-                get { return _id; }
-            }
+            public override PredefinedName PredefinedName { get; } = PredefinedName.PN_COUNT;
         }
 
         private static NameTable s_knownNames;
