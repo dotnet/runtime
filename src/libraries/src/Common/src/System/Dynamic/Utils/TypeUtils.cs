@@ -13,11 +13,6 @@ namespace System.Dynamic.Utils
             return t1.IsEquivalentTo(t2);
         }
 
-        public static bool IsEquivalentTo(this Type t1, Type t2)
-        {
-            return t1 == t2;
-        }
-
         public static bool AreReferenceAssignable(Type dest, Type src)
         {
             // This actually implements "Is this identity assignable and/or reference assignable?"
