@@ -447,9 +447,6 @@
   <data name="LogicalOperatorMustHaveBooleanOperators" xml:space="preserve">
     <value>The user-defined operator method '{1}' for operator '{0}' must have associated boolean True and False operators.</value>
   </data>
-  <data name="MethodDoesNotExistOnType" xml:space="preserve">
-    <value>No method '{0}' exists on type '{1}'.</value>
-  </data>
   <data name="MethodWithArgsDoesNotExistOnType" xml:space="preserve">
     <value>No method '{0}' on type '{1}' is compatible with the supplied arguments.</value>
   </data>
@@ -650,8 +647,5 @@
   </data>
   <data name="SameKeyExistsInExpando" xml:space="preserve">
     <value>An element with the same key '{0}' already exists in the ExpandoObject.</value>
-  </data>
-  <data name="InterpreterCannotThrowNonExceptions" xml:space="preserve">
-    <value>Interpreted expressions cannot throw an object of a type that is not derived from System.Exception.</value>
   </data>
 </root>
