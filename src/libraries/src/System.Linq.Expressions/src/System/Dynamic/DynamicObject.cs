@@ -242,40 +242,60 @@ namespace System.Dynamic
             {
                 if (IsOverridden(DynamicObject_TryGetMember))
                 {
-                    return CallMethodWithResult(DynamicObject_TryGetMember, binder, s_noArgs, (e) => binder.FallbackGetMember(this, e));
+                    return BindGetMemberOverridden(binder);
                 }
 
                 return base.BindGetMember(binder);
+            }
+
+            private DynamicMetaObject BindGetMemberOverridden(GetMemberBinder binder)
+            {
+                return CallMethodWithResult(DynamicObject_TryGetMember, binder, s_noArgs, (e) => binder.FallbackGetMember(this, e));
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
                 if (IsOverridden(DynamicObject_TrySetMember))
                 {
-                    return CallMethodReturnLast(DynamicObject_TrySetMember, binder, s_noArgs, value.Expression, (e) => binder.FallbackSetMember(this, value, e));
+                    return BindSetMemberOverridden(binder, value);
                 }
 
                 return base.BindSetMember(binder, value);
+            }
+
+            private DynamicMetaObject BindSetMemberOverridden(SetMemberBinder binder, DynamicMetaObject value)
+            {
+                return CallMethodReturnLast(DynamicObject_TrySetMember, binder, s_noArgs, value.Expression, (e) => binder.FallbackSetMember(this, value, e));
             }
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder)
             {
                 if (IsOverridden(DynamicObject_TryDeleteMember))
                 {
-                    return CallMethodNoResult(DynamicObject_TryDeleteMember, binder, s_noArgs, (e) => binder.FallbackDeleteMember(this, e));
+                    return BindDeleteMemberOverridden(binder);
                 }
 
                 return base.BindDeleteMember(binder);
+            }
+
+            private DynamicMetaObject BindDeleteMemberOverridden(DeleteMemberBinder binder)
+            {
+                return CallMethodNoResult(DynamicObject_TryDeleteMember, binder, s_noArgs, (e) => binder.FallbackDeleteMember(this, e));
             }
 
             public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
                 if (IsOverridden(DynamicObject_TryConvert))
                 {
-                    return CallMethodWithResult(DynamicObject_TryConvert, binder, s_noArgs, (e) => binder.FallbackConvert(this, e));
+                    return BindConvertOverridden(binder);
                 }
 
                 return base.BindConvert(binder);
+            }
+
+            private DynamicMetaObject BindConvertOverridden(ConvertBinder binder)
+            {
+                return CallMethodWithResult(DynamicObject_TryConvert, binder, s_noArgs, (e) => binder.FallbackConvert(this, e));
             }
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
@@ -318,70 +338,105 @@ namespace System.Dynamic
             {
                 if (IsOverridden(DynamicObject_TryCreateInstance))
                 {
-                    return CallMethodWithResult(DynamicObject_TryCreateInstance, binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackCreateInstance(this, args, e));
+                    return BindCreateInstanceOverridden(binder, args);
                 }
 
                 return base.BindCreateInstance(binder, args);
+            }
+
+            private DynamicMetaObject BindCreateInstanceOverridden(CreateInstanceBinder binder, DynamicMetaObject[] args)
+            {
+                return CallMethodWithResult(DynamicObject_TryCreateInstance, binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackCreateInstance(this, args, e));
             }
 
             public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args)
             {
                 if (IsOverridden(DynamicObject_TryInvoke))
                 {
-                    return CallMethodWithResult(DynamicObject_TryInvoke, binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackInvoke(this, args, e));
+                    return BindInvokeOverridden(binder, args);
                 }
 
                 return base.BindInvoke(binder, args);
+            }
+
+            private DynamicMetaObject BindInvokeOverridden(InvokeBinder binder, DynamicMetaObject[] args)
+            {
+                return CallMethodWithResult(DynamicObject_TryInvoke, binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackInvoke(this, args, e));
             }
 
             public override DynamicMetaObject BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg)
             {
                 if (IsOverridden(DynamicObject_TryBinaryOperation))
                 {
-                    return CallMethodWithResult(DynamicObject_TryBinaryOperation, binder, DynamicMetaObject.GetExpressions(new DynamicMetaObject[] { arg }), (e) => binder.FallbackBinaryOperation(this, arg, e));
+                    return BindBinaryOperationOverridden(binder, arg);
                 }
 
                 return base.BindBinaryOperation(binder, arg);
+            }
+
+            private DynamicMetaObject BindBinaryOperationOverridden(BinaryOperationBinder binder, DynamicMetaObject arg)
+            {
+                return CallMethodWithResult(DynamicObject_TryBinaryOperation, binder, DynamicMetaObject.GetExpressions(new DynamicMetaObject[] { arg }), (e) => binder.FallbackBinaryOperation(this, arg, e));
             }
 
             public override DynamicMetaObject BindUnaryOperation(UnaryOperationBinder binder)
             {
                 if (IsOverridden(DynamicObject_TryUnaryOperation))
                 {
-                    return CallMethodWithResult(DynamicObject_TryUnaryOperation, binder, s_noArgs, (e) => binder.FallbackUnaryOperation(this, e));
+                    return BindUnaryOperationOverridden(binder);
                 }
 
                 return base.BindUnaryOperation(binder);
+            }
+
+            private DynamicMetaObject BindUnaryOperationOverridden(UnaryOperationBinder binder)
+            {
+                return CallMethodWithResult(DynamicObject_TryUnaryOperation, binder, s_noArgs, (e) => binder.FallbackUnaryOperation(this, e));
             }
 
             public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
             {
                 if (IsOverridden(DynamicObject_TryGetIndex))
                 {
-                    return CallMethodWithResult(DynamicObject_TryGetIndex, binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackGetIndex(this, indexes, e));
+                    return BindGetIndexOverridden(binder, indexes);
                 }
 
                 return base.BindGetIndex(binder, indexes);
+            }
+
+            private DynamicMetaObject BindGetIndexOverridden(GetIndexBinder binder, DynamicMetaObject[] indexes)
+            {
+                return CallMethodWithResult(DynamicObject_TryGetIndex, binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackGetIndex(this, indexes, e));
             }
 
             public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
             {
                 if (IsOverridden(DynamicObject_TrySetIndex))
                 {
-                    return CallMethodReturnLast(DynamicObject_TrySetIndex, binder, DynamicMetaObject.GetExpressions(indexes), value.Expression, (e) => binder.FallbackSetIndex(this, indexes, value, e));
+                    return BindSetIndexOverridden(binder, indexes, value);
                 }
 
                 return base.BindSetIndex(binder, indexes, value);
+            }
+
+            private DynamicMetaObject BindSetIndexOverridden(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
+            {
+                return CallMethodReturnLast(DynamicObject_TrySetIndex, binder, DynamicMetaObject.GetExpressions(indexes), value.Expression, (e) => binder.FallbackSetIndex(this, indexes, value, e));
             }
 
             public override DynamicMetaObject BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes)
             {
                 if (IsOverridden(DynamicObject_TryDeleteIndex))
                 {
-                    return CallMethodNoResult(DynamicObject_TryDeleteIndex, binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackDeleteIndex(this, indexes, e));
+                    return BindDeleteIndexOverridden(binder, indexes);
                 }
 
                 return base.BindDeleteIndex(binder, indexes);
+            }
+
+            private DynamicMetaObject BindDeleteIndexOverridden(DeleteIndexBinder binder, DynamicMetaObject[] indexes)
+            {
+                return CallMethodNoResult(DynamicObject_TryDeleteIndex, binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackDeleteIndex(this, indexes, e));
             }
 
             private delegate DynamicMetaObject Fallback(DynamicMetaObject errorSuggestion);
