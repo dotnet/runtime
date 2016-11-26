@@ -10,8 +10,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprFactory
     {
-        private GlobalSymbolContext _globalSymbolContext;
-        private ConstValFactory _constants;
+        private readonly GlobalSymbolContext _globalSymbolContext;
+        private readonly ConstValFactory _constants;
 
         public ExprFactory(GlobalSymbolContext globalSymbolContext)
         {

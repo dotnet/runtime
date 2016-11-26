@@ -25,15 +25,15 @@ namespace Microsoft.CSharp.RuntimeBinder
         private HashSet<NameHashKey> _namesLoadedForEachType;
 
         // Members from the managed binder.
-        private SYMTBL _symbolTable;
-        private SymFactory _symFactory;
-        private NameManager _nameManager;
-        private TypeManager _typeManager;
-        private BSYMMGR _bsymmgr;
-        private CSemanticChecker _semanticChecker;
+        private readonly SYMTBL _symbolTable;
+        private readonly SymFactory _symFactory;
+        private readonly NameManager _nameManager;
+        private readonly TypeManager _typeManager;
+        private readonly BSYMMGR _bsymmgr;
+        private readonly CSemanticChecker _semanticChecker;
 
         private NamespaceSymbol _rootNamespace;
-        private InputFile _infile;
+        private readonly InputFile _infile;
 
         /////////////////////////////////////////////////////////////////////////////////
 

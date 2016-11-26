@@ -37,10 +37,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public PropertySymbol propNubValue;
         public MethodSymbol methNubCtor;
 
-        private SymFactory _symFactory;
-        private MiscSymFactory _miscSymFactory;
+        private readonly SymFactory _symFactory;
+        private readonly MiscSymFactory _miscSymFactory;
 
-        private NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
+        private readonly NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
 
         // Map from aids to INFILESYMs and EXTERNALIASSYMs
         protected List<AidContainer> ssetAssembly;
@@ -319,8 +319,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         protected struct TypeArrayKey : IEquatable<TypeArrayKey>
         {
-            private CType[] _types;
-            private int _hashCode;
+            private readonly CType[] _types;
+            private readonly int _hashCode;
 
             public TypeArrayKey(CType[] types)
             {

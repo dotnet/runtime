@@ -10,9 +10,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal class CNullable
     {
-        private SymbolLoader _pSymbolLoader;
-        private ExprFactory _exprFactory;
-        private ErrorHandling _pErrorContext;
+        private readonly SymbolLoader _pSymbolLoader;
+        private readonly ExprFactory _exprFactory;
+        private readonly ErrorHandling _pErrorContext;
 
         private SymbolLoader GetSymbolLoader()
         {

@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal class PredefinedTypes
     {
         private SymbolTable _runtimeBinderSymbolTable;
-        private BSYMMGR _pBSymmgr;
+        private readonly BSYMMGR _pBSymmgr;
         private AggregateSymbol[] _predefSyms;    // array of predefined symbol types.
         private KAID _aidMsCorLib;        // The assembly ID for all predefined types.
 
@@ -406,11 +406,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private class PredefinedTypeInfo
         {
-            internal PredefinedType type;
-            internal string name;
-            internal bool required;
-            internal FUNDTYPE fundType;
-            internal Type AssociatedSystemType;
+            internal readonly PredefinedType type;
+            internal readonly string name;
+            internal readonly bool required;
+            internal readonly FUNDTYPE fundType;
+            internal readonly Type AssociatedSystemType;
 
             internal PredefinedTypeInfo(PredefinedType type, Type associatedSystemType, string name, bool required, int arity, AggKindEnum aggKind, FUNDTYPE fundType, bool inMscorlib)
             {

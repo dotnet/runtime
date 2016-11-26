@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal Type CallingContext { get; }
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpConvertBinder" />.

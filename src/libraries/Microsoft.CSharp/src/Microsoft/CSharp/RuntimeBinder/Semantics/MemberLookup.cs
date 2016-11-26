@@ -52,20 +52,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private CMemberLookupResults _results;
 
         // For maintaining the type array. We throw the first 8 or so here.
-        private List<AggregateType> _rgtypeStart;
+        private readonly List<AggregateType> _rgtypeStart;
 
         // Results of the lookup.
         private List<AggregateType> _prgtype;
         private int _csym;                 // Number of syms found.
-        private SymWithType _swtFirst;     // The first symbol found.
-        private List<MethPropWithType> _methPropWithTypeList; // When we look up methods, we want to keep the list of all candidate methods given a particular name.
+        private readonly SymWithType _swtFirst;     // The first symbol found.
+        private readonly List<MethPropWithType> _methPropWithTypeList; // When we look up methods, we want to keep the list of all candidate methods given a particular name.
 
         // These are for error reporting.
-        private SymWithType _swtAmbig;     // An ambiguous symbol.
-        private SymWithType _swtInaccess;  // An inaccessible symbol.
-        private SymWithType _swtBad;       // If we're looking for a constructor or indexer, this matched on name, but isn't the right thing.
-        private SymWithType _swtBogus;     // A bogus member - such as an indexed property.
-        private SymWithType _swtBadArity;  // An symbol with the wrong arity.
+        private readonly SymWithType _swtAmbig;     // An ambiguous symbol.
+        private readonly SymWithType _swtInaccess;  // An inaccessible symbol.
+        private readonly SymWithType _swtBad;       // If we're looking for a constructor or indexer, this matched on name, but isn't the right thing.
+        private readonly SymWithType _swtBogus;     // A bogus member - such as an indexed property.
+        private readonly SymWithType _swtBadArity;  // An symbol with the wrong arity.
         private SymWithType _swtAmbigWarn; // An ambiguous symbol, but only warn.
 
         // We have an override symbol, which we've errored on in SymbolPrepare. If we have nothing better, use this.
@@ -84,7 +84,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // virtual, since it doesn't exist. We therefore want to use the override anyway, and
         // continue on to give results with that.
 
-        private SymWithType _swtOverride;
+        private readonly SymWithType _swtOverride;
         private bool _fMulti;              // Whether symFirst is of a kind for which we collect multiples (methods and indexers).
 
         /***************************************************************************************************

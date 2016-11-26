@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         private Entry[] _entries;
         private int _count;
         private int _mask;
-        private int _hashCodeRandomizer;
+        private readonly int _hashCodeRandomizer;
 
         internal NameTable()
         {

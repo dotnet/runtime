@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _inconvertibleResults = new List<MethPropWithInst>();
             }
 
-            private List<MethPropWithInst> _inconvertibleResults;
+            private readonly List<MethPropWithInst> _inconvertibleResults;
 
             /////////////////////////////////////////////////////////////////////////////////
 
