@@ -630,11 +630,6 @@ namespace System.Linq.Expressions
         internal static string LogicalOperatorMustHaveBooleanOperators(object p0, object p1) => SR.Format(SR.LogicalOperatorMustHaveBooleanOperators, p0, p1);
 
         /// <summary>
-        /// A string like "No method '{0}' exists on type '{1}'."
-        /// </summary>
-        internal static string MethodDoesNotExistOnType(object p0, object p1) => SR.Format(SR.MethodDoesNotExistOnType, p0, p1);
-
-        /// <summary>
         /// A string like "No method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static string MethodWithArgsDoesNotExistOnType(object p0, object p1) => SR.Format(SR.MethodWithArgsDoesNotExistOnType, p0, p1);
@@ -834,10 +829,5 @@ namespace System.Linq.Expressions
         /// A string like "The constructor should not be declared on an abstract class"
         /// </summary>
         internal static string NonAbstractConstructorRequired => SR.NonAbstractConstructorRequired;
-
-        /// <summary>
-        /// A string like "Interpreted expressions cannot throw an object of a type that is not derived from System.Exception.".
-        /// </summary>
-        internal static string InterpreterCannotThrowNonExceptions => SR.InterpreterCannotThrowNonExceptions;
     }
 }
