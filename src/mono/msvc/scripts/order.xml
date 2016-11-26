@@ -10901,17 +10901,6 @@
       <resources></resources>
       <response>System.Security.Cryptography.OpenSsl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Drawing.Primitives" library="Facades_System.Drawing.Primitives-monotouch_watch">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../../class/lib/monotouch_watch/mscorlib.dll -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/monotouch_watch/System.dll</flags>
-      <output>System.Drawing.Primitives.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/monotouch_watch/Facades/System.Drawing.Primitives.dll</library_output>
-      <fx_version>2.1</fx_version>
-      <profile>monotouch_watch</profile>
-      <resources></resources>
-      <response>./../../../build/deps/monotouch_watch_System.Drawing.Primitives.dll.sources</response>
-    </project>
     <project dir="class/Facades/System.Collections.Concurrent" library="Facades_System.Collections.Concurrent-monotouch_watch">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../../class/lib/monotouch_watch/mscorlib.dll -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/monotouch_watch/System.dll</flags>
