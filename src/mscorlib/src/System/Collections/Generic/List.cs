@@ -1041,21 +1041,29 @@ namespace System.Collections.Generic {
                 // Read in items from the enumerator, only updating fields
                 // when we run out of space.
 
-                while (en.MoveNext())
+                try
                 {
-                    if (size == items.Length)
+                    while (en.MoveNext())
                     {
-                        _size = size;
-                        EnsureCapacity(size + 1);
-                        items = _items;
-                    }
+                        if (size == items.Length)
+                        {
+                            _size = size;
+                            EnsureCapacity(size + 1);
+                            items = _items;
+                        }
 
-                    items[size++] = en.Current;
+                        // Note: It's important we increment size after Current is called.
+                        // If that throws an exception we don't want to to the increment.
+                        items[size] = en.Current;
+                        size++;
+                    }
                 }
-                
-                // Make a final update to _size and _version after we've finished adding.
-                _size = size;
-                _version++;
+                finally
+                {
+                    // Make a final update to _size and _version after we've finished adding.
+                    _size = size;
+                    _version++;
+                }
             }
         }
 
