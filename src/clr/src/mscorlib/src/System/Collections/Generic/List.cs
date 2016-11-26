@@ -1053,7 +1053,7 @@ namespace System.Collections.Generic {
                         }
 
                         // Note: It's important we increment size after Current is called.
-                        // If that throws an exception we don't want to to the increment.
+                        // If that throws an exception we don't want to do the increment.
                         items[size] = en.Current;
                         size++;
                     }
