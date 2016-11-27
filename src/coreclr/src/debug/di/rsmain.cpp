@@ -40,6 +40,8 @@
 RSDebuggingInfo g_RSDebuggingInfo_OutOfProc = {0 }; // set to NULL
 RSDebuggingInfo * g_pRSDebuggingInfo = &g_RSDebuggingInfo_OutOfProc;
 
+// The following instances are used for invoking overloaded new/delete
+forDbiWorker forDbi;
 
 #ifdef _DEBUG
 // For logs, we can print the string name for the debug codes.

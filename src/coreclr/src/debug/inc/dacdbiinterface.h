@@ -32,7 +32,7 @@
 template<class T> void DeleteDbiMemory(T *p);
 // Need a class to serve as a tag that we can use to overload New/Delete.
 class forDbiWorker {};
-#define forDbi (*(forDbiWorker *)NULL)
+extern forDbiWorker forDbi;
 extern void * operator new(size_t lenBytes, const forDbiWorker &);
 extern void * operator new[](size_t lenBytes, const forDbiWorker &);
 extern void operator delete(void *p, const forDbiWorker &);
