@@ -281,8 +281,8 @@ namespace System.Linq.Expressions.Tests
 
                 Assert.Equal(n, argProvider.ArgumentCount);
 
-                Assert.Throws<InvalidOperationException>(() => argProvider.GetArgument(-1));
-                Assert.Throws<InvalidOperationException>(() => argProvider.GetArgument(n));
+                Assert.Throws<ArgumentOutOfRangeException>(() => argProvider.GetArgument(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => argProvider.GetArgument(n));
 
                 if (node != visitedArgs) // our visitor clones argument nodes
                 {
