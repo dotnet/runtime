@@ -148,6 +148,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public SameInstanceXslTransformReader(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -203,9 +206,11 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - QFE 505 Repro")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void proc2()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
             CThreads rThreads = new CThreads(_output);
@@ -442,6 +447,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public SameInstanceXslTransformWriter(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -500,9 +508,11 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): TextWriter - QFE 505 Repro")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void proc2()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
             CThreads rThreads = new CThreads(_output);
