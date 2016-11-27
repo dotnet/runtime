@@ -4,7 +4,7 @@ add_definitions(-DLEGACY_BACKEND)
 add_definitions(-DALT_JIT)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
-# Note that legacy back-end does not define FEATURE_READYTORUN_COMPILER.
+add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 # No SIMD in legacy back-end.
