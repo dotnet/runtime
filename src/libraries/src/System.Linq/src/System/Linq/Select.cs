@@ -823,7 +823,6 @@ namespace System.Linq
             private readonly Func<TSource, TResult> _selector;
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
-            private int _index;
 
             public SelectListPartitionIterator(IList<TSource> source, Func<TSource, TResult> selector, int minIndexInclusive, int maxIndexInclusive)
             {
@@ -835,7 +834,6 @@ namespace System.Linq
                 _selector = selector;
                 _minIndexInclusive = minIndexInclusive;
                 _maxIndexInclusive = maxIndexInclusive;
-                _index = minIndexInclusive;
             }
 
             public override Iterator<TResult> Clone()
@@ -845,10 +843,11 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if ((_state == 1 & _index <= _maxIndexInclusive) && _index < _source.Count)
+                int index = _state - 1;
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
-                    _current = _selector(_source[_index]);
-                    ++_index;
+                    _current = _selector(_source[_minIndexInclusive + index]);
+                    ++_state;
                     return true;
                 }
 

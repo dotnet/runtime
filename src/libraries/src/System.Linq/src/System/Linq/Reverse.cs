@@ -42,7 +42,7 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state - 3 <= -3)
+                if (_state - 2 <= -2)
                 {
                     Dispose();
                     return false;
