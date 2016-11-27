@@ -28,7 +28,6 @@ namespace System.Linq
         {
             private readonly IEnumerable<TSource> _source;
             private TSource[] _buffer;
-            private int _index;
 
             public ReverseIterator(IEnumerable<TSource> source)
             {
@@ -43,19 +42,25 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
+                if (_state - 3 <= -3)
+                {
+                    Dispose();
+                    return false;
+                }
+
                 switch (_state)
                 {
                     case 1:
                         Buffer<TSource> buffer = new Buffer<TSource>(_source);
                         _buffer = buffer._items;
-                        _index = buffer._count - 1;
-                        _state = 2;
-                        goto case 2;
-                    case 2:
-                        if (_index != -1)
+                        _state = buffer._count + 2;
+                        goto default;
+                    default:
+                        int index = _state - 3;
+                        if (index != -1)
                         {
-                            _current = _buffer[_index];
-                            --_index;
+                            _current = _buffer[index];
+                            --_state;
                             return true;
                         }
 
