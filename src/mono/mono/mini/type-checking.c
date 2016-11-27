@@ -508,9 +508,37 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
 	if (mono_class_is_interface (klass)) {
-		g_assert (!context_used);
-		/* the is_null_bb target simply copies the input register to the output */
+		int tmp_reg, klass_reg;
+
+#ifndef DISABLE_REMOTING
+		MonoBasicBlock *interface_fail_bb, *call_proxy_isinst;
+
+		NEW_BBLOCK (cfg, interface_fail_bb);
+		NEW_BBLOCK (cfg, call_proxy_isinst);
+#endif
+
+#ifndef DISABLE_REMOTING
+		klass_reg = alloc_preg (cfg);
+		mini_emit_iface_cast (cfg, vtable_reg, klass, interface_fail_bb, is_null_bb);
+		MONO_START_BB (cfg, interface_fail_bb);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+
+		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, false_bb);
+
+		tmp_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
+
+		MONO_START_BB (cfg, call_proxy_isinst);
+
+		MonoInst *args [1] = { src };
+		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
+#else
 		mini_emit_iface_cast (cfg, vtable_reg, klass, false_bb, is_null_bb);
+#endif
 	} else {
 		int klass_reg = alloc_preg (cfg);
 
@@ -584,7 +612,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 
 	MONO_START_BB (cfg, false_bb);
 
-	MONO_EMIT_NEW_PCONST (cfg, res_reg, 0);
+	MONO_EMIT_NEW_PCONST (cfg, res_reg, NULL);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
 	MONO_START_BB (cfg, is_null_bb);
@@ -637,7 +665,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 		else
 			ret = emit_castclass_with_cache (cfg, klass, args);
 
-	} else if (!context_used && is_isinst && (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass))) {
+	} else if (!context_used && is_isinst && mono_class_is_marshalbyref (klass)) {
 		MonoInst *iargs [1];
 		int costs;
 
@@ -714,26 +742,7 @@ mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
 
 	if (mono_class_is_interface (klass)) {
-#ifndef DISABLE_REMOTING
-		NEW_BBLOCK (cfg, interface_fail_bb);
-#endif
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-#ifndef DISABLE_REMOTING
-		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, true_bb);
-		MONO_START_BB (cfg, interface_fail_bb);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-		
-		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, false_bb);
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false2_bb);		
-#else
-		mini_emit_iface_cast (cfg, tmp_reg, klass, false_bb, true_bb);
-#endif
+		g_error ("not supported");
 	} else {
 #ifndef DISABLE_REMOTING
 		tmp_reg = alloc_preg (cfg);
