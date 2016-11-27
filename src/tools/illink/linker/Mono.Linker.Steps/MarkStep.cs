@@ -122,7 +122,14 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				foreach (var exported in assembly.MainModule.ExportedTypes) {
-					if (!exported.IsForwarder)
+					bool isForwarder = exported.IsForwarder;
+					var declaringType = exported.DeclaringType;
+					while (!isForwarder && (declaringType != null)) {
+						isForwarder = declaringType.IsForwarder;
+						declaringType = declaringType.DeclaringType;
+					}
+
+					if (!isForwarder)
 						continue;
 					var type = exported.Resolve ();
 					if (!Annotations.IsMarked (type))
