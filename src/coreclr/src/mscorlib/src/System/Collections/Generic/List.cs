@@ -1035,6 +1035,8 @@ namespace System.Collections.Generic {
 
             using (IEnumerator<T> en = enumerable.GetEnumerator())
             {
+                _version++; // Even if the enumerable has no items, we can update _version.
+
                 T[] items = _items;
 
                 while (en.MoveNext())
@@ -1049,7 +1051,6 @@ namespace System.Collections.Generic {
                     // If that throws an exception we don't want to do the increment.
                     items[_size] = en.Current;
                     _size++;
-                    _version++;
                 }
             }
         }
