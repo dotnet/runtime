@@ -31,7 +31,6 @@ namespace System.Linq
         private sealed class RepeatIterator<TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly int _count;
-            private int _sent;
 
             public RepeatIterator(TResult element, int count)
             {
@@ -53,13 +52,14 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state == 1 & _sent != _count)
+                int sent = _state - 1;
+                if (sent > -1 && sent != _count)
                 {
-                    ++_sent;
+                    ++_state;
                     return true;
                 }
 
-                _state = -1;
+                Dispose();
                 return false;
             }
 
