@@ -110,6 +110,10 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             _acrossBlockJump = true;
+            if (_node != null && _node.Type != typeof(void))
+            {
+                throw Error.NonLocalJumpWithValue(_node.Name);
+            }
 
             if (HasMultipleDefinitions)
             {
