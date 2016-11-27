@@ -103,6 +103,8 @@
     <Compile Include="Dynamic\ConvertBinderTests.cs" />
     <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
     <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
+    <Compile Include="Dynamic\GetIndexBinderTests.cs" />
+    <Compile Include="Dynamic\GetMemberBinderTests.cs" />
     <Compile Include="Dynamic\InvokeMemberBindingTests.cs" />
     <Compile Include="Dynamic\UnaryOperationTests.cs .cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
