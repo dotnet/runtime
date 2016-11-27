@@ -280,6 +280,8 @@ namespace System.Linq.Expressions.Tests
         private static MethodInfo s_method3 = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.Method3));
         private static MethodInfo s_method4 = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.Method4));
         private static MethodInfo s_method5 = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.Method5));
+        private static MethodInfo s_method6 = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.Method6));
+        private static MethodInfo s_method7 = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.Method7));
 
         public static IEnumerable<object[]> Method_Invalid_TestData()
         {
@@ -582,6 +584,54 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("x.E2(y, z)", e9.ToString());
         }
 
+        [Fact]
+        public static void GetArguments()
+        {
+            VerifyGetArguments(Expression.Call(null, s_method0));
+            VerifyGetArguments(Expression.Call(null, s_method1, Expression.Constant(0)));
+            VerifyGetArguments(
+                Expression.Call(null, s_method2, Enumerable.Range(0, 2).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Call(null, s_method3, Enumerable.Range(0, 3).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Call(null, s_method4, Enumerable.Range(0, 4).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Call(null, s_method5, Enumerable.Range(0, 5).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Call(null, s_method6, Enumerable.Range(0, 6).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Call(null, s_method7, Enumerable.Range(0, 7).Select(i => Expression.Constant(i))));
+            var site = Expression.Default(typeof(NonGenericClass));
+            VerifyGetArguments(Expression.Call(site, nameof(NonGenericClass.InstanceMethod0), null));
+            VerifyGetArguments(
+                Expression.Call(site, nameof(NonGenericClass.InstanceMethod1), null, Expression.Constant(0)));
+            VerifyGetArguments(
+                Expression.Call(
+                    site, nameof(NonGenericClass.InstanceMethod2), null,
+                    Enumerable.Range(0, 2).Select(i => Expression.Constant(i)).ToArray()));
+            VerifyGetArguments(
+                Expression.Call(
+                    site, nameof(NonGenericClass.InstanceMethod3), null,
+                    Enumerable.Range(0, 3).Select(i => Expression.Constant(i)).ToArray()));
+            VerifyGetArguments(
+                Expression.Call(
+                    site, nameof(NonGenericClass.InstanceMethod4), null,
+                    Enumerable.Range(0, 4).Select(i => Expression.Constant(i)).ToArray()));
+        }
+
+        private static void VerifyGetArguments(MethodCallExpression call)
+        {
+            var args = call.Arguments;
+            Assert.Equal(args.Count, call.ArgumentCount);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => call.GetArgument(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => call.GetArgument(args.Count));
+            for (int i = 0; i != args.Count; ++i)
+            {
+                Assert.Same(args[i], call.GetArgument(i));
+                Assert.Equal(i, ((ConstantExpression)call.GetArgument(i)).Value);
+            }
+        }
+
         public class GenericClass<T>
         {
             public static void NonGenericMethod() { }
@@ -604,6 +654,8 @@ namespace System.Linq.Expressions.Tests
             public static void Method3(int i1, int i2, int i3) { }
             public static void Method4(int i1, int i2, int i3, int i4) { }
             public static void Method5(int i1, int i2, int i3, int i4, int i5) { }
+            public static void Method6(int i1, int i2, int i3, int i4, int i5, int i6) { }
+            public static void Method7(int i1, int i2, int i3, int i4, int i5, int i6, int i7) { }
 
             public void staticSameName(uint i1) { }
             public void instanceSameName(int i1) { }
@@ -617,7 +669,11 @@ namespace System.Linq.Expressions.Tests
             public void ConstrainedInstanceMethod<T>(T t1) where T : struct { }
             public static void ConstrainedStaticMethod<T>(T t1) where T : struct { }
 
+            public void InstanceMethod0() { }
             public void InstanceMethod1(int i1) { }
+            public void InstanceMethod2(int i1, int i2) { }
+            public void InstanceMethod3(int i1, int i2, int i3) { }
+            public void InstanceMethod4(int i1, int i2, int i3, int i4) { }
             public static void StaticMethod1(int i1) { }
         }
 

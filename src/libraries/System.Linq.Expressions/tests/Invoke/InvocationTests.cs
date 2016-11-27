@@ -99,5 +99,49 @@ namespace System.Linq.Expressions.Tests
             InvocationExpression e2 = Expression.Invoke(Expression.Parameter(typeof(Action<int>), "f"), Expression.Parameter(typeof(int), "x"));
             Assert.Equal("Invoke(f, x)", e2.ToString());
         }
+
+        [Fact]
+        public static void GetArguments()
+        {
+            VerifyGetArguments(Expression.Invoke(Expression.Default(typeof(Action))));
+            VerifyGetArguments(Expression.Invoke(Expression.Default(typeof(Action<int>)), Expression.Constant(0)));
+            VerifyGetArguments(
+                Expression.Invoke(
+                    Expression.Default(typeof(Action<int, int>)),
+                    Enumerable.Range(0, 2).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Invoke(
+                    Expression.Default(typeof(Action<int, int, int>)),
+                    Enumerable.Range(0, 3).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Invoke(
+                    Expression.Default(typeof(Action<int, int, int, int>)),
+                    Enumerable.Range(0, 4).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Invoke(
+                    Expression.Default(typeof(Action<int, int, int, int, int>)),
+                    Enumerable.Range(0, 5).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Invoke(
+                    Expression.Default(typeof(Action<int, int, int, int, int, int>)),
+                    Enumerable.Range(0, 6).Select(i => Expression.Constant(i))));
+            VerifyGetArguments(
+                Expression.Invoke(
+                    Expression.Default(typeof(Action<int, int, int, int, int, int, int>)),
+                    Enumerable.Range(0, 7).Select(i => Expression.Constant(i))));
+        }
+
+        private static void VerifyGetArguments(InvocationExpression invoke)
+        {
+            var args = invoke.Arguments;
+            Assert.Equal(args.Count, invoke.ArgumentCount);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => invoke.GetArgument(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => invoke.GetArgument(args.Count));
+            for (int i = 0; i != args.Count; ++i)
+            {
+                Assert.Same(args[i], invoke.GetArgument(i));
+                Assert.Equal(i, ((ConstantExpression)invoke.GetArgument(i)).Value);
+            }
+        }
     }
 }
