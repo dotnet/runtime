@@ -11956,18 +11956,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				break;
 			}
-			case CEE_MONO_CISINST:
-			case CEE_MONO_CCASTCLASS: {
+			case CEE_MONO_CISINST: {
 				int token;
 				CHECK_STACK (1);
 				--sp;
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
-				if (ip [1] == CEE_MONO_CISINST)
-					ins = mini_emit_cisinst (cfg, klass, sp [0]);
-				else
-					ins = mini_emit_ccastclass (cfg, klass, sp [0]);
+				ins = mini_emit_cisinst (cfg, klass, sp [0]);
 				*sp++ = ins;
 				ip += 6;
 				break;

@@ -372,9 +372,6 @@ MonoMethod *
 mono_marshal_get_isinst (MonoClass *klass);
 
 MonoMethod *
-mono_marshal_get_castclass (MonoClass *klass);
-
-MonoMethod *
 mono_marshal_get_stelemref (void);
 
 MonoMethod*

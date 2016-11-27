@@ -787,13 +787,6 @@ mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	return ins;
 }
 
-MonoInst*
-mini_emit_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
-{
-	g_error ("not longer needed!");
-	return NULL;
-}
-
 //API used by method-to-ir.c
 void
 mini_emit_class_check (MonoCompile *cfg, int klass_reg, MonoClass *klass)

@@ -2652,7 +2652,6 @@ void              mini_save_cast_details (MonoCompile *cfg, MonoClass *klass, in
 void              mini_reset_cast_details (MonoCompile *cfg);
 void              mini_emit_class_check (MonoCompile *cfg, int klass_reg, MonoClass *klass);
 
-MonoInst*         mini_emit_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src);
 MonoInst*         mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src);
 
 gboolean          mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *klass, int context_used);
