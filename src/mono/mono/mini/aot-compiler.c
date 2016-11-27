@@ -6309,6 +6309,8 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	}
 
 	mono_class_has_finalizer (klass);
+	if (mono_class_has_failure (klass))
+		cant_encode = TRUE;
 
 	if (mono_class_is_gtd (klass) || cant_encode) {
 		encode_value (-1, p, &p);
