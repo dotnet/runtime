@@ -340,6 +340,10 @@ namespace System.Linq.Expressions.Interpreter
         private Interpreter MakeInterpreter(string lambdaName)
         {
             DebugInfo[] debugInfos = _debugInfos.ToArray();
+            foreach (KeyValuePair<LabelTarget, LabelInfo> kvp in _treeLabels)
+            {
+                kvp.Value.ValidateFinish();
+            }
             return new Interpreter(lambdaName, _locals, _instructions.ToArray(), debugInfos);
         }
 
