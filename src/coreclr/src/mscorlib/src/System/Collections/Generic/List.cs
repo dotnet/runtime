@@ -1036,32 +1036,19 @@ namespace System.Collections.Generic {
             using (IEnumerator<T> en = enumerable.GetEnumerator())
             {
                 T[] items = _items;
-                int size = _size;
 
-                // Read in items from the enumerator, only updating fields
-                // when we run out of space.
-
-                try
+                while (en.MoveNext())
                 {
-                    while (en.MoveNext())
+                    if (_size == items.Length)
                     {
-                        if (size == items.Length)
-                        {
-                            _size = size;
-                            EnsureCapacity(size + 1);
-                            items = _items;
-                        }
-
-                        // Note: It's important we increment size after Current is called.
-                        // If that throws an exception we don't want to do the increment.
-                        items[size] = en.Current;
-                        size++;
+                        EnsureCapacity(_size + 1);
+                        items = _items;
                     }
-                }
-                finally
-                {
-                    // Make a final update to _size and _version after we've finished adding.
-                    _size = size;
+
+                    // Note: It's important we increment size after Current is called.
+                    // If that throws an exception we don't want to do the increment.
+                    items[_size] = en.Current;
+                    _size++;
                     _version++;
                 }
             }
