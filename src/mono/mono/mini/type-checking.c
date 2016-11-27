@@ -539,6 +539,45 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 #else
 		mini_emit_iface_cast (cfg, vtable_reg, klass, false_bb, is_null_bb);
 #endif
+	} else if (mono_class_is_marshalbyref (klass)) {
+
+#ifndef DISABLE_REMOTING
+		int tmp_reg, klass_reg;
+		MonoBasicBlock *no_proxy_bb, *call_proxy_isinst;
+
+		NEW_BBLOCK (cfg, no_proxy_bb);
+		NEW_BBLOCK (cfg, call_proxy_isinst);
+
+		klass_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+
+		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);
+
+		tmp_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+
+		tmp_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
+
+		mini_emit_isninst_cast (cfg, klass_reg, klass, call_proxy_isinst, is_null_bb);
+
+		MONO_START_BB (cfg, call_proxy_isinst);
+
+		MonoInst *args [1] = { src };
+		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
+
+		MONO_START_BB (cfg, no_proxy_bb);
+
+		mini_emit_isninst_cast (cfg, klass_reg, klass, false_bb, is_null_bb);
+#else
+		g_error ("transparent proxy support is disabled while trying to JIT code that uses it");
+#endif
 	} else {
 		int klass_reg = alloc_preg (cfg);
 
@@ -665,15 +704,6 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 		else
 			ret = emit_castclass_with_cache (cfg, klass, args);
 
-	} else if (!context_used && is_isinst && mono_class_is_marshalbyref (klass)) {
-		MonoInst *iargs [1];
-		int costs;
-
-		iargs [0] = source;
-		MonoMethod *wrapper = mono_marshal_get_isinst (klass);
-		costs = mini_inline_method (cfg, wrapper, mono_method_signature (wrapper), iargs, 0, 0, TRUE);
-		g_assert (costs > 0);
-		ret = iargs [0];
 	} else {
 		if (is_isinst)
 			ret = handle_isinst (cfg, klass, source, context_used);
@@ -712,88 +742,8 @@ mono_decompose_typechecks (MonoCompile *cfg)
 MonoInst*
 mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 {
-	/* This opcode takes as input an object reference and a class, and returns:
-	0) if the object is an instance of the class,
-	1) if the object is not instance of the class,
-	2) if the object is a proxy whose type cannot be determined */
-
-	MonoInst *ins;
-#ifndef DISABLE_REMOTING
-	MonoBasicBlock *true_bb, *false_bb, *false2_bb, *end_bb, *no_proxy_bb, *interface_fail_bb;
-#else
-	MonoBasicBlock *true_bb, *false_bb, *end_bb;
-#endif
-	int obj_reg = src->dreg;
-	int dreg = alloc_ireg (cfg);
-	int tmp_reg;
-#ifndef DISABLE_REMOTING
-	int klass_reg = alloc_preg (cfg);
-#endif
-
-	NEW_BBLOCK (cfg, true_bb);
-	NEW_BBLOCK (cfg, false_bb);
-	NEW_BBLOCK (cfg, end_bb);
-#ifndef DISABLE_REMOTING
-	NEW_BBLOCK (cfg, false2_bb);
-	NEW_BBLOCK (cfg, no_proxy_bb);
-#endif
-
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
-
-	if (mono_class_is_interface (klass)) {
-		g_error ("not supported");
-	} else {
-#ifndef DISABLE_REMOTING
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-
-		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);		
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
-
-		tmp_reg = alloc_preg (cfg);		
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, no_proxy_bb);
-		
-		mini_emit_isninst_cast (cfg, klass_reg, klass, false2_bb, true_bb);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false2_bb);
-
-		MONO_START_BB (cfg, no_proxy_bb);
-
-		mini_emit_isninst_cast (cfg, klass_reg, klass, false_bb, true_bb);
-#else
-		g_error ("transparent proxy support is disabled while trying to JIT code that uses it");
-#endif
-	}
-
-	MONO_START_BB (cfg, false_bb);
-
-	MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-
-#ifndef DISABLE_REMOTING
-	MONO_START_BB (cfg, false2_bb);
-
-	MONO_EMIT_NEW_ICONST (cfg, dreg, 2);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-#endif
-
-	MONO_START_BB (cfg, true_bb);
-
-	MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
-
-	MONO_START_BB (cfg, end_bb);
-
-	/* FIXME: */
-	MONO_INST_NEW (cfg, ins, OP_ICONST);
-	ins->dreg = dreg;
-	ins->type = STACK_I4;
-
-	return ins;
+	g_error ("not needed");
+	return NULL;
 }
 
 //API used by method-to-ir.c
