@@ -90,7 +90,7 @@ IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 //
 
 // Need a class to serve as a tag that we can use to overload New/Delete.
-#define forDbi (*(forDbiWorker *)NULL)
+forDbiWorker forDbi;
 
 void * operator new(size_t lenBytes, const forDbiWorker &)
 {

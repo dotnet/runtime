@@ -177,7 +177,7 @@ private:
     USHORT m_usPort;
 };
 
-#define forDbi (*(forDbiWorker *)NULL)
+extern forDbiWorker forDbi;
 
 // for dbi we just default to new, but we need to have these defined for both dac and dbi
 inline void * operator new(size_t lenBytes, const forDbiWorker &)
