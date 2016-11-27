@@ -738,13 +738,6 @@ mono_decompose_typechecks (MonoCompile *cfg)
 	
 }
 
-//Those two functions will go away as we get rid of CEE_MONO_CISINST and CEE_MONO_CCASTCLASS.
-MonoInst*
-mini_emit_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
-{
-	g_error ("not needed");
-	return NULL;
-}
 
 //API used by method-to-ir.c
 void
