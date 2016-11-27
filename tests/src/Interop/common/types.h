@@ -28,7 +28,7 @@ typedef void* HMODULE;
 typedef void* ULONG_PTR;
 typedef unsigned error_t;
 typedef void* LPVOID;
-typedef char BYTE;
+typedef unsigned char BYTE;
 typedef WCHAR OLECHAR;
 
 typedef unsigned int UINT_PTR;
