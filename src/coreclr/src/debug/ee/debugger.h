@@ -3512,10 +3512,10 @@ public:
  * ------------------------------------------------------------------------ */
 
 class InteropSafe {};
-#define interopsafe (*(InteropSafe*)NULL)
+extern InteropSafe interopsafe;
 
 class InteropSafeExecutable {};
-#define interopsafeEXEC (*(InteropSafeExecutable*)NULL)
+extern InteropSafeExecutable interopsafeEXEC;
 
 #ifndef DACCESS_COMPILE
 inline void * __cdecl operator new(size_t n, const InteropSafe&)

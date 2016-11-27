@@ -75,6 +75,9 @@ SVAL_IMPL_INIT(BOOL, Debugger, s_fCanChangeNgenFlags, TRUE);
 
 bool g_EnableSIS = false;
 
+// The following instances are used for invoking overloaded new/delete
+InteropSafe interopsafe;
+InteropSafeExecutable interopsafeEXEC;
 
 #ifndef DACCESS_COMPILE
 
