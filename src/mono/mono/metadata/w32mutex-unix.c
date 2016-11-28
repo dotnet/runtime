@@ -59,11 +59,11 @@ thread_disown_mutex (MonoInternalThread *internal, gpointer handle)
 }
 
 static gboolean
-mutex_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
+mutex_handle_own (gpointer handle, MonoW32HandleType type, gboolean *abandoned)
 {
 	MonoW32HandleMutex *mutex_handle;
 
-	*statuscode = WAIT_OBJECT_0;
+	*abandoned = FALSE;
 
 	if (!mono_w32handle_lookup (handle, type, (gpointer *)&mutex_handle)) {
 		g_warning ("%s: error looking up %s handle %p", __func__, mono_w32handle_get_typename (type), handle);
@@ -85,7 +85,7 @@ mutex_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 
 	if (mutex_handle->abandoned) {
 		mutex_handle->abandoned = FALSE;
-		*statuscode = WAIT_ABANDONED_0;
+		*abandoned = TRUE;
 	}
 
 	mono_w32handle_set_signal_state (handle, FALSE, FALSE);
@@ -122,9 +122,9 @@ static void mutex_signal(gpointer handle)
 	ves_icall_System_Threading_Mutex_ReleaseMutex_internal (handle);
 }
 
-static gboolean mutex_own (gpointer handle, guint32 *statuscode)
+static gboolean mutex_own (gpointer handle, gboolean *abandoned)
 {
-	return mutex_handle_own (handle, MONO_W32HANDLE_MUTEX, statuscode);
+	return mutex_handle_own (handle, MONO_W32HANDLE_MUTEX, abandoned);
 }
 
 static gboolean mutex_is_owned (gpointer handle)
@@ -139,9 +139,9 @@ static void namedmutex_signal (gpointer handle)
 }
 
 /* NB, always called with the shared handle lock held */
-static gboolean namedmutex_own (gpointer handle, guint32 *statuscode)
+static gboolean namedmutex_own (gpointer handle, gboolean *abandoned)
 {
-	return mutex_handle_own (handle, MONO_W32HANDLE_NAMEDMUTEX, statuscode);
+	return mutex_handle_own (handle, MONO_W32HANDLE_NAMEDMUTEX, abandoned);
 }
 
 static gboolean namedmutex_is_owned (gpointer handle)
@@ -264,7 +264,7 @@ mono_w32mutex_init (void)
 static gpointer mutex_handle_create (MonoW32HandleMutex *mutex_handle, MonoW32HandleType type, gboolean owned)
 {
 	gpointer handle;
-	guint32 statuscode;
+	gboolean abandoned;
 
 	mutex_handle->tid = 0;
 	mutex_handle->recursion = 0;
@@ -281,7 +281,7 @@ static gpointer mutex_handle_create (MonoW32HandleMutex *mutex_handle, MonoW32Ha
 	mono_w32handle_lock_handle (handle);
 
 	if (owned)
-		mutex_handle_own (handle, type, &statuscode);
+		mutex_handle_own (handle, type, &abandoned);
 	else
 		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 

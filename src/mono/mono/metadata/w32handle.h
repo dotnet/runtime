@@ -55,10 +55,10 @@ typedef struct
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple,
 	 * with the handle locked (shared handles aren't locked.)
 	 * Returns TRUE if ownership was established, false otherwise.
-	 * If TRUE, *statuscode contains a status code such as
+	 * If TRUE, *abandoned contains a status code such as
 	 * WAIT_OBJECT_0 or WAIT_ABANDONED_0.
 	 */
-	gboolean (*own_handle)(gpointer handle, guint32 *statuscode);
+	gboolean (*own_handle)(gpointer handle, gboolean *abandoned);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple, if the
 	 * handle in question is "ownable" (ie mutexes), to see if the current
