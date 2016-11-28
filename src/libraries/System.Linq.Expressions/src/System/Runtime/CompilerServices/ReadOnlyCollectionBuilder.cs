@@ -41,7 +41,9 @@ namespace System.Runtime.CompilerServices
         /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
-            ContractUtils.Requires(capacity >= 0, nameof(capacity));
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+
             _items = new T[capacity];
         }
 
@@ -51,7 +53,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="collection">The collection whose elements to copy to the builder.</param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
-            ContractUtils.Requires(collection != null, nameof(collection));
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             ICollection<T> c = collection as ICollection<T>;
             if (c != null)
@@ -84,7 +87,8 @@ namespace System.Runtime.CompilerServices
             get { return _items.Length; }
             set
             {
-                ContractUtils.Requires(value >= _size, nameof(value));
+                if (value < _size)
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 if (value != _items.Length)
                 {
@@ -129,7 +133,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="item">The object to insert into the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         public void Insert(int index, T item)
         {
-            ContractUtils.Requires(index <= _size, nameof(index));
+            if (index > _size)
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             if (_size == _items.Length)
             {
@@ -150,7 +155,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            ContractUtils.Requires(index >= 0 && index < _size, nameof(index));
+            if (index < 0 || index >= _size)
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             _size--;
             if (index < _size)
@@ -170,12 +176,16 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                ContractUtils.Requires(index < _size, nameof(index));
+                if (index >= _size)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
                 return _items[index];
             }
             set
             {
-                ContractUtils.Requires(index < _size, nameof(index));
+                if (index >= _size)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
                 _items[index] = value;
                 _version++;
             }
@@ -386,8 +396,11 @@ namespace System.Runtime.CompilerServices
 
         void System.Collections.ICollection.CopyTo(Array array, int index)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
-            ContractUtils.Requires(array.Rank == 1, nameof(array));
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (array.Rank != 1)
+                throw new ArgumentException(nameof(array));
+
             Array.Copy(_items, 0, array, index, _size);
         }
 
@@ -422,8 +435,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="count">The number of elements in the range to reverse.</param>
         public void Reverse(int index, int count)
         {
-            ContractUtils.Requires(index >= 0, nameof(index));
-            ContractUtils.Requires(count >= 0, nameof(count));
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             Array.Reverse(_items, index, count);
             _version++;
