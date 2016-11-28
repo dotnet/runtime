@@ -60,7 +60,7 @@ namespace System.Net
         private int _abortCalled = 0;
         private CancellationTokenSource _sendRequestCts;
         private X509CertificateCollection _clientCertificates;
-        private Booleans _Booleans = Booleans.Default;
+        private Booleans _booleans = Booleans.Default;
         private bool _pipelined = true;
         private bool _preAuthenticate;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
@@ -105,7 +105,7 @@ namespace System.Net
             AllowAutoRedirect = serializationInfo.GetBoolean("_AllowAutoRedirect");
             if (!serializationInfo.GetBoolean("_AllowWriteStreamBuffering"))
             {
-                _Booleans &= ~Booleans.AllowWriteStreamBuffering;
+                _booleans &= ~Booleans.AllowWriteStreamBuffering;
             }            
             _maximumAllowedRedirections = serializationInfo.GetInt32("_MaximumAllowedRedirections");
             AllowAutoRedirect = serializationInfo.GetInt32("_AutoRedirects") > 0;
@@ -287,10 +287,8 @@ namespace System.Net
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
                 }
-                if (_timeout != value)
-                {
-                    _timeout = value;
-                }
+
+                _timeout = value;
             }
         }
 
@@ -298,7 +296,7 @@ namespace System.Net
         {
             get
             {
-                long value = 0;
+                long value;
                 long.TryParse(_webHeaderCollection[HttpKnownHeaderNames.ContentLength], out value);
                 return value;
             }
@@ -475,17 +473,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.UnsafeAuthenticatedConnectionSharing) != 0;
+                return (_booleans & Booleans.UnsafeAuthenticatedConnectionSharing) != 0;
             }
             set
             {                
                 if (value)
                 {
-                    _Booleans |= Booleans.UnsafeAuthenticatedConnectionSharing;
+                    _booleans |= Booleans.UnsafeAuthenticatedConnectionSharing;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.UnsafeAuthenticatedConnectionSharing;
+                    _booleans &= ~Booleans.UnsafeAuthenticatedConnectionSharing;
                 }
             }
         }
@@ -511,17 +509,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.AllowWriteStreamBuffering) != 0;
+                return (_booleans & Booleans.AllowWriteStreamBuffering) != 0;
             }
             set
             {
                 if (value)
                 {
-                    _Booleans |= Booleans.AllowWriteStreamBuffering;
+                    _booleans |= Booleans.AllowWriteStreamBuffering;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.AllowWriteStreamBuffering;
+                    _booleans &= ~Booleans.AllowWriteStreamBuffering;
                 }
             }
         }  
@@ -535,17 +533,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.AllowAutoRedirect) != 0;
+                return (_booleans & Booleans.AllowAutoRedirect) != 0;
             }
             set
             {
                 if (value)
                 {
-                    _Booleans |= Booleans.AllowAutoRedirect;
+                    _booleans |= Booleans.AllowAutoRedirect;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.AllowAutoRedirect;
+                    _booleans &= ~Booleans.AllowAutoRedirect;
                 }
             }
         }
@@ -742,7 +740,7 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.SendChunked) != 0;
+                return (_booleans & Booleans.SendChunked) != 0;
             }
             set
             {
@@ -752,11 +750,11 @@ namespace System.Net
                 }
                 if (value)
                 {
-                    _Booleans |= Booleans.SendChunked;
+                    _booleans |= Booleans.SendChunked;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.SendChunked;
+                    _booleans &= ~Booleans.SendChunked;
                 }
             }
         }
@@ -1033,17 +1031,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.IsVersionHttp10) != 0;
+                return (_booleans & Booleans.IsVersionHttp10) != 0;
             }
             set
             {
                 if (value)
                 {
-                    _Booleans |= Booleans.IsVersionHttp10;
+                    _booleans |= Booleans.IsVersionHttp10;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.IsVersionHttp10;
+                    _booleans &= ~Booleans.IsVersionHttp10;
                 }
             }
         }
@@ -1053,7 +1051,7 @@ namespace System.Net
             try
             {
                 _sendRequestCts = new CancellationTokenSource();
-                return SendRequest().Result;
+                return SendRequest().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -1186,14 +1184,16 @@ namespace System.Net
                     request.Content = new ByteArrayContent(bytes.Array, bytes.Offset, bytes.Count);
                 }
 
-                // set up the various properties
                 handler.AutomaticDecompression = AutomaticDecompression;
                 handler.Credentials = _credentials;
                 handler.AllowAutoRedirect = AllowAutoRedirect;
                 handler.MaxAutomaticRedirections = MaximumAutomaticRedirections;
                 handler.MaxResponseHeadersLength = MaximumResponseHeadersLength;
                 handler.PreAuthenticate = PreAuthenticate;
-                client.Timeout = TimeSpan.FromMilliseconds(Timeout);
+                client.Timeout = Timeout == Threading.Timeout.Infinite ?
+                    Threading.Timeout.InfiniteTimeSpan :
+                    TimeSpan.FromMilliseconds(Timeout);
+
                 if (_cookieContainer != null)
                 {
                     handler.CookieContainer = _cookieContainer;
