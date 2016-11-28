@@ -41,5 +41,37 @@ namespace System.Linq.Expressions.Tests
             Func<int> get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
             Assert.Equal(42, get());
         }
+
+        [Fact]
+        public static void InstanceIsNotArray()
+        {
+            ConstantExpression instance = Expression.Constant(46);
+            ConstantExpression index = Expression.Constant(2);
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayAccess(instance, index));
+        }
+
+        [Fact]
+        public static void WrongNumberIndices()
+        {
+            ConstantExpression instance = Expression.Constant(new int[2,3]);
+            ConstantExpression index = Expression.Constant(2);
+            Assert.Throws<ArgumentException>(() => Expression.ArrayAccess(instance, index));
+        }
+
+        [Fact]
+        public static void NonInt32Index()
+        {
+            ConstantExpression instance = Expression.Constant(new int[4]);
+            ConstantExpression index = Expression.Constant("2");
+            Assert.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
+        }
+
+        [Fact]
+        public static void UnreadableIndex()
+        {
+            ConstantExpression instance = Expression.Constant(new int[4]);
+            MemberExpression index = Expression.Property(null, typeof(Unreadable<int>).GetProperty(nameof(Unreadable<int>.WriteOnly)));
+            Assert.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
+        }
     }
 }
