@@ -1138,7 +1138,7 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
  * mono_string_to_byvalwstr:
  * @dst: Where to store the null-terminated utf16 decoded string.
  * @src: the MonoString to copy.
- * @size: the maximum number of bytes to copy.
+ * @size: the maximum number of wide characters to copy (each consumes 2 bytes)
  *
  * Copies the MonoString pointed to by @src as a utf16 string into
  * @dst, it copies at most @size bytes into the destination (including
