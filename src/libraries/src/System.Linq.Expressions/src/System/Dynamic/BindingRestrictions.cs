@@ -314,26 +314,28 @@ namespace System.Dynamic
                 ParameterExpression temp = Expression.Parameter(typeof(object), null);
                 return Expression.Block(
                     new TrueReadOnlyCollection<ParameterExpression>(temp),
+                    new TrueReadOnlyCollection<Expression>(
 #if ENABLEDYNAMICPROGRAMMING
-                    Expression.Assign(
-                        temp,
-                        Expression.Property(
-                            Expression.Constant(new WeakReference(_instance)),
-                            typeof(WeakReference).GetProperty("Target")
-                        )
-                    ),
+                        Expression.Assign(
+                            temp,
+                            Expression.Property(
+                                Expression.Constant(new WeakReference(_instance)),
+                                typeof(WeakReference).GetProperty("Target")
+                            )
+                        ),
 #else
-                    Expression.Assign(
-                        temp,
-                        Expression.Constant(_instance, typeof(object))
-                    ),
+                        Expression.Assign(
+                            temp,
+                            Expression.Constant(_instance, typeof(object))
+                        ),
 #endif
-                    Expression.AndAlso(
-                        //check that WeakReference was not collected.
-                        Expression.NotEqual(temp, AstUtils.Null),
-                        Expression.Equal(
-                            Expression.Convert(_expression, typeof(object)),
-                            temp
+                        Expression.AndAlso(
+                            //check that WeakReference was not collected.
+                            Expression.NotEqual(temp, AstUtils.Null),
+                            Expression.Equal(
+                                Expression.Convert(_expression, typeof(object)),
+                                temp
+                            )
                         )
                     )
                 );

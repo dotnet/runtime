@@ -556,19 +556,25 @@ namespace System.Dynamic
                         condition,
                         convert,
                         Expression.Throw(
-                            Expression.New(InvalidCastException_Ctor_String,
-                                Expression.Call(
-                                    String_Format_String_ObjectArray,
-                                    Expression.Constant(convertFailed),
-                                    Expression.NewArrayInit(typeof(object),
-                                        Expression.Condition(
-                                            Expression.Equal(resultMO.Expression, AstUtils.Null),
-                                            Expression.Constant("null"),
-                                            Expression.Call(
-                                                resultMO.Expression,
-                                                Object_GetType
-                                            ),
-                                            typeof(object)
+                            Expression.New(
+                                InvalidCastException_Ctor_String,
+                                new TrueReadOnlyCollection<Expression>(
+                                    Expression.Call(
+                                        String_Format_String_ObjectArray,
+                                        Expression.Constant(convertFailed),
+                                        Expression.NewArrayInit(
+                                            typeof(object),
+                                            new TrueReadOnlyCollection<Expression>(
+                                                Expression.Condition(
+                                                    Expression.Equal(resultMO.Expression, AstUtils.Null),
+                                                    Expression.Constant("null"),
+                                                    Expression.Call(
+                                                        resultMO.Expression,
+                                                        Object_GetType
+                                                    ),
+                                                    typeof(object)
+                                                )
+                                            )
                                         )
                                     )
                                 )
@@ -589,24 +595,26 @@ namespace System.Dynamic
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(result, callArgs),
-                        methodName != nameof(DynamicObject.TryBinaryOperation) ? Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)) : Expression.Assign(callArgs, callArgsValue[0]),
-                        Expression.Condition(
-                            Expression.Call(
-                                GetLimitedSelf(),
-                                typeof(DynamicObject).GetMethod(methodName),
-                                BuildCallArgs(
-                                    binder,
-                                    args,
-                                    callArgs,
-                                    result
-                                )
-                            ),
-                            Expression.Block(
-                                methodName != nameof(DynamicObject.TryBinaryOperation) ? ReferenceArgAssign(callArgs, args) : AstUtils.Empty,
-                                resultMO.Expression
-                            ),
-                            fallbackResult.Expression,
-                            binder.ReturnType
+                        new TrueReadOnlyCollection<Expression>(
+                            methodName != nameof(DynamicObject.TryBinaryOperation) ? Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)) : Expression.Assign(callArgs, callArgsValue[0]),
+                            Expression.Condition(
+                                Expression.Call(
+                                    GetLimitedSelf(),
+                                    typeof(DynamicObject).GetMethod(methodName),
+                                    BuildCallArgs(
+                                        binder,
+                                        args,
+                                        callArgs,
+                                        result
+                                    )
+                                ),
+                                Expression.Block(
+                                    methodName != nameof(DynamicObject.TryBinaryOperation) ? ReferenceArgAssign(callArgs, args) : AstUtils.Empty,
+                                    resultMO.Expression
+                                ),
+                                fallbackResult.Expression,
+                                binder.ReturnType
+                            )
                         )
                     ),
                     GetRestrictions().Merge(resultMO.Restrictions).Merge(fallbackResult.Restrictions)
@@ -647,24 +655,26 @@ namespace System.Dynamic
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(result, callArgs),
-                        Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
-                        Expression.Condition(
-                            Expression.Call(
-                                GetLimitedSelf(),
-                                typeof(DynamicObject).GetMethod(methodName),
-                                BuildCallArgs(
-                                    binder,
-                                    args,
-                                    callArgs,
-                                    Expression.Assign(result, Expression.Convert(value, typeof(object)))
-                                )
-                            ),
-                            Expression.Block(
-                                ReferenceArgAssign(callArgs, args),
-                                result
-                            ),
-                            fallbackResult.Expression,
-                            typeof(object)
+                        new TrueReadOnlyCollection<Expression>(
+                            Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
+                            Expression.Condition(
+                                Expression.Call(
+                                    GetLimitedSelf(),
+                                    typeof(DynamicObject).GetMethod(methodName),
+                                    BuildCallArgs(
+                                        binder,
+                                        args,
+                                        callArgs,
+                                        Expression.Assign(result, Expression.Convert(value, typeof(object)))
+                                    )
+                                ),
+                                Expression.Block(
+                                    ReferenceArgAssign(callArgs, args),
+                                    result
+                                ),
+                                fallbackResult.Expression,
+                                typeof(object)
+                            )
                         )
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
@@ -708,24 +718,26 @@ namespace System.Dynamic
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(callArgs),
-                        Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
-                        Expression.Condition(
-                            Expression.Call(
-                                GetLimitedSelf(),
-                                typeof(DynamicObject).GetMethod(methodName),
-                                BuildCallArgs(
-                                    binder,
-                                    args,
-                                    callArgs,
-                                    null
-                                )
-                            ),
-                            Expression.Block(
-                                ReferenceArgAssign(callArgs, args),
-                                AstUtils.Empty
-                            ),
-                            fallbackResult.Expression,
-                            typeof(void)
+                        new TrueReadOnlyCollection<Expression>(
+                            Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
+                            Expression.Condition(
+                                Expression.Call(
+                                    GetLimitedSelf(),
+                                    typeof(DynamicObject).GetMethod(methodName),
+                                    BuildCallArgs(
+                                        binder,
+                                        args,
+                                        callArgs,
+                                        null
+                                    )
+                                ),
+                                Expression.Block(
+                                    ReferenceArgAssign(callArgs, args),
+                                    AstUtils.Empty
+                                ),
+                                fallbackResult.Expression,
+                                typeof(void)
+                            )
                         )
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)

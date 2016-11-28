@@ -807,11 +807,13 @@ namespace System.Dynamic
                 result = new DynamicMetaObject(
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(value),
-                        Expression.Condition(
-                            tryGetValue,
-                            result.Expression,
-                            fallback.Expression,
-                            typeof(object)
+                        new TrueReadOnlyCollection<Expression>(
+                            Expression.Condition(
+                                tryGetValue,
+                                result.Expression,
+                                fallback.Expression,
+                                typeof(object)
+                            )
                         )
                     ),
                     result.Restrictions.Merge(fallback.Restrictions)
