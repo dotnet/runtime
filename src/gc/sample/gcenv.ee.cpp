@@ -221,6 +221,34 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
     return NULL;
 }
 
+void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
+{
+}
+
+void GCToEEInterface::DiagUpdateGenerationBounds()
+{
+}
+
+void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
+{
+}
+
+void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
+{
+}
+
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+{
+}
+
+void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+{
+}
+
+void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
+{
+}
+
 void FinalizerThread::EnableFinalization()
 {
     // Signal to finalizer thread that there are objects to finalize

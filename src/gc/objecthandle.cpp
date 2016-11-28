@@ -110,6 +110,21 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtra
 }
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 
+
+// Only used by profiling/ETW.
+//----------------------------------------------------------------------------
+
+/*
+ * struct DIAG_DEPSCANINFO
+ *
+ * used when tracing dependent handles for profiling/ETW.
+ */
+struct DIAG_DEPSCANINFO
+{
+    HANDLESCANPROC pfnTrace;    // tracing function to use
+    uintptr_t      pfnProfilingOrETW;
+};
+
 void CALLBACK TraceDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     WRAPPER_NO_CONTRACT;
@@ -122,14 +137,15 @@ void CALLBACK TraceDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
     // object should also be non-NULL.
     _ASSERTE(*pExtraInfo == NULL || *pObjRef != NULL);
 
-    // lp2 is a HANDLESCANPROC
-    HANDLESCANPROC pfnTrace = (HANDLESCANPROC) lp2;
+    struct DIAG_DEPSCANINFO *pInfo = (struct DIAG_DEPSCANINFO*)lp2;
+
+    HANDLESCANPROC pfnTrace = pInfo->pfnTrace;
 
     // is the handle's secondary object non-NULL?
     if ((*pObjRef != NULL) && (*pExtraInfo != 0))
     {
         // yes - call the tracing function for this handle
-        pfnTrace(pObjRef, NULL, lp1, *pExtraInfo);
+        pfnTrace(pObjRef, NULL, lp1, (uintptr_t)(pInfo->pfnProfilingOrETW));
     }
 }
 
@@ -414,7 +430,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     CONTRACTL_END;
 #endif // FEATURE_REDHAWK
     UNREFERENCED_PARAMETER(pExtraInfo);
-    UNREFERENCED_PARAMETER(lp2);
+    handle_scan_fn fn = (handle_scan_fn)lp2;
 
     LOG((LF_GC | LF_CORPROF, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Notifying profiler of ", pObjRef, "to ", *pObjRef)));
 
@@ -422,7 +438,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     Object **pRef = (Object **)pObjRef;
 
     // Get a hold of the heap ID that's tacked onto the end of the scancontext struct.
-    ProfilingScanContext *pSC = (ProfilingScanContext *)lp1;
+    ScanContext *pSC = (ScanContext *)lp1;
 
     uint32_t rootFlags = 0;
     BOOL isDependent = FALSE;
@@ -487,59 +503,14 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
 
     _UNCHECKED_OBJECTREF pSec = NULL;
 
-#ifdef GC_PROFILING
-    // Give the profiler the objectref.
-    if (pSC->fProfilerPinned)
+    if (isDependent)
     {
-        if (!isDependent)
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-            g_profControlBlock.pProfInterface->RootReference2(
-                (uint8_t *)*pRef,
-                kEtwGCRootKindHandle,
-                (EtwGCRootFlags)rootFlags,
-                pRef, 
-                &pSC->pHeapId);
-            END_PIN_PROFILER();
-        }
-        else
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackConditionalWeakTableElements());
-            pSec = (_UNCHECKED_OBJECTREF)HndGetHandleExtraInfo(handle);
-            g_profControlBlock.pProfInterface->ConditionalWeakTableElementReference(
-                (uint8_t*)*pRef,
-                (uint8_t*)pSec,
-                pRef,
-                &pSC->pHeapId);
-            END_PIN_PROFILER();
-        }
+        pSec = (_UNCHECKED_OBJECTREF)HndGetHandleExtraInfo(handle);
     }
-#endif // GC_PROFILING
 
-#if defined(FEATURE_EVENT_TRACE)
-    // Notify ETW of the handle
-    if (ETW::GCLog::ShouldWalkHeapRootsForEtw())
-    {
-        if (isDependent && (pSec == NULL))
-        {
-            pSec = (_UNCHECKED_OBJECTREF)HndGetHandleExtraInfo(handle);
-
-        }
-
-        ETW::GCLog::RootReference(
-            handle,
-            *pRef,          // object being rooted
-            pSec,           // pSecondaryNodeForDependentHandle
-            isDependent,
-            pSC,
-            0,              // dwGCFlags,
-            rootFlags);     // ETW handle flags
-    }
-#endif // defined(FEATURE_EVENT_TRACE) 
+    fn(pRef, pSec, rootFlags, pSC, isDependent);
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-
-
 
 /*
  * Scan callback for updating pointers.
@@ -1417,13 +1388,15 @@ void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, 
 /*
   loop scan version of TraceVariableHandles for single-thread-managed Ref_* functions
   should be kept in sync with the code above
+  Only used by profiling/ETW.
 */
-void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1, uint32_t condemned, uint32_t maxgen, uint32_t flags)
+void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1, uintptr_t lp2, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
     WRAPPER_NO_CONTRACT;
 
     // set up to scan variable handles with the specified mask and trace function
     uint32_t type = HNDTYPE_DEPENDENT;
+    struct DIAG_DEPSCANINFO info = { pfnTrace, lp2 };
 
     HandleTableMap *walk = &g_HandleTableMap;
     while (walk) {
@@ -1436,13 +1409,12 @@ void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1,
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
                         HndScanHandlesForGC(hTable, TraceDependentHandle,
-                                    lp1, (uintptr_t)pfnTrace, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                                    lp1, (uintptr_t)&info, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
                 }
             }
         walk = walk->pNext;
     }
 }
-
 
 // We scan handle tables by their buckets (ie, AD index). We could get into the situation where
 // the AD indices are not very compacted (for example if we have just unloaded ADs and their 
@@ -1623,7 +1595,7 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 // Please update this if you change the Ref_UpdatePointers function above.
-void Ref_ScanPointersForProfilerAndETW(uint32_t maxgen, uintptr_t lp1)
+void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_scan_fn fn)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1662,16 +1634,16 @@ void Ref_ScanPointersForProfilerAndETW(uint32_t maxgen, uintptr_t lp1)
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
-                        HndScanHandlesForGC(hTable, &ScanPointerForProfilerAndETW, lp1, 0, types, _countof(types), maxgen, maxgen, flags);
+                        HndScanHandlesForGC(hTable, &ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, types, _countof(types), maxgen, maxgen, flags);
                 }
         walk = walk->pNext;
     }
 
     // update pointers in variable handles whose dynamic type is VHT_WEAK_SHORT, VHT_WEAK_LONG or VHT_STRONG
-    TraceVariableHandlesBySingleThread(&ScanPointerForProfilerAndETW, lp1, 0, VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, maxgen, maxgen, flags);
+    TraceVariableHandlesBySingleThread(&ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, maxgen, maxgen, flags);
 }
 
-void Ref_ScanDependentHandlesForProfilerAndETW(uint32_t maxgen, ProfilingScanContext * SC)
+void Ref_ScanDependentHandlesForProfilerAndETW(uint32_t maxgen, ScanContext * SC, handle_scan_fn fn)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1680,12 +1652,7 @@ void Ref_ScanDependentHandlesForProfilerAndETW(uint32_t maxgen, ProfilingScanCon
     uint32_t flags = HNDGCF_NORMAL;
 
     uintptr_t lp1 = (uintptr_t)SC;
-    // we'll re-use pHeapId (which was either unused (0) or freed by EndRootReferences2
-    // (-1)), so reset it to NULL
-    _ASSERTE((*((size_t *)(&SC->pHeapId)) == (size_t)(-1)) ||
-             (*((size_t *)(&SC->pHeapId)) == (size_t)(0)));
-    SC->pHeapId = NULL;
-    TraceDependentHandlesBySingleThread(&ScanPointerForProfilerAndETW, lp1, maxgen, maxgen, flags);
+    TraceDependentHandlesBySingleThread(&ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, maxgen, maxgen, flags);
 }
 
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
