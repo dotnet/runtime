@@ -6,6 +6,21 @@ namespace System.Security.Cryptography
 {
     public abstract class HMAC : KeyedHashAlgorithm
     {
+        private int _blockSizeValue = 64;
+
+        protected int BlockSizeValue
+        {
+            get
+            {
+                return _blockSizeValue;
+            }
+            
+            set
+            {
+                _blockSizeValue = value;
+            }
+        }
+
         protected HMAC() { }
 
         static public new HMAC Create()

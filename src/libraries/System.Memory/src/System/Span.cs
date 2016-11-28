@@ -150,7 +150,7 @@ namespace System
 
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Span(Pinnable<T> pinnable, IntPtr byteOffset, int length)
+        internal Span(Pinnable<T> pinnable, IntPtr byteOffset, int length)
         {
             Debug.Assert(length >= 0);
 
@@ -206,7 +206,7 @@ namespace System
                 else
                     Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index) = value;
             }
-    }
+        }
 
         /// <summary>
         /// Returns a reference to specified element of the Span.
@@ -417,6 +417,10 @@ namespace System
             else
                 return ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset);
         }
+
+        // These expose the internal representation for Span-related apis use only.
+        internal Pinnable<T> Pinnable => _pinnable;
+        internal IntPtr ByteOffset => _byteOffset;
 
         //
         // If the Span was constructed from an object,

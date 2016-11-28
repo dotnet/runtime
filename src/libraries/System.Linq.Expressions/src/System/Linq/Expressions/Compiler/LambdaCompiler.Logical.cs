@@ -125,8 +125,8 @@ namespace System.Linq.Expressions.Compiler
             Type nnLeftType = b.Left.Type.GetNonNullableType();
             if (b.Conversion != null)
             {
-                Debug.Assert(b.Conversion.Parameters.Count == 1);
-                ParameterExpression p = b.Conversion.Parameters[0];
+                Debug.Assert(b.Conversion.ParameterCount == 1);
+                ParameterExpression p = b.Conversion.GetParameter(0);
                 Debug.Assert(p.Type.IsAssignableFrom(b.Left.Type) ||
                              p.Type.IsAssignableFrom(nnLeftType));
 
@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Compiler
 
             // if not null, call conversion
             _ilg.MarkLabel(labNotNull);
-            Debug.Assert(b.Conversion.Parameters.Count == 1);
+            Debug.Assert(b.Conversion.ParameterCount == 1);
 
             // emit the delegate instance
             EmitLambdaExpression(b.Conversion);

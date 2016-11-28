@@ -15,7 +15,9 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Empty()
         {
+#pragma warning disable 0618
             var exception = new ExecutionEngineException();
+#pragma warning restore 0618
             Assert.NotNull(exception);
             Assert.NotEmpty(exception.Message);
             Assert.Equal(COR_E_EXECUTIONENGINE, exception.HResult);
@@ -25,7 +27,9 @@ namespace System.Tests
         public static void Ctor_String()
         {
             string message = "Created ExecutionEngineException";
+#pragma warning disable 0618
             var exception = new ExecutionEngineException(message);
+#pragma warning restore 0618
             Assert.Equal(message, exception.Message);
             Assert.Equal(COR_E_EXECUTIONENGINE, exception.HResult);
         }
@@ -35,7 +39,9 @@ namespace System.Tests
         {
             string message = "Created ExecutionEngineException";
             var innerException = new Exception("Created inner exception");
+#pragma warning disable 0618
             var exception = new ExecutionEngineException(message, innerException);
+#pragma warning restore 0618
             Assert.Equal(message, exception.Message);
             Assert.Equal(COR_E_EXECUTIONENGINE, exception.HResult);
             Assert.Equal(innerException, exception.InnerException);

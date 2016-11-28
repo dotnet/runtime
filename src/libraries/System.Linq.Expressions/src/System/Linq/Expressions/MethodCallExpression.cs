@@ -204,7 +204,7 @@ namespace System.Linq.Expressions
 
         public override Expression GetArgument(int index)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override int ArgumentCount => 0;
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression1 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
 
         public MethodCallExpression1(MethodInfo method, Expression arg0)
             : base(method)
@@ -238,7 +238,7 @@ namespace System.Linq.Expressions
             switch (index)
             {
                 case 0: return ReturnObject<Expression>(_arg0);
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -265,7 +265,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression2 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg
 
         public MethodCallExpression2(MethodInfo method, Expression arg0, Expression arg1)
@@ -281,7 +281,7 @@ namespace System.Linq.Expressions
             {
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -307,7 +307,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression3 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;           // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;           // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2; // storage for the 2nd - 3rd args.
 
         public MethodCallExpression3(MethodInfo method, Expression arg0, Expression arg1, Expression arg2)
@@ -325,7 +325,7 @@ namespace System.Linq.Expressions
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -351,7 +351,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression4 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3;  // storage for the 2nd - 4th args.
 
         public MethodCallExpression4(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
@@ -371,7 +371,7 @@ namespace System.Linq.Expressions
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -397,7 +397,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression5 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;           // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;           // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3, _arg4;   // storage for the 2nd - 5th args.
 
         public MethodCallExpression5(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
@@ -419,7 +419,7 @@ namespace System.Linq.Expressions
                 case 2: return _arg2;
                 case 3: return _arg3;
                 case 4: return _arg4;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -453,7 +453,7 @@ namespace System.Linq.Expressions
 
         public override Expression GetArgument(int index)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override int ArgumentCount => 0;
@@ -474,7 +474,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InstanceMethodCallExpression1 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                // storage for the 1st argument or a read-only collection.  See IArgumentProvider
 
         public InstanceMethodCallExpression1(MethodInfo method, Expression instance, Expression arg0)
             : base(method, instance)
@@ -487,7 +487,7 @@ namespace System.Linq.Expressions
             switch (index)
             {
                 case 0: return ReturnObject<Expression>(_arg0);
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -513,7 +513,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InstanceMethodCallExpression2 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1;   // storage for the 2nd argument
 
         public InstanceMethodCallExpression2(MethodInfo method, Expression instance, Expression arg0, Expression arg1)
@@ -529,7 +529,7 @@ namespace System.Linq.Expressions
             {
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -555,7 +555,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InstanceMethodCallExpression3 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2;   // storage for the 2nd - 3rd argument
 
         public InstanceMethodCallExpression3(MethodInfo method, Expression instance, Expression arg0, Expression arg1, Expression arg2)
@@ -573,7 +573,7 @@ namespace System.Linq.Expressions
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 

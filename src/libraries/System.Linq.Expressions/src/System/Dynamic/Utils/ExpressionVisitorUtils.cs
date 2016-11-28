@@ -32,5 +32,30 @@ namespace System.Dynamic.Utils
             }
             return newNodes;
         }
+
+        public static ParameterExpression[] VisitParameters(ExpressionVisitor visitor, IParameterProvider nodes, string callerName)
+        {
+            ParameterExpression[] newNodes = null;
+            for (int i = 0, n = nodes.ParameterCount; i < n; i++)
+            {
+                ParameterExpression curNode = nodes.GetParameter(i);
+                ParameterExpression node = visitor.VisitAndConvert(curNode, callerName);
+
+                if (newNodes != null)
+                {
+                    newNodes[i] = node;
+                }
+                else if (!object.ReferenceEquals(node, curNode))
+                {
+                    newNodes = new ParameterExpression[n];
+                    for (int j = 0; j < i; j++)
+                    {
+                        newNodes[j] = nodes.GetParameter(j);
+                    }
+                    newNodes[i] = node;
+                }
+            }
+            return newNodes;
+        }
     }
 }

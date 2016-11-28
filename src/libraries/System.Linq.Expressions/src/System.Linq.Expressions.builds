@@ -4,9 +4,6 @@
   <ItemGroup>
     <Project Include="System.Linq.Expressions.csproj" />
     <Project Include="System.Linq.Expressions.csproj">
-      <TargetGroup>netstandard1.6</TargetGroup>
-    </Project>
-    <Project Include="System.Linq.Expressions.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
     <!-- NETCore50 must redistribute binaries due to shared library

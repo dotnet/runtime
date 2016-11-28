@@ -978,8 +978,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Check for: operator ==(System.Delegate, System.Delegate).
-            CType typeDel;
-            typeDel = GetReqPDT(PredefinedType.PT_DELEGATE);
+            CType typeDel = GetReqPDT(PredefinedType.PT_DELEGATE);
 
             if (canConvert(info.arg1, typeDel) && canConvert(info.arg2, typeDel) &&
                 !type1.isDelegateType() && !type2.isDelegateType())
@@ -988,10 +987,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // The reference type equality operators only handle reference types.
-            FUNDTYPE ft1;
-            ft1 = type1.fundType();
-            FUNDTYPE ft2;
-            ft2 = type2.fundType();
+            FUNDTYPE ft1 = type1.fundType();
+            FUNDTYPE ft2 = type2.fundType();
 
             switch (ft1)
             {
@@ -1798,12 +1795,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(!uofs.isLifted());
 
             Debug.Assert(arg != null);
-            EXPR exprVal;
 #if ! CSEE
             EXPRMULTIGET exprGet = GetExprFactory().CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.type, null);
-            exprVal = exprGet;
+            EXPR exprVal = exprGet;
 #else
-            exprVal = arg;
+            EXPR exprVal = arg;
 #endif
 
             CType type = uofs.GetType();
@@ -1834,13 +1830,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             NullableType type = uofs.GetType().AsNullableType();
             Debug.Assert(arg != null);
-            EXPR exprVal;
 
 #if ! CSEE
             EXPRMULTIGET exprGet = GetExprFactory().CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.type, null);
-            exprVal = exprGet;
+            EXPR exprVal = exprGet;
 #else
-            exprVal = arg;
+            EXPR exprVal = arg;
 #endif
 
             EXPR nonLiftedResult = null;
@@ -3492,7 +3487,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             EXPR exprVal1 = arg1;
             EXPR exprVal2 = arg2;
-            TypeArray paramsRaw;
             CType typeRet;
             CType typeRetRaw = GetTypes().SubstType(mpwi.Meth().RetType, mpwi.GetType());
 
@@ -3506,7 +3500,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // argument to the nullable formal parameter type first, before we then
             // do the cast for the non-nullable call.
 
-            paramsRaw = GetTypes().SubstTypeArray(mpwi.Meth().Params, mpwi.GetType());
+            TypeArray paramsRaw = GetTypes().SubstTypeArray(mpwi.Meth().Params, mpwi.GetType());
             Debug.Assert(Params != paramsRaw);
             Debug.Assert(paramsRaw.Item(0) == Params.Item(0).GetBaseOrParameterOrElementType());
             Debug.Assert(paramsRaw.Item(1) == Params.Item(1).GetBaseOrParameterOrElementType());

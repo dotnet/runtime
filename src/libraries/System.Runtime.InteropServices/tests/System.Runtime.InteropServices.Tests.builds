@@ -5,7 +5,7 @@
     <Project Include="System.Runtime.InteropServices.Tests.csproj" />
     <Project Include="System.Runtime.InteropServices.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
+      <TargetGroup>netstandard1.7</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
   </ItemGroup>

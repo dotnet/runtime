@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -15,19 +14,16 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpSetMemberBinder : SetMemberBinder
     {
-        internal bool IsCompoundAssignment { get { return _bIsCompoundAssignment; } }
-        private bool _bIsCompoundAssignment;
+        internal bool IsCompoundAssignment { get; }
 
-        internal bool IsChecked { get { return _isChecked; } }
-        private bool _isChecked;
+        internal bool IsChecked { get; }
 
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         //////////////////////////////////////////////////////////////////////
 
@@ -47,9 +43,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
             base(name, false)
         {
-            _bIsCompoundAssignment = isCompoundAssignment;
-            _isChecked = isChecked;
-            _callingContext = callingContext;
+            IsCompoundAssignment = isCompoundAssignment;
+            IsChecked = isChecked;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

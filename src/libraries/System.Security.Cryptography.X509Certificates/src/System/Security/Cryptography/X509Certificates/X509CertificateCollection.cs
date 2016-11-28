@@ -8,90 +8,40 @@ using System.Collections.Generic;
 namespace System.Security.Cryptography.X509Certificates
 {
     [Serializable]
-    public partial class X509CertificateCollection : ICollection, IEnumerable, IList
+    public partial class X509CertificateCollection : System.Collections.CollectionBase
     {
-        private readonly List<X509Certificate> _list;
-
         public X509CertificateCollection()
         {
-            _list = new List<X509Certificate>();
         }
 
         public X509CertificateCollection(X509Certificate[] value)
-            : this()
         {
             AddRange(value);
         }
 
         public X509CertificateCollection(X509CertificateCollection value)
-            : this()
         {
             AddRange(value);
         }
 
-        public int Count
-        {
-            get { return _list.Count; }
-        }
-
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
-
-        object ICollection.SyncRoot
-        {
-            get { return NonGenericList.SyncRoot; }
-        }
-
-        bool IList.IsFixedSize
-        {
-            get { return false; }
-        }
-
-        bool IList.IsReadOnly
-        {
-            get { return false; }
-        }
-
-        object IList.this[int index]
+        public X509Certificate this[int index] 
         {
             get
             {
-                return NonGenericList[index];
+                return ((X509Certificate)(List[index]));
             }
             set
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                NonGenericList[index] = value;
-            }
-        }
-
-        public X509Certificate this[int index]
-        {
-            get
-            {
-                return _list[index];
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                _list[index] = value;
+                List[index] = value;
             }
         }
 
         public int Add(X509Certificate value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            int index = _list.Count;
-            _list.Add(value);
-            return index;
+            return List.Add(value);
         }
 
         public void AddRange(X509Certificate[] value)
@@ -116,35 +66,25 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void Clear()
-        {
-            _list.Clear();
-        }
-
         public bool Contains(X509Certificate value)
         {
-            return _list.Contains(value);
+            return List.Contains(value);
         }
 
         public void CopyTo(X509Certificate[] array, int index)
         {
-            _list.CopyTo(array, index);
+            List.CopyTo(array, index);
         }
 
-        public X509CertificateEnumerator GetEnumerator()
+        public new X509CertificateEnumerator GetEnumerator()
         {
             return new X509CertificateEnumerator(this);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
 
         public override int GetHashCode()
         {
             int hashCode = 0;
-            foreach (X509Certificate cert in _list)
+            foreach (X509Certificate cert in List)
             {
                 hashCode += cert.GetHashCode();
             }
@@ -153,106 +93,28 @@ namespace System.Security.Cryptography.X509Certificates
 
         public int IndexOf(X509Certificate value)
         {
-            return _list.IndexOf(value);
+            return List.IndexOf(value);
         }
 
         public void Insert(int index, X509Certificate value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            _list.Insert(index, value);
+            List.Insert(index, value);
         }
 
         public void Remove(X509Certificate value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            bool removed = _list.Remove(value);
-
-            // This throws on full framework, so it will also throw here.
-            if (!removed)
-            {
-                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
-            }
+            List.Remove(value);
         }
 
-        public void RemoveAt(int index)
+        // Although this class for compatibility must derive from CollectionBase
+        // we can change the behavior a bit to verify the type of object before
+        // we add it to the collection
+        protected override void OnValidate(object value)
         {
-            _list.RemoveAt(index);
-        }
+            base.OnValidate(value);
 
-        void ICollection.CopyTo(Array array, int index)
-        {
-            NonGenericList.CopyTo(array, index);
-        }
-
-        int IList.Add(object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            return NonGenericList.Add(value);
-        }
-
-        bool IList.Contains(object value)
-        {
-            return NonGenericList.Contains(value);
-        }
-
-        int IList.IndexOf(object value)
-        {
-            return NonGenericList.IndexOf(value);
-        }
-
-        void IList.Insert(int index, object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            NonGenericList.Insert(index, value);
-        }
-
-        void IList.Remove(object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            // On full framework this method throws when removing an item that
-            // is not present in the collection, and that behavior needs to be
-            // preserved.
-            //
-            // Since that behavior is not provided by the IList.Remove exposed
-            // via the NonGenericList property, this method can't just defer
-            // like the rest of the IList explicit implementations do.
-            //
-            // The List<T> which backs this collection will guard against any
-            // objects which are not X509Certificiate-or-derived, and we've
-            // already checked whether value itself was null.  Therefore we
-            // know that any (value as X509Certificate) which becomes null
-            // could not have been in our collection, and when not null we
-            // have a rich object reference and can defer to the other Remove
-            // method on this class.
-
-            X509Certificate cert = value as X509Certificate;
-
-            if (cert == null)
-            {
-                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
-            }
-
-            Remove(cert);
-        }
-
-        private IList NonGenericList
-        {
-            get { return _list; }
-        }
-
-        internal void GetEnumerator(out List<X509Certificate>.Enumerator enumerator)
-        {
-            enumerator = _list.GetEnumerator();
+            if (!(value is X509Certificate))
+              throw new ArgumentException(SR.Arg_InvalidType, "value");
         }
     }
 }

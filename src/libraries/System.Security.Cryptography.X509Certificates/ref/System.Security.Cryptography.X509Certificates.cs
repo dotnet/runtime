@@ -248,37 +248,22 @@ namespace System.Security.Cryptography.X509Certificates
         bool System.Collections.IEnumerator.MoveNext() { throw null; }
         void System.Collections.IEnumerator.Reset() { }
     }
-    public partial class X509CertificateCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
+    public partial class X509CertificateCollection : System.Collections.CollectionBase
     {
         public X509CertificateCollection() { }
         public X509CertificateCollection(System.Security.Cryptography.X509Certificates.X509Certificate[] value) { }
         public X509CertificateCollection(System.Security.Cryptography.X509Certificates.X509CertificateCollection value) { }
-        public int Count { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate this[int index] { get { throw null; } set { } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        bool System.Collections.IList.IsFixedSize { get { throw null; } }
-        bool System.Collections.IList.IsReadOnly { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
         public int Add(System.Security.Cryptography.X509Certificates.X509Certificate value) { throw null; }
         public void AddRange(System.Security.Cryptography.X509Certificates.X509Certificate[] value) { }
         public void AddRange(System.Security.Cryptography.X509Certificates.X509CertificateCollection value) { }
-        public void Clear() { }
         public bool Contains(System.Security.Cryptography.X509Certificates.X509Certificate value) { throw null; }
         public void CopyTo(System.Security.Cryptography.X509Certificates.X509Certificate[] array, int index) { }
-        public System.Security.Cryptography.X509Certificates.X509CertificateCollection.X509CertificateEnumerator GetEnumerator() { throw null; }
+        public new System.Security.Cryptography.X509Certificates.X509CertificateCollection.X509CertificateEnumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public int IndexOf(System.Security.Cryptography.X509Certificates.X509Certificate value) { throw null; }
         public void Insert(int index, System.Security.Cryptography.X509Certificates.X509Certificate value) { }
         public void Remove(System.Security.Cryptography.X509Certificates.X509Certificate value) { }
-        public void RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object value) { throw null; }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
         public partial class X509CertificateEnumerator : System.Collections.IEnumerator
         {
             public X509CertificateEnumerator(System.Security.Cryptography.X509Certificates.X509CertificateCollection mappings) { }
@@ -295,6 +280,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Chain() { }
         public X509Chain(bool useMachineContext) { }
         public X509Chain(System.IntPtr chainContext) { }
+        public static X509Chain Create() { throw null; }
         public System.IntPtr ChainContext { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainElementCollection ChainElements { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainPolicy ChainPolicy { get { throw null; } set { } }

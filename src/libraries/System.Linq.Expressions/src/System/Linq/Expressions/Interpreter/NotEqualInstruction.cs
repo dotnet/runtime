@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -11,7 +12,7 @@ namespace System.Linq.Expressions.Interpreter
     {
         // Perf: EqualityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_reference, s_boolean, s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
-        private static Instruction s_referenceLiftedToNull, s_booleanLiftedToNull, s_SByteLiftedToNull, s_int16LiftedToNull, s_charLiftedToNull, s_int32LiftedToNull, s_int64LiftedToNull, s_byteLiftedToNull, s_UInt16LiftedToNull, s_UInt32LiftedToNull, s_UInt64LiftedToNull, s_singleLiftedToNull, s_doubleLiftedToNull;
+        private static Instruction s_booleanLiftedToNull, s_SByteLiftedToNull, s_int16LiftedToNull, s_charLiftedToNull, s_int32LiftedToNull, s_int64LiftedToNull, s_byteLiftedToNull, s_UInt16LiftedToNull, s_UInt32LiftedToNull, s_UInt64LiftedToNull, s_singleLiftedToNull, s_doubleLiftedToNull;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -292,7 +293,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-
         private sealed class NotEqualBooleanLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -509,23 +509,14 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class NotEqualReferenceLiftedToNull : NotEqualInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                frame.Push(frame.Pop() != frame.Pop());
-                return +1;
-            }
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type, bool liftedToNull)
         {
+            // Boxed enums can be unboxed as their underlying types:
+            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
+
             if (liftedToNull)
             {
-                // Boxed enums can be unboxed as their underlying types:
-                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
-
                 switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_booleanLiftedToNull ?? (s_booleanLiftedToNull = new NotEqualBooleanLiftedToNull());
@@ -541,25 +532,13 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.UInt64: return s_UInt64LiftedToNull ?? (s_UInt64LiftedToNull = new NotEqualUInt64LiftedToNull());
 
                     case TypeCode.Single: return s_singleLiftedToNull ?? (s_singleLiftedToNull = new NotEqualSingleLiftedToNull());
-                    case TypeCode.Double: return s_doubleLiftedToNull ?? (s_doubleLiftedToNull = new NotEqualDoubleLiftedToNull());
-
-                    case TypeCode.String:
-                    case TypeCode.Object:
-                        if (!type.GetTypeInfo().IsValueType)
-                        {
-                            return s_referenceLiftedToNull ?? (s_referenceLiftedToNull = new NotEqualReferenceLiftedToNull());
-                        }
-                        // TODO: Nullable<T>
-                        throw Error.ExpressionNotSupportedForNullableType("NotEqual", type);
                     default:
-                        throw Error.ExpressionNotSupportedForType("NotEqual", type);
+                        Debug.Assert(underlyingType.GetTypeCode() == TypeCode.Double);
+                        return s_doubleLiftedToNull ?? (s_doubleLiftedToNull = new NotEqualDoubleLiftedToNull());
                 }
             }
             else
             {
-                // Boxed enums can be unboxed as their underlying types:
-                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
-
                 switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_boolean ?? (s_boolean = new NotEqualBoolean());
@@ -577,16 +556,10 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.Single: return s_single ?? (s_single = new NotEqualSingle());
                     case TypeCode.Double: return s_double ?? (s_double = new NotEqualDouble());
 
-                    case TypeCode.String:
-                    case TypeCode.Object:
-                        if (!type.GetTypeInfo().IsValueType)
-                        {
-                            return s_reference ?? (s_reference = new NotEqualReference());
-                        }
-                        // TODO: Nullable<T>
-                        throw Error.ExpressionNotSupportedForNullableType("NotEqual", type);
                     default:
-                        throw Error.ExpressionNotSupportedForType("NotEqual", type);
+                        // Nullable only valid if one operand is constant null, so this assert is slightly too broad.
+                        Debug.Assert(type.IsNullableOrReferenceType());
+                        return s_reference ?? (s_reference = new NotEqualReference());
                 }
             }
         }

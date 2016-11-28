@@ -4115,3 +4115,43 @@ public class MyXmlTextParser : IXmlTextParser
         }
     }
 }
+
+[Serializable]
+public class SquareWithDeserializationCallback : IDeserializationCallback
+{
+
+    public int Edge;
+
+    [NonSerialized]
+    private int _area;
+
+    public int Area => _area;
+
+    public SquareWithDeserializationCallback(int edge)
+    {
+        Edge = edge;
+        _area = edge * edge;
+    }
+
+    void IDeserializationCallback.OnDeserialization(object sender)
+    {
+        // After being deserialized, initialize the _area field 
+        // using the deserialized Radius value.
+        _area = Edge * Edge;
+    }
+}
+
+public class SampleTextWriter : IXmlTextWriterInitializer
+{
+    public Encoding Encoding;
+    public Stream Stream;
+    public SampleTextWriter()
+    {
+
+    }
+    public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
+    {
+        Encoding = encoding;
+        Stream = stream;
+    }
+}
