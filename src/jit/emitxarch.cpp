@@ -3363,22 +3363,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 /*****************************************************************************
@@ -3516,34 +3501,10 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
     if (reg == REG_ESP)
     {
-        if (emitCntStackDepth)
-        {
-            if (ins == INS_sub)
-            {
-                S_UINT32 newStackLvl(emitCurStackLvl);
-                newStackLvl += S_UINT32(val);
-                noway_assert(!newStackLvl.IsOverflow());
-
-                emitCurStackLvl = newStackLvl.Value();
-
-                if (emitMaxStackDepth < emitCurStackLvl)
-                    emitMaxStackDepth = emitCurStackLvl;
-            }
-            else if (ins == INS_add)
-            {
-                S_UINT32 newStackLvl = S_UINT32(emitCurStackLvl) - S_UINT32(val);
-                noway_assert(!newStackLvl.IsOverflow());
-
-                emitCurStackLvl = newStackLvl.Value();
-            }
-        }
+        emitAdjustStackDepth(ins, val);
     }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
 }
 
 /*****************************************************************************
@@ -3596,17 +3557,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 /*****************************************************************************
@@ -3705,22 +3656,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 /*****************************************************************************
@@ -4399,22 +4335,7 @@ void emitter::emitIns_AR_R(
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp)
@@ -4455,22 +4376,7 @@ void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 void emitter::emitIns_I_ARR(instruction ins, emitAttr attr, int val, regNumber reg, regNumber rg2, int disp)
@@ -4587,22 +4493,7 @@ void emitter::emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regN
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 void emitter::emitIns_I_ARX(
@@ -4723,22 +4614,7 @@ void emitter::emitIns_ARX_R(
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 void emitter::emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber reg, unsigned mul, int disp)
@@ -4854,22 +4730,7 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 /*****************************************************************************
@@ -4913,22 +4774,7 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     dispIns(id);
     emitCurIGsize += sz;
 
-#if !FEATURE_FIXED_OUT_ARGS
-
-    if (ins == INS_push)
-    {
-        emitCurStackLvl += emitCntStackDepth;
-
-        if (emitMaxStackDepth < emitCurStackLvl)
-            emitMaxStackDepth = emitCurStackLvl;
-    }
-    else if (ins == INS_pop)
-    {
-        emitCurStackLvl -= emitCntStackDepth;
-        assert((int)emitCurStackLvl >= 0);
-    }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    emitAdjustStackDepthPushPop(ins);
 }
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
@@ -5209,8 +5055,23 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     dispIns(id);
     emitCurIGsize += sz;
 
+    emitAdjustStackDepthPushPop(ins);
+}
+
 #if !FEATURE_FIXED_OUT_ARGS
 
+//------------------------------------------------------------------------
+// emitAdjustStackDepthPushPop: Adjust the current and maximum stack depth.
+//
+// Arguments:
+//    ins - the instruction. Only INS_push and INS_pop adjust the stack depth.
+//
+// Notes:
+//    1. Alters emitCurStackLvl and possibly emitMaxStackDepth.
+//    2. emitCntStackDepth must be set (0 in prolog/epilog, one DWORD elsewhere)
+//
+void emitter::emitAdjustStackDepthPushPop(instruction ins)
+{
     if (ins == INS_push)
     {
         emitCurStackLvl += emitCntStackDepth;
@@ -5218,9 +5079,52 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         if (emitMaxStackDepth < emitCurStackLvl)
             emitMaxStackDepth = emitCurStackLvl;
     }
-
-#endif // !FEATURE_FIXED_OUT_ARGS
+    else if (ins == INS_pop)
+    {
+        emitCurStackLvl -= emitCntStackDepth;
+        assert((int)emitCurStackLvl >= 0);
+    }
 }
+
+//------------------------------------------------------------------------
+// emitAdjustStackDepth: Adjust the current and maximum stack depth.
+//
+// Arguments:
+//    ins - the instruction. Only INS_add and INS_sub adjust the stack depth.
+//          It is assumed that the add/sub is on the stack pointer.
+//    val - the number of bytes to add to or subtract from the stack pointer.
+//
+// Notes:
+//    1. Alters emitCurStackLvl and possibly emitMaxStackDepth.
+//    2. emitCntStackDepth must be set (0 in prolog/epilog, one DWORD elsewhere)
+//
+void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
+{
+    // If we're in the prolog or epilog, or otherwise not tracking the stack depth, just return.
+    if (emitCntStackDepth == 0)
+        return;
+
+    if (ins == INS_sub)
+    {
+        S_UINT32 newStackLvl(emitCurStackLvl);
+        newStackLvl += S_UINT32(val);
+        noway_assert(!newStackLvl.IsOverflow());
+
+        emitCurStackLvl = newStackLvl.Value();
+
+        if (emitMaxStackDepth < emitCurStackLvl)
+            emitMaxStackDepth = emitCurStackLvl;
+    }
+    else if (ins == INS_add)
+    {
+        S_UINT32 newStackLvl = S_UINT32(emitCurStackLvl) - S_UINT32(val);
+        noway_assert(!newStackLvl.IsOverflow());
+
+        emitCurStackLvl = newStackLvl.Value();
+    }
+}
+
+#endif // EMIT_TRACK_STACK_DEPTH
 
 /*****************************************************************************
  *
