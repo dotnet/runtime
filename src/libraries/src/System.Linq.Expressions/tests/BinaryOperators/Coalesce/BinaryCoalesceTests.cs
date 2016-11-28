@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Tests
             Type type2 = array2.GetType().GetElementType();
             for (int i = 0; i < array1.Length; i++)
             {
-                var value1 = array1.GetValue(i);
+                object value1 = array1.GetValue(i);
                 for (int j = 0; j < array2.Length; j++)
                 {
                     VerifyCoalesce(value1, type1, array2.GetValue(j), type2, useInterpreter);
@@ -109,13 +109,13 @@ namespace System.Linq.Expressions.Tests
             Type type1 = array1.GetType().GetElementType();
             for (int i = 0; i < array1.Length; i++)
             {
-                var value1 = array1.GetValue(i);
+                object value1 = array1.GetValue(i);
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    var value2 = array2.GetValue(j);
-                    var type2 = value2.GetType();
+                    object value2 = array2.GetValue(j);
+                    Type type2 = value2.GetType();
 
-                    var result = value1 != null ? value1 : value2;
+                    object result = value1 != null ? value1 : value2;
                     if (result.GetType() == typeof(char))
                     {
                         // ChangeType does not support conversion of char to float, double, or decimal,
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Tests
                         result = Convert.ChangeType(result, typeof(int));
                     }
 
-                    var expected = Convert.ChangeType(result, type2);
+                    object expected = Convert.ChangeType(result, type2);
 
                     VerifyCoalesce(value1, type1, value2, type2, useInterpreter, expected);
                 }
@@ -296,8 +296,8 @@ namespace System.Linq.Expressions.Tests
         {
             int? i = 0;
             double? d = 0;
-            var left = Expression.Constant(d, typeof(double?));
-            var right = Expression.Constant(i, typeof(int?));
+            ConstantExpression left = Expression.Constant(d, typeof(double?));
+            ConstantExpression right = Expression.Constant(i, typeof(int?));
             Expression<Func<double?, int?>> conversion = x => 1 + (int?)x;
 
             BinaryExpression actual = Expression.Coalesce(left, right, conversion);
@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Coalesce(Expression.Parameter(typeof(string), "a"), Expression.Parameter(typeof(string), "b"));
+            BinaryExpression e = Expression.Coalesce(Expression.Parameter(typeof(string), "a"), Expression.Parameter(typeof(string), "b"));
             Assert.Equal("(a ?? b)", e.ToString());
         }
     }

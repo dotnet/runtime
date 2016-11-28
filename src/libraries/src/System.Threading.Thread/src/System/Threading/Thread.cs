@@ -204,11 +204,13 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
+        [ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Suspend()
         {
             throw new PlatformNotSupportedException();
         }
 
+        [ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume()
         {
             throw new PlatformNotSupportedException();
@@ -275,6 +277,18 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_TimeoutMilliseconds);
             }
             return (int)timeoutMilliseconds;
+        }
+
+        [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        public CompressedStack GetCompressedStack()
+        {
+            throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
+        }
+
+        [Obsolete("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        public void SetCompressedStack(CompressedStack stack)
+        {
+            throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
 #if !NETNATIVE

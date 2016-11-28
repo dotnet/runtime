@@ -347,6 +347,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { throw null; }
         protected static System.ComponentModel.ISite GetSite(object component) { throw null; }
+        [ObsoleteAttribute("This method has been deprecated. Use GetInvocationTarget instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         protected static object GetInvokee(Type componentClass, object component) { throw null; }
     }
     public partial class MultilineStringConverter : System.ComponentModel.TypeConverter
@@ -697,6 +698,7 @@ namespace System.ComponentModel
         public static Type ComObjectType { get { throw null; } }
         public static System.ComponentModel.Design.IDesigner CreateDesigner(IComponent component, Type designerBaseType) { throw null; }
 #pragma warning disable 0618
+        [ObsoleteAttribute("This property has been deprecated.  Use a type description provider to supply type information for COM types instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public static IComNativeDescriptorHandler ComNativeDescriptorHandler { get; set; }        
 #pragma warning restore 0618
     }
@@ -783,6 +785,15 @@ namespace System.Drawing
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+    }
+}
+namespace System.Security.Authentication.ExtendedProtection
+{
+    public partial class ExtendedProtectionPolicyTypeConverter : System.ComponentModel.TypeConverter
+    {
+        public ExtendedProtectionPolicyTypeConverter() { }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
+        public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
     }
 }
 namespace System.Timers

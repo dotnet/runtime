@@ -597,7 +597,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsuported anonymous mapping type: " + mapping.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsupported anonymous mapping type: " + mapping.ToString()));
             }
         }
 

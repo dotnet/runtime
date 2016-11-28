@@ -52,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return TypeCode.Double;
             else if (type == typeof(decimal))
                 return TypeCode.Decimal;
-            else if (type == typeof(System.DateTime))
+            else if (type == typeof(DateTime))
                 return TypeCode.DateTime;
             else if (type == typeof(string))
                 return TypeCode.String;
@@ -298,7 +298,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                             Expression.Equal(
                                 Expression.Property(parameter1, property),
                                 Expression.Property(parameter2, property)),
-                                new[] { parameter1, parameter2 }).Compile();
+                                parameter1, parameter2).Compile();
 
                         var result = memberEquivalence(m1, m2);
                         // it worked, so publish it

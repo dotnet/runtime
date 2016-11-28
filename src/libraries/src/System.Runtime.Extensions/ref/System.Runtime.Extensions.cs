@@ -54,24 +54,24 @@ namespace System
         public System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public System.Reflection.Assembly[] ReflectionOnlyGetAssemblies() { throw null; }
         public void SetData(string name, object data) { }
-        [ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated.")]
+        [ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated. Please investigate the use of AppDomainSetup.DynamicBase instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetDynamicBase(string path) { }
         public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
         public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
         public override string ToString() { throw null; }
         public static void Unload(System.AppDomain domain) { }
         public bool ShadowCopyFiles { get { throw null; } }
-        [Obsolete("AppDomain.AppendPrivatePath has been deprecated.")]
+        [Obsolete("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void AppendPrivatePath(string path) { }
-        [Obsolete("AppDomain.ClearPrivatePath has been deprecated.")]
+        [Obsolete("AppDomain.ClearPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void ClearPrivatePath() { }
-        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated.")]
+        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void ClearShadowCopyPath() { }
-        [Obsolete("AppDomain.SetCachePath has been deprecated.")]
+        [Obsolete("AppDomain.SetCachePath has been deprecated. Please investigate the use of AppDomainSetup.CachePath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetCachePath(string path) { }
-        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated.")]
+        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyFiles instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyFiles() { }
-        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated.")]
+        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyPath(string path) { }
     }
 
@@ -948,6 +948,22 @@ namespace System
     {
         public ContextStaticAttribute() { }
     }
+    public static class StringNormalizationExtensions
+    {
+        public static bool IsNormalized(this string value) { throw null; }
+        [System.Security.SecurityCritical]
+        public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static String Normalize(this string value) { throw null; }
+        [System.Security.SecurityCritical]
+        public static String Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+    }
+}
+namespace System.Globalization
+{
+    public static partial class GlobalizationExtensions
+    {
+        public static System.StringComparer GetStringComparer(this System.Globalization.CompareInfo compareInfo, System.Globalization.CompareOptions options) { throw null; }
+    }
 }
 namespace System.Collections
 {
@@ -1147,6 +1163,7 @@ namespace System.IO
     {
         public static readonly char AltDirectorySeparatorChar;
         public static readonly char DirectorySeparatorChar;
+        [ObsoleteAttribute("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars;
         public static readonly char PathSeparator;
         public static readonly char VolumeSeparatorChar;
@@ -1461,7 +1478,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
-        public abstract void Write(char value);
+        public virtual void Write(char value) { }
         public virtual void Write(char[] buffer) { }
         public virtual void Write(char[] buffer, int index, int count) { }
         public virtual void Write(decimal value) { }
@@ -1515,7 +1532,9 @@ namespace System.Net
     public static partial class WebUtility
     {
         public static string HtmlDecode(string value) { throw null; }
+        public static void HtmlDecode(string value, System.IO.TextWriter output) { }
         public static string HtmlEncode(string value) { throw null; }
+        public static void HtmlEncode(string value, System.IO.TextWriter output) { }
         public static string UrlDecode(string encodedValue) { throw null; }
         public static byte[] UrlDecodeToBytes(byte[] encodedValue, int offset, int count) { throw null; }
         public static string UrlEncode(string value) { throw null; }
@@ -1572,16 +1591,16 @@ namespace System.Security.Permissions
     {
         Assert = 3,
         Demand = 2,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         Deny = 4,
         InheritanceDemand = 7,
         LinkDemand = 6,
         PermitOnly = 5,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestMinimum = 8,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestOptional = 9,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestRefuse = 10,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple = true, Inherited = false)]

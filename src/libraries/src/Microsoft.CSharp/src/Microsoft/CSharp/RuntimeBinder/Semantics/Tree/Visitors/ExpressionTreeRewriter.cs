@@ -35,8 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(expr != null);
 
-            EXPR result;
-            result = base.Dispatch(expr);
+            EXPR result = base.Dispatch(expr);
             if (result == expr)
             {
                 throw Error.InternalCompilerError();

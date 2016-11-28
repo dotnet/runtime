@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions
@@ -94,9 +95,11 @@ namespace System.Linq.Expressions
             parameter = Expression.Parameter(typeof(object));
 
             return Expression.Block(
-                new[] { parameter },
-                Expression.Assign(parameter, Expression),
-                ByValParameterTypeEqual(parameter)
+                new TrueReadOnlyCollection<ParameterExpression>(parameter),
+                new TrueReadOnlyCollection<Expression>(
+                    Expression.Assign(parameter, Expression),
+                    ByValParameterTypeEqual(parameter)
+                )
             );
         }
 
@@ -113,7 +116,13 @@ namespace System.Linq.Expressions
             if (TypeOperand.GetTypeInfo().IsInterface)
             {
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
-                getType = Expression.Block(new[] { temp }, Expression.Assign(temp, getType), temp);
+                getType = Expression.Block(
+                    new TrueReadOnlyCollection<ParameterExpression>(temp),
+                    new TrueReadOnlyCollection<Expression>(
+                        Expression.Assign(temp, getType),
+                        temp
+                    )
+                );
             }
 
             // We use reference equality when comparing to null for correctness

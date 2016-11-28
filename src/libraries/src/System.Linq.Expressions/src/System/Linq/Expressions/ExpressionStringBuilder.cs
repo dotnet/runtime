@@ -233,15 +233,25 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitLambda<T>(Expression<T> node)
         {
-            if (node.Parameters.Count == 1)
+            if (node.ParameterCount == 1)
             {
                 // p => body
-                Visit(node.Parameters[0]);
+                Visit(node.GetParameter(0));
             }
             else
             {
                 // (p1, p2, ..., pn) => body
-                VisitExpressions('(', node.Parameters, ')');
+                Out('(');
+                string sep = ", ";
+                for (int i = 0, n = node.ParameterCount; i < n; i++)
+                {
+                    if (i > 0)
+                    {
+                        Out(sep);
+                    }
+                    Visit(node.GetParameter(i));
+                }
+                Out(')');
             }
             Out(" => ");
             Visit(node.Body);
@@ -670,7 +680,7 @@ namespace System.Linq.Expressions
         {
             Out("catch (");
             Out(node.Test.Name);
-            if (node.Variable != null && !string.IsNullOrEmpty(node.Variable.Name))
+            if (!string.IsNullOrEmpty(node.Variable?.Name))
             {
                 Out(' ');
                 Out(node.Variable.Name);

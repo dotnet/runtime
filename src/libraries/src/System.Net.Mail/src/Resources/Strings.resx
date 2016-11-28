@@ -130,8 +130,50 @@
   <data name="net_emptystringset" xml:space="preserve">
     <value>This property cannot be set to an empty string.</value>
   </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="event_OperationReturnedSomething" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_context_buffer_too_small" xml:space="preserve">
+    <value>Insufficient buffer space. Required: {0} Actual: {1}.</value>
+  </data>
+  <data name="net_gssapi_operation_failed_detailed" xml:space="preserve">
+    <value>GSSAPI operation failed with error - {0} ({1}).</value>
+  </data>
+  <data name="net_gssapi_operation_failed" xml:space="preserve">
+    <value>GSSAPI operation failed with status: {0} (Minor status: {1}).</value>
+  </data>
+  <data name="net_nego_channel_binding_not_supported" xml:space="preserve">
+    <value>No support for channel binding on operating systems other than Windows.</value>
+  </data>
+  <data name="net_ntlm_not_possible_default_cred" xml:space="preserve">
+    <value>NTLM authentication is not possible with default credentials on this platform.</value>
+  </data>
+  <data name="net_nego_not_supported_empty_target_with_defaultcreds" xml:space="preserve">
+    <value>Target name should be non empty if default credentials are passed.</value>
+  </data>
+  <data name="net_nego_server_not_supported" xml:space="preserve">
+    <value>Server implementation is not supported</value>
+  </data>
+  <data name="net_nego_protection_level_not_supported" xml:space="preserve">
+    <value>Requested protection level is not supported with the gssapi implementation currently installed.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
   <data name="MailBase64InvalidCharacter" xml:space="preserve">
     <value>An invalid character was found in the Base-64 stream.</value>
+  </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
   </data>
   <data name="MailCollectionIsReadOnly" xml:space="preserve">
     <value>The collection is read-only.</value>
@@ -144,6 +186,9 @@
   </data>
   <data name="MailWriterIsInContent" xml:space="preserve">
     <value>This operation cannot be performed while in content.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
   </data>
   <data name="MimeTransferEncodingNotSupported" xml:space="preserve">
     <value>The MIME transfer encoding '{0}' is not supported.</value>

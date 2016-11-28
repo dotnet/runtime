@@ -73,11 +73,7 @@ namespace System.Linq.Expressions
                 )
             );
 
-            Type delegateType = info.DelegateType;
-            if (delegateType == null)
-            {
-                delegateType = info.MakeDelegateType(returnType, arg0);
-            }
+            Type delegateType = info.DelegateType ?? info.MakeDelegateType(returnType, arg0);
 
             return DynamicExpression.Make(returnType, delegateType, binder, arg0);
         }
@@ -116,11 +112,7 @@ namespace System.Linq.Expressions
                 )
             );
 
-            Type delegateType = info.DelegateType;
-            if (delegateType == null)
-            {
-                delegateType = info.MakeDelegateType(returnType, arg0, arg1);
-            }
+            Type delegateType = info.DelegateType ?? info.MakeDelegateType(returnType, arg0, arg1);
 
             return DynamicExpression.Make(returnType, delegateType, binder, arg0, arg1);
         }
@@ -217,11 +209,7 @@ namespace System.Linq.Expressions
                 )
             );
 
-            Type delegateType = info.DelegateType;
-            if (delegateType == null)
-            {
-                delegateType = info.MakeDelegateType(returnType, arg0, arg1, arg2, arg3);
-            }
+            Type delegateType = info.DelegateType ?? info.MakeDelegateType(returnType, arg0, arg1, arg2, arg3);
 
             return DynamicExpression.Make(returnType, delegateType, binder, arg0, arg1, arg2, arg3);
         }

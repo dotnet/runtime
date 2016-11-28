@@ -5,7 +5,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -496,21 +495,7 @@ namespace System.Tests
             Single single,
             Double dbl)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(boolean.ToString() + ", ");
-            builder.Append(str + ", ");
-            builder.Append(character.ToString() + ", ");
-            builder.Append(unsignedbyte.ToString() + ", ");
-            builder.Append(signedbyte.ToString() + ", ");
-            builder.Append(int16.ToString() + ", ");
-            builder.Append(uint16.ToString() + ", ");
-            builder.Append(int32.ToString() + ", ");
-            builder.Append(uint32.ToString() + ", ");
-            builder.Append(int64.ToString() + ", ");
-            builder.Append(uint64.ToString() + ", ");
-            builder.Append(single.ToString() + ", ");
-            builder.Append(dbl);
-            return builder.ToString();
+            return FormattableString.Invariant($"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}");
         }
 
         private delegate string StringParameter(string parameter);

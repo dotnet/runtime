@@ -302,6 +302,34 @@ namespace System.Runtime.Serialization.Json
             xmlWriter.WriteAttributeString(null, JsonGlobals.itemString, null, memberNames[index].Value);
         }
 
+        internal override void WriteExtensionDataTypeInfo(XmlWriterDelegator xmlWriter, IDataNode dataNode)
+        {
+            Type dataType = dataNode.DataType;
+            if (dataType == Globals.TypeOfClassDataNode ||
+                dataType == Globals.TypeOfISerializableDataNode)
+            {
+                xmlWriter.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.objectString);
+                base.WriteExtensionDataTypeInfo(xmlWriter, dataNode);
+            }
+            else if (dataType == Globals.TypeOfCollectionDataNode)
+            {
+                xmlWriter.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.arrayString);
+                // Don't write __type for collections
+            }
+            else if (dataType == Globals.TypeOfXmlDataNode)
+            {
+                // Don't write type or __type for XML types because we serialize them to strings
+            }
+            else if ((dataType == Globals.TypeOfObject) && (dataNode.Value != null))
+            {
+                DataContract dc = GetDataContract(dataNode.Value.GetType());
+                if (RequiresJsonTypeInfo(dc))
+                {
+                    base.WriteExtensionDataTypeInfo(xmlWriter, dataNode);
+                }
+            }
+        }
+
         internal static void VerifyObjectCompatibilityWithInterface(DataContract contract, object graph, Type declaredType)
         {
             Type contractType = contract.GetType();

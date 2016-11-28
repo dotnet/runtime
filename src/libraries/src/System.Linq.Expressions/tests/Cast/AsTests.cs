@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -843,7 +842,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.TypeAs(Expression.Parameter(typeof(object), "o"), typeof(string));
+            UnaryExpression e = Expression.TypeAs(Expression.Parameter(typeof(object), "o"), typeof(string));
             Assert.Equal("(o As String)", e.ToString());
         }
 

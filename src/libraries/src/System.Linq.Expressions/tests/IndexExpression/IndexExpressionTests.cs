@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -55,13 +54,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.MakeIndex(Expression.Parameter(typeof(Vector1), "v"), typeof(Vector1).GetProperty("Item"), new[] { Expression.Parameter(typeof(int), "i") });
+            IndexExpression e1 = Expression.MakeIndex(Expression.Parameter(typeof(Vector1), "v"), typeof(Vector1).GetProperty("Item"), new[] { Expression.Parameter(typeof(int), "i") });
             Assert.Equal("v.Item[i]", e1.ToString());
 
-            var e2 = Expression.MakeIndex(Expression.Parameter(typeof(Vector2), "v"), typeof(Vector2).GetProperty("Item"), new[] { Expression.Parameter(typeof(int), "i"), Expression.Parameter(typeof(int), "j") });
+            IndexExpression e2 = Expression.MakeIndex(Expression.Parameter(typeof(Vector2), "v"), typeof(Vector2).GetProperty("Item"), new[] { Expression.Parameter(typeof(int), "i"), Expression.Parameter(typeof(int), "j") });
             Assert.Equal("v.Item[i, j]", e2.ToString());
 
-            var e3 = Expression.ArrayAccess(Expression.Parameter(typeof(int[,]), "xs"), Expression.Parameter(typeof(int), "i"), Expression.Parameter(typeof(int), "j"));
+            IndexExpression e3 = Expression.ArrayAccess(Expression.Parameter(typeof(int[,]), "xs"), Expression.Parameter(typeof(int), "i"), Expression.Parameter(typeof(int), "j"));
             Assert.Equal("xs[i, j]", e3.ToString());
         }
 

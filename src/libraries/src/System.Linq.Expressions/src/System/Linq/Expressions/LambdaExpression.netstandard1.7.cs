@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions
 {
-    public sealed partial class Expression<TDelegate> : LambdaExpression
+    public partial class Expression<TDelegate> : LambdaExpression
     {
         /// <summary>
         /// Produces a delegate that represents the lambda expression.

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         {
             KeySizeValue = 3*64;
             BlockSizeValue = 64;
-            // TODO(12368): FeedbackSizeValue = BlockSizeValue; but the field is not yet available.
+            FeedbackSizeValue = BlockSizeValue;
             LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
         }

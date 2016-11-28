@@ -19,8 +19,12 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [InlineData(int.MaxValue)]
+        [InlineData(1024)]
         [InlineData(100)]
         [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
         public void Size_Set_ReturnsExpected(int size)
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -29,6 +33,9 @@ namespace System.Reflection.Emit.Tests
 
             type.DefineGenericParameters("T", "U");
             Assert.Equal(size, type.Size);
+
+            // We should be able to create the type no matter the size
+            Assert.Equal(type.Name, type.CreateTypeInfo().Name);
         }
     }
 }
