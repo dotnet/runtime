@@ -6477,15 +6477,6 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoVTable *vt;
-	static gboolean inited = FALSE;
-	static int special_array_iface_tests, special_array_iface_tests_fails;
-	if (!inited) {
-		inited = TRUE;
-		mono_counters_register ("Special array interfaces type tests",
-				MONO_COUNTER_METADATA | MONO_COUNTER_INT, &special_array_iface_tests);
-		mono_counters_register ("Special array interface type tests fails",
-				MONO_COUNTER_METADATA | MONO_COUNTER_INT, &special_array_iface_tests_fails);
-	}
 
 	mono_error_init (error);
 
@@ -6501,11 +6492,8 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 
 		/* casting an array one of the invariant interfaces that must act as such */
 		if (klass->is_array_special_interface) {
-			++special_array_iface_tests;
 			if (mono_class_is_assignable_from (klass, vt->klass))
 				return obj;
-			else
-				++special_array_iface_tests_fails;
 		}
 
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
