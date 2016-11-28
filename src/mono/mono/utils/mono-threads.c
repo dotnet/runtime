@@ -1244,12 +1244,12 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 {
 	gint64 now, end;
 
-	g_assert (INFINITE == G_MAXUINT32);
+	g_assert (MONO_INFINITE_WAIT == G_MAXUINT32);
 
 	g_assert (alerted);
 	*alerted = FALSE;
 
-	if (ms != INFINITE)
+	if (ms != MONO_INFINITE_WAIT)
 		end = mono_msec_ticks() + ms;
 
 	mono_lazy_initialize (&sleep_init, sleep_initialize);
@@ -1257,7 +1257,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 	mono_coop_mutex_lock (&sleep_mutex);
 
 	for (;;) {
-		if (ms != INFINITE) {
+		if (ms != MONO_INFINITE_WAIT) {
 			now = mono_msec_ticks();
 			if (now >= end)
 				break;
@@ -1269,7 +1269,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 			return WAIT_IO_COMPLETION;
 		}
 
-		if (ms != INFINITE)
+		if (ms != MONO_INFINITE_WAIT)
 			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, end - now);
 		else
 			mono_coop_cond_wait (&sleep_cond, &sleep_mutex);
@@ -1306,7 +1306,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 
 	MONO_ENTER_GC_SAFE;
 
-	if (ms == INFINITE) {
+	if (ms == MONO_INFINITE_WAIT) {
 		do {
 #ifdef HOST_WIN32
 			Sleep (G_MAXUINT32);

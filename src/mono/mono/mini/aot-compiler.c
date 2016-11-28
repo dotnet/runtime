@@ -9925,7 +9925,7 @@ compile_methods (MonoAotCompile *acfg)
 		g_free (methods);
 
 		for (i = 0; i < threads->len; ++i) {
-			mono_thread_info_wait_one_handle (g_ptr_array_index (threads, i), INFINITE, FALSE);
+			mono_thread_info_wait_one_handle (g_ptr_array_index (threads, i), MONO_INFINITE_WAIT, FALSE);
 			mono_threads_close_thread_handle (g_ptr_array_index (threads, i));
 		}
 	} else {

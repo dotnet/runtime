@@ -29,8 +29,6 @@
 /* must be a power of 2 */
 #define HANDLE_PER_SLOT	(256)
 
-#define INFINITE 0xFFFFFFFF
-
 typedef struct {
 	MonoW32HandleType type;
 	guint ref;
@@ -1137,7 +1135,7 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 		}
 	}
 
-	if (timeout != INFINITE)
+	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
 	for (;;) {
@@ -1153,8 +1151,8 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 
 		mono_w32handle_ops_prewait (handle);
 
-		if (timeout == INFINITE) {
-			waited = mono_w32handle_timedwait_signal_handle (handle, INFINITE, FALSE, alertable ? &alerted : NULL);
+		if (timeout == MONO_INFINITE_WAIT) {
+			waited = mono_w32handle_timedwait_signal_handle (handle, MONO_INFINITE_WAIT, FALSE, alertable ? &alerted : NULL);
 		} else {
 			gint64 elapsed;
 
@@ -1240,7 +1238,7 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 		}
 	}
 
-	if (timeout != INFINITE)
+	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
 	for (i = 0; i < nhandles; ++i) {
@@ -1324,8 +1322,8 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 		waited = 0;
 
 		if (!signalled) {
-			if (timeout == INFINITE) {
-				waited = mono_w32handle_timedwait_signal (INFINITE, poll, alertable ? &alerted : NULL);
+			if (timeout == MONO_INFINITE_WAIT) {
+				waited = mono_w32handle_timedwait_signal (MONO_INFINITE_WAIT, poll, alertable ? &alerted : NULL);
 			} else {
 				gint64 elapsed;
 
@@ -1404,7 +1402,7 @@ mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, gu
 		}
 	}
 
-	if (timeout != INFINITE)
+	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
 	for (;;) {
@@ -1420,8 +1418,8 @@ mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, gu
 
 		mono_w32handle_ops_prewait (wait_handle);
 
-		if (timeout == INFINITE) {
-			waited = mono_w32handle_timedwait_signal_handle (wait_handle, INFINITE, FALSE, alertable ? &alerted : NULL);
+		if (timeout == MONO_INFINITE_WAIT) {
+			waited = mono_w32handle_timedwait_signal_handle (wait_handle, MONO_INFINITE_WAIT, FALSE, alertable ? &alerted : NULL);
 		} else {
 			gint64 elapsed;
 

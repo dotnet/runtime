@@ -1325,8 +1325,8 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 			if (exc) {
 				mono_raise_exception (exc);
 			} else {
-				// FIXME: !INFINITE
-				if (ms != INFINITE)
+				// FIXME: !MONO_INFINITE_WAIT
+				if (ms != MONO_INFINITE_WAIT)
 					break;
 			}
 		} else {
@@ -1638,7 +1638,7 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	UNLOCK_THREAD (thread);
 
 	if(ms== -1) {
-		ms=INFINITE;
+		ms=MONO_INFINITE_WAIT;
 	}
 	THREAD_DEBUG (g_message ("%s: joining thread handle %p, %d ms", __func__, handle, ms));
 	
@@ -1755,7 +1755,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	}
 	
 	if(ms== -1) {
-		ms=INFINITE;
+		ms=MONO_INFINITE_WAIT;
 	}
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
@@ -1795,7 +1795,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	}
 	
 	if(ms== -1) {
-		ms=INFINITE;
+		ms=MONO_INFINITE_WAIT;
 	}
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
@@ -1820,7 +1820,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for %p, %d ms", __func__, mono_native_thread_id_get (), handle, ms));
 	
 	if(ms== -1) {
-		ms=INFINITE;
+		ms=MONO_INFINITE_WAIT;
 	}
 	
 	if (mono_thread_current_check_pending_interrupt ())
@@ -1843,7 +1843,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	if (ms == -1)
-		ms = INFINITE;
+		ms = MONO_INFINITE_WAIT;
 
 	if (mono_thread_current_check_pending_interrupt ())
 		return map_native_wait_result_to_managed (MONO_W32HANDLE_WAIT_RET_FAILED, 0);
@@ -3161,7 +3161,7 @@ void mono_thread_manage (void)
 		mono_threads_unlock ();
 		if (wait->num > 0)
 			/* Something to wait for */
-			wait_for_tids (wait, INFINITE, TRUE);
+			wait_for_tids (wait, MONO_INFINITE_WAIT, TRUE);
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
@@ -3189,7 +3189,7 @@ void mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: wait->num is now %d", __func__, wait->num));
 		if (wait->num > 0) {
 			/* Something to wait for */
-			wait_for_tids (wait, INFINITE, FALSE);
+			wait_for_tids (wait, MONO_INFINITE_WAIT, FALSE);
 		}
 	} while (wait->num > 0);
 	

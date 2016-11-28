@@ -494,14 +494,14 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	mono_gc_finalize_notify ();
 
 	if (timeout == -1)
-		timeout = INFINITE;
-	if (timeout != INFINITE)
+		timeout = MONO_INFINITE_WAIT;
+	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
 	ret = TRUE;
 
 	for (;;) {
-		if (timeout == INFINITE) {
+		if (timeout == MONO_INFINITE_WAIT) {
 			res = mono_coop_sem_wait (&req->done, MONO_SEM_FLAGS_ALERTABLE);
 		} else {
 			gint64 elapsed = mono_msec_ticks () - start;
@@ -652,7 +652,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	pending_done = FALSE;
 	mono_gc_finalize_notify ();
 	while (!pending_done) {
-		coop_cond_timedwait_alertable (&pending_done_cond, &pending_done_mutex, INFINITE, &alerted);
+		coop_cond_timedwait_alertable (&pending_done_cond, &pending_done_mutex, MONO_INFINITE_WAIT, &alerted);
 		if (alerted)
 			break;
 	}
@@ -1062,7 +1062,7 @@ mono_gc_cleanup (void)
 
 
 			/* Wait for the thread to actually exit */
-			ret = guarded_wait (gc_thread->handle, INFINITE, TRUE);
+			ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, TRUE);
 			g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
 			mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));

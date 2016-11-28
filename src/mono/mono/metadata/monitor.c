@@ -868,7 +868,7 @@ retry_contended:
 		}
 	}
 
-	if (ms != INFINITE) {
+	if (ms != MONO_INFINITE_WAIT) {
 		then = mono_msec_ticks ();
 	}
 	waitms = ms;
@@ -919,7 +919,7 @@ done_waiting:
 		 * allow_interruption is FALSE to avoid hangs at shutdown.
 		 */
 		if (!mono_thread_test_state (mono_thread_internal_current (), (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested | ThreadState_AbortRequested))) {
-			if (ms != INFINITE) {
+			if (ms != MONO_INFINITE_WAIT) {
 				now = mono_msec_ticks ();
 
 				/* it should not overflow before ~30k years */
@@ -1032,7 +1032,7 @@ mono_monitor_enter (MonoObject *obj)
 	 * it will return NULL meaning we can't be aborted right now. Once that happens we switch to non-alertable.
 	 */
 	do {
-		res = mono_monitor_try_enter_internal (obj, INFINITE, allow_interruption);
+		res = mono_monitor_try_enter_internal (obj, MONO_INFINITE_WAIT, allow_interruption);
 		/*This means we got interrupted during the wait and didn't got the monitor.*/
 		if (res == -1) {
 			MonoException *exc = mono_thread_interruption_checkpoint ();
@@ -1160,7 +1160,7 @@ mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 		return;
 	}
 
-	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, INFINITE, lock_taken);
+	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, lock_taken);
 }
 
 /*
@@ -1364,7 +1364,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 
 	/* Regain the lock with the previous nest count */
 	do {
-		regain = mono_monitor_try_enter_inflated (obj, INFINITE, TRUE, id);
+		regain = mono_monitor_try_enter_inflated (obj, MONO_INFINITE_WAIT, TRUE, id);
 		/* We must regain the lock before handling interruption requests */
 	} while (regain == -1);
 

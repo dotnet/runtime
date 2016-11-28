@@ -339,7 +339,7 @@ retry:
 static inline int
 mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
 {
-	return mono_os_sem_timedwait (sem, INFINITE, flags) != 0 ? -1 : 0;
+	return mono_os_sem_timedwait (sem, MONO_INFINITE_WAIT, flags) != 0 ? -1 : 0;
 }
 
 static inline void

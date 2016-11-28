@@ -287,7 +287,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	now = start;
 
 	while (1) {
-		if (timeout != INFINITE) {
+		if (timeout != MONO_INFINITE_WAIT) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on semaphore for %li ms...",
 				__func__, handle, timeout, (long)(timeout - (now - start)));
 			ret = mono_os_sem_timedwait (&mp->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);

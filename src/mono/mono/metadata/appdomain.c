@@ -2582,7 +2582,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 		return;
 
 	/* Wait for the thread */	
-	while (!thread_data->done && guarded_wait (thread_handle, INFINITE, TRUE) == MONO_THREAD_INFO_WAIT_RET_ALERTED) {
+	while (!thread_data->done && guarded_wait (thread_handle, MONO_INFINITE_WAIT, TRUE) == MONO_THREAD_INFO_WAIT_RET_ALERTED) {
 		if (mono_thread_internal_has_appdomain_ref (mono_thread_internal_current (), domain) && (mono_thread_interruption_requested ())) {
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */
