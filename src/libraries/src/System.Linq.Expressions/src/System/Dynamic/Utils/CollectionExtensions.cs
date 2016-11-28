@@ -15,22 +15,5 @@ namespace System.Dynamic.Utils
             res[list.Count] = item;
             return res;
         }
-
-        public static T First<T>(this IEnumerable<T> source)
-        {
-            var list = source as IList<T>;
-            if (list != null)
-            {
-                return list[0];
-            }
-            using (var e = source.GetEnumerator())
-            {
-                if (e.MoveNext())
-                {
-                    return e.Current;
-                }
-            }
-            throw new InvalidOperationException();
-        }
     }
 }
