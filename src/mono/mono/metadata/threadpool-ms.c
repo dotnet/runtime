@@ -1443,7 +1443,11 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 		}
 		mono_monitor_exit ((MonoObject*) ares);
 		MONO_ENTER_GC_SAFE;
+#ifdef HOST_WIN32
 		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
+#else
+		mono_w32handle_wait_one (wait_event, INFINITE, TRUE);
+#endif
 		MONO_EXIT_GC_SAFE;
 	}
 

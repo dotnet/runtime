@@ -56,7 +56,6 @@ OTHER_SRC = \
 	uglify.h		\
 	versioninfo.c		\
 	versioninfo.h		\
-	wait.c			\
 	wait.h			\
 	wapi_glob.h		\
 	wapi_glob.c		\

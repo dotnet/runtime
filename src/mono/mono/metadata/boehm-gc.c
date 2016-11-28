@@ -24,6 +24,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/handle.h>
 #include <mono/metadata/sgen-toggleref.h>
+#include <mono/metadata/w32handle.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-memory-model.h>

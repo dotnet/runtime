@@ -26,12 +26,5 @@ G_BEGIN_DECLS
 #define WAIT_TIMEOUT		STATUS_TIMEOUT
 #define WAIT_IO_COMPLETION	STATUS_USER_APC
 
-extern guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout, 
-					gboolean alertable);
-extern guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
-				   guint32 timeout, gboolean alertable);
-extern guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
-				      gboolean waitall, guint32 timeout, gboolean alertable);
-
 G_END_DECLS
 #endif /* _WAPI_WAIT_H_ */

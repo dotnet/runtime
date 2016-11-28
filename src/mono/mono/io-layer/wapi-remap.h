@@ -63,8 +63,5 @@
 #define GetFileVersionInfo wapi_GetFileVersionInfo 
 #define VerQueryValue wapi_VerQueryValue 
 #define VerLanguageName wapi_VerLanguageName 
-#define WaitForSingleObjectEx wapi_WaitForSingleObjectEx
-#define SignalObjectAndWait wapi_SignalObjectAndWait
-#define WaitForMultipleObjectsEx wapi_WaitForMultipleObjectsEx
 
 #endif /* __WAPI_REMAP_H__ */

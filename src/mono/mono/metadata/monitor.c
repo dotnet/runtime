@@ -1294,7 +1294,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	MonoThreadsSync *mon;
 	HANDLE event;
 	guint32 nest;
-	guint32 ret;
+	MonoW32HandleWaitRet ret;
 	gboolean success = FALSE;
 	gint32 regain;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -1350,7 +1350,11 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	 * signalled before we wait, we still succeed.
 	 */
 	MONO_ENTER_GC_SAFE;
-	ret = WaitForSingleObjectEx (event, ms, TRUE);
+#ifdef HOST_WIN32
+	ret = mono_w32handle_convert_wait_ret (WaitForSingleObjectEx (event, ms, TRUE), 1);
+#else
+	ret = mono_w32handle_wait_one (event, ms, TRUE);
+#endif /* HOST_WIN32 */
 	MONO_EXIT_GC_SAFE;
 
 	/* Reset the thread state fairly early, so we don't have to worry
@@ -1370,12 +1374,16 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 
 	LOCK_DEBUG (g_message ("%s: (%d) Regained %p lock %p", __func__, mono_thread_info_get_small_id (), obj, mon));
 
-	if (ret == WAIT_TIMEOUT) {
+	if (ret == MONO_W32HANDLE_WAIT_RET_TIMEOUT) {
 		/* Poll the event again, just in case it was signalled
 		 * while we were trying to regain the monitor lock
 		 */
 		MONO_ENTER_GC_SAFE;
-		ret = WaitForSingleObjectEx (event, 0, FALSE);
+#ifdef HOST_WIN32
+		ret = mono_w32handle_convert_wait_ret (WaitForSingleObjectEx (event, 0, FALSE), 1);
+#else
+		ret = mono_w32handle_wait_one (event, 0, FALSE);
+#endif /* HOST_WIN32 */
 		MONO_EXIT_GC_SAFE;
 	}
 
@@ -1389,7 +1397,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	 * thread.
 	 */
 	
-	if (ret == WAIT_OBJECT_0) {
+	if (ret == MONO_W32HANDLE_WAIT_RET_SUCCESS_0) {
 		LOCK_DEBUG (g_message ("%s: (%d) Success", __func__, mono_thread_info_get_small_id ()));
 		success = TRUE;
 	} else {

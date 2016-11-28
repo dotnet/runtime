@@ -1664,17 +1664,29 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 #define MANAGED_WAIT_FAILED 0x7fffffff
 
 static gint32
-map_native_wait_result_to_managed (gint32 val)
+map_native_wait_result_to_managed (MonoW32HandleWaitRet val, gsize numobjects)
 {
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return val == WAIT_FAILED ? MANAGED_WAIT_FAILED : val;
+	if (val >= MONO_W32HANDLE_WAIT_RET_SUCCESS_0 && val < MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + numobjects) {
+		return WAIT_OBJECT_0 + (val - MONO_W32HANDLE_WAIT_RET_SUCCESS_0);
+	} else if (val >= MONO_W32HANDLE_WAIT_RET_ABANDONED_0 && val < MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + numobjects) {
+		return WAIT_ABANDONED_0 + (val - MONO_W32HANDLE_WAIT_RET_ABANDONED_0);
+	} else if (val == MONO_W32HANDLE_WAIT_RET_ALERTED) {
+		return WAIT_IO_COMPLETION;
+	} else if (val == MONO_W32HANDLE_WAIT_RET_TIMEOUT) {
+		return WAIT_TIMEOUT;
+	} else if (val == MONO_W32HANDLE_WAIT_RET_FAILED) {
+		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+		return MANAGED_WAIT_FAILED;
+	} else {
+		g_error ("%s: unknown val value %d", __func__, val);
+	}
 }
 
-static gint32
+static MonoW32HandleWaitRet
 mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, MonoError *error)
 {
 	MonoException *exc;
-	guint32 ret;
+	MonoW32HandleWaitRet ret;
 	gint64 start;
 	gint32 diff_ms;
 	gint32 wait = ms;
@@ -1684,13 +1696,18 @@ mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointe
 	start = (ms == -1) ? 0 : mono_100ns_ticks ();
 	do {
 		MONO_ENTER_GC_SAFE;
+#ifdef HOST_WIN32
 		if (numhandles != 1)
-			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, TRUE);
+			ret = mono_w32handle_convert_wait_ret (WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, TRUE), numhandles);
 		else
-			ret = WaitForSingleObjectEx (handles [0], ms, TRUE);
+			ret = mono_w32handle_convert_wait_ret (WaitForSingleObjectEx (handles [0], ms, TRUE), 1);
+#else
+		/* mono_w32handle_wait_multiple optimizes the case for numhandles == 1 */
+		ret = mono_w32handle_wait_multiple (handles, numhandles, waitall, wait, TRUE);
+#endif /* HOST_WIN32 */
 		MONO_EXIT_GC_SAFE;
 
-		if (ret != WAIT_IO_COMPLETION)
+		if (ret != MONO_W32HANDLE_WAIT_RET_ALERTED)
 			break;
 
 		exc = mono_thread_execute_interruption ();
@@ -1705,7 +1722,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointe
 		/* Re-calculate ms according to the time passed */
 		diff_ms = (gint32)((mono_100ns_ticks () - start) / 10000);
 		if (diff_ms >= ms) {
-			ret = WAIT_TIMEOUT;
+			ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 			break;
 		}
 		wait = ms - diff_ms;
@@ -1719,14 +1736,14 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	MonoError error;
 	HANDLE *handles;
 	guint32 numhandles;
-	guint32 ret;
+	MonoW32HandleWaitRet ret;
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* Do this WaitSleepJoin check before creating objects */
 	if (mono_thread_current_check_pending_interrupt ())
-		return map_native_wait_result_to_managed (WAIT_FAILED);
+		return map_native_wait_result_to_managed (MONO_W32HANDLE_WAIT_RET_FAILED, 0);
 
 	/* We fail in managed if the array has more than 64 elements */
 	numhandles = (guint32)mono_array_length(mono_handles);
@@ -1751,8 +1768,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 
 	mono_error_set_pending_exception (&error);
 
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return map_native_wait_result_to_managed (ret);
+	return map_native_wait_result_to_managed (ret, numhandles);
 }
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms)
@@ -1760,18 +1776,18 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	MonoError error;
 	HANDLE handles [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
 	uintptr_t numhandles;
-	guint32 ret;
+	MonoW32HandleWaitRet ret;
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* Do this WaitSleepJoin check before creating objects */
 	if (mono_thread_current_check_pending_interrupt ())
-		return map_native_wait_result_to_managed (WAIT_FAILED);
+		return map_native_wait_result_to_managed (MONO_W32HANDLE_WAIT_RET_FAILED, 0);
 
 	numhandles = mono_array_length(mono_handles);
 	if (numhandles > MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS)
-		return map_native_wait_result_to_managed (WAIT_FAILED);
+		return map_native_wait_result_to_managed (MONO_W32HANDLE_WAIT_RET_FAILED, 0);
 
 	for(i = 0; i < numhandles; i++) {	
 		waitHandle = mono_array_get(mono_handles, MonoObject*, i);
@@ -1792,14 +1808,13 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	mono_error_set_pending_exception (&error);
 
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return map_native_wait_result_to_managed (ret);
+	return map_native_wait_result_to_managed (ret, numhandles);
 }
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gint32 ms)
 {
 	MonoError error;
-	guint32 ret;
+	MonoW32HandleWaitRet ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for %p, %d ms", __func__, mono_native_thread_id_get (), handle, ms));
@@ -1809,7 +1824,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 	}
 	
 	if (mono_thread_current_check_pending_interrupt ())
-		return map_native_wait_result_to_managed (WAIT_FAILED);
+		return map_native_wait_result_to_managed (MONO_W32HANDLE_WAIT_RET_FAILED, 0);
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -1818,30 +1833,34 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 	mono_error_set_pending_exception (&error);
-	return map_native_wait_result_to_managed (ret);
+	return map_native_wait_result_to_managed (ret, 1);
 }
 
 gint32
 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, HANDLE toWait, gint32 ms)
 {
-	guint32 ret;
+	MonoW32HandleWaitRet ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	if (ms == -1)
 		ms = INFINITE;
 
 	if (mono_thread_current_check_pending_interrupt ())
-		return map_native_wait_result_to_managed (WAIT_FAILED);
+		return map_native_wait_result_to_managed (MONO_W32HANDLE_WAIT_RET_FAILED, 0);
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
 	MONO_ENTER_GC_SAFE;
-	ret = SignalObjectAndWait (toSignal, toWait, ms, TRUE);
+#ifdef HOST_WIN32
+	ret = mono_w32handle_convert_wait_ret (SignalObjectAndWait (toSignal, toWait, ms, TRUE), 1);
+#else
+	ret = mono_w32handle_signal_and_wait (toSignal, toWait, ms, TRUE);
+#endif
 	MONO_EXIT_GC_SAFE;
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-	return map_native_wait_result_to_managed (ret);
+	return map_native_wait_result_to_managed (ret, 1);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
