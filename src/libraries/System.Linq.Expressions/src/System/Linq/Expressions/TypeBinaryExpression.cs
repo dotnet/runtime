@@ -96,8 +96,10 @@ namespace System.Linq.Expressions
 
             return Expression.Block(
                 new TrueReadOnlyCollection<ParameterExpression>(parameter),
-                Expression.Assign(parameter, Expression),
-                ByValParameterTypeEqual(parameter)
+                new TrueReadOnlyCollection<Expression>(
+                    Expression.Assign(parameter, Expression),
+                    ByValParameterTypeEqual(parameter)
+                )
             );
         }
 
@@ -116,8 +118,10 @@ namespace System.Linq.Expressions
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
                 getType = Expression.Block(
                     new TrueReadOnlyCollection<ParameterExpression>(temp),
-                    Expression.Assign(temp, getType),
-                    temp
+                    new TrueReadOnlyCollection<Expression>(
+                        Expression.Assign(temp, getType),
+                        temp
+                    )
                 );
             }
 
