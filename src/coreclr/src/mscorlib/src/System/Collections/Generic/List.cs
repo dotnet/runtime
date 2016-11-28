@@ -386,7 +386,7 @@ namespace System.Collections.Generic {
         }
 
         // Ensures that the capacity of this list is at least the given minimum
-        // value. If the currect capacity of the list is less than min, the
+        // value. If the current capacity of the list is less than min, the
         // capacity is increased to twice the current capacity or to min,
         // whichever is larger.
         private void EnsureCapacity(int min) {
@@ -1037,20 +1037,18 @@ namespace System.Collections.Generic {
             {
                 _version++; // Even if the enumerable has no items, we can update _version.
 
-                T[] items = _items;
-
                 while (en.MoveNext())
                 {
-                    if (_size == items.Length)
+                    // Capture Current before doing anything else. If this throws
+                    // an exception, we want to make a clean break.
+                    T current = en.Current;
+
+                    if (_size == _items.Length)
                     {
                         EnsureCapacity(_size + 1);
-                        items = _items;
                     }
 
-                    // Note: It's important we increment size after Current is called.
-                    // If that throws an exception we don't want to do the increment.
-                    items[_size] = en.Current;
-                    _size++;
+                    _items[_size++] = current;
                 }
             }
         }
