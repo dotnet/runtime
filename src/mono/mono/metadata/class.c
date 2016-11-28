@@ -5576,8 +5576,22 @@ mono_class_setup_mono_type (MonoClass *klass)
 		klass->this_arg.type = (MonoTypeEnum)t;
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass))
+	if (MONO_CLASS_IS_INTERFACE (klass)) {
 		klass->interface_id = mono_get_unique_iid (klass);
+
+		if (is_corlib && !strcmp (nspace, "System.Collections.Generic")) {
+			//FIXME IEnumerator needs to be special because GetEnumerator uses magic under the hood
+		    /* FIXME: System.Array/InternalEnumerator don't need all this interface fabrication machinery.
+		    * MS returns diferrent types based on which instance is called. For example:
+		    * 	object obj = new byte[10][];
+		    *	Type a = ((IEnumerable<byte[]>)obj).GetEnumerator ().GetType ();
+		    *	Type b = ((IEnumerable<IList<byte>>)obj).GetEnumerator ().GetType ();
+		    * 	a != b ==> true
+			*/
+			if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+				klass->is_array_special_interface = 1;
+		}
+	}
 }
 
 #ifndef DISABLE_COM
@@ -5916,6 +5930,42 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 #endif
 
 	klass->cast_class = klass->element_class = klass;
+	if (mono_is_corlib_image (klass->image)) {
+		switch (klass->byval_arg.type) {
+			case MONO_TYPE_I1:
+				if (mono_defaults.byte_class)
+					klass->cast_class = mono_defaults.byte_class;
+				break;
+			case MONO_TYPE_U1:
+				if (mono_defaults.sbyte_class)
+					mono_defaults.sbyte_class = klass;
+				break;
+			case MONO_TYPE_I2:
+				if (mono_defaults.uint16_class)
+					mono_defaults.uint16_class = klass;
+				break;
+			case MONO_TYPE_U2:
+				if (mono_defaults.int16_class)
+					klass->cast_class = mono_defaults.int16_class;
+				break;
+			case MONO_TYPE_I4:
+				if (mono_defaults.uint32_class)
+					mono_defaults.uint32_class = klass;
+				break;
+			case MONO_TYPE_U4:
+				if (mono_defaults.int32_class)
+					klass->cast_class = mono_defaults.int32_class;
+				break;
+			case MONO_TYPE_I8:
+				if (mono_defaults.uint64_class)
+					mono_defaults.uint64_class = klass;
+				break;
+			case MONO_TYPE_U8:
+				if (mono_defaults.int64_class)
+					klass->cast_class = mono_defaults.int64_class;
+				break;
+		}
+	}
 
 	if (!klass->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (

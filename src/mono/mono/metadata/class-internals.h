@@ -1103,8 +1103,6 @@ typedef struct {
 	MonoClass *argumenthandle_class;
 	MonoClass *monitor_class;
 	MonoClass *generic_ilist_class;
-	MonoClass *generic_icollection_class;
-	MonoClass *generic_ienumerable_class;
 	MonoClass *generic_nullable_class;
 	MonoClass *handleref_class;
 	MonoClass *attribute_class;
