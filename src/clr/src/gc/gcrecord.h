@@ -13,7 +13,7 @@ Module Name:
 #ifndef __gc_record_h__
 #define __gc_record_h__
 
-#define max_generation 2
+//#define max_generation 2
 
 // We pack the dynamic tuning for deciding which gen to condemn in a uint32_t.
 // We assume that 2 bits are enough to represent the generation. 
