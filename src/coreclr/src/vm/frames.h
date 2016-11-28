@@ -113,8 +113,10 @@
 //    |   +-ComPrestubMethodFrame - prestub frame for calls from COM to CLR
 //    |
 #endif //FEATURE_COMINTEROP
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 //    | +-UMThkCallFrame        - this frame represents an unmanaged->managed
 //    |                           transition through N/Direct
+#endif
 //    |
 //    +-ContextTransitionFrame  - this frame is used to mark an appdomain transition
 //    |
@@ -266,7 +268,7 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerSecurityCodeMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 FRAME_TYPE_NAME(UMThkCallFrame)
 #endif
 #if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
@@ -2897,7 +2899,7 @@ typedef DPTR(class UMThunkMarshInfo) PTR_UMThunkMarshInfo;
 class UMEntryThunk;
 typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 //------------------------------------------------------------------------
 // This frame guards an unmanaged->managed transition thru a UMThk
 //------------------------------------------------------------------------
@@ -2925,9 +2927,9 @@ protected:
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(UMThkCallFrame)
 };
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 //-------------------------------------------------------------------------
 // Exception handler for COM to managed frame
 //  and the layout of the exception registration record structure in the stack
@@ -2947,7 +2949,7 @@ struct ComToManagedExRecord
         return &m_frame;
     }
 };
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
 #if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
 //-----------------------------------------------------------------------------
