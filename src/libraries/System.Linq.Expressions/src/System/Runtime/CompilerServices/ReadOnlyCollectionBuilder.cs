@@ -313,7 +313,7 @@ namespace System.Runtime.CompilerServices
             }
             catch (InvalidCastException)
             {
-                ThrowInvalidTypeException(value, nameof(value));
+                throw InvalidTypeException(value, nameof(value));
             }
             return Count - 1;
         }
@@ -345,7 +345,7 @@ namespace System.Runtime.CompilerServices
             }
             catch (InvalidCastException)
             {
-                ThrowInvalidTypeException(value, nameof(value));
+                throw InvalidTypeException(value, nameof(value));
             }
         }
 
@@ -375,7 +375,7 @@ namespace System.Runtime.CompilerServices
                 }
                 catch (InvalidCastException)
                 {
-                    ThrowInvalidTypeException(value, nameof(value));
+                    throw InvalidTypeException(value, nameof(value));
                 }
             }
         }
@@ -495,9 +495,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static void ThrowInvalidTypeException(object value, string argument)
+        private static Exception InvalidTypeException(object value, string argument)
         {
-            throw new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
+            return new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
         }
 
         [Serializable]
