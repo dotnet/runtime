@@ -192,33 +192,32 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
     }
 }
 
-
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-
 /*
  * Scan all handle roots in this 'namespace' for profiling
  */
 
-void GCScan::GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc)
+void GCScan::GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc, handle_scan_fn fn)
 {
     LIMITED_METHOD_CONTRACT;
 
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     LOG((LF_GC|LF_GCROOTS, LL_INFO10, "Profiler Root Scan Phase, Handles\n"));
-    Ref_ScanPointersForProfilerAndETW(max_gen, (uintptr_t)sc);
+    Ref_ScanHandlesForProfilerAndETW(max_gen, (uintptr_t)sc, fn);
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
 /*
  * Scan dependent handles in this 'namespace' for profiling
  */
-void GCScan::GcScanDependentHandlesForProfilerAndETW (int max_gen, ProfilingScanContext* sc)
+void GCScan::GcScanDependentHandlesForProfilerAndETW (int max_gen, ScanContext* sc, handle_scan_fn fn)
 {
     LIMITED_METHOD_CONTRACT;
 
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     LOG((LF_GC|LF_GCROOTS, LL_INFO10, "Profiler Root Scan Phase, DependentHandles\n"));
-    Ref_ScanDependentHandlesForProfilerAndETW(max_gen, sc);
-}
-
+    Ref_ScanDependentHandlesForProfilerAndETW(max_gen, sc, fn);
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+}
 
 void GCScan::GcRuntimeStructuresValid (BOOL bValid)
 {
