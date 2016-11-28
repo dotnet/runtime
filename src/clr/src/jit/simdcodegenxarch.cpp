@@ -464,7 +464,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
 // to target mm reg, zeroing out the upper bits if and only if specified.
 //
 // Arguments:
-//    type             the type of value to be moved
+//    targetType       the target type
+//    baseType         the base type of value to be moved
 //    targetReg        the target reg
 //    srcReg           the src reg
 //    moveType         action to be performed on target upper bits
@@ -475,10 +476,10 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
 // Notes:
 //    This is currently only supported for floating point types.
 //
-void CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg, SIMDScalarMoveType moveType)
+void CodeGen::genSIMDScalarMove(
+    var_types targetType, var_types baseType, regNumber targetReg, regNumber srcReg, SIMDScalarMoveType moveType)
 {
-    var_types targetType = compiler->getSIMDVectorType();
-    assert(varTypeIsFloating(type));
+    assert(varTypeIsFloating(baseType));
 #ifdef FEATURE_AVX_SUPPORT
     if (compiler->getSIMDInstructionSet() == InstructionSet_AVX)
     {
@@ -487,17 +488,17 @@ void CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber s
             case SMT_PreserveUpper:
                 if (srcReg != targetReg)
                 {
-                    instruction ins = ins_Store(type);
+                    instruction ins = ins_Store(baseType);
                     if (getEmitter()->IsThreeOperandMoveAVXInstruction(ins))
                     {
                         // In general, when we use a three-operands move instruction, we want to merge the src with
                         // itself. This is an exception in that we actually want the "merge" behavior, so we must
                         // specify it with all 3 operands.
-                        inst_RV_RV_RV(ins, targetReg, targetReg, srcReg, emitTypeSize(targetType));
+                        inst_RV_RV_RV(ins, targetReg, targetReg, srcReg, emitTypeSize(baseType));
                     }
                     else
                     {
-                        inst_RV_RV(ins, targetReg, srcReg, targetType, emitTypeSize(targetType));
+                        inst_RV_RV(ins, targetReg, srcReg, baseType, emitTypeSize(baseType));
                     }
                 }
                 break;
@@ -516,9 +517,9 @@ void CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber s
             case SMT_ZeroInitUpper_SrcHasUpperZeros:
                 if (srcReg != targetReg)
                 {
-                    instruction ins = ins_Copy(type);
+                    instruction ins = ins_Copy(baseType);
                     assert(!getEmitter()->IsThreeOperandMoveAVXInstruction(ins));
-                    inst_RV_RV(ins, targetReg, srcReg, targetType, emitTypeSize(targetType));
+                    inst_RV_RV(ins, targetReg, srcReg, baseType, emitTypeSize(baseType));
                 }
                 break;
 
@@ -536,7 +537,7 @@ void CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber s
             case SMT_PreserveUpper:
                 if (srcReg != targetReg)
                 {
-                    inst_RV_RV(ins_Store(type), targetReg, srcReg, targetType, emitTypeSize(targetType));
+                    inst_RV_RV(ins_Store(baseType), targetReg, srcReg, baseType, emitTypeSize(baseType));
                 }
                 break;
 
@@ -545,22 +546,22 @@ void CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber s
                 {
                     // There is no guarantee that upper bits of op1Reg are zero.
                     // We achieve this by using left logical shift 12-bytes and right logical shift 12 bytes.
-                    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, type);
+                    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, baseType);
                     getEmitter()->emitIns_R_I(ins, EA_16BYTE, srcReg, 12);
-                    ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, type);
+                    ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, baseType);
                     getEmitter()->emitIns_R_I(ins, EA_16BYTE, srcReg, 12);
                 }
                 else
                 {
                     genSIMDZero(targetType, TYP_FLOAT, targetReg);
-                    inst_RV_RV(ins_Store(type), targetReg, srcReg);
+                    inst_RV_RV(ins_Store(baseType), targetReg, srcReg);
                 }
                 break;
 
             case SMT_ZeroInitUpper_SrcHasUpperZeros:
                 if (srcReg != targetReg)
                 {
-                    inst_RV_RV(ins_Copy(type), targetReg, srcReg, targetType, emitTypeSize(targetType));
+                    inst_RV_RV(ins_Copy(baseType), targetReg, srcReg, baseType, emitTypeSize(baseType));
                 }
                 break;
 
@@ -676,7 +677,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             SIMDScalarMoveType moveType =
                 op1->IsCnsFltOrDbl() || op1->isMemoryOp() ? SMT_ZeroInitUpper_SrcHasUpperZeros : SMT_ZeroInitUpper;
 
-            genSIMDScalarMove(TYP_FLOAT, targetReg, op1Reg, moveType);
+            genSIMDScalarMove(targetType, TYP_FLOAT, targetReg, op1Reg, moveType);
 
             if (size == 8)
             {
@@ -786,7 +787,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
         {
             getEmitter()->emitIns_R_I(insLeftShift, EA_16BYTE, vectorReg, baseTypeSize);
         }
-        genSIMDScalarMove(baseType, vectorReg, operandReg, SMT_PreserveUpper);
+        genSIMDScalarMove(targetType, baseType, vectorReg, operandReg, SMT_PreserveUpper);
 
         offset += baseTypeSize;
     }
