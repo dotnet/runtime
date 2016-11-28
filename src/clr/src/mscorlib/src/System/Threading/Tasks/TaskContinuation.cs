@@ -305,7 +305,7 @@ namespace System.Threading.Tasks
             m_options = options;
             m_taskScheduler = scheduler;
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, m_task.Id, "Task.ContinueWith: " + ((Delegate)task.m_action).Method.Name, 0);
+                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, m_task.Id, "Task.ContinueWith: " + task.m_action.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
             {
@@ -374,7 +374,7 @@ namespace System.Threading.Tasks
                 return m_task.GetDelegateContinuationsForDebugger();
             }
 
-            return new Delegate[] { m_task.m_action as Delegate };
+            return new Delegate[] { m_task.m_action };
         }
     }
 
