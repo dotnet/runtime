@@ -74,7 +74,7 @@ void Frame::Log() {
 
     MethodDesc* method = GetFunction();
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
         method = ((UMThkCallFrame*) this)->GetUMEntryThunk()->GetMethod();
 #endif
@@ -85,7 +85,7 @@ void Frame::Log() {
     const char* frameType;
     if (GetVTablePtr() == PrestubMethodFrame::GetMethodFrameVPtr())
         frameType = "PreStub";
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     else if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
         frameType = "UMThkCallFrame";
 #endif
@@ -1671,7 +1671,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 #endif // FEATURE_COMINTEROP
 
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
 PTR_UMEntryThunk UMThkCallFrame::GetUMEntryThunk()
 {
@@ -1694,7 +1694,7 @@ void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif
 
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
 #ifndef DACCESS_COMPILE
 

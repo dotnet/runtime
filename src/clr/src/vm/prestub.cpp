@@ -1647,7 +1647,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 // use the prestub.
 //==========================================================================
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 static PCODE g_UMThunkPreStub;
 #endif
 
@@ -1676,7 +1676,7 @@ void InitPreStubManager(void)
         return;
     }
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     g_UMThunkPreStub = GenerateUMThunkPrestub()->GetEntryPoint();
 #endif
 
@@ -1687,7 +1687,7 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     return g_UMThunkPreStub;
 #else
     return GetEEFuncEntryPoint(TheUMEntryPrestub);

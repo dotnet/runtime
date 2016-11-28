@@ -569,7 +569,7 @@ private:
     AppDomain *m_pDomain;
 };
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 //-------------------------------------------------------------------------
 // One-time creation of special prestub to initialize UMEntryThunks.
 //-------------------------------------------------------------------------

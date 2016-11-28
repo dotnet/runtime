@@ -126,7 +126,7 @@ VPTR_CLASS(StubHelperFrame)
 #ifdef FEATURE_REMOTING
 VPTR_CLASS(TPMethodFrame)
 #endif
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 VPTR_CLASS(UMThkCallFrame)
 #endif
 VPTR_CLASS(TailCallFrame)
