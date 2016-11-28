@@ -447,7 +447,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Delegate d = (Delegate)m_action;
+                Delegate d = m_action;
                 return d != null ? d.Method.ToString() : "{null}";
             }
         }
