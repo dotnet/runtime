@@ -1158,13 +1158,7 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.UnknownLiftType(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "Cannot create instance of {0} because it contains generic parameters"
-        /// </summary>
-        internal static Exception IllegalNewGenericParams(object p0, string paramName)
-        {
-            return new ArgumentException(Strings.IllegalNewGenericParams(p0), paramName);
-        }
+
         /// <summary>
         /// InvalidOperationException with message like "variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined"
         /// </summary>
