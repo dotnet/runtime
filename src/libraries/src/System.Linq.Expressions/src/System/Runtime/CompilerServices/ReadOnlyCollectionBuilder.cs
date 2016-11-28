@@ -527,7 +527,6 @@ namespace System.Runtime.CompilerServices
 
             public void Dispose()
             {
-                GC.SuppressFinalize(this);
             }
 
             #endregion
