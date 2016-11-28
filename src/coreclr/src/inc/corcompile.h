@@ -71,7 +71,8 @@ typedef DPTR(struct CORCOMPILE_VIRTUAL_SECTION_INFO)
 typedef DPTR(struct CORCOMPILE_IMPORT_SECTION)
     PTR_CORCOMPILE_IMPORT_SECTION;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#ifdef _TARGET_X86_
+#ifndef FEATURE_PAL
 //
 // x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
 //
@@ -80,6 +81,8 @@ typedef struct _RUNTIME_FUNCTION {
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
+#endif // !FEATURE_PAL
+
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
@@ -87,7 +90,7 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 // Chained unwind info. Used for cold methods.
 #define RUNTIME_FUNCTION_INDIRECT 0x80000000
 
-#endif // _TARGET_X86_ && !FEATURE_PAL
+#endif // _TARGET_X86_
 
 // The stride is choosen as maximum value that still gives good page locality of RUNTIME_FUNCTION table touches (only one page of 
 // RUNTIME_FUNCTION table is going to be touched during most IP2MD lookups).
