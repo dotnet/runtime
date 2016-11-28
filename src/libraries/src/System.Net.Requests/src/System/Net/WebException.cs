@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -94,6 +95,14 @@ namespace System.Net
                     message,
                     exception,
                     GetStatusFromException(exception as HttpRequestException),
+                    null);
+            }
+            else if (exception is TaskCanceledException)
+            {
+                return new WebException(
+                    SR.net_webstatus_Timeout,
+                    null,
+                    WebExceptionStatus.Timeout,
                     null);
             }
 

@@ -34,11 +34,12 @@ namespace System.Net
         [ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
+            // Trick the cloned object into not thinking it's disposed.
+            _httpResponseMessage = new HttpResponseMessage();
             _webHeaderCollection = (WebHeaderCollection)serializationInfo.GetValue("_HttpResponseHeaders", typeof(WebHeaderCollection));
             _requestUri = (Uri)serializationInfo.GetValue("_Uri", typeof(Uri));
             Version version = (Version)serializationInfo.GetValue("_Version", typeof(Version));
-            _isVersionHttp11 = version.Equals(HttpVersion.Version11);            
-            ContentLength = serializationInfo.GetInt64("_ContentLength");                        
+            _isVersionHttp11 = version.Equals(HttpVersion.Version11);
         }
      
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
