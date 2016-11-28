@@ -125,4 +125,45 @@ inline Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunctio
     return g_theGCToCLR->CreateBackgroundThread(threadStart, arg);
 }
 
+inline void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->DiagGCStart(gen, isInduced);
+}
+
+inline void GCToEEInterface::DiagUpdateGenerationBounds()
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->DiagUpdateGenerationBounds();
+}
+
+inline void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->DiagGCEnd(index, gen, reason, fConcurrent);
+}
+
+inline void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->DiagWalkFReachableObjects(gcContext);
+}
+
+inline void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->DiagWalkSurvivors(gcContext);
+}
+
+inline void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->DiagWalkLOHSurvivors(gcContext);
+}
+
+inline void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->DiagWalkBGCSurvivors(gcContext);
+}
 #endif // __GCTOENV_EE_STANDALONE_INL__
