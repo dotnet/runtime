@@ -998,6 +998,10 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 	// .net seems to check that at least 50% of stack is available
 	min_size = thread->stack_size / 2;
 
+	// TODO: It's not always set
+	if (!min_size)
+		return TRUE;
+
 	current = (guint8 *)&stack_addr;
 	if (current > stack_addr) {
 		if ((current - stack_addr) < min_size)
