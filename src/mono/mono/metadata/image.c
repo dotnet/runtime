@@ -721,7 +721,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 					return NULL;
 				}
 
-				image->modules [idx - 1] = image;
+				image->modules [idx - 1] = moduleImage;
 
 #ifdef HOST_WIN32
 				if (image->modules [idx - 1]->is_module_handle)
