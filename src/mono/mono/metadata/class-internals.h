@@ -284,6 +284,8 @@ struct _MonoClass {
 	guint blittable       : 1; /* class is blittable */
 	guint unicode         : 1; /* class uses unicode char when marshalled */
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
+	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
+
 	/* next byte */
 	guint8 min_align;
 

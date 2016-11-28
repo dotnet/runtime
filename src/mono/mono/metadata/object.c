@@ -75,6 +75,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (activation_services, System.Runtime.Remoti
 #define ldstr_unlock() mono_os_mutex_unlock (&ldstr_section)
 static mono_mutex_t ldstr_section;
 
+
 /**
  * mono_runtime_object_init:
  * @this_obj: the object to initialize
@@ -6489,8 +6490,14 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 			return obj;
 		}
 
+		/* casting an array one of the invariant interfaces that must act as such */
+		if (klass->is_array_special_interface) {
+			if (mono_class_is_assignable_from (klass, vt->klass))
+				return obj;
+		}
+
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
-		if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
+		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
 			return obj;
 	} else {
 		MonoClass *oklass = vt->klass;
