@@ -6,11 +6,16 @@
 #include <mono/metadata/tabledefs.h>
 
 
-enum InfrequentDataKind {
+typedef enum {
 	PROP_MARSHAL_INFO = 1, /* MonoMarshalType */
-	PROP_EXT = 2, /* MonoClassExt */
-	PROP_REF_INFO_HANDLE = 3, /* gchandle */
-};
+	PROP_REF_INFO_HANDLE = 2, /* gchandle */
+	PROP_EXCEPTION_DATA = 3, /* MonoErrorBoxed* */
+	PROP_NESTED_CLASSES = 4, /* GList* */
+	PROP_PROPERTY_INFO = 5, /* MonoClassPropertyInfo* */
+	PROP_EVENT_INFO = 6, /* MonoClassEventInfo* */
+	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
+	PROP_DECLSEC_FLAGS = 8 /* guint32 */
+}  InfrequentDataKind;
 
 /* Accessors based on class kind*/
 
@@ -242,19 +247,6 @@ mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info)
 	mono_property_bag_add (&class->infrequent_data, marshal_info);
 }
 
-MonoClassExt*
-mono_class_get_ext (MonoClass *class)
-{
-	return mono_property_bag_get (&class->infrequent_data, PROP_EXT);
-}
-
-void
-mono_class_set_ext (MonoClass *class, MonoClassExt *ext)
-{
-	ext->head.tag = PROP_EXT;
-	mono_property_bag_add (&class->infrequent_data, ext);
-}
-
 typedef struct {
 	MonoPropertyBagItem head;
 	guint32 value;
@@ -282,4 +274,103 @@ mono_class_set_ref_info_handle (MonoClass *class, guint32 value)
 	prop->value = value;
 	prop = mono_property_bag_add (&class->infrequent_data, prop);
 	return prop->value;
+}
+
+typedef struct {
+	MonoPropertyBagItem head;
+	gpointer value;
+} PointerProperty;
+
+static void
+set_pointer_property (MonoClass *klass, InfrequentDataKind property, gpointer value)
+{
+	PointerProperty *prop = mono_class_alloc (klass, sizeof (PointerProperty));
+	prop->head.tag = property;
+	prop->value = value;
+	mono_property_bag_add (&klass->infrequent_data, prop);
+}
+
+static gpointer
+get_pointer_property (MonoClass *klass, InfrequentDataKind property)
+{
+	PointerProperty *prop = (PointerProperty*)mono_property_bag_get (&klass->infrequent_data, property);
+	return prop ? prop->value : NULL;
+}
+
+MonoErrorBoxed*
+mono_class_get_exception_data (MonoClass *klass)
+{
+	return (MonoErrorBoxed*)get_pointer_property (klass, PROP_EXCEPTION_DATA);
+}
+
+void
+mono_class_set_exception_data (MonoClass *klass, MonoErrorBoxed *value)
+{
+	set_pointer_property (klass, PROP_EXCEPTION_DATA, value);
+}
+
+GList*
+mono_class_get_nested_classes_property (MonoClass *klass)
+{
+	return (GList*)get_pointer_property (klass, PROP_NESTED_CLASSES);
+}
+
+void
+mono_class_set_nested_classes_property (MonoClass *klass, GList *value)
+{
+	set_pointer_property (klass, PROP_NESTED_CLASSES, value);
+}
+
+MonoClassPropertyInfo*
+mono_class_get_property_info (MonoClass *klass)
+{
+	return mono_property_bag_get (&klass->infrequent_data, PROP_PROPERTY_INFO);
+}
+
+void
+mono_class_set_property_info (MonoClass *klass, MonoClassPropertyInfo *info)
+{
+	info->head.tag = PROP_PROPERTY_INFO;
+	mono_property_bag_add (&klass->infrequent_data, info);
+}
+
+MonoClassEventInfo*
+mono_class_get_event_info (MonoClass *klass)
+{
+	return mono_property_bag_get (&klass->infrequent_data, PROP_EVENT_INFO);
+}
+
+void
+mono_class_set_event_info (MonoClass *klass, MonoClassEventInfo *info)
+{
+	info->head.tag = PROP_EVENT_INFO;
+	mono_property_bag_add (&klass->infrequent_data, info);
+}
+
+MonoFieldDefaultValue*
+mono_class_get_field_def_values (MonoClass *klass)
+{
+	return (MonoFieldDefaultValue*)get_pointer_property (klass, PROP_FIELD_DEF_VALUES);
+}
+
+void
+mono_class_set_field_def_values (MonoClass *klass, MonoFieldDefaultValue *values)
+{
+	set_pointer_property (klass, PROP_FIELD_DEF_VALUES, values);
+}
+
+guint32
+mono_class_get_declsec_flags (MonoClass *class)
+{
+	Uint32Property *prop = mono_property_bag_get (&class->infrequent_data, PROP_DECLSEC_FLAGS);
+	return prop ? prop->value : 0;
+}
+
+void
+mono_class_set_declsec_flags (MonoClass *class, guint32 value)
+{
+	Uint32Property *prop = mono_class_alloc (class, sizeof (Uint32Property));
+	prop->head.tag = PROP_DECLSEC_FLAGS;
+	prop->value = value;
+	mono_property_bag_add (&class->infrequent_data, prop);
 }

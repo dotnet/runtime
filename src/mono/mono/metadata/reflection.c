@@ -2379,21 +2379,19 @@ guint32
 mono_declsec_flags_from_class (MonoClass *klass)
 {
 	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_HAS_SECURITY) {
-		MonoClassExt *ext = mono_class_get_ext (klass);
-		if (!ext || !ext->declsec_flags) {
+		guint32 flags = mono_class_get_declsec_flags (klass);
+
+		if (!flags) {
 			guint32 idx;
 
 			idx = mono_metadata_token_index (klass->type_token);
 			idx <<= MONO_HAS_DECL_SECURITY_BITS;
 			idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
-			mono_loader_lock ();
-			mono_class_alloc_ext (klass);
-			ext = mono_class_get_ext (klass);
-			mono_loader_unlock ();
+			flags = mono_declsec_get_flags (klass->image, idx);
 			/* we cache the flags on classes */
-			ext->declsec_flags = mono_declsec_get_flags (klass->image, idx);
+			mono_class_set_declsec_flags (klass, flags);
 		}
-		return ext->declsec_flags;
+		return flags;
 	}
 	return 0;
 }

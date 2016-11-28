@@ -1217,13 +1217,10 @@ mono_image_fill_export_table_from_class (MonoDomain *domain, MonoClass *klass,
 	table->next_idx ++;
 
 	/* Emit nested types */
-	MonoClassExt *ext = mono_class_get_ext (klass);
-	if (ext && ext->nested_classes) {
-		GList *tmp;
-
-		for (tmp = ext->nested_classes; tmp; tmp = tmp->next)
-			mono_image_fill_export_table_from_class (domain, (MonoClass *)tmp->data, module_index, table->next_idx - 1, assembly);
-	}
+	GList *nested_classes = mono_class_get_nested_classes_property (klass);
+	GList *tmp;
+	for (tmp = nested_classes; tmp; tmp = tmp->next)
+		mono_image_fill_export_table_from_class (domain, (MonoClass *)tmp->data, module_index, table->next_idx - 1, assembly);
 
 	return res;
 }

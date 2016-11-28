@@ -11,6 +11,12 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-membar.h>
 
+/*
+ * mono_property_bag_get:
+ *
+ *   Return the value of the property with TAG or NULL.
+ * This doesn't take any locks.
+ */
 void*
 mono_property_bag_get (MonoPropertyBag *bag, int tag)
 {
@@ -23,6 +29,15 @@ mono_property_bag_get (MonoPropertyBag *bag, int tag)
 	return NULL;
 }
 
+/*
+ * mono_property_bag_add:
+ *
+ *   Store VALUE in the property bag. Return the previous value
+ * with the same tag, or NULL. VALUE should point to a structure
+ * extending the MonoPropertyBagItem structure with the 'tag'
+ * field set.
+ * This doesn't take any locks.
+ */
 void*
 mono_property_bag_add (MonoPropertyBag *bag, void *value)
 {

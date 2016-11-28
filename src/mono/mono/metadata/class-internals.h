@@ -227,39 +227,21 @@ typedef struct {
 
 #define MONO_SIZEOF_CLASS_RUNTIME_INFO (sizeof (MonoClassRuntimeInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
-#define MONO_CLASS_PROP_EXCEPTION_DATA 0
-
-/* 
- * This structure contains the rarely used fields of MonoClass
- * Since using just one field causes the whole structure to be allocated, it should
- * be used for fields which are only used in like 5% of all classes.
- */
 typedef struct {
 	MonoPropertyBagItem head;
 
-	struct {
-#if MONO_SMALL_CONFIG
-		guint16 first, count;
-#else
-		guint32 first, count;
-#endif
-	} property, event;
-
-	/* Initialized by a call to mono_class_setup_properties () */
 	MonoProperty *properties;
+	guint32 first, count;
+	MonoFieldDefaultValue *def_values;
+} MonoClassPropertyInfo;
+
+typedef struct {
+	MonoPropertyBagItem head;
 
 	/* Initialized by a call to mono_class_setup_events () */
 	MonoEvent *events;
-
-	guint32    declsec_flags;	/* declarative security attributes flags */
-
-	/* Default values/RVA for fields and properties */
-	/* Accessed using mono_class_get_field_default_value () / mono_field_get_data () */
-	MonoFieldDefaultValue *field_def_values;
-	MonoFieldDefaultValue *prop_def_values;
-
-	GList      *nested_classes;
-} MonoClassExt;
+	guint32 first, count;
+} MonoClassEventInfo;
 
 typedef enum {
 	MONO_CLASS_DEF = 1, /* non-generic type */
@@ -334,7 +316,7 @@ struct _MonoClass {
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* setup_fields () has finished */
-	guint has_failure : 1; /* See MONO_CLASS_PROP_EXCEPTION_DATA for a MonoErrorBoxed with the details */
+	guint has_failure : 1; /* See mono_class_get_exception_data () for a MonoErrorBoxed with the details */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -1362,9 +1344,6 @@ gpointer
 mono_class_alloc0 (MonoClass *klass, int size);
 
 void
-mono_class_alloc_ext (MonoClass *klass);
-
-void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error);
 
 MonoClassField*
@@ -1493,17 +1472,47 @@ mono_class_get_marshal_info (MonoClass *class);
 void
 mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info);
 
-MonoClassExt*
-mono_class_get_ext (MonoClass *class);
-
-void
-mono_class_set_ext (MonoClass *class, MonoClassExt *ext);
-
 guint32
 mono_class_get_ref_info_handle (MonoClass *class);
 
 guint32
 mono_class_set_ref_info_handle (MonoClass *class, guint32 value);
+
+MonoErrorBoxed*
+mono_class_get_exception_data (MonoClass *klass);
+
+void
+mono_class_set_exception_data (MonoClass *klass, MonoErrorBoxed *value);
+
+GList*
+mono_class_get_nested_classes_property (MonoClass *klass);
+
+void
+mono_class_set_nested_classes_property (MonoClass *klass, GList *value);
+
+MonoClassPropertyInfo*
+mono_class_get_property_info (MonoClass *klass);
+
+void
+mono_class_set_property_info (MonoClass *klass, MonoClassPropertyInfo *info);
+
+MonoClassEventInfo*
+mono_class_get_event_info (MonoClass *klass);
+
+void
+mono_class_set_event_info (MonoClass *klass, MonoClassEventInfo *info);
+
+MonoFieldDefaultValue*
+mono_class_get_field_def_values (MonoClass *klass);
+
+void
+mono_class_set_field_def_values (MonoClass *klass, MonoFieldDefaultValue *values);
+
+guint32
+mono_class_get_declsec_flags (MonoClass *class);
+
+void
+mono_class_set_declsec_flags (MonoClass *class, guint32 value);
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>

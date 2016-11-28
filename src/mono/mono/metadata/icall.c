@@ -2091,12 +2091,11 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *rfield)
 	if (image_is_dynamic (field->parent->image)) {
 		MonoClass *klass = field->parent;
 		int fidx = field - klass->fields;
-		MonoClassExt *ext = mono_class_get_ext (klass);
+		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
-		g_assert (ext);
-		g_assert (ext->field_def_values);
-		def_type = ext->field_def_values [fidx].def_type;
-		def_value = ext->field_def_values [fidx].data;
+		g_assert (def_values);
+		def_type = def_values [fidx].def_type;
+		def_value = def_values [fidx].data;
 
 		if (def_type == MONO_TYPE_END) {
 			mono_set_pending_exception (mono_get_exception_invalid_operation (NULL));
