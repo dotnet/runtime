@@ -30,6 +30,7 @@
 #include "utils/mono-threads-coop.h"
 #include "sgen/sgen-thread-pool.h"
 #include "utils/mono-threads.h"
+#include "metadata/w32handle.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;

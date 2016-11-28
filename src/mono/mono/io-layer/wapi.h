@@ -10,6 +10,8 @@
 #ifndef _WAPI_WAPI_H_
 #define _WAPI_WAPI_H_
 
+#include <glib.h>
+
 #include <sys/types.h>
 
 #include <mono/io-layer/wapi-remap.h>
@@ -23,7 +25,15 @@
 #include <mono/io-layer/status.h>
 #include <mono/io-layer/timefuncs.h>
 #include <mono/io-layer/versioninfo.h>
-#include <mono/io-layer/wait.h>
+
+G_BEGIN_DECLS
+
+#define WAIT_FAILED		0xFFFFFFFF
+#define WAIT_OBJECT_0		((STATUS_WAIT_0) +0)
+#define WAIT_ABANDONED		((STATUS_ABANDONED_WAIT_0) +0)
+#define WAIT_ABANDONED_0	((STATUS_ABANDONED_WAIT_0) +0)
+#define WAIT_TIMEOUT		STATUS_TIMEOUT
+#define WAIT_IO_COMPLETION	STATUS_USER_APC
 
 void
 wapi_init (void);
@@ -40,5 +50,7 @@ DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpoi
 
 pid_t
 wapi_getpid (void);
+
+G_END_DECLS
 
 #endif /* _WAPI_WAPI_H_ */

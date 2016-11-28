@@ -25,7 +25,6 @@ OTHER_H = \
 	types.h		\
 	uglify.h	\
 	versioninfo.h	\
-	wait.h		\
 	wapi.h		\
 	wapi-remap.h
 
@@ -56,7 +55,6 @@ OTHER_SRC = \
 	uglify.h		\
 	versioninfo.c		\
 	versioninfo.h		\
-	wait.h			\
 	wapi_glob.h		\
 	wapi_glob.c		\
 	wapi.h			\

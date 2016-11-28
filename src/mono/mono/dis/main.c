@@ -31,6 +31,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/w32handle.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-counters.h>
 
