@@ -1061,6 +1061,38 @@ namespace System.Linq.Expressions.Tests
             JumpOutOfExceptionFilter(false);
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpOutOfFinally(bool useInterpreter)
+        {
+            LabelTarget target = Expression.Label();
+            Expression<Func<int>> tryExp = Expression.Lambda<Func<int>>(
+                Expression.Block(
+                    Expression.Label(target),
+                    Expression.TryFinally(
+                        Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                            Expression.Block(
+                                Expression.Goto(target),
+                                Expression.Constant(true)
+                                )
+                            )
+                        )
+                    );
+            Assert.Throws<InvalidOperationException>(() => tryExp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpIntoTry(bool useInterpreter)
+        {
+            LabelTarget target = Expression.Label();
+            Expression<Action> tryExp = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.Goto(target),
+                    Expression.TryFinally(
+                        Expression.Label(target),
+                        Expression.Empty())));
+            Assert.Throws<InvalidOperationException>(() => tryExp.Compile(useInterpreter));
+        }
+
         [Fact]
         public void NonAssignableTryAndCatchTypes()
         {
