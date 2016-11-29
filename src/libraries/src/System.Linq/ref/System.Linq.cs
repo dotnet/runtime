@@ -202,7 +202,7 @@ namespace System.Linq
         System.Collections.Generic.IEnumerable<TElement> this[TKey key] { get; }
         bool Contains(TKey key);
     }
-    public partial interface IOrderedEnumerable<TElement> : System.Collections.Generic.IEnumerable<TElement>, System.Collections.IEnumerable
+    public partial interface IOrderedEnumerable<out TElement> : System.Collections.Generic.IEnumerable<TElement>, System.Collections.IEnumerable
     {
         System.Linq.IOrderedEnumerable<TElement> CreateOrderedEnumerable<TKey>(System.Func<TElement, TKey> keySelector, System.Collections.Generic.IComparer<TKey> comparer, bool descending);
     }
