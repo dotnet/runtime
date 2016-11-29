@@ -768,10 +768,29 @@ mono_get_reflection_missing_object (MonoDomain *domain)
 }
 
 static MonoObject*
-get_dbnull (MonoDomain *domain, MonoObject **dbnull)
+get_dbnull_object (MonoDomain *domain, MonoError *error)
 {
+	MonoObject *obj;
+	static MonoClassField *dbnull_value_field = NULL;
+
+	mono_error_init (error);
+
+	if (!dbnull_value_field) {
+		MonoClass *dbnull_klass;
+		dbnull_klass = mono_class_get_dbnull_class ();
+		dbnull_value_field = mono_class_get_field_from_name (dbnull_klass, "Value");
+		g_assert (dbnull_value_field);
+	}
+	obj = mono_field_get_value_object_checked (domain, dbnull_value_field, NULL, error);
+	return obj;
+}
+
+static MonoObject*
+get_dbnull (MonoDomain *domain, MonoObject **dbnull, MonoError *error)
+{
+	mono_error_init (error);
 	if (!*dbnull)
-		*dbnull = mono_get_dbnull_object (domain);
+		*dbnull = get_dbnull_object (domain, error);
 	return *dbnull;
 }
 
@@ -879,7 +898,9 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 			if (param->AttrsImpl & PARAM_ATTRIBUTE_OPTIONAL)
 				MONO_OBJECT_SETREF (param, DefaultValueImpl, get_reflection_missing (domain, &missing));
 			else
-				MONO_OBJECT_SETREF (param, DefaultValueImpl, get_dbnull (domain, &dbnull));
+				MONO_OBJECT_SETREF (param, DefaultValueImpl, get_dbnull (domain, &dbnull, error));
+			if (!is_ok (error))
+				goto leave;
 		} else {
 
 			if (!blobs) {
@@ -913,9 +934,10 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 				if (param->AttrsImpl & PARAM_ATTRIBUTE_OPTIONAL)
 					MONO_OBJECT_SETREF (param, DefaultValueImpl, get_reflection_missing (domain, &missing));
 				else
-					MONO_OBJECT_SETREF (param, DefaultValueImpl, get_dbnull (domain, &dbnull));
+					MONO_OBJECT_SETREF (param, DefaultValueImpl, get_dbnull (domain, &dbnull, error));
+				if (!is_ok (error))
+					goto leave;
 			}
-			
 		}
 
 		if (mspecs [i + 1]) {
@@ -1123,15 +1145,8 @@ mono_get_dbnull_object (MonoDomain *domain)
 {
 	MonoError error;
 	MonoObject *obj;
-	static MonoClassField *dbnull_value_field = NULL;
-	
-	if (!dbnull_value_field) {
-		MonoClass *dbnull_klass;
-		dbnull_klass = mono_class_get_dbnull_class ();
-		dbnull_value_field = mono_class_get_field_from_name (dbnull_klass, "Value");
-		g_assert (dbnull_value_field);
-	}
-	obj = mono_field_get_value_object_checked (domain, dbnull_value_field, NULL, &error);
+
+	obj = get_dbnull_object (domain, &error);
 	mono_error_assert_ok (&error);
 	return obj;
 }
