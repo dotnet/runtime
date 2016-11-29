@@ -367,7 +367,7 @@ namespace System.Runtime.CompilerServices
             var body = new List<Expression>();
             var vars = new List<ParameterExpression>();
 
-            ParameterExpression[] @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
+            ParameterExpression[] @params = Array.ConvertAll(invoke.GetParametersCached(), p => Expression.Parameter(p.ParameterType, p.Name));
             LabelTarget @return = Expression.Label(invoke.GetReturnType());
             Type[] typeArgs = new[] { typeof(T) };
 
@@ -581,7 +581,7 @@ namespace System.Runtime.CompilerServices
             body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
 
             ParameterExpression args = Expression.Variable(typeof(object[]), "args");
-            Expression[] argsElements = arguments.Map(p => Convert(p, typeof(object)));
+            Expression[] argsElements = Array.ConvertAll(arguments, p => Convert(p, typeof(object)));
             vars.Add(args);
             body.Add(
                 Expression.Assign(
@@ -651,7 +651,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomNoMatchDelegate(MethodInfo invoke)
         {
-            ParameterExpression[] @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
+            ParameterExpression[] @params = Array.ConvertAll(invoke.GetParametersCached(), p => Expression.Parameter(p.ParameterType, p.Name));
             return Expression.Lambda<T>(
                 Expression.Block(
                     Expression.Call(
