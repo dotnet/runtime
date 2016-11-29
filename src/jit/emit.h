@@ -427,6 +427,11 @@ public:
         // There seem to be some cases where this is used without being initialized via CodeGen::inst_set_SV_var().
         emitVarRefOffs = 0;
 #endif // DEBUG
+
+#ifdef _TARGET_XARCH_
+        SetUseSSE3_4(false);
+#endif // _TARGET_XARCH_
+
 #ifdef FEATURE_AVX_SUPPORT
         SetUseAVX(false);
 #endif // FEATURE_AVX_SUPPORT

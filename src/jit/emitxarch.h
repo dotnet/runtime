@@ -86,6 +86,17 @@ size_t AddRexXPrefix(instruction ins, size_t code);
 size_t AddRexBPrefix(instruction ins, size_t code);
 size_t AddRexPrefix(instruction ins, size_t code);
 
+bool useSSE3_4Encodings;
+bool UseSSE3_4()
+{
+    return useSSE3_4Encodings;
+}
+void SetUseSSE3_4(bool value)
+{
+    useSSE3_4Encodings = value;
+}
+bool Is4ByteSSE4Instruction(instruction ins);
+
 #ifdef FEATURE_AVX_SUPPORT
 // 3-byte VEX prefix starts with byte 0xC4
 #define VEX_PREFIX_MASK_3BYTE 0xC4000000000000LL
@@ -112,6 +123,7 @@ size_t AddVexPrefixIfNeededAndNotPresent(instruction ins, size_t code, emitAttr 
     }
     return code;
 }
+
 bool useAVXEncodings;
 bool UseAVX()
 {
@@ -121,12 +133,14 @@ void SetUseAVX(bool value)
 {
     useAVXEncodings = value;
 }
+
 bool IsThreeOperandBinaryAVXInstruction(instruction ins);
 bool IsThreeOperandMoveAVXInstruction(instruction ins);
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
     return (IsThreeOperandBinaryAVXInstruction(ins) || IsThreeOperandMoveAVXInstruction(ins));
 }
+bool Is4ByteAVXInstruction(instruction ins);
 #else  // !FEATURE_AVX_SUPPORT
 bool UseAVX()
 {
@@ -145,6 +159,10 @@ bool IsThreeOperandMoveAVXInstruction(instruction ins)
     return false;
 }
 bool IsThreeOperandAVXInstruction(instruction ins)
+{
+    return false;
+}
+bool Is4ByteAVXInstruction(instruction ins)
 {
     return false;
 }
