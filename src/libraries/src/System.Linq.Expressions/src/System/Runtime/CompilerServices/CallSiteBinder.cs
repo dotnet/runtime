@@ -194,7 +194,7 @@ namespace System.Runtime.CompilerServices
                                 Expression.Convert(site, siteType),
                                 typeof(CallSite<T>).GetProperty(nameof(CallSite<T>.Update))
                             ),
-                            new TrueReadOnlyCollection<Expression>(@params)
+                            @params
                         )
                     )
                 )
@@ -204,7 +204,7 @@ namespace System.Runtime.CompilerServices
                 Expression.Block(body),
                 CallSite.CallSiteTargetMethodName,
                 true, // always compile the rules with tail call optimization
-                new TrueReadOnlyCollection<ParameterExpression>(@params)
+                @params
             );
         }
 

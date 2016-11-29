@@ -11,19 +11,27 @@ namespace System.Dynamic.Utils
 {
     internal static partial class CollectionExtensions
     {
-        public static T[] AddFirst<T>(this IList<T> list, T item)
+        public static TrueReadOnlyCollection<T> AddFirst<T>(this ReadOnlyCollection<T> list, T item)
         {
             T[] res = new T[list.Count + 1];
             res[0] = item;
             list.CopyTo(res, 1);
+            return new TrueReadOnlyCollection<T>(res);
+        }
+
+        public static T[] AddFirst<T>(this T[] array, T item)
+        {
+            T[] res = new T[array.Length + 1];
+            res[0] = item;
+            array.CopyTo(res, 1);
             return res;
         }
 
-        public static T[] AddLast<T>(this IList<T> list, T item)
+        public static T[] AddLast<T>(this T[] array, T item)
         {
-            T[] res = new T[list.Count + 1];
-            list.CopyTo(res, 0);
-            res[list.Count] = item;
+            T[] res = new T[array.Length + 1];
+            array.CopyTo(res, 0);
+            res[array.Length] = item;
             return res;
         }
 
