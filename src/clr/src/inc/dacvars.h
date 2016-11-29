@@ -234,7 +234,9 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pOverlappedDataClass, ::g_pOve
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pValueTypeClass, ::g_pValueTypeClass)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pEnumClass, ::g_pEnumClass)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pThreadClass, ::g_pThreadClass)
+#ifdef FEATURE_CER
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pCriticalFinalizerObjectClass, ::g_pCriticalFinalizerObjectClass)
+#endif
 #ifndef FEATURE_CORECLR
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pAsyncFileStream_AsyncResultClass, ::g_pAsyncFileStream_AsyncResultClass)
 #endif // !FEATURE_CORECLR
@@ -251,7 +253,9 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pBaseRuntimeClass, ::g_pBaseRu
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICastableInterface)
 #endif // FEATURE_ICASTABLE
 
+#ifdef FEATURE_CER
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pPrepareConstrainedRegionsMethod, ::g_pPrepareConstrainedRegionsMethod)
+#endif
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pExecuteBackoutCodeHelperMethod, ::g_pExecuteBackoutCodeHelperMethod)
 
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pObjectCtorMD, ::g_pObjectCtorMD)

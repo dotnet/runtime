@@ -1745,10 +1745,6 @@ void PrepopulateGenericHandleCache(DictionaryLayout  *pDictionaryLayout,
                                    MethodDesc        *pMD,
                                    MethodTable       *pMT)
 {
-#ifdef FEATURE_CORECLR
-    // Disable this function in CoreCLR to work around https://github.com/dotnet/corefx/issues/12412.
-    LIMITED_METHOD_CONTRACT;
-#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -1772,7 +1768,6 @@ void PrepopulateGenericHandleCache(DictionaryLayout  *pDictionaryLayout,
         }
         pOverflows = pOverflows->GetNextLayout();
     }
-#endif // FEATURE_CORECLR
 }
 
 #ifdef FEATURE_PREJIT

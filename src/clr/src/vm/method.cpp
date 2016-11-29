@@ -3249,6 +3249,7 @@ bool MethodDesc::CanSkipDoPrestub (
         return false;
     }
 
+#ifdef FEATURE_CER
     // Can't hard bind to a method which contains one or more Constrained Execution Region roots (we need to force the prestub to
     // execute for such methods).
     if (ContainsPrePreparableCerRoot(this))
@@ -3256,6 +3257,7 @@ bool MethodDesc::CanSkipDoPrestub (
         *pReason = CORINFO_INDIRECT_CALL_CER;
         return false;
     }
+#endif // FEATURE_CER
 
     // Check whether our methoddesc needs restore
     if (NeedsRestore(GetAppDomain()->ToCompilationDomain()->GetTargetImage(), TRUE))
