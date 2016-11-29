@@ -3595,6 +3595,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_cross_helpers_run ();
 
+	mono_counters_init ();
+
 	mini_jit_init ();
 
 	/* Happens when using the embedding interface */
@@ -3657,8 +3659,6 @@ mini_init (const char *filename, const char *runtime_version)
 	ticallbacks.thread_state_init_from_sigctx = mono_thread_state_init_from_sigctx;
 	ticallbacks.thread_state_init_from_handle = mono_thread_state_init_from_handle;
 	ticallbacks.thread_state_init = mono_thread_state_init;
-
-	mono_counters_init ();
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
