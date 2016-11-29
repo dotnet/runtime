@@ -3761,10 +3761,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     }
 
 #if FEATURE_EH_FUNCLETS
-    if (compiler->ehNeedsPSPSym())
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
-        assert(compiler->lvaPSPSym != BAD_VAR_NUM);
-
 #ifdef _TARGET_AMD64_
         // The PSPSym is relative to InitialSP on X64 and CallerSP on other platforms.
         gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetInitialSPRelativeOffset(compiler->lvaPSPSym));
