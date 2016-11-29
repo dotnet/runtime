@@ -235,10 +235,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
     //      jmp         finally-return                  // Only for non-retless finally calls
     // The jmp can be a NOP if we're going to the next block.
     // If we're generating code for the main function (not a funclet), and there is no localloc,
-    // then RSP at this point is the same value as that stored in the PSPsym. So just copy RSP
-    // instead of loading the PSPSym in this case.
+    // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
+    // instead of loading the PSPSym in this case, or if PSPSym is not used (CoreRT ABI).
 
-    if (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT))
+    if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
+        (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
     {
         inst_RV_RV(INS_mov, REG_ARG_0, REG_SPBASE, TYP_I_IMPL);
     }
@@ -2718,8 +2719,10 @@ ALLOC_DONE:
 BAILOUT:
 
     // Write the lvaLocAllocSPvar stack frame slot
-    noway_assert(compiler->lvaLocAllocSPvar != BAD_VAR_NUM);
-    getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
+    if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
+    {
+        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
+    }
 
 #if STACK_PROBES
     if (compiler->opts.compNeedStackProbes)

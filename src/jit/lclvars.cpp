@@ -3388,20 +3388,26 @@ void Compiler::lvaMarkLocalVars()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-#if FEATURE_EH_FUNCLETS
-    if (ehNeedsPSPSym())
+    // PSPSym and LocAllocSPvar are not used by the CoreRT ABI
+    if (eeGetEEInfo()->targetAbi != CORINFO_CORERT_ABI)
     {
-        lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
-        LclVarDsc* lclPSPSym = &lvaTable[lvaPSPSym];
-        lclPSPSym->lvType    = TYP_I_IMPL;
-    }
+#if FEATURE_EH_FUNCLETS
+        if (ehNeedsPSPSym())
+        {
+            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
+            LclVarDsc* lclPSPSym = &lvaTable[lvaPSPSym];
+            lclPSPSym->lvType    = TYP_I_IMPL;
+        }
 #endif // FEATURE_EH_FUNCLETS
 
-    if (compLocallocUsed)
-    {
-        lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
-        LclVarDsc* locAllocSPvar = &lvaTable[lvaLocAllocSPvar];
-        locAllocSPvar->lvType    = TYP_I_IMPL;
+        // TODO: LocAllocSPvar should be only required by the implicit frame layout expected by the VM on x86.
+        // It should be removed on other platforms once we check there are no other implicit dependencies.
+        if (compLocallocUsed)
+        {
+            lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
+            LclVarDsc* locAllocSPvar = &lvaTable[lvaLocAllocSPvar];
+            locAllocSPvar->lvType    = TYP_I_IMPL;
+        }
     }
 
     BasicBlock* block;
@@ -4060,12 +4066,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
     LclVarDsc* varDsc;
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
-    if (ehNeedsPSPSym())
+    if (lvaPSPSym != BAD_VAR_NUM)
     {
         // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
         // Without this code, lvaAlignFrame might have put the padding lower than the PSPSym, which would be between
         // the PSPSym and the outgoing argument space.
-        assert(lvaPSPSym != BAD_VAR_NUM);
         varDsc = &lvaTable[lvaPSPSym];
         assert(varDsc->lvFramePointerBased); // We always access it RBP-relative.
         assert(!varDsc->lvMustInit);         // It is never "must init".
@@ -4975,13 +4980,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif //_TARGET_AMD64_
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARMARCH_)
-    if (ehNeedsPSPSym())
+    if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On ARM/ARM64, if we need a PSPSym, allocate it first, before anything else, including
         // padding (so we can avoid computing the same padding in the funclet
         // frame). Note that there is no special padding requirement for the PSPSym.
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
-        assert(lvaPSPSym != BAD_VAR_NUM);            // We should have created the PSPSym variable
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARMARCH_)
@@ -5035,7 +5039,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaSecurityObject, TARGET_POINTER_SIZE, stkOffs);
     }
 
-    if (compLocallocUsed)
+    if (lvaLocAllocSPvar != BAD_VAR_NUM)
     {
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed()); // else offsets of locals of frameless methods will be incorrect
@@ -5481,13 +5485,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
-    if (ehNeedsPSPSym())
+    if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On AMD64, if we need a PSPSym, allocate it last, immediately above the outgoing argument
         // space. Any padding will be higher on the stack than this
         // (including the padding added by lvaAlignFrame()).
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
-        assert(lvaPSPSym != BAD_VAR_NUM);            // We should have created the PSPSym variable
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
