@@ -187,7 +187,8 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
             // Set up standard options.
             Utilities.addStandardOptions(newTestJob, isPR)
             // Add the unit test results
-            Utilities.addXUnitDotNETResults(newTestJob, 'bin/tests/**/testResults.xml')
+            // TODO: Re-enable test analysis when the build refactoring work allows it.
+            //Utilities.addXUnitDotNETResults(newTestJob, 'bin/tests/**/testResults.xml')
 
             def fullCoreFXTestJobName = projectFolder + '/' + newTestJob.name
             def newJob = buildFlowJob(Utilities.getFullJobName(project, newJobName, isPR)) {
@@ -253,7 +254,8 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
-            Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+            // TODO: Re-enable test analysis when the build refactoring work allows it.
+            // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
             // Add archival for the built data.
             Utilities.addArchival(newJob, "msbuild.log", '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
             // Set up appropriate triggers.  PR on demand, otherwise nightly
@@ -345,7 +347,8 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
         Utilities.addGithubPushTrigger(newJob)
 
         // Get results
-        Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testresults/**/testResults.xml')
+        // TODO: Re-enable test analysis when the build refactoring work allows it.
+        // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testresults/**/testResults.xml')
     }
 }
 
@@ -387,7 +390,8 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
-            Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+            // TODO: Re-enable test analysis when the build refactoring work allows it.
+            // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
             def archiveContents = "msbuild.log"
             if (osName.contains('Windows')) {
                 // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
