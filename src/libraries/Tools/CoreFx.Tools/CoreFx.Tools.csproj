@@ -5,6 +5,8 @@
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
     <CLSCompliant>false</CLSCompliant>
+    <OutputPath Condition="'$(TargetGroup)' != 'net45'">$(CoreFxToolsDir)</OutputPath>
+    <OutputPath Condition="'$(TargetGroup)' == 'net45'">$(CoreFxDesktopToolsDir)</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BuildTask.cs" />
