@@ -10660,8 +10660,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
             case GT_COLON:
 #if LOCAL_ASSERTION_PROP
                 if (optLocalAssertionProp)
-                {
 #endif
+                {
                     isQmarkColon = true;
                 }
                 break;
@@ -10875,44 +10875,44 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 // Note for _TARGET_ARMARCH_ we don't have  a remainder instruction, so we don't do this optimization
 //
 #else  // _TARGET_XARCH
-            /* If this is an unsigned long mod with op2 which is a cast to long from a
-               constant int, then don't morph to a call to the helper.  This can be done
-               faster inline using idiv.
-            */
+                /* If this is an unsigned long mod with op2 which is a cast to long from a
+                   constant int, then don't morph to a call to the helper.  This can be done
+                   faster inline using idiv.
+                */
 
-            noway_assert(op2);
-            if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD) &&
-                ((tree->gtFlags & GTF_UNSIGNED) == (op1->gtFlags & GTF_UNSIGNED)) &&
-                ((tree->gtFlags & GTF_UNSIGNED) == (op2->gtFlags & GTF_UNSIGNED)))
-            {
-                if (op2->gtOper == GT_CAST && op2->gtCast.CastOp()->gtOper == GT_CNS_INT &&
-                    op2->gtCast.CastOp()->gtIntCon.gtIconVal >= 2 &&
-                    op2->gtCast.CastOp()->gtIntCon.gtIconVal <= 0x3fffffff &&
-                    (tree->gtFlags & GTF_UNSIGNED) == (op2->gtCast.CastOp()->gtFlags & GTF_UNSIGNED))
+                noway_assert(op2);
+                if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD) &&
+                    ((tree->gtFlags & GTF_UNSIGNED) == (op1->gtFlags & GTF_UNSIGNED)) &&
+                    ((tree->gtFlags & GTF_UNSIGNED) == (op2->gtFlags & GTF_UNSIGNED)))
                 {
-                    tree->gtOp.gtOp2 = op2 = fgMorphCast(op2);
-                    noway_assert(op2->gtOper == GT_CNS_NATIVELONG);
-                }
-
-                if (op2->gtOper == GT_CNS_NATIVELONG && op2->gtIntConCommon.LngValue() >= 2 &&
-                    op2->gtIntConCommon.LngValue() <= 0x3fffffff)
-                {
-                    tree->gtOp.gtOp1 = op1 = fgMorphTree(op1);
-                    noway_assert(op1->TypeGet() == TYP_LONG);
-
-                    // Update flags for op1 morph
-                    tree->gtFlags &= ~GTF_ALL_EFFECT;
-
-                    tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT); // Only update with op1 as op2 is a constant
-
-                    // If op1 is a constant, then do constant folding of the division operator
-                    if (op1->gtOper == GT_CNS_NATIVELONG)
+                    if (op2->gtOper == GT_CAST && op2->gtCast.CastOp()->gtOper == GT_CNS_INT &&
+                        op2->gtCast.CastOp()->gtIntCon.gtIconVal >= 2 &&
+                        op2->gtCast.CastOp()->gtIntCon.gtIconVal <= 0x3fffffff &&
+                        (tree->gtFlags & GTF_UNSIGNED) == (op2->gtCast.CastOp()->gtFlags & GTF_UNSIGNED))
                     {
-                        tree = gtFoldExpr(tree);
+                        tree->gtOp.gtOp2 = op2 = fgMorphCast(op2);
+                        noway_assert(op2->gtOper == GT_CNS_NATIVELONG);
                     }
-                    return tree;
+
+                    if (op2->gtOper == GT_CNS_NATIVELONG && op2->gtIntConCommon.LngValue() >= 2 &&
+                        op2->gtIntConCommon.LngValue() <= 0x3fffffff)
+                    {
+                        tree->gtOp.gtOp1 = op1 = fgMorphTree(op1);
+                        noway_assert(op1->TypeGet() == TYP_LONG);
+
+                        // Update flags for op1 morph
+                        tree->gtFlags &= ~GTF_ALL_EFFECT;
+
+                        tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT); // Only update with op1 as op2 is a constant
+
+                        // If op1 is a constant, then do constant folding of the division operator
+                        if (op1->gtOper == GT_CNS_NATIVELONG)
+                        {
+                            tree = gtFoldExpr(tree);
+                        }
+                        return tree;
+                    }
                 }
-            }
 #endif // _TARGET_XARCH
 
             ASSIGN_HELPER_FOR_MOD:
@@ -11071,12 +11071,12 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     ((op2->gtCall.gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) ||
                      (op2->gtCall.gtCallType == CT_HELPER)))
 #else
-            if ((((op1->gtOper == GT_INTRINSIC) &&
-                  (op1->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)) ||
-                 ((op1->gtOper == GT_CALL) && (op1->gtCall.gtCallType == CT_HELPER))) &&
-                (((op2->gtOper == GT_INTRINSIC) &&
-                  (op2->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)) ||
-                 ((op2->gtOper == GT_CALL) && (op2->gtCall.gtCallType == CT_HELPER))))
+                if ((((op1->gtOper == GT_INTRINSIC) &&
+                      (op1->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)) ||
+                     ((op1->gtOper == GT_CALL) && (op1->gtCall.gtCallType == CT_HELPER))) &&
+                    (((op2->gtOper == GT_INTRINSIC) &&
+                      (op2->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)) ||
+                     ((op2->gtOper == GT_CALL) && (op2->gtCall.gtCallType == CT_HELPER))))
 #endif
                 {
                     GenTreePtr pGetClassFromHandle;
@@ -11086,8 +11086,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     bool bOp1ClassFromHandle = gtIsTypeHandleToRuntimeTypeHelper(op1);
                     bool bOp2ClassFromHandle = gtIsTypeHandleToRuntimeTypeHelper(op2);
 #else
-                bool bOp1ClassFromHandle = op1->gtOper == GT_CALL ? gtIsTypeHandleToRuntimeTypeHelper(op1) : false;
-                bool bOp2ClassFromHandle = op2->gtOper == GT_CALL ? gtIsTypeHandleToRuntimeTypeHelper(op2) : false;
+                    bool bOp1ClassFromHandle = op1->gtOper == GT_CALL ? gtIsTypeHandleToRuntimeTypeHelper(op1) : false;
+                    bool bOp2ClassFromHandle = op2->gtOper == GT_CALL ? gtIsTypeHandleToRuntimeTypeHelper(op2) : false;
 #endif
 
                     // Optimize typeof(...) == typeof(...)
@@ -11143,8 +11143,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                             info.compCompHnd->getIntrinsicID(pGetType->gtCall.gtCallMethHnd) ==
                                 CORINFO_INTRINSIC_Object_GetType &&
 #else
-                    if ((pGetType->gtOper == GT_INTRINSIC) &&
-                        (pGetType->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType) &&
+                        if ((pGetType->gtOper == GT_INTRINSIC) &&
+                            (pGetType->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType) &&
 #endif
                             pConstLiteral->gtOper == GT_CNS_INT && pConstLiteral->gtType == TYP_I_IMPL)
                         {
@@ -11158,7 +11158,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 #ifdef LEGACY_BACKEND
                                 GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtCall.gtCallObjp);
 #else
-                            GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
+                                GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
 #endif
                                 objMT->gtFlags |= GTF_EXCEPT; // Null ref exception if object is null
                                 compCurBB->bbFlags |= BBF_HAS_VTABREF;
@@ -11746,7 +11746,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 //
                 //                        EQ/NE
                 //                        /  \
-        //                      op1   CNS 0/1
+                //                      op1   CNS 0/1
                 //
                 ival2 = INT_MAX; // The value of INT_MAX for ival2 just means that the constant value is not 0 or 1
 
@@ -11771,11 +11771,11 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         //
                         //                  EQ/NE                    Possible REVERSE(RELOP)
                         //                  /  \                           /      \
-                //               COMMA CNS 0/1             ->   COMMA   relop_op2
+                        //               COMMA CNS 0/1             ->   COMMA   relop_op2
                         //              /   \                          /    \
-                //             x  RELOP                       x     relop_op1
+                        //             x  RELOP                       x     relop_op1
                         //               /    \
-                //         relop_op1  relop_op2
+                        //         relop_op1  relop_op2
                         //
                         //
                         //
@@ -11814,13 +11814,13 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         //
                         //                        EQ/NE                  EQ/NE
                         //                        /  \                   /  \
-                //                     COMMA  CNS 0/1  ->     RELOP CNS 0/1
+                        //                     COMMA  CNS 0/1  ->     RELOP CNS 0/1
                         //                     /   \                   / \
-                //                   ASG  LCL_VAR
+                        //                   ASG  LCL_VAR
                         //                  /  \
-                //           LCL_VAR   RELOP
+                        //           LCL_VAR   RELOP
                         //                      / \
-                //
+                        //
 
                         GenTreePtr asg = op1->gtOp.gtOp1;
                         GenTreePtr lcl = op1->gtOp.gtOp2;
@@ -11903,9 +11903,9 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         //
                         //                        EQ/NE           ->      RELOP/!RELOP
                         //                        /  \                       /    \
-                //                     RELOP  CNS 0/1
+                        //                     RELOP  CNS 0/1
                         //                     /   \
-                //
+                        //
                         // Note that we will remove/destroy the EQ/NE node and move
                         // the RELOP up into it's location.
 
@@ -11935,11 +11935,11 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     //
                     //                        EQ/NE                  EQ/NE
                     //                        /  \                   /  \
-            //                      AND   CNS 0/1  ->      AND   CNS 0
+                    //                      AND   CNS 0/1  ->      AND   CNS 0
                     //                     /   \                  /   \
-            //                RSZ/RSH   CNS 1            x     CNS (1 << y)
+                    //                RSZ/RSH   CNS 1            x     CNS (1 << y)
                     //                  /  \
-            //                 x   CNS_INT +y
+                    //                 x   CNS_INT +y
 
                     if (op1->gtOper == GT_AND)
                     {
