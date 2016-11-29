@@ -22,13 +22,6 @@ mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass)
 
 #define is_complex_isinst(klass) (mono_class_is_interface (klass) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || mono_class_is_sealed (klass) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
-static MonoInst*
-emit_isinst_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args)
-{
-	MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
-	return mono_emit_method_call (cfg, mono_isinst, args, NULL);
-}
-
 static int
 get_castclass_cache_idx (MonoCompile *cfg)
 {
@@ -37,11 +30,48 @@ get_castclass_cache_idx (MonoCompile *cfg)
 	return (cfg->method_index << 16) | cfg->castclass_cache_index;
 }
 
-static MonoInst*
-emit_castclass_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args)
+static void
+emit_cached_check_args (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int context_used, MonoInst *args[3])
 {
+	args [0] = obj;
+
+	if (context_used) {
+		MonoInst *cache_ins;
+
+		cache_ins = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
+
+		/* klass - it's the second element of the cache entry*/
+		EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, sizeof (gpointer));
+
+		args [2] = cache_ins; /* cache */
+	} else {
+		int idx;
+
+		EMIT_NEW_CLASSCONST (cfg, args [1], klass); /* klass */
+
+		idx = get_castclass_cache_idx (cfg); /* inline cache*/
+		args [2] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
+	}
+}
+
+static MonoInst*
+emit_isinst_with_cache (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int context_used)
+{
+	MonoInst *args [3];
+	MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
+
+	emit_cached_check_args (cfg, obj, klass, context_used, args);
+	return mono_emit_method_call (cfg, mono_isinst, args, NULL);
+}
+
+static MonoInst*
+emit_castclass_with_cache (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int context_used)
+{
+	MonoInst *args [3];
 	MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 	MonoInst *res;
+
+	emit_cached_check_args (cfg, obj, klass, context_used, args);
 
 	mini_save_cast_details (cfg, klass, args [0]->dreg, TRUE);
 	res = mono_emit_method_call (cfg, mono_castclass, args, NULL);
@@ -327,24 +357,9 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		return src;
 
 	if (context_used) {
-		MonoInst *args [3];
 
-		if (is_complex_isinst (klass)) {
-			MonoInst *cache_ins;
-
-			cache_ins = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
-
-			/* obj */
-			args [0] = src;
-
-			/* klass - it's the second element of the cache entry*/
-			EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, sizeof (gpointer));
-
-			/* cache */
-			args [2] = cache_ins;
-
-			return emit_castclass_with_cache (cfg, klass, args);
-		}
+		if (is_complex_isinst (klass))
+			return emit_castclass_with_cache (cfg, src, klass, context_used);
 
 		klass_inst = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 	}
@@ -476,19 +491,8 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	MonoInst *klass_inst = NULL;
 
 	if (context_used) {
-		MonoInst *args [3];
-
-		if(is_complex_isinst (klass)) {
-			MonoInst *cache_ins = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
-
-			args [0] = src; /* obj */
-
-			/* klass - it's the second element of the cache entry*/
-			EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, sizeof (gpointer));
-
-			args [2] = cache_ins; /* cache */
-			return emit_isinst_with_cache (cfg, klass, args);
-		}
+		if(is_complex_isinst (klass))
+			return emit_isinst_with_cache (cfg, src, klass, context_used);
 
 		klass_inst = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 	}
@@ -679,30 +683,10 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	cfg->cbb = first_bb;
 
 	if (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || klass->is_array_special_interface) {
-		MonoInst *args [3];
-		args [0] = source; /* obj */
-
-		if (context_used) {
-			MonoInst *cache_ins;
-
-			cache_ins = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
-
-			/* klass - it's the second element of the cache entry*/
-			EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, sizeof (gpointer));
-
-			args [2] = cache_ins; /* cache */
-		} else {
-			int idx;
-
-			EMIT_NEW_CLASSCONST (cfg, args [1], klass); /* klass */
-
-			idx = get_castclass_cache_idx (cfg); /* inline cache*/
-			args [2] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
-		}
 		if (is_isinst)
-			ret = emit_isinst_with_cache (cfg, klass, args);
+			ret = emit_isinst_with_cache (cfg, source, klass, context_used);
 		else
-			ret = emit_castclass_with_cache (cfg, klass, args);
+			ret = emit_castclass_with_cache (cfg, source, klass, context_used);
 
 	} else {
 		if (is_isinst)
