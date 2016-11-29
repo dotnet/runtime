@@ -6,7 +6,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal class Name
     {
-        private string _text;
+        private readonly string _text;
 
         public Name(string text)
         {

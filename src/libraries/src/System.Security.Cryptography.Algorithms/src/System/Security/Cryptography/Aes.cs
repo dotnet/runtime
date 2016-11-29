@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
 
             BlockSizeValue = 128;
-            // TODO(12368): FeedbackSizeValue = 8;, but the field is not yet available.
+            FeedbackSizeValue = 8;
             KeySizeValue = 256;
             ModeValue = CipherMode.CBC;
         }

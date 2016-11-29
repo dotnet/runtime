@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         private Entry[] _entries;
         private int _count;
         private int _mask;
-        private int _hashCodeRandomizer;
+        private readonly int _hashCodeRandomizer;
 
         internal NameTable()
         {
@@ -43,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
                     return e.name;
                 }
             }
-            return this.AddEntry(new Name(key), hashCode);
+            return AddEntry(new Name(key), hashCode);
         }
 
         internal void Add(Name name)
@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
                     throw Error.InternalCompilerError();
                 }
             }
-            this.AddEntry(name, hashCode);
+            AddEntry(name, hashCode);
         }
 
         public Name Lookup(string key)
@@ -96,7 +96,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             _entries[index] = e;
             if (_count++ == _mask)
             {
-                this.Grow();
+                Grow();
             }
             return e.name;
         }

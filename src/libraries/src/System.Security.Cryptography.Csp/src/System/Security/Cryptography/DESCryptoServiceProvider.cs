@@ -14,7 +14,10 @@ namespace System.Security.Cryptography
         private const int BitsPerByte = 8;
         private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
-        public DESCryptoServiceProvider() { }
+        public DESCryptoServiceProvider()
+        {
+            FeedbackSizeValue = 8;
+        }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DES")]
         public override void GenerateKey()

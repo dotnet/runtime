@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -20,17 +19,17 @@ namespace Microsoft.CSharp.RuntimeBinder
         IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments { get { return Array.Empty<Type>(); } }
 
         CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags { get { return _flags; } }
-        private CSharpCallFlags _flags;
+        private readonly CSharpCallFlags _flags;
 
         Type ICSharpInvokeOrInvokeMemberBinder.CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        private readonly Type _callingContext;
 
         IList<CSharpArgumentInfo> ICSharpInvokeOrInvokeMemberBinder.ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
         bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return (_flags & CSharpCallFlags.ResultDiscarded) != 0; } }
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpInvokeBinder" />.

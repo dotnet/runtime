@@ -4,15 +4,14 @@
 
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Errors;
-using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal class CNullable
     {
-        private SymbolLoader _pSymbolLoader;
-        private ExprFactory _exprFactory;
-        private ErrorHandling _pErrorContext;
+        private readonly SymbolLoader _pSymbolLoader;
+        private readonly ExprFactory _exprFactory;
+        private readonly ErrorHandling _pErrorContext;
 
         private SymbolLoader GetSymbolLoader()
         {
@@ -65,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(exprSrc != null && exprSrc.type.IsNullableType());
 
             // For new T?(x), the answer is x.
-            if (CNullable.IsNullableConstructor(exprSrc))
+            if (IsNullableConstructor(exprSrc))
             {
                 Debug.Assert(exprSrc.asCALL().GetOptionalArguments() != null && !exprSrc.asCALL().GetOptionalArguments().isLIST());
                 return exprSrc.asCALL().GetOptionalArguments();

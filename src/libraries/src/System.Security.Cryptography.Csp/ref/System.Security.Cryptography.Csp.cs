@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     public sealed partial class AesCryptoServiceProvider : System.Security.Cryptography.Aes
     {
         public AesCryptoServiceProvider() { }
+        public override int FeedbackSize { get { throw null; } set { } }
         public override int BlockSize { get { throw null; } set { } }
         public override byte[] IV { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
@@ -54,6 +55,8 @@ namespace System.Security.Cryptography
         public CspParameters(int dwTypeIn, string strProviderNameIn) { }
         public CspParameters(int dwTypeIn, string strProviderNameIn, string strContainerNameIn) { }
         public System.Security.Cryptography.CspProviderFlags Flags { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Security.SecureString KeyPassword { get { throw null; } set { } }
         public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
@@ -87,10 +90,12 @@ namespace System.Security.Cryptography
         public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
         public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
+        public override string KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public bool PersistKeyInCsp { get { throw null; } set { } }
         public bool PublicOnly { get { throw null; } }
+        public override string SignatureAlgorithm { get { throw null; } }
         public static bool UseMachineKeyStore { get { throw null; } set { } }
         public override byte[] CreateSignature(byte[] rgbHash) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -158,10 +163,12 @@ namespace System.Security.Cryptography
         public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
         public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
+        public override string KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public bool PersistKeyInCsp { get { throw null; } set { } }
         public bool PublicOnly { get { throw null; } }
+        public override string SignatureAlgorithm { get { throw null; } }
         public static bool UseMachineKeyStore { get { throw null; } set { } }
         public byte[] Decrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
@@ -197,6 +204,7 @@ namespace System.Security.Cryptography
     public sealed partial class TripleDESCryptoServiceProvider : System.Security.Cryptography.TripleDES
     {
         public TripleDESCryptoServiceProvider() { }
+        public override int FeedbackSize { get { throw null; } set { } }
         public override int BlockSize { get { throw null; } set { } }
         public override byte[] IV { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }

@@ -7,7 +7,7 @@
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
-    </Project>
+    </Project>    
     <Project Include="System.Runtime.Extensions.csproj">
       <TargetGroup>net462</TargetGroup>
     </Project>

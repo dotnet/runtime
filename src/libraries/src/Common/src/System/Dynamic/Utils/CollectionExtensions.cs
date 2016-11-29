@@ -45,7 +45,7 @@ namespace System.Dynamic.Utils
         }
 
         // We could probably improve the hashing here
-        public static int ListHashCode<T>(this IEnumerable<T> list)
+        public static int ListHashCode<T>(this ReadOnlyCollection<T> list)
         {
             EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             int h = 6551;

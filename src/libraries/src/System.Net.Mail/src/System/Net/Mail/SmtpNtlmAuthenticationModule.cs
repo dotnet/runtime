@@ -32,7 +32,7 @@ namespace System.Net.Mail
 
                         _sessions[sessionCookie] =
                             clientContext =
-                            new NTAuthentication(false, "Ntlm", credential, spn, ContextFlags.Connection, channelBindingToken);
+                            new NTAuthentication(false, "Ntlm", credential, spn, ContextFlagsPal.Connection, channelBindingToken);
 
                     }
 

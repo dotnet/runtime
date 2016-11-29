@@ -4,21 +4,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
     internal sealed class CSharpInvokeConstructorBinder : DynamicMetaObjectBinder, ICSharpInvokeOrInvokeMemberBinder
     {
-        public CSharpCallFlags Flags { get { return _flags; } }
-        private CSharpCallFlags _flags;
+        public CSharpCallFlags Flags { get; }
 
-        public Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        public Type CallingContext { get; }
 
         public IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
         public bool StaticCall { get { return true; } }
         public IList<Type> TypeArguments { get { return Array.Empty<Type>(); } }
@@ -26,15 +23,15 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return false; } }
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         public CSharpInvokeConstructorBinder(
             CSharpCallFlags flags,
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo)
         {
-            _flags = flags;
-            _callingContext = callingContext;
+            Flags = flags;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

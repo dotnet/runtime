@@ -46,6 +46,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionArray array)
             {
+                ContractUtils.RequiresNotNull(array, nameof(array));
                 _array = array;
             }
 
@@ -90,6 +91,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionList list)
             {
+                ContractUtils.RequiresNotNull(list, nameof(list));
                 _list = list;
             }
 
@@ -299,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
                 _maxStackDepth,
                 _maxContinuationDepth,
                 _instructions.ToArray(),
-                (_objects != null) ? _objects.ToArray() : null,
+                _objects?.ToArray(),
                 BuildRuntimeLabels(),
                 _debugCookies
             );
@@ -816,6 +818,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitCastReferenceToEnum(Type toType)
         {
+            Debug.Assert(_instructions[_instructions.Count - 1] == NullCheckInstruction.Instance);
             Emit(new CastReferenceToEnumInstruction(toType));
         }
 

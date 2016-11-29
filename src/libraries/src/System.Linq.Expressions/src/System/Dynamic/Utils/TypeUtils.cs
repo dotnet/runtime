@@ -474,56 +474,46 @@ namespace System.Dynamic.Utils
                 IsImplicitNullableConversion(source, destination);
         }
 
-        public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType, bool implicitOnly)
+        public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
-            // check for implicit coercions first
             Type nnExprType = GetNonNullableType(convertFrom);
             Type nnConvType = GetNonNullableType(convertToType);
 
-            bool retryForLifted = !AreEquivalent(nnExprType, convertFrom) || !AreEquivalent(nnConvType, convertToType);
-
             // try exact match on types
-            IEnumerable<MethodInfo> eMethods = nnExprType.GetStaticMethods();
-            if (retryForLifted)
-            {
-                // If this may be scanned again for a lifted match, store it in a list.
-                eMethods = new List<MethodInfo>(eMethods);
-            }
+            MethodInfo[] eMethods = nnExprType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            MethodInfo method = FindConversionOperator(eMethods, convertFrom, convertToType, implicitOnly);
+            MethodInfo method = FindConversionOperator(eMethods, convertFrom, convertToType);
             if (method != null)
             {
                 return method;
             }
 
-            IEnumerable<MethodInfo> cMethods = nnConvType.GetStaticMethods();
-            if (retryForLifted)
-            {
-                cMethods = new List<MethodInfo>(cMethods);
-            }
+            MethodInfo[] cMethods = nnConvType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            method = FindConversionOperator(cMethods, convertFrom, convertToType, implicitOnly);
+            method = FindConversionOperator(cMethods, convertFrom, convertToType);
             if (method != null)
             {
                 return method;
+            }
+
+            if (AreEquivalent(nnExprType, convertFrom) && AreEquivalent(nnConvType, convertToType))
+            {
+                return null;
             }
 
             // try lifted conversion
-            if (retryForLifted)
-            {
-                return FindConversionOperator(eMethods, nnExprType, nnConvType, implicitOnly)
-                    ?? FindConversionOperator(cMethods, nnExprType, nnConvType, implicitOnly);
-            }
-
-            return null;
+            return FindConversionOperator(eMethods, nnExprType, nnConvType)
+                   ?? FindConversionOperator(cMethods, nnExprType, nnConvType)
+                   ?? FindConversionOperator(eMethods, nnExprType, convertToType)
+                   ?? FindConversionOperator(cMethods, nnExprType, convertToType);
         }
 
-        private static MethodInfo FindConversionOperator(IEnumerable<MethodInfo> methods, Type typeFrom, Type typeTo, bool implicitOnly)
+        private static MethodInfo FindConversionOperator(MethodInfo[] methods, Type typeFrom, Type typeTo)
         {
             foreach (MethodInfo mi in methods)
             {
                 if (
-                    (mi.Name == "op_Implicit" || (!implicitOnly && mi.Name == "op_Explicit"))
+                    (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
                     && AreEquivalent(mi.ReturnType, typeTo)
                     )
                 {
@@ -753,7 +743,8 @@ namespace System.Dynamic.Utils
         public static bool IsVector(this Type type)
         {
             // Unfortunately, the IsSzArray property of System.Type is inaccessible to us,
-            // so we use a little equality comparison trick instead:
+            // so we use a little equality comparison trick instead. This omission is being
+            // tracked at https://github.com/dotnet/coreclr/issues/1877.
             return type == type.GetElementType().MakeArrayType();
         }
     }

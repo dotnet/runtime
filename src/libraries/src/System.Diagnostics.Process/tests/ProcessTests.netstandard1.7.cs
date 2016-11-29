@@ -83,49 +83,65 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNonpagedSystemMemorySize()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestPagedMemorySize()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PagedMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestPagedSystemMemorySize()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PagedSystemMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestPeakPagedMemorySize()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PeakPagedMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestPeakVirtualMemorySize()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PeakVirtualMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestPeakWorkingSet()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PeakWorkingSet);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestPrivateMemorySize()
         {
+#pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PrivateMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
         public void TestVirtualMemorySize()
         {
+#pragma warning disable 0618
             Assert.Equal(unchecked((int)_process.VirtualMemorySize64), _process.VirtualMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
@@ -134,11 +150,15 @@ namespace System.Diagnostics.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 // resident memory can be 0 on OSX.
+#pragma warning disable 0618
                 Assert.True(_process.WorkingSet >= 0);
+#pragma warning restore 0618
                 return;
             }
 
+#pragma warning disable 0618
             Assert.True(_process.WorkingSet > 0);
+#pragma warning restore 0618
         }
 
         [Fact]

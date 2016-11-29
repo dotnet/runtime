@@ -82,14 +82,8 @@ namespace System.Dynamic
                     {
                         return ct;
                     }
-                    if (Value != null)
-                    {
-                        return Value.GetType();
-                    }
-                    else
-                    {
-                        return null;
-                    }
+
+                    return Value?.GetType();
                 }
                 else
                 {

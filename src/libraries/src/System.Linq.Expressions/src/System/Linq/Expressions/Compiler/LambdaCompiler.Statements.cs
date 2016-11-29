@@ -8,6 +8,7 @@ using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
@@ -677,14 +678,14 @@ namespace System.Linq.Expressions.Compiler
                 {
                     if (t.Value != null)
                     {
-                        initializers.Add(Expression.ElementInit(add, t, Utils.Constant(i)));
+                        initializers.Add(Expression.ElementInit(add, new TrueReadOnlyCollection<Expression>(t, Utils.Constant(i))));
                     }
                     else
                     {
                         nullCase = i;
                     }
                 }
-                cases.UncheckedAdd(Expression.SwitchCase(node.Cases[i].Body, Utils.Constant(i)));
+                cases.UncheckedAdd(Expression.SwitchCase(node.Cases[i].Body, new TrueReadOnlyCollection<Expression>(Utils.Constant(i))));
             }
 
             // Create the field to hold the lazily initialized dictionary
@@ -700,7 +701,9 @@ namespace System.Linq.Expressions.Compiler
                     Expression.ListInit(
                         Expression.New(
                             DictionaryOfStringInt32_Ctor_Int32,
-                            Utils.Constant(initializers.Count)
+                            new TrueReadOnlyCollection<Expression>(
+                                Utils.Constant(initializers.Count)
+                            )
                         ),
                         initializers
                     )
@@ -732,18 +735,20 @@ namespace System.Linq.Expressions.Compiler
             ParameterExpression switchValue = Expression.Variable(typeof(string), "switchValue");
             ParameterExpression switchIndex = Expression.Variable(typeof(int), "switchIndex");
             BlockExpression reduced = Expression.Block(
-                new[] { switchIndex, switchValue },
-                Expression.Assign(switchValue, node.SwitchValue),
-                Expression.IfThenElse(
-                    Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
-                    Expression.Assign(switchIndex, Utils.Constant(nullCase)),
+                new TrueReadOnlyCollection<ParameterExpression>(switchIndex, switchValue),
+                new TrueReadOnlyCollection<Expression>(
+                    Expression.Assign(switchValue, node.SwitchValue),
                     Expression.IfThenElse(
-                        Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
-                        Utils.Empty,
-                        Expression.Assign(switchIndex, Utils.Constant(-1))
-                    )
-                ),
-                Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases.ToReadOnly())
+                        Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
+                        Expression.Assign(switchIndex, Utils.Constant(nullCase)),
+                        Expression.IfThenElse(
+                            Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
+                            Utils.Empty,
+                            Expression.Assign(switchIndex, Utils.Constant(-1))
+                        )
+                    ),
+                    Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases.ToReadOnly())
+                )
             );
 
             EmitExpression(reduced, flags);
