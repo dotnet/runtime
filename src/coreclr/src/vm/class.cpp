@@ -19,6 +19,7 @@
 #include "constrainedexecutionregion.h"
 #include "customattribute.h"
 #include "encee.h"
+#include "typestring.h"
 
 #ifdef FEATURE_COMINTEROP 
 #include "comcallablewrapper.h"
@@ -2490,12 +2491,14 @@ MethodTable::GetSubstitutionForParent(
 
 #endif //!DACCESS_COMPILE
 
+#ifdef FEATURE_CER
 //*******************************************************************************
 DWORD EEClass::GetReliabilityContract()
 {
     LIMITED_METHOD_CONTRACT;
     return HasOptionalFields() ? GetOptionalFields()->m_dwReliabilityContract : RC_NULL;
 }
+#endif // FEATURE_CER
 
 //*******************************************************************************
 #ifdef FEATURE_PREJIT

@@ -42,6 +42,7 @@ class Object;
 #include "olevariant.h"
 #include "interopconverter.h"
 #include "constrainedexecutionregion.h"
+#include "typestring.h"
 #ifdef FEATURE_REMOTING
 #include "crossdomaincalls.h"
 #endif

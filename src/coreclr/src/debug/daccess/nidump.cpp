@@ -4088,6 +4088,7 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                  (int)(module->m_maxDynamicEntries
                  * sizeof(*(module->m_pDynamicStaticsInfo))));
 
+#ifdef FEATURE_CER
     DisplayWriteFieldInt( m_dwReliabilityContract,
                           module->m_dwReliabilityContract, Module, MODULE );
 
@@ -4105,6 +4106,7 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                            offsetof(Module, m_pCerNgenRootTable),
                            fieldsize(Module, m_pCerNgenRootTable) );
     }
+#endif
 
 
     _ASSERTE(module->m_debuggerSpecificData.m_pDynamicILCrst == NULL);
@@ -4152,6 +4154,7 @@ bool NativeImageDumper::isPrecode(TADDR maybePrecode)
     return !!module->IsZappedPrecode(maybePrecode);
 }
 
+#ifdef FEATURE_CER
 void NativeImageDumper::DumpNgenRootTable( PTR_CerNgenRootTable table,
                                            const char * name, unsigned offset,
                                            unsigned fieldSize )
@@ -4231,6 +4234,8 @@ void NativeImageDumper::DumpNgenRootTable( PTR_CerNgenRootTable table,
 
     DisplayEndStructure( MODULE ); //CERNgenRootTable
 }
+#endif // FEATURE_CER
+
 void NativeImageDumper::IterateTypeDefToMTCallback( TADDR mtTarget,
                                                     TADDR flags,
                                                     PTR_LookupMapBase map,
@@ -9034,12 +9039,14 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
         DisplayWriteFieldInt( m_cbModuleDynamicID, pClassOptional->m_cbModuleDynamicID,
                               EEClassOptionalFields, EECLASSES );
 
+#ifdef FEATURE_CER
         /* REVISIT_TODO Fri 10/14/2005
          * Use the macros from ConstrainedExecutionRegion.cpp on this?
          */
         DisplayWriteFieldUInt( m_dwReliabilityContract,
                                clazz->GetReliabilityContract(),
                                EEClassOptionalFields, EECLASSES );
+#endif
 
         DisplayWriteFieldEnumerated( m_SecProps, clazz->GetSecurityProperties()->dwFlags,
                                      EEClassOptionalFields, s_SecurityProperties, W("|"),

@@ -13,6 +13,7 @@
 #ifndef __CONSTRAINED_EXECUTION_REGION_H
 #define __CONSTRAINED_EXECUTION_REGION_H
 
+#ifdef FEATURE_CER
 
 #include <corhlpr.h>
 #include <typestring.h>
@@ -559,5 +560,7 @@ private:
     DWORD       m_dwMisses;
 #endif
 };
+
+#endif // FEATURE_CER
 
 #endif
