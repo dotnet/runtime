@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -34,46 +35,57 @@ class Program
 
     static void RunTest1()
     {
-        DateTime dt = new DateTime(1776, 7, 4);
-        string dtString = dt.ToString();
-        Assert.AreEqual(new GenClass1c<DateTime>(dt).ToStringEx(7), dtString + " 7");
-        Assert.AreEqual(new GenClass1c<int>(1).ToStringEx(7), "1 7");
-        Assert.AreEqual(new GenClass1c<long>(2).ToStringEx(7), "2 7");
-        Assert.AreEqual(new GenClass1c<float>(3.14f).ToStringEx(7), "3.14 7");
-        Assert.AreEqual(new GenClass1c<double>(4.13).ToStringEx(7), "4.13 7");
-        Assert.AreEqual(new GenClass1c<int?>(9).ToString(), "9");
+        var originalCultureInfo = CultureInfo.CurrentCulture;
 
-        Assert.AreEqual(new GenClass2<DateTime, double>(dt, 3.1416).ToString(), dtString + " 3.1416");
-        Assert.AreEqual(new GenClass2<DateTime, double>(dt, 3.1416).ToStringEx(7, 8), dtString + " 3.1416 7 8");
-        Assert.AreEqual(new GenClass2<object, string>(new object(), "3.1416").ToString(), "System.Object 3.1416");
-        Assert.AreEqual(new GenClass2<object, string>(new object(), "3.1416").ToStringEx(7L, 8L), "System.Object 3.1416 7 8");
-        Assert.AreEqual(GetString(7.0, 8.0), "7 8");
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-        var gen1a = new GenClass1a<object>();
-        Assert.AreEqual(gen1a.CreateGenClass1b(), "GenClass1b`1[System.Object]");
-        Assert.AreEqual(gen1a.CreateGenClass1bArray(), "GenClass1b`1[System.Object][]");
+            DateTime dt = new DateTime(1776, 7, 4);
+            string dtString = dt.ToString();
+            Assert.AreEqual(new GenClass1c<DateTime>(dt).ToStringEx(7), dtString + " 7");
+            Assert.AreEqual(new GenClass1c<int>(1).ToStringEx(7), "1 7");
+            Assert.AreEqual(new GenClass1c<long>(2).ToStringEx(7), "2 7");
+            Assert.AreEqual(new GenClass1c<float>(3.14f).ToStringEx(7), "3.14 7");
+            Assert.AreEqual(new GenClass1c<double>(4.13).ToStringEx(7), "4.13 7");
+            Assert.AreEqual(new GenClass1c<int?>(9).ToString(), "9");
 
-        var gen1aInt = new GenClass1a<int>();
-        var gen1bInt = new GenClass1b<int>();
-        var gen1bLong = new GenClass1b<long>();
-        Assert.AreEqual(gen1bInt.IsGenClass1a(gen1aInt).ToString(), "True");
-        Assert.AreEqual(gen1bLong.IsGenClass1a(gen1aInt).ToString(), "False");
-        Assert.AreEqual(gen1bInt.AsGenClass1a(gen1aInt)?.ToString() ?? "null", gen1aInt.ToString());
-        Assert.AreEqual(gen1bLong.AsGenClass1a(gen1aInt)?.ToString() ?? "null", "null");
+            Assert.AreEqual(new GenClass2<DateTime, double>(dt, 3.1416).ToString(), dtString + " 3.1416");
+            Assert.AreEqual(new GenClass2<DateTime, double>(dt, 3.1416).ToStringEx(7, 8), dtString + " 3.1416 7 8");
+            Assert.AreEqual(new GenClass2<object, string>(new object(), "3.1416").ToString(), "System.Object 3.1416");
+            Assert.AreEqual(new GenClass2<object, string>(new object(), "3.1416").ToStringEx(7L, 8L), "System.Object 3.1416 7 8");
+            Assert.AreEqual(GetString(7.0, 8.0), "7 8");
 
-        var gen1aString = new GenClass1a<string>();
-        var gen1b = new GenClass1b<string>();
-        Assert.AreEqual(gen1b.IsGenClass1a(gen1aString).ToString(), "True");
-        Assert.AreEqual(gen1b.AsGenClass1a(gen1aString)?.ToString() ?? "null", gen1aString.ToString());
-        Assert.AreEqual(GenClass1a<string>.CallVirtual(gen1b), "GenClass1b`1[System.String].VirtualMethod");
-        Assert.AreEqual(GenClass1a<string>.CallInterface(gen1b), "GenClass1b`1[System.String].InterfaceMethod1");
-        Assert.AreEqual(GenClass1a<string>.CallInterface(gen1b, "Test").ToString(), "GenClass1b`1[System.String]");
+            var gen1a = new GenClass1a<object>();
+            Assert.AreEqual(gen1a.CreateGenClass1b(), "GenClass1b`1[System.Object]");
+            Assert.AreEqual(gen1a.CreateGenClass1bArray(), "GenClass1b`1[System.Object][]");
 
-        NormalClass n = new NormalClass();
-        Assert.AreEqual(CallGenVirtMethod<int>(n).ToString(), "GenClass1a`1[System.Int32]");
-        Assert.AreEqual(CallGenVirtMethod<int>(n, 42).ToString(), "System.Int32[]");
-        Assert.AreEqual(CallGenVirtMethod<string>(n).ToString(), "GenClass1a`1[System.String]");
-        Assert.AreEqual(CallGenVirtMethod<string>(n, "forty-two").ToString(), "System.String[]");
+            var gen1aInt = new GenClass1a<int>();
+            var gen1bInt = new GenClass1b<int>();
+            var gen1bLong = new GenClass1b<long>();
+            Assert.AreEqual(gen1bInt.IsGenClass1a(gen1aInt).ToString(), "True");
+            Assert.AreEqual(gen1bLong.IsGenClass1a(gen1aInt).ToString(), "False");
+            Assert.AreEqual(gen1bInt.AsGenClass1a(gen1aInt)?.ToString() ?? "null", gen1aInt.ToString());
+            Assert.AreEqual(gen1bLong.AsGenClass1a(gen1aInt)?.ToString() ?? "null", "null");
+
+            var gen1aString = new GenClass1a<string>();
+            var gen1b = new GenClass1b<string>();
+            Assert.AreEqual(gen1b.IsGenClass1a(gen1aString).ToString(), "True");
+            Assert.AreEqual(gen1b.AsGenClass1a(gen1aString)?.ToString() ?? "null", gen1aString.ToString());
+            Assert.AreEqual(GenClass1a<string>.CallVirtual(gen1b), "GenClass1b`1[System.String].VirtualMethod");
+            Assert.AreEqual(GenClass1a<string>.CallInterface(gen1b), "GenClass1b`1[System.String].InterfaceMethod1");
+            Assert.AreEqual(GenClass1a<string>.CallInterface(gen1b, "Test").ToString(), "GenClass1b`1[System.String]");
+
+            NormalClass n = new NormalClass();
+            Assert.AreEqual(CallGenVirtMethod<int>(n).ToString(), "GenClass1a`1[System.Int32]");
+            Assert.AreEqual(CallGenVirtMethod<int>(n, 42).ToString(), "System.Int32[]");
+            Assert.AreEqual(CallGenVirtMethod<string>(n).ToString(), "GenClass1a`1[System.String]");
+            Assert.AreEqual(CallGenVirtMethod<string>(n, "forty-two").ToString(), "System.String[]");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCultureInfo;
+        }
     }
 
     static void RunTest2()
