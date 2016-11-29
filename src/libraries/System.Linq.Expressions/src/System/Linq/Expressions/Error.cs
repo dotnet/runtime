@@ -44,7 +44,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static Exception SameKeyExistsInExpando(object p0)
         {
-            return new ArgumentException(Strings.SameKeyExistsInExpando(p0));
+            return new ArgumentException(Strings.SameKeyExistsInExpando(p0), "key");
         }
         /// <summary>
         /// System.Collections.Generic.KeyNotFoundException with message like "The specified key '{0}' does not exist in the ExpandoObject."
