@@ -476,7 +476,7 @@ inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
 }
 
 #include <pshpack1.h>
-DECLSPEC_ALIGN(4) struct UMEntryThunkCode
+struct DECLSPEC_ALIGN(4) UMEntryThunkCode
 {
     BYTE            m_alignpad[2];  // used to guarantee alignment of backpactched portion
     BYTE            m_movEAX;   //MOV EAX,imm32
