@@ -603,6 +603,8 @@ typedef struct {
 	gboolean (*mono_exception_walk_trace) (MonoException *ex, MonoInternalExceptionFrameWalk func, gpointer user_data);
 	gboolean (*mono_install_handler_block_guard) (MonoThreadUnwindState *unwind_state);
 	gboolean (*mono_current_thread_has_handle_block_guard) (void);
+	gboolean (*mono_above_abort_threshold) (void);
+	void (*mono_clear_abort_threshold) (void);
 } MonoRuntimeExceptionHandlingCallbacks;
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);

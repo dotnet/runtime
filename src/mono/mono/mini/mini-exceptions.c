@@ -82,6 +82,10 @@
 #define MONO_ARCH_CONTEXT_DEF
 #endif
 
+#ifndef MONO_ARCH_STACK_GROWS_UP
+#define MONO_ARCH_STACK_GROWS_UP 0
+#endif
+
 static gpointer restore_context_func, call_filter_func;
 static gpointer throw_exception_func, rethrow_exception_func;
 static gpointer throw_corlib_exception_func;
@@ -95,6 +99,77 @@ static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx,
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
 static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
 static gboolean mono_current_thread_has_handle_block_guard (void);
+
+static gboolean
+first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
+{
+	gpointer **data = (gpointer **)addr;
+
+	if (!frame->managed)
+		return FALSE;
+
+	*data = MONO_CONTEXT_GET_SP(ctx);
+	g_assert (*data);
+	return TRUE;
+}
+
+static gpointer
+mono_thread_get_managed_sp (void)
+{
+	gpointer addr = NULL;
+	mono_walk_stack (first_managed, MONO_UNWIND_SIGNAL_SAFE, &addr);
+	return addr;
+}
+
+static inline int
+mini_abort_threshold_offset (gpointer threshold, gpointer sp)
+{
+	intptr_t stack_threshold = (intptr_t) threshold;
+	intptr_t stack_pointer = (intptr_t) sp;
+
+	const int direction = MONO_ARCH_STACK_GROWS_UP ? -1 : 1;
+	intptr_t magnitude = stack_pointer - stack_threshold;
+
+	return direction * magnitude;
+}
+
+static inline void
+mini_clear_abort_threshold (void)
+{
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+	jit_tls->abort_exc_stack_threshold = NULL;
+}
+
+static inline void
+mini_set_abort_threshold (MonoContext *ctx)
+{
+	gpointer sp = MONO_CONTEXT_GET_SP (ctx);
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+	// Only move it up, to avoid thrown/caught
+	// exceptions lower in the stack from triggering
+	// a rethrow
+	gboolean above_threshold = mini_abort_threshold_offset (jit_tls->abort_exc_stack_threshold, sp) >= 0;
+	if (!jit_tls->abort_exc_stack_threshold || above_threshold) {
+		jit_tls->abort_exc_stack_threshold = sp;
+	}
+}
+
+// Note: In the case that the frame is above where the thread abort
+// was set we bump the threshold so that functions called from the new,
+// higher threshold don't trigger the thread abort exception
+static inline gboolean
+mini_above_abort_threshold (void)
+{
+	gpointer sp = mono_thread_get_managed_sp ();
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+
+	gboolean above_threshold = mini_abort_threshold_offset (jit_tls->abort_exc_stack_threshold, sp) >= 0;
+
+	if (above_threshold)
+		jit_tls->abort_exc_stack_threshold = sp;
+
+	return above_threshold;
+}
 
 void
 mono_exceptions_init (void)
@@ -138,6 +213,8 @@ mono_exceptions_init (void)
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
 	cbs.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
+	cbs.mono_clear_abort_threshold = mini_above_abort_threshold;
+	cbs.mono_above_abort_threshold = mini_clear_abort_threshold;
 	mono_install_eh_callbacks (&cbs);
 }
 
@@ -1275,12 +1352,6 @@ wrap_non_exception_throws (MonoMethod *m)
 	return val;
 }
 
-#ifndef MONO_ARCH_STACK_GROWS_UP
-#define DOES_STACK_GROWS_UP 1
-#else
-#define DOES_STACK_GROWS_UP 0
-#endif
-
 #define MAX_UNMANAGED_BACKTRACE 128
 static MonoArray*
 build_native_trace (MonoError *error)
@@ -1465,10 +1536,10 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 			dynamic_methods = g_slist_prepend (dynamic_methods, method);
 
 		if (stack_overflow) {
-			if (DOES_STACK_GROWS_UP)
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
-			else
+			if (MONO_ARCH_STACK_GROWS_UP)
 				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (ctx));
+			else
+				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
 		} else {
 			free_stack = 0xffffff;
 		}
@@ -1550,6 +1621,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 							setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
 						g_slist_free (dynamic_methods);
 						/* mono_debugger_agent_handle_exception () needs this */
+						mini_set_abort_threshold (ctx);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						return TRUE;
 					}
@@ -1735,6 +1807,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
+			mini_set_abort_threshold (ctx);
 			mono_unhandled_exception (obj);
 		} else {
 			gboolean unhandled = FALSE;
@@ -1805,10 +1878,10 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		//printf ("M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
 
 		if (stack_overflow) {
-			if (DOES_STACK_GROWS_UP)
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
-			else
+			if (MONO_ARCH_STACK_GROWS_UP)
 				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (ctx));
+			else
+				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
 		} else {
 			free_stack = 0xffffff;
 		}
@@ -1906,6 +1979,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					jit_tls->orig_ex_ctx_set = TRUE;
 					mono_profiler_exception_clause_handler (method, ei->flags, i);
 					jit_tls->orig_ex_ctx_set = FALSE;
+					mini_set_abort_threshold (ctx);
 					MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					mono_set_lmf (lmf);
 #ifndef DISABLE_PERFCOUNTERS
@@ -1923,6 +1997,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					jit_tls->orig_ex_ctx_set = TRUE;
 					mono_profiler_exception_clause_handler (method, ei->flags, i);
 					jit_tls->orig_ex_ctx_set = FALSE;
+					mini_set_abort_threshold (ctx);
 					call_filter (ctx, ei->handler_start);
 				}
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
@@ -1952,9 +2027,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.lmf = lmf;
 						jit_tls->resume_state.first_filter_idx = first_filter_idx;
 						jit_tls->resume_state.filter_idx = filter_idx;
+						mini_set_abort_threshold (ctx);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						return 0;
 					} else {
+						mini_set_abort_threshold (ctx);
 						call_filter (ctx, ei->handler_start);
 					}
 				}

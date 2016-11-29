@@ -170,6 +170,64 @@ public class Tests {
 		return 0;
 	}
 
+	public static void HasTry ()
+	{
+		try {
+			throw new Exception ("boop");
+		} catch (Exception e) {
+			// See if we re-throw the thread abort exception here
+		}
+	}
+
+	public static int test_0_thread_abort_water_mark () 
+	{
+		Boolean failed = true;
+
+		try {
+			Thread.CurrentThread.Abort ("test_0_thread_abort_water_mark");
+		} catch (ThreadAbortException e) {
+			HasTry ();
+			Thread.ResetAbort ();
+			failed = false;
+		} finally {
+			if (failed) {
+				Thread.ResetAbort ();
+				throw new Exception ("Threw pending ThreadAbort exception under stack threshold");
+			}
+			Console.WriteLine ("Working thread abort");
+		}
+
+		return 0;
+	}
+
+	public static int test_0_thread_abort_water_mark_other_exc () 
+	{
+		Boolean failed = true;
+
+		try {
+			try {
+				try {
+					Thread.CurrentThread.Abort ("TestKeepAbort");
+				} catch (ThreadAbortException ta_ex) {
+					throw new ArgumentNullException("SpecificDummyException");
+				}
+			} catch (ArgumentNullException ex){
+				// Throw ThreadAbortException here
+			}
+		} catch (ThreadAbortException ex) {
+			Console.WriteLine ("Retained thread abort exception");
+			failed = false;
+			Thread.ResetAbort ();
+		} catch (Exception e) {
+			failed = true;
+		} finally {
+			if (failed)
+				throw new Exception ("Lost the thread abort due to another exception running.");
+		}
+
+		return 0;
+	}
+
 	public class CBO : ContextBoundObject {
 		public void Run () {
 			Thread.CurrentThread.Abort ("FOO");

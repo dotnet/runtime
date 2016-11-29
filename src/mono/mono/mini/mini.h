@@ -1193,6 +1193,14 @@ typedef struct {
 	 * The calling assembly in llvmonly mode.
 	 */
 	MonoImage *calling_image;
+
+	/*
+	 * The stack frame "high water mark" for ThreadAbortExceptions.
+	 * We will rethrow the exception upon exiting a catch clause that's
+	 * in a function stack frame above the water mark(isn't being called by
+	 * the catch block that caught the ThreadAbortException).
+	 */
+	gpointer abort_exc_stack_threshold;
 } MonoJitTlsData;
 
 /*

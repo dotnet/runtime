@@ -2256,6 +2256,8 @@ ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this_obj)
 		mono_set_pending_exception (mono_get_exception_thread_state (msg));
 		return;
 	}
+
+	mono_get_eh_callbacks ()->mono_clear_abort_threshold ();
 	thread->abort_exc = NULL;
 	if (thread->abort_state_handle) {
 		mono_gchandle_free (thread->abort_state_handle);
@@ -2273,6 +2275,7 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 	thread->state &= ~ThreadState_AbortRequested;
 
 	if (thread->abort_exc) {
+		mono_get_eh_callbacks ()->mono_clear_abort_threshold ();
 		thread->abort_exc = NULL;
 		if (thread->abort_state_handle) {
 			mono_gchandle_free (thread->abort_state_handle);
@@ -3833,17 +3836,22 @@ mono_thread_get_undeniable_exception (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
-	if (thread && thread->abort_exc && !is_running_protected_wrapper ()) {
-		/*
-		 * FIXME: Clear the abort exception and return an AppDomainUnloaded 
-		 * exception if the thread no longer references a dying appdomain.
-		 */
-		thread->abort_exc->trace_ips = NULL;
-		thread->abort_exc->stack_trace = NULL;
-		return thread->abort_exc;
-	}
+	if (!(thread && thread->abort_exc && !is_running_protected_wrapper ()))
+		return NULL;
 
-	return NULL;
+	// We don't want to have our exception effect calls made by
+	// the catching block
+
+	if (!mono_get_eh_callbacks ()->mono_above_abort_threshold ())
+		return NULL;
+
+	/*
+	 * FIXME: Clear the abort exception and return an AppDomainUnloaded 
+	 * exception if the thread no longer references a dying appdomain.
+	 */ 
+	thread->abort_exc->trace_ips = NULL;
+	thread->abort_exc->stack_trace = NULL;
+	return thread->abort_exc;
 }
 
 #if MONO_SMALL_CONFIG
