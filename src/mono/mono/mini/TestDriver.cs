@@ -13,10 +13,22 @@ public class CategoryAttribute : Attribute
 		get; set;
 	}
 }
+public class TestDriverReporter
+{
+	public int FailedTests { get; private set; }
+	public int SkippedTests { get; private set; }
+	public int ExecutedTests { get; private set; }
+
+	public void ReportResults (int executed, int skipped, int failed) {
+		ExecutedTests = executed;
+		SkippedTests = skipped;
+		FailedTests = failed;
+	}
+};
 
 public class TestDriver {
 
-	static public int RunTests (Type type, string[] args) {
+	static public int RunTests(Type type, string[] args, TestDriverReporter reporter) {
 		int failed = 0, ran = 0;
 		int result, expected;
 		int i, j, iterations;
@@ -135,11 +147,20 @@ public class TestDriver {
 			}
 		}
 
+		if (reporter != null) {
+			reporter.ReportResults (ran, nskipped, failed);
+		}
+
 		//Console.WriteLine ("Regression tests: {0} ran, {1} failed in [{2}]{3}", ran, failed, type.Assembly.GetName().Name, type);
 		return failed;
 	}
+
+	static public int RunTests (Type type, string[] args) {
+		return RunTests (type, args, null);
+	}
+
 	static public int RunTests (Type type) {
-		return RunTests (type, null);
+		return RunTests (type, null, null);
 	}
 }
 
