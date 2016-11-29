@@ -216,3 +216,19 @@ function(_install)
       install(${ARGV})
     endif()
 endfunction()
+
+function(verify_dependencies targetName errorMessage)
+    # We don't need to verify dependencies on OSX, since missing dependencies
+    # result in link error over there.
+    if (NOT CLR_CMAKE_PLATFORM_DARWIN)
+        add_custom_command(
+            TARGET ${targetName}
+            POST_BUILD
+            VERBATIM
+            COMMAND ${CMAKE_SOURCE_DIR}/verify-so.sh 
+                $<TARGET_FILE:${targetName}> 
+                ${errorMessage}
+            COMMENT "Verifying ${targetName} dependencies"
+        )
+    endif()
+endfunction()
