@@ -322,6 +322,7 @@ public:
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
     unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
+    var_types     lvBaseType : 5;            // Note: this only packs because var_types is a typedef of unsigned char
 #endif                                       // FEATURE_SIMD
     unsigned char lvRegStruct : 1;           // This is a reg-sized non-field-addressed struct.
 
@@ -330,9 +331,6 @@ public:
                                   // local.
         unsigned lvParentLcl; // The index of the local var representing the parent (i.e. the promoted struct local).
                               // Valid on promoted struct local fields.
-#ifdef FEATURE_SIMD
-        var_types lvBaseType; // The base type of a SIMD local var.  Valid on TYP_SIMD locals.
-#endif                        // FEATURE_SIMD
     };
 
     unsigned char lvFieldCnt; //  Number of fields in the promoted VarDsc.
@@ -6930,6 +6928,20 @@ private:
 
     // Should we support SIMD intrinsics?
     bool featureSIMD;
+
+    // Have we identified any SIMD types?
+    // This is currently used by struct promotion to avoid getting type information for a struct
+    // field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in
+    // the method.
+    bool _usesSIMDTypes;
+    bool usesSIMDTypes()
+    {
+        return _usesSIMDTypes;
+    }
+    void setUsesSIMDTypes(bool value)
+    {
+        _usesSIMDTypes = value;
+    }
 
     // This is a temp lclVar allocated on the stack as TYP_SIMD.  It is used to implement intrinsics
     // that require indexed access to the individual fields of the vector, which is not well supported
