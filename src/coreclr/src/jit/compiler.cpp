@@ -3022,6 +3022,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef FEATURE_SIMD
     // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
     featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
+    setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
     if (compIsForInlining() || compIsForImportOnly())

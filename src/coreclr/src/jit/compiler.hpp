@@ -1137,7 +1137,6 @@ inline GenTreePtr Compiler::gtNewFieldRef(
     tree->gtField.gtFldObj    = obj;
     tree->gtField.gtFldHnd    = fldHnd;
     tree->gtField.gtFldOffset = offset;
-    tree->gtFlags |= GTF_GLOB_REF;
 
 #ifdef FEATURE_READYTORUN_COMPILER
     tree->gtField.gtFieldLookup.addr = nullptr;
@@ -1154,6 +1153,18 @@ inline GenTreePtr Compiler::gtNewFieldRef(
     {
         unsigned lclNum                  = obj->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
         lvaTable[lclNum].lvFieldAccessed = 1;
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+        // These structs are passed by reference; we should probably be able to treat these
+        // as non-global refs, but downstream logic expects these to be marked this way.
+        if (lvaTable[lclNum].lvIsParam)
+        {
+            tree->gtFlags |= GTF_GLOB_REF;
+        }
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+    }
+    else
+    {
+        tree->gtFlags |= GTF_GLOB_REF;
     }
 
     return tree;
