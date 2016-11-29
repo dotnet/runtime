@@ -8,7 +8,7 @@
 #if defined(__APPLE__)
         .cfi_personality 0x9b, C_FUNC(\Handler) // 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
 #else
-        .cfi_personality 0, C_FUNC(\Handler) // 0 == DW_EH_PE_absptr
+        .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4
 #endif
         .endif
 .endm
