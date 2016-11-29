@@ -24711,7 +24711,7 @@ void gc_heap::compact_phase (int condemned_gen_number,
 #pragma warning(push)
 #pragma warning(disable:4702) // C4702: unreachable code: gc_thread_function may not return
 #endif //_MSC_VER
-void __stdcall gc_heap::gc_thread_stub (void* arg)
+void gc_heap::gc_thread_stub (void* arg)
 {
     ClrFlsSetThreadType (ThreadType_GC);
     STRESS_LOG_RESERVE_MEM (GC_STRESSLOG_MULTIPLY);
