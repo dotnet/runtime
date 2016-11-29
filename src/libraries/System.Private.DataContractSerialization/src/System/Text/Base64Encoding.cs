@@ -6,8 +6,6 @@ using System.Text;
 using System.Diagnostics;
 using System.Runtime.Serialization; //For SR
 using System.Globalization;
-using System.Security;
-
 
 namespace System.Text
 {
@@ -55,11 +53,6 @@ namespace System.Text
             return !(v3 == 64 && v4 != 64);
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe public override int GetByteCount(char[] chars, int index, int count)
         {
             if (chars == null)
@@ -114,11 +107,6 @@ namespace System.Text
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
@@ -198,11 +186,6 @@ namespace System.Text
             }
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe public virtual int GetBytes(byte[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
@@ -291,11 +274,6 @@ namespace System.Text
             return GetMaxCharCount(count);
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             if (bytes == null)
@@ -385,11 +363,6 @@ namespace System.Text
             return charCount;
         }
 
-        /// <SecurityNote>
-        /// Critical - contains unsafe code
-        /// Safe - unsafe code is effectively encapsulated, all inputs are validated
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         unsafe public int GetChars(byte[] bytes, int byteIndex, int byteCount, byte[] chars, int charIndex)
         {
             if (bytes == null)

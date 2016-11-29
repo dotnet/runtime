@@ -21,6 +21,15 @@ namespace System.Threading
         STA = 0,
         Unknown = 2,
     }
+    public sealed partial class CompressedStack : System.Runtime.Serialization.ISerializable
+    {
+        private CompressedStack() { }
+        public static System.Threading.CompressedStack Capture() { throw null; }
+        public System.Threading.CompressedStack CreateCopy() { throw null; }
+        public static System.Threading.CompressedStack GetCompressedStack() { throw null; }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void Run(System.Threading.CompressedStack compressedStack, System.Threading.ContextCallback callback, object state) { }
+    }
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public delegate void ParameterizedThreadStart(object obj);
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -50,11 +59,14 @@ namespace System.Threading
         public static System.LocalDataStoreSlot AllocateNamedDataSlot(string name) { throw null; }
         public static void BeginCriticalRegion() { }
         public static void BeginThreadAffinity() { }
+        public void DisableComObjectEagerCleanup() { }
         public static void EndCriticalRegion() { }
         public static void EndThreadAffinity() { }
         ~Thread() { }
         public static void FreeNamedDataSlot(string name) { }
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
+        [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        public System.Threading.CompressedStack GetCompressedStack() { throw null; }
         public static object GetData(System.LocalDataStoreSlot slot) { throw null; }
         public static System.AppDomain GetDomain() { throw null; }
         public static int GetDomainID() { throw null; }
@@ -69,6 +81,8 @@ namespace System.Threading
         [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume() { }
         public void SetApartmentState(System.Threading.ApartmentState state) { }
+        [System.ObsoleteAttribute("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object data) { }
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }

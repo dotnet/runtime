@@ -18,6 +18,8 @@ namespace Internal.Cryptography
     //
     internal sealed class UniversalCryptoEncryptor : UniversalCryptoTransform
     {
+        private static readonly RandomNumberGenerator s_randomNumberGenerator = RandomNumberGenerator.Create();
+
         public UniversalCryptoEncryptor(PaddingMode paddingMode, BasicSymmetricCipher basicSymmetricCipher)
             : base(paddingMode, basicSymmetricCipher)
         {
@@ -48,6 +50,31 @@ namespace Internal.Cryptography
 
                     result = new byte[count];
                     Buffer.BlockCopy(block, offset, result, 0, result.Length);
+                    break;
+
+                // ANSI padding fills the blocks with zeros and adds the total number of padding bytes as
+                // the last pad byte, adding an extra block if the last block is complete.
+                //
+                // x 00 00 00 00 00 00 07
+                case PaddingMode.ANSIX923:
+                    result = new byte[count + padBytes];
+
+                    Buffer.BlockCopy(block, offset, result, 0, count);
+                    result[result.Length - 1] = (byte)padBytes;
+
+                    break;
+
+                // ISO padding fills the blocks up with random bytes and adds the total number of padding
+                // bytes as the last pad byte, adding an extra block if the last block is complete.
+                //
+                // xx rr rr rr rr rr rr 07
+                case PaddingMode.ISO10126:
+                    result = new byte[count + padBytes];
+                    
+                    Buffer.BlockCopy(block, offset, result, 0, count);
+                    s_randomNumberGenerator.GetBytes(result, count + 1, padBytes - 1);
+                    result[result.Length - 1] = (byte)padBytes;
+
                     break;
 
                 // PKCS padding fills the blocks up with bytes containing the total number of padding bytes

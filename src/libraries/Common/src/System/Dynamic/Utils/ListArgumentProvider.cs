@@ -8,39 +8,25 @@ using System.Linq.Expressions;
 
 namespace System.Dynamic.Utils
 {
-    /// <summary>
-    /// Provides a wrapper around an IArgumentProvider which exposes the argument providers
-    /// members out as an IList of Expression.  This is used to avoid allocating an array
-    /// which needs to be stored inside of a ReadOnlyCollection.  Instead this type has
-    /// the same amount of overhead as an array without duplicating the storage of the
-    /// elements.  This ensures that internally we can avoid creating and copying arrays
-    /// while users of the Expression trees also don't pay a size penalty for this internal
-    /// optimization.  See IArgumentProvider for more general information on the Expression
-    /// tree optimizations being used here.
-    /// </summary>
-    internal sealed class ListArgumentProvider : IList<Expression>
+    internal abstract class ListProvider<T> : IList<T>
+        where T : class
     {
-        private readonly IArgumentProvider _provider;
-        private readonly Expression _arg0;
+        protected abstract T First { get; }
+        protected abstract int ElementCount { get; }
+        protected abstract T GetElement(int index);
 
-        internal ListArgumentProvider(IArgumentProvider provider, Expression arg0)
+        #region IList<T> Members
+
+        public int IndexOf(T item)
         {
-            _provider = provider;
-            _arg0 = arg0;
-        }
-
-        #region IList<Expression> Members
-
-        public int IndexOf(Expression item)
-        {
-            if (_arg0 == item)
+            if (First == item)
             {
                 return 0;
             }
 
-            for (int i = 1, n = _provider.ArgumentCount; i < n; i++)
+            for (int i = 1, n = ElementCount; i < n; i++)
             {
-                if (_provider.GetArgument(i) == item)
+                if (GetElement(i) == item)
                 {
                     return i;
                 }
@@ -49,7 +35,7 @@ namespace System.Dynamic.Utils
             return -1;
         }
 
-        public void Insert(int index, Expression item)
+        public void Insert(int index, T item)
         {
             throw ContractUtils.Unreachable;
         }
@@ -59,16 +45,16 @@ namespace System.Dynamic.Utils
             throw ContractUtils.Unreachable;
         }
 
-        public Expression this[int index]
+        public T this[int index]
         {
             get
             {
                 if (index == 0)
                 {
-                    return _arg0;
+                    return First;
                 }
 
-                return _provider.GetArgument(index);
+                return GetElement(index);
             }
             set
             {
@@ -78,9 +64,9 @@ namespace System.Dynamic.Utils
 
         #endregion
 
-        #region ICollection<Expression> Members
+        #region ICollection<T> Members
 
-        public void Add(Expression item)
+        public void Add(T item)
         {
             throw ContractUtils.Unreachable;
         }
@@ -90,37 +76,37 @@ namespace System.Dynamic.Utils
             throw ContractUtils.Unreachable;
         }
 
-        public bool Contains(Expression item) => IndexOf(item) != -1;
+        public bool Contains(T item) => IndexOf(item) != -1;
 
-        public void CopyTo(Expression[] array, int arrayIndex)
+        public void CopyTo(T[] array, int arrayIndex)
         {
-            array[arrayIndex++] = _arg0;
-            for (int i = 1, n = _provider.ArgumentCount; i < n; i++)
+            array[arrayIndex++] = First;
+            for (int i = 1, n = ElementCount; i < n; i++)
             {
-                array[arrayIndex++] = _provider.GetArgument(i);
+                array[arrayIndex++] = GetElement(i);
             }
         }
 
-        public int Count => _provider.ArgumentCount;
+        public int Count => ElementCount;
 
         public bool IsReadOnly => true;
 
-        public bool Remove(Expression item)
+        public bool Remove(T item)
         {
             throw ContractUtils.Unreachable;
         }
 
         #endregion
 
-        #region IEnumerable<Expression> Members
+        #region IEnumerable<T> Members
 
-        public IEnumerator<Expression> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
-            yield return _arg0;
+            yield return First;
 
-            for (int i = 1, n = _provider.ArgumentCount; i < n; i++)
+            for (int i = 1, n = ElementCount; i < n; i++)
             {
-                yield return _provider.GetArgument(i);
+                yield return GetElement(i);
             }
         }
 
@@ -131,5 +117,31 @@ namespace System.Dynamic.Utils
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         #endregion
+    }
+
+    /// <summary>
+    /// Provides a wrapper around an IArgumentProvider which exposes the argument providers
+    /// members out as an IList of Expression.  This is used to avoid allocating an array
+    /// which needs to be stored inside of a ReadOnlyCollection.  Instead this type has
+    /// the same amount of overhead as an array without duplicating the storage of the
+    /// elements.  This ensures that internally we can avoid creating and copying arrays
+    /// while users of the Expression trees also don't pay a size penalty for this internal
+    /// optimization.  See IArgumentProvider for more general information on the Expression
+    /// tree optimizations being used here.
+    /// </summary>
+    internal sealed class ListArgumentProvider : ListProvider<Expression>
+    {
+        private readonly IArgumentProvider _provider;
+        private readonly Expression _arg0;
+
+        internal ListArgumentProvider(IArgumentProvider provider, Expression arg0)
+        {
+            _provider = provider;
+            _arg0 = arg0;
+        }
+
+        protected override Expression First => _arg0;
+        protected override int ElementCount => _provider.ArgumentCount;
+        protected override Expression GetElement(int index) => _provider.GetArgument(index);
     }
 }

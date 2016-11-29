@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.IO": "4.1.0",
-    "System.IO.FileSystem": "4.0.1",
-    "System.IO.FileSystem.Primitives": "4.0.1",
-    "System.Runtime": "4.1.0",
-    "System.Security.AccessControl": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0"
+    "System.IO": "4.3.0",
+    "System.IO.FileSystem": "4.3.0",
+    "System.IO.FileSystem.Primitives": "4.3.0",
+    "System.Runtime": "4.3.0",
+    "System.Security.AccessControl": "4.3.0",
+    "System.Security.Principal.Windows": "4.3.0"
   },
   "frameworks": {
     "netstandard1.3": {}

@@ -13,9 +13,11 @@ namespace System.PrivateUri.Tests
         [Theory]
         public static void TestCtor_String_Boolean(bool dontEscape)
         {
+#pragma warning disable 0618
 #pragma warning disable 0612
             Uri uri = new Uri(@"http://foo/bar/baz#frag", dontEscape);
 #pragma warning restore 0612
+#pragma warning restore 0618
 
             int i;
             String s;

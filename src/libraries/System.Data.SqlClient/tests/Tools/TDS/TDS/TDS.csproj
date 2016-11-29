@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Microsoft.SqlServer.TDS</RootNamespace>
+    <AssemblyName>Microsoft.SqlServer.TDS</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <ClsCompliant>false</ClsCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="AllHeaders\TDSQueryNotificationsHeader.cs" />
+    <Compile Include="AllHeaders\TDSTraceHeader.cs" />
+    <Compile Include="AllHeaders\TDSTransactionDescriptorHeader.cs" />
+    <Compile Include="AllHeaders\TDSHeaderType.cs" />
+    <Compile Include="AllHeaders\TDSAllHeaders.cs" />
+    <Compile Include="AutoTDSStream.cs" />
+    <Compile Include="ColInfo\TDSColInfoToken.cs" />
+    <Compile Include="ColInfo\TDSColumnProperty.cs" />
+    <Compile Include="ColInfo\TDSColumnStatus.cs" />
+    <Compile Include="ColMetadata\TDSColMetadataToken.cs" />
+    <Compile Include="ColMetadata\TDSColumnData.cs" />
+    <Compile Include="ColMetadata\TDSColumnDataCollation.cs" />
+    <Compile Include="ColMetadata\TDSColumnDataFlags.cs" />
+    <Compile Include="ColMetadata\TDSColumnDataUpdatableFlag.cs" />
+    <Compile Include="ColMetadata\TDSDecimalColumnSpecific.cs" />
+    <Compile Include="ColMetadata\TDSShilohVarCharColumnSpecific.cs" />
+    <Compile Include="DateFormatType.cs" />
+    <Compile Include="Done\TDSDoneInProcToken.cs" />
+    <Compile Include="Done\TDSDoneProcedureToken.cs" />
+    <Compile Include="Done\TDSDoneToken.cs" />
+    <Compile Include="Done\TDSDoneTokenCommandType.cs" />
+    <Compile Include="Done\TDSDoneTokenStatusType.cs" />
+    <Compile Include="EnvChange\TDSEnvChangeToken.cs" />
+    <Compile Include="EnvChange\TDSEnvChangeTokenType.cs" />
+    <Compile Include="EnvChange\TDSRoutingEnvChangeTokenValue.cs" />
+    <Compile Include="EnvChange\TDSRoutingEnvChangeTokenValueType.cs" />
+    <Compile Include="Error\TDSErrorToken.cs" />
+    <Compile Include="FeatureExtAck\TDSFeatureExtAckFederatedAuthenticationOption.cs" />
+    <Compile Include="FeatureExtAck\TDSFeatureExtAckGenericOption.cs" />
+    <Compile Include="FeatureExtAck\TDSFeatureExtAckOption.cs" />
+    <Compile Include="FeatureExtAck\TDSFeatureExtAckSessionStateOption.cs" />
+    <Compile Include="FeatureExtAck\TDSFeatureExtAckToken.cs" />
+    <Compile Include="FedAuthInfo\TDSFedAuthInfoId.cs" />
+    <Compile Include="FedAuthInfo\TDSFedAuthInfoOption.cs" />
+    <Compile Include="FedAuthInfo\TDSFedAuthInfoOptionSPN.cs" />
+    <Compile Include="FedAuthInfo\TDSFedAuthInfoOptionSTSURL.cs" />
+    <Compile Include="FedAuthInfo\TDSFedAuthInfoToken.cs" />
+    <Compile Include="FedAuthMessage\TDSFedAuthMessageToken.cs" />
+    <Compile Include="IDeflatable.cs" />
+    <Compile Include="IInflatable.cs" />
+    <Compile Include="Info\TDSInfoToken.cs" />
+    <Compile Include="LanguageString.cs" />
+    <Compile Include="LanguageType.cs" />
+    <Compile Include="Login7\TDSLogin7FeatureOptionsToken.cs" />
+    <Compile Include="Login7\TDSLogin7FeatureOptionToken.cs" />
+    <Compile Include="Login7\TDSLogin7FedAuthOptionToken.cs" />
+    <Compile Include="Login7\TDSLogin7GenericOptionToken.cs" />
+    <Compile Include="Login7\TDSLogin7SessionRecoveryOptionToken.cs" />
+    <Compile Include="Login7\TDSLogin7TokenOffsetProperty.cs" />
+    <Compile Include="Login7\TDSLogin7TokenOptionalFlags1.cs" />
+    <Compile Include="Login7\TDSLogin7TokenOptionalFlags2.cs" />
+    <Compile Include="Login7\TDSLogin7TokenOptionalFlags3.cs" />
+    <Compile Include="Login7\TDSLogin7Token.cs" />
+    <Compile Include="Login7\TDSLogin7TokenTypeFlags.cs" />
+    <Compile Include="LoginAck\TDSLoginAckToken.cs" />
+    <Compile Include="Order\TDSOrderToken.cs" />
+    <Compile Include="PreLogin\TDSPreLoginAuthenticationType.cs" />
+    <Compile Include="ReturnStatus\TDSReturnStatusToken.cs" />
+    <Compile Include="Row\TDSNBCRowToken.cs" />
+    <Compile Include="Row\TDSRowToken.cs" />
+    <Compile Include="Row\TDSRowTokenBase.cs" />
+    <Compile Include="SessionState\TDSSessionRecoveryData.cs" />
+    <Compile Include="SessionState\TDSSessionStateContextInfoOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateDateFirstDateFormatOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateDeadlockPriorityOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateGenericOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateISOFipsOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateLockTimeoutOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateTextSizeOption.cs" />
+    <Compile Include="SessionState\TDSSessionStateToken.cs" />
+    <Compile Include="SessionState\TDSSessionStateUserOptionsOption.cs" />
+    <Compile Include="SQLBatch\TDSSQLBatchToken.cs" />
+    <Compile Include="SSPI\TDSSSPIClientToken.cs" />
+    <Compile Include="SSPI\TDSSSPIToken.cs" />
+    <Compile Include="TDSClientState.cs" />
+    <Compile Include="TDSDataType.cs" />
+    <Compile Include="TDSEncryptionType.cs" />
+    <Compile Include="TDSFeatureID.cs" />
+    <Compile Include="TDSMessage.cs" />
+    <Compile Include="TDSMessageCollection.cs" />
+    <Compile Include="TDSPacketHeader.cs" />
+    <Compile Include="TDSPacketToken.cs" />
+    <Compile Include="TDSPacketStatus.cs" />
+    <Compile Include="TDSMessageType.cs" />
+    <Compile Include="PreLogin\TDSPreLoginTokenEncryptionType.cs" />
+    <Compile Include="PreLogin\TDSPreLoginToken.cs" />
+    <Compile Include="PreLogin\TDSPreLoginTokenOption.cs" />
+    <Compile Include="PreLogin\TDSPreLoginTokenOptionType.cs" />
+    <Compile Include="TDSTokenType.cs" />
+    <Compile Include="TDSStream.cs" />
+    <Compile Include="TDSTokenFactory.cs" />
+    <Compile Include="TDSUtilities.cs" />
+    <Compile Include="TDSVersion.cs" />
+    <Compile Include="TransactionIsolationLevelType.cs" />
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

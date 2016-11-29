@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
@@ -182,7 +181,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          */
         public bool isSetAccessor()
         {
-            if (!this.isPropertyAccessor())
+            if (!isPropertyAccessor())
             {
                 return false;
             }

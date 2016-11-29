@@ -197,14 +197,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object dflt = frame.Pop();
                 object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(dflt);
-                }
-                else
-                {
-                    frame.Push(obj);
-                }
+                frame.Push(obj ?? dflt);
                 return +1;
             }
         }
@@ -394,26 +387,24 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type t)
         {
-            if (!t.GetTypeInfo().IsEnum)
+            Debug.Assert(!t.GetTypeInfo().IsEnum);
+            switch (t.GetTypeCode())
             {
-                switch (t.GetTypeCode())
-                {
-                    case TypeCode.Boolean: return s_boolean ?? (s_boolean = new CastInstructionT<bool>());
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new CastInstructionT<byte>());
-                    case TypeCode.Char: return s_char ?? (s_char = new CastInstructionT<char>());
-                    case TypeCode.DateTime: return s_dateTime ?? (s_dateTime = new CastInstructionT<DateTime>());
-                    case TypeCode.Decimal: return s_decimal ?? (s_decimal = new CastInstructionT<decimal>());
-                    case TypeCode.Double: return s_double ?? (s_double = new CastInstructionT<double>());
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new CastInstructionT<short>());
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new CastInstructionT<int>());
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new CastInstructionT<long>());
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new CastInstructionT<sbyte>());
-                    case TypeCode.Single: return s_single ?? (s_single = new CastInstructionT<float>());
-                    case TypeCode.String: return s_string ?? (s_string = new CastInstructionT<string>());
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new CastInstructionT<ushort>());
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new CastInstructionT<uint>());
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new CastInstructionT<ulong>());
-                }
+                case TypeCode.Boolean: return s_boolean ?? (s_boolean = new CastInstructionT<bool>());
+                case TypeCode.Byte: return s_byte ?? (s_byte = new CastInstructionT<byte>());
+                case TypeCode.Char: return s_char ?? (s_char = new CastInstructionT<char>());
+                case TypeCode.DateTime: return s_dateTime ?? (s_dateTime = new CastInstructionT<DateTime>());
+                case TypeCode.Decimal: return s_decimal ?? (s_decimal = new CastInstructionT<decimal>());
+                case TypeCode.Double: return s_double ?? (s_double = new CastInstructionT<double>());
+                case TypeCode.Int16: return s_int16 ?? (s_int16 = new CastInstructionT<short>());
+                case TypeCode.Int32: return s_int32 ?? (s_int32 = new CastInstructionT<int>());
+                case TypeCode.Int64: return s_int64 ?? (s_int64 = new CastInstructionT<long>());
+                case TypeCode.SByte: return s_SByte ?? (s_SByte = new CastInstructionT<sbyte>());
+                case TypeCode.Single: return s_single ?? (s_single = new CastInstructionT<float>());
+                case TypeCode.String: return s_string ?? (s_string = new CastInstructionT<string>());
+                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new CastInstructionT<ushort>());
+                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new CastInstructionT<uint>());
+                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new CastInstructionT<ulong>());
             }
 
             return CastInstructionNoT.Create(t);
@@ -433,27 +424,13 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object from = frame.Pop();
-            switch (Convert.GetTypeCode(from))
-            {
-                case TypeCode.Empty:
-                    frame.Push(null);
-                    break;
-                case TypeCode.Int32:
-                case TypeCode.SByte:
-                case TypeCode.Int16:
-                case TypeCode.Int64:
-                case TypeCode.UInt32:
-                case TypeCode.Byte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt64:
-                case TypeCode.Char:
-                case TypeCode.Boolean:
-                    frame.Push(Enum.ToObject(_t, from));
-                    break;
-                default:
-                    throw new InvalidCastException();
-            }
-
+            Debug.Assert(
+                new[]
+                {
+                    TypeCode.Empty, TypeCode.Int32, TypeCode.SByte, TypeCode.Int16, TypeCode.Int64, TypeCode.UInt32,
+                    TypeCode.Byte, TypeCode.UInt16, TypeCode.UInt64, TypeCode.Char, TypeCode.Boolean
+                }.Contains(Convert.GetTypeCode(from)));
+            frame.Push(from == null ? null : Enum.ToObject(_t, from));
             return +1;
         }
     }
@@ -471,65 +448,57 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object from = frame.Pop();
-            if (from == null)
+            Debug.Assert(from != null);
+            Type underlying = Enum.GetUnderlyingType(_t);
+            // Order checks in order of likelihood. int first as the vast majority of enums
+            // are int-based, then long as that is sometimes used when required for a large set of flags
+            // and so-on.
+            if (underlying == typeof(int))
             {
-                frame.Push(null);
+                // If from is neither an int nor a type assignable to int (viz. an int-backed enum)
+                // this will cause an InvalidCastException, which is what this operation should
+                // throw in this case.
+                frame.Push(Enum.ToObject(_t, (int)from));
+            }
+            else if (underlying == typeof(long))
+            {
+                frame.Push(Enum.ToObject(_t, (long)from));
+            }
+            else if (underlying == typeof(uint))
+            {
+                frame.Push(Enum.ToObject(_t, (uint)from));
+            }
+            else if (underlying == typeof(ulong))
+            {
+                frame.Push(Enum.ToObject(_t, (ulong)from));
+            }
+            else if (underlying == typeof(byte))
+            {
+                frame.Push(Enum.ToObject(_t, (byte)from));
+            }
+            else if (underlying == typeof(sbyte))
+            {
+                frame.Push(Enum.ToObject(_t, (sbyte)from));
+            }
+            else if (underlying == typeof(short))
+            {
+                frame.Push(Enum.ToObject(_t, (short)from));
+            }
+            else if (underlying == typeof(ushort))
+            {
+                frame.Push(Enum.ToObject(_t, (ushort)from));
+            }
+            else if (underlying == typeof(char))
+            {
+                // Disallowed in C#, but allowed in CIL
+                frame.Push(Enum.ToObject(_t, (char)from));
             }
             else
             {
-                Type underlying = _t.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(_t) : _t;
-                // Order checks in order of likelihood. int first as the vast majority of enums
-                // are int-based, then long as that is sometimes used when required for a large set of flags
-                // and so-on.
-                if (underlying == typeof(int))
-                {
-                    // If from is neither an int nor a type assignable to int (viz. an int-backed enum)
-                    // this will cause an InvalidCastException, which is what this operation should
-                    // throw in this case.
-                    frame.Push(Enum.ToObject(_t, (int)from));
-                }
-                else if (underlying == typeof(long))
-                {
-                    frame.Push(Enum.ToObject(_t, (long)from));
-                }
-                else if (underlying == typeof(uint))
-                {
-                    frame.Push(Enum.ToObject(_t, (uint)from));
-                }
-                else if (underlying == typeof(ulong))
-                {
-                    frame.Push(Enum.ToObject(_t, (ulong)from));
-                }
-                else if (underlying == typeof(byte))
-                {
-                    frame.Push(Enum.ToObject(_t, (byte)from));
-                }
-                else if (underlying == typeof(sbyte))
-                {
-                    frame.Push(Enum.ToObject(_t, (sbyte)from));
-                }
-                else if (underlying == typeof(short))
-                {
-                    frame.Push(Enum.ToObject(_t, (short)from));
-                }
-                else if (underlying == typeof(ushort))
-                {
-                    frame.Push(Enum.ToObject(_t, (ushort)from));
-                }
-                else if (underlying == typeof(char))
-                {
-                    // Disallowed in C#, but allowed in CIL
-                    frame.Push(Enum.ToObject(_t, (char)from));
-                }
-                else if (underlying == typeof(bool))
-                {
-                    // Disallowed in C#, but allowed in CIL
-                    frame.Push(Enum.ToObject(_t, (bool)from));
-                }
-                else
-                {
-                    throw new InvalidCastException();
-                }
+                // Only remaining possible type.
+                // Disallowed in C#, but allowed in CIL
+                Debug.Assert(underlying == typeof(bool));
+                frame.Push(Enum.ToObject(_t, (bool)from));
             }
 
             return 1;
@@ -586,12 +555,19 @@ namespace System.Linq.Expressions.Interpreter
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                if (node.Parameters.Count > 0)
+                if (node.ParameterCount > 0)
                 {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                    var parameters = new HashSet<ParameterExpression>();
+
+                    for (int i = 0, n = node.ParameterCount; i < n; i++)
+                    {
+                        parameters.Add(node.GetParameter(i));
+                    }
+
+                    _shadowedVars.Push(parameters);
                 }
                 Expression b = Visit(node.Body);
-                if (node.Parameters.Count > 0)
+                if (node.ParameterCount > 0)
                 {
                     _shadowedVars.Pop();
                 }
@@ -599,7 +575,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     return node;
                 }
-                return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
+                return node.Rewrite(b, parameters: null);
             }
 
             protected internal override Expression VisitBlock(BlockExpression node)

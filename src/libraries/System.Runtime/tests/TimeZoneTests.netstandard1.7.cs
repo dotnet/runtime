@@ -16,7 +16,9 @@ namespace System.Tests
         [Fact]
         public static void TestBasicTimeZoneProperties()
         {
+#pragma warning disable 0618
             var currentZone = TimeZone.CurrentTimeZone;
+#pragma warning restore 0618
             Assert.Equal(TimeZoneInfo.Local.StandardName, currentZone.StandardName);
             Assert.Equal(TimeZoneInfo.Local.DaylightName, currentZone.DaylightName);
 
@@ -57,18 +59,24 @@ namespace System.Tests
         [Fact]
         public static void TestOffsetsAndDaylight()
         {
+#pragma warning disable 0618
             var currentZone = TimeZone.CurrentTimeZone;
+#pragma warning restore 0618
             DateTime now = DateTime.Now;
 
             Assert.Equal(TimeZoneInfo.Local.GetUtcOffset(now), currentZone.GetUtcOffset(now));
             Assert.Equal(TimeZoneInfo.Local.IsDaylightSavingTime(now), currentZone.IsDaylightSavingTime(now));
+#pragma warning disable 0618
             Assert.Equal(TimeZoneInfo.Local.IsDaylightSavingTime(now), TimeZone.IsDaylightSavingTime(now, currentZone.GetDaylightChanges(now.Year)));
+#pragma warning restore 0618
         }
 
         [Fact]
         public static void TestRoundTripping()
         {
+#pragma warning disable 0618
             var currentZone = TimeZone.CurrentTimeZone;
+#pragma warning restore 0618
             DateTime now = DateTime.Now;
 
             if (!TimeZoneInfo.Local.IsAmbiguousTime(now))

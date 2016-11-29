@@ -57,7 +57,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void SslStream_AuthenticateAsClientAsync_AllUnsuported_Fails()
+        public void SslStream_AuthenticateAsClientAsync_AllUnsupported_Fails()
         {
             SslStream stream = new SslStream(new NotImplementedStream());
             Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, SslProtocolSupport.UnsupportedSslProtocols, false));

@@ -81,7 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        private Dictionary<Key, Symbol> _dictionary;
+        private readonly Dictionary<Key, Symbol> _dictionary;
 
         private sealed class Key
         {

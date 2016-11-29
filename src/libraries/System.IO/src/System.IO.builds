@@ -4,9 +4,6 @@
   <ItemGroup>
     <Project Include="System.IO.csproj" />
     <Project Include="System.IO.csproj">
-      <TargetGroup>net462</TargetGroup>
-    </Project>
-    <Project Include="System.IO.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
     <Project Include="System.IO.csproj">

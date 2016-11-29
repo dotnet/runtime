@@ -13,6 +13,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- ToDo: Remove once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\ref\System.Security.Cryptography.Primitives.csproj">
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj">
       <Name>System.Security.Cryptography.Algorithms</Name>
     </ProjectReference>

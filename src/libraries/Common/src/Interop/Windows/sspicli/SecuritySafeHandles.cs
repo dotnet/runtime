@@ -893,7 +893,7 @@ namespace System.Net.Security
                                         outFreeContextBuffer);
 
                         if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshaling OUT buffer");
-                        
+
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
                         outSecBuffer.type = outUnmanagedBuffer[0].BufferType;
@@ -1177,7 +1177,7 @@ namespace System.Net.Security
 #endif
                     }
                 }
-                
+
                 // TODO: (#3114): Optimizations to remove the unnecesary allocation of a CredHandle, remove the AddRef
                 // if refContext was previously null, refactor the code to unify CompleteAuthToken and ApplyControlToken.
                 Interop.SspiCli.CredHandle contextHandle = new Interop.SspiCli.CredHandle();

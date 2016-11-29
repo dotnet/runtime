@@ -27,7 +27,7 @@ namespace System.Net.Http
 
         private Uri _baseAddress;
         private TimeSpan _timeout;
-        private long _maxResponseContentBufferSize;
+        private int _maxResponseContentBufferSize;
 
         #endregion Fields
 
@@ -89,7 +89,9 @@ namespace System.Net.Http
                         SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
                 }
                 CheckDisposedOrStarted();
-                _maxResponseContentBufferSize = value;
+
+                Debug.Assert(HttpContent.MaxBufferSize <= int.MaxValue);
+                _maxResponseContentBufferSize = (int)value;
             }
         }
 
@@ -125,30 +127,104 @@ namespace System.Net.Http
 
         #region Simple Get Overloads
 
-        public Task<string> GetStringAsync(string requestUri) => GetStringAsync(CreateUri(requestUri));
+        public Task<string> GetStringAsync(string requestUri) =>
+            GetStringAsync(CreateUri(requestUri));
 
-        public Task<string> GetStringAsync(Uri requestUri)
+        public Task<string> GetStringAsync(Uri requestUri) =>
+            GeStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
+
+        private async Task<string> GeStringAsyncCore(Task<HttpResponseMessage> getTask)
         {
-            return GetAsync(requestUri, HttpCompletionOption.ResponseContentRead).ContinueWith(t =>
+            // Wait for the response message.
+            using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))
             {
-                HttpResponseMessage r = t.GetAwaiter().GetResult();
-                r.EnsureSuccessStatusCode();
-                HttpContent c = r.Content;
-                return c != null ? c.ReadBufferedContentAsString() : string.Empty;
-            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+                // Make sure it completed successfully.
+                responseMessage.EnsureSuccessStatusCode();
+
+                // Get the response content.
+                HttpContent c = responseMessage.Content;
+                if (c != null)
+                {
+                    HttpContentHeaders headers = c.Headers;
+
+                    // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
+                    // stream to which we copy all of the data from the response.
+                    using (Stream responseStream = await c.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
+                    {
+                        await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                        if (buffer.Length > 0)
+                        {
+                            // Decode and return the data from the buffer.
+                            return HttpContent.ReadBufferAsString(buffer.GetBuffer(), headers);
+                        }
+                    }
+                }
+
+                // No content to return.
+                return string.Empty;
+            }
         }
 
-        public Task<byte[]> GetByteArrayAsync(string requestUri) => GetByteArrayAsync(CreateUri(requestUri));
+        public Task<byte[]> GetByteArrayAsync(string requestUri) =>
+            GetByteArrayAsync(CreateUri(requestUri));
 
-        public Task<byte[]> GetByteArrayAsync(Uri requestUri)
+        public Task<byte[]> GetByteArrayAsync(Uri requestUri) =>
+            GetByteArrayAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
+
+        private async Task<byte[]> GetByteArrayAsyncCore(Task<HttpResponseMessage> getTask)
         {
-            return GetAsync(requestUri, HttpCompletionOption.ResponseContentRead).ContinueWith(t =>
+            // Wait for the response message.
+            using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))
             {
-                HttpResponseMessage r = t.GetAwaiter().GetResult();
-                r.EnsureSuccessStatusCode();
-                HttpContent c = r.Content;
-                return c != null ? c.ReadBufferedContentAsByteArray() : Array.Empty<byte>();
-            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+                // Make sure it completed successfully.
+                responseMessage.EnsureSuccessStatusCode();
+                
+                // Get the response content.
+                HttpContent c = responseMessage.Content;
+                if (c != null)
+                {
+                    HttpContentHeaders headers = c.Headers;
+                    using (Stream responseStream = await c.ReadAsStreamAsync().ConfigureAwait(false))
+                    {
+                        long? contentLength = headers.ContentLength;
+                        Stream buffer; // declared here to share the state machine field across both if/else branches
+
+                        if (contentLength.HasValue)
+                        {
+                            // If we got a content length, then we assume that it's correct and create a MemoryStream
+                            // to which the content will be transferred.  That way, assuming we actually get the exact
+                            // amount we were expecting, we can simply return the MemoryStream's underlying buffer.
+                            buffer = new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault());
+                            await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                            if (buffer.Length > 0)
+                            {
+                                return ((HttpContent.LimitMemoryStream)buffer).GetSizedBuffer();
+                            }
+                        }
+                        else
+                        {
+                            // If we didn't get a content length, then we assume we're going to have to grow
+                            // the buffer potentially several times and that it's unlikely the underlying buffer
+                            // at the end will be the exact size needed, in which case it's more beneficial to use
+                            // ArrayPool buffers and copy out to a new array at the end.
+                            buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
+                            try
+                            {
+                                await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                                if (buffer.Length > 0)
+                                {
+                                    return ((HttpContent.LimitArrayPoolWriteStream)buffer).ToArray();
+                                }
+                            }
+                            finally { buffer.Dispose(); }
+                        }
+                    }
+                }
+
+                // No content to return.
+                return Array.Empty<byte>();
+            }
         }
 
         // Unbuffered by default

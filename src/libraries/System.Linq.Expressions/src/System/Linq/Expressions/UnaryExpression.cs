@@ -164,10 +164,12 @@ namespace System.Linq.Expressions
             // temp
             ParameterExpression temp = Parameter(Operand.Type, name: null);
             return Block(
-                new[] { temp },
-                Assign(temp, Operand),
-                Assign(Operand, FunctionalOp(temp)),
-                temp
+                new  TrueReadOnlyCollection<ParameterExpression>(temp),
+                new TrueReadOnlyCollection<Expression>(
+                    Assign(temp, Operand),
+                    Assign(Operand, FunctionalOp(temp)),
+                    temp
+                )
             );
         }
 
@@ -192,9 +194,11 @@ namespace System.Linq.Expressions
                     // temp1 = value
                     // temp1.member = op(temp1.member)
                     return Block(
-                        new[] { temp1 },
-                        initTemp1,
-                        Assign(member, FunctionalOp(member))
+                        new TrueReadOnlyCollection<ParameterExpression>(temp1),
+                        new TrueReadOnlyCollection<Expression>(
+                            initTemp1,
+                            Assign(member, FunctionalOp(member))
+                        )
                     );
                 }
 
@@ -206,11 +210,13 @@ namespace System.Linq.Expressions
                 // temp2
                 ParameterExpression temp2 = Parameter(member.Type, name: null);
                 return Block(
-                    new[] { temp1, temp2 },
-                    initTemp1,
-                    Assign(temp2, member),
-                    Assign(member, FunctionalOp(temp2)),
-                    temp2
+                    new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
+                    new TrueReadOnlyCollection<Expression>(
+                        initTemp1,
+                        Assign(temp2, member),
+                        Assign(member, FunctionalOp(temp2)),
+                        temp2
+                    )
                 );
             }
         }
@@ -428,7 +434,7 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetUserDefinedCoercion(ExpressionType coercionType, Expression expression, Type convertToType)
         {
-            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType, implicitOnly: false);
+            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType);
             if (method != null)
             {
                 return new UnaryExpression(coercionType, expression, convertToType, method);
@@ -455,7 +461,8 @@ namespace System.Linq.Expressions
             // check for lifted call
             if ((operand.Type.IsNullableType() || convertToType.IsNullableType()) &&
                 ParameterIsAssignable(pms[0], operand.Type.GetNonNullableType()) &&
-                TypeUtils.AreEquivalent(method.ReturnType, convertToType.GetNonNullableType()))
+                (TypeUtils.AreEquivalent(method.ReturnType, convertToType.GetNonNullableType()) ||
+                TypeUtils.AreEquivalent(method.ReturnType, convertToType)))
             {
                 return new UnaryExpression(unaryType, operand, convertToType, method);
             }

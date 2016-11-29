@@ -11,8 +11,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
     {
         internal class KnownName : Name
         {
-            private PredefinedName _id = PredefinedName.PN_COUNT;
-
             public KnownName(string text)
                 : base(text)
             {
@@ -21,13 +19,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             public KnownName(string text, PredefinedName id)
                 : base(text)
             {
-                _id = id;
+                PredefinedName = id;
             }
 
-            public override PredefinedName PredefinedName
-            {
-                get { return _id; }
-            }
+            public override PredefinedName PredefinedName { get; } = PredefinedName.PN_COUNT;
         }
 
         private static NameTable s_knownNames;
@@ -57,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             }
         }
 
-        private static KnownName[] s_predefinedNames = new KnownName[(int)PredefinedName.PN_COUNT] {
+        private static readonly KnownName[] s_predefinedNames = new KnownName[(int)PredefinedName.PN_COUNT] {
             new KnownName(".ctor", PredefinedName.PN_CTOR),
             new KnownName("Finalize", PredefinedName.PN_DTOR),
             new KnownName(".cctor", PredefinedName.PN_STATCTOR),
@@ -163,7 +158,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new KnownName("GetOrCreateEventRegistrationTokenTable", PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE)
         };
 
-        private static KnownName[] s_otherNames = new KnownName[] {
+        private static readonly KnownName[] s_otherNames = new KnownName[] {
             new KnownName("true"),
             new KnownName("false"),
             new KnownName("null"),

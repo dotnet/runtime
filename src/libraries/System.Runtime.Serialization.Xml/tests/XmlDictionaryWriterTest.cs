@@ -278,26 +278,13 @@ public static class XmlDictionaryWriterTest
         binaryReader.Close();
     }
 
-    [ActiveIssue(12902)]
     [Fact]
     public static void IXmlTextReaderInitializerTest()
     {
-        DataContractSerializer serializer = new DataContractSerializer(typeof(TestData));
-        MemoryStream ms = new MemoryStream();
-        TestData td = new TestData();
-        Encoding encoding = Encoding.UTF8;
-        XmlDictionaryWriter textWriter = XmlDictionaryWriter.CreateTextWriter(ms, encoding, false);
-        IXmlTextWriterInitializer writerInitializer = (IXmlTextWriterInitializer)textWriter;
-        writerInitializer.SetOutput(ms, encoding, false);
-        serializer.WriteObject(ms, td);
-        textWriter.Flush();
-        byte[] xmlDoc = ms.ToArray();
-        textWriter.Close();
-        XmlDictionaryReader textReader = XmlDictionaryReader.CreateTextReader(xmlDoc, 0, xmlDoc.Length, encoding, XmlDictionaryReaderQuotas.Max, new OnXmlDictionaryReaderClose((XmlDictionaryReader reader) => { }));
-        IXmlTextReaderInitializer readerInitializer = (IXmlTextReaderInitializer)textReader;
-        readerInitializer.SetInput(xmlDoc, 0, xmlDoc.Length, encoding, XmlDictionaryReaderQuotas.Max, new OnXmlDictionaryReaderClose((XmlDictionaryReader reader) => { }));
-        textReader.ReadContentAsObject();
-        textReader.Close();
+        var writer = new SampleTextWriter();
+        var ms = new MemoryStream();
+        var encoding = Encoding.UTF8;
+        writer.SetOutput(ms, encoding, true);
     }
 
     [ActiveIssue(13375)]
@@ -361,30 +348,14 @@ public static class XmlDictionaryWriterTest
         if (rwType != ReaderWriterFactory.ReaderWriterType.MTOM)
         {
             // stream should be released right after WriteValue
-            if (myStreamProvider.StreamReleased)
-            {
-                Console.WriteLine("Ok, stream released right after WriteValue");
-            }
-            else
-            {
-                Console.WriteLine("Error, stream not released after WriteValue");
-                return false;
-            }
+            Assert.True(myStreamProvider.StreamReleased, "Error, stream not released after WriteValue");
         }
         writer.WriteEndElement();
 
         // stream should be released now for MTOM
         if (rwType == ReaderWriterFactory.ReaderWriterType.MTOM)
         {
-            if (myStreamProvider.StreamReleased)
-            {
-                Console.WriteLine("Ok, stream released right after WriteValue");
-            }
-            else
-            {
-                Console.WriteLine("Error, stream not released after WriteValue");
-                return false;
-            }
+            Assert.True(myStreamProvider.StreamReleased, "Error, stream not released after WriteEndElement");
         }
         writer.Flush();
         return true;
@@ -396,15 +367,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Root");
         Task writeValueAsynctask = writer.WriteValueAsync(myStreamProvider);
         writeValueAsynctask.Wait();
-        if (myStreamProvider.StreamReleased)
-        {
-            Console.WriteLine("Ok, stream released right after AsyncWriteValue");
-        }
-        else
-        {
-            Console.WriteLine("Error, stream not released after AsyncWriteValue");
-            return false;
-        }
+        Assert.True(myStreamProvider.StreamReleased, "Error, stream not released.");
         writer.WriteEndElement();
         writer.Flush();
         return true;
@@ -416,16 +379,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Root");
         Task writeValueBase64Asynctask = writer.WriteBase64Async(byteArray, 0, byteArray.Length);
         writeValueBase64Asynctask.Wait();
-
-        if (myStreamProvider.StreamReleased)
-        {
-            Console.WriteLine("Ok, stream released right after AsyncWriteValueBase64");
-        }
-        else
-        {
-            Console.WriteLine("Error, stream not released after AsyncWriteValueBase64");
-            return false;
-        }
+        Assert.True(myStreamProvider.StreamReleased, "Error, stream not released.");
         writer.WriteEndElement();
         writer.Flush();
         return true;

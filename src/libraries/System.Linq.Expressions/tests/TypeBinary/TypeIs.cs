@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -97,7 +95,7 @@ namespace System.Linq.Expressions.Tests
                 ? type == typeof(void)
                 : type.IsInstanceOfType(Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()());
 
-            var param = Expression.Parameter(expression.Type);
+            ParameterExpression param = Expression.Parameter(expression.Type);
 
             Func<bool> func = Expression.Lambda<Func<bool>>(
                 Expression.Block(
@@ -139,7 +137,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ToStringTest()
         {
-            var e = Expression.TypeIs(Expression.Parameter(typeof(object), "o"), typeof(string));
+            TypeBinaryExpression e = Expression.TypeIs(Expression.Parameter(typeof(object), "o"), typeof(string));
             Assert.Equal("(o Is String)", e.ToString());
         }
     }

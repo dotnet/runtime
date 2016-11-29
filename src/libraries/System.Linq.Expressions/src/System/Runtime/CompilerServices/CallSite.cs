@@ -8,10 +8,7 @@ using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
-
-#if FEATURE_COMPILE
-using System.Linq.Expressions.Compiler;
-#endif
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Runtime.CompilerServices
 {
@@ -43,7 +40,14 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public class CallSite
     {
-        // Cache of CallSite constructors for a given delegate type
+        /// <summary>
+        /// String used for generated CallSite methods.
+        /// </summary>
+        internal const string CallSiteTargetMethodName = "CallSite.Target";
+
+        /// <summary>
+        /// Cache of CallSite constructors for a given delegate type.
+        /// </summary>
         private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>> s_siteCtors;
 
         /// <summary>
@@ -60,7 +64,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// used by Matchmaker sites to indicate rule match.
+        /// Used by Matchmaker sites to indicate rule match.
         /// </summary>
         internal bool _match;
 
@@ -401,9 +405,7 @@ namespace System.Runtime.CompilerServices
                 Expression.Assign(
                     site,
                     Expression.Call(
-                        typeof(CallSiteOps),
-                        nameof(CallSiteOps.CreateMatchmaker),
-                        typeArgs,
+                        CallSiteOps_CreateMatchmaker.MakeGenericMethod(typeArgs),
                         @this
                     )
                 )
@@ -411,20 +413,12 @@ namespace System.Runtime.CompilerServices
 
             Expression invokeRule;
 
-            Expression getMatch = Expression.Call(
-                typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.GetMatch)),
-                site
-            );
+            Expression getMatch = Expression.Call(CallSiteOps_GetMatch, site);
 
-            Expression resetMatch = Expression.Call(
-                typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.ClearMatch)),
-                site
-            );
+            Expression resetMatch = Expression.Call(CallSiteOps_ClearMatch, site);
 
             Expression onMatch = Expression.Call(
-                typeof(CallSiteOps),
-                nameof(CallSiteOps.UpdateRules),
-                typeArgs,
+                CallSiteOps_UpdateRules.MakeGenericMethod(typeArgs),
                 @this,
                 index
             );
@@ -467,9 +461,7 @@ namespace System.Runtime.CompilerServices
                         Expression.Assign(
                             applicable,
                             Expression.Call(
-                                typeof(CallSiteOps),
-                                nameof(CallSiteOps.GetRules),
-                                typeArgs,
+                                CallSiteOps_GetRules.MakeGenericMethod(typeArgs),
                                 @this
                             )
                         ),
@@ -518,14 +510,14 @@ namespace System.Runtime.CompilerServices
             body.Add(
                 Expression.Assign(
                     cache,
-                    Expression.Call(typeof(CallSiteOps), nameof(CallSiteOps.GetRuleCache), typeArgs, @this)
+                    Expression.Call(CallSiteOps_GetRuleCache.MakeGenericMethod(typeArgs), @this)
                 )
             );
 
             body.Add(
                 Expression.Assign(
                     applicable,
-                    Expression.Call(typeof(CallSiteOps), nameof(CallSiteOps.GetCachedRules), typeArgs, cache)
+                    Expression.Call(CallSiteOps_GetCachedRules.MakeGenericMethod(typeArgs), cache)
                 )
             );
 
@@ -556,8 +548,8 @@ namespace System.Runtime.CompilerServices
                 Expression.IfThen(
                     getMatch,
                     Expression.Block(
-                        Expression.Call(typeof(CallSiteOps), nameof(CallSiteOps.AddRule), typeArgs, @this, rule),
-                        Expression.Call(typeof(CallSiteOps), nameof(CallSiteOps.MoveRule), typeArgs, cache, rule, index)
+                        Expression.Call(CallSiteOps_AddRule.MakeGenericMethod(typeArgs), @this, rule),
+                        Expression.Call(CallSiteOps_MoveRule.MakeGenericMethod(typeArgs), cache, rule, index)
                     )
                 )
             );
@@ -589,11 +581,12 @@ namespace System.Runtime.CompilerServices
             body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
 
             ParameterExpression args = Expression.Variable(typeof(object[]), "args");
+            Expression[] argsElements = arguments.Map(p => Convert(p, typeof(object)));
             vars.Add(args);
             body.Add(
                 Expression.Assign(
                     args,
-                    Expression.NewArrayInit(typeof(object), arguments.Map(p => Convert(p, typeof(object))))
+                    Expression.NewArrayInit(typeof(object), new TrueReadOnlyCollection<Expression>(argsElements))
                 )
             );
 
@@ -607,9 +600,7 @@ namespace System.Runtime.CompilerServices
                 Expression.Assign(
                     rule,
                     Expression.Call(
-                        typeof(CallSiteOps),
-                        nameof(CallSiteOps.Bind),
-                        typeArgs,
+                        CallSiteOps_Bind.MakeGenericMethod(typeArgs),
                         Expression.Property(@this, nameof(Binder)),
                         @this,
                         args
@@ -622,9 +613,7 @@ namespace System.Runtime.CompilerServices
                 Expression.IfThen(
                     getMatch,
                     Expression.Call(
-                        typeof(CallSiteOps),
-                        nameof(CallSiteOps.AddRule),
-                        typeArgs,
+                        CallSiteOps_AddRule.MakeGenericMethod(typeArgs),
                         @this,
                         rule
                     )
@@ -649,7 +638,7 @@ namespace System.Runtime.CompilerServices
                         body.ToReadOnly()
                     )
                 ),
-                "CallSite.Target",
+                CallSiteTargetMethodName,
                 true, // always compile the rules with tail call optimization
                 new TrueReadOnlyCollection<ParameterExpression>(@params)
             );
@@ -667,11 +656,11 @@ namespace System.Runtime.CompilerServices
                 Expression.Block(
                     Expression.Call(
                         typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.SetNotMatched)),
-                        @params.First()
+                        @params[0]
                     ),
                     Expression.Default(invoke.GetReturnType())
                 ),
-                @params
+                new TrueReadOnlyCollection<ParameterExpression>(@params)
             ).Compile();
         }
 

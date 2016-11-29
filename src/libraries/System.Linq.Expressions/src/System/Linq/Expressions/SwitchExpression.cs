@@ -217,7 +217,7 @@ namespace System.Linq.Expressions
                 {
                     ContractUtils.RequiresNotNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
-                    for (int i = 0; i < c.TestValues.Count; i++)
+                    for (int i = 0, n = c.TestValues.Count; i < n; i++)
                     {
                         // When a comparison method is provided, test values can have different type but have to
                         // be reference assignable to the right hand side parameter of the method.
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions
                     ContractUtils.RequiresNotNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
                     // When no comparison method is provided, require all test values to have the same type.
-                    for (int i = 0; i < c.TestValues.Count; i++)
+                    for (int i = 0, n = c.TestValues.Count; i < n; i++)
                     {
                         if (!TypeUtils.AreEquivalent(firstTestValue.Type, c.TestValues[i].Type))
                         {

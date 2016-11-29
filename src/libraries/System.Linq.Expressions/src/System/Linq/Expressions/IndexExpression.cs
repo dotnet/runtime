@@ -283,9 +283,7 @@ namespace System.Linq.Expressions
 
         private static bool IsCompatible(PropertyInfo pi, Expression[] args)
         {
-            MethodInfo mi;
-
-            mi = pi.GetGetMethod(nonPublic: true);
+            MethodInfo mi = pi.GetGetMethod(nonPublic: true);
             ParameterInfo[] parms;
             if (mi != null)
             {

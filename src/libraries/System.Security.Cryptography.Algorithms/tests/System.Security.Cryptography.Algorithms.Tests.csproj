@@ -147,12 +147,14 @@
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="AesManagedTests.cs" />
     <Compile Include="AsymmetricSignatureFormatterTests.cs" />
+    <Compile Include="BlockSizeValueTests.cs" />
     <Compile Include="CryptoConfigTests.cs" />
     <Compile Include="DefaultDSAProvider.cs" />
     <Compile Include="DESProvider.cs" />
     <Compile Include="DESTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
+    <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RC2Provider.cs" />
     <Compile Include="RC2Tests.cs" />
     <Compile Include="RijndaelTests.cs" />
@@ -162,6 +164,7 @@
     <Compile Include="Sha256ManagedTests.cs" />
     <Compile Include="Sha384ManagedTests.cs" />
     <Compile Include="Sha512ManagedTests.cs" />
+    <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AsymmetricSignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs</Link>
     </Compile>
@@ -195,6 +198,12 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs</Link>
     </Compile>
@@ -210,9 +219,18 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSASignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSASignatureFormatter.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\Interop\Unix\" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- ToDo: Remove once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj">
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.Runtime;
-using System.Security;
 
 namespace System.Text
 {
@@ -46,7 +45,6 @@ namespace System.Text
             return GetMaxByteCount(count);
         }
 
-        [SecuritySafeCritical]
         unsafe public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
@@ -117,7 +115,6 @@ namespace System.Text
             return GetMaxCharCount(count);
         }
 
-        [SecuritySafeCritical]
         unsafe public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             if (bytes == null)
