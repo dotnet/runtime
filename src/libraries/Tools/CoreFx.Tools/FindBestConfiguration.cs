@@ -11,11 +11,11 @@ namespace Microsoft.DotNet.Build.Tasks
 {
     public class FindBestConfiguration : BuildTask
     {
-        private static readonly char s_SupportedGroupsSeparator = '|';
-        private static readonly char s_VerticalGroupsSeparator = '-';
+        private static readonly char[] s_SupportedGroupsSeparator = new[] { '|' };
+        private static readonly char[] s_VerticalGroupsSeparator = new[] { '-' };
 
         [Required]
-        public string ProjectConfigurations { get; set; }
+        public string[] ProjectConfigurations { get; set; }
 
         [Required]
         public string SelectionGroup { get; set; }
@@ -38,8 +38,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public override bool Execute()
         {
-            string[] configurations = ProjectConfigurations.Split(';');
-            string[] supportedTargetGroups = configurations.Select(s => s.Split(s_SupportedGroupsSeparator)[0]).Where(w => !string.IsNullOrWhiteSpace(w)).ToArray();
+            string[] supportedTargetGroups = ProjectConfigurations.Select(s => s.Split(s_SupportedGroupsSeparator)[0]).Where(w => !string.IsNullOrWhiteSpace(w)).ToArray();
 
             string[] tokens = SelectionGroup.Split(s_VerticalGroupsSeparator);
             string osGroup = tokens[0];
@@ -69,14 +68,14 @@ namespace Microsoft.DotNet.Build.Tasks
                 metadata.Add("TargetGroup", targetGroup);
             }
 
-            string[] supportedOSGroups = configurations.Where(v => v.Contains(targetGroup)).Select(v => v.Split(s_SupportedGroupsSeparator)[1]).ToArray();
+            string[] supportedOSGroups = ProjectConfigurations.Where(v => v.Contains(targetGroup)).Select(v => v.Split(s_SupportedGroupsSeparator)[1]).ToArray();
             Dictionary<string, ITaskItem> searchOSGroups = OSGroups.ToDictionary(o => o.ItemSpec, o => o);
             string compatibleOSGroup = FindCompatibleOSGroup(osGroup, supportedOSGroups, searchOSGroups);
             metadata.Add("OSGroup", compatibleOSGroup);
 
             OutputItem = new TaskItem(Name, metadata);
 
-            return true;
+            return !Log.HasLoggedErrors;
         }
 
         private string FindCompatibleOSGroup(string osGroup, string[] supportedOsGroups, Dictionary<string, ITaskItem> searchOSGroups)
