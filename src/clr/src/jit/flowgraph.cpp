@@ -8253,8 +8253,8 @@ void Compiler::fgAddInternal()
         if (!varTypeIsFloating(info.compRetType))
         {
             lvaTable[genReturnLocal].setPrefReg(REG_INTRET, this);
-#ifdef REG_FLOATRET
         }
+#ifdef REG_FLOATRET
         else
         {
             lvaTable[genReturnLocal].setPrefReg(REG_FLOATRET, this);
@@ -8948,10 +8948,10 @@ void Compiler::fgSimpleLowering()
             for (GenTreePtr tree = stmt->gtStmtList; tree; tree = tree->gtNext)
             {
 #else
-            LIR::Range& range         = LIR::AsRange(block);
-            for (GenTree* tree : range)
+        LIR::Range& range             = LIR::AsRange(block);
+        for (GenTree* tree : range)
+        {
             {
-                {
 #endif
                 if (tree->gtOper == GT_ARR_LENGTH)
                 {
@@ -8999,7 +8999,7 @@ void Compiler::fgSimpleLowering()
                         add->gtNext  = tree;
                         tree->gtPrev = add;
 #else
-                            range.InsertAfter(arr, con, add);
+                        range.InsertAfter(arr, con, add);
 #endif
                     }
 
@@ -11031,10 +11031,10 @@ bool Compiler::fgExpandRarelyRunBlocks()
                             noway_assert(tmpbb->isBBCallAlwaysPair());
                             bPrevPrev = tmpbb;
 #else
-                                if (tmpbb->bbJumpKind == BBJ_CALLFINALLY)
-                                {
-                                    bPrevPrev = tmpbb;
-                                }
+                            if (tmpbb->bbJumpKind == BBJ_CALLFINALLY)
+                            {
+                                bPrevPrev = tmpbb;
+                            }
 #endif
                         }
 
@@ -11566,60 +11566,60 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
 #else // FEATURE_EH_FUNCLETS
 
-        for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    {
+        if (XTnum == regionIndex)
         {
-            if (XTnum == regionIndex)
-            {
-                // Don't update our handler's Last info
-                continue;
-            }
+            // Don't update our handler's Last info
+            continue;
+        }
 
-            if (HBtab->ebdTryLast == bLast)
+        if (HBtab->ebdTryLast == bLast)
+        {
+            // If we moved a set of blocks that were at the end of
+            // a different try region then we may need to update ebdTryLast
+            for (block = HBtab->ebdTryBeg; block != NULL; block = block->bbNext)
             {
-                // If we moved a set of blocks that were at the end of
-                // a different try region then we may need to update ebdTryLast
-                for (block = HBtab->ebdTryBeg; block != NULL; block = block->bbNext)
+                if (block == bPrev)
                 {
-                    if (block == bPrev)
-                    {
-                        fgSetTryEnd(HBtab, bPrev);
-                        break;
-                    }
-                    else if (block == HBtab->ebdTryLast->bbNext)
-                    {
-                        // bPrev does not come after the TryBeg
-                        break;
-                    }
+                    fgSetTryEnd(HBtab, bPrev);
+                    break;
+                }
+                else if (block == HBtab->ebdTryLast->bbNext)
+                {
+                    // bPrev does not come after the TryBeg
+                    break;
                 }
             }
-            if (HBtab->ebdHndLast == bLast)
+        }
+        if (HBtab->ebdHndLast == bLast)
+        {
+            // If we moved a set of blocks that were at the end of
+            // a different handler region then we must update ebdHndLast
+            for (block = HBtab->ebdHndBeg; block != NULL; block = block->bbNext)
             {
-                // If we moved a set of blocks that were at the end of
-                // a different handler region then we must update ebdHndLast
-                for (block = HBtab->ebdHndBeg; block != NULL; block = block->bbNext)
+                if (block == bPrev)
                 {
-                    if (block == bPrev)
-                    {
-                        fgSetHndEnd(HBtab, bPrev);
-                        break;
-                    }
-                    else if (block == HBtab->ebdHndLast->bbNext)
-                    {
-                        // bPrev does not come after the HndBeg
-                        break;
-                    }
+                    fgSetHndEnd(HBtab, bPrev);
+                    break;
+                }
+                else if (block == HBtab->ebdHndLast->bbNext)
+                {
+                    // bPrev does not come after the HndBeg
+                    break;
                 }
             }
-        } // end exception table iteration
+        }
+    } // end exception table iteration
 
-        // We have decided to insert the block(s) after fgLastBlock
-        fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
+    // We have decided to insert the block(s) after fgLastBlock
+    fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
 
-        // If bPrev falls through, we will insert a jump to block
-        fgConnectFallThrough(bPrev, bStart);
+    // If bPrev falls through, we will insert a jump to block
+    fgConnectFallThrough(bPrev, bStart);
 
-        // If bLast falls through, we will insert a jump to bNext
-        fgConnectFallThrough(bLast, bNext);
+    // If bLast falls through, we will insert a jump to bNext
+    fgConnectFallThrough(bLast, bNext);
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -12060,70 +12060,70 @@ void Compiler::fgCreateFunclets()
 
 #else // !FEATURE_EH_FUNCLETS
 
-    /*****************************************************************************
-     *
-     *  Function called to relocate any and all EH regions.
-     *  Only entire consecutive EH regions will be moved and they will be kept together.
-     *  Except for the first block, the range can not have any blocks that jump into or out of the region.
-     */
+/*****************************************************************************
+ *
+ *  Function called to relocate any and all EH regions.
+ *  Only entire consecutive EH regions will be moved and they will be kept together.
+ *  Except for the first block, the range can not have any blocks that jump into or out of the region.
+ */
 
-    bool Compiler::fgRelocateEHRegions()
-    {
-        bool result = false; // Our return value
+bool Compiler::fgRelocateEHRegions()
+{
+    bool result = false; // Our return value
 
 #ifdef DEBUG
-        if (verbose)
-            printf("*************** In fgRelocateEHRegions()\n");
+    if (verbose)
+        printf("*************** In fgRelocateEHRegions()\n");
 #endif
 
-        if (fgCanRelocateEHRegions)
+    if (fgCanRelocateEHRegions)
+    {
+        unsigned  XTnum;
+        EHblkDsc* HBtab;
+
+        for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
         {
-            unsigned  XTnum;
-            EHblkDsc* HBtab;
-
-            for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+            // Nested EH regions cannot be moved.
+            // Also we don't want to relocate an EH region that has a filter
+            if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
             {
-                // Nested EH regions cannot be moved.
-                // Also we don't want to relocate an EH region that has a filter
-                if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
+                bool movedTry = false;
+#if DEBUG
+                bool movedHnd = false;
+#endif // DEBUG
+
+                // Only try to move the outermost try region
+                if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
                 {
-                    bool movedTry = false;
-#if DEBUG
-                    bool movedHnd = false;
-#endif // DEBUG
-
-                    // Only try to move the outermost try region
-                    if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                    // Move the entire try region if it can be moved
+                    if (HBtab->ebdTryBeg->isRunRarely())
                     {
-                        // Move the entire try region if it can be moved
-                        if (HBtab->ebdTryBeg->isRunRarely())
+                        BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
+                        if (bTryLastBB != NULL)
                         {
-                            BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
-                            if (bTryLastBB != NULL)
-                            {
-                                result   = true;
-                                movedTry = true;
-                            }
+                            result   = true;
+                            movedTry = true;
                         }
-#if DEBUG
-                        if (verbose && movedTry)
-                        {
-                            printf("\nAfter relocating an EH try region");
-                            fgDispBasicBlocks();
-                            fgDispHandlerTab();
-
-                            // Make sure that the predecessor lists are accurate
-                            if (expensiveDebugCheckLevel >= 2)
-                            {
-                                fgDebugCheckBBlist();
-                            }
-                        }
-#endif // DEBUG
                     }
+#if DEBUG
+                    if (verbose && movedTry)
+                    {
+                        printf("\nAfter relocating an EH try region");
+                        fgDispBasicBlocks();
+                        fgDispHandlerTab();
 
-                    // Currently it is not good to move the rarely run handler regions to the end of the method
-                    // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot section.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
+                        // Make sure that the predecessor lists are accurate
+                        if (expensiveDebugCheckLevel >= 2)
+                        {
+                            fgDebugCheckBBlist();
+                        }
+                    }
+#endif // DEBUG
+                }
+
+                // Currently it is not good to move the rarely run handler regions to the end of the method
+                // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot section.
+                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if 0
                 // Now try to move the entire handler region if it can be moved.
@@ -12142,38 +12142,38 @@ void Compiler::fgCreateFunclets()
 #endif // 0
 
 #if DEBUG
-                    if (verbose && movedHnd)
-                    {
-                        printf("\nAfter relocating an EH handler region");
-                        fgDispBasicBlocks();
-                        fgDispHandlerTab();
+                if (verbose && movedHnd)
+                {
+                    printf("\nAfter relocating an EH handler region");
+                    fgDispBasicBlocks();
+                    fgDispHandlerTab();
 
-                        // Make sure that the predecessor lists are accurate
-                        if (expensiveDebugCheckLevel >= 2)
-                        {
-                            fgDebugCheckBBlist();
-                        }
+                    // Make sure that the predecessor lists are accurate
+                    if (expensiveDebugCheckLevel >= 2)
+                    {
+                        fgDebugCheckBBlist();
                     }
-#endif // DEBUG
                 }
+#endif // DEBUG
             }
         }
+    }
 
 #if DEBUG
-        fgVerifyHandlerTab();
+    fgVerifyHandlerTab();
 
-        if (verbose && result)
-        {
-            printf("\nAfter fgRelocateEHRegions()");
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-            // Make sure that the predecessor lists are accurate
-            fgDebugCheckBBlist();
-        }
+    if (verbose && result)
+    {
+        printf("\nAfter fgRelocateEHRegions()");
+        fgDispBasicBlocks();
+        fgDispHandlerTab();
+        // Make sure that the predecessor lists are accurate
+        fgDebugCheckBBlist();
+    }
 #endif // DEBUG
 
-        return result;
-    }
+    return result;
+}
 
 #endif // !FEATURE_EH_FUNCLETS
 
