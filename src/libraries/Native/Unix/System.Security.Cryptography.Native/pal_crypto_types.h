@@ -4,8 +4,7 @@
 
 #pragma once
 #include "pal_types.h"
-
-#include <openssl/x509.h>
+#include "opensslshim.h"
 
 typedef STACK_OF(X509) X509Stack;
 typedef STACK_OF(X509_NAME) X509NameStack;

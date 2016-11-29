@@ -5,8 +5,6 @@
 #include "pal_x509_root.h"
 
 #include <assert.h>
-#include <openssl/pem.h>
-#include <openssl/x509v3.h>
 
 extern "C" const char* CryptoNative_GetX509RootStorePath()
 {
