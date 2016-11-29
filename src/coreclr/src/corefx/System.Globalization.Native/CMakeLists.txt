@@ -93,5 +93,11 @@ else()
     add_definitions(-DU_DISABLE_RENAMING=1)
 endif()
 
+verify_dependencies(
+    System.Globalization.Native
+    "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
+)
+
 # add the install targets
 install_clr(System.Globalization.Native)
+
