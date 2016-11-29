@@ -52,7 +52,9 @@ namespace System.Dynamic
             return target.BindSetIndex(this, indexes, value);
         }
 
-        // this is a standard DynamicMetaObjectBinder
+        /// <summary>
+        /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
+        /// </summary>
         internal override sealed bool IsStandardBinder => true;
 
         /// <summary>

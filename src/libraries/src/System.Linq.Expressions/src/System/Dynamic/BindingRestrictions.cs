@@ -19,7 +19,7 @@ namespace System.Dynamic
     public abstract class BindingRestrictions
     {
         /// <summary>
-        /// Represents an empty set of binding restrictions. This field is read only.
+        /// Represents an empty set of binding restrictions. This field is read-only.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
