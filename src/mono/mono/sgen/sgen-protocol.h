@@ -21,15 +21,6 @@
 #define BINARY_PROTOCOL_NO_MATCH (-1)
 #define BINARY_PROTOCOL_MATCH (-2)
 
-/* We pack all protocol structs by default unless specified otherwise */
-#ifndef PROTOCOL_STRUCT_ATTR
-#ifdef __GNUC__
-#define PROTOCOL_STRUCT_ATTR __attribute__ ((packed))
-#else
-#define PROTOCOL_STRUCT_ATTR
-#endif
-#endif
-
 #define PROTOCOL_ID(method) method ## _id
 #define PROTOCOL_STRUCT(method) method ## _struct
 #define CLIENT_PROTOCOL_NAME(method) sgen_client_ ## method
@@ -79,6 +70,19 @@ enum {
 
 #include "sgen-protocol-def.h"
 };
+
+/* We pack all protocol structs by default unless specified otherwise */
+#ifndef PROTOCOL_STRUCT_ATTR
+
+#define PROTOCOL_PACK_STRUCTS
+
+#if defined(__GNUC__)
+#define PROTOCOL_STRUCT_ATTR __attribute__ ((packed))
+#else
+#define PROTOCOL_STRUCT_ATTR
+#endif
+
+#endif
 
 #define BEGIN_PROTOCOL_ENTRY0(method)
 #define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
@@ -147,7 +151,15 @@ enum {
 #define END_PROTOCOL_ENTRY_FLUSH
 #define END_PROTOCOL_ENTRY_HEAVY
 
+#if defined(_MSC_VER) && defined(PROTOCOL_PACK_STRUCTS)
+#pragma pack(push)
+#pragma pack(1)
+#endif
 #include "sgen-protocol-def.h"
+#if defined(_MSC_VER) && defined(PROTOCOL_PACK_STRUCTS)
+#pragma pack(pop)
+#undef PROTOCOL_PACK_STRUCTS
+#endif
 
 /* missing: finalizers, roots, non-store wbarriers */
 
