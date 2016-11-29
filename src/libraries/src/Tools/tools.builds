@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Project Include="CoreFx.Tools\CoreFx.Tools.builds" />
+    <Project Include="GenerateProps\GenerateProps.proj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
