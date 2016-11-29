@@ -376,10 +376,14 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
                         // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
                         if (osName == 'OSX') {
-                            shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref bin/packages")
+                            // TODO: Re-enable package archival when the build refactoring work allows it.
+                            // shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref bin/packages")
+                            shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref")
                         }
                         else {
-                            shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                            // TODO: Re-enable package archival when the build refactoring work allows it.
+                            // shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                            shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
                         }
                     }
                 }
@@ -449,7 +453,9 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
                         shell(script)
 
                         // Archive the native and managed binaries
-                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                        // TODO: Re-enable package archival when the build refactoring work allows it.
+                        // shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
                     }
                 }
 
