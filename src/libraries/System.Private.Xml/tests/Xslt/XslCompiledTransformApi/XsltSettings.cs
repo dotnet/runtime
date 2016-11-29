@@ -18,6 +18,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CXsltSettings(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -84,23 +87,25 @@ namespace System.Xml.Tests
             XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6);
         }
 
-        [ActiveIssue(9876)]
         //[Variation(id = 5, Desc = "Test the document function with EnableDocumentFunction, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, false })]
         [InlineData(5, "XsltSettings.xml", "XsltSettings2.xsl", true, false)]
         //[Variation(id = 8, Desc = "Test the document function with TrustedXslt, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, true })]
         [InlineData(8, "XsltSettings.xml", "XsltSettings2.xsl", true, true)]
         [Theory]
-        public void XsltSettings1_1_ActiveIssue9876(object param0, object param1, object param2, object param3, object param4)
+        public void XsltSettings1_1_ExternalURI(object param0, object param1, object param2, object param3, object param4)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             XsltSettings1_1(param0, param1, param2, param3, param4);
         }
 
-        [ActiveIssue(9876)]
         //[Variation(id = 18, Desc = "Test 6 with EnableDocumentFunction override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false })]
         [InlineData(18, "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false)]
         [Theory]
-        public void XsltSettings1_2_ActiveIssue9876(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
+        public void XsltSettings1_2_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6);
         }
 
