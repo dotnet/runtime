@@ -223,6 +223,15 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.SetterMustBeVoid, paramName);
         }
+
+        /// <summary>
+        /// ArgumentException with message like "Property type must match the value type of getter"
+        /// </summary>
+        internal static Exception PropertyTypeMustMatchGetter(string paramName)
+        {
+            return new ArgumentException(Strings.PropertyTypeMustMatchGetter, paramName);
+        }
+        
         /// <summary>
         /// ArgumentException with message like "Property type must match the value type of setter"
         /// </summary>
@@ -864,9 +873,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Instance property '{0}{1}' is not defined for type '{2}'"
         /// </summary>
-        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2)
+        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2, string paramName)
         {
-            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2));
+            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"

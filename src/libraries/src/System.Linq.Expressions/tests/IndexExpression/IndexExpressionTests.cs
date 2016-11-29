@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -12,7 +14,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void UpdateSameTest()
         {
-            var instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
             IndexExpression expr = instance.DefaultIndexExpression;
 
             IndexExpression exprUpdated = expr.Update(expr.Object, expr.Arguments);
@@ -28,7 +30,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void UpdateTest()
         {
-            var instance = new SampleClassWithProperties
+            SampleClassWithProperties instance = new SampleClassWithProperties
             {
                 DefaultProperty = new List<int> { 100, 101 },
                 AlternativeProperty = new List<int> { 200, 201 }
@@ -62,6 +64,580 @@ namespace System.Linq.Expressions.Tests
 
             IndexExpression e3 = Expression.ArrayAccess(Expression.Parameter(typeof(int[,]), "xs"), Expression.Parameter(typeof(int), "i"), Expression.Parameter(typeof(int), "j"));
             Assert.Equal("xs[i, j]", e3.ToString());
+        }
+
+        private static TypeBuilder GetTestTypeBuilder() =>
+            AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                .DefineDynamicModule("TestModule")
+                .DefineType("TestType");
+
+        [Fact]
+        public void NoAccessorIndexedProperty()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            typeBuild.DefineProperty("Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = info.DeclaredProperties.First();
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void ByRefIndexedProperty()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+            FieldBuilder field = typeBuild.DefineField("_value", typeof(int), FieldAttributes.Private);
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int).MakeByRefType(), new[] {typeof(int)});
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(int).MakeByRefType(),
+                new[] {typeof(int)});
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldarg_0);
+            ilGen.Emit(OpCodes.Ldflda, field);
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void VoidIndexedProperty()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(void), new[] { typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                new[] { typeof(int) });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertyGetReturnsWrongType()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(long),
+                new[] { typeof(int) });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertySetterNoParams()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                Type.EmptyTypes);
+
+            ILGenerator ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertySetterByrefValueType()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                new [] {typeof(int), typeof(int).MakeByRefType()});
+
+            ILGenerator ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertySetterNotReturnVoid()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(int),
+                new[] { typeof(int), typeof(int) });
+
+            ILGenerator ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertyGetterInstanceSetterStatic()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(int),
+                new[] { typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Static
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                new[] { typeof(int), typeof(int) });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldc_I4_0);
+            ilGen.Emit(OpCodes.Ret);
+
+            ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertySetterValueTypeNotMatchPropertyType()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                new[] { typeof(int), typeof(long) });
+
+            ILGenerator ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertyGetterSetterArgCountMismatch()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(int),
+                new[] { typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                new[] { typeof(int), typeof(int), typeof(int) });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldc_I4_0);
+            ilGen.Emit(OpCodes.Ret);
+
+            ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertyGetterSetterArgumentTypeMismatch()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int), typeof(int), typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(int),
+                new[] { typeof(int), typeof(int), typeof(int) });
+
+            MethodBuilder setter = typeBuild.DefineMethod(
+                "set_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(void),
+                new[] { typeof(int), typeof(int), typeof(long), typeof(int) });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldc_I4_0);
+            ilGen.Emit(OpCodes.Ret);
+
+            ilGen = setter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+            property.SetSetMethod(setter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void IndexedPropertyVarArgs()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                CallingConventions.VarArgs,
+                typeof(int),
+                Type.EmptyTypes);
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldc_I4_0);
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void NullInstanceInstanceProperty()
+        {
+            PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
+            ConstantExpression index = Expression.Constant(0);
+            Assert.Throws<ArgumentException>("instance", () => Expression.Property(null, prop, index));
+        }
+
+        [Fact]
+        public void InstanceToStaticProperty()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Static
+                | MethodAttributes.PrivateScope,
+                typeof(int),
+                new[] { typeof(int) });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldc_I4_0);
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>(() => Expression.Property(instance, prop, Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void ByRefIndexer()
+        {
+            TypeBuilder typeBuild = GetTestTypeBuilder();
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "Item", PropertyAttributes.None, typeof(int), new[] { typeof(int).MakeByRefType() });
+
+            MethodBuilder getter = typeBuild.DefineMethod(
+                "get_Item",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                | MethodAttributes.PrivateScope,
+                typeof(int),
+                new[] { typeof(int).MakeByRefType() });
+
+            ILGenerator ilGen = getter.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldc_I4_0);
+            ilGen.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+
+            TypeInfo info = typeBuild.CreateTypeInfo();
+            Type type = info.AsType();
+            PropertyInfo prop = type.GetProperties()[0];
+            Expression instance = Expression.Default(type);
+            Assert.Throws<ArgumentException>("indexes[0]", () => Expression.Property(instance, prop, Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void CallWithoutIndices()
+        {
+            PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
+            DefaultExpression dict = Expression.Default(typeof(Dictionary<int, int>));
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(dict, prop, Array.Empty<Expression>()));
+        }
+
+        [Fact]
+        public void CallWithExcessiveIndices()
+        {
+            PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
+            DefaultExpression dict = Expression.Default(typeof(Dictionary<int, int>));
+            ConstantExpression index = Expression.Constant(0);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(dict, prop, index, index));
+        }
+
+        [Fact]
+        public void CallWithUnassignableIndex()
+        {
+            PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
+            DefaultExpression dict = Expression.Default(typeof(Dictionary<int, int>));
+            ConstantExpression index = Expression.Constant(0L);
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.Property(dict, prop, index));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CallWithLambdaIndex(bool useInterpreter)
+        {
+            // An exception to the rule against unassignable indices, lamdba expressions
+            // can be automatically quoted.
+            PropertyInfo prop = typeof(Dictionary<Expression<Func<int>>, int>).GetProperty("Item");
+            Expression<Func<int>> index = () => 2;
+            ConstantExpression dict = Expression.Constant(new Dictionary<Expression<Func<int>>, int>{{index, 9}});
+            Func<int> f = Expression.Lambda<Func<int>>(Expression.Property(dict, prop, index)).Compile(useInterpreter);
+            Assert.Equal(9, f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CallWithIntAndLambdaIndex(bool useInterpreter)
+        {
+            PropertyInfo prop = typeof(IntAndExpressionIndexed).GetProperty("Item");
+            ConstantExpression instance = Expression.Constant(new IntAndExpressionIndexed());
+            Expression<Action> index = Expression.Lambda<Action>(Expression.Empty());
+            ConstantExpression intIdx = Expression.Constant(0);
+            Func<bool> f = Expression.Lambda<Func<bool>>(Expression.Property(instance, prop, intIdx, index)).Compile(useInterpreter);
+            Assert.True(f());
+        }
+
+        [Fact]
+        public void TryIndexedAccessNonIndexedProperty()
+        {
+            ConstantExpression instance = Expression.Constant("");
+            PropertyInfo prop = typeof(string).GetProperty(nameof(string.Length));
+            ConstantExpression index = Expression.Constant(0);
+            Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, index));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void OverloadedIndexer(bool useInterpreter)
+        {
+            ConstantExpression instance = Expression.Constant(new OverloadedIndexers());
+            ConstantExpression index = Expression.Constant("");
+            Expression<Func<int>> exp = Expression.Lambda<Func<int>>(Expression.Property(instance, "Item", index));
+            Func<int> f = exp.Compile(useInterpreter);
+            Assert.Equal(2, f());
+        }
+
+        [Fact]
+        public void OverloadedIndexerBothMatch()
+        {
+            ConstantExpression instance = Expression.Constant(new OverloadedIndexersBothMatchString());
+            ConstantExpression index = Expression.Constant("");
+            Assert.Throws<InvalidOperationException>(() => Expression.Property(instance, "Item", index));
+        }
+
+        [Fact]
+        public void NoSuchPropertyExplicitlyNoIndices()
+        {
+            ConstantExpression instance = Expression.Constant("");
+            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "ThisDoesNotExist", Array.Empty<Expression>()));
+            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "ThisDoesNotExist", null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void NonIndexedPropertyExplicitlyNoIndices(bool useInterpreter)
+        {
+            ConstantExpression instance = Expression.Constant("123");
+            IndexExpression prop = Expression.Property(instance, "Length", null);
+            Expression<Func<int>> exp = Expression.Lambda<Func<int>>(prop);
+            Func<int> func = exp.Compile(useInterpreter);
+            Assert.Equal(3, func());
+        }
+
+        [Fact]
+        public void FindNothingForNullArgument()
+        {
+            ConstantExpression instance = Expression.Constant("123");
+            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "Length", new Expression[] {null}));
+        }
+
+        [Fact]
+        public void NullArgument()
+        {
+            ConstantExpression instance = Expression.Constant(new Dictionary<int, int>());
+            PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
+            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "Item", new Expression[] {null}));
+            Assert.Throws<ArgumentNullException>("arguments[0]", () => Expression.Property(instance, prop, new Expression[] {null}));
+        }
+
+        [Fact]
+        public void UnreadableIndex()
+        {
+            ConstantExpression instance = Expression.Constant(new Dictionary<int, int>());
+            PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
+            MemberExpression index = Expression.Property(null, typeof(Unreadable<int>).GetProperty(nameof(Unreadable<int>.WriteOnly)));
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.Property(instance, "Item", index));
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.Property(instance, prop, index));
+        }
+
+        private class IntAndExpressionIndexed
+        {
+            public bool this[int x, Expression<Action> y] => true;
+        }
+
+        private class OverloadedIndexers
+        {
+            public int this[int index] => 0;
+
+            public int this[int x, int y] => 1;
+
+            public int this[string index] => 2;
+        }
+
+        private class OverloadedIndexersBothMatchString
+        {
+            public int this[IComparable index] => 0;
+
+            public int this[ICloneable index] => 1;
         }
 
         class Vector1
