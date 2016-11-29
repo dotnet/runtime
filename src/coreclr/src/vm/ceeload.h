@@ -3394,10 +3394,12 @@ public:
     //-----------------------------------------------------------------------------------------
     BOOL                    IsPreV4Assembly();
 
+#ifdef FEATURE_CER
     //-----------------------------------------------------------------------------------------
     // Get reliability contract info, see ConstrainedExecutionRegion.cpp for details.
     //-----------------------------------------------------------------------------------------
     DWORD                   GetReliabilityContract();
+#endif
 
     //-----------------------------------------------------------------------------------------
     // Parse/Return NeutralResourcesLanguageAttribute if it exists (updates Module member variables at ngen time)
@@ -3406,13 +3408,15 @@ public:
 
 protected:
 
+#ifdef FEATURE_CER
     Volatile<DWORD>         m_dwReliabilityContract;
+#endif
 
     // initialize Crst controlling the Dynamic IL hashtables
     void                    InitializeDynamicILCrst();
 
-#ifndef DACCESS_COMPILE
 public:
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_CER)
 
     // Support for getting and creating information about Constrained Execution Regions rooted in this module.
 
@@ -3443,7 +3447,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pCerCrst;
     }
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && FEATURE_CER
 
 #ifdef FEATURE_CORECLR
     void VerifyAllMethods();
@@ -3456,10 +3460,12 @@ public:
     }
 
 private:
+#ifdef FEATURE_CER
     EEPtrHashTable       *m_pCerPrepInfo;       // Root methods prepared for Constrained Execution Regions
     Crst                 *m_pCerCrst;           // Mutex protecting update access to both of the above hashes
 #ifdef FEATURE_PREJIT
     CerNgenRootTable     *m_pCerNgenRootTable;  // Root methods of CERs found during ngen and requiring runtime restoration
+#endif
 #endif
 
     // This struct stores the data used by the managed debugging infrastructure.  If it turns out that 

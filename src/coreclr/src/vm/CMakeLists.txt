@@ -155,7 +155,6 @@ set(VM_SOURCES_WKS
     comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
-    constrainedexecutionregion.cpp
     coverage.cpp
     customattribute.cpp
     custommarshalerinfo.cpp
@@ -241,6 +240,12 @@ set(VM_SOURCES_WKS
     weakreferencenative.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if(FEATURE_CER)
+    list(APPEND VM_SOURCES_WKS
+        constrainedexecutionregion.cpp
+        )
+endif(FEATURE_CER)
 
 if(FEATURE_EVENT_TRACE)
     list(APPEND VM_SOURCES_WKS

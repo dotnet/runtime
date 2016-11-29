@@ -2949,6 +2949,7 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pExecutionEngineExceptionClass = MscorlibBinder::GetException(kExecutionEngineException);
     g_pThreadAbortExceptionClass = MscorlibBinder::GetException(kThreadAbortException);
 
+#ifdef FEATURE_CER
     // Used for determining whether a class has a critical finalizer
     // To determine whether a class has a critical finalizer, we
     // currently will simply see if it's parent class has a critical
@@ -2957,6 +2958,7 @@ void SystemDomain::LoadBaseSystemClasses()
     // here.
     g_pCriticalFinalizerObjectClass = MscorlibBinder::GetClass(CLASS__CRITICAL_FINALIZER_OBJECT);
     _ASSERTE(g_pCriticalFinalizerObjectClass->HasCriticalFinalizer());
+#endif
 
     // used by gc to handle predefined agility checking
     g_pThreadClass = MscorlibBinder::GetClass(CLASS__THREAD);
@@ -2986,7 +2988,9 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // Load a special marker method used to detect Constrained Execution Regions
     // at jit time.
+#ifdef FEATURE_CER
     g_pPrepareConstrainedRegionsMethod = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__PREPARE_CONSTRAINED_REGIONS);
+#endif
     g_pExecuteBackoutCodeHelperMethod = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__EXECUTE_BACKOUT_CODE_HELPER);
 
     // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper. 
