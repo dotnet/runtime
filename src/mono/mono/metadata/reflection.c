@@ -2192,6 +2192,8 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	if (mono_is_sre_type_builder (mono_object_class (type))) {
 		is_dynamic = TRUE;
 	} else if (mono_is_sre_generic_instance (mono_object_class (type))) {
+		/* Does this ever make sense?  what does instantiating a generic instance even mean? */
+		g_assert_not_reached ();
 		MonoReflectionGenericClass *rgi = (MonoReflectionGenericClass *) type;
 		MonoReflectionType *gtd = rgi->generic_type;
 
