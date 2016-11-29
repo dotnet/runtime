@@ -42,6 +42,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/hazard-pointer.h>
+#include <mono/io-layer/io-layer.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -882,7 +883,7 @@ finalize_domain_objects (void)
 	}
 }
 
-static guint32
+static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
 	MonoError error;

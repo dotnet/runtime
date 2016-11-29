@@ -539,7 +539,7 @@ worker_try_unpark (MonoThreadPoolWorker *worker)
 	return res;
 }
 
-static void
+static gsize WINAPI
 worker_thread (gpointer data)
 {
 	MonoThreadPoolWorker *worker;
@@ -759,7 +759,7 @@ monitor_sufficient_delay_since_last_dequeue (MonoThreadPoolWorker *worker)
 
 static void hill_climbing_force_change (MonoThreadPoolWorker *worker, gint16 new_thread_count, ThreadPoolHeuristicStateTransition transition);
 
-static void
+static gsize WINAPI
 monitor_thread (gpointer data)
 {
 	MonoThreadPoolWorker *worker;
