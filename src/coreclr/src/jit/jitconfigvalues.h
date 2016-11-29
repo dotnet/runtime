@@ -200,11 +200,17 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 0) // Controls the Alt
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
 #endif                                                       // defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
 
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+CONFIG_INTEGER(EnableSSE3_4, W("EnableSSE3_4"), 1) // Enable SSE3, SSSE3, SSE 4.1 and 4.2 instruction set as default
+#endif
+
 #if defined(_TARGET_AMD64_)
-CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1) // Enable AVX instruction set for wide operations as default
-#else                                        // !defined(_TARGET_AMD64_)
+CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1) // Enable AVX instruction set for wide operations as default.
+// When both AVX and SSE3_4 are set, we will use the most capable instruction set available
+// which will prefer AVX over SSE3/4.
+#else  // !defined(_TARGET_AMD64_)
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)                 // Enable AVX instruction set for wide operations as default
-#endif                                       // defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_AMD64_)
 
 #if !defined(DEBUG) && !defined(_DEBUG)
 CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)

@@ -2772,7 +2772,8 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             info->srcCount = 2;
 
             // SSE2 32-bit integer multiplication requires two temp regs
-            if (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicMul && simdTree->gtSIMDBaseType == TYP_INT)
+            if (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicMul && simdTree->gtSIMDBaseType == TYP_INT &&
+                comp->getSIMDInstructionSet() == InstructionSet_SSE2)
             {
                 info->internalFloatCount = 2;
                 info->setInternalCandidates(lsra, lsra->allSIMDRegs());
@@ -2803,24 +2804,20 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
         case SIMDIntrinsicOpInEquality:
             info->srcCount = 2;
 
-            // On AVX, we can generate optimal code for (in)equality
-            // against zero.
+            // On SSE4/AVX, we can generate optimal code for (in)equality
+            // against zero using ptest. We can safely do the this optimization
+            // for integral vectors but not for floating-point for the reason
+            // that we have +0.0 and -0.0 and +0.0 == -0.0
             op2 = tree->gtGetOp2();
-            if (comp->canUseAVX() && op2->IsIntegralConstVector(0))
+            if ((comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0))
             {
-                // On AVX we can use ptest instruction for (in)equality
-                // against zero to generate optimal code.
-                //
-                // We can safely do the below optimization for integral
-                // vectors but not for floating-point for the reason
-                // that we have +0.0 and -0.0 and +0.0 == -0.0
                 MakeSrcContained(tree, op2);
             }
             else
             {
 
                 // Need one SIMD register as scratch.
-                // See genSIMDIntrinsicRelOp() for details on code sequence generate and
+                // See genSIMDIntrinsicRelOp() for details on code sequence generated and
                 // the need for one scratch register.
                 //
                 // Note these intrinsics produce a BOOL result, hence internal float
@@ -2838,10 +2835,10 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             // registers. Note that if this is a TYP_SIMD16 or smaller on AVX, then we
             // don't need a tmpReg.
             //
-            // 32-byte integer vector on AVX:
+            // 32-byte integer vector on SSE4/AVX:
             // will take advantage of phaddd, which operates only on 128-bit xmm reg.
-            // This would need 2 internal registers since targetReg is an int type
-            // register.
+            // This will need 1 (in case of SSE4) or 2 (in case of AVX) internal
+            // registers since targetReg is an int type register.
             //
             // See genSIMDIntrinsicDotProduct() for details on code sequence generated
             // and the need for scratch registers.
@@ -2858,12 +2855,12 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             }
             else
             {
-                assert(simdTree->gtSIMDBaseType == TYP_INT && comp->canUseAVX());
+                assert(simdTree->gtSIMDBaseType == TYP_INT && comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4);
 
                 // No need to set isInternalRegDelayFree since targetReg is a
                 // an int type reg and guaranteed to be different from xmm/ymm
                 // regs.
-                info->internalFloatCount = 2;
+                info->internalFloatCount = comp->canUseAVX() ? 2 : 1;
                 info->setInternalCandidates(lsra, lsra->allSIMDRegs());
             }
             info->srcCount = 2;
