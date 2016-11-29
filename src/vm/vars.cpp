@@ -83,7 +83,9 @@ GPTR_IMPL(MethodTable,      g_pMulticastDelegateClass);
 GPTR_IMPL(MethodTable,      g_pValueTypeClass);
 GPTR_IMPL(MethodTable,      g_pEnumClass);
 GPTR_IMPL(MethodTable,      g_pThreadClass);
+#ifdef FEATURE_CER
 GPTR_IMPL(MethodTable,      g_pCriticalFinalizerObjectClass);
+#endif
 #ifndef FEATURE_CORECLR
 GPTR_IMPL(MethodTable,      g_pAsyncFileStream_AsyncResultClass);
 #endif // !FEATURE_CORECLR
@@ -104,7 +106,9 @@ GPTR_IMPL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE
 
 
+#ifdef FEATURE_CER
 GPTR_IMPL(MethodDesc,       g_pPrepareConstrainedRegionsMethod);
+#endif
 GPTR_IMPL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
 GPTR_IMPL(MethodDesc,       g_pObjectCtorMD);

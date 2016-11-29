@@ -6603,7 +6603,9 @@ void CEEPreloader::PrePrepareMethodIfNecessary(CORINFO_METHOD_HANDLE hMethod)
 {
     STANDARD_VM_CONTRACT;
 
+#ifdef FEATURE_CER
     ::PrePrepareMethodIfNecessary(hMethod);
+#endif
 }
 
 static void SetStubMethodDescOnInteropMethodDesc(MethodDesc* pInteropMD, MethodDesc* pStubMD, bool fReverseStub)

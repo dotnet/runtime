@@ -1215,12 +1215,12 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
         RETURN GetStableEntryPoint();
     }
 
-#ifdef FEATURE_PREJIT 
+#if defined(FEATURE_PREJIT) && defined(FEATURE_CER)
     // If this method is the root of a CER call graph and we've recorded this fact in the ngen image then we're in the prestub in
     // order to trip any runtime level preparation needed for this graph (P/Invoke stub generation/library binding, generic
     // dictionary prepopulation etc.).
     GetModule()->RestoreCer(this);
-#endif // FEATURE_PREJIT
+#endif // FEATURE_PREJIT && FEATURE_CER
 
 #ifdef FEATURE_COMINTEROP 
     /**************************   INTEROP   *************************/
