@@ -562,7 +562,7 @@ namespace System.Collections.Generic
                 _siInfo = null;
             }
 
-            internal Enumerator(SerializationInfo info, StreamingContext context)
+            private Enumerator(SerializationInfo info, StreamingContext context)
             {
                 _siInfo = info;
                 _list = null;
