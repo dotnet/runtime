@@ -213,8 +213,8 @@ mono_exceptions_init (void)
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
 	cbs.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
-	cbs.mono_clear_abort_threshold = mini_above_abort_threshold;
-	cbs.mono_above_abort_threshold = mini_clear_abort_threshold;
+	cbs.mono_clear_abort_threshold = mini_clear_abort_threshold;
+	cbs.mono_above_abort_threshold = mini_above_abort_threshold;
 	mono_install_eh_callbacks (&cbs);
 }
 
