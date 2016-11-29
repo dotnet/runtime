@@ -2657,7 +2657,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileListInitExpression(Expression expr)
         {
             var node = (ListInitExpression)expr;
@@ -2683,7 +2682,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileMemberInitExpression(Expression expr)
         {
             var node = (MemberInitExpression)expr;
@@ -2739,7 +2737,6 @@ namespace System.Linq.Expressions.Interpreter
             throw new InvalidOperationException("MemberNotFieldOrProperty");
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileQuoteUnaryExpression(Expression expr)
         {
             var unary = (UnaryExpression)expr;
