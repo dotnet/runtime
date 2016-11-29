@@ -347,6 +347,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         }
 
         *sizeBytes = size;
+        setUsesSIMDTypes(true);
     }
 
     return simdBaseType;

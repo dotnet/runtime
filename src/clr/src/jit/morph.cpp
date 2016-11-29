@@ -5629,8 +5629,13 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         // to ensure that the same values are used in the bounds check and the actual
         // dereference.
         // Also we allocate the temporary when the arrRef is sufficiently complex/expensive.
+        // Note that if 'arrRef' is a GT_FIELD, it has not yet been morphed so its true
+        // complexity is not exposed. (Without that condition there are cases of local struct
+        // fields that were previously, needlessly, marked as GTF_GLOB_REF, and when that was
+        // fixed, there were some regressions that were mostly ameliorated by adding this condition.)
         //
-        if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY))
+        if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) ||
+            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || (arrRef->OperGet() == GT_FIELD))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
@@ -5649,7 +5654,8 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         // dereference.
         // Also we allocate the temporary when the index is sufficiently complex/expensive.
         //
-        if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY))
+        if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) ||
+            (arrRef->OperGet() == GT_FIELD))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             indexDefn            = gtNewTempAssign(indexTmpNum, index);
@@ -6051,13 +6057,14 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
 {
     assert(tree->gtOper == GT_FIELD);
 
-    noway_assert(tree->gtFlags & GTF_GLOB_REF);
-
     CORINFO_FIELD_HANDLE symHnd          = tree->gtField.gtFldHnd;
     unsigned             fldOffset       = tree->gtField.gtFldOffset;
     GenTreePtr           objRef          = tree->gtField.gtFldObj;
     bool                 fieldMayOverlap = false;
     bool                 objIsLocal      = false;
+
+    noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
+                 ((tree->gtFlags & GTF_GLOB_REF) != 0));
 
     if (tree->gtField.gtFldMayOverlap)
     {
@@ -17203,109 +17210,102 @@ void Compiler::fgPromoteStructs()
 Compiler::fgWalkResult Compiler::fgMorphStructField(GenTreePtr tree, fgWalkData* fgWalkPre)
 {
     noway_assert(tree->OperGet() == GT_FIELD);
-    noway_assert(tree->gtFlags & GTF_GLOB_REF);
 
     GenTreePtr objRef = tree->gtField.gtFldObj;
+    GenTreePtr obj    = ((objRef != nullptr) && (objRef->gtOper == GT_ADDR)) ? objRef->gtOp.gtOp1 : nullptr;
+    noway_assert((tree->gtFlags & GTF_GLOB_REF) || ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR)));
 
     /* Is this an instance data member? */
 
-    if (objRef)
+    if ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR))
     {
-        if (objRef->gtOper == GT_ADDR)
+        unsigned   lclNum = obj->gtLclVarCommon.gtLclNum;
+        LclVarDsc* varDsc = &lvaTable[lclNum];
+
+        if (varTypeIsStruct(obj))
         {
-            GenTreePtr obj = objRef->gtOp.gtOp1;
-
-            if (obj->gtOper == GT_LCL_VAR)
+            if (varDsc->lvPromoted)
             {
-                unsigned   lclNum = obj->gtLclVarCommon.gtLclNum;
-                LclVarDsc* varDsc = &lvaTable[lclNum];
+                // Promoted struct
+                unsigned fldOffset     = tree->gtField.gtFldOffset;
+                unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+                noway_assert(fieldLclIndex != BAD_VAR_NUM);
 
-                if (varTypeIsStruct(obj))
+                tree->SetOper(GT_LCL_VAR);
+                tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
+                tree->gtType = lvaTable[fieldLclIndex].TypeGet();
+                tree->gtFlags &= GTF_NODE_MASK;
+                tree->gtFlags &= ~GTF_GLOB_REF;
+
+                GenTreePtr parent = fgWalkPre->parentStack->Index(1);
+                if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
                 {
-                    if (varDsc->lvPromoted)
-                    {
-                        // Promoted struct
-                        unsigned fldOffset     = tree->gtField.gtFldOffset;
-                        unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
-                        noway_assert(fieldLclIndex != BAD_VAR_NUM);
-
-                        tree->SetOper(GT_LCL_VAR);
-                        tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
-                        tree->gtType = lvaTable[fieldLclIndex].TypeGet();
-                        tree->gtFlags &= GTF_NODE_MASK;
-                        tree->gtFlags &= ~GTF_GLOB_REF;
-
-                        GenTreePtr parent = fgWalkPre->parentStack->Index(1);
-                        if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
-                        {
-                            tree->gtFlags |= GTF_VAR_DEF;
-                            tree->gtFlags |= GTF_DONT_CSE;
-                        }
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("Replacing the field in promoted struct with a local var:\n");
-                            fgWalkPre->printModified = true;
-                        }
-#endif // DEBUG
-                        return WALK_SKIP_SUBTREES;
-                    }
+                    tree->gtFlags |= GTF_VAR_DEF;
+                    tree->gtFlags |= GTF_DONT_CSE;
                 }
-                else
+#ifdef DEBUG
+                if (verbose)
                 {
-                    // Normed struct
-                    // A "normed struct" is a struct that the VM tells us is a basic type. This can only happen if
-                    // the struct contains a single element, and that element is 4 bytes (on x64 it can also be 8
-                    // bytes). Normally, the type of the local var and the type of GT_FIELD are equivalent. However,
-                    // there is one extremely rare case where that won't be true. An enum type is a special value type
-                    // that contains exactly one element of a primitive integer type (that, for CLS programs is named
-                    // "value__"). The VM tells us that a local var of that enum type is the primitive type of the
-                    // enum's single field. It turns out that it is legal for IL to access this field using ldflda or
-                    // ldfld. For example:
-                    //
-                    //  .class public auto ansi sealed mynamespace.e_t extends [mscorlib]System.Enum
-                    //  {
-                    //    .field public specialname rtspecialname int16 value__
-                    //    .field public static literal valuetype mynamespace.e_t one = int16(0x0000)
-                    //  }
-                    //  .method public hidebysig static void  Main() cil managed
-                    //  {
-                    //     .locals init (valuetype mynamespace.e_t V_0)
-                    //     ...
-                    //     ldloca.s   V_0
-                    //     ldflda     int16 mynamespace.e_t::value__
-                    //     ...
-                    //  }
-                    //
-                    // Normally, compilers will not generate the ldflda, since it is superfluous.
-                    //
-                    // In the example, the lclVar is short, but the JIT promotes all trees using this local to the
-                    // "actual type", that is, INT. But the GT_FIELD is still SHORT. So, in the case of a type
-                    // mismatch like this, don't do this morphing. The local var may end up getting marked as
-                    // address taken, and the appropriate SHORT load will be done from memory in that case.
-
-                    if (tree->TypeGet() == obj->TypeGet())
-                    {
-                        tree->ChangeOper(GT_LCL_VAR);
-                        tree->gtLclVarCommon.SetLclNum(lclNum);
-                        tree->gtFlags &= GTF_NODE_MASK;
-
-                        GenTreePtr parent = fgWalkPre->parentStack->Index(1);
-                        if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
-                        {
-                            tree->gtFlags |= GTF_VAR_DEF;
-                            tree->gtFlags |= GTF_DONT_CSE;
-                        }
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("Replacing the field in normed struct with the local var:\n");
-                            fgWalkPre->printModified = true;
-                        }
-#endif // DEBUG
-                        return WALK_SKIP_SUBTREES;
-                    }
+                    printf("Replacing the field in promoted struct with a local var:\n");
+                    fgWalkPre->printModified = true;
                 }
+#endif // DEBUG
+                return WALK_SKIP_SUBTREES;
+            }
+        }
+        else
+        {
+            // Normed struct
+            // A "normed struct" is a struct that the VM tells us is a basic type. This can only happen if
+            // the struct contains a single element, and that element is 4 bytes (on x64 it can also be 8
+            // bytes). Normally, the type of the local var and the type of GT_FIELD are equivalent. However,
+            // there is one extremely rare case where that won't be true. An enum type is a special value type
+            // that contains exactly one element of a primitive integer type (that, for CLS programs is named
+            // "value__"). The VM tells us that a local var of that enum type is the primitive type of the
+            // enum's single field. It turns out that it is legal for IL to access this field using ldflda or
+            // ldfld. For example:
+            //
+            //  .class public auto ansi sealed mynamespace.e_t extends [mscorlib]System.Enum
+            //  {
+            //    .field public specialname rtspecialname int16 value__
+            //    .field public static literal valuetype mynamespace.e_t one = int16(0x0000)
+            //  }
+            //  .method public hidebysig static void  Main() cil managed
+            //  {
+            //     .locals init (valuetype mynamespace.e_t V_0)
+            //     ...
+            //     ldloca.s   V_0
+            //     ldflda     int16 mynamespace.e_t::value__
+            //     ...
+            //  }
+            //
+            // Normally, compilers will not generate the ldflda, since it is superfluous.
+            //
+            // In the example, the lclVar is short, but the JIT promotes all trees using this local to the
+            // "actual type", that is, INT. But the GT_FIELD is still SHORT. So, in the case of a type
+            // mismatch like this, don't do this morphing. The local var may end up getting marked as
+            // address taken, and the appropriate SHORT load will be done from memory in that case.
+
+            if (tree->TypeGet() == obj->TypeGet())
+            {
+                tree->ChangeOper(GT_LCL_VAR);
+                tree->gtLclVarCommon.SetLclNum(lclNum);
+                tree->gtFlags &= GTF_NODE_MASK;
+
+                GenTreePtr parent = fgWalkPre->parentStack->Index(1);
+                if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
+                {
+                    tree->gtFlags |= GTF_VAR_DEF;
+                    tree->gtFlags |= GTF_DONT_CSE;
+                }
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Replacing the field in normed struct with the local var:\n");
+                    fgWalkPre->printModified = true;
+                }
+#endif // DEBUG
+                return WALK_SKIP_SUBTREES;
             }
         }
     }
