@@ -461,9 +461,28 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		return res;
 	}
 
-	/* This MonoGenericClass hack is no longer necessary. Let's leave it here until we finish with the 2-stage type-builder setup.*/
-	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder)
-		g_assert (0);
+	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder) {
+		/* This can happen if a TypeBuilder for a generic class K<T,U>
+		 * had reflection_create_generic_class) called on it, but not
+		 * ves_icall_TypeBuilder_create_runtime_class.  This can happen
+		 * if the K`2 is refernced from a generic instantiation
+		 * (e.g. K<int,string>) that appears as type argument
+		 * (e.g. Dict<string,K<int,string>>), field (e.g. K<int,string>
+		 * Foo) or method signature, parent class or any of the above
+		 * in a nested class of some other TypeBuilder.  Such an
+		 * occurrence caused mono_reflection_type_get_handle to be
+		 * called on the sre generic instance (K<int,string>) which
+		 * required the container_class for the generic class K`2 to be
+		 * set up, but the remainder of class construction for K`2 has
+		 * not been done. */
+		char * full_name = mono_type_get_full_name (klass);
+		/* I would have expected ReflectionTypeLoadException, but evidently .NET throws TLE in this case. */
+		mono_error_set_type_load_class (error, klass, "TypeBuilder.CreateType() not called for generic class %s", full_name);
+		g_free (full_name);
+		mono_domain_unlock (domain);
+		mono_loader_unlock ();
+		return NULL;
+	}
 
 	if (mono_class_get_ref_info (klass) && !klass->wastypebuilder && !type->byref) {
 		mono_domain_unlock (domain);
