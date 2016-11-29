@@ -2270,7 +2270,7 @@ void Compiler::compSetProcessor()
 #if defined(_TARGET_ARM_)
     info.genCPU = CPU_ARM;
 #elif defined(_TARGET_AMD64_)
-    info.genCPU         = CPU_X64;
+    info.genCPU       = CPU_X64;
 #elif defined(_TARGET_X86_)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
@@ -2307,9 +2307,22 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV    = true;
     opts.compCanUseSSE2 = true;
 #elif defined(_TARGET_X86_)
-    opts.compUseFCOMI   = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
-    opts.compUseCMOV    = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
+    opts.compUseFCOMI = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
+    opts.compUseCMOV  = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
     opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
+
+#if !defined(LEGACY_BACKEND) && !defined(FEATURE_CORECLR)
+    // RyuJIT/x86 requires SSE2 to be available: there is no support for generating floating-point
+    // code with x87 instructions. On .NET Core, the VM always tells us that SSE2 is available.
+    // However, on desktop, under ngen, (and presumably in the unlikely case you're actually
+    // running on a machine without SSE2), the VM does not set the SSE2 flag. We ignore this and
+    // go ahead and generate SSE2 code anyway.
+    if (!opts.compCanUseSSE2)
+    {
+        JITDUMP("VM didn't set CORJIT_FLG_USE_SSE2! Ignoring, and generating SSE2 code anyway.\n");
+        opts.compCanUseSSE2 = true;
+    }
+#endif // !defined(LEGACY_BACKEND) && !defined(FEATURE_CORECLR)
 
 #ifdef DEBUG
     if (opts.compUseFCOMI)
@@ -2317,10 +2330,9 @@ void Compiler::compSetProcessor()
     if (opts.compUseCMOV)
         opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 
-// X86 RyuJIT requires SSE2 to be available and hence
-// don't turn off compCanUseSSE2 under stress.
 #ifdef LEGACY_BACKEND
-    // Should we override the SSE2 setting
+
+    // Should we override the SSE2 setting?
     enum
     {
         SSE2_FORCE_DISABLE = 0,
@@ -2334,9 +2346,14 @@ void Compiler::compSetProcessor()
         opts.compCanUseSSE2 = true;
     else if (opts.compCanUseSSE2)
         opts.compCanUseSSE2 = !compStressCompile(STRESS_GENERIC_VARN, 50);
-#else  // !LEGACY_JITBACKEND
+
+#else // !LEGACY_BACKEND
+
+    // RyuJIT/x86 requires SSE2 to be available and hence
+    // don't turn off compCanUseSSE2 under stress.
     assert(opts.compCanUseSSE2);
-#endif // !LEGACY_JITBACKEND
+
+#endif // !LEGACY_BACKEND
 
 #endif // DEBUG
 
