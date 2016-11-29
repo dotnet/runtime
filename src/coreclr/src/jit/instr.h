@@ -284,15 +284,19 @@ END_DECLARE_TYPED_ENUM(emitAttr,unsigned)
 #define EmitSize(x)                 (EA_ATTR(genTypeSize(TypeGet(x))))
 
 // Enum specifying the instruction set for generating floating point or SIMD code.
+// These enums are ordered such that each one is inclusive of previous instruction sets
+// and the VM ensures this as well when setting the CONFIG flags.
 enum InstructionSet
 {
 #ifdef _TARGET_XARCH_
-    InstructionSet_SSE2,
-    InstructionSet_AVX,
+    InstructionSet_SSE2,      // SSE2 Instruction set
+    InstructionSet_SSE3_4,    // SSE3, SSSE3, SSE4.1 and SSE4.2 instruction set
+    InstructionSet_AVX,       // AVX2 instruction set
+                              // TODO-Cleaup - This should be named as InstructionSet_AVX2
 #elif defined(_TARGET_ARM_)
     InstructionSet_NEON,
 #endif
-    InstructionSet_NONE
+    InstructionSet_NONE       // No instruction set is available indicating an invalid value
 };
 // clang-format on
 
