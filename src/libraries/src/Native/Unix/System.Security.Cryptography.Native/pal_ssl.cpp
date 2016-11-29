@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_ssl.h"
-#include "pal_crypto_config.h"
 
 #include <assert.h>
 #include <string.h>
-#include <openssl/err.h>
 
 static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE, "");
 static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL, "");

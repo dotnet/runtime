@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-
-#include <openssl/ecdsa.h>
-#include <openssl/ec.h>
+#include "opensslshim.h"
 
 typedef enum : int32_t {
     Unspecified = 0,

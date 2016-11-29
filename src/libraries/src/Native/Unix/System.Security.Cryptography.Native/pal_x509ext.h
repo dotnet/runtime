@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-
-#include <openssl/x509v3.h>
+#include "opensslshim.h"
 
 /*
 Creates an X509_EXTENSION with the given args.
