@@ -46,16 +46,6 @@ wapi_getpid (void)
 	return _wapi_pid;
 }
 
-/* Lots more to implement here, but this is all we need at the moment */
-gboolean
-DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpointer *target,
-	guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 options G_GNUC_UNUSED)
-{
-	mono_w32handle_ref (src);
-	*target = src;
-	return TRUE;
-}
-
 /**
  * CloseHandle:
  * @handle: The handle to release

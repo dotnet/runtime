@@ -1158,7 +1158,13 @@ ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE
 	gboolean ret;
 	
 	MONO_ENTER_GC_SAFE;
+#ifdef HOST_WIN32
 	ret=DuplicateHandle (source_process_handle, source_handle, target_process_handle, target_handle, access, inherit, options);
+#else
+	mono_w32handle_ref (source_handle);
+	*target_handle = source_handle;
+	ret = TRUE;
+#endif
 	MONO_EXIT_GC_SAFE;
 
 	if(ret==FALSE) {

@@ -16,7 +16,6 @@
 #define SetLastError wapi_SetLastError
 #define TransmitFile wapi_TransmitFile
 #define CloseHandle wapi_CloseHandle 
-#define DuplicateHandle wapi_DuplicateHandle 
 #define CreateFile wapi_CreateFile
 #define DeleteFile wapi_DeleteFile
 #define GetStdHandle wapi_GetStdHandle

@@ -44,10 +44,6 @@ wapi_cleanup (void);
 gboolean
 CloseHandle (gpointer handle);
 
-gboolean
-DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpointer *target,
-	guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 options G_GNUC_UNUSED);
-
 pid_t
 wapi_getpid (void);
 
