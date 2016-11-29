@@ -3929,7 +3929,7 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		LLVMValueRef switch_ins = LLVMBuildSwitch (lpadBuilder, match, resume_bb, group_size);
 
 		// else move to that target bb
-		for (int i=0; i < group_size; i++) {
+		for (int i = 0; i < group_size; i++) {
 			MonoExceptionClause *clause = group_start + i;
 			int clause_index = clause - cfg->header->clauses;
 			MonoBasicBlock *handler_bb = (MonoBasicBlock*)g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
@@ -7331,8 +7331,10 @@ emit_method_inner (EmitContext *ctx)
 			GSList *bb_list = info->call_handler_return_bbs;
 
 			GSList *bb_list_iter;
+			i = 0;
 			for (bb_list_iter = bb_list; bb_list_iter; bb_list_iter = g_slist_next (bb_list_iter)) {
 				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i + 1, FALSE), (LLVMBasicBlockRef)bb_list_iter->data);
+				i ++;
 			}
 		}
 	}
