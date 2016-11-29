@@ -156,6 +156,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 static MonoMethodSignature *helper_sig_domain_get;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline;
+static MonoMethodSignature *helper_sig_jit_thread_attach;
 
 /* type loading helpers */
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, System.Runtime.CompilerServices, RuntimeHelpers)
@@ -367,6 +368,7 @@ mono_create_helper_signatures (void)
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 	helper_sig_llvmonly_imt_trampoline = mono_create_icall_signature ("ptr ptr ptr");
+	helper_sig_jit_thread_attach = mono_create_icall_signature ("ptr ptr");
 }
 
 static MONO_NEVER_INLINE void
@@ -12872,12 +12874,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* AOT code is only used in the root domain */
 				EMIT_NEW_PCONST (cfg, args [0], cfg->compile_aot ? NULL : cfg->domain);
-				ins = mono_emit_jit_icall (cfg, mono_jit_thread_attach, args);
+				if (cfg->compile_aot) {
+					MonoInst *addr;
+
+					/*
+					 * This is called on unattached threads, so it cannot go through the trampoline
+					 * infrastructure. Use an indirect call through a got slot initialized at load time
+					 * instead.
+					 */
+					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_THREAD_ATTACH, NULL);
+					ins = mono_emit_calli (cfg, helper_sig_jit_thread_attach, args, addr, NULL, NULL);
+				} else {
+					ins = mono_emit_jit_icall (cfg, mono_jit_thread_attach, args);
+				}
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 
 				if (next_bb)
 					MONO_START_BB (cfg, next_bb);
-
 
 				ip += 2;
 				break;
