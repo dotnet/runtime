@@ -63,7 +63,6 @@ namespace System.Dynamic.Utils
         /// changed after creation. The exception is if the enumerable is
         /// already a ReadOnlyCollection{T}, in which case we just return it.
         /// </summary>
-        [Pure]
         public static ReadOnlyCollection<T> ToReadOnly<T>(this IEnumerable<T> enumerable)
         {
             if (enumerable == null)
@@ -101,7 +100,6 @@ namespace System.Dynamic.Utils
             return h;
         }
 
-        [Pure]
         public static bool ListEquals<T>(this ReadOnlyCollection<T> first, ReadOnlyCollection<T> second)
         {
             if (first == second)
