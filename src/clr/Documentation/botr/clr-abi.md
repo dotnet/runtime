@@ -6,6 +6,8 @@ It describes requirements that the Just-In-Time (JIT) compiler imposes on the VM
 
 A note on the JIT codebases: JIT32 refers to the original JIT codebase that originally generated x86 code and was later ported to generate ARM code. Later, it was ported and re-architected to generate AMD64 code (making its name something of a confusing misnomer). This work is referred to as RyuJIT. RyuJIT is being ported to generate ARM64 code. JIT64 refers to the legacy codebase that supports AMD64.
 
+CoreRT refers to https://github.com/dotnet/corert runtime that is optimized for AOT. The CoreRT ABI differs in a few details for simplicity and consistency across platforms.
+
 # Getting started
 
 Read everything in the documented Windows ABI.
@@ -288,6 +290,8 @@ Using the establisher frame, the funclet wants to load the value of the PSPSym. 
 On ARM and ARM64, for all second pass funclets (finally, fault, catch, and filter-handler) the VM restores all non-volatile registers to their values within the parent frame. This includes the frame register (`R11`). Thus, the PSPSym is not used to recompute the frame pointer register in this case, though the PSPSym is copied to the funclet's frame, as for all funclets.
 
 Catch, Filter, and Filter-handlers also get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is the second argument and thus passed in RDX. On ARM and ARM64 this is the first argument and passed in R0.
+
+CoreRT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
 
 (Note that the JIT64 source code contains a comment that says, "The current CLR doesn't always pass the correct establisher frame to the funclet. Funclet may receive establisher frame of funclet when expecting that of original routine." It indicates this is the reason that a PSPSym is required in all funclets as well as the main function, whereas if the establisher frame was correctly reported, the PSPSym could be omitted in some cases.)
 
