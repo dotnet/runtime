@@ -21,7 +21,7 @@ namespace System.Net
     {
         private string _domain;
         private string _userName;
-        private string _password;
+        private object _password;
 
         public NetworkCredential()
             : this(string.Empty, string.Empty, string.Empty)
@@ -42,13 +42,27 @@ namespace System.Net
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.Net.NetworkCredential'/>
-        ///       class with name and password set as specified.
+        ///       class with name, password and domain set as specified.
         ///    </para>
         /// </devdoc>
         public NetworkCredential(string userName, string password, string domain)
         {
             UserName = userName;
             Password = password;
+            Domain = domain;
+        }
+
+        [CLSCompliant(false)]
+        public NetworkCredential(string userName, SecureString password)
+        : this(userName, password, string.Empty)
+        {
+        }
+
+        [CLSCompliant(false)]
+        public NetworkCredential(string userName, SecureString password, string domain)
+        {
+            UserName = userName;
+            SecurePassword = password;
             Domain = domain;
         }
 
@@ -59,14 +73,8 @@ namespace System.Net
         /// </devdoc>
         public string UserName
         {
-            get
-            {
-                return InternalGetUserName();
-            }
-            set
-            {
-                _userName = value ?? string.Empty;
-            }
+            get { return _userName; }
+            set { _userName = value ?? string.Empty; }
         }
 
         /// <devdoc>
@@ -78,11 +86,39 @@ namespace System.Net
         {
             get
             {
-                return InternalGetPassword();
+                SecureString sstr = _password as SecureString;
+                if (sstr != null)
+                {
+                    return MarshalToString(sstr);
+                }
+                return (string)_password ?? string.Empty;
             }
             set
             {
+                SecureString old = _password as SecureString;
                 _password = value;
+                old?.Dispose();
+            }
+        }
+
+        [CLSCompliant(false)]
+        public SecureString SecurePassword
+        {
+            get
+            {
+                string str = _password as string;
+                if (str != null)
+                {
+                    return MarshalToSecureString(str);
+                }
+                SecureString sstr = _password as SecureString;
+                return sstr != null ? sstr.Copy() : new SecureString();
+            } 
+            set
+            { 
+                SecureString old = _password as SecureString;
+                _password = value?.Copy();
+                old?.Dispose();
             }
         }
 
@@ -94,36 +130,13 @@ namespace System.Net
         /// </devdoc>
         public string Domain
         {
-            get
-            {
-                return InternalGetDomain();
-            }
-            set
-            {
-                _domain = value ?? string.Empty;
-            }
-        }
-
-        internal string InternalGetUserName()
-        {
-            return _userName;
-        }
-
-        internal string InternalGetPassword()
-        {
-            return _password;
-        }
-
-        internal string InternalGetDomain()
-        {
-            return _domain;
+            get { return _domain; }
+            set { _domain = value ?? string.Empty; }
         }
 
         internal string InternalGetDomainUserName()
         {
-            string domain = InternalGetDomain();
-            string userName = InternalGetUserName();
-            return domain != "" ? domain + "\\" + userName : userName;
+            return _domain != "" ? _domain + "\\" + _userName : _userName;
         }
 
         /// <devdoc>
@@ -142,30 +155,41 @@ namespace System.Net
             return this;
         }
 
-#if DEBUG
-        // This method is only called as part of an assert
-        internal bool IsEqualTo(object compObject)
+        private string MarshalToString(SecureString sstr)
         {
-            if ((object)compObject == null)
+            if (sstr == null || sstr.Length == 0)
             {
-                return false;
+                return string.Empty;
             }
 
-            if ((object)this == (object)compObject)
+            IntPtr ptr = IntPtr.Zero;
+            string result = string.Empty;
+            try
             {
-                return true;
+                ptr = Marshal.SecureStringToGlobalAllocUnicode(sstr);
+                result = Marshal.PtrToStringUni(ptr);
             }
-
-            NetworkCredential compCred = compObject as NetworkCredential;
-            if ((object)compCred == null)
+            finally
             {
-                return false;
+                if (ptr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                }
             }
-
-            return (InternalGetUserName() == compCred.InternalGetUserName() &&
-                    InternalGetDomain() == compCred.InternalGetDomain() &&
-                    string.Equals(_password, compCred._password, StringComparison.Ordinal));
+            return result;
         }
-#endif
+
+        private unsafe SecureString MarshalToSecureString(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return new SecureString();
+            }
+
+            fixed (char* ptr = str)
+            {
+                return new SecureString(ptr, str.Length);
+            }
+        }
     }
 }
