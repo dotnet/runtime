@@ -318,5 +318,45 @@ namespace System.Linq.Tests
             while (enumerator.MoveNext()) { }
             Assert.False(enumerator.MoveNext());
         }
+
+        [Fact]
+        public void OrderByIsCovariantTestWithCast()
+        {
+            var ordered = Enumerable.Range(0, 100).Select(i => i.ToString()).OrderBy(i => i.Length);
+            IOrderedEnumerable<IComparable> covariantOrdered = ordered;
+            covariantOrdered = covariantOrdered.ThenBy(i => i);
+            string[] expected =
+                Enumerable.Range(0, 100).Select(i => i.ToString()).OrderBy(i => i.Length).ThenBy(i => i).ToArray();
+            Assert.Equal(expected, covariantOrdered);
+        }
+
+        [Fact]
+        public void OrderByIsCovariantTestWithAssignToArgument()
+        {
+            var ordered = Enumerable.Range(0, 100).Select(i => i.ToString()).OrderBy(i => i.Length);
+            IOrderedEnumerable<IComparable> covariantOrdered = ordered.ThenByDescending<IComparable, IComparable>(i => i);
+            string[] expected = Enumerable.Range(0, 100)
+                .Select(i => i.ToString())
+                .OrderBy(i => i.Length)
+                .ThenByDescending(i => i)
+                .ToArray();
+            Assert.Equal(expected, covariantOrdered);
+        }
+
+        [Fact]
+        public void CanObtainFromCovariantIOrderedQueryable()
+        {
+            // If an ordered queryable is cast covariantly and then has ThenBy() called on it,
+            // it depends on IOrderedEnumerable<TElement> also being covariant to allow for
+            // that ThenBy() to be processed within Linq-to-objects, as otherwise there is no
+            // equivalent ThenBy() overload to translate the call to.
+
+            IOrderedQueryable<IComparable> ordered =
+                Enumerable.Range(0, 100).AsQueryable().Select(i => i.ToString()).OrderBy(i => i.Length);
+            ordered = ordered.ThenBy(i => i);
+            string[] expected =
+                Enumerable.Range(0, 100).Select(i => i.ToString()).OrderBy(i => i.Length).ThenBy(i => i).ToArray();
+            Assert.Equal(expected, ordered);
+        }
     }
 }
