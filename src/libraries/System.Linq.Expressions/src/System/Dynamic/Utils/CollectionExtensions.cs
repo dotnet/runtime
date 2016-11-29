@@ -41,21 +41,6 @@ namespace System.Dynamic.Utils
             return result;
         }
 
-        // Name needs to be different so it doesn't conflict with Enumerable.Select
-        public static U[] Map<T, U>(this T[] array, Func<T, U> select)
-        {
-            int count = array.Length;
-
-            U[] result = new U[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                result[i] = select(array[i]);
-            }
-
-            return result;
-        }
-
         /// <summary>
         /// Wraps the provided enumerable into a ReadOnlyCollection{T}
         ///
