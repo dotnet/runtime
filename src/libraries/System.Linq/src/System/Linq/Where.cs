@@ -265,7 +265,7 @@ namespace System.Linq
 
             public TSource[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                var builder = new LargeArrayBuilder<TSource>(_source.Length);
 
                 foreach (TSource item in _source)
                 {
@@ -375,7 +375,7 @@ namespace System.Linq
 
             public TSource[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                var builder = new LargeArrayBuilder<TSource>(_source.Count);
 
                 for (int i = 0; i < _source.Count; i++)
                 {
@@ -483,7 +483,7 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
+                var builder = new LargeArrayBuilder<TResult>(_source.Length);
 
                 foreach (TSource item in _source)
                 {
@@ -592,7 +592,7 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
+                var builder = new LargeArrayBuilder<TResult>(_source.Count);
 
                 for (int i = 0; i < _source.Count; i++)
                 {
