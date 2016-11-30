@@ -50,7 +50,7 @@ public:
     //---------------------------------------------------------
     // Destructor
     //---------------------------------------------------------
-    ~StubCacheBase();
+    virtual ~StubCacheBase();
 
     //---------------------------------------------------------
     // Returns the equivalent hashed Stub, creating a new hash
