@@ -192,7 +192,7 @@ Thread * const CURRENT_THREAD = NULL;
     (void)CURRENT_THREAD_AVAILABLE; /* silence "local variable initialized but not used" warning */ \
 
 #ifndef DACCESS_COMPILE
-EXTERN_C AppDomain* GetAppDomain();
+EXTERN_C AppDomain* STDCALL GetAppDomain();
 #endif //!DACCESS_COMPILE
 
 inline void RetailBreak()  
