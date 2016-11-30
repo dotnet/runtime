@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -50,9 +50,6 @@
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
-      <Link>Common\System\Net\Shims\DBNull.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
@@ -71,10 +68,6 @@
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
-    </Compile>
-    <!-- Common -->
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
@@ -207,7 +200,22 @@
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime.Handles" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Claims" />
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Diagnostics.Contracts" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

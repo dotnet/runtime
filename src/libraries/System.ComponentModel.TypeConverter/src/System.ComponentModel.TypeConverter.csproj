@@ -256,7 +256,32 @@
     <TargetingPackReference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Drawing.Primitives" />
+    <Reference Include="System.Threading.Timer" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.Security.Permissions" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Net.WebClient" />
+    <Reference Include="System.Net.Security" />
+    <Reference Include="System.Runtime.Serialization.Formatters" />
+    <Reference Include="System.Resources.Writer" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

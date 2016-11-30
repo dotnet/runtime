@@ -1,5 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Threading.Thread</AssemblyName>
@@ -36,13 +39,18 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net463' and '$(TargetGroup)' != 'uap101aot'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <Aliases>System_Runtime</Aliases>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);OSGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-      <OSGroup>$(InputOSGroup)</OSGroup>
       <Aliases>System_Runtime_Extensions</Aliases>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);OSGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
       <Aliases>System_Security_Principal</Aliases>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+      <UndefineProperties>%(ProjectReference.UndefineProperties);OSGroup</UndefineProperties>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
@@ -58,7 +66,7 @@
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
