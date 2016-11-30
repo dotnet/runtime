@@ -615,22 +615,19 @@ namespace System.Xml.Tests
             XmlTextReader tr1 = new XmlTextReader("out.xml");
             XmlTextReader tr2 = new XmlTextReader(new StringReader(expectedValue));
 
-            bool bResult = xmldiff.Compare(tr1, tr2);
+            bool result = xmldiff.Compare(tr1, tr2);
 
             //Close the readers
             tr1.Dispose();
             tr2.Dispose();
 
-            if (bResult)
-                return;
-            else
-                Assert.True(false);
+             Assert.True(result);
         }
 
         //VerifyResult which compares 2 arguments using XmlDiff.
         public void VerifyResult(string baseline, string outputFile)
         {
-            bool bResult = false;
+            bool result = false;
             FileStream fsExpected;
 
             baseline = FullFilePath(baseline);
@@ -645,7 +642,7 @@ namespace System.Xml.Tests
             _output.WriteLine("Verifying o/p with baseline result {0}...", baseline);
             try
             {
-                bResult = diff.Compare(new XmlTextReader(fsActual, XmlNodeType.Element, context), new XmlTextReader(fsExpected, XmlNodeType.Element, context));
+                result = diff.Compare(new XmlTextReader(fsActual, XmlNodeType.Element, context), new XmlTextReader(fsExpected, XmlNodeType.Element, context));
             }
             catch (Exception e)
             {
@@ -657,7 +654,7 @@ namespace System.Xml.Tests
                 fsExpected.Dispose();
                 fsActual.Dispose();
             }
-            if (!bResult)
+            if (!result)
             {
                 // Write out the actual and expected o/p
                 _output.WriteLine("Expected o/p: ");
@@ -680,13 +677,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            if (bResult)
-                return;
-            else
-            {
-                _output.WriteLine("**** Baseline mis-matched ****");
-                Assert.True(false);
-            }
+            Assert.True(result, "**** Baseline mis-matched ****");
         }
 
         // --------------------------------------------------------------------------------------------------------------

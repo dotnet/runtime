@@ -2545,24 +2545,15 @@ namespace System.Xml.Tests
             if (LoadXSL("showParam.xsl") == 1)
             {
                 CallTransform(xslt, szFullFilename, _strOutFile);
-                StreamReader fs = null;
 
                 // check if I can open and close the xml file
-                using (FileStream outFile = new FileStream(szFullFilename, FileMode.Open, FileAccess.Read))
-                {
-                    fs = new StreamReader(outFile);
-                    fs.Dispose();
-                }
+                File.ReadAllText(szFullFilename);
 
                 strmTemp = new FileStream(szFullFilename, FileMode.Open, FileAccess.Read);
                 strmTemp.Dispose();
 
                 // check if I can open and close the output file
-                using (FileStream outFile = new FileStream(_strOutFile, FileMode.Open, FileAccess.Read))
-                {
-                    fs = new StreamReader(outFile);
-                    fs.Dispose();
-                }
+                File.ReadAllText(_strOutFile);
 
                 strmTemp = new FileStream(_strOutFile, FileMode.Open, FileAccess.Read);
                 strmTemp.Dispose();
