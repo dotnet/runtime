@@ -2824,7 +2824,7 @@ void CodeGen::genCondJumpFltStackFP(GenTreePtr cond, BasicBlock* jumpTrue, Basic
 BasicBlock* CodeGen::genTransitionBlockStackFP(FlatFPStateX87* pState, BasicBlock* pFrom, BasicBlock* pTarget)
 {
     // Fast paths where a transition block is not necessary
-    if (pTarget->bbFPStateX87 && FlatFPStateX87::AreEqual(pState, pTarget->bbFPStateX87) || pState->IsEmpty())
+    if ((pTarget->bbFPStateX87 && FlatFPStateX87::AreEqual(pState, pTarget->bbFPStateX87)) || pState->IsEmpty())
     {
         return pTarget;
     }
