@@ -331,7 +331,7 @@ typedef char * va_list;
 PALIMPORT
 BOOL
 PALAPI
-PAL_IsDebuggerPresent();
+PAL_IsDebuggerPresent(VOID);
  
 #define MAXIMUM_SUSPEND_COUNT  MAXCHAR
 
@@ -507,7 +507,7 @@ PAL_Initialize(
 PALIMPORT
 int
 PALAPI
-PAL_InitializeDLL();
+PAL_InitializeDLL(VOID);
 
 PALIMPORT
 DWORD
@@ -581,7 +581,7 @@ PAL_UnregisterForRuntimeStartup(
 PALIMPORT
 BOOL
 PALAPI
-PAL_NotifyRuntimeStarted();
+PAL_NotifyRuntimeStarted(VOID);
 
 static const int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = 64;
 
@@ -3251,22 +3251,22 @@ TlsFree(
 PALIMPORT
 void *
 PALAPI
-PAL_GetStackBase();
+PAL_GetStackBase(VOID);
 
 PALIMPORT
 void *
 PALAPI
-PAL_GetStackLimit();
+PAL_GetStackLimit(VOID);
 
 PALIMPORT
 DWORD
 PALAPI
-PAL_GetLogicalCpuCountFromOS();
+PAL_GetLogicalCpuCountFromOS(VOID);
 
 PALIMPORT
 size_t
 PALAPI
-PAL_GetLogicalProcessorCacheSizeFromOS();
+PAL_GetLogicalProcessorCacheSizeFromOS(VOID);
 
 typedef BOOL (*ReadMemoryWordCallback)(SIZE_T address, SIZE_T *value);
 
@@ -4901,7 +4901,7 @@ GetTickCount(
 PALIMPORT
 ULONGLONG
 PALAPI
-GetTickCount64();
+GetTickCount64(VOID);
 
 PALIMPORT
 BOOL
@@ -5341,7 +5341,7 @@ YieldProcessor(
 PALIMPORT
 DWORD
 PALAPI
-GetCurrentProcessorNumber();
+GetCurrentProcessorNumber(VOID);
 
 /*++
 Function:
@@ -5353,7 +5353,7 @@ Checks if GetCurrentProcessorNumber is available in the current environment
 PALIMPORT
 BOOL
 PALAPI
-PAL_HasGetCurrentProcessorNumber();
+PAL_HasGetCurrentProcessorNumber(VOID);
     
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
@@ -5439,7 +5439,7 @@ ResetWriteWatch(
 PALIMPORT
 VOID 
 PALAPI 
-FlushProcessWriteBuffers();
+FlushProcessWriteBuffers(VOID);
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
 typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip, BOOL checkingCurrentThread);
@@ -6302,14 +6302,14 @@ PAL_Enter(PAL_Boundary boundary);
 PALIMPORT
 BOOL
 PALAPI
-PAL_HasEntered();
+PAL_HasEntered(VOID);
 
 // Equivalent to PAL_Enter(PAL_BoundaryTop) and is for stub
 // code generation use.
 PALIMPORT
 DWORD
 PALAPI
-PAL_EnterTop();
+PAL_EnterTop(VOID);
 
 // This function needs to be called on a thread when it enters
 // a region of code that depends on this instance of the PAL
@@ -6344,14 +6344,14 @@ PAL_Leave(PAL_Boundary boundary);
 PALIMPORT
 VOID
 PALAPI
-PAL_LeaveBottom();
+PAL_LeaveBottom(VOID);
 
 // This function is equivalent to PAL_Leave(PAL_BoundaryTop)
 // and is available to limit the creation of stub code.
 PALIMPORT
 VOID
 PALAPI
-PAL_LeaveTop();
+PAL_LeaveTop(VOID);
 
 #ifdef  __cplusplus
 //
