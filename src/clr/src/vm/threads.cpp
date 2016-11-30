@@ -2022,8 +2022,10 @@ Thread::Thread()
     m_ppvHJRetAddrPtr = (VOID**) 0xCCCCCCCCCCCCCCCC;
     m_pvHJRetAddr = (VOID*) 0xCCCCCCCCCCCCCCCC;
 
+#ifndef PLATFORM_UNIX
     X86_ONLY(m_LastRedirectIP = 0);
     X86_ONLY(m_SpinCount = 0);
+#endif // PLATFORM_UNIX
 #endif // FEATURE_HIJACK
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
