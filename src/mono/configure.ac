@@ -759,6 +759,9 @@ AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compi
 
 DISABLED_FEATURES=none
 
+
+AC_ARG_WITH(mcs-compiler, [  --with-mcs-compiler=yes,no      Changes C# compiler used for compilation to be mcs instead of default csc],[],[with_mcs_compiler=no])
+
 #
 # Set the build profiles and options before things which use them
 #
@@ -4399,6 +4402,10 @@ fi
     fi
 
     echo "CSC_LOCATION = $CSC" >> $srcdir/$mcsdir/build/config.make
+
+    if test "x$with_mcs_compiler" = "xyes"; then
+      echo "MCS_MODE = 1" >> $srcdir/$mcsdir/build/config.make
+    fi
 
     if test "x$AOT_BUILD_FLAGS" != "x" ; then
       echo "AOT_RUN_FLAGS=$AOT_RUN_FLAGS" >> $srcdir/$mcsdir/build/config.make
