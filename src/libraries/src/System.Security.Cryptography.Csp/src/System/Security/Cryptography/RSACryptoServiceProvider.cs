@@ -439,7 +439,7 @@ namespace System.Security.Cryptography
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
-            int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
+            int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             return SignHash(rgbHash, calgHash);
         }
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography
             if (rgbSignature == null)
                 throw new ArgumentNullException(nameof(rgbSignature));
 
-            int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
+            int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
             return VerifyHash(rgbHash, calgHash, rgbSignature);
         }
 
