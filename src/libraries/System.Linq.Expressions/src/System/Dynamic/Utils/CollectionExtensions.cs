@@ -4,12 +4,11 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils
 {
-    internal static partial class CollectionExtensions
+    internal static class CollectionExtensions
     {
         public static TrueReadOnlyCollection<T> AddFirst<T>(this ReadOnlyCollection<T> list, T item)
         {
