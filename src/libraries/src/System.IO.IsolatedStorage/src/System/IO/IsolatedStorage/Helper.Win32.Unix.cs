@@ -24,7 +24,6 @@ namespace System.IO.IsolatedStorage
             {
                 // SpecialFolder.CommonApplicationData -> C:\ProgramData
                 dataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    dataDirectory = @"/usr/local/share";
             }
             else if (IsRoaming(scope))
             {
