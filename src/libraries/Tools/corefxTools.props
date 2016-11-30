@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Temporarily enable local build of tools -->
+    <CoreFxToolsDir Condition="'$(CoreFxToolsDir)' == ''">$(BinDir)/tools/</CoreFxToolsDir>
+    <CoreFxDesktopToolsDir Condition="'$(CoreFxDesktopToolsDir)' == ''">$(BinDir)/tools/net45/</CoreFxDesktopToolsDir>
+    <CoreFxToolsTaskDir Condition="'$(CoreFxToolsTaskDir)' == '' AND '$(BuildToolsTargets45)' != 'true'">$(CoreFxToolsDir)</CoreFxToolsTaskDir>
+    <CoreFxToolsTaskDir Condition="'$(CoreFxToolsTaskDir)' == '' AND '$(BuildToolsTargets45)' == 'true'">$(CoreFxDesktopToolsDir)</CoreFxToolsTaskDir>
+  </PropertyGroup>
+</Project>

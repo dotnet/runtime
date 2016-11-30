@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <OSGroups Include="Windows_NT">
+        <Imports>AnyOS</Imports>
+    </OSGroups>
+    <OSGroups Include="Unix">
+        <Imports>AnyOS</Imports>
+    </OSGroups>
+    <OSGroups Include="Linux">
+        <Imports>Unix</Imports>
+    </OSGroups>
+    <OSGroups Include="OSX">
+        <Imports>Unix</Imports>
+    </OSGroups>
+    <OSGroups Include="AnyOS" />
+  </ItemGroup>
+</Project>
