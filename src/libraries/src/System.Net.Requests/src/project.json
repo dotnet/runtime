@@ -10,6 +10,7 @@
         "System.Collections.Specialized": "4.4.0-beta-24721-02",
         "System.Diagnostics.Debug": "4.4.0-beta-24721-02",
         "System.Diagnostics.Tracing": "4.4.0-beta-24721-02",
+        "System.Diagnostics.Tools": "4.4.0-beta-24721-02",
         "System.Globalization": "4.4.0-beta-24721-02",
         "System.IO": "4.4.0-beta-24721-02",
         "System.IO.Compression": "4.4.0-beta-24721-02",

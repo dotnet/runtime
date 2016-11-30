@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-
-#include <openssl/dsa.h>
+#include "opensslshim.h"
 
 /*
 Shims the DSA_new method.

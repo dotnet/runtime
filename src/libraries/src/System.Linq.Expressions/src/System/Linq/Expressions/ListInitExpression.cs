@@ -123,7 +123,7 @@ namespace System.Linq.Expressions
             }
 
             MethodInfo addMethod = FindMethod(newExpression.Type, "Add", null, new Expression[] { initializerlist[0] }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            return ListInit(newExpression, addMethod, initializers);
+            return ListInit(newExpression, addMethod, initializerlist);
         }
 
         /// <summary>

@@ -189,6 +189,7 @@ namespace System.Linq.Expressions
             {
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
+            TypeUtils.ValidateType(type, nameof(type));
 
             if (!type.GetTypeInfo().IsValueType)
             {

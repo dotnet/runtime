@@ -48,7 +48,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.DebugInfo(Expression.SymbolDocument("foo.cs"), 12, 23, 34, 45);
+            DebugInfoExpression e = Expression.DebugInfo(Expression.SymbolDocument("foo.cs"), 12, 23, 34, 45);
             Assert.Equal("<DebugInfo(foo.cs: 12, 23, 34, 45)>", e.ToString());
         }
 

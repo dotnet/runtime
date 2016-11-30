@@ -77,7 +77,9 @@ namespace System.Dynamic
             return target.BindUnaryOperation(this);
         }
 
-        // this is a standard DynamicMetaObjectBinder
+        /// <summary>
+        /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
+        /// </summary>
         internal override sealed bool IsStandardBinder => true;
 
         internal static bool OperationIsValid(ExpressionType operation)

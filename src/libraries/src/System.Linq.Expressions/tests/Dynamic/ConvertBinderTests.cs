@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
-namespace System.Dynamic.Test
+namespace System.Dynamic.Tests
 {
     public class ConvertBinderTests
     {

@@ -20,11 +20,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Binary_IndexAssign()
         {
-            var item = typeof(Dictionary<int, int>).GetProperty("Item");
+            Reflection.PropertyInfo item = typeof(Dictionary<int, int>).GetProperty("Item");
 
             Test((d, i, v) =>
             {
-                var index = Expression.Property(d, item, i);
+                IndexExpression index = Expression.Property(d, item, i);
 
                 return
                     Expression.Block(
@@ -37,11 +37,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Binary_MemberAssign()
         {
-            var baz = typeof(Bar).GetProperty(nameof(Bar.Baz));
+            Reflection.PropertyInfo baz = typeof(Bar).GetProperty(nameof(Bar.Baz));
 
             Test((l, r) =>
             {
-                var prop = Expression.Property(l, baz);
+                MemberExpression prop = Expression.Property(l, baz);
 
                 return
                     Expression.Block(
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions.Tests
         {
             Test((a, b) =>
             {
-                var @break = Expression.Label(typeof(int));
+                LabelTarget @break = Expression.Label(typeof(int));
                 return Expression.Add(a, Expression.Loop(Expression.Break(@break, b), @break));
             }, Expression.Constant(1), Expression.Constant(2));
         }
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Index()
         {
-            var item = typeof(Dictionary<int, int>).GetProperty("Item");
+            Reflection.PropertyInfo item = typeof(Dictionary<int, int>).GetProperty("Item");
 
             Test((d, i) => Expression.MakeIndex(d, item, new[] { i }), Expression.Constant(new Dictionary<int, int> { { 1, 2 } }), Expression.Constant(1));
         }
@@ -116,7 +116,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Call_Static()
         {
-            var max = typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(int), typeof(int) });
+            Reflection.MethodInfo max = typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(int), typeof(int) });
 
             Test((x, y) => Expression.Call(max, x, y), Expression.Constant(1), Expression.Constant(2));
         }
@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Call_Instance()
         {
-            var substring = typeof(string).GetMethod(nameof(string.Substring), new[] { typeof(int), typeof(int) });
+            Reflection.MethodInfo substring = typeof(string).GetMethod(nameof(string.Substring), new[] { typeof(int), typeof(int) });
 
             Test((s, i, j) => Expression.Call(s, substring, i, j), Expression.Constant("foobar"), Expression.Constant(1), Expression.Constant(2));
         }
@@ -138,8 +138,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Invocation_Inline()
         {
-            var x = Expression.Parameter(typeof(int));
-            var y = Expression.Parameter(typeof(int));
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ParameterExpression y = Expression.Parameter(typeof(int));
 
             Test((a, b) => Expression.Invoke(Expression.Lambda(Expression.Subtract(x, y), x, y), a, b), Expression.Constant(1), Expression.Constant(2));
         }
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_New()
         {
-            var ctor = typeof(TimeSpan).GetConstructor(new[] { typeof(int), typeof(int), typeof(int) });
+            Reflection.ConstructorInfo ctor = typeof(TimeSpan).GetConstructor(new[] { typeof(int), typeof(int), typeof(int) });
 
             Test((h, m, s) => Expression.New(ctor, h, m, s), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3));
         }
@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Tests
         {
             Test((a, b, c) =>
             {
-                var p = Expression.Parameter(typeof(int[]));
+                ParameterExpression p = Expression.Parameter(typeof(int[]));
 
                 return
                     Expression.Block(
@@ -180,11 +180,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_NewArrayBounds()
         {
-            var getUpperBound = typeof(Array).GetMethod(nameof(Array.GetUpperBound));
+            Reflection.MethodInfo getUpperBound = typeof(Array).GetMethod(nameof(Array.GetUpperBound));
 
             Test((a, b, c) =>
             {
-                var p = Expression.Parameter(typeof(int[,,]));
+                ParameterExpression p = Expression.Parameter(typeof(int[,,]));
 
                 return
                     Expression.Block(
@@ -207,11 +207,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_ListInit()
         {
-            var item = typeof(List<int>).GetProperty("Item");
+            Reflection.PropertyInfo item = typeof(List<int>).GetProperty("Item");
 
             Test((a, b, c) =>
             {
-                var p = Expression.Parameter(typeof(List<int>));
+                ParameterExpression p = Expression.Parameter(typeof(List<int>));
 
                 return
                     Expression.Block(
@@ -234,13 +234,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_MemberInit_Bind()
         {
-            var baz = typeof(Bar).GetProperty(nameof(Bar.Baz));
-            var foo = typeof(Bar).GetProperty(nameof(Bar.Foo));
-            var qux = typeof(Bar).GetProperty(nameof(Bar.Qux));
+            Reflection.PropertyInfo baz = typeof(Bar).GetProperty(nameof(Bar.Baz));
+            Reflection.PropertyInfo foo = typeof(Bar).GetProperty(nameof(Bar.Foo));
+            Reflection.PropertyInfo qux = typeof(Bar).GetProperty(nameof(Bar.Qux));
 
             Test((a, b, c) =>
             {
-                var p = Expression.Parameter(typeof(Bar));
+                ParameterExpression p = Expression.Parameter(typeof(Bar));
 
                 return
                     Expression.Block(
@@ -268,14 +268,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_MemberInit_MemberBind()
         {
-            var bar = typeof(BarHolder).GetProperty(nameof(BarHolder.Bar));
-            var baz = typeof(Bar).GetProperty(nameof(Bar.Baz));
-            var foo = typeof(Bar).GetProperty(nameof(Bar.Foo));
-            var qux = typeof(Bar).GetProperty(nameof(Bar.Qux));
+            Reflection.PropertyInfo bar = typeof(BarHolder).GetProperty(nameof(BarHolder.Bar));
+            Reflection.PropertyInfo baz = typeof(Bar).GetProperty(nameof(Bar.Baz));
+            Reflection.PropertyInfo foo = typeof(Bar).GetProperty(nameof(Bar.Foo));
+            Reflection.PropertyInfo qux = typeof(Bar).GetProperty(nameof(Bar.Qux));
 
             Test((a, b, c) =>
             {
-                var p = Expression.Parameter(typeof(BarHolder));
+                ParameterExpression p = Expression.Parameter(typeof(BarHolder));
 
                 return
                     Expression.Block(
@@ -306,13 +306,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_MemberInit_ListBind()
         {
-            var xs = typeof(ListHolder).GetProperty(nameof(ListHolder.Xs));
-            var add = typeof(List<int>).GetMethod(nameof(List<int>.Add));
-            var item = typeof(List<int>).GetProperty("Item");
+            Reflection.PropertyInfo xs = typeof(ListHolder).GetProperty(nameof(ListHolder.Xs));
+            Reflection.MethodInfo add = typeof(List<int>).GetMethod(nameof(List<int>.Add));
+            Reflection.PropertyInfo item = typeof(List<int>).GetProperty("Item");
 
             Test((a, b, c) =>
             {
-                var p = Expression.Parameter(typeof(ListHolder));
+                ParameterExpression p = Expression.Parameter(typeof(ListHolder));
 
                 return
                     Expression.Block(
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions.Tests
             {
                 Test((c, a, b) =>
                 {
-                    var lbl = Expression.Label(typeof(int));
+                    LabelTarget lbl = Expression.Label(typeof(int));
 
                     return
                         Expression.Block(
@@ -375,13 +375,13 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefInstance_IndexAssignment()
         {
-            var v = Expression.Parameter(typeof(ValueVector));
-            var item = typeof(ValueVector).GetProperty("Item");
-            var i = Expression.Constant(0);
-            var p = Expression.Property(v, item, i);
-            var x = Expression.Constant(42);
+            ParameterExpression v = Expression.Parameter(typeof(ValueVector));
+            Reflection.PropertyInfo item = typeof(ValueVector).GetProperty("Item");
+            ConstantExpression i = Expression.Constant(0);
+            IndexExpression p = Expression.Property(v, item, i);
+            ConstantExpression x = Expression.Constant(42);
 
-            var e =
+            Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.Block(
                         new[] { v },
@@ -397,9 +397,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_IndexAssignment_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_IndexAssignment();
+            Expression<Func<int>> e = Spill_RefInstance_IndexAssignment();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -407,7 +407,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_IndexAssignment_CodeGen()
         {
-            var e = Spill_RefInstance_IndexAssignment();
+            Expression<Func<int>> e = Spill_RefInstance_IndexAssignment();
 
             e.Verify(
                 il: @"
@@ -481,11 +481,11 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefInstance_Index()
         {
-            var v = Expression.Parameter(typeof(ValueBar));
-            var item = typeof(ValueBar).GetProperty("Item");
-            var x = Expression.Constant(42);
+            ParameterExpression v = Expression.Parameter(typeof(ValueBar));
+            Reflection.PropertyInfo item = typeof(ValueBar).GetProperty("Item");
+            ConstantExpression x = Expression.Constant(42);
 
-            var e =
+            Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.Block(
                         new[] { v },
@@ -500,9 +500,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_Index_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_Index();
+            Expression<Func<int>> e = Spill_RefInstance_Index();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -510,7 +510,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_Index_CodeGen()
         {
-            var e = Spill_RefInstance_Index();
+            Expression<Func<int>> e = Spill_RefInstance_Index();
 
             e.Verify(
                 il: @"
@@ -574,12 +574,12 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefInstance_MemberAssignment()
         {
-            var v = Expression.Parameter(typeof(ValueBar));
-            var foo = typeof(ValueBar).GetProperty(nameof(ValueBar.Foo));
-            var x = Expression.Constant(42);
-            var p = Expression.Property(v, foo);
+            ParameterExpression v = Expression.Parameter(typeof(ValueBar));
+            Reflection.PropertyInfo foo = typeof(ValueBar).GetProperty(nameof(ValueBar.Foo));
+            ConstantExpression x = Expression.Constant(42);
+            MemberExpression p = Expression.Property(v, foo);
 
-            var e =
+            Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.Block(
                         new[] { v },
@@ -595,9 +595,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_MemberAssignment_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_MemberAssignment();
+            Expression<Func<int>> e = Spill_RefInstance_MemberAssignment();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -605,7 +605,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_MemberAssignment_CodeGen()
         {
-            var e = Spill_RefInstance_MemberAssignment();
+            Expression<Func<int>> e = Spill_RefInstance_MemberAssignment();
 
             e.Verify(
                 il: @"
@@ -675,9 +675,9 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefInstance_Call()
         {
-            var v = Expression.Parameter(typeof(ValueBar));
+            ParameterExpression v = Expression.Parameter(typeof(ValueBar));
 
-            var e =
+            Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.Block(
                         new[] { v },
@@ -700,9 +700,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_Call_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_Call();
+            Expression<Func<int>> e = Spill_RefInstance_Call();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -710,7 +710,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_Call_CodeGen()
         {
-            var e = Spill_RefInstance_Call();
+            Expression<Func<int>> e = Spill_RefInstance_Call();
 
             e.Verify(
                 il: @"
@@ -780,12 +780,12 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefArgs_Call()
         {
-            var assign = typeof(ByRefs).GetMethod(nameof(ByRefs.Assign));
-            var x = Expression.Parameter(typeof(int));
-            var v = Expression.Constant(42);
-            var b = Expression.Block(new[] { x }, Expression.Call(assign, x, Spill(v)), x);
+            Reflection.MethodInfo assign = typeof(ByRefs).GetMethod(nameof(ByRefs.Assign));
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ConstantExpression v = Expression.Constant(42);
+            BlockExpression b = Expression.Block(new[] { x }, Expression.Call(assign, x, Spill(v)), x);
 
-            var e = Expression.Lambda<Func<int>>(b);
+            Expression<Func<int>> e = Expression.Lambda<Func<int>>(b);
 
             return e;
         }
@@ -794,9 +794,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefArgs_Call_Eval(bool useInterpreter)
         {
-            var e = Spill_RefArgs_Call();
+            Expression<Func<int>> e = Spill_RefArgs_Call();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -804,7 +804,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefArgs_Call_CodeGen()
         {
-            var e = Spill_RefArgs_Call();
+            Expression<Func<int>> e = Spill_RefArgs_Call();
 
             e.Verify(
                 il: @"
@@ -872,12 +872,12 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefArgs_New()
         {
-            var ctor = typeof(ByRefs).GetConstructors()[0];
-            var x = Expression.Parameter(typeof(int));
-            var v = Expression.Constant(42);
-            var b = Expression.Block(new[] { x }, Expression.New(ctor, x, Spill(v)), x);
+            Reflection.ConstructorInfo ctor = typeof(ByRefs).GetConstructors()[0];
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ConstantExpression v = Expression.Constant(42);
+            BlockExpression b = Expression.Block(new[] { x }, Expression.New(ctor, x, Spill(v)), x);
 
-            var e = Expression.Lambda<Func<int>>(b);
+            Expression<Func<int>> e = Expression.Lambda<Func<int>>(b);
 
             return e;
         }
@@ -886,9 +886,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefArgs_New_Eval(bool useInterpreter)
         {
-            var e = Spill_RefArgs_New();
+            Expression<Func<int>> e = Spill_RefArgs_New();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -896,7 +896,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefArgs_New_CodeGen()
         {
-            var e = Spill_RefArgs_New();
+            Expression<Func<int>> e = Spill_RefArgs_New();
 
             e.Verify(
                 il: @"
@@ -966,12 +966,12 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<int>> Spill_RefArgs_Invoke()
         {
-            var assign = Expression.Constant(new Assign((ref int l, int r) => { l = r; }));
-            var x = Expression.Parameter(typeof(int));
-            var v = Expression.Constant(42);
-            var b = Expression.Block(new[] { x }, Expression.Invoke(assign, x, Spill(v)), x);
+            ConstantExpression assign = Expression.Constant(new Assign((ref int l, int r) => { l = r; }));
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ConstantExpression v = Expression.Constant(42);
+            BlockExpression b = Expression.Block(new[] { x }, Expression.Invoke(assign, x, Spill(v)), x);
 
-            var e = Expression.Lambda<Func<int>>(b);
+            Expression<Func<int>> e = Expression.Lambda<Func<int>>(b);
 
             return e;
         }
@@ -979,7 +979,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefArgs_Invoke_CodeGen()
         {
-            var e = Spill_RefArgs_Invoke();
+            Expression<Func<int>> e = Spill_RefArgs_Invoke();
 
             e.Verify(
                 il: @"
@@ -1055,23 +1055,23 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefArgs_Invoke_Eval(bool useInterpreter)
         {
-            var e = Spill_RefArgs_Invoke();
+            Expression<Func<int>> e = Spill_RefArgs_Invoke();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
 
         private static Expression<Func<int>> Spill_RefArgs_Invoke_Inline()
         {
-            var l = Expression.Parameter(typeof(int).MakeByRefType());
-            var r = Expression.Parameter(typeof(int));
-            var assign = Expression.Lambda<Assign>(Expression.Assign(l, r), l, r);
-            var x = Expression.Parameter(typeof(int));
-            var v = Expression.Constant(42);
-            var b = Expression.Block(new[] { x }, Expression.Invoke(assign, x, Spill(v)), x);
+            ParameterExpression l = Expression.Parameter(typeof(int).MakeByRefType());
+            ParameterExpression r = Expression.Parameter(typeof(int));
+            Expression<Assign> assign = Expression.Lambda<Assign>(Expression.Assign(l, r), l, r);
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ConstantExpression v = Expression.Constant(42);
+            BlockExpression b = Expression.Block(new[] { x }, Expression.Invoke(assign, x, Spill(v)), x);
 
-            var e = Expression.Lambda<Func<int>>(b);
+            Expression<Func<int>> e = Expression.Lambda<Func<int>>(b);
 
             return e;
         }
@@ -1080,9 +1080,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefArgs_Invoke_Inline_Eval(bool useInterpreter)
         {
-            var e = Spill_RefArgs_Invoke_Inline();
+            Expression<Func<int>> e = Spill_RefArgs_Invoke_Inline();
 
-            var f = e.Compile(useInterpreter);
+            Func<int> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f());
         }
@@ -1090,7 +1090,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefArgs_Invoke_Inline_CodeGen()
         {
-            var e = Spill_RefArgs_Invoke_Inline();
+            Expression<Func<int>> e = Spill_RefArgs_Invoke_Inline();
 
             e.Verify(
                 il: @"
@@ -1173,11 +1173,11 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<ValueList>> Spill_RefInstance_ListInit()
         {
-            var l = Expression.Parameter(typeof(ValueList));
-            var i = Expression.ListInit(Expression.New(typeof(ValueList)), Spill(Expression.Constant(42)));
-            var b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
+            ParameterExpression l = Expression.Parameter(typeof(ValueList));
+            ListInitExpression i = Expression.ListInit(Expression.New(typeof(ValueList)), Spill(Expression.Constant(42)));
+            BlockExpression b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
 
-            var e = Expression.Lambda<Func<ValueList>>(b);
+            Expression<Func<ValueList>> e = Expression.Lambda<Func<ValueList>>(b);
 
             return e;
         }
@@ -1186,9 +1186,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_ListInit_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_ListInit();
+            Expression<Func<ValueList>> e = Spill_RefInstance_ListInit();
 
-            var f = e.Compile(useInterpreter);
+            Func<ValueList> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f()[0]);
         }
@@ -1196,7 +1196,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_ListInit_CodeGen()
         {
-            var e = Spill_RefInstance_ListInit();
+            Expression<Func<ValueList>> e = Spill_RefInstance_ListInit();
 
             e.Verify(
                 il: @"
@@ -1279,12 +1279,12 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<ValueBar>> Spill_RefInstance_MemberInit_Assign_Field()
         {
-            var baz = typeof(ValueBar).GetField(nameof(ValueBar.Baz));
-            var l = Expression.Parameter(typeof(ValueBar));
-            var i = Expression.MemberInit(Expression.New(typeof(ValueBar)), Expression.Bind(baz, Spill(Expression.Constant(42))));
-            var b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
+            Reflection.FieldInfo baz = typeof(ValueBar).GetField(nameof(ValueBar.Baz));
+            ParameterExpression l = Expression.Parameter(typeof(ValueBar));
+            MemberInitExpression i = Expression.MemberInit(Expression.New(typeof(ValueBar)), Expression.Bind(baz, Spill(Expression.Constant(42))));
+            BlockExpression b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
 
-            var e = Expression.Lambda<Func<ValueBar>>(b);
+            Expression<Func<ValueBar>> e = Expression.Lambda<Func<ValueBar>>(b);
 
             return e;
         }
@@ -1293,9 +1293,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_MemberInit_Assign_Field_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_MemberInit_Assign_Field();
+            Expression<Func<ValueBar>> e = Spill_RefInstance_MemberInit_Assign_Field();
 
-            var f = e.Compile(useInterpreter);
+            Func<ValueBar> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f().Baz);
         }
@@ -1303,7 +1303,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_MemberInit_Assign_Field_CodeGen()
         {
-            var e = Spill_RefInstance_MemberInit_Assign_Field();
+            Expression<Func<ValueBar>> e = Spill_RefInstance_MemberInit_Assign_Field();
 
             e.Verify(
                 il: @"
@@ -1386,12 +1386,12 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<ValueBar>> Spill_RefInstance_MemberInit_Assign_Property()
         {
-            var foo = typeof(ValueBar).GetProperty(nameof(ValueBar.Foo));
-            var l = Expression.Parameter(typeof(ValueBar));
-            var i = Expression.MemberInit(Expression.New(typeof(ValueBar)), Expression.Bind(foo, Spill(Expression.Constant(42))));
-            var b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
+            Reflection.PropertyInfo foo = typeof(ValueBar).GetProperty(nameof(ValueBar.Foo));
+            ParameterExpression l = Expression.Parameter(typeof(ValueBar));
+            MemberInitExpression i = Expression.MemberInit(Expression.New(typeof(ValueBar)), Expression.Bind(foo, Spill(Expression.Constant(42))));
+            BlockExpression b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
 
-            var e = Expression.Lambda<Func<ValueBar>>(b);
+            Expression<Func<ValueBar>> e = Expression.Lambda<Func<ValueBar>>(b);
 
             return e;
         }
@@ -1400,9 +1400,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void Spill_RefInstance_MemberInit_Assign_Property_Eval(bool useInterpreter)
         {
-            var e = Spill_RefInstance_MemberInit_Assign_Property();
+            Expression<Func<ValueBar>> e = Spill_RefInstance_MemberInit_Assign_Property();
 
-            var f = e.Compile(useInterpreter);
+            Func<ValueBar> f = e.Compile(useInterpreter);
 
             Assert.Equal(42, f().Foo);
         }
@@ -1410,7 +1410,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_MemberInit_Assign_Property_CodeGen()
         {
-            var e = Spill_RefInstance_MemberInit_Assign_Property();
+            Expression<Func<ValueBar>> e = Spill_RefInstance_MemberInit_Assign_Property();
 
             e.Verify(
                 il: @"
@@ -1493,13 +1493,13 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<ValueBar>> Spill_RefInstance_MemberInit_MemberBind()
         {
-            var baz2 = typeof(ValueBar).GetProperty(nameof(ValueBar.Baz2));
-            var foo = typeof(Baz).GetField(nameof(Baz.Foo));
-            var l = Expression.Parameter(typeof(ValueBar));
-            var i = Expression.MemberInit(Expression.New(typeof(ValueBar).GetConstructor(new[] { typeof(Baz) }), Expression.New(typeof(Baz))), Expression.MemberBind(baz2, Expression.Bind(foo, Spill(Expression.Constant(42)))));
-            var b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
+            Reflection.PropertyInfo baz2 = typeof(ValueBar).GetProperty(nameof(ValueBar.Baz2));
+            Reflection.FieldInfo foo = typeof(Baz).GetField(nameof(Baz.Foo));
+            ParameterExpression l = Expression.Parameter(typeof(ValueBar));
+            MemberInitExpression i = Expression.MemberInit(Expression.New(typeof(ValueBar).GetConstructor(new[] { typeof(Baz) }), Expression.New(typeof(Baz))), Expression.MemberBind(baz2, Expression.Bind(foo, Spill(Expression.Constant(42)))));
+            BlockExpression b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
 
-            var e = Expression.Lambda<Func<ValueBar>>(b);
+            Expression<Func<ValueBar>> e = Expression.Lambda<Func<ValueBar>>(b);
 
             return e;
         }
@@ -1507,7 +1507,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_MemberInit_MemberBind_CodeGen()
         {
-            var e = Spill_RefInstance_MemberInit_MemberBind();
+            Expression<Func<ValueBar>> e = Spill_RefInstance_MemberInit_MemberBind();
 
             e.Verify(
                 il: @"
@@ -1585,13 +1585,13 @@ namespace System.Linq.Expressions.Tests
 
         private static Expression<Func<ValueBar>> Spill_RefInstance_MemberInit_ListBind()
         {
-            var xs = typeof(ValueBar).GetProperty(nameof(ValueBar.Xs));
-            var add = typeof(List<int>).GetMethod(nameof(List<int>.Add));
-            var l = Expression.Parameter(typeof(ValueBar));
-            var i = Expression.MemberInit(Expression.New(typeof(ValueBar)), Expression.ListBind(xs, Expression.ElementInit(add, Spill(Expression.Constant(42)))));
-            var b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
+            Reflection.PropertyInfo xs = typeof(ValueBar).GetProperty(nameof(ValueBar.Xs));
+            Reflection.MethodInfo add = typeof(List<int>).GetMethod(nameof(List<int>.Add));
+            ParameterExpression l = Expression.Parameter(typeof(ValueBar));
+            MemberInitExpression i = Expression.MemberInit(Expression.New(typeof(ValueBar)), Expression.ListBind(xs, Expression.ElementInit(add, Spill(Expression.Constant(42)))));
+            BlockExpression b = Expression.Block(new[] { l }, Expression.Assign(l, i), l);
 
-            var e = Expression.Lambda<Func<ValueBar>>(b);
+            Expression<Func<ValueBar>> e = Expression.Lambda<Func<ValueBar>>(b);
 
             return e;
         }
@@ -1599,7 +1599,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_RefInstance_MemberInit_ListBind_CodeGen()
         {
-            var e = Spill_RefInstance_MemberInit_ListBind();
+            Expression<Func<ValueBar>> e = Spill_RefInstance_MemberInit_ListBind();
 
             e.Verify(
                 il: @"
@@ -1681,11 +1681,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_Constant()
         {
-            var xs = Expression.Parameter(typeof(int[]));
-            var i = Expression.Constant(0);
-            var v = Spill(Expression.Constant(1));
+            ParameterExpression xs = Expression.Parameter(typeof(int[]));
+            ConstantExpression i = Expression.Constant(0);
+            Expression v = Spill(Expression.Constant(1));
 
-            var e =
+            Expression<Action<int[]>> e =
                 Expression.Lambda<Action<int[]>>(
                     Expression.Assign(Expression.ArrayAccess(xs, i), v),
                     xs
@@ -1739,11 +1739,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_Default()
         {
-            var xs = Expression.Parameter(typeof(int[]));
-            var i = Expression.Default(typeof(int));
-            var v = Spill(Expression.Constant(1));
+            ParameterExpression xs = Expression.Parameter(typeof(int[]));
+            DefaultExpression i = Expression.Default(typeof(int));
+            Expression v = Spill(Expression.Constant(1));
 
-            var e =
+            Expression<Action<int[]>> e =
                 Expression.Lambda<Action<int[]>>(
                     Expression.Assign(Expression.ArrayAccess(xs, i), v),
                     xs
@@ -1797,7 +1797,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_LiteralField()
         {
-            var e =
+            Expression<Func<double>> e =
                 Expression.Lambda<Func<double>>(
                     Expression.Add(
                         Expression.Field(null, typeof(Math).GetField(nameof(Math.PI))),
@@ -1845,7 +1845,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_StaticReadOnlyField()
         {
-            var e =
+            Expression<Func<string>> e =
                 Expression.Lambda<Func<string>>(
                     Expression.Call(
                         typeof(string).GetMethod(nameof(string.Concat), new[] { typeof(string), typeof(string) }),
@@ -1894,8 +1894,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_RuntimeVariables1()
         {
-            var f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
-            var e =
+            ParameterExpression f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
+            Expression<Action<Action<IRuntimeVariables, int>>> e =
                 Expression.Lambda<Action<Action<IRuntimeVariables, int>>>(
                     Expression.Invoke(
                         f,
@@ -1953,9 +1953,9 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_RuntimeVariables2()
         {
-            var f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
-            var x = Expression.Parameter(typeof(int));
-            var e =
+            ParameterExpression f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            Expression<Action<Action<IRuntimeVariables, int>, int>> e =
                 Expression.Lambda<Action<Action<IRuntimeVariables, int>, int>>(
                     Expression.Invoke(
                         f,
@@ -2031,12 +2031,12 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_NoSpillBeyondSpillSite1()
         {
-            var f = Expression.Parameter(typeof(Func<int, int, int, int>));
-            var x = Expression.Parameter(typeof(int));
-            var y = Expression.Parameter(typeof(int));
-            var z = Expression.Parameter(typeof(int));
+            ParameterExpression f = Expression.Parameter(typeof(Func<int, int, int, int>));
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ParameterExpression y = Expression.Parameter(typeof(int));
+            ParameterExpression z = Expression.Parameter(typeof(int));
 
-            var e =
+            Expression<Func<Func<int, int, int, int>, int, int, int, int>> e =
                 Expression.Lambda<Func<Func<int, int, int, int>, int, int, int, int>>(
                     Expression.Invoke(
                         f,
@@ -2053,7 +2053,7 @@ namespace System.Linq.Expressions.Tests
                     z
                 );
 
-            var d = e.Compile();
+            Func<Func<int, int, int, int>, int, int, int, int> d = e.Compile();
             Assert.Equal(7, d((a, b, c) => a + b * c, 1, 2, 3));
 
             e.VerifyIL(@"
@@ -2104,13 +2104,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Spill_Optimizations_NoSpillBeyondSpillSite2()
         {
-            var f = Expression.Parameter(typeof(Func<int, int, int, int>));
-            var x1 = Expression.Parameter(typeof(int));
-            var x2 = Expression.Parameter(typeof(int));
-            var x3 = Expression.Parameter(typeof(int));
-            var x4 = Expression.Parameter(typeof(int));
+            ParameterExpression f = Expression.Parameter(typeof(Func<int, int, int, int>));
+            ParameterExpression x1 = Expression.Parameter(typeof(int));
+            ParameterExpression x2 = Expression.Parameter(typeof(int));
+            ParameterExpression x3 = Expression.Parameter(typeof(int));
+            ParameterExpression x4 = Expression.Parameter(typeof(int));
 
-            var e =
+            Expression<Func<int, int, int, int, int>> e =
                 Expression.Lambda<Func<int, int, int, int, int>>(
                     Expression.Add(
                         Expression.Add(
@@ -2131,7 +2131,7 @@ namespace System.Linq.Expressions.Tests
                     x4
                 );
 
-            var d = e.Compile();
+            Func<int, int, int, int, int> d = e.Compile();
             Assert.Equal(10, d(1, 2, 3, 4));
 
             e.VerifyIL(@"
@@ -2209,17 +2209,17 @@ namespace System.Linq.Expressions.Tests
 
         private static void Test(Func<Expression[], Expression> factory, Expression[] args, bool useInterpreter)
         {
-            var expected = Eval(factory(args), useInterpreter);
+            object expected = Eval(factory(args), useInterpreter);
 
             for (var i = 0; i < args.Length; i++)
             {
-                var newArgs = args.Select((arg, j) => j == i ? Spill(arg) : arg).ToArray();
+                Expression[] newArgs = args.Select((arg, j) => j == i ? Spill(arg) : arg).ToArray();
                 Assert.Equal(expected, Eval(factory(newArgs), useInterpreter));
             }
 
             for (var i = 0; i < args.Length; i++)
             {
-                var newArgs = args.Select((arg, j) => j == i ? new Extension(arg) : arg).ToArray();
+                Expression[] newArgs = args.Select((arg, j) => j == i ? new Extension(arg) : arg).ToArray();
                 Assert.Equal(expected, Eval(factory(newArgs), useInterpreter));
             }
         }

@@ -372,9 +372,11 @@ namespace System.Xml.Tests
 
         //[Variation("Set XmlResolver property to null, load style sheet with import/include, should not affect transform")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void XmlResolver1()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             try
             {
                 if (LoadXSL("XmlResolver_Main.xsl") == 1)
@@ -443,6 +445,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("document() has absolute URI")]
+        [ActiveIssue(14071)]
         [InlineData()]
         [Theory(Skip = "When style sheet URI = Intranet zone, XmlSecureResolver does not resolve document function")]
         public void XmlResolver7()
@@ -653,9 +656,11 @@ namespace System.Xml.Tests
 
         //[Variation("Verify that style sheet is closed properly after Load - Shared Read Access")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void LoadGeneric7()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             FileStream s2;
 
             // check immediately after load and after transform
@@ -701,15 +706,17 @@ namespace System.Xml.Tests
 
         //[Variation("Verify that included files are closed properly after Load - Read Access")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void LoadGeneric9()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             FileStream s2;
 
             // check immediately after load and after transform
             if (LoadXSL("XmlResolver_Main.xsl") == 1)
             {
-                s2 = new FileStream(FullFilePath("XmlResolver_sub.xsl"), FileMode.Open, FileAccess.Read);
+                s2 = new FileStream(FullFilePath("XmlResolver_Sub.xsl"), FileMode.Open, FileAccess.Read);
                 s2.Dispose();
                 if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
                 {
@@ -1026,9 +1033,11 @@ namespace System.Xml.Tests
 
         //[Variation("Load with resolver with credentials, then load XSL that does not need cred.")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void LoadGeneric9()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             if ((LoadXSL_Resolver("XmlResolver_Main.xsl", GetDefaultCredResolver()) == 1))
             {
                 if ((LoadXSL("XmlResolver_Main.xsl") == 1) && (Transform("fruits.xml") == 1)
@@ -1921,9 +1930,11 @@ namespace System.Xml.Tests
 
         //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void XmlResolver1()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             try
             {
                 if (LoadXSL("XmlResolver_Main.xsl") == 1)
@@ -1989,6 +2000,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("document() has absolute URI")]
+        [ActiveIssue(14071)]
         [InlineData()]
         [Theory(Skip = "When style sheet URI = Intranet zone, XmlSecureResolver does not resolve document function")]
         public void XmlResolver5()
@@ -2421,14 +2433,19 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformStrStrResolverTest(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]
         [InlineData()]
-        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        [Theory]
         public void TransformStrStrResolver1()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             String szFullFilename = FullFilePath("fruits.xml");
 
             try

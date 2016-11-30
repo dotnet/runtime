@@ -842,11 +842,9 @@ namespace System.Linq.Expressions.Compiler
             var fi = member as FieldInfo;
             if ((object)fi != null)
             {
-                object value;
-
-                if (fi.IsLiteral && TryGetRawConstantValue(fi, out value))
+                if (fi.IsLiteral)
                 {
-                    EmitConstant(value, fi.FieldType);
+                    EmitConstant(fi.GetRawConstantValue(), fi.FieldType);
                 }
                 else
                 {
@@ -859,24 +857,6 @@ namespace System.Linq.Expressions.Compiler
                 Debug.Assert(member is PropertyInfo);
                 var prop = (PropertyInfo)member;
                 EmitCall(objectType, prop.GetGetMethod(nonPublic: true));
-            }
-        }
-
-        private static bool TryGetRawConstantValue(FieldInfo fi, out object value)
-        {
-            // TODO: It looks like GetRawConstantValue is not available at the moment, use it when it comes back.
-            //value = fi.GetRawConstantValue();
-            //return true;
-
-            try
-            {
-                value = fi.GetValue(obj: null);
-                return true;
-            }
-            catch
-            {
-                value = null;
-                return false;
             }
         }
 

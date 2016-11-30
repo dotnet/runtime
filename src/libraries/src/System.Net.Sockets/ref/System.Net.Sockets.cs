@@ -380,6 +380,7 @@ namespace System.Net.Sockets
         Peek = 2,
         Truncated = 256,
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct SocketInformation
     {
         public SocketInformationOptions Options { get { throw null; } set { } }

@@ -28,7 +28,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool _bIsCheckingInstanceMethods;
             private bool _bAtEnd;
             private bool _bAllowBogusAndInaccessible;
-            private bool _bAllowExtensionMethods;
             // Flags for the current sym.
             private bool _bCurrentSymIsBogus;
             private bool _bCurrentSymIsInaccessible;
@@ -54,7 +53,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pQualifyingType = qualifyingType;
                 _pContext = context;
                 _bAllowBogusAndInaccessible = allowBogusAndInaccessible;
-                _bAllowExtensionMethods = allowExtensionMethods;
                 _nArity = arity;
                 _flags = flags;
                 _mask = mask;
@@ -63,7 +61,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _bAtEnd = false;
                 _bCurrentSymIsBogus = false;
                 _bCurrentSymIsInaccessible = false;
-                _bcanIncludeExtensionsInResults = _bAllowExtensionMethods;
+                _bcanIncludeExtensionsInResults = allowExtensionMethods;
                 _bEndIterationAtCurrentExtensionList = false;
             }
             public MethodOrPropertySymbol GetCurrentSymbol()

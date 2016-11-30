@@ -986,6 +986,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CXmlResolverTest(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -1047,11 +1050,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Default XmlResolver, load style sheet with document function, should resolve during transform", Pri = 1, Param = "DefaultResolver.txt")]
-        [ActiveIssue(9876)]
         [InlineData("DefaultResolver.txt")]
         [Theory]
         public void XmlResolver3(object param)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             string Baseline = Path.Combine("baseline", (string)param);
 
             if (LoadXSL("xmlResolver_document_function.xsl") == 1)
@@ -1104,11 +1108,13 @@ namespace System.Xml.Tests
         */
 
         //[Variation(id = 7, Desc = "document() has absolute URI", Pri = 0)]
-        [ActiveIssue(9876)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void XmlResolver7()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             // copy file on the local machine (this is now done with createAPItestfiles.js, see Oasys scenario.)
             if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl") == 1)
             {
@@ -2953,6 +2959,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformResolverTest(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -2980,11 +2989,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform", Param = "xmlResolver_document_function.txt")]
-        [ActiveIssue(9876)]
         [InlineData("xmlResolver_document_function.txt")]
         [Theory]
         public void XmlResolver2(object param)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3006,11 +3016,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform", Param = "DefaultResolver.txt")]
-        [ActiveIssue(9876)]
         [InlineData("DefaultResolver.txt")]
         [Theory]
         public void XmlResolver3(object param)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3031,11 +3042,13 @@ namespace System.Xml.Tests
         }
 
         //[Variation("document() has absolute URI")]
-        [ActiveIssue(9876)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void XmlResolver5()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             // copy file on the local machine
             try
             {
@@ -3467,6 +3480,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformStrStrResolverTest(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -3501,11 +3517,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform")]
-        [ActiveIssue(9876)]
         [InlineData()]
         [Theory]
         public void TransformStrStrResolver2()
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
 
@@ -3526,11 +3543,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform", Param = "xmlResolver_document_function.txt")]
-        [ActiveIssue(9876)]
         [InlineData("xmlResolver_document_function.txt")]
         [Theory]
         public void TransformStrStrResolver3(object param)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
 
@@ -3559,6 +3577,9 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformConstructorWihtFourParametersTest(ITestOutputHelper output) : base(output)
         {
+            // Make sure that we don't cache the value of the switch to enable testing
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
             _output = output;
         }
 
@@ -3579,7 +3600,6 @@ namespace System.Xml.Tests
             }
         }
 
-        [ActiveIssue(9876)]
         //[Variation("Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true })]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]
@@ -3589,6 +3609,8 @@ namespace System.Xml.Tests
         [Theory]
         public void ValidCases_ActiveIssue9876(object param0, object param1, object param2, object param3, object param4, object param5)
         {
+            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
             ValidCases(param0, param1, param2, param3, param4, param5);
         }
 

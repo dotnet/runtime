@@ -53,7 +53,7 @@ namespace System.Dynamic.Tests
             var att =
                 (DebuggerTypeProxyAttribute)
                     type.GetCustomAttributes().Single(at => at.TypeId.Equals(typeof(DebuggerTypeProxyAttribute)));
-            var proxyName = att.ProxyTypeName;
+            string proxyName = att.ProxyTypeName;
             proxyName = proxyName.Substring(0, proxyName.IndexOf(','));
             return type.GetTypeInfo().Assembly.GetType(proxyName);
         }
@@ -64,10 +64,10 @@ namespace System.Dynamic.Tests
         [Fact]
         public void EmptyRestiction()
         {
-            var empty = BindingRestrictions.Empty;
-            var view = GetDebugViewObject(empty);
+            BindingRestrictions empty = BindingRestrictions.Empty;
+            BindingRestrictionsProxyProxy view = GetDebugViewObject(empty);
             Assert.True(view.IsEmpty);
-            var restrictions = view.Restrictions;
+            BindingRestrictions[] restrictions = view.Restrictions;
             Assert.Equal(1, restrictions.Length);
             Assert.Same(empty, restrictions[0]);
             Assert.Same(empty.ToExpression(), view.Test);
@@ -77,11 +77,11 @@ namespace System.Dynamic.Tests
         [Fact]
         public void CustomRestriction()
         {
-            var exp = Expression.Constant(false);
-            var custom = BindingRestrictions.GetExpressionRestriction(exp);
-            var view = GetDebugViewObject(custom);
+            ConstantExpression exp = Expression.Constant(false);
+            BindingRestrictions custom = BindingRestrictions.GetExpressionRestriction(exp);
+            BindingRestrictionsProxyProxy view = GetDebugViewObject(custom);
             Assert.False(view.IsEmpty);
-            var restrictions = view.Restrictions;
+            BindingRestrictions[] restrictions = view.Restrictions;
             Assert.Equal(1, restrictions.Length);
             Assert.Same(custom, restrictions[0]);
             Assert.NotSame(BindingRestrictions.Empty.ToExpression(), view.Test);
@@ -98,21 +98,21 @@ namespace System.Dynamic.Tests
                 Expression.Equal(Expression.Constant(2), Expression.Constant(3))
             };
 
-            var br = BindingRestrictions.Empty;
+            BindingRestrictions br = BindingRestrictions.Empty;
             var restrictions = new List<BindingRestrictions>();
             foreach (var exp in exps)
             {
-                var res = BindingRestrictions.GetExpressionRestriction(exp);
+                BindingRestrictions res = BindingRestrictions.GetExpressionRestriction(exp);
                 restrictions.Add(res);
                 br = br.Merge(res);
             }
 
-            var view = GetDebugViewObject(br);
+            BindingRestrictionsProxyProxy view = GetDebugViewObject(br);
             Assert.False(view.IsEmpty);
 
             Assert.Equal(br.ToExpression().ToString(), view.ToString());
 
-            var viewedRestrictions = view.Restrictions;
+            BindingRestrictions[] viewedRestrictions = view.Restrictions;
 
             // Check equal to source restrictions, but not insisting on order.
             Assert.Equal(3, viewedRestrictions.Length);
@@ -128,13 +128,13 @@ namespace System.Dynamic.Tests
                 Expression.Equal(Expression.Constant(2), Expression.Constant(3))
             };
 
-            var br = BindingRestrictions.Empty;
+            BindingRestrictions br = BindingRestrictions.Empty;
             foreach (var exp in exps)
             {
                 br = br.Merge(BindingRestrictions.GetExpressionRestriction(exp));
             }
 
-            var view = GetDebugViewObject(br);
+            BindingRestrictionsProxyProxy view = GetDebugViewObject(br);
 
             // The expression in the view will be a tree of AndAlso nodes.
             // If we examine the expression of the restriction a new AndAlso
@@ -142,7 +142,7 @@ namespace System.Dynamic.Tests
             // with the initial set.
 
             var notAndAlso = new List<Expression>();
-            var vExp = view.Test;
+            Expression vExp = view.Test;
             Assert.Equal(ExpressionType.AndAlso, vExp.NodeType);
 
             Stack<Expression> toSplit = new Stack<Expression>();
@@ -174,7 +174,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ThrowOnNullToCtor()
         {
-            var tie = Assert.Throws<TargetInvocationException>(() => BindingRestrictionsProxyCtor.Invoke(new object[] {null}));
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => BindingRestrictionsProxyCtor.Invoke(new object[] {null}));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
             Assert.Equal("node", ane.ParamName);
         }

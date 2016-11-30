@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.ObjectModel.Tests</AssemblyName>
     <RootNamespace>System.ObjectModel.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -49,6 +49,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="KeyedCollection\TestMethods.netcoreapp1.1.cs" />
     <Compile Include="KeyedCollection\Serialization.netstandard1.7.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard1.7.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_Serialization.netstandard1.7.cs" />

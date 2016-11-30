@@ -165,9 +165,11 @@ namespace System.Linq.Expressions
             ParameterExpression temp = Parameter(Operand.Type, name: null);
             return Block(
                 new  TrueReadOnlyCollection<ParameterExpression>(temp),
-                Assign(temp, Operand),
-                Assign(Operand, FunctionalOp(temp)),
-                temp
+                new TrueReadOnlyCollection<Expression>(
+                    Assign(temp, Operand),
+                    Assign(Operand, FunctionalOp(temp)),
+                    temp
+                )
             );
         }
 
@@ -193,8 +195,10 @@ namespace System.Linq.Expressions
                     // temp1.member = op(temp1.member)
                     return Block(
                         new TrueReadOnlyCollection<ParameterExpression>(temp1),
-                        initTemp1,
-                        Assign(member, FunctionalOp(member))
+                        new TrueReadOnlyCollection<Expression>(
+                            initTemp1,
+                            Assign(member, FunctionalOp(member))
+                        )
                     );
                 }
 
@@ -207,10 +211,12 @@ namespace System.Linq.Expressions
                 ParameterExpression temp2 = Parameter(member.Type, name: null);
                 return Block(
                     new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
-                    initTemp1,
-                    Assign(temp2, member),
-                    Assign(member, FunctionalOp(temp2)),
-                    temp2
+                    new TrueReadOnlyCollection<Expression>(
+                        initTemp1,
+                        Assign(temp2, member),
+                        Assign(member, FunctionalOp(temp2)),
+                        temp2
+                    )
                 );
             }
         }
@@ -428,7 +434,7 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetUserDefinedCoercion(ExpressionType coercionType, Expression expression, Type convertToType)
         {
-            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType, implicitOnly: false);
+            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType);
             if (method != null)
             {
                 return new UnaryExpression(coercionType, expression, convertToType, method);

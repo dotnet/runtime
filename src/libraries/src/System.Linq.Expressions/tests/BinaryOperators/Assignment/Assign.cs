@@ -151,8 +151,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void BasicAssignmentExpressionTest()
         {
-            var left = Expression.Parameter(typeof(int));
-            var right = Expression.Parameter(typeof(int));
+            ParameterExpression left = Expression.Parameter(typeof(int));
+            ParameterExpression right = Expression.Parameter(typeof(int));
 
             BinaryExpression actual = Expression.Assign(left, right);
 
@@ -343,7 +343,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Assign(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e = Expression.Assign(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a = b)", e.ToString());
         }
 
