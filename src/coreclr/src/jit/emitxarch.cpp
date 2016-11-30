@@ -6970,7 +6970,7 @@ void emitter::emitDispIns(
 #ifndef LEGACY_BACKEND
                      || (ins == INS_cvtss2si) || (ins == INS_cvtsd2si) || (ins == INS_cvttss2si)
 #endif
-                         )
+                     || 0)
             {
                 printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
             }
