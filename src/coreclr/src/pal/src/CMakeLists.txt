@@ -107,10 +107,10 @@ elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
   set(ARCH_SOURCES
-    #arch/i386/context2.S
-    #arch/i386/debugbreak.S
-    #arch/i386/exceptionhelper.S
-    arch/amd64/processor.cpp
+    arch/i386/context2.S
+    arch/i386/debugbreak.S
+    arch/i386/exceptionhelper.S
+    arch/i386/processor.cpp
   )
 endif()
 

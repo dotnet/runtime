@@ -745,12 +745,12 @@ void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
     GetExecutionEngine()->TLS_AssociateCallback(slot, callback);
 }
 
-void ** __stdcall ClrFlsGetBlockGeneric()
+LPVOID *ClrFlsGetBlockGeneric()
 {
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    return (void **) GetExecutionEngine()->TLS_GetDataBlock();
+    return (LPVOID *) GetExecutionEngine()->TLS_GetDataBlock();
 }
 
 CLRFLSGETBLOCK __ClrFlsGetBlock = ClrFlsGetBlockGeneric;
