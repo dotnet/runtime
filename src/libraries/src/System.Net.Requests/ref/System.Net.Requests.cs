@@ -106,7 +106,7 @@ namespace System.Net
         public override System.IO.Stream GetRequestStream() { throw null; }
         public override System.Net.WebResponse GetResponse() { throw null; }
     }
-    public class FtpWebResponse : WebResponse
+    public class FtpWebResponse : WebResponse, IDisposable
     {
         internal FtpWebResponse() { }
         public override long ContentLength { get { throw null; } }
