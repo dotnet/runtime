@@ -41,6 +41,7 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-D_TARGET_MAC64)
+  add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
     arch/amd64/activationhandlerwrapper.S
     arch/amd64/context.S
