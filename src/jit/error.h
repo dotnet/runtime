@@ -58,10 +58,11 @@ extern LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 
 /*****************************************************************************/
 
+// clang-format off
+
 extern void debugError(const char* msg, const char* file, unsigned line);
 extern void DECLSPEC_NORETURN badCode();
-extern void                   DECLSPEC_NORETURN
-badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line);
+extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line);
 extern void DECLSPEC_NORETURN noWay();
 extern void DECLSPEC_NORETURN NOMEM();
 extern void DECLSPEC_NORETURN fatal(int errCode);
@@ -79,120 +80,6 @@ extern void noWayAssertBodyConditional(
     );
 extern void noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
 
-#if !defined(_TARGET_X86_) || !defined(LEGACY_BACKEND)
-
-// This guy can return based on Config flag/Debugger
-extern void notYetImplemented(const char* msg, const char* file, unsigned line);
-#define NYI(msg) notYetImplemented("NYI: " #msg, __FILE__, __LINE__)
-#define NYI_IF(cond, msg)                                                                                              \
-    if (cond)                                                                                                          \
-    notYetImplemented("NYI: " #msg, __FILE__, __LINE__)
-
-#ifdef _TARGET_AMD64_
-
-#define NYI_AMD64(msg) notYetImplemented("NYI_AMD64: " #msg, __FILE__, __LINE__)
-#define NYI_X86(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-
-#elif defined(_TARGET_X86_)
-
-#define NYI_AMD64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_X86(msg) notYetImplemented("NYI_X86: " #msg, __FILE__, __LINE__)
-#define NYI_ARM(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-
-#elif defined(_TARGET_ARM_)
-
-#define NYI_AMD64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_X86(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM(msg) notYetImplemented("NYI_ARM: " #msg, __FILE__, __LINE__)
-#define NYI_ARM64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-
-#elif defined(_TARGET_ARM64_)
-
-#define NYI_AMD64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_X86(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM64(msg) notYetImplemented("NYI_ARM64: " #msg, __FILE__, __LINE__)
-
-#else
-
-#error "Unknown platform, not x86, ARM, or AMD64?"
-
-#endif
-
-#else // defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-
-#define NYI(msg) assert(!msg)
-#define NYI_AMD64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM(msg)                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_ARM64(msg)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-
-#endif // _TARGET_X86_
-
-#if !defined(_TARGET_X86_) && !defined(FEATURE_STACK_FP_X87)
-#define NYI_FLAT_FP_X87(msg) notYetImplemented("NYI: " #msg, __FILE__, __LINE__)
-#define NYI_FLAT_FP_X87_NC(msg) notYetImplemented("NYI: " #msg, __FILE__, __LINE__)
-
-#else
-
-#define NYI_FLAT_FP_X87(msg)                                                                                           \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-#define NYI_FLAT_FP_X87_NC(msg)                                                                                        \
-    do                                                                                                                 \
-    {                                                                                                                  \
-    } while (0)
-
-#endif // !_TARGET_X86_ && !FEATURE_STACK_FP_X87
-
 #ifdef DEBUG
 #define NO_WAY(msg) (debugError(msg, __FILE__, __LINE__), noWay())
 // Used for fallback stress mode
@@ -209,6 +96,8 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
         }                                                                                                              \
     } while (0)
 #define unreached() noWayAssertBody("unreached", __FILE__, __LINE__)
+
+#define NOWAY_MSG(msg) noWayAssertBodyConditional(msg, __FILE__, __LINE__)
 
 #else
 
@@ -232,12 +121,88 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
     } while (0)
 #define unreached() noWayAssertBody()
 
+#define NOWAY_MSG(msg) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
+
 #endif
 
 // IMPL_LIMITATION is called when we encounter valid IL that is not
 // supported by our current implementation because of various
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) NO_WAY(msg)
+
+#if !defined(_TARGET_X86_) || !defined(LEGACY_BACKEND)
+
+#if defined(ALT_JIT)
+
+// This guy can return based on Config flag/Debugger
+extern void notYetImplemented(const char* msg, const char* file, unsigned line);
+#define NYIRAW(msg) notYetImplemented(msg, __FILE__, __LINE__)
+
+#else // !defined(ALT_JIT)
+
+#define NYIRAW(msg) NOWAY_MSG(msg)
+
+#endif // !defined(ALT_JIT)
+
+#define NYI(msg)                    NYIRAW("NYI: " msg)
+#define NYI_IF(cond, msg) if (cond) NYIRAW("NYI: " msg)
+
+#ifdef _TARGET_AMD64_
+
+#define NYI_AMD64(msg)  NYIRAW("NYI_AMD64: " msg)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+
+#elif defined(_TARGET_X86_)
+
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    NYIRAW("NYI_X86: " msg)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+
+#elif defined(_TARGET_ARM_)
+
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    NYIRAW("NYI_ARM: " msg)
+#define NYI_ARM64(msg)  do { } while (0)
+
+#elif defined(_TARGET_ARM64_)
+
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  NYIRAW("NYI_ARM64: " msg)
+
+#else
+
+#error "Unknown platform, not x86, ARM, or AMD64?"
+
+#endif
+
+#else // NYI not available; make it an assert.
+
+#define NYI(msg)        assert(!msg)
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+
+#endif // NYI not available
+
+#if !defined(_TARGET_X86_) && !defined(FEATURE_STACK_FP_X87)
+
+#define NYI_FLAT_FP_X87(msg)    NYI(msg)
+#define NYI_FLAT_FP_X87_NC(msg) NYI(msg)
+
+#else
+
+#define NYI_FLAT_FP_X87(msg)    do { } while (0)
+#define NYI_FLAT_FP_X87_NC(msg) do { } while (0)
+
+#endif // !_TARGET_X86_ && !FEATURE_STACK_FP_X87
+
+// clang-format on
 
 #if defined(_HOST_X86_) && !defined(FEATURE_PAL)
 
