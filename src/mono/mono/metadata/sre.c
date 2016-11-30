@@ -1304,13 +1304,13 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 static gpointer
 register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
-	CACHE_OBJECT (MonoReflectionAssembly *, assembly, res, NULL);
+	return CACHE_OBJECT (MonoReflectionAssembly *, assembly, &res->object, NULL);
 }
 
 static gpointer
 register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynamicImage *module)
 {
-	CACHE_OBJECT (MonoReflectionModuleBuilder *, module, res, NULL);
+	return CACHE_OBJECT (MonoReflectionModuleBuilder *, module, &res->module.obj, NULL);
 }
 
 static gboolean

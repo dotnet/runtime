@@ -1310,6 +1310,9 @@ typedef struct {
 	guint32 location;
 } MonoManifestResourceInfo;
 
+/* Safely access System.Reflection.ManifestResourceInfo from native code */
+TYPED_HANDLE_DECL (MonoManifestResourceInfo);
+
 /* A boxed IntPtr */
 typedef struct {
 	MonoObject object;

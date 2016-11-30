@@ -16,7 +16,6 @@
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/object-internals.h"
-#include "mono/metadata/reflection-cache.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/reflection-internals.h"

@@ -7,8 +7,10 @@
 
 #include <glib.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/handle.h>
 #include <mono/metadata/mono-hash.h>
 #include <mono/metadata/mempool.h>
+#include <mono/utils/mono-error-internals.h>
 
 /*
  * We need to return always the same object for MethodInfo, FieldInfo etc..
@@ -38,43 +40,120 @@ reflected_hash (gconstpointer a);
 #define FREE_REFENTRY(entry)
 #endif
 
+static inline MonoObject*
+cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o)
+{
+	MonoObject *obj;
+	ReflectedEntry pe;
+	pe.item = item;
+	pe.refclass = klass;
+	mono_domain_lock (domain);
+	if (!domain->refobject_hash)
+		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
 
-#define CACHE_OBJECT(t,p,o,k)	\
-	do {	\
-		t _obj;	\
-        ReflectedEntry pe; \
-        pe.item = (p); \
-        pe.refclass = (k); \
-        mono_domain_lock (domain); \
-		if (!domain->refobject_hash)	\
-			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");	\
-        _obj = (t)mono_g_hash_table_lookup (domain->refobject_hash, &pe); \
-        if (!_obj) { \
-		    ReflectedEntry *e = ALLOC_REFENTRY; 	\
-		    e->item = (p);	\
-		    e->refclass = (k);	\
-		    mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
-            _obj = o; \
-        } \
-		mono_domain_unlock (domain);	\
-        return _obj; \
-	} while (0)
+	obj = (MonoObject*) mono_g_hash_table_lookup (domain->refobject_hash, &pe);
+	if (obj == NULL) {
+		ReflectedEntry *e = ALLOC_REFENTRY;
+		e->item = item;
+		e->refclass = klass;
+		mono_g_hash_table_insert (domain->refobject_hash, e, o);
+		obj = o;
+	}
+	mono_domain_unlock (domain);
+	return obj;
+}
 
-#define CHECK_OBJECT(t,p,k)	\
-	do {	\
-		t _obj;	\
-		ReflectedEntry e; 	\
-		e.item = (p);	\
-		e.refclass = (k);	\
-		mono_domain_lock (domain);	\
-		if (!domain->refobject_hash)	\
-			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");	\
-		if ((_obj = (t)mono_g_hash_table_lookup (domain->refobject_hash, &e))) {	\
-			mono_domain_unlock (domain);	\
-			return _obj;	\
-		}	\
-        mono_domain_unlock (domain); \
-	} while (0)
+
+static inline MonoObjectHandle
+cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObjectHandle o)
+{
+	ReflectedEntry pe;
+	pe.item = item;
+	pe.refclass = klass;
+	mono_domain_lock (domain);
+	if (!domain->refobject_hash)
+		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
+
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_g_hash_table_lookup (domain->refobject_hash, &pe));
+	if (MONO_HANDLE_IS_NULL (obj)) {
+		ReflectedEntry *e = ALLOC_REFENTRY;
+		e->item = item;
+		e->refclass = klass;
+		mono_g_hash_table_insert (domain->refobject_hash, e, MONO_HANDLE_RAW (o));
+		MONO_HANDLE_ASSIGN (obj, o);
+	}
+	mono_domain_unlock (domain);
+	return obj;
+}
+
+
+#define CACHE_OBJECT(t,p,o,k) ((t) (cache_object (domain, (k), (p), (o))))
+
+
+static inline MonoObject*
+check_object (MonoDomain* domain, MonoClass *klass, gpointer item)
+{
+	ReflectedEntry e;
+	e.item = item;
+	e.refclass = klass;
+	mono_domain_lock (domain);
+	if (!domain->refobject_hash)
+		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
+	MonoObject *obj = (MonoObject*) mono_g_hash_table_lookup (domain->refobject_hash, &e);
+	mono_domain_unlock (domain);
+	return obj;
+}
+
+static inline MonoObjectHandle
+check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
+{
+	ReflectedEntry e;
+	e.item = item;
+	e.refclass = klass;
+	mono_domain_lock (domain);
+	if (!domain->refobject_hash)
+		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_g_hash_table_lookup (domain->refobject_hash, &e));
+	mono_domain_unlock (domain);
+	return obj;
+}
+
+
+typedef MonoObject* (*ReflectionCacheConstructFunc) (MonoDomain*, MonoClass*, gpointer, gpointer, MonoError *);
+
+typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoDomain*, MonoClass*, gpointer, gpointer, MonoError *);
+
+
+static inline MonoObject*
+check_or_construct (MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc construct)
+{
+	mono_error_init (error);
+	MonoObject *obj = check_object (domain, klass, item);
+	if (obj)
+		return obj;
+	obj = construct (domain, klass, item, user_data, error);
+	return_val_if_nok (error, NULL);
+	/* note no caching if there was an error in construction */
+	return cache_object (domain, klass, item, obj);
+}
+
+static inline MonoObjectHandle
+check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
+{
+	mono_error_init (error);
+	MonoObjectHandle obj = check_object_handle (domain, klass, item);
+	if (!MONO_HANDLE_IS_NULL (obj))
+		return obj;
+	MONO_HANDLE_ASSIGN (obj, construct (domain, klass, item, user_data, error));
+	return_val_if_nok (error, NULL);
+	/* note no caching if there was an error in construction */
+	return cache_object_handle (domain, klass, item, obj);
+}
+
+
+#define CHECK_OR_CONSTRUCT(t,p,k,construct,ud) ((t) check_or_construct (domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc) (construct)))
+
+#define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) ((t) check_or_construct_handle (domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct)))
 
 
 #endif /*__MONO_METADATA_REFLECTION_CACHE_H__*/

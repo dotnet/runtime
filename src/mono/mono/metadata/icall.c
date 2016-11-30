@@ -2605,15 +2605,14 @@ ves_icall_reflection_get_token (MonoObject* obj)
 	return result;
 }
 
-ICALL_EXPORT MonoReflectionModule*
-ves_icall_RuntimeTypeHandle_GetModule (MonoReflectionType *type)
+ICALL_EXPORT MonoReflectionModuleHandle
+ves_icall_RuntimeTypeHandle_GetModule (MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionModule *result = NULL;
-	MonoClass *klass = mono_class_from_mono_type (type->type);
-	result = mono_module_get_object_checked (mono_object_domain (type), klass->image, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (type);
+	MonoType *t = MONO_HANDLE_GETVAL (type, type);
+	MonoClass *klass = mono_class_from_mono_type (t);
+	return mono_module_get_object_handle (domain, klass->image, error);
 }
 
 ICALL_EXPORT MonoReflectionAssembly*
@@ -4608,15 +4607,13 @@ leave:
 	return res;
 }
 
-ICALL_EXPORT MonoReflectionModule*
-ves_icall_System_Reflection_Assembly_GetManifestModuleInternal (MonoReflectionAssembly *assembly) 
+ICALL_EXPORT MonoReflectionModuleHandle
+ves_icall_System_Reflection_Assembly_GetManifestModuleInternal (MonoReflectionAssemblyHandle assembly, MonoError *error) 
 {
-	MonoError error;
-	MonoReflectionModule *result = NULL;
-	result = mono_module_get_object_checked (mono_object_domain (assembly), assembly->assembly->image, &error);
-	if (!mono_error_ok (&error))
-		mono_error_set_pending_exception (&error);
-	return result;
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
+	MonoAssembly *a = MONO_HANDLE_GETVAL (assembly, assembly);
+	return mono_module_get_object_handle (domain, a->image, error);
 }
 
 ICALL_EXPORT MonoArray*
@@ -4724,23 +4721,24 @@ g_concat_dir_and_file (const char *dir, const char *file)
 }
 
 ICALL_EXPORT void *
-ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name, gint32 *size, MonoReflectionModule **ref_module) 
+ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
 {
-	MonoError error;
-	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
+	MonoTableInfo *table = &assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 i;
 	guint32 cols [MONO_MANIFEST_SIZE];
 	guint32 impl, file_idx;
 	const char *val;
 	MonoImage *module;
 
-	char *n = mono_string_to_utf8_checked (name, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	char *n = mono_string_handle_to_utf8 (name, error);
+	return_val_if_nok (error, NULL);
 
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
-		val = mono_metadata_string_heap (assembly->assembly->image, cols [MONO_MANIFEST_NAME]);
+		val = mono_metadata_string_heap (assembly->image, cols [MONO_MANIFEST_NAME]);
 		if (strcmp (val, n) == 0)
 			break;
 	}
@@ -4757,82 +4755,87 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE);
 		file_idx = impl >> MONO_IMPLEMENTATION_BITS;
 
-		module = mono_image_load_file_for_image_checked (assembly->assembly->image, file_idx, &error);
-		if (mono_error_set_pending_exception (&error) || !module)
+		module = mono_image_load_file_for_image_checked (assembly->image, file_idx, error);
+		if (!is_ok (error) || !module)
 			return NULL;
 	}
 	else
-		module = assembly->assembly->image;
+		module = assembly->image;
 
 	
-	MonoReflectionModule *rm = mono_module_get_object_checked (mono_domain_get (), module, &error);
-	if (mono_error_set_pending_exception (&error))
+	MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, module, error);
+	if (!is_ok (error))
 		return NULL;
-	mono_gc_wbarrier_generic_store (ref_module, (MonoObject*) rm);
+	MONO_HANDLE_ASSIGN (ref_module, rm);
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
 }
 
-ICALL_EXPORT gboolean
-ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflectionAssembly *assembly, MonoString *name, MonoManifestResourceInfo *info)
+static gboolean
+get_manifest_resource_info_internal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoManifestResourceInfoHandle info, MonoError *error)
 {
-	MonoError error;
-	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	HANDLE_FUNCTION_ENTER ();
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
+	MonoTableInfo *table = &assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	int i;
 	guint32 cols [MONO_MANIFEST_SIZE];
 	guint32 file_cols [MONO_FILE_SIZE];
 	const char *val;
 	char *n;
 
-	n = mono_string_to_utf8_checked (name, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+	gboolean result = FALSE;
+	
+	n = mono_string_handle_to_utf8 (name, error);
+	if (!is_ok (error))
+		goto leave;
+
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
-		val = mono_metadata_string_heap (assembly->assembly->image, cols [MONO_MANIFEST_NAME]);
+		val = mono_metadata_string_heap (assembly->image, cols [MONO_MANIFEST_NAME]);
 		if (strcmp (val, n) == 0)
 			break;
 	}
 	g_free (n);
 	if (i == table->rows)
-		return FALSE;
+		goto leave;
 
 	if (!cols [MONO_MANIFEST_IMPLEMENTATION]) {
-		info->location = RESOURCE_LOCATION_EMBEDDED | RESOURCE_LOCATION_IN_MANIFEST;
+		MONO_HANDLE_SETVAL (info, location, guint32, RESOURCE_LOCATION_EMBEDDED | RESOURCE_LOCATION_IN_MANIFEST);
 	}
 	else {
 		switch (cols [MONO_MANIFEST_IMPLEMENTATION] & MONO_IMPLEMENTATION_MASK) {
 		case MONO_IMPLEMENTATION_FILE:
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
-			table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+			table = &assembly->image->tables [MONO_TABLE_FILE];
 			mono_metadata_decode_row (table, i - 1, file_cols, MONO_FILE_SIZE);
-			val = mono_metadata_string_heap (assembly->assembly->image, file_cols [MONO_FILE_NAME]);
-			MONO_OBJECT_SETREF (info, filename, mono_string_new (mono_object_domain (assembly), val));
+			val = mono_metadata_string_heap (assembly->image, file_cols [MONO_FILE_NAME]);
+			MONO_HANDLE_SET (info, filename, mono_string_new_handle (domain, val, error));
 			if (file_cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA)
-				info->location = 0;
+				MONO_HANDLE_SETVAL (info, location, guint32, 0);
 			else
-				info->location = RESOURCE_LOCATION_EMBEDDED;
+				MONO_HANDLE_SETVAL (info, location, guint32, RESOURCE_LOCATION_EMBEDDED);
 			break;
 
 		case MONO_IMPLEMENTATION_ASSEMBLYREF:
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
-			mono_assembly_load_reference (assembly->assembly->image, i - 1);
-			if (assembly->assembly->image->references [i - 1] == (gpointer)-1) {
-				mono_error_set_assembly_load (&error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->assembly->image->name);
-				mono_error_set_pending_exception (&error);
-				return FALSE;
+			mono_assembly_load_reference (assembly->image, i - 1);
+			if (assembly->image->references [i - 1] == REFERENCE_MISSING) {
+				mono_error_set_assembly_load (error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->image->name);
+				goto leave;
 			}
-			MonoReflectionAssembly *assm_obj;
-			assm_obj = mono_assembly_get_object_checked (mono_domain_get (), assembly->assembly->image->references [i - 1], &error);
-			if (!assm_obj) {
-				mono_error_set_pending_exception (&error);
-				return FALSE;
-			}
-			MONO_OBJECT_SETREF (info, assembly, assm_obj);
+			MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (mono_domain_get (), assembly->image->references [i - 1], error);
+			if (!is_ok (error))
+				goto leave;
+			MONO_HANDLE_SET (info, assembly, assm_obj);
 
 			/* Obtain info recursively */
-			ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (info->assembly, name, info);
-			info->location |= RESOURCE_LOCATION_ANOTHER_ASSEMBLY;
+			get_manifest_resource_info_internal (assm_obj, name, info, error);
+			if (!is_ok (error))
+				goto leave;
+			guint32 location = MONO_HANDLE_GETVAL (info, location);
+			location |= RESOURCE_LOCATION_ANOTHER_ASSEMBLY;
+			MONO_HANDLE_SETVAL (info, location, guint32, location);
 			break;
 
 		case MONO_IMPLEMENTATION_EXP_TYPE:
@@ -4841,7 +4844,16 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 		}
 	}
 
-	return TRUE;
+	result = TRUE;
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (result);
+}
+
+ICALL_EXPORT gboolean
+ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoManifestResourceInfoHandle info_h, MonoError *error)
+{
+	mono_error_init (error);
+	return get_manifest_resource_info_internal (assembly_h, name, info_h, error);
 }
 
 ICALL_EXPORT MonoObject*
@@ -4899,22 +4911,71 @@ ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *a
 	return (MonoObject*)result;
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly *assembly)
+static gboolean
+add_module_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int *dest_idx, MonoImage* module, MonoError *error)
 {
-	MonoError error;
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	if (module) {
+		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, module, error);
+		if (!is_ok (error))
+			goto leave;
+		
+		MONO_HANDLE_ARRAY_SETREF (dest, *dest_idx, rm);
+		++(*dest_idx);
+	}
+
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
+}
+
+static gboolean
+add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_idx, MonoImage *image, MonoTableInfo *table, int table_idx,  MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+
+	guint32 cols [MONO_FILE_SIZE];
+	mono_metadata_decode_row (table, table_idx, cols, MONO_FILE_SIZE);
+	if (cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA) {
+		MonoReflectionModuleHandle rm = mono_module_file_get_object_handle (domain, image, table_idx, error);
+		if (!is_ok (error))
+			goto leave;
+		MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, rm);
+	} else {
+		MonoImage *m = mono_image_load_file_for_image_checked (image, table_idx + 1, error);
+		if (!is_ok (error))
+			goto leave;
+		if (!m) {
+			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
+			mono_error_set_assembly_load (error, g_strdup (filename), "%s", "");
+			goto leave;
+		}
+		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, m, error);
+		if (!is_ok (error))
+			goto leave;
+		MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, rm);
+	}
+
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
+}
+
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
+{
+	mono_error_init (error);
 	MonoDomain *domain = mono_domain_get();
-	MonoArray *res;
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
 	MonoClass *klass;
 	int i, j, file_count = 0;
 	MonoImage **modules;
 	guint32 module_count, real_module_count;
 	MonoTableInfo *table;
-	guint32 cols [MONO_FILE_SIZE];
-	MonoImage *image = assembly->assembly->image;
+	MonoImage *image = assembly->image;
 
 	g_assert (image != NULL);
-	g_assert (!assembly_is_dynamic (assembly->assembly));
+	g_assert (!assembly_is_dynamic (assembly));
 
 	table = &image->tables [MONO_TABLE_FILE];
 	file_count = table->rows;
@@ -4928,51 +4989,29 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 			real_module_count ++;
 
 	klass = mono_class_get_module_class ();
-	res = mono_array_new_checked (domain, klass, 1 + real_module_count + file_count, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoArrayHandle res = mono_array_new_handle (domain, klass, 1 + real_module_count + file_count, error);
+	if (!is_ok (error))
+		goto fail;
 
-	MonoReflectionModule *image_obj = mono_module_get_object_checked (domain, image, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoReflectionModuleHandle image_obj = mono_module_get_object_handle (domain, image, error);
+	if (!is_ok (error))
+		goto fail;
 
-	mono_array_setref (res, 0, image_obj);
+	MONO_HANDLE_ARRAY_SETREF (res, 0, image_obj);
+
 	j = 1;
 	for (i = 0; i < module_count; ++i)
-		if (modules [i]) {
-			MonoReflectionModule *rm = mono_module_get_object_checked (domain, modules[i], &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-			mono_array_setref (res, j, rm);
-			++j;
-		}
+		if (!add_module_to_modules_array (domain, res, &j, modules[i], error))
+			goto fail;
 
 	for (i = 0; i < file_count; ++i, ++j) {
-		mono_metadata_decode_row (table, i, cols, MONO_FILE_SIZE);
-		if (cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA) {
-			MonoReflectionModule *rm = mono_module_file_get_object_checked (domain, image, i, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-			mono_array_setref (res, j, rm);
-		}
-		else {
-			MonoImage *m = mono_image_load_file_for_image_checked (image, i + 1, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-			if (!m) {
-				const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
-				mono_error_set_assembly_load (&error, g_strdup (filename), "%s", "");
-				mono_error_set_pending_exception (&error);
-				return NULL;
-			}
-			MonoReflectionModule *rm = mono_module_get_object_checked (domain, m, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-			mono_array_setref (res, j, rm);
-		}
+		if (!add_file_to_modules_array (domain, res, j, image, table, i, error))
+			goto fail;
 	}
 
 	return res;
+fail:
+	return MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
 }
 
 ICALL_EXPORT MonoReflectionMethod*
