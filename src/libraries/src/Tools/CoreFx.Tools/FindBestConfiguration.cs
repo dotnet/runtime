@@ -6,10 +6,11 @@ using Microsoft.Build.Utilities;
 using Microsoft.Build.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public class FindBestConfiguration : BuildTask
+    public class FindBestConfiguration : ConfigurationTask
     {
         private static readonly char[] s_SupportedGroupsSeparator = new[] { '|' };
         private static readonly char[] s_VerticalGroupsSeparator = new[] { '-' };
@@ -19,12 +20,6 @@ namespace Microsoft.DotNet.Build.Tasks
 
         [Required]
         public string SelectionGroup { get; set; }
-
-        [Required]
-        public ITaskItem[] TargetGroups { get; set; }
-
-        [Required]
-        public ITaskItem[] OSGroups { get; set; }
 
         [Required]
         public string Name { get; set; }
@@ -38,80 +33,28 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public override bool Execute()
         {
-            string[] supportedTargetGroups = ProjectConfigurations.Select(s => s.Split(s_SupportedGroupsSeparator)[0]).Where(w => !string.IsNullOrWhiteSpace(w)).ToArray();
+            LoadConfiguration();
 
-            string[] tokens = SelectionGroup.Split(s_VerticalGroupsSeparator);
-            string osGroup = tokens[0];
-            string targetGroup = tokens[1];
-            string originalTargetGroup = targetGroup;
+            var supportedProjectConfigurations = new HashSet<Configuration>(ProjectConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)));
 
-            Dictionary<string, string> metadata = new Dictionary<string, string>();
+            var buildConfiguration = ConfigurationFactory.ParseConfiguration(SelectionGroup);
 
-            if (targetGroup == null)
+            var compatibleConfigurations = ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration);
+
+            var bestConfiguration = compatibleConfigurations.FirstOrDefault(c => supportedProjectConfigurations.Contains(c));
+
+            if (bestConfiguration == null)
             {
-                metadata.Add("TargetGroup", "");
+                Log.LogError($"Could not find any applicable configuration for '{buildConfiguration}' among projectConfigurations {string.Join(", ", supportedProjectConfigurations.Select(c => c.ToString()))}");
+                Log.LogMessage(MessageImportance.Low, $"Compatible configurations: {string.Join(", ", compatibleConfigurations.Select(c => c.ToString()))}");
             }
             else
             {
-                Dictionary<string, ITaskItem> searchTargetGroups = TargetGroups.ToDictionary(f => f.ItemSpec, f => f);
-
-                // Depth search for a valid framework ie. netcoreapp1.1 => netcoreapp1.0
-                targetGroup = FindCompatibleTargetGroup(targetGroup, supportedTargetGroups, searchTargetGroups, UseCompileFramework);
-
-                if(string.IsNullOrWhiteSpace(targetGroup) && AllowCompatibleFramework == true)
-                {
-                    // Depth search of compatible framework hierarchy, ie. netcoreapp1.1 => netstandard1.7 (compatible) => netstandard1.6 => ...
-                    targetGroup = searchTargetGroups[originalTargetGroup].GetMetadata("CompatibleGroup");
-                    targetGroup = FindCompatibleTargetGroup(targetGroup, supportedTargetGroups, searchTargetGroups);
-                }
-
-                metadata.Add("TargetGroup", targetGroup);
+                Log.LogMessage(MessageImportance.Low, $"Chose configuration {bestConfiguration}");
+                OutputItem = new TaskItem(Name, (IDictionary)bestConfiguration.GetProperties());
             }
-
-            string[] supportedOSGroups = ProjectConfigurations.Where(v => v.Contains(targetGroup)).Select(v => v.Split(s_SupportedGroupsSeparator)[1]).ToArray();
-            Dictionary<string, ITaskItem> searchOSGroups = OSGroups.ToDictionary(o => o.ItemSpec, o => o);
-            string compatibleOSGroup = FindCompatibleOSGroup(osGroup, supportedOSGroups, searchOSGroups);
-            metadata.Add("OSGroup", compatibleOSGroup);
-
-            OutputItem = new TaskItem(Name, metadata);
 
             return !Log.HasLoggedErrors;
-        }
-
-        private string FindCompatibleOSGroup(string osGroup, string[] supportedOsGroups, Dictionary<string, ITaskItem> searchOSGroups)
-        {
-            if (string.IsNullOrWhiteSpace(osGroup))
-            {
-                return osGroup;
-            }
-            if (supportedOsGroups.Contains(osGroup))
-            {
-                return osGroup;
-            }
-
-            return FindCompatibleOSGroup(searchOSGroups[osGroup].GetMetadata("Imports"), supportedOsGroups, searchOSGroups);
-        }
-
-        private string FindCompatibleTargetGroup(string targetGroup, string [] supportedTargetGroups, Dictionary<string, ITaskItem> searchTargetGroups, bool UseCompileFramework = false)
-        {
-            if(string.IsNullOrWhiteSpace(targetGroup))
-            {
-                return targetGroup;
-            }
-
-            if (UseCompileFramework && searchTargetGroups.ContainsKey(targetGroup))
-            {
-                if (searchTargetGroups[targetGroup].GetMetadata("CompatibleGroup") != string.Empty)
-                {
-                    targetGroup = searchTargetGroups[targetGroup].GetMetadata("CompatibleGroup");
-                }
-            }
-
-            if (supportedTargetGroups.Contains(targetGroup))
-            {
-                return targetGroup;
-            }
-            return FindCompatibleTargetGroup(searchTargetGroups[targetGroup].GetMetadata("Imports"), supportedTargetGroups, searchTargetGroups);
         }
     }
 }
