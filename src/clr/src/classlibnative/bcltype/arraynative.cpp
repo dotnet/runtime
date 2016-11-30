@@ -176,7 +176,6 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 #ifdef _X86_
     BEGIN_CALL_TO_MANAGED();
 
-    typedef void (__fastcall * CtorFtnType)(BYTE*, BYTE*);
 
     for (SIZE_T i = 0; i < cElements; i++)
     {
@@ -197,6 +196,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
             nop                // Mark the fact that we can call managed code
         }
 #else // _DEBUG
+        typedef void (__fastcall * CtorFtnType)(BYTE*, BYTE*);
         (*(CtorFtnType)ctorFtn)(thisPtr, (BYTE*)pElemMT);
 #endif // _DEBUG
 
