@@ -123,7 +123,7 @@ namespace System.Net
         public string StatusDescription { get { throw null; } }
         public DateTime LastModified { get { throw null; } }
     }
-    public partial class HttpWebRequest : System.Net.WebRequest
+    public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
         internal HttpWebRequest() { }
         public string Accept { get { throw null; } set { } }
@@ -183,8 +183,17 @@ namespace System.Net
         public override string ConnectionGroupName { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
         public HttpContinueDelegate ContinueDelegate { get { throw null; } set { } }
+        protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        public string Connection { get { throw null; } set { } }
+        public override System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public static new System.Net.Cache.RequestCachePolicy DefaultCachePolicy { get { throw null; } set { } }
+        public override bool PreAuthenticate { get { throw null; } set { } }
+        public override int Timeout { get { throw null; } set { } }
+        public override long ContentLength { get { throw null; } set { } }
     }
-    public partial class HttpWebResponse : System.Net.WebResponse
+    public partial class HttpWebResponse : System.Net.WebResponse , System.Runtime.Serialization.ISerializable
     {
         public HttpWebResponse() { }
         public override long ContentLength { get { throw null; } }
@@ -205,6 +214,10 @@ namespace System.Net
         public string CharacterSet { get { throw null; } }
         public string Server { get { throw null; } }
         public override void Close() { throw null; }
+        public override bool IsMutuallyAuthenticated { get { throw null; } }
+        protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
     }
     public interface IAuthenticationModule
     {
