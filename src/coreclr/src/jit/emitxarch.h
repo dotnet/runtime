@@ -28,6 +28,15 @@ inline static bool isDoubleReg(regNumber reg)
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
 
+// code_t is a type used to accumulate bits of opcode + prefixes. On amd64, it must be 64 bits
+// to support the REX prefixes. On both x86 and amd64, it must be 64 bits to support AVX, with
+// its 3-byte VEX prefix. For legacy backend (which doesn't support AVX), leave it as size_t.
+#if defined(LEGACY_BACKEND)
+typedef size_t code_t;
+#else  // !defined(LEGACY_BACKEND)
+typedef unsigned __int64 code_t;
+#endif // !defined(LEGACY_BACKEND)
+
 struct CnsVal
 {
     ssize_t cnsVal;
@@ -36,19 +45,19 @@ struct CnsVal
 #endif
 };
 
-UNATIVE_OFFSET emitInsSize(size_t code);
+UNATIVE_OFFSET emitInsSize(code_t code);
 UNATIVE_OFFSET emitInsSizeRM(instruction ins);
-UNATIVE_OFFSET emitInsSizeSV(size_t code, int var, int dsp);
+UNATIVE_OFFSET emitInsSizeSV(code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, int var, int dsp, int val);
 UNATIVE_OFFSET emitInsSizeRR(instruction ins, regNumber reg1, regNumber reg2, emitAttr attr);
-UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, size_t code);
-UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, size_t code, int val);
-UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, size_t code);
-UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, size_t code, int val);
+UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code);
+UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
+UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
+UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
-BYTE* emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc = nullptr);
-BYTE* emitOutputSV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc = nullptr);
-BYTE* emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc = nullptr);
+BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
+BYTE* emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
+BYTE* emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
 
 BYTE* emitOutputR(BYTE* dst, instrDesc* id);
 BYTE* emitOutputRI(BYTE* dst, instrDesc* id);
@@ -61,30 +70,33 @@ BYTE* emitOutputRRR(BYTE* dst, instrDesc* id);
 
 BYTE* emitOutputLJ(BYTE* dst, instrDesc* id);
 
-unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, size_t& code);
+unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
 unsigned emitGetVexPrefixSize(instruction ins, emitAttr attr);
-unsigned emitGetPrefixSize(size_t code);
-unsigned emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, size_t code);
+unsigned emitGetPrefixSize(code_t code);
+unsigned emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, code_t code);
 
-unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, size_t* code);
-unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, size_t* code);
-size_t insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, size_t code);
-unsigned insEncodeRegSIB(instruction ins, regNumber reg, size_t* code);
+unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
+unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code);
+code_t insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code);
+unsigned insEncodeRegSIB(instruction ins, regNumber reg, code_t* code);
 
-size_t insEncodeMRreg(instruction ins, size_t code);
-size_t insEncodeMRreg(instruction ins, regNumber reg, emitAttr size, size_t code);
-size_t insEncodeRRIb(instruction ins, regNumber reg, emitAttr size);
-size_t insEncodeOpreg(instruction ins, regNumber reg, emitAttr size);
+code_t insEncodeMRreg(instruction ins, code_t code);
+code_t insEncodeRMreg(instruction ins, code_t code);
+code_t insEncodeMRreg(instruction ins, regNumber reg, emitAttr size, code_t code);
+code_t insEncodeRRIb(instruction ins, regNumber reg, emitAttr size);
+code_t insEncodeOpreg(instruction ins, regNumber reg, emitAttr size);
+
+unsigned insSSval(unsigned scale);
 
 bool IsAVXInstruction(instruction ins);
-size_t insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, size_t code);
+code_t insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code);
 
-size_t AddRexWPrefix(instruction ins, size_t code);
-size_t AddRexRPrefix(instruction ins, size_t code);
-size_t AddRexXPrefix(instruction ins, size_t code);
-size_t AddRexBPrefix(instruction ins, size_t code);
-size_t AddRexPrefix(instruction ins, size_t code);
+code_t AddRexWPrefix(instruction ins, code_t code);
+code_t AddRexRPrefix(instruction ins, code_t code);
+code_t AddRexXPrefix(instruction ins, code_t code);
+code_t AddRexBPrefix(instruction ins, code_t code);
+code_t AddRexPrefix(instruction ins, code_t code);
 
 bool useSSE3_4Encodings;
 bool UseSSE3_4()
@@ -98,16 +110,20 @@ void SetUseSSE3_4(bool value)
 bool Is4ByteSSE4Instruction(instruction ins);
 
 #ifdef FEATURE_AVX_SUPPORT
+
 // 3-byte VEX prefix starts with byte 0xC4
-#define VEX_PREFIX_MASK_3BYTE 0xC4000000000000LL
+#define VEX_PREFIX_MASK_3BYTE 0xFF000000000000ULL
+#define VEX_PREFIX_CODE_3BYTE 0xC4000000000000ULL
+
 bool TakesVexPrefix(instruction ins);
+
 // Returns true if the instruction encoding already contains VEX prefix
-bool hasVexPrefix(size_t code)
+bool hasVexPrefix(code_t code)
 {
-    return (code & VEX_PREFIX_MASK_3BYTE) != 0;
+    return (code & VEX_PREFIX_MASK_3BYTE) == VEX_PREFIX_CODE_3BYTE;
 }
-size_t AddVexPrefix(instruction ins, size_t code, emitAttr attr);
-size_t AddVexPrefixIfNeeded(instruction ins, size_t code, emitAttr size)
+code_t AddVexPrefix(instruction ins, code_t code, emitAttr attr);
+code_t AddVexPrefixIfNeeded(instruction ins, code_t code, emitAttr size)
 {
     if (TakesVexPrefix(ins))
     {
@@ -115,7 +131,7 @@ size_t AddVexPrefixIfNeeded(instruction ins, size_t code, emitAttr size)
     }
     return code;
 }
-size_t AddVexPrefixIfNeededAndNotPresent(instruction ins, size_t code, emitAttr size)
+code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr size)
 {
     if (TakesVexPrefix(ins) && !hasVexPrefix(code))
     {
@@ -142,11 +158,11 @@ bool IsThreeOperandAVXInstruction(instruction ins)
 }
 bool Is4ByteAVXInstruction(instruction ins);
 #else  // !FEATURE_AVX_SUPPORT
-bool UseAVX()
+bool                     UseAVX()
 {
     return false;
 }
-bool hasVexPrefix(size_t code)
+bool hasVexPrefix(code_t code)
 {
     return false;
 }
@@ -170,11 +186,11 @@ bool TakesVexPrefix(instruction ins)
 {
     return false;
 }
-size_t AddVexPrefixIfNeeded(instruction ins, size_t code, emitAttr attr)
+code_t AddVexPrefixIfNeeded(instruction ins, code_t code, emitAttr attr)
 {
     return code;
 }
-size_t AddVexPrefixIfNeededAndNotPresent(instruction ins, size_t code, emitAttr size)
+code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr size)
 {
     return code;
 }
