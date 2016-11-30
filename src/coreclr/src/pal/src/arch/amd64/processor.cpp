@@ -42,3 +42,23 @@ YieldProcessor(
     );
 }
 
+/*++
+Function:
+XmmYmmStateSupport
+
+Check if OS has enabled both XMM and YMM state support
+
+Return value:
+1 if XMM and YMM are enabled, 0 otherwise
+--*/
+extern "C" unsigned int XmmYmmStateSupport()
+{
+    unsigned int eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "eax", "edx" /* registers that are clobbered*/
+      );
+    // Check OS has enabled both XMM and YMM state support
+    return ((eax & 0x06) == 0x06) ? 1 : 0;
+}
