@@ -748,42 +748,13 @@ namespace System.Dynamic
             /// </summary>
             private bool IsOverridden(string method)
             {
-                MemberInfo[] members = Value.GetType().GetMember(method, BindingFlags.Public | BindingFlags.Instance);
+                MemberInfo[] methods = Value.GetType().GetMember(method, MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance);
 
-                foreach (MemberInfo member in members)
+                foreach (MethodInfo mi in methods)
                 {
-                    var mi = member as MethodInfo;
-
-                    if (mi != null && mi.DeclaringType != typeof(DynamicObject))
+                    if (mi.DeclaringType != typeof(DynamicObject) && mi.GetBaseDefinition().DeclaringType == typeof(DynamicObject))
                     {
-                        MemberInfo[] baseMembers = typeof(DynamicObject).GetMember(method, BindingFlags.Public | BindingFlags.Instance);
-
-                        foreach (MemberInfo baseMember in baseMembers)
-                        {
-                            var baseMethod = baseMember as MethodInfo;
-
-                            if (baseMethod != null)
-                            {
-                                ParameterInfo[] baseParams = baseMethod.GetParameters();
-                                ParameterInfo[] miParams = mi.GetParameters();
-
-                                if (baseParams.Length == miParams.Length)
-                                {
-                                    bool mismatch = false;
-                                    for (int i = 0; i < baseParams.Length; i++)
-                                    {
-                                        if (baseParams[i].ParameterType != miParams[i].ParameterType)
-                                        {
-                                            mismatch = true;
-                                        }
-                                    }
-                                    if (!mismatch)
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
+                        return true;
                     }
                 }
 
