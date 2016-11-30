@@ -38,6 +38,29 @@ namespace System
 
         /// <summary>
         /// Creates a new span over the portion of the target array beginning
+        /// at 'start' index and covering the remainder of the array.
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the span.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> is not in the range (&lt;0 or &gt;&eq;Length).
+        /// </exception>
+        public ReadOnlySpan(T[] array, int start)
+        {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            if ((uint)start > (uint)array.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
+            _rawPointer = (IntPtr)Unsafe.AsPointer(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
+            _length = array.Length - start;
+        }
+
+        /// <summary>
+        /// Creates a new span over the portion of the target array beginning
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
         /// <param name="array">The target array.</param>
@@ -46,7 +69,7 @@ namespace System
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;&eq;Length).
         /// </exception>
         public ReadOnlySpan(T[] array, int start, int length)
         {
