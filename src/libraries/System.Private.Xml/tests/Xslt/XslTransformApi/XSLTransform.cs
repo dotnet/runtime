@@ -591,34 +591,22 @@ namespace System.Xml.Tests
                 XmlDiff.XmlDiff xmldiff = new XmlDiff.XmlDiff();
                 xmldiff.Option = XmlDiffOption.InfosetComparison | XmlDiffOption.IgnoreEmptyElement | XmlDiffOption.NormalizeNewline;
                 
-                string actualValue;
-                
-                using (FileStream outFile = new FileStream("out.xml", FileMode.Open, FileAccess.Read))
-                {
-                    StreamReader sr = new StreamReader(outFile);
-                    actualValue = sr.ReadToEnd();
-                    sr.Dispose();
-                }
+                string actualValue = File.ReadAllText(_strOutFile);
                 
                 //Output the expected and actual values
                 _output.WriteLine("Expected : " + expectedValue);
                 _output.WriteLine("Actual : " + actualValue);
                 
-                bool bResult;
+                bool result;
 
                 //Load into XmlTextReaders
-                using (XmlTextReader tr1 = new XmlTextReader("out.xml"))
+                using (XmlTextReader tr1 = new XmlTextReader(_strOutFile))
+                using (XmlTextReader tr2 = new XmlTextReader(new StringReader(expectedValue)))
                 {
-                    using (XmlTextReader tr2 = new XmlTextReader(new StringReader(expectedValue)))
-                    {
-                        bResult = xmldiff.Compare(tr1, tr2);
-                    }
+                    result = xmldiff.Compare(tr1, tr2);
                 }
 
-                if (bResult)
-                    return;
-                else
-                    Assert.True(false);
+                Assert.True(result);
             }
         }
 
