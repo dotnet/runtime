@@ -22,11 +22,11 @@
 #error FEATURE_PREJIT is required for this file
 #endif // FEATURE_PREJIT
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
+#if !defined(_TARGET_X86_)
 #ifndef WIN64EXCEPTIONS
 #define WIN64EXCEPTIONS
 #endif
-#endif  // !_TARGET_X86_ || FEATURE_PAL
+#endif  // !_TARGET_X86_
 
 #include <cor.h>
 #include <corhdr.h>

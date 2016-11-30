@@ -21,11 +21,11 @@
 #include <float.h>
 #include <limits.h>
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
+#if !defined(_TARGET_X86_)
 #ifndef WIN64EXCEPTIONS
 #define WIN64EXCEPTIONS
 #endif
-#endif // !_TARGET_X86_ || FEATURE_PAL
+#endif // !_TARGET_X86_
 
 #include "utilcode.h"
 #include "corjit.h"
