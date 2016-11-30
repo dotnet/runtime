@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -787,7 +788,7 @@ namespace System.Linq.Expressions.Interpreter
             ConstructorInfo ctor = _runtimeWrappedExceptionCtor
                 ?? (_runtimeWrappedExceptionCtor = typeof(RuntimeWrappedException)
                 .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
-                .First(c => c.GetParameters().Length == 1));
+                .First(c => c.GetParametersCached().Length == 1));
             return (RuntimeWrappedException)ctor.Invoke(new [] {thrown});
         }
     }

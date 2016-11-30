@@ -193,7 +193,7 @@ namespace System.Linq.Expressions
 
             if (!type.GetTypeInfo().IsValueType)
             {
-                ConstructorInfo ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParameters().Length == 0);
+                ConstructorInfo ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
                 if (ci == null)
                 {
                     throw Error.TypeMissingDefaultConstructor(type, nameof(type));

@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static CallInstruction Create(MethodInfo info)
         {
-            return Create(info, info.GetParameters());
+            return Create(info, info.GetParametersCached());
         }
 
         /// <summary>

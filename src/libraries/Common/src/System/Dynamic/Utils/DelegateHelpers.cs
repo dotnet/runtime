@@ -44,7 +44,7 @@ namespace System.Dynamic.Utils
             Type returnType = delegateInvokeMethod.ReturnType;
             bool hasReturnValue = returnType != typeof(void);
 
-            ParameterInfo[] parameters = delegateInvokeMethod.GetParameters();
+            ParameterInfo[] parameters = delegateInvokeMethod.GetParametersCached();
             Type[] paramTypes = new Type[parameters.Length + 1];
             paramTypes[0] = typeof(Func<object[], object>);
             for (int i = 0; i < parameters.Length; i++)
