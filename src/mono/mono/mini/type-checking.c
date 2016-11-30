@@ -65,6 +65,20 @@ emit_isinst_with_cache (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int c
 }
 
 static MonoInst*
+emit_castclass_with_cache_no_details (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int context_used)
+{
+	MonoInst *args [3];
+	MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
+	MonoInst *res;
+
+	emit_cached_check_args (cfg, obj, klass, context_used, args);
+
+	res = mono_emit_method_call (cfg, mono_castclass, args, NULL);
+
+	return res;
+}
+
+static MonoInst*
 emit_castclass_with_cache (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int context_used)
 {
 	MonoInst *args [3];
@@ -341,6 +355,28 @@ mini_emit_castclass (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClass *kl
 	mini_emit_castclass_inst (cfg, obj_reg, klass_reg, klass, NULL, object_is_null);
 }
 
+static void
+emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klass, int vtable_reg, MonoBasicBlock *true_bb, int context_used)
+{
+	MonoBasicBlock *not_an_array;
+	int rank_reg;
+
+	if (!klass->is_array_special_interface)
+		return;
+
+	rank_reg = alloc_ireg (cfg);
+
+	NEW_BBLOCK (cfg, not_an_array);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, 1);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, not_an_array);
+
+	emit_castclass_with_cache_no_details (cfg, src, klass, context_used);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, true_bb);
+
+	MONO_START_BB (cfg, not_an_array);
+
+}
 
 /*
  * Returns NULL and set the cfg exception on error.
@@ -350,7 +386,6 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 {
 	MonoBasicBlock *is_null_bb;
 	int obj_reg = src->dreg;
-	int vtable_reg = alloc_preg (cfg);
 	MonoInst *klass_inst = NULL;
 
 	if (MONO_INS_IS_PCONST_NULL (src))
@@ -384,6 +419,10 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 		// iface bitmap check failed
 		MONO_START_BB (cfg, interface_fail_bb);
+
+		//Check if it's a rank zero array and emit fallback casting
+		emit_special_array_iface_check (cfg, src, klass, tmp_reg, is_null_bb, context_used);
+
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
 		mini_emit_class_check (cfg, klass_reg, mono_defaults.transparent_proxy_class);
@@ -400,9 +439,22 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 #else
+		MonoBasicBlock *interface_fail_bb = NULL;
+
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+
+		if (klass->is_array_special_interface) {
+			NEW_BBLOCK (cfg, interface_fail_bb);
+			mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, is_null_bb);
+			// iface bitmap check failed
+			MONO_START_BB (cfg, interface_fail_bb);
+
+			//Check if it's a rank zero array and emit fallback casting
+			emit_special_array_iface_check (cfg, src, tmp_reg, is_null_bb, context_used);
+		} else {
+			mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+		}
 #endif
 	} else if (mono_class_is_marshalbyref (klass)) {
 #ifndef DISABLE_REMOTING
@@ -445,6 +497,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		g_error ("Transparent proxy support is disabled while trying to JIT code that uses it");
 #endif
 	} else {
+		int vtable_reg = alloc_preg (cfg);
 		int klass_reg = alloc_preg (cfg);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
@@ -512,19 +565,37 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
 	if (mono_class_is_interface (klass)) {
-		int tmp_reg, klass_reg;
-
-#ifndef DISABLE_REMOTING
-		MonoBasicBlock *interface_fail_bb, *call_proxy_isinst;
+		MonoBasicBlock *interface_fail_bb;
 
 		NEW_BBLOCK (cfg, interface_fail_bb);
-		NEW_BBLOCK (cfg, call_proxy_isinst);
-#endif
 
-#ifndef DISABLE_REMOTING
-		klass_reg = alloc_preg (cfg);
 		mini_emit_iface_cast (cfg, vtable_reg, klass, interface_fail_bb, is_null_bb);
 		MONO_START_BB (cfg, interface_fail_bb);
+
+		if (klass->is_array_special_interface) {
+			MonoBasicBlock *not_an_array;
+			MonoInst *move;
+			int rank_reg = alloc_ireg (cfg);
+
+			NEW_BBLOCK (cfg, not_an_array);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, 1);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, not_an_array);
+
+			MonoInst *res_inst = emit_isinst_with_cache (cfg, src, klass, context_used);
+			EMIT_NEW_UNALU (cfg, move, OP_MOVE, res_reg, res_inst->dreg);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+			MONO_START_BB (cfg, not_an_array);
+		}
+
+#ifndef DISABLE_REMOTING
+		int tmp_reg, klass_reg;
+		MonoBasicBlock *call_proxy_isinst;
+
+		NEW_BBLOCK (cfg, call_proxy_isinst);
+
+		klass_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
 		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, false_bb);
@@ -541,8 +612,9 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
 #else
-		mini_emit_iface_cast (cfg, vtable_reg, klass, false_bb, is_null_bb);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
 #endif
+
 	} else if (mono_class_is_marshalbyref (klass)) {
 
 #ifndef DISABLE_REMOTING
@@ -682,7 +754,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	NEW_BBLOCK (cfg, first_bb);
 	cfg->cbb = first_bb;
 
-	if (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || klass->is_array_special_interface) {
+	if (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 		if (is_isinst)
 			ret = emit_isinst_with_cache (cfg, source, klass, context_used);
 		else
