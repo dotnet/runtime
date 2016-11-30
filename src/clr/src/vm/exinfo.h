@@ -79,6 +79,7 @@ public:
     //
     void* m_StackAddress; // A pseudo or real stack location for this record.
 
+#ifndef FEATURE_PAL
 private:
     EHWatsonBucketTracker m_WatsonBucketTracker;
 public:
@@ -87,6 +88,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
     }
+#endif
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 private:
