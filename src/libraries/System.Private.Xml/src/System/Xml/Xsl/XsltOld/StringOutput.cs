@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
             _builder.Append(outputChar);
 
 #if DEBUG
-            this.result = this.builder.ToString();
+            this._result = this._builder.ToString();
 #endif
         }
 
@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.XsltOld
             _builder.Append(outputText);
 
 #if DEBUG
-            this.result = this.builder.ToString();
+            this._result = this._builder.ToString();
 #endif
         }
 
