@@ -28,7 +28,7 @@ HANDLE hEvent = NULL;
 unsigned int globalcounter =0;
 
 //Declaring Function Prototypes
-DWORD incrementCounter(LPVOID params);
+DWORD PALAPI incrementCounter(LPVOID params);
 
 int __cdecl main(int argc, char **argv)
 {
@@ -154,7 +154,7 @@ return ( PASS );
 
 }
 
-DWORD incrementCounter(LPVOID params)
+DWORD PALAPI incrementCounter(LPVOID params)
 {
 
 	//Signal Event so that main thread can start to wait for thread object

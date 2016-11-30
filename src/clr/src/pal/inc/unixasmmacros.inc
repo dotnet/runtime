@@ -28,7 +28,9 @@
         .equiv \New, \Old
 .endm
 
-#if defined(_AMD64_)
+#if defined(_X86_)
+#include "unixasmmacrosx86.inc"
+#elif defined(_AMD64_)
 #include "unixasmmacrosamd64.inc"
 #elif defined(_ARM_)
 #include "unixasmmacrosarm.inc"
