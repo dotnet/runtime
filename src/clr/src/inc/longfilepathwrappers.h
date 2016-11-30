@@ -124,18 +124,18 @@ GetLongPathNameWrapper(
     SString& lpszLongPath
     );
 
-UINT GetTempFileNameWrapper(
+UINT WINAPI GetTempFileNameWrapper(
     _In_  LPCTSTR lpPathName,
     _In_  LPCTSTR lpPrefixString,
     _In_  UINT    uUnique,
     SString&  lpTempFileName
     );
 
-DWORD GetTempPathWrapper(
+DWORD WINAPI GetTempPathWrapper(
     SString& lpBuffer
     );
 
-DWORD GetCurrentDirectoryWrapper(
+DWORD WINAPI GetCurrentDirectoryWrapper(
     SString&  lpBuffer
     );
 
@@ -145,7 +145,7 @@ GetModuleFileNameWrapper(
     SString& buffer
     );
 
-DWORD GetEnvironmentVariableWrapper(
+DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
     _Out_opt_ SString&  lpBuffer
     );
