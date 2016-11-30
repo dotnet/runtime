@@ -57,7 +57,9 @@ bool emitter::IsAVXInstruction(instruction ins)
 #endif
 }
 
+#ifdef _TARGET_AMD64_
 #define REX_PREFIX_MASK 0xFF00000000LL
+#endif // _TARGET_AMD64_
 
 #ifdef FEATURE_AVX_SUPPORT
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
@@ -180,8 +182,9 @@ bool emitter::TakesVexPrefix(instruction ins)
 // prefix. Based on 'attr' param we could add 2-byte VEX prefix in case of scalar
 // and AVX-128 bit operations.
 #define DEFAULT_3BYTE_VEX_PREFIX 0xC4E07800000000ULL
-#define LBIT_IN_3BYTE_VEX_PREFIX 0X00000400000000ULL
-size_t emitter::AddVexPrefix(instruction ins, size_t code, emitAttr attr)
+#define DEFAULT_3BYTE_VEX_PREFIX_MASK 0xFFFFFF00000000ULL
+#define LBIT_IN_3BYTE_VEX_PREFIX 0x00000400000000ULL
+emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr attr)
 {
     // Only AVX instructions require VEX prefix
     assert(IsAVXInstruction(ins));
@@ -190,6 +193,7 @@ size_t emitter::AddVexPrefix(instruction ins, size_t code, emitAttr attr)
     assert(!hasVexPrefix(code));
 
     // Set L bit to 1 in case of instructions that operate on 256-bits.
+    assert((code & DEFAULT_3BYTE_VEX_PREFIX_MASK) == 0);
     code |= DEFAULT_3BYTE_VEX_PREFIX;
     if (attr == EA_32BYTE)
     {
@@ -326,25 +330,25 @@ bool IsXMMReg(regNumber reg)
 }
 
 // Returns bits to be encoded in instruction for the given register.
-regNumber RegEncoding(regNumber reg)
+unsigned RegEncoding(regNumber reg)
 {
 #ifndef LEGACY_BACKEND
     // XMM registers do not share the same reg numbers as integer registers.
     // But register encoding of integer and XMM registers is the same.
     // Therefore, subtract XMMBASE from regNumber to get the register encoding
     // in case of XMM registers.
-    return (regNumber)((IsXMMReg(reg) ? reg - XMMBASE : reg) & 0x7);
+    return (unsigned)((IsXMMReg(reg) ? reg - XMMBASE : reg) & 0x7);
 #else  // LEGACY_BACKEND
     // Legacy X86: XMM registers share the same reg numbers as integer registers and
     // hence nothing to do to get reg encoding.
-    return (regNumber)(reg & 0x7);
+    return (unsigned)(reg & 0x7);
 #endif // LEGACY_BACKEND
 }
 
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
 // SSE2: separate 1-byte prefix gets added before opcode.
 // AVX:  specific bits within VEX prefix need to be set in bit-inverted form.
-size_t emitter::AddRexWPrefix(instruction ins, size_t code)
+emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 {
 #ifdef _TARGET_AMD64_
     if (UseAVX() && IsAVXInstruction(ins))
@@ -365,7 +369,7 @@ size_t emitter::AddRexWPrefix(instruction ins, size_t code)
 
 #ifdef _TARGET_AMD64_
 
-size_t emitter::AddRexRPrefix(instruction ins, size_t code)
+emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 {
     if (UseAVX() && IsAVXInstruction(ins))
     {
@@ -379,7 +383,7 @@ size_t emitter::AddRexRPrefix(instruction ins, size_t code)
     return code | 0x4400000000ULL;
 }
 
-size_t emitter::AddRexXPrefix(instruction ins, size_t code)
+emitter::code_t emitter::AddRexXPrefix(instruction ins, code_t code)
 {
     if (UseAVX() && IsAVXInstruction(ins))
     {
@@ -393,7 +397,7 @@ size_t emitter::AddRexXPrefix(instruction ins, size_t code)
     return code | 0x4200000000ULL;
 }
 
-size_t emitter::AddRexBPrefix(instruction ins, size_t code)
+emitter::code_t emitter::AddRexBPrefix(instruction ins, code_t code)
 {
     if (UseAVX() && IsAVXInstruction(ins))
     {
@@ -408,7 +412,7 @@ size_t emitter::AddRexBPrefix(instruction ins, size_t code)
 }
 
 // Adds REX prefix (0x40) without W, R, X or B bits set
-size_t emitter::AddRexPrefix(instruction ins, size_t code)
+emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
 {
     assert(!UseAVX() || !IsAVXInstruction(ins));
     return code | 0x4000000000ULL;
@@ -434,14 +438,14 @@ bool isPrefix(BYTE b)
 }
 
 // Outputs VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
-unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, size_t& code)
+unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code)
 {
-#ifdef _TARGET_AMD64_ // TODO-x86: This needs to be enabled for AVX support on x86.
+#ifdef FEATURE_AVX_SUPPORT
     if (hasVexPrefix(code))
     {
         // Only AVX instructions should have a VEX prefix
         assert(UseAVX() && IsAVXInstruction(ins));
-        size_t vexPrefix = (code >> 32) & 0x00FFFFFF;
+        code_t vexPrefix = (code >> 32) & 0x00FFFFFF;
         code &= 0x00000000FFFFFFFFLL;
 
         WORD leadingBytes = 0;
@@ -534,7 +538,10 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, s
         emitOutputByte(dst + 2, vexPrefix & 0xFF);
         return 3;
     }
-    else if (code > 0x00FFFFFFFFLL)
+#endif // FEATURE_AVX_SUPPORT
+
+#ifdef _TARGET_AMD64_
+    if (code > 0x00FFFFFFFFLL)
     {
         BYTE prefix = (code >> 32) & 0xFF;
         noway_assert(prefix >= 0x40 && prefix <= 0x4F);
@@ -573,13 +580,13 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, s
                 {
                     // 3 prefixes were rex = rr, check = c1, check2 = c2 encoded as 0xrrc1c2XXXX
                     // Change to c2rrc1XXXX, and emit check2 now
-                    code = (((size_t)prefix << 24) | ((size_t)check << 16) | (code & 0x0000FFFFLL));
+                    code = (((code_t)prefix << 24) | ((code_t)check << 16) | (code & 0x0000FFFFLL));
                 }
                 else
                 {
                     // 2 prefixes were rex = rr, check2 = c2 encoded as 0xrrXXc2XXXX, (check is part of the opcode)
                     // Change to c2XXrrXXXX, and emit check2 now
-                    code = (((size_t)check << 24) | ((size_t)prefix << 16) | (code & 0x0000FFFFLL));
+                    code = (((code_t)check << 24) | ((code_t)prefix << 16) | (code & 0x0000FFFFLL));
                 }
                 return emitOutputByte(dst, check2);
             }
@@ -623,7 +630,6 @@ void emitter::emitOutputPreEpilogNOP()
 // Size of rex prefix in bytes
 unsigned emitter::emitGetRexPrefixSize(instruction ins)
 {
-
     // In case of AVX instructions, REX prefixes are part of VEX prefix.
     // And hence requires no additional byte to encode REX prefixes.
     if (IsAVXInstruction(ins))
@@ -660,7 +666,7 @@ unsigned emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 //=(opcodeSize - ExtrabytesSize) + vexPrefixSize
 //=opcodeSize + (vexPrefixSize - ExtrabytesSize)
 //=opcodeSize + vexPrefixAdjustedSize
-unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, size_t code)
+unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, code_t code)
 {
 #ifdef FEATURE_AVX_SUPPORT
     if (IsAVXInstruction(ins))
@@ -704,19 +710,19 @@ unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, s
 }
 
 // Get size of rex or vex prefix emitted in code
-unsigned emitter::emitGetPrefixSize(size_t code)
+unsigned emitter::emitGetPrefixSize(code_t code)
 {
-#ifdef FEATURE_AVX_SUPPORT
-    if (code & VEX_PREFIX_MASK_3BYTE)
+    if (hasVexPrefix(code))
     {
         return 3;
     }
-    else
-#endif
-        if (code & REX_PREFIX_MASK)
+
+#ifdef _TARGET_AMD64_
+    if (code & REX_PREFIX_MASK)
     {
         return 1;
     }
+#endif // _TARGET_AMD64_
 
     return 0;
 }
@@ -1088,7 +1094,7 @@ size_t          insCodesMR[] =
 // clang-format on
 
 // Returns true iff the give CPU instruction has an MR encoding.
-inline size_t hasCodeMR(instruction ins)
+inline bool hasCodeMR(instruction ins)
 {
     assert((unsigned)ins < sizeof(insCodesMR) / sizeof(insCodesMR[0]));
     return ((insCodesMR[ins] != BAD_CODE));
@@ -1113,7 +1119,7 @@ inline size_t insCodeMR(instruction ins)
  *  part of an opcode.
  */
 
-inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAttr size, size_t* code)
+inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code)
 {
     assert(reg < REG_STK);
 
@@ -1136,16 +1142,16 @@ inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAtt
     }
 #endif // _TARGET_AMD64_
 
-    reg = RegEncoding(reg);
-    assert(reg < 8);
-    return reg;
+    unsigned regBits = RegEncoding(reg);
 
 #else // LEGACY_BACKEND
 
-    assert(reg < 8);
-    return reg;
+    unsigned regBits = reg;
 
 #endif // LEGACY_BACKEND
+
+    assert(regBits < 8);
+    return regBits;
 }
 
 /*****************************************************************************
@@ -1154,7 +1160,7 @@ inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAtt
  *  part of an opcode.
  */
 
-inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAttr size, size_t* code)
+inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code)
 {
     assert(reg < REG_STK);
 
@@ -1177,14 +1183,16 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
     }
 #endif // _TARGET_AMD64_
 
-    reg = RegEncoding(reg);
-    assert(reg < 8);
-    return (reg << 3);
+    unsigned regBits = RegEncoding(reg);
 
-#else  // LEGACY_BACKEND
-    assert(reg < 8);
-    return (reg << 3);
+#else // LEGACY_BACKEND
+
+    unsigned regBits = reg;
+
 #endif // LEGACY_BACKEND
+
+    assert(regBits < 8);
+    return (regBits << 3);
 }
 
 /***********************************************************************************
@@ -1192,7 +1200,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
  *  Returns modified AVX opcode with the specified register encoded in bits 3-6 of
  *  byte 2 of VEX prefix.
  */
-inline size_t emitter::insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, size_t code)
+inline emitter::code_t emitter::insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code)
 {
 #ifdef FEATURE_AVX_SUPPORT
     assert(reg < REG_STK);
@@ -1202,7 +1210,7 @@ inline size_t emitter::insEncodeReg3456(instruction ins, regNumber reg, emitAttr
     // Get 4-bit register encoding
     // RegEncoding() gives lower 3 bits
     // IsExtendedReg() gives MSB.
-    size_t regBits = RegEncoding(reg);
+    code_t regBits = RegEncoding(reg);
     if (IsExtendedReg(reg))
     {
         regBits |= 0x08;
@@ -1226,7 +1234,7 @@ inline size_t emitter::insEncodeReg3456(instruction ins, regNumber reg, emitAttr
  *  Used exclusively to generate the REX.X bit and truncate the register.
  */
 
-inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, size_t* code)
+inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, code_t* code)
 {
     assert(reg < REG_STK);
 
@@ -1240,11 +1248,13 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, size_t*
     {
         *code = AddRexXPrefix(ins, *code); // REX.X
     }
-    reg = RegEncoding(reg);
-#endif
+    unsigned regBits = RegEncoding(reg);
+#else  // !_TARGET_AMD64_
+    unsigned regBits = reg;
+#endif // !_TARGET_AMD64_
 
-    assert(reg < 8);
-    return reg;
+    assert(regBits < 8);
+    return regBits;
 }
 
 /*****************************************************************************
@@ -1252,7 +1262,7 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, size_t*
  *  Returns the "[r/m]" opcode with the mod/RM field set to register.
  */
 
-inline size_t emitter::insEncodeMRreg(instruction ins, size_t code)
+inline emitter::code_t emitter::insEncodeMRreg(instruction ins, code_t code)
 {
     // If Byte 4 (which is 0xFF00) is 0, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding.
@@ -1267,22 +1277,10 @@ inline size_t emitter::insEncodeMRreg(instruction ins, size_t code)
 
 /*****************************************************************************
  *
- *  Returns the "[r/m], icon" opcode with the mod/RM field set to register.
- */
-
-inline size_t insEncodeMIreg(instruction ins, size_t code)
-{
-    assert((code & 0xC000) == 0);
-    code |= 0xC000;
-    return code;
-}
-
-/*****************************************************************************
- *
  *  Returns the given "[r/m]" opcode with the mod/RM field set to register.
  */
 
-inline size_t insEncodeRMreg(instruction ins, size_t code)
+inline emitter::code_t emitter::insEncodeRMreg(instruction ins, code_t code)
 {
     // If Byte 4 (which is 0xFF00) is 0, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding.
@@ -1300,7 +1298,7 @@ inline size_t insEncodeRMreg(instruction ins, size_t code)
  *  the given register.
  */
 
-inline size_t emitter::insEncodeMRreg(instruction ins, regNumber reg, emitAttr size, size_t code)
+inline emitter::code_t emitter::insEncodeMRreg(instruction ins, regNumber reg, emitAttr size, code_t code)
 {
     assert((code & 0xC000) == 0);
     code |= 0xC000;
@@ -1315,7 +1313,7 @@ inline size_t emitter::insEncodeMRreg(instruction ins, regNumber reg, emitAttr s
  *  the given register.
  */
 
-inline size_t emitter::insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, size_t code)
+inline emitter::code_t emitter::insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code)
 {
     assert((code & 0xC000) == 0);
     code |= 0xC000;
@@ -1340,12 +1338,12 @@ inline bool insNeedsRRIb(instruction ins)
  *  Returns the "reg,reg,imm8" opcode with both the reg's set to the
  *  the given register.
  */
-inline size_t emitter::insEncodeRRIb(instruction ins, regNumber reg, emitAttr size)
+inline emitter::code_t emitter::insEncodeRRIb(instruction ins, regNumber reg, emitAttr size)
 {
     assert(size == EA_4BYTE); // All we handle for now.
     assert(insNeedsRRIb(ins));
     // If this list gets longer, use a switch, or a table lookup.
-    size_t   code    = 0x69c0;
+    code_t   code    = 0x69c0;
     unsigned regcode = insEncodeReg012(ins, reg, size, &code);
     // We use the same register as source and destination.  (Could have another version that does both regs...)
     code |= regcode;
@@ -1359,9 +1357,9 @@ inline size_t emitter::insEncodeRRIb(instruction ins, regNumber reg, emitAttr si
  *  nibble of the opcode
  */
 
-inline size_t emitter::insEncodeOpreg(instruction ins, regNumber reg, emitAttr size)
+inline emitter::code_t emitter::insEncodeOpreg(instruction ins, regNumber reg, emitAttr size)
 {
-    size_t   code    = insCodeRR(ins);
+    code_t   code    = insCodeRR(ins);
     unsigned regcode = insEncodeReg012(ins, reg, size, &code);
     code |= regcode;
     return code;
@@ -1372,7 +1370,7 @@ inline size_t emitter::insEncodeOpreg(instruction ins, regNumber reg, emitAttr s
  *  Return the 'SS' field value for the given index scale factor.
  */
 
-inline unsigned insSSval(unsigned scale)
+inline unsigned emitter::insSSval(unsigned scale)
 {
     assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
 
@@ -1477,7 +1475,7 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
  *  Estimate the size (in bytes of generated code) of the given instruction.
  */
 
-inline UNATIVE_OFFSET emitter::emitInsSize(size_t code)
+inline UNATIVE_OFFSET emitter::emitInsSize(code_t code)
 {
     UNATIVE_OFFSET size = (code & 0xFF000000) ? 4 : (code & 0x00FF0000) ? 3 : 2;
 #ifdef _TARGET_AMD64_
@@ -1507,7 +1505,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     else
 #endif // _TARGET_AMD64_
     {
-        size_t code = insCodeRM(ins);
+        code_t code = insCodeRM(ins);
         sz          = emitInsSize(insEncodeRMreg(ins, code));
     }
 
@@ -1532,7 +1530,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
 
 /*****************************************************************************/
 
-inline UNATIVE_OFFSET emitter::emitInsSizeSV(size_t code, int var, int dsp)
+inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 {
     UNATIVE_OFFSET size = emitInsSize(code);
     UNATIVE_OFFSET offs;
@@ -1807,7 +1805,7 @@ static bool baseRegisterRequiresDisplacement(regNumber base)
 #endif
 }
 
-UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, size_t code)
+UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 {
     emitAttr    attrSize = id->idOpSize();
     instruction ins      = id->idIns();
@@ -2024,7 +2022,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, size_t code)
     return size;
 }
 
-inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, size_t code, int val)
+inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val)
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
@@ -2057,7 +2055,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, size_t code, int val
     return valSize + emitInsSizeAM(id, code);
 }
 
-inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, size_t code)
+inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
@@ -2077,7 +2075,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, size_t code)
     return size + emitInsSize(code);
 }
 
-inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, size_t code, int val)
+inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val)
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
@@ -2282,7 +2280,7 @@ void emitter::emitIns(instruction ins)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr();
-    size_t         code = insCodeMR(ins);
+    code_t         code = insCodeMR(ins);
 
 #ifdef DEBUG
 #if FEATURE_STACK_FP_X87
@@ -2358,7 +2356,7 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr(attr);
-    size_t         code = insCodeMR(ins);
+    code_t         code = insCodeMR(ins);
     assert(ins == INS_cdq);
     assert((code & 0xFFFFFF00) == 0);
     sz = 1;
@@ -3997,7 +3995,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     id->idIns(ins);
     id->idInsFmt(fmt);
 
-    size_t         code = insCodeMI(ins);
+    code_t         code = insCodeMI(ins);
     UNATIVE_OFFSET sz   = emitInsSizeCV(id, code, val);
 
 #ifdef _TARGET_AMD64_
@@ -7429,7 +7427,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
  *  Output an instruction involving an address mode.
  */
 
-BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
+BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 {
     regNumber reg;
     regNumber rgx;
@@ -7451,7 +7449,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
         // Special case: call via a register
         if (id->idIsCallRegPtr())
         {
-            size_t opcode = insEncodeMRreg(INS_call, reg, EA_PTRSIZE, insCodeMR(INS_call));
+            code_t opcode = insEncodeMRreg(INS_call, reg, EA_PTRSIZE, insCodeMR(INS_call));
 
             dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, opcode);
             dst += emitOutputWord(dst, opcode);
@@ -7467,13 +7465,15 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
         if (IsExtendedReg(reg, EA_PTRSIZE))
         {
             insEncodeReg012(ins, reg, EA_PTRSIZE, &code);
-            reg = RegEncoding(reg);
+            // TODO-Cleanup: stop casting RegEncoding() back to a regNumber.
+            reg = (regNumber)RegEncoding(reg);
         }
 
         if (IsExtendedReg(rgx, EA_PTRSIZE))
         {
             insEncodeRegSIB(ins, rgx, &code);
-            rgx = RegEncoding(rgx);
+            // TODO-Cleanup: stop casting RegEncoding() back to a regNumber.
+            rgx = (regNumber)RegEncoding(rgx);
         }
 
         // And emit the REX prefix
@@ -7513,7 +7513,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
     // For this format, moves do not support a third operand, so we only need to handle the binary ops.
     if (IsThreeOperandBinaryAVXInstruction(ins))
     {
-        // Encode source operand reg in 'vvvv' bits in 1's compliement form
+        // Encode source operand reg in 'vvvv' bits in 1's complement form
         // The order of operands are reversed, therefore use reg2 as the source.
         code = insEncodeReg3456(ins, id->idReg1(), size, code);
     }
@@ -7527,13 +7527,15 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
     if (IsExtendedReg(reg, EA_PTRSIZE))
     {
         insEncodeReg012(ins, reg, EA_PTRSIZE, &code);
-        reg = RegEncoding(reg);
+        // TODO-Cleanup: stop casting RegEncoding() back to a regNumber.
+        reg = (regNumber)RegEncoding(reg);
     }
 
     if (IsExtendedReg(rgx, EA_PTRSIZE))
     {
         insEncodeRegSIB(ins, rgx, &code);
-        rgx = RegEncoding(rgx);
+        // TODO-Cleanup: stop casting RegEncoding() back to a regNumber.
+        rgx = (regNumber)RegEncoding(rgx);
     }
 
     // Is this a 'big' opcode?
@@ -8093,7 +8095,7 @@ DONE:
  *  Output an instruction involving a stack frame value.
  */
 
-BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
+BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 {
     int  adr;
     int  dsp;
@@ -8142,7 +8144,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
     // Special case emitting AVX instructions
     if (Is4ByteAVXInstruction(ins))
     {
-        size_t regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
+        unsigned regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
         // Emit last opcode byte
@@ -8489,7 +8491,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
  *  Output an instruction with a static data member (class variable).
  */
 
-BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
+BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 {
     BYTE*                addr;
     CORINFO_FIELD_HANDLE fldh;
@@ -8554,20 +8556,18 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
             {
                 case IF_RWR_MRD:
 
-                    assert((unsigned)code ==
-                           (insCodeRM(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8) | 0x0500));
+                    assert(code == (insCodeRM(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8) | 0x0500));
 
-                    code &= ~((size_t)0xFFFFFFFF);
+                    code &= ~((code_t)0xFFFFFFFF);
                     code |= 0xA0;
                     isMoffset = true;
                     break;
 
                 case IF_MWR_RRD:
 
-                    assert((unsigned)code ==
-                           (insCodeMR(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8) | 0x0500));
+                    assert(code == (insCodeMR(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8) | 0x0500));
 
-                    code &= ~((size_t)0xFFFFFFFF);
+                    code &= ~((code_t)0xFFFFFFFF);
                     code |= 0xA2;
                     isMoffset = true;
                     break;
@@ -8582,7 +8582,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
     // Special case emitting AVX instructions
     if (Is4ByteAVXInstruction(ins))
     {
-        size_t regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
+        unsigned regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
         // Emit last opcode byte
@@ -8925,7 +8925,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal* addc)
 
 BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 {
-    size_t code;
+    code_t code;
 
     instruction ins  = id->idIns();
     regNumber   reg  = id->idReg1();
@@ -9136,7 +9136,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
 BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 {
-    size_t code;
+    code_t code;
 
     instruction ins  = id->idIns();
     regNumber   reg1 = id->idReg1();
@@ -9475,7 +9475,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #ifdef FEATURE_AVX_SUPPORT
 BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 {
-    size_t code;
+    code_t code;
 
     instruction ins = id->idIns();
     assert(IsAVXInstruction(ins));
@@ -9557,7 +9557,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
 BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 {
-    size_t      code;
+    code_t      code;
     emitAttr    size      = id->idOpSize();
     instruction ins       = id->idIns();
     regNumber   reg       = id->idReg1();
@@ -9919,7 +9919,7 @@ DONE:
 
 BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
 {
-    size_t      code;
+    code_t      code;
     instruction ins       = id->idIns();
     emitAttr    size      = id->idOpSize();
     ssize_t     val       = emitGetInsSC(id);
@@ -10201,27 +10201,29 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
     }
     else
     {
-        size_t code;
+        code_t code;
 
         // Long  jump
         if (jmp)
         {
+            // clang-format off
             assert(INS_jmp + (INS_l_jmp - INS_jmp) == INS_l_jmp);
-            assert(INS_jo + (INS_l_jmp - INS_jmp) == INS_l_jo);
-            assert(INS_jb + (INS_l_jmp - INS_jmp) == INS_l_jb);
+            assert(INS_jo  + (INS_l_jmp - INS_jmp) == INS_l_jo);
+            assert(INS_jb  + (INS_l_jmp - INS_jmp) == INS_l_jb);
             assert(INS_jae + (INS_l_jmp - INS_jmp) == INS_l_jae);
-            assert(INS_je + (INS_l_jmp - INS_jmp) == INS_l_je);
+            assert(INS_je  + (INS_l_jmp - INS_jmp) == INS_l_je);
             assert(INS_jne + (INS_l_jmp - INS_jmp) == INS_l_jne);
             assert(INS_jbe + (INS_l_jmp - INS_jmp) == INS_l_jbe);
-            assert(INS_ja + (INS_l_jmp - INS_jmp) == INS_l_ja);
-            assert(INS_js + (INS_l_jmp - INS_jmp) == INS_l_js);
+            assert(INS_ja  + (INS_l_jmp - INS_jmp) == INS_l_ja);
+            assert(INS_js  + (INS_l_jmp - INS_jmp) == INS_l_js);
             assert(INS_jns + (INS_l_jmp - INS_jmp) == INS_l_jns);
             assert(INS_jpe + (INS_l_jmp - INS_jmp) == INS_l_jpe);
             assert(INS_jpo + (INS_l_jmp - INS_jmp) == INS_l_jpo);
-            assert(INS_jl + (INS_l_jmp - INS_jmp) == INS_l_jl);
+            assert(INS_jl  + (INS_l_jmp - INS_jmp) == INS_l_jl);
             assert(INS_jge + (INS_l_jmp - INS_jmp) == INS_l_jge);
             assert(INS_jle + (INS_l_jmp - INS_jmp) == INS_l_jle);
-            assert(INS_jg + (INS_l_jmp - INS_jmp) == INS_l_jg);
+            assert(INS_jg  + (INS_l_jmp - INS_jmp) == INS_l_jg);
+            // clang-format on
 
             code = insCode((instruction)(ins + (INS_l_jmp - INS_jmp)));
         }
@@ -10367,10 +10369,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // What instruction format have we got?
     switch (id->idInsFmt())
     {
-        size_t code;
-        size_t regcode;
-        int    args;
-        CnsVal cnsVal;
+        code_t   code;
+        unsigned regcode;
+        int      args;
+        CnsVal   cnsVal;
 
         BYTE* addr;
         bool  recCall;

@@ -6038,7 +6038,7 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 #ifdef DEBUG
     if (emitComp->opts.dspEmit)
     {
-        printf("; emit_long 0%08XH\n", val);
+        printf("; emit_long 0%08XH\n", (int)val);
     }
 #ifdef _TARGET_AMD64_
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
@@ -6062,15 +6062,69 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
     if (emitComp->opts.dspEmit)
     {
 #ifdef _TARGET_AMD64_
-        printf("; emit_size_t 0%016llXH\n", (size_t)val);
+        printf("; emit_size_t 0%016llXH\n", val);
 #else  // _TARGET_AMD64_
-        printf("; emit_size_t 0%08XH\n", (size_t)val);
+        printf("; emit_size_t 0%08XH\n", val);
 #endif // _TARGET_AMD64_
     }
 #endif // DEBUG
 
     return sizeof(size_t);
 }
+
+//------------------------------------------------------------------------
+// Wrappers to emitOutputByte, emitOutputWord, emitOutputLong, emitOutputSizeT
+// that take unsigned __int64 or size_t type instead of ssize_t. Used on RyuJIT/x86.
+//
+// Arguments:
+//    dst - passed through
+//    val - passed through
+//
+// Return Value:
+//    Same as wrapped function.
+//
+
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
+unsigned char emitter::emitOutputByte(BYTE* dst, size_t val)
+{
+    return emitOutputByte(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputWord(BYTE* dst, size_t val)
+{
+    return emitOutputWord(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputLong(BYTE* dst, size_t val)
+{
+    return emitOutputLong(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputSizeT(BYTE* dst, size_t val)
+{
+    return emitOutputSizeT(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputByte(BYTE* dst, unsigned __int64 val)
+{
+    return emitOutputByte(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputWord(BYTE* dst, unsigned __int64 val)
+{
+    return emitOutputWord(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputLong(BYTE* dst, unsigned __int64 val)
+{
+    return emitOutputLong(dst, (ssize_t)val);
+}
+
+unsigned char emitter::emitOutputSizeT(BYTE* dst, unsigned __int64 val)
+{
+    return emitOutputSizeT(dst, (ssize_t)val);
+}
+#endif // !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
 
 /*****************************************************************************
  *

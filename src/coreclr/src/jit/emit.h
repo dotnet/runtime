@@ -1664,6 +1664,18 @@ private:
     unsigned char emitOutputLong(BYTE* dst, ssize_t val);
     unsigned char emitOutputSizeT(BYTE* dst, ssize_t val);
 
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
+    unsigned char emitOutputByte(BYTE* dst, size_t val);
+    unsigned char emitOutputWord(BYTE* dst, size_t val);
+    unsigned char emitOutputLong(BYTE* dst, size_t val);
+    unsigned char emitOutputSizeT(BYTE* dst, size_t val);
+
+    unsigned char emitOutputByte(BYTE* dst, unsigned __int64 val);
+    unsigned char emitOutputWord(BYTE* dst, unsigned __int64 val);
+    unsigned char emitOutputLong(BYTE* dst, unsigned __int64 val);
+    unsigned char emitOutputSizeT(BYTE* dst, unsigned __int64 val);
+#endif // !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
+
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
