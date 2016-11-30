@@ -363,6 +363,7 @@ namespace System.Net.Sockets
         Irda = 26,
         Iso = 7,
         Lat = 14,
+        Max = 29,
         NetBios = 17,
         NetworkDesigners = 28,
         NS = 6,

@@ -180,6 +180,7 @@
     <Compile Include="New\NewWithParameterTests.cs" />
     <Compile Include="New\NewWithTwoParametersTests.cs" />
     <Compile Include="New\TypeExtensions.cs" />
+    <Compile Include="ReadOnlyCollectionBuilderTests.cs" />
     <Compile Include="SequenceTests\SequenceTests.cs" />
     <Compile Include="StackSpillerTests.cs" />
     <Compile Include="Switch\SwitchTests.cs" />

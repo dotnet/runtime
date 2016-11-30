@@ -229,60 +229,63 @@ namespace System.Dynamic
             {
                 if (IsOverridden(DynamicObject_TryGetMember))
                 {
-                    return BindGetMemberOverridden(binder);
+                    return CallMethodWithResult(
+                        DynamicObject_TryGetMember,
+                        binder,
+                        s_noArgs,
+                        (MetaDynamic @this, GetMemberBinder b, DynamicMetaObject e) => b.FallbackGetMember(@this, e)
+                    );
                 }
 
                 return base.BindGetMember(binder);
-            }
-
-            private DynamicMetaObject BindGetMemberOverridden(GetMemberBinder binder)
-            {
-                return CallMethodWithResult(DynamicObject_TryGetMember, binder, s_noArgs, (e) => binder.FallbackGetMember(this, e));
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
                 if (IsOverridden(DynamicObject_TrySetMember))
                 {
-                    return BindSetMemberOverridden(binder, value);
+                    DynamicMetaObject localValue = value;
+
+                    return CallMethodReturnLast(
+                        DynamicObject_TrySetMember,
+                        binder,
+                        s_noArgs,
+                        value.Expression,
+                        (MetaDynamic @this, SetMemberBinder b, DynamicMetaObject e) => b.FallbackSetMember(@this, localValue, e)
+                    );
                 }
 
                 return base.BindSetMember(binder, value);
-            }
-
-            private DynamicMetaObject BindSetMemberOverridden(SetMemberBinder binder, DynamicMetaObject value)
-            {
-                return CallMethodReturnLast(DynamicObject_TrySetMember, binder, s_noArgs, value.Expression, (e) => binder.FallbackSetMember(this, value, e));
             }
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder)
             {
                 if (IsOverridden(DynamicObject_TryDeleteMember))
                 {
-                    return BindDeleteMemberOverridden(binder);
+                    return CallMethodNoResult(
+                        DynamicObject_TryDeleteMember,
+                        binder,
+                        s_noArgs,
+                        (MetaDynamic @this, DeleteMemberBinder b, DynamicMetaObject e) => b.FallbackDeleteMember(@this, e)
+                    );
                 }
 
                 return base.BindDeleteMember(binder);
-            }
-
-            private DynamicMetaObject BindDeleteMemberOverridden(DeleteMemberBinder binder)
-            {
-                return CallMethodNoResult(DynamicObject_TryDeleteMember, binder, s_noArgs, (e) => binder.FallbackDeleteMember(this, e));
             }
 
             public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
                 if (IsOverridden(DynamicObject_TryConvert))
                 {
-                    return BindConvertOverridden(binder);
+                    return CallMethodWithResult(
+                        DynamicObject_TryConvert,
+                        binder,
+                        s_noArgs,
+                        (MetaDynamic @this, ConvertBinder b, DynamicMetaObject e) => b.FallbackConvert(@this, e)
+                    );
                 }
 
                 return base.BindConvert(binder);
-            }
-
-            private DynamicMetaObject BindConvertOverridden(ConvertBinder binder)
-            {
-                return CallMethodWithResult(DynamicObject_TryConvert, binder, s_noArgs, (e) => binder.FallbackConvert(this, e));
             }
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
@@ -302,8 +305,6 @@ namespace System.Dynamic
                 // "error", giving the language the option of using this
                 // tree or doing .NET binding.
                 //
-                Fallback fallback = e => binder.FallbackInvokeMember(this, args, e);
-
                 DynamicMetaObject call = BuildCallMethodWithResult(
                     DynamicObject_TryInvokeMember,
                     binder,
@@ -312,121 +313,135 @@ namespace System.Dynamic
                         DynamicObject_TryGetMember,
                         new GetBinderAdapter(binder),
                         s_noArgs,
-                        fallback(null),
-                        (e) => binder.FallbackInvoke(e, args, null)
+                        binder.FallbackInvokeMember(this, args, null),
+                        (MetaDynamic @this, GetMemberBinder ignored, DynamicMetaObject e) => binder.FallbackInvoke(e, args, null)
                     ),
                     null
                 );
 
-                return fallback(call);
+                return binder.FallbackInvokeMember(this, args, call);
             }
 
             public override DynamicMetaObject BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args)
             {
                 if (IsOverridden(DynamicObject_TryCreateInstance))
                 {
-                    return BindCreateInstanceOverridden(binder, args);
+                    DynamicMetaObject[] localArgs = args;
+
+                    return CallMethodWithResult(
+                        DynamicObject_TryCreateInstance,
+                        binder,
+                        DynamicMetaObject.GetExpressions(args),
+                        (MetaDynamic @this, CreateInstanceBinder b, DynamicMetaObject e) => b.FallbackCreateInstance(@this, localArgs, e)
+                    );
                 }
 
                 return base.BindCreateInstance(binder, args);
-            }
-
-            private DynamicMetaObject BindCreateInstanceOverridden(CreateInstanceBinder binder, DynamicMetaObject[] args)
-            {
-                return CallMethodWithResult(DynamicObject_TryCreateInstance, binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackCreateInstance(this, args, e));
             }
 
             public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args)
             {
                 if (IsOverridden(DynamicObject_TryInvoke))
                 {
-                    return BindInvokeOverridden(binder, args);
+                    DynamicMetaObject[] localArgs = args;
+
+                    return CallMethodWithResult(
+                        DynamicObject_TryInvoke,
+                        binder,
+                        DynamicMetaObject.GetExpressions(args),
+                        (MetaDynamic @this, InvokeBinder b, DynamicMetaObject e) => b.FallbackInvoke(@this, localArgs, e)
+                    );
                 }
 
                 return base.BindInvoke(binder, args);
-            }
-
-            private DynamicMetaObject BindInvokeOverridden(InvokeBinder binder, DynamicMetaObject[] args)
-            {
-                return CallMethodWithResult(DynamicObject_TryInvoke, binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackInvoke(this, args, e));
             }
 
             public override DynamicMetaObject BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg)
             {
                 if (IsOverridden(DynamicObject_TryBinaryOperation))
                 {
-                    return BindBinaryOperationOverridden(binder, arg);
+                    DynamicMetaObject localArg = arg;
+
+                    return CallMethodWithResult(
+                        DynamicObject_TryBinaryOperation,
+                        binder,
+                        DynamicMetaObject.GetExpressions(new DynamicMetaObject[] { arg }),
+                        (MetaDynamic @this, BinaryOperationBinder b, DynamicMetaObject e) => b.FallbackBinaryOperation(@this, localArg, e)
+                    );
                 }
 
                 return base.BindBinaryOperation(binder, arg);
-            }
-
-            private DynamicMetaObject BindBinaryOperationOverridden(BinaryOperationBinder binder, DynamicMetaObject arg)
-            {
-                return CallMethodWithResult(DynamicObject_TryBinaryOperation, binder, DynamicMetaObject.GetExpressions(new DynamicMetaObject[] { arg }), (e) => binder.FallbackBinaryOperation(this, arg, e));
             }
 
             public override DynamicMetaObject BindUnaryOperation(UnaryOperationBinder binder)
             {
                 if (IsOverridden(DynamicObject_TryUnaryOperation))
                 {
-                    return BindUnaryOperationOverridden(binder);
+                    return CallMethodWithResult(
+                        DynamicObject_TryUnaryOperation,
+                        binder,
+                        s_noArgs,
+                        (MetaDynamic @this, UnaryOperationBinder b, DynamicMetaObject e) => b.FallbackUnaryOperation(@this, e)
+                    );
                 }
 
                 return base.BindUnaryOperation(binder);
-            }
-
-            private DynamicMetaObject BindUnaryOperationOverridden(UnaryOperationBinder binder)
-            {
-                return CallMethodWithResult(DynamicObject_TryUnaryOperation, binder, s_noArgs, (e) => binder.FallbackUnaryOperation(this, e));
             }
 
             public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
             {
                 if (IsOverridden(DynamicObject_TryGetIndex))
                 {
-                    return BindGetIndexOverridden(binder, indexes);
+                    DynamicMetaObject[] localIndexes = indexes;
+
+                    return CallMethodWithResult(
+                        DynamicObject_TryGetIndex,
+                        binder,
+                        DynamicMetaObject.GetExpressions(indexes),
+                        (MetaDynamic @this, GetIndexBinder b, DynamicMetaObject e) => b.FallbackGetIndex(@this, localIndexes, e)
+                    );
                 }
 
                 return base.BindGetIndex(binder, indexes);
-            }
-
-            private DynamicMetaObject BindGetIndexOverridden(GetIndexBinder binder, DynamicMetaObject[] indexes)
-            {
-                return CallMethodWithResult(DynamicObject_TryGetIndex, binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackGetIndex(this, indexes, e));
             }
 
             public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
             {
                 if (IsOverridden(DynamicObject_TrySetIndex))
                 {
-                    return BindSetIndexOverridden(binder, indexes, value);
+                    DynamicMetaObject[] localIndexes = indexes;
+                    DynamicMetaObject localValue = value;
+
+                    return CallMethodReturnLast(
+                        DynamicObject_TrySetIndex,
+                        binder,
+                        DynamicMetaObject.GetExpressions(indexes),
+                        value.Expression,
+                        (MetaDynamic @this, SetIndexBinder b, DynamicMetaObject e) => b.FallbackSetIndex(@this, localIndexes, localValue, e)
+                    );
                 }
 
                 return base.BindSetIndex(binder, indexes, value);
-            }
-
-            private DynamicMetaObject BindSetIndexOverridden(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
-            {
-                return CallMethodReturnLast(DynamicObject_TrySetIndex, binder, DynamicMetaObject.GetExpressions(indexes), value.Expression, (e) => binder.FallbackSetIndex(this, indexes, value, e));
             }
 
             public override DynamicMetaObject BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes)
             {
                 if (IsOverridden(DynamicObject_TryDeleteIndex))
                 {
-                    return BindDeleteIndexOverridden(binder, indexes);
+                    DynamicMetaObject[] localIndexes = indexes;
+
+                    return CallMethodNoResult(
+                        DynamicObject_TryDeleteIndex,
+                        binder,
+                        DynamicMetaObject.GetExpressions(indexes),
+                        (MetaDynamic @this, DeleteIndexBinder b, DynamicMetaObject e) => b.FallbackDeleteIndex(@this, localIndexes, e)
+                    );
                 }
 
                 return base.BindDeleteIndex(binder, indexes);
             }
 
-            private DynamicMetaObject BindDeleteIndexOverridden(DeleteIndexBinder binder, DynamicMetaObject[] indexes)
-            {
-                return CallMethodNoResult(DynamicObject_TryDeleteIndex, binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackDeleteIndex(this, indexes, e));
-            }
-
-            private delegate DynamicMetaObject Fallback(DynamicMetaObject errorSuggestion);
+            private delegate DynamicMetaObject Fallback<TBinder>(MetaDynamic @this, TBinder binder, DynamicMetaObject errorSuggestion);
 
             private readonly static Expression[] s_noArgs = new Expression[0]; // used in reference comparison, requires unique object identity
 
@@ -503,7 +518,7 @@ namespace System.Dynamic
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic that returns a result
             /// </summary>
-            private DynamicMetaObject CallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback fallback)
+            private DynamicMetaObject CallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback<TBinder> fallback)
                 where TBinder : DynamicMetaObjectBinder
             {
                 return CallMethodWithResult(method, binder, args, fallback, null);
@@ -513,14 +528,14 @@ namespace System.Dynamic
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic that returns a result
             /// </summary>
-            private DynamicMetaObject CallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback fallback, Fallback fallbackInvoke)
+            private DynamicMetaObject CallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback<TBinder> fallback, Fallback<TBinder> fallbackInvoke)
                 where TBinder : DynamicMetaObjectBinder
             {
                 //
                 // First, call fallback to do default binding
                 // This produces either an error or a call to a .NET member
                 //
-                DynamicMetaObject fallbackResult = fallback(null);
+                DynamicMetaObject fallbackResult = fallback(this, binder, null);
 
                 DynamicMetaObject callDynamic = BuildCallMethodWithResult(method, binder, args, fallbackResult, fallbackInvoke);
 
@@ -532,7 +547,7 @@ namespace System.Dynamic
                 //   2. Binding will fail, and it will use the MO we created
                 //      above.
                 //
-                return fallback(callDynamic);
+                return fallback(this, binder, callDynamic);
             }
 
             /// <summary>
@@ -543,7 +558,7 @@ namespace System.Dynamic
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.
             /// </summary>
-            private DynamicMetaObject BuildCallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, DynamicMetaObject fallbackResult, Fallback fallbackInvoke)
+            private DynamicMetaObject BuildCallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, DynamicMetaObject fallbackResult, Fallback<TBinder> fallbackInvoke)
                 where TBinder : DynamicMetaObjectBinder
             {
                 if (!IsOverridden(method))
@@ -631,7 +646,7 @@ namespace System.Dynamic
 
                 if (fallbackInvoke != null)
                 {
-                    resultMO = fallbackInvoke(resultMO);
+                    resultMO = fallbackInvoke(this, binder, resultMO);
                 }
 
                 var callDynamic = new DynamicMetaObject(
@@ -673,14 +688,14 @@ namespace System.Dynamic
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.
             /// </summary>
-            private DynamicMetaObject CallMethodReturnLast<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Expression value, Fallback fallback)
+            private DynamicMetaObject CallMethodReturnLast<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Expression value, Fallback<TBinder> fallback)
                 where TBinder : DynamicMetaObjectBinder
             {
                 //
                 // First, call fallback to do default binding
                 // This produces either an error or a call to a .NET member
                 //
-                DynamicMetaObject fallbackResult = fallback(null);
+                DynamicMetaObject fallbackResult = fallback(this, binder, null);
 
                 //
                 // Build a new expression like:
@@ -730,7 +745,7 @@ namespace System.Dynamic
                 //   2. Binding will fail, and it will use the MO we created
                 //      above.
                 //
-                return fallback(callDynamic);
+                return fallback(this, binder, callDynamic);
             }
 
             /// <summary>
@@ -742,14 +757,14 @@ namespace System.Dynamic
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.
             /// </summary>
-            private DynamicMetaObject CallMethodNoResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback fallback)
+            private DynamicMetaObject CallMethodNoResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback<TBinder> fallback)
                 where TBinder : DynamicMetaObjectBinder
             {
                 //
                 // First, call fallback to do default binding
                 // This produces either an error or a call to a .NET member
                 //
-                DynamicMetaObject fallbackResult = fallback(null);
+                DynamicMetaObject fallbackResult = fallback(this, binder, null);
                 ParameterExpression callArgs = Expression.Parameter(typeof(object[]), null);
                 ReadOnlyCollection<Expression> callArgsValue = GetConvertedArgs(args);
 
@@ -793,7 +808,7 @@ namespace System.Dynamic
                 //   2. Binding will fail, and it will use the MO we created
                 //      above.
                 //
-                return fallback(callDynamic);
+                return fallback(this, binder, callDynamic);
             }
 
             /// <summary>
