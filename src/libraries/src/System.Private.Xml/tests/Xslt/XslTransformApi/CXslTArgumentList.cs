@@ -992,11 +992,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam1()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -1005,9 +1012,11 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.6003003605) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1051,11 +1060,13 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very Long Param Name")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam4()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam(szLongString, szEmpty, "Test1");
@@ -1064,9 +1075,11 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParamLongName.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(383.8692240713) == 1))
+            if ((LoadXSL("showParamLongName.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1110,11 +1123,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam7()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test7
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test7");
@@ -1124,19 +1144,28 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test7")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.7055635184) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam8()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szLongNS, "Test8");
@@ -1145,9 +1174,11 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test8")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1176,19 +1207,28 @@ namespace System.Xml.Tests
         */
 
         //[Variation("Objects as different Data Types")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam10()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.My Custom Object has a value of 10
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             MyObject m = new MyObject(10, _output);
 
             m_xsltArg.AddParam("myArg1", szEmpty, m);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(473.4007803959) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1214,11 +1254,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object with same name, different namespace System.Xml.Tests")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam12()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -1240,19 +1287,28 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.6003003605) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Object with same namespace System.Xml.Tests, different name")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam13()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.Test2
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -1274,19 +1330,28 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(449.000354515) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Case Sensitivity")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam14()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.Test2
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -1313,9 +1378,11 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test3")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(449.000354515) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1340,11 +1407,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add/remove object many times")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam16()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.Test1
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             String obj = "Test";
 
@@ -1381,19 +1455,32 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj.ToString() != ("Test1"))
                 Assert.True(false);
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(458.7752486264) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Whitespace in URI and param")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam17()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test  
+		2.Test
+
+		3.Test	
+		4.Test
+
+		5.Test	
+  
+	
+		6.No Value Specified</result>";
+
             int i = 1;
             int errCount = 0;
             m_xsltArg = new XsltArgumentList();
@@ -1434,19 +1521,28 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(420.7138852814) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Adding many objects")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam18()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.Test2
+		3.Test3
+		4.Test4
+		5.Test5
+		6.Test6</result>";
+
             m_xsltArg = new XsltArgumentList();
             String obj = "Test";
 
@@ -1458,19 +1554,28 @@ namespace System.Xml.Tests
                     Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(413.6341271694) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Add same object many times")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam19()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.Test1
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             String obj = "Test";
 
@@ -1490,19 +1595,28 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj.ToString() != ("Test1"))
                 Assert.True(false);
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(458.7752486264) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Using Different XSLT namespace")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam20()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj1=""urn:http://www.w3.org/1999/XSL/Transform"" xmlns:myObj2=""urn:tmp"" xmlns:myObj3=""urn:my-object"" xmlns:myObj4=""urn:MY-OBJECT"">
+		1.Test1
+		2.Test2
+		3.Test3
+		4.Test4
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", "urn:" + szXslNS, "Test1");
@@ -1529,9 +1643,11 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test4")
                 Assert.True(false);
 
-            if ((LoadXSL("showParamNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(509.315418596) == 1))
+            if ((LoadXSL("showParamNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1551,20 +1667,28 @@ namespace System.Xml.Tests
         [Theory]
         public void AddExtObject32()
         {
+            string expected1 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: first</out>";
+            string expected2 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: second</out>";
+
             if (LoadXSL("test_Param.xsl") == 1)
             {
                 m_xsltArg = new XsltArgumentList();
                 m_xsltArg.AddParam("myParam1", szEmpty, "first");
 
                 // Transform once
-                if ((Transform_ArgList("foo.xml") == 1) && (CheckResult(383.6292620645) == 1))
+                if (Transform_ArgList("foo.xml") == 1)
                 {
+                    VerifyResult(expected1);
+
                     m_xsltArg = new XsltArgumentList();
                     m_xsltArg.AddParam("myParam1", szEmpty, "second");
 
                     // Transform again to make sure that parameter from first transform are not cached
-                    if ((Transform_ArgList("foo.xml") == 1) && (CheckResult(384.9801823644) == 1))
+                    if (Transform_ArgList("foo.xml") == 1)
+                    {
+                        VerifyResult(expected2);
                         return;
+                    }
                 }
             }
             Assert.True(false);
@@ -1810,18 +1934,24 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject1()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(430.402026847) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1859,29 +1989,43 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject4()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""http://www.miocrosoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             m_xsltArg = new XsltArgumentList();
             MyObject obj = new MyObject(4, _output);
 
             m_xsltArg.AddExtensionObject(szLongNS, obj);
 
-            if ((LoadXSL("MyObjectLongNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(522.0563223871) == 1))
+            if ((LoadXSL("myObjectLongNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Different Data Types")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject6()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+
+		String  Argument: System.String
+		Int32   Argument: System.Int32
+		Boolean Argument: System.Boolean
+		Boolean Argument: System.Boolean
+		Double  Argument: System.Double
+		String  Argument: System.String</result>";
+
             m_xsltArg = new XsltArgumentList();
             String obj = "0.00";
 
@@ -1952,9 +2096,11 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.GetExtensionObject("myArg6");
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", bT.ToString(), retObj);
 
-            if ((LoadXSL("MyObject_DataTypes.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(499.4069850096) == 1))
+            if ((LoadXSL("MyObject_DataTypes.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1982,11 +2128,15 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case sensitivity")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject8()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
 
@@ -2002,9 +2152,11 @@ namespace System.Xml.Tests
             m_xsltArg.AddExtensionObject("urn:My-Object", obj);
             m_xsltArg.AddExtensionObject("urn-my:object", obj);
 
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(430.402026847) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2030,28 +2182,38 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Unitialized and NULL return values from the methods in the extension object")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject10()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+
+		Test1
+		Test2: 0</result>";
+
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_Null.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(424.8906559839) == 1))
+            if ((LoadXSL("MyObject_Null.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Add many objects")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject11()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             MyObject obj1 = new MyObject(100, _output);
@@ -2062,9 +2224,11 @@ namespace System.Xml.Tests
                 MyObject obj = new MyObject(i, _output);
                 m_xsltArg.AddExtensionObject(szDefaultNS + i, obj);
             }
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(430.402026847) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2118,11 +2282,15 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add and Remove multiple times")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject14()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             MyObject obj = new MyObject(14, _output);
             m_xsltArg = new XsltArgumentList();
 
@@ -2133,9 +2301,11 @@ namespace System.Xml.Tests
             }
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
 
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(430.402026847) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2200,103 +2370,149 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Writing To Output")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject17()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		Here:End
+		</result>";
+
             MyObject obj = new MyObject(17, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_ConsoleWrite.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(421.8660259804) == 1))
+            if ((LoadXSL("MyObject_ConsoleWrite.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Recursive Functions")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject18()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		Recursive Function Returning the factorial of five:120</result>";
+
             MyObject obj = new MyObject(18, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_Recursion.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(459.4210605285) == 1))
+            if ((LoadXSL("MyObject_Recursion.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Overloaded Functions")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject19()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		Overloaded Double: Int Overlaod
+		Overloaded Int: Int Overlaod
+		Overloaded String: String Overlaod</result>";
+
             MyObject obj = new MyObject(19, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_Overloads.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(481.1053900491) == 1))
+            if ((LoadXSL("MyObject_Overloads.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Function-exists tests")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject20()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		DoNothing Function Test Pass
+		Construtor Function
+		Return Int  Function Test Pass
+		Return String Function Test Pass
+		ReturnInt  Function Test Pass
+		Taking in args  Test Pass
+		Public Function Test Pass
+		Protected Function
+		Private Function
+		Default Function</result>";
+
             MyObject obj = new MyObject(20, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_FnExists.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(534.2681508201) == 1))
+            if ((LoadXSL("MyObject_FnExists.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Argument Tests")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject21()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+
+		String  Argument: Received a string with value: Hello
+		Double  Argument: Received a double with value 3.14
+		Boolean Argument: Statement is True
+		Boolean True Argument: Statement is False</result>";
+
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_Arguments.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(513.296131727) == 1))
+            if ((LoadXSL("MyObject_Arguments.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Methods returning void and valid types")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject22()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		Get A String:Hello world
+		Get A Double:22.41276
+		Get A True Boolean:true
+		Get A False Boolean:false
+		Get An Int:10
+		Get Other with ToString() Support:My Custom Object has a value of 22
+		Call function with no return type:</result>";
+
             MyObject obj = new MyObject(22, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_ReturnValidTypes.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(514.0958814743) == 1))
+            if ((LoadXSL("MyObject_ReturnValidTypes.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2374,35 +2590,56 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Maintaining State")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject27()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		A:27
+		B:23
+		C:23
+		D:23
+		E:37
+		F:Hello 
+		G:Hello World 
+		E:-13</result>";
+
             MyObject obj = new MyObject(27, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_KeepingState.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(439.7536748395) == 1))
+            if ((LoadXSL("MyObject_KeepingState.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Deliberately Messing Up the Stylesheet")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject28()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+
+		Aiming with Gun: &gt;"" $tmp &gt;;'	 
+&amp;
+		Aiming with Missile: &lt;xsl:variable name=""tmp""/&gt;
+		Aiming with Nuclear: &lt;/xsl:stylesheet&gt;
+		Wow...survived all killer ammo.
+	</result>";
+
             MyObject obj = new MyObject(28, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            if ((LoadXSL("MyObject_KillerStrings.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(495.5795381156) == 1 || CheckResult(503.3730396353) == 1))  //multiple baseline
+            if ((LoadXSL("MyObject_KillerStrings.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2444,11 +2681,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Extension objects should not be cached during Transform()")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject32()
         {
+            string expected1 = @"<?xml version=""1.0"" encoding=""utf-8""?><out xmlns:id=""id"" xmlns:cap=""capitalizer"">
+			ID: first
+			Capitalized ID: FIRST</out>";
+
+            string expected2 = @"<?xml version=""1.0"" encoding=""utf-8""?><out xmlns:id=""id"" xmlns:cap=""capitalizer"">
+			ID: second
+			Capitalized ID: SECOND</out>";
+
             if (LoadXSL("Bug78587.xsl") == 1)
             {
                 m_xsltArg = new XsltArgumentList();
@@ -2456,15 +2700,20 @@ namespace System.Xml.Tests
                 m_xsltArg.AddExtensionObject("capitalizer", new Capitalizer());
 
                 // Transform once
-                if ((Transform_ArgList("Bug78587.xml") == 1) && (CheckResult(438.9506396879) == 1))
+                if (Transform_ArgList("Bug78587.xml") == 1)
                 {
+                    VerifyResult(expected1);
+
                     m_xsltArg = new XsltArgumentList();
                     m_xsltArg.AddExtensionObject("id", new Id("second"));
                     m_xsltArg.AddExtensionObject("capitalizer", new Capitalizer());
 
                     // Transform again to make sure that extension objects from first transform are not cached
-                    if ((Transform_ArgList("Bug78587.xml") == 1) && (CheckResult(440.0296788876) == 1))
+                    if (Transform_ArgList("Bug78587.xml") == 1)
+                    {
+                        VerifyResult(expected2);
                         return;
+                    }
                 }
             }
             Assert.True(false);
@@ -2489,11 +2738,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam1()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test2");
@@ -2514,9 +2770,11 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.6003003605) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2537,67 +2795,98 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is empty string")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam3()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.RemoveParam(szEmpty, szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Param name is non-existent")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam4()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.RemoveParam(szSimple, szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Invalid Param name")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam5()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.RemoveParam(szInvalid, szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Very long param name")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam6()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam(szLongString, szEmpty, "Test1");
             m_xsltArg.RemoveParam(szLongString, szEmpty);
 
-            if ((LoadXSL("showParamLongName.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(400.2204182193) == 1))
+            if ((LoadXSL("showParamLongName.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2619,65 +2908,99 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam8()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
             m_xsltArg.RemoveParam("myArg1", szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Namespace URI is non-existent")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam9()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
             m_xsltArg.RemoveParam("myArg1", "http://www.xsltTest.com");
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.6003003605) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam10()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szLongString, "Test1");
             m_xsltArg.RemoveParam("myArg1", szLongString);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Different Data Types")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam11()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             double d1 = double.PositiveInfinity;
             double d2 = double.NegativeInfinity;
             double d3 = double.NaN;
@@ -2867,19 +3190,28 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Case Sensitivity")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam12()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -2888,19 +3220,28 @@ namespace System.Xml.Tests
             m_xsltArg.RemoveParam("myArg1 ", szEmpty);
 
             // perform a transform for kicks and ensure all is ok.
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.6003003605) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Whitespace")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam13()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test
+		2.Test
+		3.Test
+		4.Test
+		5.Test
+		6.No Value Specified</result>";
+
             int i = 1;
             m_xsltArg = new XsltArgumentList();
 
@@ -2932,19 +3273,28 @@ namespace System.Xml.Tests
             }
 
             // perform a transform for kicks and ensure all is ok.
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(421.3863242307) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Call Multiple Times")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam14()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -2952,9 +3302,11 @@ namespace System.Xml.Tests
             for (int i = 0; i < 500; i++)
                 m_xsltArg.RemoveParam("myArg1", szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -3033,11 +3385,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Multiple Times")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj3()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
 
@@ -3046,28 +3405,36 @@ namespace System.Xml.Tests
             for (int i = 0; i < 500; i++)
                 m_xsltArg.RemoveExtensionObject(szDefaultNS);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Namespace URI is non-existent")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj4()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             MyObject obj = new MyObject(4, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             m_xsltArg.RemoveExtensionObject(szSimple);
 
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(430.402026847) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -3097,11 +3464,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj6()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             MyObject obj = new MyObject(6, _output);
             m_xsltArg = new XsltArgumentList();
 
@@ -3123,19 +3497,25 @@ namespace System.Xml.Tests
             m_xsltArg.AddExtensionObject("urn:my-object", false);
             m_xsltArg.RemoveExtensionObject("urn:my-object");
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Case Sensitivity")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj7()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		1.Test1
+		2.Test2
+		3.Test3</result>";
+
             MyObject obj = new MyObject(7, _output);
             m_xsltArg = new XsltArgumentList();
 
@@ -3146,9 +3526,11 @@ namespace System.Xml.Tests
             m_xsltArg.RemoveExtensionObject("urn-my:object");
             m_xsltArg.RemoveExtensionObject("urn:my-object ");
 
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(430.402026847) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -3190,20 +3572,29 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using default XSLT namespace - Bug305503")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj9()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.RemoveExtensionObject(szDefaultNS);
 
             // ensure we can still do a transform
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -3223,11 +3614,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear1()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -3240,35 +3638,53 @@ namespace System.Xml.Tests
             if (retObj != null)
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Clear with nothing loaded")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear2()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.Clear();
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Clear Params")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear3()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -3281,9 +3697,11 @@ namespace System.Xml.Tests
             if (retObj != null)
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -3321,11 +3739,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Many Objects")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear5()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             String obj = "Test";
 
@@ -3354,23 +3779,30 @@ namespace System.Xml.Tests
                 }
             }
 
-            //	_output.WriteLine(retObj.GetType());
-
             m_xsltArg.Clear();
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Clear Multiple Times")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear6()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -3384,19 +3816,28 @@ namespace System.Xml.Tests
             if (retObj != null)
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(466.5112789241) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Loading one object, but clearing another")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear7()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.Test1
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
             XsltArgumentList m_2 = new XsltArgumentList();
 
@@ -3407,19 +3848,28 @@ namespace System.Xml.Tests
 
             m_2.Clear();
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(457.6003003605) == 1))
+            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Clear after objects have been \"Removed\"")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear8()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
+		1.No Value Specified
+		2.No Value Specified
+		3.No Value Specified
+		4.No Value Specified
+		5.No Value Specified
+		6.No Value Specified</result>";
+
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
@@ -3429,9 +3879,10 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.RemoveParam("myArg1", szEmpty);
             m_xsltArg.Clear();
 
-            if ((LoadXSL("showParam.xsl") != 1) || (Transform_ArgList("fruits.xml") != 1) ||
-                (CheckResult(466.5112789241) != 1))
-                Assert.True(false);
+            if ((LoadXSL("showParam.xsl") != 1) || (Transform_ArgList("fruits.xml") != 1))
+            Assert.True(false);
+
+            VerifyResult(expected);
 
             MyObject obj = new MyObject(26, _output);
 

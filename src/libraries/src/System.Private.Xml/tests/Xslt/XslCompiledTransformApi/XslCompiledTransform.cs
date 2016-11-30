@@ -1108,18 +1108,23 @@ namespace System.Xml.Tests
         */
 
         //[Variation(id = 7, Desc = "document() has absolute URI", Pri = 0)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(14071)]
         [InlineData()]
         [Theory]
         public void XmlResolver7()
         {
             AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
 
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
+
             // copy file on the local machine (this is now done with createAPItestfiles.js, see Oasys scenario.)
             if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl") == 1)
             {
-                if ((Transform("fruits.xml") == 1) && (CheckResult(377.8217373898) == 1))
+                if (Transform("fruits.xml") == 1)
+                {
+                    VerifyResult(expected);
                     return;
+                }
                 else
                 {
                     _output.WriteLine("Failed to resolve document function with absolute URI.");
@@ -1310,14 +1315,16 @@ namespace System.Xml.Tests
         public void LoadGeneric7()
         {
             FileStream s2;
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
             // check immediately after load and after transform
             if (LoadXSL("XmlResolver_Main.xsl") == 1)
             {
                 s2 = new FileStream(FullFilePath("XmlResolver_Main.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
                 s2.Dispose();
-                if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
+                if (Transform("fruits.xml") == 1)
                 {
+                    VerifyResult(expected);
                     s2 = new FileStream(FullFilePath("XmlResolver_Main.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
                     s2.Dispose();
                     return;
@@ -1358,14 +1365,16 @@ namespace System.Xml.Tests
         public void LoadGeneric9()
         {
             FileStream s2;
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
             // check immediately after load and after transform
             if (LoadXSL("XmlResolver_Main.xsl") == 1)
             {
                 s2 = new FileStream(FullFilePath("XmlResolver_Sub.xsl"), FileMode.Open, FileAccess.Read);
                 s2.Dispose();
-                if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
+                if (Transform("fruits.xml") == 1)
                 {
+                    VerifyResult(expected);
                     s2 = new FileStream(FullFilePath("XmlResolver_Include.xsl"), FileMode.Open, FileAccess.Read, FileShare.Read);
                     s2.Dispose();
                     return;
@@ -1401,7 +1410,6 @@ namespace System.Xml.Tests
         */
 
         //[Variation(id = 11, Desc = "Load stylesheet with entity reference: Bug #68450 ")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric11()
@@ -1411,14 +1419,20 @@ namespace System.Xml.Tests
                 return;
             else
             {
+                string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><Book>
+			Name
+		</Book>";
+
                 if (LoadXSL("books_entity_ref.xsl", XslInputType.Reader, new XmlUrlResolver()) != 1)
                 {
                     _output.WriteLine("Failed to load stylesheet books_entity_ref.xsl");
                     Assert.True(false);
                 }
-                if ((LoadXSL("books_entity_ref.xsl") == 1) && (Transform("books_entity_ref.xml") == 1)
-                    && (CheckResult(371.4148215954) == 1))
+                if ((LoadXSL("books_entity_ref.xsl") == 1) && (Transform("books_entity_ref.xml") == 1))
+                {
+                    VerifyResult(expected);
                     return;
+                }
                 Assert.True(false);
             }
         }
@@ -1654,6 +1668,8 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadGeneric7(object param)
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
+
             string Baseline = Path.Combine("baseline", (string)param);
             CustomNullResolver myResolver = new CustomNullResolver(_output);
 
@@ -1677,8 +1693,11 @@ namespace System.Xml.Tests
 
                 if (LoadXSL("XmlResolver_Main.xsl") == 1)
                 {
-                    if ((Transform("fruits.xml") == 1) && (CheckResult(428.8541842246) == 1))
+                    if (Transform("fruits.xml") == 1)
+                    {
+                        VerifyResult(expected);
                         return;
+                    }
                     else
                         Assert.True(false);
                 }
@@ -1796,11 +1815,15 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadGeneric9()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
+
             if ((LoadXSL_Resolver("XmlResolver_Main.xsl", GetDefaultCredResolver()) == 1))
             {
-                if ((LoadXSL("XmlResolver_Main.xsl") == 1) && (Transform("fruits.xml") == 1)
-                    && (CheckResult(428.8541842246) == 1))
+                if ((LoadXSL("XmlResolver_Main.xsl") == 1) && (Transform("fruits.xml") == 1))
+                {
+                    VerifyResult(expected);
                     return;
+                }
             }
             else
             {
@@ -1987,27 +2010,6 @@ namespace System.Xml.Tests
         public CLoadReaderResolverEvidenceTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
-        }
-
-        // TODO: BinCompat - add this test back if Evidence is back
-        //[Variation("Call Load with null source value, null evidence")]
-        [ActiveIssue(9877)]
-        [InlineData()]
-        [Theory]
-        public void LoadGeneric1()
-        {
-            /*
-            try
-            {
-                LoadXSL_Resolver_Evidence(null, new XmlUrlResolver(), null);
-            }
-            catch (ArgumentNullException e)
-            {
-                _output.WriteLine(e.ToString());
-                return;
-            }
-            _output.WriteLine("Passing null stylesheet parameter should have thrown ArgumentNullException");
-            Assert.True(false);*/
         }
 
         //[Variation("Call Load with style sheet that has script, pass null evidence, should throw security exception")]
@@ -2305,6 +2307,8 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //TEST_SKIPPED;
 
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><out>You are safe</out>";
+
             xslt = new XslCompiledTransform();
             XmlReader xrLoad = XmlReader.Create(FullFilePath("Bug80768.xsl"));
             XPathDocument xd = new XPathDocument(xrLoad, XmlSpace.Preserve);
@@ -2316,10 +2320,7 @@ namespace System.Xml.Tests
             xslt.Transform(xn, null, fs);
             fs.Dispose();
 
-            if (CheckResult(383.0855503831) == 1)
-                return;
-            else
-                Assert.True(false);
+            VerifyResult(expected);
         }
     }
 
@@ -2552,7 +2553,7 @@ namespace System.Xml.Tests
         [Theory]
         public void Bug380138()
         {
-            string xsl = @"<?xml version='1.0' encoding='utf-8'?>
+            string xsl = @"<?xml version=""1.0"" encoding=""utf-8""?>
     <xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
         xmlns:ms='urn:schemas-microsoft-com:xslt' exclude-result-prefixes='ms'>
       <xsl:template match='asf'><xsl:value-of select=""ms:namespace-uri('ms:b')""/></xsl:template>
@@ -2970,12 +2971,17 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver1()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
+
             try
             {
                 if (LoadXSL("XmlResolver_Main.xsl") == 1)
                 {
-                    if ((TransformResolver("fruits.xml", null) == 1) && (CheckResult(428.8541842246) == 1))
+                    if (TransformResolver("fruits.xml", null) == 1)
+                    {
+                        VerifyResult(expected);
                         return;
+                    }
                     else
                         Assert.True(false);
                 }
@@ -3042,12 +3048,14 @@ namespace System.Xml.Tests
         }
 
         //[Variation("document() has absolute URI")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(14071)]
         [InlineData()]
         [Theory]
         public void XmlResolver5()
         {
             AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
 
             // copy file on the local machine
             try
@@ -3071,8 +3079,11 @@ namespace System.Xml.Tests
 
             if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl") == 1)
             {
-                if ((TransformResolver("fruits.xml", new XmlUrlResolver()) == 1) && (CheckResult(377.8217373898) == 1))
+                if (TransformResolver("fruits.xml", new XmlUrlResolver()) == 1)
+                {
+                    VerifyResult(expected);
                     return;
+                }
                 else
                 {
                     _output.WriteLine("Failed to resolve document function with absolute URI.");
@@ -3487,31 +3498,25 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver to Transform, load style sheet with import/include, should not affect transform")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformStrStrResolver1()
         {
             String szFullFilename = FullFilePath("fruits.xml");
-            try
+            string expected = @"<result>
+  <fruit>Apple</fruit>
+  <fruit>orange</fruit>
+</result>";
+
+            if (LoadXSL("XmlResolver_Main.xsl", new XmlUrlResolver()) == 1)
             {
-                if (LoadXSL("XmlResolver_Main.xsl", new XmlUrlResolver()) == 1)
-                {
-                    XmlTextReader xr = new XmlTextReader(szFullFilename);
-                    XmlTextWriter xw = new XmlTextWriter("out.xml", Encoding.Unicode);
-                    xslt.Transform(xr, null, xw, null);
-                    xr.Dispose();
-                    xw.Dispose();
-                    if (CheckResult(403.7784431795) == 1)
-                        return;
-                    else
-                        Assert.True(false);
-                }
-            }
-            catch (Exception e)
-            {
-                _output.WriteLine(e.ToString());
-                Assert.True(false);
+                XmlTextReader xr = new XmlTextReader(szFullFilename);
+                XmlTextWriter xw = new XmlTextWriter("out.xml", Encoding.Unicode);
+                xslt.Transform(xr, null, xw, null);
+                xr.Dispose();
+                xw.Dispose();
+                VerifyResult(expected);
+                return;
             }
             Assert.True(false);
         }
@@ -3523,6 +3528,8 @@ namespace System.Xml.Tests
         {
             AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
 
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><elem>1</elem><elem>2</elem><elem>3</elem></result>";
+
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
 
@@ -3531,15 +3538,13 @@ namespace System.Xml.Tests
             if (LoadXSL("xmlResolver_document_function.xsl") == 1)
             {
                 xslt.Transform(szFullFilename, "out.xml");
-                if (CheckResult(422.3877210723) == 1)
-                    return;
+                VerifyResult(expected);
             }
             else
             {
                 _output.WriteLine("Problem loading stylesheet!");
                 Assert.True(false);
             }
-            Assert.True(false);
         }
 
         //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform", Param = "xmlResolver_document_function.txt")]
@@ -3787,58 +3792,82 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Local parameter gets overwritten with global param value", Pri = 1)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var1()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><out>
+param1 (correct answer is 'local-param1-arg'): local-param1-arg
+param2 (correct answer is 'local-param2-arg'): local-param2-arg
+</out>";
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.AddParam("param1", string.Empty, "global-param1-arg");
 
-            if ((LoadXSL("paramScope.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) && (CheckResult(473.4644857331) == 1))
+            if ((LoadXSL("paramScope.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Local parameter gets overwritten with global variable value", Pri = 1)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var2()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><out>
+param1 (correct answer is 'local-param1-arg'): local-param1-arg
+param2 (correct answer is 'local-param2-arg'): local-param2-arg
+</out>";
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.AddParam("param1", string.Empty, "global-param1-arg");
 
-            if ((LoadXSL("varScope.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) && (CheckResult(473.4644857331) == 1))
+            if ((LoadXSL("varScope.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Subclassed XPathNodeIterator returned from an extension object or XsltFunction is not accepted by XPath", Pri = 1)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var3()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><distinct-countries>France, Spain, Austria, Germany</distinct-countries>";
+
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.AddExtensionObject("http://foo.com", new MyXsltExtension());
 
-            if ((LoadXSL("Bug111075.xsl") == 1) && (Transform_ArgList("Bug111075.xml") == 1) && (CheckResult(441.288076277) == 1))
+            if ((LoadXSL("Bug111075.xsl") == 1) && (Transform_ArgList("Bug111075.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Iterator using for-each over a variable is not reset correctly while using msxsl:node-set()", Pri = 1)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var4()
         {
-            if ((LoadXSL("Bug109644.xsl") == 1) && (Transform("foo.xml") == 1) && (CheckResult(417.2501860011) == 1))
-                return;
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?>
+		Node Count: {3}
+
+		
+		Correct Output: (1)(2)(3)
+		Incorrect Output: [1][2][3]";
+
+            if ((LoadXSL("Bug109644.xsl") == 1) && (Transform("foo.xml") == 1))
+            {
+                Assert.Equal(expected, File.ReadAllText("out.xml"));
+            }
             else
                 Assert.True(false);
         }
