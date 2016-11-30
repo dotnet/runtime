@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -17,7 +17,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj">
-      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
@@ -28,7 +27,7 @@
     <TargetingPackReference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Runtime" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

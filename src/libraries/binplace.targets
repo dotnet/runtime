@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true'">true</IsRuntimeAssembly>
+    <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
+    <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BinPlaceStuff" DependsOnTargets="$(BinPlaceStuffDependsOn)" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Importance="low" Text="IsRuntimeAssembly: $(IsRuntimeAssembly)" />
+    <Message Importance="low" Text="IsReferenceAssembly: $(IsReferenceAssembly)" />
+  </Target>
+
+  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetTargetingPackDir">
+    <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
+    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(TargetingPackDir.Identity)" />
+  </Target>
+
+  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetRuntimeDir">
+    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(RuntimeDir.Identity)" />
+  </Target>
+
+  <Target Name="GetTargetingPackDir">
+    <ItemGroup>
+      <TargetingPackDir Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp'))" Include="$(BinDir)netcoreapp\TargetingPack" />
+      <TargetingPackDir Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETStandard'))" Include="$(BinDir)netstandard\TargetingPack" />
+      <TargetingPackDir Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETStandard'))" Include="$(BinDir)netcoreapp\TargetingPack" />
+    </ItemGroup>
+    <Error Condition="'@(TargetingPackDir)' == ''" Text="No targeting pack directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
+    <Message Text="Got TargetingPackDir:@(TargetingPackDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
+  </Target>
+
+    <Target Name="GetRuntimeDir">
+    <ItemGroup>
+      <RuntimeDir Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp'))" Include="$(BinDir)netcoreapp\Runtime" />
+      <RuntimeDir Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETStandard'))" Include="$(BinDir)netstandard\Runtime" />
+      <RuntimeDir Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETStandard'))" Include="$(BinDir)netcoreapp\Runtime" />
+    </ItemGroup>
+    <Error Condition="'@(RuntimeDir)' == ''" Text="No Runtime directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
+    <Message Text="Got RuntimeDir:@(RuntimeDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
+  </Target>
+</Project>

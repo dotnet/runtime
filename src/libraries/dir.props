@@ -64,6 +64,8 @@
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
+  <Import Project="$(MSBuildThisFileDirectory)targetingpacks.props" />
+
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>

@@ -51,6 +51,8 @@
   <!-- permit a wrapping build system to contribute targets to this build -->
   <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
 
+  <Import Project="$(MSBuildThisFileDirectory)binplace.targets" />
+
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->

@@ -1,16 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.XDocument.cs" />
     <Compile Include="System.Xml.XDocument.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

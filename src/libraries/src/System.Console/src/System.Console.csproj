@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'=='' AND ('$(TargetGroup)' == '' OR '$(TargetGroup)' == 'netstandard1.3')">Windows_Debug</Configuration>
@@ -256,13 +256,16 @@
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
-    <None Include="project.json" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -19,7 +19,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj">
-      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>System\Collections\Generic\ArrayBuilder.cs</Link>
@@ -75,7 +74,15 @@
     <TargetingPackReference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

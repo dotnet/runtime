@@ -38,10 +38,11 @@
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
+    <!--
     <Project Include="src\tests.builds" Condition="$(BuildTests)=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
-    <!-- signing must happen before packaging -->
+    <!- signing must happen before packaging -!>
     <Project Include="src\sign.builds" />
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
@@ -50,9 +51,10 @@
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
     </Project>
     <Project Include="src\post.builds">
-      <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
+      <!- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -!>
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
+    -->
   </ItemGroup>
 
   <Import Project="dir.targets" />
