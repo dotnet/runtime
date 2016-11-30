@@ -107,7 +107,7 @@ namespace SortVersioning
 
     PSORTHANDLE GetSortHandle(__in LPCWSTR lpLocaleName, __in_opt CONST NLSVERSIONINFO * pVersion);
 
-    int SortCompareString(__in LPCWSTR lpLocaleName,
+    int WINAPI SortCompareString(__in LPCWSTR lpLocaleName,
                                __in DWORD dwCmpFlags,
                                __in_ecount(cchCount1) LPCWSTR lpString1,
                                __in int cchCount1,
@@ -137,7 +137,7 @@ namespace SortVersioning
                            __reserved LPVOID lpReserved,
                            __reserved LPARAM lParam );    
 
-   __success(return != 0) int SortDllChangeCase(
+   __success(return != 0) int WINAPI SortDllChangeCase(
         __in PSORTHANDLE pSort,
         __in DWORD dwFlags,
         __in_ecount(cchSrc) LPCWSTR pSrc,
@@ -147,7 +147,7 @@ namespace SortVersioning
         __in_opt LPVOID lpReserved,
         __in_opt LPARAM lParam );
 
-    __success(return != 0) int SortDllGetSortKey(
+    __success(return != 0) int WINAPI SortDllGetSortKey(
         __in PSORTHANDLE pSort,
         __in DWORD dwFlags,
         __in_ecount(cchSrc) LPCWSTR pSrc,
@@ -157,7 +157,7 @@ namespace SortVersioning
         __in_opt LPVOID lpReserved,
         __in_opt LPARAM lParam );
 
-    int SortFindString(__in LPCWSTR lpLocaleName,
+    int WINAPI SortFindString(__in LPCWSTR lpLocaleName,
                         __in DWORD dwFindNLSStringFlags,
                         __in_ecount(cchSource) LPCWSTR lpStringSource,
                         __in int cchSource,
@@ -168,7 +168,7 @@ namespace SortVersioning
                         __reserved LPVOID lpReserved,
                         __reserved LPARAM lParam);
 
-    __success(return != 0) int SortDllFindString(
+    __success(return != 0) int WINAPI SortDllFindString(
         __in PSORTHANDLE pSort,
         __in DWORD dwFindNLSStringFlags,
         __in_ecount(cchSource) LPCWSTR lpStringSource,
@@ -179,7 +179,7 @@ namespace SortVersioning
         __in_opt LPVOID lpReserved,
         __in_opt LPARAM lParam);
 
-    BOOL SortIsDefinedString(__in NLS_FUNCTION Function,
+    BOOL WINAPI SortIsDefinedString(__in NLS_FUNCTION Function,
                             __in DWORD dwFlags,
                             __in_opt CONST NLSVERSIONINFOEX * lpVersionInfo,
                             __in LPCWSTR lpString,
