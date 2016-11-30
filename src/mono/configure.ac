@@ -758,9 +758,32 @@ fi
 AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compilation of system assemblies during the build (on by default on some platforms)], enable_system_aot=$enableval, enable_system_aot=default)
 
 DISABLED_FEATURES=none
+csc_compiler=default
+endian=unknown
+AC_C_BIGENDIAN([endian=big],[endian=little],[endian=unknown])
+AC_MSG_CHECKING([CSharp compiler to use])
+AC_ARG_WITH(csc, [  --with-csc=mcs,roslyn,default      Configures the CSharp compiler to use],[
+   if test x$withval = xmcs; then
+       csc_compiler=mcs
+   elif test x$withval = xroslyn; then
+       csc_compiler=roslyn
+   elif test x$withval = xdefault; then
+       :
+   else
+       AC_MSG_ERROR([You must supply one of "mcs", "roslyn" or "default" to the --with-csc option])
+   fi
+],[csc_compiler=default])
 
-
-AC_ARG_WITH(mcs-compiler, [  --with-mcs-compiler=yes,no      Changes C# compiler used for compilation to be mcs instead of default csc],[],[with_mcs_compiler=no])
+if test $csc_compiler = default; then
+   if test $endian = big; then
+      csc_compiler=mcs
+   elif test $endian = little; then
+      csc_compiler=roslyn
+   else
+      csc_compiler=mcs
+   fi
+fi
+AC_MSG_RESULT($csc_compiler)
 
 #
 # Set the build profiles and options before things which use them
@@ -4403,7 +4426,7 @@ fi
 
     echo "CSC_LOCATION = $CSC" >> $srcdir/$mcsdir/build/config.make
 
-    if test "x$with_mcs_compiler" = "xyes"; then
+    if test $csc_compiler = mcs; then
       echo "MCS_MODE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
@@ -4436,6 +4459,7 @@ fi
 
 echo "
         mcs source:    $mcsdir
+	C# Compiler:   $csc_compiler
 
    Engine:
 	Host:	       $host
