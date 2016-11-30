@@ -51,7 +51,7 @@ unsigned __int64 getTimeStamp() {
 
 #endif // _TARGET_X86_ 
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
 /*********************************************************************************/
 /* Get the the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
