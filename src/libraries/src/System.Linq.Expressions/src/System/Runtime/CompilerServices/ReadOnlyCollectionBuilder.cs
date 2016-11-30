@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
-using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -23,9 +22,6 @@ namespace System.Runtime.CompilerServices
         private T[] _items;
         private int _size;
         private int _version;
-
-        [NonSerialized]
-        private object _syncRoot;
 
         /// <summary>
         /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>.
@@ -402,17 +398,7 @@ namespace System.Runtime.CompilerServices
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Interlocked.CompareExchange<object>(ref _syncRoot, new object(), comparand: null);
-                }
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         #endregion
 
