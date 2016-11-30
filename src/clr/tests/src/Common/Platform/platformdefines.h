@@ -72,7 +72,7 @@ LPWSTR HackyConvertToWSTR(char* pszInput);
 
 typedef pthread_t THREAD_ID;
 typedef void* (*MacWorker)(void*);
-typedef DWORD (*LPTHREAD_START_ROUTINE)(void*);
+typedef DWORD __stdcall (*LPTHREAD_START_ROUTINE)(void*);
 #ifdef UNICODE
 typedef WCHAR TCHAR;
 #else // ANSI
