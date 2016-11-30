@@ -3447,6 +3447,16 @@ void EEJitManager::CleanupCodeHeaps()
 
     _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress() && ::IsGCThread()));
 
+	// Quick out, don't even take the lock if we have not cleanup to do.
+	// This is important because ETW takes the CodeHeapLock when it is doing
+	// rundown, and if there are many JIT compiled methods, this can take a while.
+	// Because cleanup is called synchronously before a GC, this means GCs get
+	// blocked while ETW is doing rundown.   By not taking the lock we avoid
+	// this stall most of the time since cleanup is rare, and ETW rundown is rare
+	// the likelihood of both is very very rare.   
+	if (m_cleanupList == NULL)
+		return;
+
     CrstHolder ch(&m_CodeHeapCritSec);
 
     if (m_cleanupList == NULL)
