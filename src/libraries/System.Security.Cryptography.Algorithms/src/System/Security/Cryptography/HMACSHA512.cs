@@ -28,7 +28,8 @@ namespace System.Security.Cryptography
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA512, key, BlockSize);
             base.Key = _hMacCommon.ActualKey;
             // change the default value of BlockSizeValue to 128 instead of 64 
-            BlockSizeValue = BlockSize; 
+            BlockSizeValue = BlockSize;
+            HashSizeValue = _hMacCommon.HashSizeInBits;
         }
 
         public bool ProduceLegacyHmacValues
@@ -45,14 +46,6 @@ namespace System.Security.Cryptography
                 {
                     throw new PlatformNotSupportedException();
                 }
-            }
-        }
-
-        public override int HashSize
-        {
-            get
-            {
-                return _hMacCommon.HashSizeInBits;
             }
         }
 

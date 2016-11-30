@@ -123,7 +123,6 @@ namespace System.Security.Cryptography
     public sealed partial class MD5CryptoServiceProvider : System.Security.Cryptography.MD5
     {
         public MD5CryptoServiceProvider() { }
-        public override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override byte[] HashFinal() { throw null; }
@@ -216,7 +215,6 @@ namespace System.Security.Cryptography
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
         public SHA1CryptoServiceProvider() { }
-        public override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override byte[] HashFinal() { throw null; }

@@ -247,7 +247,6 @@ namespace System.Security.Cryptography
     {
         public HMACMD5() { }
         public HMACMD5(byte[] key) { }
-        public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
@@ -260,7 +259,6 @@ namespace System.Security.Cryptography
         public HMACSHA1(byte[] key) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public HMACSHA1(byte[] key, bool useManagedSha1) { }
-        public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
@@ -271,7 +269,6 @@ namespace System.Security.Cryptography
     {
         public HMACSHA256() { }
         public HMACSHA256(byte[] key) { }
-        public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
@@ -283,7 +280,6 @@ namespace System.Security.Cryptography
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
         public bool ProduceLegacyHmacValues { get; set; }
-        public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
@@ -295,7 +291,6 @@ namespace System.Security.Cryptography
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
         public bool ProduceLegacyHmacValues { get; set; }
-        public override int HashSize { get { throw null; } }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
@@ -533,7 +528,6 @@ namespace System.Security.Cryptography
     public sealed partial class SHA1Managed : System.Security.Cryptography.SHA1
     {
         public SHA1Managed() { }
-        public sealed override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override byte[] HashFinal() { throw null; }
@@ -549,7 +543,6 @@ namespace System.Security.Cryptography
     public sealed partial class SHA256Managed : System.Security.Cryptography.SHA256
     {
         public SHA256Managed() { }
-        public sealed override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override byte[] HashFinal() { throw null; }
@@ -565,7 +558,6 @@ namespace System.Security.Cryptography
     public sealed partial class SHA384Managed : System.Security.Cryptography.SHA384
     {
         public SHA384Managed() { }
-        public sealed override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override byte[] HashFinal() { throw null; }
@@ -581,7 +573,6 @@ namespace System.Security.Cryptography
     public sealed partial class SHA512Managed : System.Security.Cryptography.SHA512
     {
         public SHA512Managed() { }
-        public sealed override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override byte[] HashFinal() { throw null; }
