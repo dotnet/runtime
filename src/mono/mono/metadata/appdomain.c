@@ -187,6 +187,7 @@ create_domain_objects (MonoDomain *domain)
 	MonoString *empty_str = mono_string_intern_checked (mono_string_new (domain, ""), &error);
 	mono_error_assert_ok (&error);
 	mono_field_static_set_value (string_vt, string_empty_fld, empty_str);
+	domain->empty_string = empty_str;
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.

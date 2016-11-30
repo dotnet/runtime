@@ -824,6 +824,8 @@ mono_string_hash
 mono_string_intern
 mono_string_is_interned
 mono_string_length
+mono_string_empty
+mono_string_empty_wrapper
 mono_string_new
 mono_string_new_len
 mono_string_new_size
