@@ -1518,6 +1518,7 @@ ActivationHandler(CONTEXT* context)
 
 extern "C" void ActivationHandlerWrapper();
 extern "C" int ActivationHandlerReturnOffset;
+extern "C" unsigned int XmmYmmStateSupport();
 
 /*++
 Function :
@@ -1581,6 +1582,12 @@ InjectActivationInternal(CPalThread* pThread)
                 // after the activation function returns.
                 CONTEXT *pContext = (CONTEXT *)contextAddress;
                 pContext->ContextFlags = CONTEXT_FULL | CONTEXT_SEGMENTS;
+#ifdef XSTATE_SUPPORTED
+                if (XmmYmmStateSupport() == 1)
+                {
+                    pContext->ContextFlags |= CONTEXT_XSTATE;
+                }
+#endif
                 MachRet = CONTEXT_GetThreadContextFromPort(threadPort, pContext);
                 _ASSERT_MSG(MachRet == KERN_SUCCESS, "CONTEXT_GetThreadContextFromPort\n");
 
