@@ -55,6 +55,9 @@
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
 
+  <!-- Temporarily enable local build of tools -->
+  <Import Project="$(SourceDir)Tools\corefxTools.props" />
+
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
 
   <PropertyGroup>
