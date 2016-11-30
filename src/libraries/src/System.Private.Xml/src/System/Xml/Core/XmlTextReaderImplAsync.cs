@@ -2570,7 +2570,7 @@ namespace System.Xml
                 int attrNameLinePos = _ps.LinePos;
 
 #if DEBUG
-                int attrNameLineNo = ps.LineNo;
+                int attrNameLineNo = _ps.LineNo;
 #endif
 
                 // parse attribute name
@@ -2663,7 +2663,7 @@ namespace System.Xml
                 attr.SetLineInfo(_ps.LineNo, attrNameLinePos);
 
 #if DEBUG
-                Debug.Assert( attrNameLineNo == ps.LineNo );
+                Debug.Assert( attrNameLineNo == _ps.LineNo );
 #endif
 
                 // parse equals and quote char; 
@@ -2708,8 +2708,8 @@ namespace System.Xml
                 {
 #if DEBUG
 #if !SILVERLIGHT
-                    if ( normalize ) {
-                        string val = new string(chars, ps.charPos, pos - ps.charPos );
+                    if ( _normalize ) {
+                        string val = new string(chars, _ps.charPos, pos - _ps.charPos );
                         Debug.Assert( val == XmlComplianceUtil.CDataNormalize( val ), "The attribute value is not CDATA normalized!" ); 
                     }
 #endif

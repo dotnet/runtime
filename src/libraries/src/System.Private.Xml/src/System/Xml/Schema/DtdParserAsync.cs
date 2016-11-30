@@ -164,8 +164,8 @@ namespace System.Xml
             await ParseSubsetAsync().ConfigureAwait(false);
 
 #if DEBUG
-            Debug.Assert( readerAdapter.EntityStackLength == 0 ||
-                         ( freeFloatingDtd && readerAdapter.EntityStackLength == 1 ) );
+            Debug.Assert( _readerAdapter.EntityStackLength == 0 ||
+                         ( _freeFloatingDtd && _readerAdapter.EntityStackLength == 1 ) );
 #endif
         }
 
@@ -248,8 +248,8 @@ namespace System.Xml
                             }
 #if DEBUG
                             // check entity nesting
-                            Debug.Assert( readerAdapter.EntityStackLength == 0 || 
-                                          ( freeFloatingDtd && readerAdapter.EntityStackLength == 1 ) );
+                            Debug.Assert( _readerAdapter.EntityStackLength == 0 || 
+                                          ( _freeFloatingDtd && _readerAdapter.EntityStackLength == 1 ) );
 #endif
                         }
                         else
