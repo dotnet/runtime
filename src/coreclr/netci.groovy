@@ -1877,7 +1877,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }
                         if (scenario == 'gcstress15_pri1r2r')
                         {
-                           gcstressStr = 'gcstresslevel 0xF'
+                            gcstressStr = 'gcstresslevel 0xF'
                         }
 
                         if (scenario == 'jitdiff')
@@ -1934,7 +1934,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // 10s of thousands of files around.
                         buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${arch}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
 
-                        if (!Constants.jitStressModeScenarios.containsKey(scenario) && scenario != 'jitdiff') {
+                        if (!Constants.jitStressModeScenarios.containsKey(scenario)) {
                             // For windows, pull full test results and test drops for x86/x64.
                             // No need to pull for stress mode scenarios (downstream builds use the default scenario)
                             Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
