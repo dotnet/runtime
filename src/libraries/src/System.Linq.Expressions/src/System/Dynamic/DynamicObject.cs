@@ -801,43 +801,15 @@ namespace System.Dynamic
             /// implementation for the method provided then Dynamic falls back to the base class
             /// behavior which lets the call site determine how the binder is performed.
             /// </summary>
-            private bool IsOverridden(MethodInfo baseMethod)
+            private bool IsOverridden(MethodInfo method)
             {
-                MemberInfo[] members = Value.GetType().GetMember(baseMethod.Name, BindingFlags.Public | BindingFlags.Instance);
-                ParameterInfo[] baseParams = null;
+                MemberInfo[] methods = Value.GetType().GetMember(method.Name, MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance);
 
-                foreach (MemberInfo member in members)
+                foreach (MethodInfo mi in methods)
                 {
-                    var mi = member as MethodInfo;
-
-                    if (mi != null && mi.DeclaringType != typeof(DynamicObject))
+                    if (mi.DeclaringType != typeof(DynamicObject) && mi.GetBaseDefinition() == method)
                     {
-                        // TODO: Review this logic. Using GetBaseDefinition would be more natural,
-                        //       but the current code seems to bind to shadowing methods with the
-                        //       same name and parameters (but not return type).
-
-                        if (baseParams == null)
-                        {
-                            baseParams = baseMethod.GetParameters();
-                        }
-
-                        ParameterInfo[] miParams = mi.GetParameters();
-
-                        if (baseParams.Length == miParams.Length)
-                        {
-                            bool mismatch = false;
-                            for (int i = 0; i < baseParams.Length; i++)
-                            {
-                                if (baseParams[i].ParameterType != miParams[i].ParameterType)
-                                {
-                                    mismatch = true;
-                                }
-                            }
-                            if (!mismatch)
-                            {
-                                return true;
-                            }
-                        }
+                        return true;
                     }
                 }
 
