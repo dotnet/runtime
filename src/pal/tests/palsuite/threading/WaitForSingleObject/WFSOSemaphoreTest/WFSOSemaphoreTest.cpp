@@ -31,7 +31,7 @@ unsigned int globalcounter =0;
 int testReturnCode = PASS;
 
 //Declaring Function Prototypes
-DWORD WFSOSemaphoreTest(LPVOID params);
+DWORD PALAPI WFSOSemaphoreTest(LPVOID params);
 void incrementCounter(void);
 
 int __cdecl main(int argc, char **argv)
@@ -134,7 +134,7 @@ void incrementCounter(void)
 }
 
 
-DWORD WFSOSemaphoreTest(LPVOID params)
+DWORD PALAPI WFSOSemaphoreTest(LPVOID params)
 {
 
      DWORD dwWaitResult; 

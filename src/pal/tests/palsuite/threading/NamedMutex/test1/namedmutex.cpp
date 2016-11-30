@@ -520,7 +520,7 @@ bool MutualExclusionTests_Parent()
     return true;
 }
 
-DWORD MutualExclusionTests_Child(void *arg = nullptr)
+DWORD PALAPI MutualExclusionTests_Child(void *arg = nullptr)
 {
     const char *testName = "MutualExclusionTests";
 
@@ -626,7 +626,7 @@ bool LifetimeTests_Parent()
     return true;
 }
 
-DWORD LifetimeTests_Child(void *arg = nullptr)
+DWORD PALAPI LifetimeTests_Child(void *arg = nullptr)
 {
     const char *testName = "LifetimeTests";
 
@@ -682,7 +682,7 @@ bool LifetimeTests()
     return true;
 }
 
-DWORD AbandonTests_Child_TryLock(void *arg = nullptr);
+DWORD PALAPI AbandonTests_Child_TryLock(void *arg = nullptr);
 
 bool AbandonTests_Parent()
 {
@@ -751,7 +751,7 @@ bool AbandonTests_Parent()
     return true;
 }
 
-DWORD AbandonTests_Child_GracefulExit_Close(void *arg = nullptr)
+DWORD PALAPI AbandonTests_Child_GracefulExit_Close(void *arg = nullptr)
 {
     const char *testName = "AbandonTests";
 
@@ -837,7 +837,7 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
     return 0;
 }
 
-DWORD AbandonTests_Child_TryLock(void *arg)
+DWORD PALAPI AbandonTests_Child_TryLock(void *arg)
 {
     const char *testName = "AbandonTests";
 
@@ -910,7 +910,7 @@ DWORD g_stressDurationMilliseconds = 0;
 LONG g_stressTestCounts[_countof(TestList)] = {0};
 LONG g_stressResult = true;
 
-DWORD StressTest(void *arg)
+DWORD PALAPI StressTest(void *arg)
 {
     // Run the specified test continuously for the stress duration
     SIZE_T testIndex = reinterpret_cast<SIZE_T>(arg);

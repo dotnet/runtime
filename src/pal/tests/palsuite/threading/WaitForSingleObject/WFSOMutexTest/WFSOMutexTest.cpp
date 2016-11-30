@@ -30,7 +30,7 @@ unsigned int globalcounter =0;
 int testReturnCode = PASS;
 
 //Declaring Function Prototypes
-DWORD WFSOMutexTest(LPVOID params);
+DWORD PALAPI WFSOMutexTest(LPVOID params);
 void incrementCounter(void);
 
 
@@ -131,7 +131,7 @@ void incrementCounter(void)
 }
 
 
-DWORD WFSOMutexTest(LPVOID params)
+DWORD PALAPI WFSOMutexTest(LPVOID params)
 {
 
      DWORD dwWaitResult; 
