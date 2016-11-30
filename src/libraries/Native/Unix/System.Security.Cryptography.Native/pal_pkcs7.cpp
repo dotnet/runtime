@@ -4,8 +4,6 @@
 
 #include "pal_pkcs7.h"
 
-#include <openssl/pem.h>
-
 extern "C" PKCS7* CryptoNative_PemReadBioPkcs7(BIO* bp)
 {
     return PEM_read_bio_PKCS7(bp, nullptr, nullptr, nullptr);

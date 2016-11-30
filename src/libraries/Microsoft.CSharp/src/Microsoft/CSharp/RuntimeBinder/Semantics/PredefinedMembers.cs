@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -247,10 +246,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(false, "panic!");
         }
 
-        private SymbolLoader _loader;
+        private readonly SymbolLoader _loader;
         internal SymbolTable RuntimeBinderSymbolTable;
-        private MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
-        private PropertySymbol[] _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
+        private readonly MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
+        private readonly PropertySymbol[] _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
 
         private Name GetMethName(PREDEFMETH method)
         {
@@ -666,8 +665,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             GetErrorContext().Error(ErrorCode.ERR_MissingPredefinedMember, PredefinedTypes.GetFullName(type), GetPredefName(name));
         }
 
-        private static int[] s_DelegateCtorSignature1 = { (int)PredefinedType.PT_VOID, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_INTPTR };
-        private static int[] s_DelegateCtorSignature2 = { (int)PredefinedType.PT_VOID, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_UINTPTR };
+        private static readonly int[] s_DelegateCtorSignature1 = { (int)PredefinedType.PT_VOID, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_INTPTR };
+        private static readonly int[] s_DelegateCtorSignature2 = { (int)PredefinedType.PT_VOID, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_UINTPTR };
 
         private static PredefinedName GetPropPredefName(PREDEFPROP property)
         {
@@ -706,7 +705,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // the list of predefined property definitions.
         // This list must be in the same order as the PREDEFPROP enum.
-        private static PredefinedPropertyInfo[] s_predefinedProperties = {
+        private static readonly PredefinedPropertyInfo[] s_predefinedProperties = {
             new PredefinedPropertyInfo(   PREDEFPROP.PP_FIRST,                                           MethodRequiredEnum.Optional,   PredefinedName.PN_COUNT,                   PREDEFMETH.PM_COUNT,                                           PREDEFMETH.PM_COUNT  ),
 
             new PredefinedPropertyInfo(   PREDEFPROP.PP_ARRAY_LENGTH,                                    MethodRequiredEnum.Optional,   PredefinedName.PN_LENGTH,                  PREDEFMETH.PM_ARRAY_GETLENGTH,                                 PREDEFMETH.PM_COUNT  ),
@@ -766,7 +765,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // the list of predefined method definitions.
         // This list must be in the same order as the PREDEFMETH enum.
-        private static PredefinedMethodInfo[] s_predefinedMethods = new PredefinedMethodInfo[(int)PREDEFMETH.PM_COUNT] {
+        private static readonly PredefinedMethodInfo[] s_predefinedMethods = new PredefinedMethodInfo[(int)PREDEFMETH.PM_COUNT] {
             new PredefinedMethodInfo(   PREDEFMETH.PM_FIRST,                                           MethodRequiredEnum.Optional,   PredefinedType.PT_COUNT,               PredefinedName.PN_COUNT,                   MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_VOID, 0  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_ARRAY_GETLENGTH,                                 MethodRequiredEnum.Optional,   PredefinedType.PT_ARRAY,               PredefinedName.PN_GETLENGTH,               MethodCallingConventionEnum.Instance,   ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_INT, 0  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_DECIMAL_OPDECREMENT,                             MethodRequiredEnum.Optional,   PredefinedType.PT_DECIMAL,             PredefinedName.PN_OPDECREMENT,             MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_DECIMAL, 1, (int)PredefinedType.PT_DECIMAL  }),

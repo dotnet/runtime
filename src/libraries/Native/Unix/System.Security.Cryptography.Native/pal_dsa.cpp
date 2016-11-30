@@ -4,7 +4,6 @@
 
 #include "pal_dsa.h"
 #include "pal_utilities.h"
-#include <openssl/err.h>
 
 extern "C" int32_t CryptoNative_DsaUpRef(DSA* dsa)
 {

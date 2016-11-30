@@ -58,7 +58,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void EqualityBasedOnNamesAndCount()
         {
-            var names = new[] {"foo", "bar", "baz", "quux", "quuux"};
+            string[] names = new[] {"foo", "bar", "baz", "quux", "quuux"};
             for (int i = 0; i <= names.Length; ++i)
             {
                 for (int j = 0; j != 3; ++j)
@@ -79,7 +79,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void HashCodeBasedOnEquality()
         {
-            var names = new[] {"foo", "bar", "baz", "quux", "quuux"};
+            string[] names = new[] {"foo", "bar", "baz", "quux", "quuux"};
             for (int i = 0; i <= names.Length; ++i)
             {
                 for (int j = 0; j != 3; ++j)
@@ -120,7 +120,7 @@ namespace System.Dynamic.Tests
         public void FreshCopyOfNamesMadeEnumerable()
         {
             List<string> nameList = new List<string> {"foo", "bar"};
-            var nameReadOnly = nameList.AsReadOnly();
+            ReadOnlyCollection<string> nameReadOnly = nameList.AsReadOnly();
             var info = new CallInfo(2, nameReadOnly);
             nameList[0] = "baz";
             nameList[1] = "qux";

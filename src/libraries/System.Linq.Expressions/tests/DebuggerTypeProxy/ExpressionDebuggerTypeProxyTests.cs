@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Tests
             var att =
                 (DebuggerTypeProxyAttribute)
                     type.GetCustomAttributes().Single(at => at.TypeId.Equals(typeof(DebuggerTypeProxyAttribute)));
-            var proxyName = att.ProxyTypeName;
+            string proxyName = att.ProxyTypeName;
             proxyName = proxyName.Substring(0, proxyName.IndexOf(','));
             return type.GetTypeInfo().Assembly.GetType(proxyName);
         }
@@ -75,10 +75,10 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(UnaryExpressionProxy))]
         public void VerifyDebugView(object obj)
         {
-            var type = obj.GetType();
-            var viewType = GetDebugViewType(type);
-            var view = viewType.GetConstructors().Single().Invoke(new[] {obj});
-            var properties =
+            Type type = obj.GetType();
+            Type viewType = GetDebugViewType(type);
+            object view = viewType.GetConstructors().Single().Invoke(new[] {obj});
+            IEnumerable<PropertyInfo> properties =
                 type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy)
                     .Where(pr => !ExcludedPropertyNames.Contains(pr.Name) && pr.CanRead);
             if (obj is Expression)
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Tests
             foreach (var property in properties)
             {
                 string name = property.Name;
-                var proxyProperty = viewType.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+                PropertyInfo proxyProperty = viewType.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
                 Assert.True(proxyProperty != null, $"Could not find property {name} in proxy for {type}");
                 Assert.True(proxyProperty.CanRead);
                 Assert.False(proxyProperty.CanWrite);
@@ -104,7 +104,7 @@ namespace System.Linq.Expressions.Tests
                     continue;
                 }
 
-                var proxyValue = proxyProperty.GetValue(view);
+                object proxyValue = proxyProperty.GetValue(view);
                 Assert.Equal(value, proxyValue);
                 if (!(proxyValue is string) && proxyValue is IEnumerable)
                 {
@@ -158,10 +158,10 @@ namespace System.Linq.Expressions.Tests
         [Theory, MemberData(nameof(OnePerType))]
         public void ThrowOnNullToCtor(object sourceObject)
         {
-            var type = sourceObject.GetType();
-            var viewType = GetDebugViewType(type);
-            var ctor = viewType.GetConstructors().Single();
-            var tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] {null}));
+            Type type = sourceObject.GetType();
+            Type viewType = GetDebugViewType(type);
+            ConstructorInfo ctor = viewType.GetConstructors().Single();
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] {null}));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
             Assert.Equal(ctor.GetParameters()[0].Name, ane.ParamName);
         }
@@ -214,7 +214,7 @@ namespace System.Linq.Expressions.Tests
         {
             for (int paramCount = 0; paramCount != 4; ++paramCount)
             {
-                var parameters = Enumerable.Range(0, paramCount).Select(x => Expression.Parameter(typeof(int))).ToList();
+                List<ParameterExpression> parameters = Enumerable.Range(0, paramCount).Select(x => Expression.Parameter(typeof(int))).ToList();
                 for (int count = 0; count != 7; ++count)
                 {
                     yield return
@@ -308,8 +308,8 @@ namespace System.Linq.Expressions.Tests
 
             for (int i = 0; i != 7; ++i)
             {
-                var parameters = Enumerable.Range(0, i).Select(_ => Expression.Parameter(typeof(int))).ToArray();
-                var arguments = Enumerable.Range(0, i).Select(x => (Expression)Expression.Constant(x)).ToArray();
+                ParameterExpression[] parameters = Enumerable.Range(0, i).Select(_ => Expression.Parameter(typeof(int))).ToArray();
+                Expression[] arguments = Enumerable.Range(0, i).Select(x => (Expression)Expression.Constant(x)).ToArray();
                 yield return
                     new object[] {Expression.Invoke(Expression.Lambda(Expression.Empty(), parameters), arguments)};
                 yield return

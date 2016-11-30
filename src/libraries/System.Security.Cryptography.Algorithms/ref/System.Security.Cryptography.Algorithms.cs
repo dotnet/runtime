@@ -82,6 +82,7 @@ namespace System.Security.Cryptography
         public static void AddOID(string oid, params string[] names) { }
         public static object CreateFromName(string name) { throw null; }
         public static object CreateFromName(string name, params object[] args) { throw null; }
+        public static byte[] EncodeOID(string str) { throw null; }
         public static string MapNameToOID(string name) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -384,6 +385,7 @@ namespace System.Security.Cryptography
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations) { }
         public int IterationCount { get { throw null; } set { } }
         public byte[] Salt { get { throw null; } set { } }
+        public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override byte[] GetBytes(int cb) { throw null; }
         public override void Reset() { }

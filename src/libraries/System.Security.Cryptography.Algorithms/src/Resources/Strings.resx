@@ -138,6 +138,9 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Cryptography_Config_EncodedOIDError" xml:space="preserve">
+    <value>Encoded OID length is too large (greater than 0x7f bytes).</value>
+  </data>
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
@@ -146,6 +149,9 @@
   </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
+  <data name="Cryptography_InvalidOID" xml:space="preserve">
+    <value>Object identifier (OID) is unknown.</value>
   </data>
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>

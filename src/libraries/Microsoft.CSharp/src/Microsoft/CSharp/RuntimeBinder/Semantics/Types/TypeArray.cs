@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal class TypeArray
     {
-        private CType[] _items;
+        private readonly CType[] _items;
 
         public TypeArray(CType[] types)
         {

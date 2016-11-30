@@ -44,7 +44,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static Exception SameKeyExistsInExpando(object p0)
         {
-            return new ArgumentException(Strings.SameKeyExistsInExpando(p0));
+            return new ArgumentException(Strings.SameKeyExistsInExpando(p0), "key");
         }
         /// <summary>
         /// System.Collections.Generic.KeyNotFoundException with message like "The specified key '{0}' does not exist in the ExpandoObject."
@@ -223,6 +223,15 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.SetterMustBeVoid, paramName);
         }
+
+        /// <summary>
+        /// ArgumentException with message like "Property type must match the value type of getter"
+        /// </summary>
+        internal static Exception PropertyTypeMustMatchGetter(string paramName)
+        {
+            return new ArgumentException(Strings.PropertyTypeMustMatchGetter, paramName);
+        }
+        
         /// <summary>
         /// ArgumentException with message like "Property type must match the value type of setter"
         /// </summary>
@@ -611,13 +620,6 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
         /// </summary>
-        internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName)
-        {
-            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName);
-        }
-        /// <summary>
-        /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
-        /// </summary>
         internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName, int index)
         {
             return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName, index);
@@ -839,13 +841,7 @@ namespace System.Linq.Expressions
         {
             return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForType(p0, p1));
         }
-        /// <summary>
-        /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for nullable type '{1}'"
-        /// </summary>
-        internal static Exception ExpressionNotSupportedForNullableType(object p0, object p1)
-        {
-            return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForNullableType(p0, p1));
-        }
+
         /// <summary>
         /// ArgumentException with message like "ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'"
         /// </summary>
@@ -877,9 +873,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Instance property '{0}{1}' is not defined for type '{2}'"
         /// </summary>
-        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2)
+        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2, string paramName)
         {
-            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2));
+            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"
@@ -1008,13 +1004,6 @@ namespace System.Linq.Expressions
         internal static Exception LogicalOperatorMustHaveBooleanOperators(object p0, object p1)
         {
             return new ArgumentException(Strings.LogicalOperatorMustHaveBooleanOperators(p0, p1));
-        }
-        /// <summary>
-        /// InvalidOperationException with message like "No method '{0}' exists on type '{1}'."
-        /// </summary>
-        internal static Exception MethodDoesNotExistOnType(object p0, object p1)
-        {
-            return new InvalidOperationException(Strings.MethodDoesNotExistOnType(p0, p1));
         }
         /// <summary>
         /// InvalidOperationException with message like "No method '{0}' on type '{1}' is compatible with the supplied arguments."
@@ -1172,13 +1161,7 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.UnknownLiftType(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "Cannot create instance of {0} because it contains generic parameters"
-        /// </summary>
-        internal static Exception IllegalNewGenericParams(object p0, string paramName)
-        {
-            return new ArgumentException(Strings.IllegalNewGenericParams(p0), paramName);
-        }
+
         /// <summary>
         /// InvalidOperationException with message like "variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined"
         /// </summary>
@@ -1317,14 +1300,12 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.NonAbstractConstructorRequired);
         }
 
+        /// <summary>
+        /// InvalidProgramException with default message.
+        /// </summary>
         internal static Exception InvalidProgram()
         {
             return new InvalidProgramException();
-        }
-
-        internal static InvalidOperationException InterpreterCannotThrowNonExceptions()
-        {
-            return new InvalidOperationException(Strings.InterpreterCannotThrowNonExceptions);
         }
 
         private static string GetParamName(string paramName, int index)

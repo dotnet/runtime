@@ -246,19 +246,17 @@ namespace System.Linq.Expressions.Tests
 
     internal class CompilationTypes : IEnumerable<object[]>
     {
-        private static readonly object[] False = new object[] { false };
-        private static readonly object[] True = new object[] { true };
-
-        public IEnumerator<object[]> GetEnumerator()
+        private static readonly IEnumerable<object[]> Booleans = new[]
         {
-            yield return False;
-            yield return True;
-        }
+            new object[] {false},
+#if FEATURE_COMPILE && FEATURE_INTERPRET
+            new object[] {true}
+#endif
+        };
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        public IEnumerator<object[]> GetEnumerator() => Booleans.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     internal class NoOpVisitor : ExpressionVisitor

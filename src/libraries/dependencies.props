@@ -18,17 +18,17 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>10ae672d2e13fb79101a4991f2643cca01208075</CoreFxCurrentRef>
-    <CoreClrCurrentRef>b43cafc26d7e7982ba748dc0cb44326c7e626ab6</CoreClrCurrentRef>
-    <ExternalCurrentRef>34a8d759cc7da4d664d27a57c1558be8dec2208c</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>34a8d759cc7da4d664d27a57c1558be8dec2208c</ProjectNTfsCurrentRef>
+    <CoreClrCurrentRef>7f84c1bb6d8a5178786ae30ba1fb780e332c3818</CoreClrCurrentRef>
+    <ExternalCurrentRef>4e2952b5114bfa90cc45eef908204006a771a62b</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>7f84c1bb6d8a5178786ae30ba1fb780e332c3818</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>beta-24721-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24725-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24725-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24725-00</ProjectNTfsExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24729-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24729-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->

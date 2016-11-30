@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Compiler
                 Expression newBody = body.Node;
                 if (_tm.Temps.Count > 0)
                 {
-                    newBody = Expression.Block(_tm.Temps, newBody);
+                    newBody = Expression.Block(_tm.Temps, new TrueReadOnlyCollection<Expression>(newBody));
                 }
 
                 // Clone the lambda, replacing the body & variables.

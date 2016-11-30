@@ -231,7 +231,7 @@ namespace System.Linq.Expressions
 
                 return Expression.Block(
                     new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
-                    e1, e2, e3, e4
+                    new TrueReadOnlyCollection<Expression>(e1, e2, e3, e4)
                 );
             }
         }
@@ -422,30 +422,34 @@ namespace System.Linq.Expressions
 
             return Block(
                 new TrueReadOnlyCollection<ParameterExpression>(left),
-                Assign(left, Left),
-                Condition(
-                    Property(left, "HasValue"),
+                new TrueReadOnlyCollection<Expression>(
+                    Assign(left, Left),
                     Condition(
-                        Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
-                        left,
-                        Block(
-                            new TrueReadOnlyCollection<ParameterExpression>(right),
-                            Assign(right, Right),
-                            Condition(
-                                Property(right, "HasValue"),
-                                Convert(
-                                    Call(
-                                        Method,
-                                        Call(left, "GetValueOrDefault", null),
-                                        Call(right, "GetValueOrDefault", null)
-                                    ),
-                                    Type
-                                ),
-                                Constant(null, Type)
+                        Property(left, "HasValue"),
+                        Condition(
+                            Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
+                            left,
+                            Block(
+                                new TrueReadOnlyCollection<ParameterExpression>(right),
+                                new TrueReadOnlyCollection<Expression>(
+                                    Assign(right, Right),
+                                    Condition(
+                                        Property(right, "HasValue"),
+                                        Convert(
+                                            Call(
+                                                Method,
+                                                Call(left, "GetValueOrDefault", null),
+                                                Call(right, "GetValueOrDefault", null)
+                                            ),
+                                            Type
+                                        ),
+                                        Constant(null, Type)
+                                    )
+                                )
                             )
-                        )
-                    ),
-                    Constant(null, Type)
+                        ),
+                        Constant(null, Type)
+                    )
                 )
             );
         }
@@ -1592,13 +1596,11 @@ namespace System.Linq.Expressions
             {
                 throw Error.OperandTypesDoNotMatchParameters(nodeType, conversion.ToString());
             }
-            if (method != null)
+            Debug.Assert(method != null);
+            // The parameter type of conversion lambda must be the same as the return type of the overload method
+            if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
             {
-                // The parameter type of conversion lambda must be the same as the return type of the overload method
-                if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
-                {
-                    throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
-                }
+                throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
             }
         }
 

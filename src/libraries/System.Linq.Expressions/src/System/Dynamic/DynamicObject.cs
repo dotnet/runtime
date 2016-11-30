@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -15,19 +16,23 @@ namespace System.Dynamic
 {
     /// <summary>
     /// Provides a simple class that can be inherited from to create an object with dynamic behavior
-    /// at runtime.  Subclasses can override the various binder methods (GetMember, SetMember, Call, etc.)
-    /// to provide custom behavior that will be invoked at runtime.
+    /// at runtime.  Subclasses can override the various binder methods (<see cref="TryGetMember"/>,
+    /// <see cref="TrySetMember"/>, <see cref="TryInvokeMember"/>, etc.) to provide custom behavior
+    /// that will be invoked at runtime.
     ///
-    /// If a method is not overridden then the DynamicObject does not directly support that behavior and
-    /// the call site will determine how the binding should be performed.
+    /// If a method is not overridden then the <see cref="DynamicObject"/> does not directly support
+    /// that behavior and the call site will determine how the binding should be performed.
     /// </summary>
     [Serializable]
     public class DynamicObject : IDynamicMetaObjectProvider
     {
         /// <summary>
-        /// Enables derived types to create a new instance of DynamicObject.  DynamicObject instances cannot be
-        /// directly instantiated because they have no implementation of dynamic behavior.
+        /// Enables derived types to create a new instance of <see cref="DynamicObject"/>.
         /// </summary>
+        /// <remarks>
+        /// <see cref="DynamicObject"/> instances cannot be directly instantiated because they have no
+        /// implementation of dynamic behavior.
+        /// </remarks>
         protected DynamicObject()
         {
         }
@@ -57,10 +62,7 @@ namespace System.Dynamic
         /// <param name="binder">The binder provided by the call site.</param>
         /// <param name="value">The value to set.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        public virtual bool TrySetMember(SetMemberBinder binder, object value)
-        {
-            return false;
-        }
+        public virtual bool TrySetMember(SetMemberBinder binder, object value) => false;
 
         /// <summary>
         /// Provides the implementation of deleting a member.  Derived classes can override
@@ -69,10 +71,7 @@ namespace System.Dynamic
         /// </summary>
         /// <param name="binder">The binder provided by the call site.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        public virtual bool TryDeleteMember(DeleteMemberBinder binder)
-        {
-            return false;
-        }
+        public virtual bool TryDeleteMember(DeleteMemberBinder binder) => false;
 
         /// <summary>
         /// Provides the implementation of calling a member.  Derived classes can override
@@ -91,9 +90,9 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Provides the implementation of converting the DynamicObject to another type.  Derived classes
-        /// can override this method to customize behavior.  When not overridden the call site
-        /// requesting the binder determines the behavior.
+        /// Provides the implementation of converting the <see cref="DynamicObject"/> to another type.
+        /// Derived classes can override this method to customize behavior.  When not overridden the
+        /// call site requesting the binder determines the behavior.
         /// </summary>
         /// <param name="binder">The binder provided by the call site.</param>
         /// <param name="result">The result of the conversion.</param>
@@ -106,9 +105,9 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Provides the implementation of creating an instance of the DynamicObject.  Derived classes
-        /// can override this method to customize behavior.  When not overridden the call site requesting
-        /// the binder determines the behavior.
+        /// Provides the implementation of creating an instance of the <see cref="DynamicObject"/>.
+        /// Derived classes can override this method to customize behavior.  When not overridden the
+        /// call site requesting the binder determines the behavior.
         /// </summary>
         /// <param name="binder">The binder provided by the call site.</param>
         /// <param name="args">The arguments used for creation.</param>
@@ -122,7 +121,7 @@ namespace System.Dynamic
         }
 
         /// <summary>
-        /// Provides the implementation of invoking the DynamicObject.  Derived classes can
+        /// Provides the implementation of invoking the <see cref="DynamicObject"/>.  Derived classes can
         /// override this method to customize behavior.  When not overridden the call site requesting
         /// the binder determines the behavior.
         /// </summary>
@@ -194,10 +193,7 @@ namespace System.Dynamic
         /// <param name="value">The value to set.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value)
-        {
-            return false;
-        }
+        public virtual bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value) => false;
 
         /// <summary>
         /// Provides the implementation of performing a delete index operation.  Derived classes
@@ -207,20 +203,14 @@ namespace System.Dynamic
         /// <param name="binder">The binder provided by the call site.</param>
         /// <param name="indexes">The indexes to be deleted.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        public virtual bool TryDeleteIndex(DeleteIndexBinder binder, object[] indexes)
-        {
-            return false;
-        }
+        public virtual bool TryDeleteIndex(DeleteIndexBinder binder, object[] indexes) => false;
 
         /// <summary>
         /// Returns the enumeration of all dynamic member names.
         /// </summary>
         /// <returns>The list of dynamic member names.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames()
-        {
-            return Array.Empty<string>();
-        }
+        public virtual IEnumerable<string> GetDynamicMemberNames() => Array.Empty<string>();
 
         #endregion
 
@@ -233,10 +223,7 @@ namespace System.Dynamic
             {
             }
 
-            public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames()
-            {
-                return Value.GetDynamicMemberNames();
-            }
+            public override IEnumerable<string> GetDynamicMemberNames() => Value.GetDynamicMemberNames();
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
             {
@@ -611,7 +598,8 @@ namespace System.Dynamic
                         condition,
                         convert,
                         Expression.Throw(
-                            Expression.New(InvalidCastException_Ctor_String,
+                            Expression.New(
+                                InvalidCastException_Ctor_String,
                                 new TrueReadOnlyCollection<Expression>(
                                     Expression.Call(
                                         String_Format_String_ObjectArray,
@@ -906,14 +894,15 @@ namespace System.Dynamic
         #region IDynamicMetaObjectProvider Members
 
         /// <summary>
-        /// The provided MetaObject will dispatch to the Dynamic virtual methods.
-        /// The object can be encapsulated inside of another MetaObject to
-        /// provide custom behavior for individual actions.
+        /// Returns the <see cref="DynamicMetaObject" /> responsible for binding operations performed on this object,
+        /// using the virtual methods provided by this class.
         /// </summary>
-        public virtual DynamicMetaObject GetMetaObject(Expression parameter)
-        {
-            return new MetaDynamic(parameter, this);
-        }
+        /// <param name="parameter">The expression tree representation of the runtime value.</param>
+        /// <returns>
+        /// The <see cref="DynamicMetaObject" /> to bind this object.  The object can be encapsulated inside of another
+        /// <see cref="DynamicMetaObject"/> to provide custom behavior for individual actions.
+        /// </returns>
+        public virtual DynamicMetaObject GetMetaObject(Expression parameter) => new MetaDynamic(parameter, this);
 
         #endregion
     }

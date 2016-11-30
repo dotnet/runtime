@@ -4,6 +4,7 @@
     "System.Collections": "4.4.0-beta-24721-02"
   },
   "frameworks": {
+    "netcoreapp1.1": {},
     "netstandard1.7": {}
   }
 }

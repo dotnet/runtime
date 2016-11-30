@@ -271,6 +271,16 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 });
         }
 
+#if netstandard17
+        public static void CryptDeriveKey_NotSupported()
+        {
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[8]));
+            }
+        }
+#endif
+
         private static void TestKnownValue(string password, byte[] salt, int iterationCount, byte[] expected)
         {
             byte[] output;

@@ -3,7 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <AssemblyVersion>4.2.0.0</AssemblyVersion>
     <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Linq.cs" />
