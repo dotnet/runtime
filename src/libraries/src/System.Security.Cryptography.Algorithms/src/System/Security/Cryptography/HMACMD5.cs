@@ -29,15 +29,8 @@ namespace System.Security.Cryptography
             base.Key = _hMacCommon.ActualKey;
             // this not really needed as it'll initialize BlockSizeValue with same value it has which is 64.
             // we just want to be explicit in all HMAC extended classes   
-            BlockSizeValue = BlockSize; 
-        }
-
-        public override int HashSize
-        {
-            get
-            {
-                return _hMacCommon.HashSizeInBits;
-            }
+            BlockSizeValue = BlockSize;
+            HashSizeValue = _hMacCommon.HashSizeInBits;
         }
 
         public override byte[] Key
