@@ -2126,7 +2126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMethodCallExpression(Expression @object, MethodInfo method, IArgumentProvider arguments)
         {
-            ParameterInfo[] parameters = method.GetParameters();
+            ParameterInfo[] parameters = method.GetParametersCached();
 
             // TODO: Support pass by reference.
             List<ByRefUpdater> updaters = null;
@@ -2380,7 +2380,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (node.Constructor.DeclaringType.GetTypeInfo().IsAbstract)
                     throw Error.NonAbstractConstructorRequired();
 
-                ParameterInfo[] parameters = node.Constructor.GetParameters();
+                ParameterInfo[] parameters = node.Constructor.GetParametersCached();
                 List<ByRefUpdater> updaters = null;
 
                 for (int i = 0; i < parameters.Length; i++)
