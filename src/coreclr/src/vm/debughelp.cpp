@@ -202,7 +202,7 @@ void *DumpEnvironmentBlock(void)
     return WszGetEnvironmentStrings();
 }
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 /*******************************************************************/
 // Dump the SEH chain to stderr
 void PrintSEHChain(void)
