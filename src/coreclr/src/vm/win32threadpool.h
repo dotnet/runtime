@@ -505,22 +505,22 @@ public:
     static BOOL UnregisterWaitEx(HANDLE hWaitObject,HANDLE CompletionEvent);
     static void WaitHandleCleanup(HANDLE hWaitObject);
 
-    static BOOL BindIoCompletionCallback(HANDLE FileHandle,
+    static BOOL WINAPI BindIoCompletionCallback(HANDLE FileHandle,
                                             LPOVERLAPPED_COMPLETION_ROUTINE Function,
                                             ULONG Flags,
                                             DWORD& errorCode);
 
-    static void WaitIOCompletionCallback(DWORD dwErrorCode,
+    static void WINAPI WaitIOCompletionCallback(DWORD dwErrorCode,
                                             DWORD numBytesTransferred,
                                             LPOVERLAPPED lpOverlapped);
 
-    static VOID CallbackForInitiateDrainageOfCompletionPortQueue(
+    static VOID WINAPI CallbackForInitiateDrainageOfCompletionPortQueue(
         DWORD dwErrorCode,
         DWORD dwNumberOfBytesTransfered,
         LPOVERLAPPED lpOverlapped
     );
 
-    static VOID CallbackForContinueDrainageOfCompletionPortQueue(
+    static VOID WINAPI CallbackForContinueDrainageOfCompletionPortQueue(
         DWORD dwErrorCode,
         DWORD dwNumberOfBytesTransfered,
         LPOVERLAPPED lpOverlapped
