@@ -64,12 +64,6 @@
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\ExpressionUtils.cs">
       <Link>Common\System\Dynamic\Utils\ExpressionUtils.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ExpressionVisitorUtils.cs">
-      <Link>Common\System\Dynamic\Utils\ExpressionVisitorUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ListArgumentProvider.cs">
-      <Link>Common\System\Dynamic\Utils\ListArgumentProvider.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\Strings.cs">
       <Link>Common\System\Dynamic\Utils\Strings.cs</Link>
     </Compile>
@@ -90,6 +84,7 @@
     </Compile>
     <Compile Include="System\Dynamic\Utils\ExpressionUtils.cs" />
     <Compile Include="System\Dynamic\Utils\ExpressionVisitorUtils.cs" />
+    <Compile Include="System\Dynamic\Utils\ListArgumentProvider.cs" />
     <Compile Include="System\Dynamic\Utils\ListParameterProvider.cs" />
     <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
