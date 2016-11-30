@@ -586,31 +586,40 @@ namespace System.Xml.Tests
         //VerifyResult
         public void VerifyResult(string expectedValue)
         {
-            XmlDiff.XmlDiff xmldiff = new XmlDiff.XmlDiff();
-            xmldiff.Option = XmlDiffOption.InfosetComparison | XmlDiffOption.IgnoreEmptyElement;
+            lock(s_outFileMemoryLock)
+            {
+                XmlDiff.XmlDiff xmldiff = new XmlDiff.XmlDiff();
+                xmldiff.Option = XmlDiffOption.InfosetComparison | XmlDiffOption.IgnoreEmptyElement | XmlDiffOption.NormalizeNewline;
+                
+                string actualValue;
+                
+                using (FileStream outFile = new FileStream("out.xml", FileMode.Open, FileAccess.Read))
+                {
+                    StreamReader sr = new StreamReader(outFile);
+                    actualValue = sr.ReadToEnd();
+                    sr.Dispose();
+                }
+                
+                //Output the expected and actual values
+                _output.WriteLine("Expected : " + expectedValue);
+                _output.WriteLine("Actual : " + actualValue);
+                
+                bool bResult;
 
-            StreamReader sr = new StreamReader(new FileStream("out.xml", FileMode.Open, FileAccess.Read));
-            string actualValue = sr.ReadToEnd();
-            sr.Dispose();
+                //Load into XmlTextReaders
+                using (XmlTextReader tr1 = new XmlTextReader("out.xml"))
+                {
+                    using (XmlTextReader tr2 = new XmlTextReader(new StringReader(expectedValue)))
+                    {
+                        bResult = xmldiff.Compare(tr1, tr2);
+                    }
+                }
 
-            //Output the expected and actual values
-            _output.WriteLine("Expected : " + expectedValue);
-            _output.WriteLine("Actual : " + actualValue);
-
-            //Load into XmlTextReaders
-            XmlTextReader tr1 = new XmlTextReader("out.xml");
-            XmlTextReader tr2 = new XmlTextReader(new StringReader(expectedValue));
-
-            bool bResult = xmldiff.Compare(tr1, tr2);
-
-            //Close the readers
-            tr1.Dispose();
-            tr2.Dispose();
-
-            if (bResult)
-                return;
-            else
-                Assert.True(false);
+                if (bResult)
+                    return;
+                else
+                    Assert.True(false);
+            }
         }
 
         // --------------------------------------------------------------------------------------------------------------
@@ -717,8 +726,11 @@ namespace System.Xml.Tests
                         TextWriter tw = null;
                         try
                         {
-                            tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
-                            xslt.Transform(xd, null, tw);
+                            using (FileStream outFile = new FileStream(_strOutFile, FileMode.Create, FileAccess.Write))
+                            {
+                                tw = new StreamWriter(outFile, Encoding.UTF8);
+                                xslt.Transform(xd, null, tw);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -819,8 +831,11 @@ namespace System.Xml.Tests
                         TextWriter tw = null;
                         try
                         {
-                            tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
-                            xslt.Transform(xd, m_xsltArg, tw);
+                            using (FileStream outFile = new FileStream(_strOutFile, FileMode.Create, FileAccess.Write))
+                            {
+                                tw = new StreamWriter(outFile, Encoding.UTF8);
+                                xslt.Transform(xd, m_xsltArg, tw);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -924,8 +939,11 @@ namespace System.Xml.Tests
                         TextWriter tw = null;
                         try
                         {
-                            tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
-                            xslt.Transform(xd, null, tw, xr);
+                            using (FileStream outFile = new FileStream(_strOutFile, FileMode.Create, FileAccess.Write))
+                            {
+                                tw = new StreamWriter(outFile, Encoding.UTF8);
+                                xslt.Transform(xd, null, tw, xr);
+                            } 
                         }
                         catch (Exception ex)
                         {
