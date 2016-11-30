@@ -3400,7 +3400,7 @@ public:
         m_iSize = iBuckets + 7;
     }
 
-    ~CClosedHashBase()
+    virtual ~CClosedHashBase()
     {
         WRAPPER_NO_CONTRACT;
         Clear();
