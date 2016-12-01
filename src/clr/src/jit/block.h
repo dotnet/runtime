@@ -353,15 +353,18 @@ struct BasicBlock : private LIR::Range
                                        // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
                                        // finally.
 
+#define BBF_CLONED_FINALLY_BEGIN 0x100000000 // First block of a cloned finally region
+#define BBF_CLONED_FINALLY_END 0x200000000   // Last block of a cloned finally region
+
 // Flags that relate blocks to loop structure.
 
 #define BBF_LOOP_FLAGS (BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1)
 
-    bool isRunRarely()
+    bool isRunRarely() const
     {
         return ((bbFlags & BBF_RUN_RARELY) != 0);
     }
-    bool isLoopHead()
+    bool isLoopHead() const
     {
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
     }
@@ -388,7 +391,7 @@ struct BasicBlock : private LIR::Range
 // For example, the top block might or might not have BBF_GC_SAFE_POINT,
 // but we assume it does not have BBF_GC_SAFE_POINT any more.
 
-#define BBF_SPLIT_LOST (BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS)
+#define BBF_SPLIT_LOST (BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END)
 
 // Flags gained by the bottom block when a block is split.
 // Note, this is a conservative guess.
@@ -399,7 +402,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_SPLIT_GAINED                                                                                               \
     (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
-     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS)
+     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
@@ -980,8 +983,8 @@ struct BasicBlock : private LIR::Range
         return bbNum - 1;
     }
 
-    GenTreeStmt* firstStmt();
-    GenTreeStmt* lastStmt();
+    GenTreeStmt* firstStmt() const;
+    GenTreeStmt* lastStmt() const;
     GenTreeStmt* lastTopLevelStmt();
 
     GenTree* firstNode();

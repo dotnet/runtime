@@ -3500,6 +3500,10 @@ public:
 
     void fgInline();
 
+    void fgRemoveEmptyFinally();
+
+    void fgCloneFinally();
+
     GenTreePtr fgGetCritSectOfStaticMethod();
 
 #if !defined(_TARGET_X86_)
@@ -4271,6 +4275,7 @@ public:
     void fgDebugCheckNodeLinks(BasicBlock* block, GenTreePtr stmt);
     void fgDebugCheckFlags(GenTreePtr tree);
     void fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsigned chkFlags);
+    void fgDebugCheckTryFinallyExits();
 #endif
 
 #ifdef LEGACY_BACKEND
