@@ -151,6 +151,9 @@
     <ClCompile Include="..\mono\mini\tramp-x86-gsharedvt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\mini\type-checking.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\mini\abcremoval.h">

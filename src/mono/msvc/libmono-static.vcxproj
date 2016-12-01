@@ -135,6 +135,7 @@
     <ClInclude Include="..\mono\mini\mini-llvm.h" />
     <ClInclude Include="..\mono\mini\mini-llvm-cpp.h" />
     <ClCompile Include="..\mono\mini\mini-native-types.c" />
+    <ClCompile Include="..\mono\mini\type-checking.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CB0D9E92-293C-439C-9AC7-C5F59B6E0772}</ProjectGuid>
