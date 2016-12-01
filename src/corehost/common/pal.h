@@ -70,6 +70,8 @@
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
 
+#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
 #endif
@@ -202,6 +204,10 @@ namespace pal
     bool load_library(const char_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
+
+#if FEATURE_BINDING_CHECK
+    bool validate_binding(const string_t& own_dll);
+#endif
 }
 
 #endif // PAL_H
