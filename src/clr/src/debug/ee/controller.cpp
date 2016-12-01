@@ -2824,6 +2824,8 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     
     CrstHolderWithState lockController(&g_criticalSection);
 
+    TADDR originalAddress = 0;
+
 #ifdef EnC_SUPPORTED
     DebuggerControllerPatch *dcpEnCOriginal = NULL;
 
@@ -2878,7 +2880,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     // If we setip, then that will change the address in the context.
     // Remeber the old address so that we can compare it to the context's ip and see if it changed.
     // If it did change, then don't dispatch our current event.
-    TADDR originalAddress = (TADDR) address;
+    originalAddress = (TADDR) address;
 
 #ifdef _DEBUG
     // If we do a SetIP after this point, the value of address will be garbage.  Set it to a distictive pattern now, so
@@ -4486,7 +4488,7 @@ void DebuggerPatchSkip::DebuggerDetachClean()
    // THIS FIX IS INCOMPLETE!It attempts to update the IP in the cases we can easily detect.However, 
    // if a thread is in pre - emptive mode, and its filter context has been propagated to a VEH 
    // context, then the filter context we get will be NULL and this fix will not work.Our belief is 
-   // that this scenario is rare enough that it doesn’t justify the cost and risk associated with a 
+   // that this scenario is rare enough that it doesnt justify the cost and risk associated with a 
    // complete fix, in which we would have to either :
    // 1. Change the reference counting for DebuggerController and then change the exception handling 
    // logic in the debuggee so that we can handle the debugger event after detach.

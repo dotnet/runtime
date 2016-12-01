@@ -149,7 +149,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
     HRESULT hr = S_OK;
     HENUMInternal enumENC;
-    
+
+    BYTE *pLocalILMemory = NULL;
+    IMDInternalImport *pMDImport = NULL;
+    IMDInternalImport *pNewMDImport = NULL;
+
     CONTRACT_VIOLATION(GCViolation);    // SafeComHolder goes to preemptive mode, which will trigger a GC
     SafeComHolder<IMDInternalImportENC> pIMDInternalImportENC;
     SafeComHolder<IMetaDataEmit> pEmitter;
@@ -175,8 +179,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     IfFailGo(hr);
 
     // Grab the current importer.
-    IMDInternalImport *pMDImport = GetMDImport();
-    IMDInternalImport *pNewMDImport;
+    pMDImport = GetMDImport();
 
     // Apply the EnC delta to this module's metadata.
     IfFailGo(pMDImport->ApplyEditAndContinue(pDeltaMD, cbDeltaMD, &pNewMDImport));
@@ -195,7 +198,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     IfFailGo(GetMetaDataPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the deltaIL into our RVAable IL memory
-    BYTE *pLocalILMemory = new BYTE[cbDeltaIL];
+    pLocalILMemory = new BYTE[cbDeltaIL];
     memcpy(pLocalILMemory, pDeltaIL, cbDeltaIL);
 
     // Enumerate all of the EnC delta tokens 
@@ -203,7 +206,6 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     IfFailGo(pIMDInternalImportENC->EnumDeltaTokensInit(&enumENC));
 
     mdToken token;
-    FieldDesc *  pField = NULL;
     while (pIMDInternalImportENC->EnumNext(&enumENC, &token)) 
     {
         STRESS_LOG3(LF_ENC, LL_INFO100, "EACM::AEAC: updated token 0x%x; type 0x%x; rid 0x%x\n", token, TypeFromToken(token), RidFromToken(token));
@@ -248,8 +250,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 // FieldDef token - add a new field
                 LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%x\n", token));
 
-                pField = LookupFieldDef(token);
-                if (pField) 
+                if (LookupFieldDef(token)) 
                 {
                     // Field already exists - just ignore for now
                     continue;

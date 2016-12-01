@@ -4865,6 +4865,8 @@ void ArrayMarshalInfo::InitForHiddenLengthArray(TypeHandle thElement)
 {
     STANDARD_VM_CONTRACT;
     
+    MethodTable *pMT = NULL;
+
     // WinRT supports arrays of any WinRT-legal types
     if (thElement.IsArray())
     {
@@ -4877,7 +4879,7 @@ void ArrayMarshalInfo::InitForHiddenLengthArray(TypeHandle thElement)
 
     m_thElement = thElement;
 
-    MethodTable *pMT = thElement.GetMethodTable();
+    pMT = thElement.GetMethodTable();
     if (pMT->IsString())
     {
         m_vtElement = VTHACK_HSTRING;

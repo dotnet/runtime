@@ -254,47 +254,49 @@ HRESULT CreateInstanceCustomImpl(
 
         typedef HRESULT (__stdcall IDebugSymbols3::*GetPathFunc)(LPWSTR , ULONG, ULONG*);
 
-        // Handle both the image path and the symbol path
-        GetPathFunc rgGetPathFuncs[] = 
-            { &IDebugSymbols3::GetImagePathWide, &IDebugSymbols3::GetSymbolPathWide };
-
-        for (int i = 0; i < _countof(rgGetPathFuncs); ++i)
         {
-            ULONG pathSize = 0;
+            // Handle both the image path and the symbol path
+            GetPathFunc rgGetPathFuncs[] = 
+                { &IDebugSymbols3::GetImagePathWide, &IDebugSymbols3::GetSymbolPathWide };
 
-            // get the path buffer size
-            if ((spSym3.GetPtr()->*rgGetPathFuncs[i])(NULL, 0, &pathSize) != S_OK)
+            for (int i = 0; i < _countof(rgGetPathFuncs); ++i)
             {
-                continue;
-            }
+                ULONG pathSize = 0;
 
-            ArrayHolder<WCHAR> imgPath = new WCHAR[pathSize+MAX_LONGPATH+1];
-            if (imgPath == NULL)
-            {
-                continue;
-            }
-
-            // actually get the path
-            if ((spSym3.GetPtr()->*rgGetPathFuncs[i])(imgPath, pathSize, NULL) != S_OK)
-            {
-                continue;
-            }
-
-            LPWSTR ctx;
-            LPCWSTR pathElem = wcstok_s(imgPath, W(";"), &ctx);
-            while (pathElem != NULL)
-            {
-                WCHAR fullName[MAX_LONGPATH];
-                wcscpy_s(fullName, _countof(fullName), pathElem);
-                if (wcscat_s(fullName, W("\\")) == 0 && wcscat_s(fullName, dllName) == 0)
+                // get the path buffer size
+                if ((spSym3.GetPtr()->*rgGetPathFuncs[i])(NULL, 0, &pathSize) != S_OK)
                 {
-                    if (SUCCEEDED(CreateInstanceFromPath(clsid, iid, fullName, ppItf)))
-                    {
-                        return S_OK;
-                    }
+                    continue;
                 }
 
-                pathElem = wcstok_s(NULL, W(";"), &ctx);
+                ArrayHolder<WCHAR> imgPath = new WCHAR[pathSize+MAX_LONGPATH+1];
+                if (imgPath == NULL)
+                {
+                    continue;
+                }
+
+                // actually get the path
+                if ((spSym3.GetPtr()->*rgGetPathFuncs[i])(imgPath, pathSize, NULL) != S_OK)
+                {
+                    continue;
+                }
+
+                LPWSTR ctx;
+                LPCWSTR pathElem = wcstok_s(imgPath, W(";"), &ctx);
+                while (pathElem != NULL)
+                {
+                    WCHAR fullName[MAX_LONGPATH];
+                    wcscpy_s(fullName, _countof(fullName), pathElem);
+                    if (wcscat_s(fullName, W("\\")) == 0 && wcscat_s(fullName, dllName) == 0)
+                    {
+                        if (SUCCEEDED(CreateInstanceFromPath(clsid, iid, fullName, ppItf)))
+                        {
+                            return S_OK;
+                        }
+                    }
+
+                    pathElem = wcstok_s(NULL, W(";"), &ctx);
+                }
             }
         }
 
