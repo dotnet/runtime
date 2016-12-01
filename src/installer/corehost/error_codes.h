@@ -6,7 +6,6 @@
 enum StatusCode
 {
     Success                     = 0,
-    DebugCheckFailure           = 0x80008080,
     InvalidArgFailure           = 0x80008081,
     CoreHostLibLoadFailure      = 0x80008082,
     CoreHostLibMissingFailure   = 0x80008083,
@@ -27,8 +26,6 @@ enum StatusCode
     LibHostInvalidArgs          = 0x80008092,
     InvalidConfigFile           = 0x80008093,
     AppArgNotRunnable           = 0x80008094,
-    CoreHostLibSymbolFailure    = 0x80008095,
-    LibHostAppValidationFailure = 0x80008096,
-    LibHostEntrypointExeFailure = 0x80008097,
+    AppHostExeNotBoundFailure   = 0x80008095,
 };
 #endif // __ERROR_CODES_H__

@@ -48,7 +48,7 @@ usage()
     echo "Usage: $0 --arch <Architecture> --rid <Runtime Identifier> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
-    echo "  --arch <Architecture>             Target Architecture (amd64, x86, arm)"
+    echo "  --arch <Architecture>             Target Architecture (x64, x86, arm)"
     echo "  --rid <Runtime Identifier>        Target Runtime Identifier"
     echo "  --hostver <Dotnet host version>   Version of the dotnet executable"
     echo "  --apphostver <app host version>   Version of the apphost executable"
@@ -124,7 +124,7 @@ while [ "$1" != "" ]; do
             __CrossBuild=1
             ;;
         *)
-        echo "Unknown argument to build.sh $1"; exit 1
+        echo "Unknown argument to build.sh $1"; usage; exit 1
     esac
     shift
 done
@@ -142,7 +142,7 @@ case $__build_arch in
         __arch_define=-DCLI_CMAKE_PLATFORM_ARCH_ARM=1
         ;;
     *)
-        echo "Unknown architecture $__build_arch"; exit 1
+        echo "Unknown architecture $__build_arch"; usage; exit 1
         ;;
 esac
 __cmake_defines="${__cmake_defines} ${__arch_define}"
