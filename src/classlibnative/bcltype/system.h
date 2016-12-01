@@ -72,6 +72,7 @@ private:
 public:
     // Functions on the System.Environment class
     static FCDECL0(INT64, __GetSystemTimeAsFileTime);
+    static FCDECL0(UINT32, GetCurrentProcessorNumber);
     static FCDECL0(UINT32, GetTickCount);
     static FCDECL1(FC_BOOL_RET, GetOSVersion, OSVERSIONINFOObject *osVer);
     static FCDECL1(FC_BOOL_RET, GetOSVersionEx, OSVERSIONINFOEXObject *osVer);
