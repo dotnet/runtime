@@ -485,7 +485,7 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
 #elif defined(_ARM_)
     return pContext->R7;
 #elif defined(_ARM64_)
-    return pContext->X29;    
+    return pContext->Fp;
 #else
 #error don't know how to get the frame pointer for this architecture
 #endif
