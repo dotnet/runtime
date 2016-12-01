@@ -3326,46 +3326,55 @@ void CodeGen::genReportEH()
     // VM.
     unsigned duplicateClauseCount = 0;
     unsigned enclosingTryIndex;
-    for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
+
+    // Duplicate clauses are not used by CoreRT ABI
+    if (!compiler->IsTargetAbi(CORINFO_CORERT_ABI))
     {
-        for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                             // ignoring 'mutual protect' trys
-             enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-             enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
+        for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
-            ++duplicateClauseCount;
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
+                                                                                 // ignoring 'mutual protect' trys
+                 enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+                 enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
+            {
+                ++duplicateClauseCount;
+            }
         }
+        EHCount += duplicateClauseCount;
     }
-    EHCount += duplicateClauseCount;
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
     unsigned clonedFinallyCount = 0;
 
-    // We don't keep track of how many cloned finally there are. So, go through and count.
-    // We do a quick pass first through the EH table to see if there are any try/finally
-    // clauses. If there aren't, we don't need to look for BBJ_CALLFINALLY.
+    // Duplicate clauses are not used by CoreRT ABI
+    if (!compiler->IsTargetAbi(CORINFO_CORERT_ABI))
+    {
+        // We don't keep track of how many cloned finally there are. So, go through and count.
+        // We do a quick pass first through the EH table to see if there are any try/finally
+        // clauses. If there aren't, we don't need to look for BBJ_CALLFINALLY.
 
-    bool anyFinallys = false;
-    for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-         HBtab < HBtabEnd; HBtab++)
-    {
-        if (HBtab->HasFinallyHandler())
+        bool anyFinallys = false;
+        for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
+             HBtab < HBtabEnd; HBtab++)
         {
-            anyFinallys = true;
-            break;
-        }
-    }
-    if (anyFinallys)
-    {
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
-        {
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (HBtab->HasFinallyHandler())
             {
-                ++clonedFinallyCount;
+                anyFinallys = true;
+                break;
             }
         }
+        if (anyFinallys)
+        {
+            for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+            {
+                if (block->bbJumpKind == BBJ_CALLFINALLY)
+                {
+                    ++clonedFinallyCount;
+                }
+            }
 
-        EHCount += clonedFinallyCount;
+            EHCount += clonedFinallyCount;
+        }
     }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
@@ -3664,7 +3673,7 @@ void CodeGen::genReportEH()
     } // if (duplicateClauseCount > 0)
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-    if (anyFinallys)
+    if (clonedFinallyCount > 0)
     {
         unsigned reportedClonedFinallyCount = 0;
         for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
@@ -3718,7 +3727,7 @@ void CodeGen::genReportEH()
         }     // for each block
 
         assert(clonedFinallyCount == reportedClonedFinallyCount);
-    }  // if (anyFinallys)
+    }  // if (clonedFinallyCount > 0)
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
 #endif // FEATURE_EH_FUNCLETS
