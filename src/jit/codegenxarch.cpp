@@ -7498,6 +7498,17 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 //
 bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
 {
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(putArgStk))
+    {
+        const unsigned argSize = genTypeSize(putArgStk);
+        inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+        genStackLevel += argSize;
+        m_pushStkArg = false;
+        return true;
+    }
+#endif // FEATURE_SIMD
+
     const unsigned argSize = putArgStk->getArgSize();
 
     // If the gtPutArgStkKind is one of the push types, we do not pre-adjust the stack.
@@ -7532,10 +7543,13 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
         m_pushStkArg = true;
         return false;
     }
-    m_pushStkArg = false;
-    inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
-    genStackLevel += argSize;
-    return true;
+    else
+    {
+        m_pushStkArg = false;
+        inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+        genStackLevel += argSize;
+        return true;
+    }
 }
 
 //---------------------------------------------------------------------
@@ -7736,6 +7750,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
 void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 {
     var_types targetType = putArgStk->TypeGet();
+
 #ifdef _TARGET_X86_
     if (varTypeIsStruct(targetType))
     {
