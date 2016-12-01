@@ -115,6 +115,7 @@
     <ClInclude Include="..\mono\metadata\cil-coff.h" />
     <ClInclude Include="..\mono\metadata\class-internals.h" />
     <ClInclude Include="..\mono\metadata\class.h" />
+    <ClInclude Include="..\mono\metadata\cominterop-win32-internals.h" />
     <ClInclude Include="..\mono\metadata\cominterop.h" />
     <ClInclude Include="..\mono\metadata\console-io.h" />
     <ClInclude Include="..\mono\metadata\console-win32-internals.h" />
