@@ -9,6 +9,7 @@
 #include "fx_muxer.h"
 #include "error_codes.h"
 #include "libhost.h"
+#include "hostfxr.h"
 #include "runtime_config.h"
 
 typedef int(*corehost_load_fn) (const host_interface_t* init);
@@ -86,6 +87,37 @@ static char sccsid[] = "@(#)"            \
                        __TIME__          \
                        ;
 
+
+hostfxr_init_t g_init;
+
+/**
+ *  This export was added to hostfxr.dll since 1.1.*, dotnet.exe from RTM 1.0.0 will not call this export.
+ */
+SHARED_API int hostfxr_load(const hostfxr_interface_t* input)
+{
+    trace::setup();
+
+    // Check if there are any breaking changes.
+    if (input->version_hi != HOSTFXR_INTERFACE_LAYOUT_VERSION_HI)
+    {
+        trace::error(_X("The version of the data layout used to initialize %s is [0x%04x]; expected version [0x%04x]"), LIBFXR_NAME, input->version_hi, HOSTFXR_INTERFACE_LAYOUT_VERSION_HI);
+        return StatusCode::LibHostInitFailure;
+    }
+    // Check if the size is at least what we expect to contain.
+    if (input->version_lo < HOSTFXR_INTERFACE_LAYOUT_VERSION_LO)
+    {
+        trace::error(_X("The size of the data layout used to initialize %s is %d; expected at least %d"), LIBFXR_NAME, input->version_lo, HOSTFXR_INTERFACE_LAYOUT_VERSION_LO);
+        return StatusCode::LibHostInitFailure;
+    }
+    trace::verbose(_X("Reading from exe interface version: [0x%04x:%d] to initialize fxr version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOSTFXR_INTERFACE_LAYOUT_VERSION_HI, HOSTFXR_INTERFACE_LAYOUT_VERSION_LO);
+
+    g_init.exe_type = input->exe_type;
+    g_init.exe_commit = input->exe_commit;
+    g_init.exe_version = input->exe_version;
+
+    return 0;
+}
+
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
 {
     trace::setup();
@@ -93,6 +125,10 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
     trace::info(_X("--- Invoked hostfxr [commit hash: %s] main"), _STRINGIFY(REPO_COMMIT_HASH));
 
     fx_muxer_t muxer;
-    return muxer.execute(argc, argv);
+    return muxer.execute(g_init.exe_type, argc, argv);
 }
 
+SHARED_API int hostfxr_unload()
+{
+    return 0;
+}
