@@ -126,6 +126,21 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 						 gint mask, gint attrs,
 						 gint32 *error);
 
+extern HANDLE
+ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern,
+						MonoString **file_name,
+						gint32 *file_attr,
+						gint32 *ioerror);
+
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_FindNextFile (HANDLE hnd,
+						MonoString **file_name,
+						gint32 *file_attr,
+						gint32 *ioerror);
+
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_FindCloseFile (HANDLE hnd);
+
 extern MonoString *
 ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 				      MonoString *path_with_pattern,
