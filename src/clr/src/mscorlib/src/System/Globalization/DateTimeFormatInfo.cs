@@ -181,18 +181,6 @@ namespace System.Globalization {
         // genitive form or leap year month names.
         [OptionalField(VersionAdded = 2)]
         internal DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
-        internal static bool preferExistingTokens = InitPreferExistingTokens();
-
-
-        [System.Security.SecuritySafeCritical]
-        static bool InitPreferExistingTokens()
-        {
-            bool ret = false;
-#if !FEATURE_CORECLR
-            ret = DateTime.LegacyParseMode();
-#endif
-            return ret;
-        }
 
         private String CultureName
         {
@@ -2877,35 +2865,13 @@ namespace System.Globalization {
                                 int nTokenType = (int)tokenType;
                                 int nCurrentTokenTypeInHash = (int)value.tokenType;
 
-                                // The idea behind this check is:
-                                // - if the app is targetting 4.5.1 or above OR the compat flag is set, use the correct behavior by default.
-                                // - if the app is targetting 4.5 or below AND the compat switch is set, use the correct behavior
-                                // - if the app is targetting 4.5 or below AND the compat switch is NOT set, use the incorrect behavior
-                                if (preferExistingTokens || BinaryCompatibility.TargetsAtLeast_Desktop_V4_5_1)
+                                if (((nCurrentTokenTypeInHash & (int)TokenType.RegularTokenMask) == 0) && ((nTokenType & (int)TokenType.RegularTokenMask) != 0) ||
+                                   ((nCurrentTokenTypeInHash & (int)TokenType.SeparatorTokenMask) == 0) && ((nTokenType & (int)TokenType.SeparatorTokenMask) != 0))
                                 {
-                                    if (((nCurrentTokenTypeInHash & (int)TokenType.RegularTokenMask) == 0) && ((nTokenType & (int)TokenType.RegularTokenMask) != 0) ||
-                                       ((nCurrentTokenTypeInHash & (int)TokenType.SeparatorTokenMask) == 0) && ((nTokenType & (int)TokenType.SeparatorTokenMask) != 0))
+                                    value.tokenType |= tokenType;
+                                    if (tokenValue != 0)
                                     {
-                                        value.tokenType |= tokenType;
-                                        if (tokenValue != 0)
-                                        {
-                                            value.tokenValue = tokenValue;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    // The following logic is incorrect and causes updates to happen depending on the bitwise relationship between the existing token type and the
-                                    // the stored token type.  It was this way in .NET 4 RTM.  The behavior above is correct and will be adopted going forward.
-
-                                    if ((((nTokenType | nCurrentTokenTypeInHash) & (int)TokenType.RegularTokenMask) == nTokenType) ||
-                                       (((nTokenType | nCurrentTokenTypeInHash) & (int)TokenType.SeparatorTokenMask) == nTokenType))
-                                    {
-                                        value.tokenType |= tokenType;
-                                        if (tokenValue != 0)
-                                        {
-                                            value.tokenValue = tokenValue;
-                                        }
+                                        value.tokenValue = tokenValue;
                                     }
                                 }
                                 // The token to be inserted is already in the table.  Skip it.
