@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Build.Utilities;
 using Microsoft.Build.Framework;
-using System.Collections.Generic;
-using System.Linq;
 using System;
-using System.Text;
-using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Build.Construction;
-using System.Collections;
+using System.Linq;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
@@ -21,6 +16,10 @@ namespace Microsoft.DotNet.Build.Tasks
 
         private Dictionary<string, PropertyInfo> Properties { get; }
 
+        private PropertyInfo[] PropertiesByOrder { get; }
+
+        private PropertyInfo[] PropertiesByPrecedence { get; }
+
         private Dictionary<PropertyInfo, PropertyValue[]> PropertyValues { get; }
 
         private Dictionary<string, PropertyValue> AllPropertyValues { get; }
@@ -29,6 +28,8 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             Properties = properties.Select(p => new PropertyInfo(p))
                 .ToDictionary(p => p.Name, p => p);
+            PropertiesByOrder = Properties.Values.OrderBy(p => p.Order).ToArray();
+            PropertiesByPrecedence = Properties.Values.OrderBy(p => p.Precedence).ToArray();
 
             var propertyValueGrouping = propertyValues.Select(v => new PropertyValue(v, Properties)).GroupBy(p => p.Value);
 
@@ -60,6 +61,11 @@ namespace Microsoft.DotNet.Build.Tasks
             }
         }
 
+        /// <summary>
+        /// Get known values for a property
+        /// </summary>
+        /// <param name="property">name of property to retrieve values</param>
+        /// <returns></returns>
         public IEnumerable<PropertyValue> GetValues(string property)
         {
             PropertyInfo propertyInfo;
@@ -72,7 +78,11 @@ namespace Microsoft.DotNet.Build.Tasks
             return GetValues(propertyInfo);
         }
 
-
+        /// <summary>
+        /// Get known values for a property
+        /// </summary>
+        /// <param name="property">property to retrieve values</param>
+        /// <returns></returns>
         public IEnumerable<PropertyValue> GetValues(PropertyInfo property)
         {
             PropertyValue[] values;
@@ -93,11 +103,8 @@ namespace Microsoft.DotNet.Build.Tasks
         /// <returns>All combinations of values</returns>
         public IEnumerable<Configuration> GetConfigurations(Func<PropertyInfo, IEnumerable<PropertyValue>> selectValues)
         {
-            // order properties by precedence, this will be preserved in the cross-product
-            var properties = Properties.Values.OrderBy(p => p.Precedence).ToArray();
-
             // get all property values, ordered by precedence
-            var values = properties.Select(selectValues);
+            var values = PropertiesByPrecedence.Select(selectValues);
 
             // start with an empty enumerable
             IEnumerable<IEnumerable<PropertyValue>> emptySet = new[] { Enumerable.Empty<PropertyValue>() };
@@ -139,7 +146,7 @@ namespace Microsoft.DotNet.Build.Tasks
         }
 
         /// <summary>
-        /// Parses a configuration string to return a value set.
+        /// Parses a configuration string to return a Configuration.
         /// </summary>
         /// <param name="configurationString"></param>
         /// <returns></returns>
@@ -147,14 +154,12 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             var values = configurationString.Split(PropertySeperator);
 
-            var orderedProperties = Properties.Values.OrderBy(p => p.Order).ToArray();
+            var valueSet = new PropertyValue[PropertiesByOrder.Length];
 
-            var valueSet = new PropertyValue[orderedProperties.Length];
-
-            for(int propertyIndex = 0, valueIndex = 0; propertyIndex < orderedProperties.Length; propertyIndex++, valueIndex++)
+            for(int propertyIndex = 0, valueIndex = 0; propertyIndex < PropertiesByOrder.Length; propertyIndex++, valueIndex++)
             {
                 var value = valueIndex < values.Length ? values[valueIndex] : null;
-                var property = orderedProperties[propertyIndex];
+                var property = PropertiesByOrder[propertyIndex];
 
                 if (String.IsNullOrEmpty(value))
                 {
@@ -199,13 +204,13 @@ namespace Microsoft.DotNet.Build.Tasks
                         // give this property its default value and advance to the next property
                         valueSet[propertyIndex++] = property.DefaultValue;
 
-                        if (propertyIndex > orderedProperties.Length)
+                        if (propertyIndex > PropertiesByOrder.Length)
                         {
                             // we ran out of possible properties.
                             throw new ArgumentException($"Property '{propertyValue.Property.Name}' value '{propertyValue.Value}' occured at unexpected position in configuration '{configurationString}'");
                         }
 
-                        property = orderedProperties[propertyIndex];
+                        property = PropertiesByOrder[propertyIndex];
                     }
                 }
 

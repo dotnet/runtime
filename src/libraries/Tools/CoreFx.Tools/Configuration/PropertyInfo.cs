@@ -31,8 +31,21 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             Name = propertyItem.ItemSpec;
             defaultValue = propertyItem.GetMetadata(nameof(DefaultValue));
-            Precedence = int.Parse(propertyItem.GetMetadata(nameof(Precedence)));
-            Order = int.Parse(propertyItem.GetMetadata(nameof(Order)));
+            Precedence = ParseIntMetadata(propertyItem, nameof(Precedence));
+            Order = ParseIntMetadata(propertyItem, nameof(Order)); ;
+        }
+
+        private static int ParseIntMetadata(ITaskItem item, string name)
+        {
+            int value;
+            var metadata = item.GetMetadata(name);
+
+            if (!int.TryParse(metadata, out value))
+            {
+                throw new InvalidDataException($"Could not parse value '{metadata}' from required metadata '{name}' on item '{item.ItemSpec}'.");
+            }
+
+            return value;
         }
 
         public void ConnectDefault(IDictionary<string, PropertyValue> values)
