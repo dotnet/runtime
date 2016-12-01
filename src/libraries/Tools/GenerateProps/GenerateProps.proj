@@ -35,23 +35,21 @@
 
   <Target Name="Build">
     <PropertyGroup>
-      <ConfigurationPropsFile>$(CoreFxToolsDir)projectCongifuration.props</ConfigurationPropsFile>
+      <ConfigurationPropsFolder>$(CoreFxToolsDir)projectCongifuration</ConfigurationPropsFolder>
     </PropertyGroup>
 
-    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFile="$(ConfigurationPropsFile)" />
-
-    <Message Text="Generated $(ConfigurationPropsFile)." />
+    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(ConfigurationPropsFolder)" />
   </Target>
   
   <Target Name="FindBestConfiguration">
     <PropertyGroup>
-      <ProjectConfigurations>netcoreapp1.1;netstandard1.0|Windows_NT;netstandard1.6</ProjectConfigurations>
+      <ProjectConfigurations>netcoreapp1.1;netstandard1.0-Windows_NT;netstandard1.6</ProjectConfigurations>
     </PropertyGroup>
     
     <FindBestConfiguration Properties="@(Property)" 
                            PropertyValues="@(PropertyValue)" 
                            ProjectConfigurations="$(ProjectConfigurations)"
-                           BuildConfiguration="netcoreapp1.1|Windows_NT">
+                           BuildConfiguration="netcoreapp1.1-Windows_NT">
       <Output TaskParameter="BestConfiguration" ItemName="ProjectConfiguration" />
     </FindBestConfiguration>
   </Target>

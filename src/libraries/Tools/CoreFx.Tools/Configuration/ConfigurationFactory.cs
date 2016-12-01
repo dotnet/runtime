@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.Build.Tasks
 {
     public class ConfigurationFactory
     {
-        internal const char PropertySeperator = '|';
+        internal const char PropertySeperator = '-';
 
         private Dictionary<string, PropertyInfo> Properties { get; }
 
@@ -59,6 +59,11 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 property.ConnectDefault(AllPropertyValues);
             }
+        }
+
+        public IEnumerable<PropertyInfo> GetProperties()
+        {
+            return PropertiesByOrder;
         }
 
         /// <summary>
