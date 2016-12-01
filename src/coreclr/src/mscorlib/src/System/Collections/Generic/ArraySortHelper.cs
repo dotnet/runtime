@@ -49,16 +49,7 @@ namespace System.Collections.Generic
         }
 
         internal static void ThrowOrIgnoreBadComparer(Object comparer) {
-            // This is hit when an invarant of QuickSort is violated due to a bad IComparer implementation (for
-            // example, imagine an IComparer that returns 0 when items are equal but -1 all other times).
-            //
-            // We could have thrown this exception on v4, but due to changes in v4.5 around how we partition arrays
-            // there are different sets of input where we would throw this exception.  In order to reduce overall risk from
-            // an app compat persective, we're changing to never throw on v4.  Instead, we'll return with a partially
-            // sorted array.
-            if(BinaryCompatibility.TargetsAtLeast_Desktop_V4_5) {
-                throw new ArgumentException(Environment.GetResourceString("Arg_BogusIComparer", comparer));
-            }
+            throw new ArgumentException(Environment.GetResourceString("Arg_BogusIComparer", comparer));
         }
 
     }
