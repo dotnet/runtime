@@ -12,24 +12,16 @@ namespace Microsoft.DotNet.Build.Tasks
 {
     public class FindBestConfiguration : ConfigurationTask
     {
-        private static readonly char[] s_SupportedGroupsSeparator = new[] { '|' };
-        private static readonly char[] s_VerticalGroupsSeparator = new[] { '-' };
-
         [Required]
         public string[] ProjectConfigurations { get; set; }
 
         [Required]
-        public string SelectionGroup { get; set; }
+        public string BuildConfiguration { get; set; }
 
-        [Required]
-        public string Name { get; set; }
-
-        public bool UseCompileFramework { get; set; }
-
-        public bool AllowCompatibleFramework { get; set; }
+        public bool DoNotAllowCompatibleValues { get; set; }
 
         [Output]
-        public ITaskItem OutputItem { get; set; }
+        public ITaskItem BestConfiguration { get; set; }
 
         public override bool Execute()
         {
@@ -37,9 +29,9 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var supportedProjectConfigurations = new HashSet<Configuration>(ProjectConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)));
 
-            var buildConfiguration = ConfigurationFactory.ParseConfiguration(SelectionGroup);
+            var buildConfiguration = ConfigurationFactory.ParseConfiguration(BuildConfiguration);
 
-            var compatibleConfigurations = ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration);
+            var compatibleConfigurations = ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration, DoNotAllowCompatibleValues);
 
             var bestConfiguration = compatibleConfigurations.FirstOrDefault(c => supportedProjectConfigurations.Contains(c));
 
@@ -51,7 +43,7 @@ namespace Microsoft.DotNet.Build.Tasks
             else
             {
                 Log.LogMessage(MessageImportance.Low, $"Chose configuration {bestConfiguration}");
-                OutputItem = new TaskItem(Name, (IDictionary)bestConfiguration.GetProperties());
+                BestConfiguration = new TaskItem(bestConfiguration.ToString(), (IDictionary)bestConfiguration.GetProperties());
             }
 
             return !Log.HasLoggedErrors;

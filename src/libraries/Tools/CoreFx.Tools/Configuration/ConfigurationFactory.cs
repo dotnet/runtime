@@ -131,11 +131,11 @@ namespace Microsoft.DotNet.Build.Tasks
         /// </summary>
         /// <param name="valueSet"></param>
         /// <returns></returns>
-        public IEnumerable<Configuration> GetCompatibleConfigurations(Configuration configuration)
+        public IEnumerable<Configuration> GetCompatibleConfigurations(Configuration configuration, bool doNotAllowCompatibleValues = false)
         {
             var propTable = configuration.Values.ToDictionary(v => v.Property, v => v);
 
-            return GetConfigurations(p => propTable[p].GetCompatibleValues());
+            return GetConfigurations(p => propTable[p].GetCompatibleValues(doNotAllowCompatibleValues));
         }
 
         /// <summary>
