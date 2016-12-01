@@ -287,7 +287,8 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
 {
     STANDARD_VM_CONTRACT;
     HRESULT hr = S_OK;
-    ReleaseHolder<CLRPrivAssemblyWinRT> pAssembly;    
+    ReleaseHolder<CLRPrivAssemblyWinRT> pAssembly;
+    LPWSTR wszFullTypeName = nullptr;
 #ifndef FEATURE_CORECLR
     NewArrayHolder<WCHAR> wszAssemblySimpleName;
 #endif
@@ -319,11 +320,13 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     IfFailGo(fusion::util::GetProperty(pAssemblyName, ASM_NAME_NAME, &wszAssemblySimpleName));
 #else
     WCHAR wszAssemblySimpleName[_MAX_PATH];
-    DWORD cchAssemblySimpleName = _MAX_PATH;
-    IfFailGo(pAssemblyName->GetName(&cchAssemblySimpleName, wszAssemblySimpleName));
+    {
+        DWORD cchAssemblySimpleName = _MAX_PATH;
+        IfFailGo(pAssemblyName->GetName(&cchAssemblySimpleName, wszAssemblySimpleName));
+    }
 #endif
     
-    LPWSTR wszFullTypeName = wcschr(wszAssemblySimpleName, W('!'));
+    wszFullTypeName = wcschr(wszAssemblySimpleName, W('!'));
     
     if (wszFullTypeName != nullptr)
     {

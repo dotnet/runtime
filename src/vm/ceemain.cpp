@@ -1933,15 +1933,17 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #endif
 
 #ifdef FEATURE_PREJIT
-        // If we're doing basic block profiling, we need to write the log files to disk.
-
-        static BOOL fIBCLoggingDone = FALSE;
-        if (!fIBCLoggingDone)
         {
-            if (g_IBCLogger.InstrEnabled())
-                Module::WriteAllModuleProfileData(true);
+            // If we're doing basic block profiling, we need to write the log files to disk.
 
-            fIBCLoggingDone = TRUE;
+            static BOOL fIBCLoggingDone = FALSE;
+            if (!fIBCLoggingDone)
+            {
+                if (g_IBCLogger.InstrEnabled())
+                    Module::WriteAllModuleProfileData(true);
+
+                fIBCLoggingDone = TRUE;
+            }
         }
 
 #endif // FEATURE_PREJIT

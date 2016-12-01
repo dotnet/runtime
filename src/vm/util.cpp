@@ -1950,17 +1950,18 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 
     // Crack the information. Iterate through all the SLPI array entries for all processors in system.
     // Will return the greatest of all the processor cache sizes or zero
-
-    size_t last_cache_size = 0;
-
-    for (DWORD i=0; i < nEntries; i++)
     {
-        if (pslpi[i].Relationship == RelationCache)
+        size_t last_cache_size = 0;
+
+        for (DWORD i=0; i < nEntries; i++)
         {
-            last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
-        }             
-    }  
-    cache_size = last_cache_size;
+            if (pslpi[i].Relationship == RelationCache)
+            {
+                last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
+            }             
+        }  
+        cache_size = last_cache_size;
+    }
 Exit:
 
     if(pslpi)
@@ -1991,6 +1992,9 @@ DWORD GetLogicalCpuCountFromOS()
     
     DWORD nEntries = 0;
 
+    DWORD prevcount = 0;
+    DWORD count = 1;
+
     // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
     // if API not present or on failure.
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = IsGLPISupported(&nEntries) ;
@@ -2000,9 +2004,6 @@ DWORD GetLogicalCpuCountFromOS()
         // GetLogicalProcessorInformation no supported
         goto lDone;
     }
-
-    DWORD prevcount = 0;
-    DWORD count = 1;
 
     for (DWORD j = 0; j < nEntries; j++)
     {

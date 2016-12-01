@@ -9916,47 +9916,48 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
         goto doValidation;
     }
 
-    // Find the reference to the exception tracker corresponding to the preallocated exception,
-    // starting the search from the current exception tracker (2nd arg of NULL specifies that).
-#if defined(WIN64EXCEPTIONS)
-    PTR_ExceptionTracker pEHTracker = NULL;
-    PTR_ExceptionTracker pPreviousEHTracker = NULL;
+    {
+        // Find the reference to the exception tracker corresponding to the preallocated exception,
+        // starting the search from the current exception tracker (2nd arg of NULL specifies that).
+ #if defined(WIN64EXCEPTIONS)
+        PTR_ExceptionTracker pEHTracker = NULL;
+        PTR_ExceptionTracker pPreviousEHTracker = NULL;
 
 #elif _TARGET_X86_
-    PTR_ExInfo pEHTracker = NULL;
-    PTR_ExInfo pPreviousEHTracker = NULL;
+        PTR_ExInfo pEHTracker = NULL;
+        PTR_ExInfo pPreviousEHTracker = NULL;
 #else // !(_WIN64 || _TARGET_X86_)
 #error Unsupported platform
 #endif // _WIN64
 
-    if (fStartSearchFromPreviousTracker)
-    {
-        // Get the exception tracker previous to the current one
-        pPreviousEHTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker()->GetPreviousExceptionTracker();
-
-        // If there is no previous tracker to start from, then simply abort the search attempt.
-        // If we couldnt find the exception tracker, then buckets are not available
-        if (pPreviousEHTracker == NULL)
+        if (fStartSearchFromPreviousTracker)
         {
-            LOG((LF_EH, LL_INFO100, "GetWatsonBucketTrackerForPreallocatedException - Couldnt find the previous EHTracker to start the search from.\n"));
+            // Get the exception tracker previous to the current one
+            pPreviousEHTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker()->GetPreviousExceptionTracker();
+
+            // If there is no previous tracker to start from, then simply abort the search attempt.
+            // If we couldnt find the exception tracker, then buckets are not available
+            if (pPreviousEHTracker == NULL)
+            {
+                LOG((LF_EH, LL_INFO100, "GetWatsonBucketTrackerForPreallocatedException - Couldnt find the previous EHTracker to start the search from.\n"));
+                pWBTracker = NULL;
+                goto done;
+            }
+        }
+
+        pEHTracker = GetEHTrackerForPreallocatedException(gc.oPreAllocThrowable, pPreviousEHTracker);
+
+        // If we couldnt find the exception tracker, then buckets are not available
+        if (pEHTracker == NULL)
+        {
+            LOG((LF_EH, LL_INFO100, "GetWatsonBucketTrackerForPreallocatedException - Couldnt find EHTracker for preallocated exception object.\n"));
             pWBTracker = NULL;
             goto done;
         }
+
+        // Get the Watson Bucket Tracker from the exception tracker
+        pWBTracker = pEHTracker->GetWatsonBucketTracker();
     }
-
-    pEHTracker = GetEHTrackerForPreallocatedException(gc.oPreAllocThrowable, pPreviousEHTracker);
-
-    // If we couldnt find the exception tracker, then buckets are not available
-    if (pEHTracker == NULL)
-    {
-        LOG((LF_EH, LL_INFO100, "GetWatsonBucketTrackerForPreallocatedException - Couldnt find EHTracker for preallocated exception object.\n"));
-        pWBTracker = NULL;
-        goto done;
-    }
-
-    // Get the Watson Bucket Tracker from the exception tracker
-    pWBTracker = pEHTracker->GetWatsonBucketTracker();
-
 doValidation:
     _ASSERTE(pWBTracker != NULL);
 
