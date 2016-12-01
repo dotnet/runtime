@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
@@ -27,6 +26,13 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public PropertyValue[] Values { get; }
 
+
+        /// <summary>
+        /// Constructs a configuration string from this configuration
+        /// </summary>
+        /// <param name="allowDefaults">true to omit default values from configuration string</param>
+        /// <param name="encounteredDefault">true if a default value was omitted</param>
+        /// <returns>configuration string</returns>
         private string GetConfigurationString(bool allowDefaults, out bool encounteredDefault)
         {
             encounteredDefault = false;
@@ -50,7 +56,10 @@ namespace Microsoft.DotNet.Build.Tasks
             return configurationBuilder.ToString();
         }
 
-
+        /// <summary>
+        /// Get properties assoicated with this configuration
+        /// </summary>
+        /// <returns></returns>
         public IDictionary<string, string> GetProperties()
         {
             Dictionary<string, string> properties = new Dictionary<string, string>();
@@ -131,6 +140,5 @@ namespace Microsoft.DotNet.Build.Tasks
             var unused = false;
             return GetConfigurationString(true, out unused);
         }
-
     }
 }
