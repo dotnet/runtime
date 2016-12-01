@@ -545,13 +545,13 @@ namespace System.Collections.Generic {
             int version = _version;
 
             for(int i = 0 ; i < _size; i++) {
-                if (version != _version && BinaryCompatibility.TargetsAtLeast_Desktop_V4_5) {
+                if (version != _version) {
                     break;
                 }
                 action(_items[i]);
             }
 
-            if (version != _version && BinaryCompatibility.TargetsAtLeast_Desktop_V4_5)
+            if (version != _version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
         }
 
