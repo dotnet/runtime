@@ -5916,31 +5916,6 @@ ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n)
 }
 
 /**
- * mono_string_empty_wrapper:
- *
- * Returns: The same empty string instance as the managed string.Empty
- */
-MonoString*
-mono_string_empty_wrapper ()
-{
-	MonoDomain *domain = mono_domain_get ();
-	return mono_string_empty (domain);
-}
-
-/**
- * mono_string_empty:
- *
- * Returns: The same empty string instance as the managed string.Empty
- */
-MonoString*
-mono_string_empty (MonoDomain *domain)
-{
-	g_assert (domain);
-	g_assert (domain->empty_string);
-	return domain->empty_string;
-}
-
-/**
  * mono_string_new_utf16:
  * @text: a pointer to an utf16 string
  * @len: the length of the string
