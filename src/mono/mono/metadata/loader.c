@@ -2434,9 +2434,16 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		mono_error_set_method_load (error, m->klass, m->name, "generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
 		return NULL;
 	}
-	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		signature->pinvoke = 1;
-	else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+#ifdef HOST_WIN32
+		/*
+		 * On Windows the default pinvoke calling convention is STDCALL but
+		 * we need CDECL since this is actually an icall.
+		 */
+		signature->call_convention = MONO_CALL_C;
+#endif
+	} else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoCallConvention conv = (MonoCallConvention)0;
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)m;
 		signature->pinvoke = 1;
