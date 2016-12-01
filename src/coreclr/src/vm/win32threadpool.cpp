@@ -3679,6 +3679,8 @@ DWORD __stdcall ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     BOOL fThreadInit = FALSE;
     Thread *pThread = NULL;
 
+    DWORD cpThreadWait = 0;
+
     if (g_fEEStarted) {
         pThread = SetupThreadNoThrow();
         if (pThread == NULL) {
@@ -3713,7 +3715,7 @@ DWORD __stdcall ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     ThreadCounter::Counts oldCounts;
     ThreadCounter::Counts newCounts;
 
-    DWORD cpThreadWait = CP_THREAD_WAIT;
+    cpThreadWait = CP_THREAD_WAIT;
     for (;; )
     {
 Top:

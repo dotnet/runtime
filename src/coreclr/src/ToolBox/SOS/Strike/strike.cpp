@@ -4361,8 +4361,10 @@ DECLARE_API(VerifyObj)
         ExtOut("Unable to build snapshot of the garbage collector state\n");
         goto Exit;
     }
-    DacpGcHeapDetails *pheapDetails = g_snapshot.GetHeap(taddrObj);
-    bValid = VerifyObject(*pheapDetails, taddrObj, taddrMT, objSize, TRUE);
+    {
+        DacpGcHeapDetails *pheapDetails = g_snapshot.GetHeap(taddrObj);
+        bValid = VerifyObject(*pheapDetails, taddrObj, taddrMT, objSize, TRUE);
+    }
 
 Exit:
     if (bValid)
