@@ -338,11 +338,3 @@ void pal::readdir(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
     readdir(path, _X("*"), list);
 }
-
-#if FEATURE_BINDING_CHECK
-bool pal::validate_binding(const pal::string_t& own_dll)
-{
-    // We don't perform any validation on Unix for now.
-    return true;
-}
-#endif

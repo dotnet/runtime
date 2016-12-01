@@ -75,6 +75,13 @@ namespace Microsoft.DotNet.Cli.Build
             { "Microsoft.NETCore.DotNetHostResolver", LatestHostFxrVersion },
             { "Microsoft.NETCore.DotNetHostPolicy", LatestHostPolicyVersion }
         };
+        public Dictionary<string, VerInfo> LatestHostPackagesToValidate => new Dictionary<string, VerInfo>()
+        {
+            { "Microsoft.NETCore.DotNetHost", LatestHostVersion },
+            { "Microsoft.NETCore.DotNetAppHost", LatestAppHostVersion },
+            { "Microsoft.NETCore.DotNetHostResolver", LatestHostFxrVersion },
+            { "Microsoft.NETCore.DotNetHostPolicy", LatestHostPolicyVersion }
+        };
         public Dictionary<string, VerInfo> LatestHostBinaries => new Dictionary<string, VerInfo>()
         {
             { "dotnet", LatestHostVersion },

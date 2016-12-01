@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>$(HostVersion)</Version>
+    <Version>$(AppHostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>osx.10.10</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>

@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Version>$(AppHostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <MinOSForArch>rhel.7</MinOSForArch>
+    <MinOSForArch>fedora.24</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <Serviceable>true</Serviceable>
   </PropertyGroup>
