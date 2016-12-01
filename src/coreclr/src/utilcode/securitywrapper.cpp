@@ -412,6 +412,7 @@ HRESULT SidBuffer::InitFromProcessAppContainerSidNoThrow(DWORD pid)
 {
     HRESULT hr = S_OK;
     HANDLE hToken = NULL;
+    BOOL fIsLowBox = FALSE;
 
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
     if (hProcess == NULL)
@@ -438,7 +439,6 @@ HRESULT SidBuffer::InitFromProcessAppContainerSidNoThrow(DWORD pid)
     } TOKEN_APPCONTAINER_INFORMATION, *PTOKEN_APPCONTAINER_INFORMATION;
 
     DWORD size;
-    BOOL fIsLowBox = FALSE;
     if (!GetTokenInformation(hToken, (TOKEN_INFORMATION_CLASS)TokenIsAppContainer, &fIsLowBox, sizeof(fIsLowBox), &size))
     {
         DWORD gle = GetLastError();
@@ -466,23 +466,25 @@ HRESULT SidBuffer::InitFromProcessAppContainerSidNoThrow(DWORD pid)
         goto exit;
     }
 
-    PTOKEN_APPCONTAINER_INFORMATION pTokPack = (PTOKEN_APPCONTAINER_INFORMATION)&PackSid;
-    PSID pLowBoxPackage = pTokPack->TokenPackage;
-    DWORD dwSidLen = GetLengthSid(pLowBoxPackage);
-    m_pBuffer = new (nothrow) BYTE[dwSidLen];
-    if (m_pBuffer == NULL)
     {
-        hr = E_OUTOFMEMORY;
-        goto exit;
-    }
-    else
-    {
-        if (!CopySid(dwSidLen, m_pBuffer, pLowBoxPackage))
+        PTOKEN_APPCONTAINER_INFORMATION pTokPack = (PTOKEN_APPCONTAINER_INFORMATION)&PackSid;
+        PSID pLowBoxPackage = pTokPack->TokenPackage;
+        DWORD dwSidLen = GetLengthSid(pLowBoxPackage);
+        m_pBuffer = new (nothrow) BYTE[dwSidLen];
+        if (m_pBuffer == NULL)
         {
-            hr = HRESULT_FROM_GetLastError();
-            delete m_pBuffer;
-            m_pBuffer = NULL;
+            hr = E_OUTOFMEMORY;
             goto exit;
+        }
+        else
+        {
+            if (!CopySid(dwSidLen, m_pBuffer, pLowBoxPackage))
+            {
+                hr = HRESULT_FROM_GetLastError();
+                delete m_pBuffer;
+                m_pBuffer = NULL;
+                goto exit;
+            }
         }
     }
 
@@ -790,6 +792,7 @@ bool IsHandleSpoofed(HANDLE handle, DWORD pid)
 
         SidBuffer sbPidOther;
         SidBuffer sbPidThis;    
+        DWORD pidThis;
 
         // Is the object owner the "other" pid?
         sbPidOther.InitFromProcess(pid);
@@ -805,7 +808,7 @@ bool IsHandleSpoofed(HANDLE handle, DWORD pid)
         // This can happen if the other process impersonates us. The most common case would
         // be if we're an admin and the other process (say some service) is impersonating Admin
         // when it spins up the CLR.
-        DWORD pidThis = GetCurrentProcessId();
+        pidThis = GetCurrentProcessId();
         if (pidThis != pid)
         {
             sbPidThis.InitFromProcess(pidThis);

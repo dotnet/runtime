@@ -1784,13 +1784,14 @@ DWORD GetLogicalCpuCount()
     PAL_TRY(Param *, pParam, &param)
     {
         unsigned char buffer[16];
+        DWORD* dwBuffer = NULL;
 
         DWORD maxCpuId = getcpuid(0, buffer);
 
         if (maxCpuId < 1)
             goto lDone;
 
-        DWORD* dwBuffer = (DWORD*)buffer;
+        dwBuffer = (DWORD*)buffer;
 
         if (dwBuffer[1] == 'uneG') {
             if (dwBuffer[3] == 'Ieni') {
