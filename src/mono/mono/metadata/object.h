@@ -112,6 +112,13 @@ mono_array_addr_with_size   (MonoArray *array, int size, uintptr_t idx);
 MONO_API uintptr_t
 mono_array_length           (MonoArray *array);
 
+MONO_API MonoString*
+mono_string_empty	      (MonoDomain *domain);
+
+MONO_RT_EXTERNAL_ONLY
+MONO_API MonoString*
+mono_string_empty_wrapper   ();
+
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_utf16	    (MonoDomain *domain, const mono_unichar2 *text, int32_t len);
