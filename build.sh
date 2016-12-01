@@ -58,13 +58,26 @@ usage()
 
 initDistroRid()
 {
-    if [ "$__BuildOS" == "Linux" ]; then
+    if [ "$__HostOS" == "Linux" ]; then
         if [ ! -e /etc/os-release ]; then
             echo "WARNING: Can not determine runtime id for current distro."
             export __DistroRid=""
         else
             source /etc/os-release
             export __DistroRid="$ID.$VERSION_ID-$__HostArch"
+        fi
+    fi
+}
+
+initTargetDistroRid()
+{
+    if [ "$__BuildOS" == "Linux" ]; then
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            export __CrossDistroRid=""
+        else
+            source $ROOTFS_DIR/etc/os-release
+            export __CrossDistroRid="$ID.$VERSION_ID-$__BuildArch"
         fi
     fi
 }
@@ -699,6 +712,7 @@ if [ $__CrossBuild == 1 ]; then
     if ! [[ -n "$ROOTFS_DIR" ]]; then
         export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
     fi
+    initTargetDistroRid
 fi
 
 # Make the directories necessary for build if they don't exist

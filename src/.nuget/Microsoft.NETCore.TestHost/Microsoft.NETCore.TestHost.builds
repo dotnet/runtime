@@ -67,6 +67,14 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'ubuntu.14.04-arm'" Include="ubuntu/14.04/Microsoft.NETCore.TestHost.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>arm</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'ubuntu.16.04-arm'" Include="ubuntu/16.04/Microsoft.NETCore.TestHost.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>arm</Platform>
+    </Project>
     <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.TestHost.pkgproj">
       <OSGroup>OSX</OSGroup>
       <Platform>amd64</Platform>
