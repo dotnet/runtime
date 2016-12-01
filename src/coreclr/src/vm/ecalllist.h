@@ -288,6 +288,7 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("GetResourceFromDefault", GetResourceFromDefault)
 #endif // !FEATURE_CORECLR
     FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
+    FCFuncElement("get_CurrentProcessorNumber", SystemNative::GetCurrentProcessorNumber)
 
 #if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
     QCFuncElement("WinRTSupported", SystemNative::WinRTSupported)
