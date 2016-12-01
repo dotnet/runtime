@@ -95,12 +95,17 @@ namespace Microsoft.DotNet.Build.Tasks
             return connectedValues;
         }
 
-        public IEnumerable<PropertyValue> GetCompatibleValues()
+        public IEnumerable<PropertyValue> GetCompatibleValues(bool doNotAllowCompatibleValues)
         {
             var queue = new Queue<PropertyValue>();
             var visited = new HashSet<PropertyValue>();
 
-            var roots = new[] { this }.Concat(CompatibleValues);
+            IEnumerable<PropertyValue> roots = new[] { this };
+
+            if (!doNotAllowCompatibleValues)
+            {
+                roots = roots.Concat(CompatibleValues);
+            }
 
             // do a breadth first traversal of imports from each root, without duplicates
             foreach (var root in roots)
