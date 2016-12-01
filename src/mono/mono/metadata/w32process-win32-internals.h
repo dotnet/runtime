@@ -20,9 +20,8 @@ mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle,
 				HANDLE stderr_handle,STARTUPINFO *startinfo);
 
 gboolean
-mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *shell_path, MonoString *cmd,
-			     guint32 creation_flags, gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info,
-			     PROCESS_INFORMATION *process_info);
+mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *cmd, guint32 creation_flags,
+	gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info);
 
 MonoBoolean
 mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max);

@@ -131,9 +131,8 @@ mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle, HANDL
 }
 
 static gboolean
-mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *shell_path,
-			     MonoString *cmd, guint32 creation_flags, gunichar2 *env_vars,
-			     gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
+mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *cmd, guint32 creation_flags,
+	gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
 {
 	gboolean result = FALSE;
 
@@ -231,17 +230,15 @@ process_complete_path (const gunichar2 *appname, gchar **completed)
 }
 
 static gboolean
-process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2 **shell_path, MonoString **cmd)
+process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, MonoString **cmd)
 {
 	gchar		*spath = NULL;
 	gchar		*new_cmd, *cmd_utf8;
 	MonoError	mono_error;
 
-	*shell_path = NULL;
 	*cmd = proc_start_info->arguments;
 
-	process_complete_path (mono_string_chars (proc_start_info->filename), &spath);
-	if (spath != NULL) {
+	if (process_complete_path (mono_string_chars (proc_start_info->filename), &spath)) {
 		/* Seems like our CreateProcess does not work as the windows one.
 		 * This hack is needed to deal with paths containing spaces */
 		if (*cmd) {
@@ -273,7 +270,6 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	gunichar2 *dir;
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
-	gunichar2 *shell_path = NULL;
 	gunichar2 *env_vars = NULL;
 	MonoString *cmd = NULL;
 	guint32 creation_flags;
@@ -284,7 +280,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	if (proc_start_info->create_no_window)
 		creation_flags |= CREATE_NO_WINDOW;
 	
-	if (process_get_shell_arguments (proc_start_info, &shell_path, &cmd) == FALSE) {
+	if (process_get_shell_arguments (proc_start_info, &cmd) == FALSE) {
 		process_info->pid = -ERROR_FILE_NOT_FOUND;
 		return FALSE;
 	}
@@ -326,11 +322,9 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	else
 		dir = mono_string_chars (proc_start_info->working_directory);
 
-	ret = mono_process_create_process (process_info, shell_path, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	ret = mono_process_create_process (process_info, NULL, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
 
 	g_free (env_vars);
-	if (shell_path != NULL)
-		g_free (shell_path);
 
 	if (ret) {
 		process_info->process_handle = procinfo.hProcess;

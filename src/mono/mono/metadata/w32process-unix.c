@@ -2255,20 +2255,18 @@ process_get_complete_path (const gunichar2 *appname, gchar **completed)
 }
 
 static gboolean
-process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2 **shell_path, MonoString **cmd)
+process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2 **shell_path)
 {
-	gchar *spath = NULL;
+	gchar *complete_path = NULL;
 
 	*shell_path = NULL;
-	*cmd = proc_start_info->arguments;
 
-	process_get_complete_path (mono_string_chars (proc_start_info->filename), &spath);
-	if (spath != NULL) {
-		*shell_path = g_utf8_to_utf16 (spath, -1, NULL, NULL, NULL);
-		g_free (spath);
+	if (process_get_complete_path (mono_string_chars (proc_start_info->filename), &complete_path)) {
+		*shell_path = g_utf8_to_utf16 (complete_path, -1, NULL, NULL, NULL);
+		g_free (complete_path);
 	}
 
-	return (*shell_path != NULL) ? TRUE : FALSE;
+	return *shell_path != NULL;
 }
 
 MonoBoolean
@@ -2279,23 +2277,26 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	gunichar2 *dir;
 	StartupHandles startup_handles;
 	gunichar2 *shell_path = NULL;
-	MonoString *cmd = NULL;
+	gunichar2 *args = NULL;
 
 	memset (&startup_handles, 0, sizeof (startup_handles));
 	startup_handles.input = stdin_handle;
 	startup_handles.output = stdout_handle;
 	startup_handles.error = stderr_handle;
 
-	if (process_get_shell_arguments (proc_start_info, &shell_path, &cmd) == FALSE) {
+	if (!process_get_shell_arguments (proc_start_info, &shell_path)) {
 		process_info->pid = -ERROR_FILE_NOT_FOUND;
 		return FALSE;
 	}
+
+	args = proc_start_info->arguments && mono_string_length (proc_start_info->arguments) > 0 ?
+			mono_string_chars (proc_start_info->arguments): NULL;
 
 	/* The default dir name is "".  Turn that into NULL to mean "current directory" */
 	dir = proc_start_info->working_directory && mono_string_length (proc_start_info->working_directory) > 0 ?
 			mono_string_chars (proc_start_info->working_directory) : NULL;
 
-	ret = process_create (shell_path, cmd ? mono_string_chars (cmd): NULL, dir, &startup_handles, process_info);
+	ret = process_create (shell_path, args, dir, &startup_handles, process_info);
 
 	if (shell_path != NULL)
 		g_free (shell_path);
