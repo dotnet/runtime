@@ -44,6 +44,8 @@ static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoR
 static gboolean ensure_runtime_vtable (MonoClass *klass, MonoError  *error);
 static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb);
 static gboolean reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error);
+static gboolean reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error);
+
 
 static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 #endif
@@ -1547,7 +1549,21 @@ mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 				return NULL;
 			}
 		}
-
+		/* Need to resolve the generic_type in order for it to create its generic context. */
+		MonoType *gtd = mono_reflection_type_get_handle (gclass->generic_type, error);
+		if (!is_ok (error)) {
+			g_free (types);
+			return NULL;
+		}
+		MonoClass *gtd_klass = mono_class_from_mono_type (gtd);
+		if (is_sre_type_builder (mono_object_class (gclass->generic_type))) {
+			reflection_create_generic_class ((MonoReflectionTypeBuilder*)gclass->generic_type, error);
+			if (!is_ok (error)) {
+				g_free (types);
+				return NULL;
+			}
+		}
+		g_assert (count == 0 || mono_class_is_gtd (gtd_klass));
 		res = mono_reflection_bind_generic_parameters (gclass->generic_type, count, types, error);
 		g_free (types);
 		g_assert (res);
@@ -2408,6 +2424,7 @@ reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	mono_error_init (error);
 
 	reflection_setup_internal_class (tb, error);
+	return_val_if_nok (error, FALSE);
 
 	klass = mono_class_from_mono_type (tb->type.type);
 
@@ -2415,6 +2432,9 @@ reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error
 
 	if (count == 0)
 		return TRUE;
+
+	if (mono_class_try_get_generic_container (klass) != NULL)
+		return TRUE; /* already setup */
 
 	MonoGenericContainer *generic_container = (MonoGenericContainer *)mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 
