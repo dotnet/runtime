@@ -1586,13 +1586,13 @@ leave:
 }
 
 static gboolean
-process_create (const gunichar2 *appname, const gunichar2 *cmdline, gpointer new_environ,
+process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	const gunichar2 *cwd, StartupHandles *startup_handles, MonoW32ProcessInfo *process_info)
 {
 #if defined (HAVE_FORK) && defined (HAVE_EXECVE)
 	char *cmd = NULL, *prog = NULL, *full_prog = NULL, *args = NULL, *args_after_prog = NULL;
 	char *dir = NULL, **env_strings = NULL, **argv = NULL;
-	guint32 i, env_count = 0;
+	guint32 i;
 	gboolean ret = FALSE;
 	gpointer handle = NULL;
 	GError *gerr = NULL;
@@ -1855,7 +1855,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline, gpointer new
 			g_free (newapp);
 
 			if (newcmd) {
-				ret = process_create (NULL, newcmd, new_environ, cwd, startup_handles, process_info);
+				ret = process_create (NULL, newcmd, cwd, startup_handles, process_info);
 
 				g_free (newcmd);
 
@@ -1898,59 +1898,56 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline, gpointer new
 		err_fd = GPOINTER_TO_UINT (GetStdHandle (STD_ERROR_HANDLE));
 	}
 
-	/* new_environ is a block of NULL-terminated strings, which
-	 * is itself NULL-terminated. Of course, passing an array of
-	 * string pointers would have made things too easy :-(
+	/*
+	 * process->env_variables is a an array of MonoString*
 	 *
 	 * If new_environ is not NULL it specifies the entire set of
 	 * environment variables in the new process.  Otherwise the
 	 * new process inherits the same environment.
 	 */
-	if (new_environ) {
-		gunichar2 *new_environp;
+	if (process_info->env_variables) {
+		gint i, str_length, var_length;
+		MonoString *var;
+		gunichar2 *str;
 
-		/* Count the number of strings */
-		for (new_environp = (gunichar2 *)new_environ; *new_environp; new_environp++) {
-			env_count++;
-			while (*new_environp)
-				new_environp++;
-		}
+		/* +2: one for the process handle value, and the last one is NULL */
+		env_strings = g_new0 (gchar*, mono_array_length (process_info->env_variables) + 2);
 
-		/* +2: one for the process handle value, and the last
-		 * one is NULL
-		 */
-		env_strings = g_new0 (char *, env_count + 2);
+		str = NULL;
+		str_length = 0;
 
-		/* Copy each environ string into 'strings' turning it
-		 * into utf8 (or the requested encoding) at the same
-		 * time
-		 */
-		env_count = 0;
-		for (new_environp = (gunichar2 *)new_environ; *new_environp; new_environp++) {
-			env_strings[env_count] = mono_unicode_to_external (new_environp);
-			env_count++;
-			while (*new_environp) {
-				new_environp++;
+		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
+		for (i = 0; i < mono_array_length (process_info->env_variables); ++i) {
+			var = mono_array_get (process_info->env_variables, MonoString*, i);
+			var_length = mono_string_length (var);
+
+			/* str is a null-terminated copy of var */
+
+			if (var_length + 1 > str_length) {
+				str_length = var_length + 1;
+				str = g_renew (gunichar2, str, str_length);
 			}
+
+			memcpy (str, mono_string_chars (var), var_length * sizeof (gunichar2));
+			str [var_length] = '\0';
+
+			env_strings [i] = mono_unicode_to_external (str);
 		}
+
+		g_free (str);
 	} else {
+		guint32 env_count;
+
+		env_count = 0;
 		for (i = 0; environ[i] != NULL; i++)
 			env_count++;
 
-		/* +2: one for the process handle value, and the last
-		 * one is NULL
-		 */
-		env_strings = g_new0 (char *, env_count + 2);
+		/* +2: one for the process handle value, and the last one is NULL */
+		env_strings = g_new0 (gchar*, env_count + 2);
 
-		/* Copy each environ string into 'strings' turning it
-		 * into utf8 (or the requested encoding) at the same
-		 * time
-		 */
-		env_count = 0;
-		for (i = 0; environ[i] != NULL; i++) {
-			env_strings[env_count] = g_strdup (environ[i]);
-			env_count++;
-		}
+		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
+		for (i = 0; i < env_count; i++)
+			env_strings [i] = g_strdup (environ[i]);
 	}
 
 	/* Create a pipe to make sure the child doesn't exit before
@@ -2137,7 +2134,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		ret = FALSE;
 		goto done;
 	}
-	ret = process_create (NULL, args, NULL, lpDirectory, NULL, process_info);
+	ret = process_create (NULL, args, lpDirectory, NULL, process_info);
 	g_free (args);
 
 	if (!ret && GetLastError () == ERROR_OUTOFMEMORY)
@@ -2194,7 +2191,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 			ret = FALSE;
 			goto done;
 		}
-		ret = process_create (NULL, args, NULL, lpDirectory, NULL, process_info);
+		ret = process_create (NULL, args, lpDirectory, NULL, process_info);
 		g_free (args);
 		if (!ret) {
 			if (GetLastError () != ERROR_OUTOFMEMORY)
@@ -2282,7 +2279,6 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	gunichar2 *dir;
 	StartupHandles startup_handles;
 	gunichar2 *shell_path = NULL;
-	gchar *env_vars = NULL;
 	MonoString *cmd = NULL;
 
 	memset (&startup_handles, 0, sizeof (startup_handles));
@@ -2295,54 +2291,12 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 		return FALSE;
 	}
 
-	if (process_info->env_keys) {
-		gint i, len; 
-		MonoString *ms;
-		MonoString *key, *value;
-		gunichar2 *str, *ptr;
-		gunichar2 *equals16;
-
-		for (len = 0, i = 0; i < mono_array_length (process_info->env_keys); i++) {
-			ms = mono_array_get (process_info->env_values, MonoString *, i);
-			if (ms == NULL)
-				continue;
-
-			len += mono_string_length (ms) * sizeof (gunichar2);
-			ms = mono_array_get (process_info->env_keys, MonoString *, i);
-			len += mono_string_length (ms) * sizeof (gunichar2);
-			len += 2 * sizeof (gunichar2);
-		}
-
-		equals16 = g_utf8_to_utf16 ("=", 1, NULL, NULL, NULL);
-		ptr = str = g_new0 (gunichar2, len + 1);
-		for (i = 0; i < mono_array_length (process_info->env_keys); i++) {
-			value = mono_array_get (process_info->env_values, MonoString *, i);
-			if (value == NULL)
-				continue;
-
-			key = mono_array_get (process_info->env_keys, MonoString *, i);
-			memcpy (ptr, mono_string_chars (key), mono_string_length (key) * sizeof (gunichar2));
-			ptr += mono_string_length (key);
-
-			memcpy (ptr, equals16, sizeof (gunichar2));
-			ptr++;
-
-			memcpy (ptr, mono_string_chars (value), mono_string_length (value) * sizeof (gunichar2));
-			ptr += mono_string_length (value);
-			ptr++;
-		}
-
-		g_free (equals16);
-		env_vars = (gchar *) str;
-	}
-	
 	/* The default dir name is "".  Turn that into NULL to mean "current directory" */
 	dir = proc_start_info->working_directory && mono_string_length (proc_start_info->working_directory) > 0 ?
 			mono_string_chars (proc_start_info->working_directory) : NULL;
 
-	ret = process_create (shell_path, cmd ? mono_string_chars (cmd): NULL, env_vars, dir, &startup_handles, process_info);
+	ret = process_create (shell_path, cmd ? mono_string_chars (cmd): NULL, dir, &startup_handles, process_info);
 
-	g_free (env_vars);
 	if (shell_path != NULL)
 		g_free (shell_path);
 

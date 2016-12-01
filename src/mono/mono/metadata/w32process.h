@@ -36,8 +36,7 @@ typedef struct
 	gpointer thread_handle;
 	guint32 pid; /* Contains GetLastError () on failure */
 	guint32 tid;
-	MonoArray *env_keys;
-	MonoArray *env_values;
+	MonoArray *env_variables;
 	MonoString *username;
 	MonoString *domain;
 	gpointer password; /* BSTR from SecureString in 2.0 profile */

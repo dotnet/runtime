@@ -64,68 +64,6 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
-static gchar*
-mono_process_unquote_application_name (gchar *appname)
-{
-	size_t len = strlen (appname);
-	if (len) {
-		if (appname[len-1] == '\"')
-			appname[len-1] = '\0';
-		if (appname[0] == '\"')
-			appname++;
-	}
-
-	return appname;
-}
-
-static gchar*
-mono_process_quote_path (const gchar *path)
-{
-	gchar *res = g_shell_quote (path);
-	gchar *q = res;
-	while (*q) {
-		if (*q == '\'')
-			*q = '\"';
-		q++;
-	}
-	return res;
-}
-
-/* Only used when UseShellExecute is false */
-static gboolean
-mono_process_complete_path (const gunichar2 *appname, gchar **completed)
-{
-	gchar *utf8app, *utf8appmemory;
-	gchar *found;
-
-	utf8appmemory = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
-	utf8app = mono_process_unquote_application_name (utf8appmemory);
-
-	if (g_path_is_absolute (utf8app)) {
-		*completed = mono_process_quote_path (utf8app);
-		g_free (utf8appmemory);
-		return TRUE;
-	}
-
-	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
-		*completed = mono_process_quote_path (utf8app);
-		g_free (utf8appmemory);
-		return TRUE;
-	}
-	
-	found = g_find_program_in_path (utf8app);
-	if (found == NULL) {
-		*completed = NULL;
-		g_free (utf8appmemory);
-		return FALSE;
-	}
-
-	*completed = mono_process_quote_path (found);
-	g_free (found);
-	g_free (utf8appmemory);
-	return TRUE;
-}
-
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 MonoBoolean
 ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_info)
@@ -191,12 +129,10 @@ mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle, HANDL
 	startinfo->hStdError = stderr_handle;
 	return;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 static gboolean
 mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *shell_path,
-			     MonoString *cmd, guint32 creation_flags, gchar *env_vars,
+			     MonoString *cmd, guint32 creation_flags, gunichar2 *env_vars,
 			     gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
 {
 	gboolean result = FALSE;
@@ -211,7 +147,7 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *s
 						  shell_path,
 						  cmd ? mono_string_chars (cmd) : NULL,
 						  creation_flags,
-						  env_vars, dir, start_info, process_info);
+						  (gchar*) env_vars, dir, start_info, process_info);
 
 	} else {
 
@@ -221,7 +157,7 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *s
 					NULL,
 					TRUE,
 					creation_flags,
-					env_vars,
+					(gchar*) env_vars,
 					dir,
 					start_info,
 					process_info);
@@ -232,8 +168,70 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, gunichar2 *s
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
+static gchar*
+process_unquote_application_name (gchar *appname)
+{
+	size_t len = strlen (appname);
+	if (len) {
+		if (appname[len-1] == '\"')
+			appname[len-1] = '\0';
+		if (appname[0] == '\"')
+			appname++;
+	}
+
+	return appname;
+}
+
+static gchar*
+process_quote_path (const gchar *path)
+{
+	gchar *res = g_shell_quote (path);
+	gchar *q = res;
+	while (*q) {
+		if (*q == '\'')
+			*q = '\"';
+		q++;
+	}
+	return res;
+}
+
+/* Only used when UseShellExecute is false */
 static gboolean
-mono_process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2 **shell_path, MonoString **cmd)
+process_complete_path (const gunichar2 *appname, gchar **completed)
+{
+	gchar *utf8app, *utf8appmemory;
+	gchar *found;
+
+	utf8appmemory = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
+	utf8app = process_unquote_application_name (utf8appmemory);
+
+	if (g_path_is_absolute (utf8app)) {
+		*completed = process_quote_path (utf8app);
+		g_free (utf8appmemory);
+		return TRUE;
+	}
+
+	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
+		*completed = process_quote_path (utf8app);
+		g_free (utf8appmemory);
+		return TRUE;
+	}
+	
+	found = g_find_program_in_path (utf8app);
+	if (found == NULL) {
+		*completed = NULL;
+		g_free (utf8appmemory);
+		return FALSE;
+	}
+
+	*completed = process_quote_path (found);
+	g_free (found);
+	g_free (utf8appmemory);
+	return TRUE;
+}
+
+static gboolean
+process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2 **shell_path, MonoString **cmd)
 {
 	gchar		*spath = NULL;
 	gchar		*new_cmd, *cmd_utf8;
@@ -242,7 +240,7 @@ mono_process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, guni
 	*shell_path = NULL;
 	*cmd = proc_start_info->arguments;
 
-	mono_process_complete_path (mono_string_chars (proc_start_info->filename), &spath);
+	process_complete_path (mono_string_chars (proc_start_info->filename), &spath);
 	if (spath != NULL) {
 		/* Seems like our CreateProcess does not work as the windows one.
 		 * This hack is needed to deal with paths containing spaces */
@@ -276,7 +274,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
 	gunichar2 *shell_path = NULL;
-	gchar *env_vars = NULL;
+	gunichar2 *env_vars = NULL;
 	MonoString *cmd = NULL;
 	guint32 creation_flags;
 
@@ -286,50 +284,38 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	if (proc_start_info->create_no_window)
 		creation_flags |= CREATE_NO_WINDOW;
 	
-	if (mono_process_get_shell_arguments (proc_start_info, &shell_path, &cmd) == FALSE) {
+	if (process_get_shell_arguments (proc_start_info, &shell_path, &cmd) == FALSE) {
 		process_info->pid = -ERROR_FILE_NOT_FOUND;
 		return FALSE;
 	}
 
-	if (process_info->env_keys) {
-		gint i, len; 
-		MonoString *ms;
-		MonoString *key, *value;
+	if (process_info->env_variables) {
+		gint i, len;
+		MonoString *var;
 		gunichar2 *str, *ptr;
-		gunichar2 *equals16;
 
-		for (len = 0, i = 0; i < mono_array_length (process_info->env_keys); i++) {
-			ms = mono_array_get (process_info->env_values, MonoString *, i);
-			if (ms == NULL)
-				continue;
+		len = 0;
 
-			len += mono_string_length (ms) * sizeof (gunichar2);
-			ms = mono_array_get (process_info->env_keys, MonoString *, i);
-			len += mono_string_length (ms) * sizeof (gunichar2);
-			len += 2 * sizeof (gunichar2);
+		for (i = 0; i < mono_array_length (process_info->env_variables); i++) {
+			var = mono_array_get (process_info->env_variables, MonoString*, i);
+
+			len += mono_string_length (var) * sizeof (gunichar2);
+
+			/* it's null-separated and null-terminated */
+			len += sizeof (gunichar2);
 		}
 
-		equals16 = g_utf8_to_utf16 ("=", 1, NULL, NULL, NULL);
-		ptr = str = g_new0 (gunichar2, len + 1);
-		for (i = 0; i < mono_array_length (process_info->env_keys); i++) {
-			value = mono_array_get (process_info->env_values, MonoString *, i);
-			if (value == NULL)
-				continue;
+		env_vars = ptr = g_new (gunichar2, len);
 
-			key = mono_array_get (process_info->env_keys, MonoString *, i);
-			memcpy (ptr, mono_string_chars (key), mono_string_length (key) * sizeof (gunichar2));
+		for (i = 0; i < mono_array_length (process_info->env_variables); i++) {
+			var = mono_array_get (process_info->env_variables, MonoString*, i);
+
+			memcpy (ptr, mono_string_chars (var), mono_string_length (var) * sizeof (gunichar2));
 			ptr += mono_string_length (key);
 
-			memcpy (ptr, equals16, sizeof (gunichar2));
-			ptr++;
-
-			memcpy (ptr, mono_string_chars (value), mono_string_length (value) * sizeof (gunichar2));
-			ptr += mono_string_length (value);
-			ptr++;
+			memset (ptr, 0, sizeof (gunichar2));
+			ptr += 1;
 		}
-
-		g_free (equals16);
-		env_vars = (gchar *) str;
 	}
 	
 	/* The default dir name is "".  Turn that into NULL to mean
