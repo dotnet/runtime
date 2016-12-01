@@ -45,6 +45,7 @@ namespace Microsoft.DotNet.Cli.Build
                 return ridCrossgen;
             }
 
+            // TODO-ARM-Crossgen: Add ubuntu.14.04-arm and ubuntu.16.04-arm
             if (_targetRID == "win8-arm")
             {
                 ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_arm", $"crossgen{Constants.ExeSuffix}");
@@ -73,6 +74,7 @@ namespace Microsoft.DotNet.Cli.Build
 
             string jitPath = Path.Combine(jitPackagePath, "runtimes", jitRid, "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
             
+            // TODO-ARM-Crossgen: Add ubuntu.14.04-arm and ubuntu.16.04-arm
             if (_targetRID == "win8-arm") 
             {
                 jitPath = Path.Combine(jitPackagePath, "runtimes", "x86_arm", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
