@@ -11,6 +11,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public class SafeWinHttpHandleTest
     {
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateAddRefDispose_HandleIsNotClosed()
         {
@@ -27,6 +28,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             safeHandle.DangerousRelease();
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateAddRefDisposeDispose_HandleIsNotClosed()
         {
@@ -44,6 +46,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             safeHandle.DangerousRelease();
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateAddRefDisposeRelease_HandleIsClosed()
         {
@@ -58,6 +61,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(0, FakeSafeWinHttpHandle.HandlesOpen);
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateAddRefRelease_HandleIsNotClosed()
         {
@@ -74,6 +78,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             safeHandle.Dispose();
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateAddRefReleaseDispose_HandleIsClosed()
         {
@@ -88,6 +93,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(0, FakeSafeWinHttpHandle.HandlesOpen);
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateDispose_HandleIsClosed()
         {
@@ -97,6 +103,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.True(safeHandle.IsClosed, "closed");
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateDisposeDispose_HandleIsClosedAndSecondDisposeIsNoop()
         {
@@ -106,6 +113,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.True(safeHandle.IsClosed, "closed");
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateDisposeAddRef_ThrowsObjectDisposedException()
         {
@@ -115,6 +123,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 { bool ignore = false; safeHandle.DangerousAddRef(ref ignore); });
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void CreateDisposeRelease_ThrowsObjectDisposedException()
         {
@@ -123,6 +132,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Throws<ObjectDisposedException>(() => safeHandle.DangerousRelease());
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void SetParentHandle_CreateParentCreateChildDisposeParent_ParentNotClosed()
         {
@@ -138,6 +148,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             childHandle.Dispose();
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void SetParentHandle_CreateParentCreateChildDisposeParentDisposeChild_HandlesClosed()
         {
@@ -151,6 +162,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.True(childHandle.IsClosed, "closed");
         }
 
+        [ActiveIssue(13951)]
         [Fact]
         public void SetParentHandle_CreateParentCreateChildDisposeChildDisposeParent_HandlesClosed()
         {
