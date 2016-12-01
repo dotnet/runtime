@@ -563,7 +563,13 @@ class MsbuildGenerator {
 
 		case "/publicsign":
 			return true;
-			
+
+		case "/deterministic":
+			return true;
+
+		case "/runtimemetadataversion":
+			return true;
+
 		case "/-getresourcestrings":
 			return true;
 		}
