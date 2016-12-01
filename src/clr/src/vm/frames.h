@@ -113,7 +113,7 @@
 //    |   +-ComPrestubMethodFrame - prestub frame for calls from COM to CLR
 //    |
 #endif //FEATURE_COMINTEROP
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_)
 //    | +-UMThkCallFrame        - this frame represents an unmanaged->managed
 //    |                           transition through N/Direct
 #endif
@@ -268,7 +268,7 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerSecurityCodeMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_)
 FRAME_TYPE_NAME(UMThkCallFrame)
 #endif
 #if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
@@ -1907,7 +1907,7 @@ class UnmanagedToManagedFrame : public Frame
 {
     friend class CheckAsmOffsets;
 
-    VPTR_ABSTRACT_VTABLE_CLASS(UnmanagedToManagedFrame, Frame)
+    VPTR_ABSTRACT_VTABLE_CLASS_AND_CTOR(UnmanagedToManagedFrame, Frame)
 
 public:
 
@@ -2899,7 +2899,7 @@ typedef DPTR(class UMThunkMarshInfo) PTR_UMThunkMarshInfo;
 class UMEntryThunk;
 typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_)
 //------------------------------------------------------------------------
 // This frame guards an unmanaged->managed transition thru a UMThk
 //------------------------------------------------------------------------
@@ -2929,7 +2929,7 @@ protected:
 };
 #endif // _TARGET_X86_ && !FEATURE_PAL
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_)
 //-------------------------------------------------------------------------
 // Exception handler for COM to managed frame
 //  and the layout of the exception registration record structure in the stack
@@ -2949,7 +2949,7 @@ struct ComToManagedExRecord
         return &m_frame;
     }
 };
-#endif // _TARGET_X86_ && !FEATURE_PAL
+#endif // _TARGET_X86_
 
 #if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
 //-----------------------------------------------------------------------------
