@@ -16164,7 +16164,7 @@ GenTreePtr Compiler::fgInitThisClass()
     {
 #ifdef FEATURE_READYTORUN_COMPILER
         // Only CoreRT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
-        if (opts.IsReadyToRun() && eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI)
+        if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_CORERT_ABI))
         {
             CORINFO_RESOLVED_TOKEN resolvedToken;
             memset(&resolvedToken, 0, sizeof(resolvedToken));
