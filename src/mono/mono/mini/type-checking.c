@@ -450,7 +450,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			MONO_START_BB (cfg, interface_fail_bb);
 
 			//Check if it's a rank zero array and emit fallback casting
-			emit_special_array_iface_check (cfg, src, tmp_reg, is_null_bb, context_used);
+			emit_special_array_iface_check (cfg, src, klass, tmp_reg, is_null_bb, context_used);
 		} else {
 			mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
