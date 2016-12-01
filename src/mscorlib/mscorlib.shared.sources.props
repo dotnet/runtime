@@ -985,7 +985,6 @@
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SafeSerializationManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\BinaryCompatibility.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkId.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
