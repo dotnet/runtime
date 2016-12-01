@@ -128,9 +128,11 @@
     <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+    <TargetsLinuxCross Condition="'$(TargetsLinux)' == 'true' and '$(CROSSCOMPILE)' != ''">true</TargetsLinuxCross>
 
     <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
-    <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
+    <DistroRid Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxCross)' != 'true'">$(__DistroRid)</DistroRid>
+    <DistroRid Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxCross)' == 'true'">$(__CrossDistroRid)</DistroRid>
 
   </PropertyGroup>
 
