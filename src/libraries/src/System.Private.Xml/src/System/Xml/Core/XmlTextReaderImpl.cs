@@ -4982,9 +4982,9 @@ namespace System.Xml
                 if (tmpch3 == quoteChar)
                 {
 #if DEBUG
-                    if (normalize)
+                    if (_normalize)
                     {
-                        string val = new string(chars, ps.charPos, pos - ps.charPos);
+                        string val = new string(chars, _ps.charPos, pos - _ps.charPos);
                         Debug.Assert(val == XmlComplianceUtil.CDataNormalize(val), "The attribute value is not CDATA normalized!"); 
                     }
 #endif
