@@ -3388,10 +3388,8 @@ void Compiler::lvaMarkLocalVars()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-#if COR_JIT_EE_VERSION > 460
     // PSPSym and LocAllocSPvar are not used by the CoreRT ABI
-    if (eeGetEEInfo()->targetAbi != CORINFO_CORERT_ABI)
-#endif
+    if (!IsTargetAbi(CORINFO_CORERT_ABI))
     {
 #if FEATURE_EH_FUNCLETS
         if (ehNeedsPSPSym())

@@ -6383,10 +6383,19 @@ public:
 #endif
     }
 
+    inline bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
+    {
+#if COR_JIT_EE_VERSION > 460
+        return eeGetEEInfo()->targetAbi == abi;
+#else
+        return CORINFO_DESKTOP_ABI == abi;
+#endif
+    }
+
     inline bool generateCFIUnwindCodes()
     {
-#if COR_JIT_EE_VERSION > 460 && defined(UNIX_AMD64_ABI)
-        return eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI;
+#ifdef UNIX_AMD64_ABI
+        return IsTargetAbi(CORINFO_CORERT_ABI);
 #else
         return false;
 #endif
