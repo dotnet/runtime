@@ -2146,8 +2146,10 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	cfg->args = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, (sig->param_count + sig->hasthis) * sizeof (MonoInst*));
 
-	if (sig->hasthis)
+	if (sig->hasthis) {
 		cfg->args [0] = mono_compile_create_var (cfg, &cfg->method->klass->this_arg, OP_ARG);
+		cfg->this_arg = cfg->args [0];
+	}
 
 	for (i = 0; i < sig->param_count; ++i) {
 		cfg->args [i + sig->hasthis] = mono_compile_create_var (cfg, sig->params [i], OP_ARG);

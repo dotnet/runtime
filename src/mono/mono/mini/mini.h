@@ -1593,6 +1593,7 @@ typedef struct {
 	MonoMethod      *current_method; /* The method currently processed by method_to_ir () */
 	MonoMethod      *method_to_register; /* The method to register in JIT info tables */
 	MonoGenericContext *generic_context;
+	MonoInst        *this_arg;
 
 	MonoBackend *backend;
 
