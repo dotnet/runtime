@@ -465,7 +465,8 @@ common_sources = \
 	alias-analysis.c	\
 	mini-cross-helpers.c \
 	arch-stubs.c		\
-	llvm-runtime.h
+	llvm-runtime.h	\
+	type-checking.c
 
 test_sources = 			\
 	basic-calls.cs 		\

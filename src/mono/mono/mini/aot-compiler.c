@@ -3144,8 +3144,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_PROXY_ISINST:
 		case MONO_WRAPPER_LDFLD:
 		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD:
-		case MONO_WRAPPER_ISINST: {
+		case MONO_WRAPPER_STFLD: {
 			g_assert (info);
 			encode_klass_ref (acfg, info->d.proxy.klass, p, &p);
 			break;
@@ -7273,7 +7272,6 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_LDFLD:
 			case MONO_WRAPPER_LDFLDA:
 			case MONO_WRAPPER_STELEMREF:
-			case MONO_WRAPPER_ISINST:
 			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
