@@ -777,8 +777,7 @@ int fx_muxer_t::read_config_and_execute(
  *  Main entrypoint to detect operating mode and perform corehost, muxer,
  *  standalone application activation and the SDK activation.
  */
-int fx_muxer_t::execute(const pal::string_t& exe_type,
-        const int argc, const pal::char_t* argv[])
+int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 {
     pal::string_t own_path;
 
@@ -820,29 +819,7 @@ int fx_muxer_t::execute(const pal::string_t& exe_type,
     if (mode == host_mode_t::standalone)
     {
         trace::verbose(_X("--- Executing in standalone mode..."));
-
-        bool is_unsigned_host = exe_type.empty();
-        bool is_app_host = (exe_type == _X("apphost"));
-        bool is_dotnet_host = (exe_type == _X("dotnet"));
-        bool can_load_own_dll = is_unsigned_host || (is_app_host && pal::validate_binding(own_dll));
-
-        trace::info(_X("Activation parameters, unsigned host: '%d', app host: '%d', loadable: '%d'"), is_unsigned_host, is_app_host, can_load_own_dll);
-
-        // Temporarily allow "dotnet.exe" host to load by own name.
-        if (can_load_own_dll || is_dotnet_host)
-        {
-            return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
-        }
-        else if (is_app_host)
-        {
-            trace::error(_X("A fatal error occurred: this executable was not bound to %s"), own_dll.c_str());
-            return StatusCode::LibHostAppValidationFailure;
-        }
-        else
-        {
-            trace::error(_X("A fatal error occurred: Invalid .NET Core configuration, an incorrect entrypoint executable is used."));
-            return StatusCode::LibHostEntrypointExeFailure;
-        }
+        return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
     }
 
     //

@@ -3,10 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>$(HostVersion)</Version>
+    <Version>$(AppHostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
+    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm64'))">win10</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <Serviceable>true</Serviceable>
   </PropertyGroup>

@@ -3,9 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>$(AppHostVersion)</Version>
+    <Version>$(HostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <MinOSForArch>rhel.7</MinOSForArch>
+    <MinOSForArch>linux</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <Serviceable>true</Serviceable>
   </PropertyGroup>
