@@ -27,7 +27,8 @@ enum EHHandlerType
     EH_HANDLER_CATCH = 0x1, // Don't use zero (to aid debugging uninitialized memory)
     EH_HANDLER_FILTER,
     EH_HANDLER_FAULT,
-    EH_HANDLER_FINALLY
+    EH_HANDLER_FINALLY,
+    EH_HANDLER_FAULT_WAS_FINALLY
 };
 
 // ToCORINFO_EH_CLAUSE_FLAGS: Convert an internal EHHandlerType to a CORINFO_EH_CLAUSE_FLAGS value
@@ -41,6 +42,7 @@ inline CORINFO_EH_CLAUSE_FLAGS ToCORINFO_EH_CLAUSE_FLAGS(EHHandlerType type)
         case EH_HANDLER_FILTER:
             return CORINFO_EH_CLAUSE_FILTER;
         case EH_HANDLER_FAULT:
+        case EH_HANDLER_FAULT_WAS_FINALLY:
             return CORINFO_EH_CLAUSE_FAULT;
         case EH_HANDLER_FINALLY:
             return CORINFO_EH_CLAUSE_FINALLY;
