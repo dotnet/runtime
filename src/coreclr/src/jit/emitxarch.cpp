@@ -1494,16 +1494,15 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     emitAttr size = EA_SIZE(attr);
 
     UNATIVE_OFFSET sz;
-#ifdef _TARGET_AMD64_
-    // If Byte 4 (which is 0xFF00) is non-zero, that's where the RM encoding goes.
+
+    // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    if (insCodeRM(ins) & 0xFF00)
+    if ((insCodeRM(ins) & 0xFF00) != 0)
     {
         sz = 5;
     }
     else
-#endif // _TARGET_AMD64_
     {
         code_t code = insCodeRM(ins);
         sz          = emitInsSize(insEncodeRMreg(ins, code));
@@ -9230,12 +9229,12 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     // now we use the single source as source1 and source2.
     if (IsThreeOperandBinaryAVXInstruction(ins))
     {
-        // encode source/dest operand reg in 'vvvv' bits in 1's compliement form
+        // encode source/dest operand reg in 'vvvv' bits in 1's complement form
         code = insEncodeReg3456(ins, reg1, size, code);
     }
     else if (IsThreeOperandMoveAVXInstruction(ins))
     {
-        // encode source operand reg in 'vvvv' bits in 1's compliement form
+        // encode source operand reg in 'vvvv' bits in 1's complement form
         code = insEncodeReg3456(ins, reg2, size, code);
     }
 
