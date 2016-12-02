@@ -851,7 +851,6 @@ AOT_DISABLED_TESTS= \
 CI_DISABLED_TESTS = \
 	main-returns-background-resetabort.exe \
 	main-returns-background-abort-resetabort.exe	\
-	thread6.exe	\
 	assemblyresolve_event3.exe \
 	delegate2.exe	\
 	finally_guard.exe \
