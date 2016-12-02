@@ -41,26 +41,7 @@ namespace System.Linq
                 return new ListPartition<TSource>(sourceList, count, int.MaxValue);
             }
 
-            return SkipIterator(source, count);
-        }
-
-        private static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count)
-        {
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                while (count > 0 && e.MoveNext())
-                {
-                    count--;
-                }
-
-                if (count <= 0)
-                {
-                    while (e.MoveNext())
-                    {
-                        yield return e.Current;
-                    }
-                }
-            }
+            return new EnumerablePartition<TSource>(source, count, -1);
         }
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
