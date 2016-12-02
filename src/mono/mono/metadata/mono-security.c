@@ -337,15 +337,41 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token)
 {
-	/* Posix version implemented in /mono/mono/io-layer/security.c */
+#ifdef HOST_WIN32
 	return (ImpersonateLoggedOnUser (token) != 0);
+#else
+	uid_t itoken = (uid_t) GPOINTER_TO_INT (token);
+#ifdef HAVE_SETRESUID
+	if (setresuid (-1, itoken, getuid ()) < 0)
+		return FALSE;
+#endif
+	return geteuid () == itoken;
+#endif
 }
 
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (void)
 {
-	/* Posix version implemented in /mono/mono/io-layer/security.c */
+#ifdef HOST_WIN32
 	return (RevertToSelf () != 0);
+#else
+#ifdef HAVE_GETRESUID
+	uid_t ruid, euid;
+#endif
+	uid_t suid = -1;
+
+#ifdef HAVE_GETRESUID
+	if (getresuid (&ruid, &euid, &suid) < 0)
+		return FALSE;
+#endif
+#ifdef HAVE_SETRESUID
+	if (setresuid (-1, suid, -1) < 0)
+		return FALSE;
+#else
+	return TRUE;
+#endif
+	return geteuid () == suid;
+#endif
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 

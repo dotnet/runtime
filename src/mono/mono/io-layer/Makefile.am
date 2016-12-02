@@ -17,7 +17,6 @@ OTHER_H = \
 	io-layer.h	\
 	io-portability.h	\
 	messages.h	\
-	security.h	\
 	sockets.h	\
 	uglify.h	\
 	versioninfo.h	\
@@ -37,8 +36,6 @@ OTHER_SRC = \
 	messages.c		\
 	messages.h		\
 	posix.c			\
-	security.c		\
-	security.h		\
 	sockets.c		\
 	sockets.h		\
 	socket-private.h	\
