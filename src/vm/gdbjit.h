@@ -431,6 +431,8 @@ public:
         m_sub_loc[0] = 1;
 #if defined(_TARGET_AMD64_)
         m_sub_loc[1] = DW_OP_reg6;
+#elif defined(_TARGET_X86_)
+        m_sub_loc[1] = DW_OP_reg5;
 #elif defined(_TARGET_ARM_)
         m_sub_loc[1] = DW_OP_reg11;
 #else
