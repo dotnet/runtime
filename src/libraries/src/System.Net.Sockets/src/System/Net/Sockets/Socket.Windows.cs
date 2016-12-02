@@ -209,11 +209,7 @@ namespace System.Net.Sockets
         private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
         {
             // Open the file, if any
-            FileStream fileStream = null;
-            if (fileName != null && fileName.Length > 0)
-            {
-                fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            }
+            FileStream fileStream = OpenFile(fileName);
 
             SocketError errorCode;
             using (fileStream)
@@ -232,7 +228,8 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            // If the TransmitFile call did a Disconnect, process that now
+            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
+            // Update our state to reflect this.
             if ((flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
             {
                 SetToDisconnected();
@@ -242,11 +239,7 @@ namespace System.Net.Sockets
 
         private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
         {
-            FileStream fileStream = null;
-            if (fileName != null && fileName.Length > 0)
-            {
-                fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            }
+            FileStream fileStream = OpenFile(fileName);
 
             TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
@@ -283,7 +276,8 @@ namespace System.Net.Sockets
             castedAsyncResult.InternalWaitForCompletion();
             castedAsyncResult.EndCalled = true;
 
-            // If the socket was disconnected by the SendFile operation, process that
+            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
+            // Update our state to reflect this.
             if (castedAsyncResult.DoDisconnect)
             {
                 SetToDisconnected();
