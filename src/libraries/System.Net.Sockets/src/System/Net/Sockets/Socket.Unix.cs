@@ -22,22 +22,23 @@ namespace System.Net.Sockets
             return null;
         }
 
-        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {
             // Note, UseDefaultWorkerThread is the default and is == 0.
             // Unfortunately there is no TransmitFileOptions.None.
             if (flags != TransmitFileOptions.UseDefaultWorkerThread)
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.net_sockets_transmitfileoptions_notsupported);
             }
+        }
+
+        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        {
+            CheckTransmitFileOptions(flags);
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream fileStream = null;
-            if (fileName != null && fileName.Length > 0)
-            {
-                fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            }
+            FileStream fileStream = OpenFile(fileName);
 
             SocketError errorCode = SocketError.Success;
             using (fileStream)
@@ -82,14 +83,14 @@ namespace System.Net.Sockets
                 // This will throw on error
                 if (preBuffer != null && preBuffer.Length > 0)
                 {
-                    // Using "this." seems to make the extension method kick in
-                    await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None);
+                    // Using "this." makes the extension method kick in
+                    await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None).ConfigureAwait(false);
                 }
 
                 // Send the file, if any
                 if (fileStream != null)
                 {
-                    TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+                    var tcs = new TaskCompletionSource<bool>();
 
                     // This can throw ObjectDisposedException.
                     errorCode = SocketPal.SendFileAsync(_handle, fileStream, (bytesTransferred, socketError) => 
@@ -106,7 +107,7 @@ namespace System.Net.Sockets
                         tcs.SetResult(true);
                     });
 
-                    await tcs.Task;
+                    await tcs.Task.ConfigureAwait(false);
                 }
             }
 
@@ -123,27 +124,18 @@ namespace System.Net.Sockets
             // This will throw on error
             if (postBuffer != null && postBuffer.Length > 0)
             {
-                // Using "this." seems to make the extension method kick in
-                await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None);
+                // Using "this." makes the extension method kick in
+                await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None).ConfigureAwait(false);
             }
         }
 
         private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
         {
-            // Note, UseDefaultWorkerThread is the default and is == 0.
-            // Unfortunately there is no TransmitFileOptions.None.
-            if (flags != TransmitFileOptions.UseDefaultWorkerThread)
-            {
-                throw new PlatformNotSupportedException();
-            }
+            CheckTransmitFileOptions(flags);
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream fileStream = null;
-            if (fileName != null && fileName.Length > 0)
-            {
-                fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            }
+            FileStream fileStream = OpenFile(fileName);
 
             return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
         }

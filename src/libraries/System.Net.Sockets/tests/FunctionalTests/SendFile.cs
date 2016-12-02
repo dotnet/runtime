@@ -123,6 +123,9 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(BytesToSend, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+
+            // Clean up the file we created
+            File.Delete(filename);
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -200,6 +203,9 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(BytesToSend, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+
+            // Clean up the file we created
+            File.Delete(filename);
         }
     }
 }

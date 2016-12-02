@@ -2792,6 +2792,8 @@ extern "C" Error SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t 
 #else
     (void)outfd;
     (void)infd;
+    (void)offset;
+    (void)count;
     *sent = 0;
     errno = ENOTSUP;
     return SystemNative_ConvertErrorPlatformToPal(errno);

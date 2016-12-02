@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net.Sockets
 {
-    internal class TransmitFileAsyncResult : BaseOverlappedAsyncResult
+    internal sealed class TransmitFileAsyncResult : BaseOverlappedAsyncResult
     {
         private FileStream _fileStream;
         private bool _doDisconnect;

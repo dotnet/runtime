@@ -4108,7 +4108,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-#region Async methods
+        #region Async methods
         public bool AcceptAsync(SocketAsyncEventArgs e)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
@@ -4769,10 +4769,10 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, retval);
             return retval;
         }
-#endregion
-#endregion
+        #endregion
+        #endregion
 
-#region Internal and private properties
+        #region Internal and private properties
         private static object InternalSyncObject
         {
             get
@@ -4819,9 +4819,9 @@ namespace System.Net.Sockets
                             TransportType.All;
             }
         }
-#endregion
+        #endregion
 
-#region Internal and private methods
+        #region Internal and private methods
         internal static void GetIPProtocolInformation(AddressFamily addressFamily, Internals.SocketAddress socketAddress, out bool isIPv4, out bool isIPv6)
         {
             bool isIPv4MappedToIPv6 = socketAddress.Family == AddressFamily.InterNetworkV6 && socketAddress.GetIPAddress().IsIPv4MappedToIPv6;
@@ -5824,7 +5824,10 @@ namespace System.Net.Sockets
             }
         }
 
-#endregion
+        // Helper for SendFile implementations
+        private static FileStream OpenFile(string name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
+
+        #endregion
 
         [System.Diagnostics.Conditional("TRACE_VERBOSE")]
         internal void DebugMembers()

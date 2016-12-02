@@ -204,8 +204,8 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError SendFile(SafeCloseSocket handle, SafeFileHandle fileHandle, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
         {
-            fixed (byte * prePinnedBuffer = preBuffer)
-            fixed (byte * postPinnedBuffer = postBuffer)
+            fixed (byte* prePinnedBuffer = preBuffer)
+            fixed (byte* postPinnedBuffer = postBuffer)
             {
                 Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = null;
                 if (preBuffer != null || postBuffer != null)
