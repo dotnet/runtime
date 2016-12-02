@@ -3319,6 +3319,8 @@ void CodeGen::genReportEH()
     EHblkDsc* HBtab;
     EHblkDsc* HBtabEnd;
 
+    bool isCoreRTABI = compiler->IsTargetAbi(CORINFO_CORERT_ABI);
+
     unsigned EHCount = compiler->compHndBBtabCount;
 
 #if FEATURE_EH_FUNCLETS
@@ -3328,7 +3330,7 @@ void CodeGen::genReportEH()
     unsigned enclosingTryIndex;
 
     // Duplicate clauses are not used by CoreRT ABI
-    if (!compiler->IsTargetAbi(CORINFO_CORERT_ABI))
+    if (!isCoreRTABI)
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
@@ -3347,7 +3349,7 @@ void CodeGen::genReportEH()
     unsigned clonedFinallyCount = 0;
 
     // Duplicate clauses are not used by CoreRT ABI
-    if (!compiler->IsTargetAbi(CORINFO_CORERT_ABI))
+    if (!isCoreRTABI)
     {
         // We don't keep track of how many cloned finally there are. So, go through and count.
         // We do a quick pass first through the EH table to see if there are any try/finally
@@ -3428,6 +3430,23 @@ void CodeGen::genReportEH()
         }
 
         CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
+
+        if (isCoreRTABI && (XTnum > 0))
+        {
+            // For CoreRT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // try block as the previous one. The runtime cannot reliably infer this information from
+            // native code offsets because of different try blocks can have same offsets. Alternative
+            // solution to this problem would be inserting extra nops to ensure that different try
+            // blocks have different offsets.
+            if (EHblkDsc::ebdIsSameTry(HBtab, HBtab - 1))
+            {
+                // The SAMETRY bit should only be set on catch clauses. This is ensured in IL, where only 'catch' is
+                // allowed to be mutually-protect. E.g., the C# "try {} catch {} catch {} finally {}" actually exists in
+                // IL as "try { try {} catch {} catch {} } finally {}".
+                assert(HBtab->HasCatchHandler());
+                flags = (CORINFO_EH_CLAUSE_FLAGS)(flags | CORINFO_EH_CLAUSE_SAMETRY);
+            }
+        }
 
         // Note that we reuse the CORINFO_EH_CLAUSE type, even though the names of
         // the fields aren't accurate.
@@ -3634,9 +3653,7 @@ void CodeGen::genReportEH()
                 CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(encTab->ebdHandlerType);
 
                 // Tell the VM this is an extra clause caused by moving funclets out of line.
-                // It seems weird this is from the CorExceptionFlag enum in corhdr.h,
-                // not the CORINFO_EH_CLAUSE_FLAGS enum in corinfo.h.
-                flags = (CORINFO_EH_CLAUSE_FLAGS)(flags | COR_ILEXCEPTION_CLAUSE_DUPLICATED);
+                flags = (CORINFO_EH_CLAUSE_FLAGS)(flags | CORINFO_EH_CLAUSE_DUPLICATE);
 
                 // Note that the JIT-EE interface reuses the CORINFO_EH_CLAUSE type, even though the names of
                 // the fields aren't really accurate. For example, we set "TryLength" to the offset of the
@@ -3703,9 +3720,9 @@ void CodeGen::genReportEH()
 
                 CORINFO_EH_CLAUSE clause;
                 clause.ClassToken = 0; // unused
-                clause.Flags = (CORINFO_EH_CLAUSE_FLAGS)(CORINFO_EH_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_DUPLICATED);
-                clause.TryOffset     = hndBeg;
-                clause.TryLength     = hndBeg;
+                clause.Flags      = (CORINFO_EH_CLAUSE_FLAGS)(CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_DUPLICATE);
+                clause.TryOffset  = hndBeg;
+                clause.TryLength  = hndBeg;
                 clause.HandlerOffset = hndBeg;
                 clause.HandlerLength = hndEnd;
 
