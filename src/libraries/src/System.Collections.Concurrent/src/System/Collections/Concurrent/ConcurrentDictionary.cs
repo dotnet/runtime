@@ -1834,12 +1834,10 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void AcquireAllLocks(ref int locksAcquired)
         {
-#if FEATURE_TRACING
             if (CDSCollectionETWBCLProvider.Log.IsEnabled())
             {
                 CDSCollectionETWBCLProvider.Log.ConcurrentDictionary_AcquiringAllLocks(_tables._buckets.Length);
             }
-#endif
 
             // First, acquire lock 0
             AcquireLocks(0, 1, ref locksAcquired);
