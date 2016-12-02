@@ -5153,19 +5153,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_GENERIC_CLASS_INIT: {
-			static int byte_offset = -1;
-			static guint8 bitmask;
-			guint32 imm8;
+			int byte_offset;
 			guint8 *jump;
 
-			if (byte_offset < 0)
-				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+			byte_offset = MONO_STRUCT_OFFSET (MonoVTable, initialized);
 
 			g_assert (arm_is_imm8 (byte_offset));
 			ARM_LDRSB_IMM (code, ARMREG_IP, ins->sreg1, byte_offset);
-			imm8 = mono_arm_is_rotated_imm8 (bitmask, &rot_amount);
-			g_assert (imm8 >= 0);
-			ARM_AND_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
 			ARM_CMP_REG_IMM (code, ARMREG_IP, 0, 0);
 			jump = code;
 			ARM_B_COND (code, ARMCOND_NE, 0);

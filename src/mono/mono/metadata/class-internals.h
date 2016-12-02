@@ -459,8 +459,9 @@ struct MonoVTable {
 	guint8     *interface_bitmap;
 	guint32     max_interface_id;
 	guint8      rank;
+	/* Keep this a guint8, the jit depends on it */
+	guint8      initialized; /* cctor has been run */
 	guint remote          : 1; /* class is remotely activated */
-	guint initialized     : 1; /* cctor has been run */
 	guint init_failed     : 1; /* cctor execution failed */
 	guint has_static_fields : 1; /* pointer to the data stored at the end of the vtable array */
 	guint gc_bits         : MONO_VTABLE_AVAILABLE_GC_BITS; /* Those bits are reserved for the usaged of the GC */

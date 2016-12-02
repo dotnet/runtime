@@ -4242,18 +4242,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		case OP_GENERIC_CLASS_INIT: {
-			static int byte_offset = -1;
-			static guint8 bitmask;
+			int byte_offset;
 			guint8 *jump;
 
-			if (byte_offset < 0)
-				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+			byte_offset = MONO_STRUCT_OFFSET (MonoVTable, initialized);
 
 			/* Load vtable->initialized */
 			arm_ldrsbx (code, ARMREG_IP0, sreg1, byte_offset);
-			// FIXME: No andx_imm yet */
-			code = mono_arm_emit_imm64 (code, ARMREG_IP1, bitmask);
-			arm_andx (code, ARMREG_IP0, ARMREG_IP0, ARMREG_IP1);
 			jump = code;
 			arm_cbnzx (code, ARMREG_IP0, 0);
 

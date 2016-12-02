@@ -3630,20 +3630,13 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 		ins->sreg1 = vtable_arg->dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 	} else {
-		static int byte_offset = -1;
-		static guint8 bitmask;
-		int bits_reg, inited_reg;
+		int inited_reg;
 		MonoBasicBlock *inited_bb;
 		MonoInst *args [16];
 
-		if (byte_offset < 0)
-			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-		bits_reg = alloc_ireg (cfg);
 		inited_reg = alloc_ireg (cfg);
 
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, bits_reg, vtable_arg->dreg, byte_offset);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, inited_reg, bits_reg, bitmask);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, inited_reg, vtable_arg->dreg, MONO_STRUCT_OFFSET (MonoVTable, initialized));
 
 		NEW_BBLOCK (cfg, inited_bb);
 

@@ -4883,16 +4883,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_GENERIC_CLASS_INIT: {
-			static int byte_offset = -1;
-			static guint8 bitmask;
 			guint8 *jump;
 
 			g_assert (ins->sreg1 == MONO_AMD64_ARG_REG1);
 
-			if (byte_offset < 0)
-				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-			amd64_test_membase_imm_size (code, ins->sreg1, byte_offset, bitmask, 1);
+			amd64_test_membase_imm_size (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoVTable, initialized), 1, 1);
 			jump = code;
 			amd64_branch8 (code, X86_CC_NZ, -1, 1);
 
