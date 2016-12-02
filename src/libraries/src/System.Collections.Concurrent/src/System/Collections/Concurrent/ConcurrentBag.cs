@@ -205,7 +205,6 @@ namespace System.Collections.Concurrent
         /// <returns>True if succeeded, false otherwise.</returns>
         private bool TrySteal(out T result, bool take)
         {
-#if FEATURE_TRACING
             if (take)
             {
                 CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryTakeSteals();
@@ -214,7 +213,6 @@ namespace System.Collections.Concurrent
             {
                 CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryPeekSteals();
             }
-#endif
 
             // If there's no local queue for this thread, just start from the head queue
             // and try to steal from each queue until we get a result.
