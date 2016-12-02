@@ -16,13 +16,9 @@ OTHER_H = \
 	io-trace.h	\
 	io-layer.h	\
 	io-portability.h	\
-	macros.h	\
 	messages.h	\
 	security.h	\
 	sockets.h	\
-	status.h	\
-	timefuncs.h	\
-	types.h		\
 	uglify.h	\
 	versioninfo.h	\
 	wapi.h		\
@@ -38,7 +34,6 @@ OTHER_SRC = \
 	io-private.h		\
 	io-layer.h		\
 	locking.c		\
-	macros.h		\
 	messages.c		\
 	messages.h		\
 	posix.c			\
@@ -48,10 +43,6 @@ OTHER_SRC = \
 	sockets.h		\
 	socket-private.h	\
 	socket-wrappers.h	\
-	status.h		\
-	timefuncs.c		\
-	timefuncs.h		\
-	types.h			\
 	uglify.h		\
 	versioninfo.c		\
 	versioninfo.h		\

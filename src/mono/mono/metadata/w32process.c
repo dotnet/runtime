@@ -313,7 +313,12 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 			}
 
 			if (VerQueryValue (data, query, (gpointer *)&ffi, &ffi_size)) {
-				LOGDEBUG (g_message ("%s: recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d]", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), HIWORD (ffi->dwFileVersionMS), LOWORD (ffi->dwFileVersionMS), HIWORD (ffi->dwFileVersionLS), LOWORD (ffi->dwFileVersionLS)));
+				#define LOWORD(i32) ((guint16)((i32) & 0xFFFF))
+				#define HIWORD(i32) ((guint16)(((guint32)(i32) >> 16) & 0xFFFF))
+
+				LOGDEBUG (g_message ("%s: recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d]",
+					__func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), HIWORD (ffi->dwFileVersionMS),
+						LOWORD (ffi->dwFileVersionMS), HIWORD (ffi->dwFileVersionLS), LOWORD (ffi->dwFileVersionLS)));
 
 				process_set_field_int (filever, "filemajorpart", HIWORD (ffi->dwFileVersionMS));
 				process_set_field_int (filever, "fileminorpart", LOWORD (ffi->dwFileVersionMS));
@@ -330,6 +335,9 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 				process_set_field_bool (filever, "ispatched", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PATCHED) != 0);
 				process_set_field_bool (filever, "isprivatebuild", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRIVATEBUILD) != 0);
 				process_set_field_bool (filever, "isspecialbuild", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_SPECIALBUILD) != 0);
+
+				#undef LOWORD
+				#undef HIWORD
 			}
 			g_free (query);
 

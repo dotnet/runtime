@@ -159,8 +159,8 @@ typedef struct {
 	pid_t id;
 	guint32 exitstatus;
 	gpointer main_thread;
-	WapiFileTime create_time;
-	WapiFileTime exit_time;
+	guint64 create_time;
+	guint64 exit_time;
 	char *proc_name;
 	size_t min_working_set;
 	size_t max_working_set;
@@ -329,7 +329,8 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 		process_handle->exitstatus = 128 + WTERMSIG (status);
 	else
 		process_handle->exitstatus = WEXITSTATUS (status);
-	_wapi_time_t_to_filetime (time (NULL), &process_handle->exit_time);
+
+	process_handle->exit_time = mono_100ns_datetime ();
 
 	process_handle->exited = TRUE;
 
@@ -454,7 +455,7 @@ process_set_defaults (MonoW32HandleProcess *process_handle)
 	process_handle->min_working_set = 204800;
 	process_handle->max_working_set = 1413120;
 
-	_wapi_time_t_to_filetime (time (NULL), &process_handle->create_time);
+	process_handle->create_time = mono_100ns_datetime ();
 }
 
 static void
@@ -2305,13 +2306,6 @@ ticks_to_processtime (guint64 ticks, ProcessTime *processtime)
 	processtime->highDateTime = ticks >> 32;
 }
 
-static void
-wapifiletime_to_processtime (WapiFileTime wapi_filetime, ProcessTime *processtime)
-{
-	processtime->lowDateTime = wapi_filetime.dwLowDateTime;
-	processtime->highDateTime = wapi_filetime.dwHighDateTime;
-}
-
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64 *creation_time, gint64 *exit_time, gint64 *kernel_time, gint64 *user_time)
 {
@@ -2352,12 +2346,12 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 		return FALSE;
 	}
 
-	wapifiletime_to_processtime (process_handle->create_time, creation_processtime);
+	ticks_to_processtime (process_handle->create_time, creation_processtime);
 
 	/* A process handle is only signalled if the process has
 	 * exited, otherwise exit_processtime isn't set */
 	if (mono_w32handle_issignalled (handle))
-		wapifiletime_to_processtime (process_handle->exit_time, exit_processtime);
+		ticks_to_processtime (process_handle->exit_time, exit_processtime);
 
 #ifdef HAVE_GETRUSAGE
 	if (process_handle->id == getpid ()) {

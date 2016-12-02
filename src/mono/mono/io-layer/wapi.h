@@ -15,25 +15,20 @@
 #include <sys/types.h>
 
 #include <mono/io-layer/wapi-remap.h>
-#include <mono/io-layer/types.h>
-#include <mono/io-layer/macros.h>
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/error.h>
 #include <mono/io-layer/messages.h>
 #include <mono/io-layer/security.h>
 #include <mono/io-layer/sockets.h>
-#include <mono/io-layer/status.h>
-#include <mono/io-layer/timefuncs.h>
 #include <mono/io-layer/versioninfo.h>
 
 G_BEGIN_DECLS
 
-#define WAIT_FAILED		0xFFFFFFFF
-#define WAIT_OBJECT_0		((STATUS_WAIT_0) +0)
-#define WAIT_ABANDONED		((STATUS_ABANDONED_WAIT_0) +0)
-#define WAIT_ABANDONED_0	((STATUS_ABANDONED_WAIT_0) +0)
-#define WAIT_TIMEOUT		STATUS_TIMEOUT
-#define WAIT_IO_COMPLETION	STATUS_USER_APC
+#define WAIT_FAILED        ((int) 0xFFFFFFFF)
+#define WAIT_OBJECT_0      ((int) 0x00000000)
+#define WAIT_ABANDONED_0   ((int) 0x00000080)
+#define WAIT_TIMEOUT       ((int) 0x00000102)
+#define WAIT_IO_COMPLETION ((int) 0x000000C0)
 
 void
 wapi_init (void);

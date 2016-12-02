@@ -22,7 +22,7 @@ mono_networking_init (void)
 	WSADATA wsadata;
 	int err;
 
-	err = WSAStartup (MAKEWORD (2,0), &wsadata);
+	err = WSAStartup (2 /* 2.0 */, &wsadata);
 	if(err)
 		g_error ("%s: Couldn't initialise networking", __func__);
 }
