@@ -4862,6 +4862,17 @@
       <resources></resources>
       <response>System.IO.Pipes.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.Security.Cryptography.Algorithms" library="Facades_System.Security.Cryptography.Algorithms-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Core.dll</flags>
+      <output>System.Security.Cryptography.Algorithms.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Security.Cryptography.Algorithms.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Security.Cryptography.Algorithms.dll.sources</response>
+    </project>
     <project dir="nunit24/NUnitFramework/framework" library="NUnit.Framework-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /d:StronglyNamedAssembly -warn:1 /publicsign /keyfile:../../nunit.snk -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.dll</flags>
