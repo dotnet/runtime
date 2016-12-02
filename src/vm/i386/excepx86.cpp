@@ -1153,6 +1153,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
     pExInfo->m_pExceptionPointers = &exceptionPointers;
 
+#ifndef FEATURE_PAL
     if (bRethrownException || bNestedException)
     {
         _ASSERTE(pExInfo->m_pPrevNestedInfo != NULL);
@@ -1161,6 +1162,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         SetStateForWatsonBucketing(bRethrownException, pExInfo->GetPreviousExceptionTracker()->GetThrowableAsHandle());
         END_SO_INTOLERANT_CODE;
     }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
     //
