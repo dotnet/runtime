@@ -3,8 +3,8 @@
 
 #ifndef DISABLE_JIT
 
-#include <mini.h>
-#include <ir-emit.h>
+#include "mini.h"
+#include "ir-emit.h"
 #include <mono/metadata/abi-details.h>
 
 
