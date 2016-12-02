@@ -2606,9 +2606,9 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         // EX_CATCH just above us.  If not, the exception
         if (   IsFilterHandler(&EHClause)
             && (   offs > EHClause.FilterOffset
-                || offs == EHClause.FilterOffset && !start_adjust)
+                || (offs == EHClause.FilterOffset && !start_adjust) )
             && (   offs < EHClause.HandlerStartPC
-                || offs == EHClause.HandlerStartPC && !end_adjust)) {
+                || (offs == EHClause.HandlerStartPC && !end_adjust) )) {
 
             STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: Fault inside filter [%d,%d] startAdj %d endAdj %d\n",
                         EHClause.FilterOffset, EHClause.HandlerStartPC, start_adjust, end_adjust);
@@ -2980,9 +2980,9 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
 
         if (   IsFilterHandler(&EHClause)
             && (   offs > EHClause.FilterOffset
-                || offs == EHClause.FilterOffset && !start_adjust)
+                || (offs == EHClause.FilterOffset && !start_adjust) )
             && (   offs < EHClause.HandlerStartPC
-                || offs == EHClause.HandlerStartPC && !end_adjust)
+                || (offs == EHClause.HandlerStartPC && !end_adjust) )
             ) {
             STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: Fault inside filter [%d,%d] startAdj %d endAdj %d\n",
                         EHClause.FilterOffset, EHClause.HandlerStartPC, start_adjust, end_adjust);
