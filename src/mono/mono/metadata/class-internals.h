@@ -278,6 +278,7 @@ struct _MonoClass {
 	 * initialise all static fields.
 	 */
 	/* size_inited is accessed without locks, so it needs a memory barrier */
+	/* All flag bits should be written while holding the loader lock */
 	guint size_inited     : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */

@@ -5081,12 +5081,13 @@ mono_class_init (MonoClass *klass)
 	init_list = g_slist_remove (init_list, klass);
 	mono_native_tls_set_value (init_pending_tls_id, init_list);
 
-	/* Because of the double-checking locking pattern */
-	mono_memory_barrier ();
-	klass->inited = 1;
-
 	if (locked)
 		mono_loader_unlock ();
+
+	/* Leave this for last */
+	mono_loader_lock ();
+	klass->inited = 1;
+	mono_loader_unlock ();
 
 	return !mono_class_has_failure (klass);
 }
