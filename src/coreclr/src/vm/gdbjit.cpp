@@ -688,7 +688,7 @@ const unsigned char AbbrevTable[] = {
         DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
 #if defined(_TARGET_AMD64_)
         DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
         DW_FORM_data4,
 #else
 #error Unsupported platform!
@@ -724,7 +724,7 @@ const unsigned char AbbrevTable[] = {
         DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, 
 #if defined(_TARGET_AMD64_)
         DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
         DW_FORM_data4,
 #else
 #error Unsupported platform!
@@ -810,7 +810,7 @@ struct __attribute__((packed)) DebugInfoSub
     uint32_t m_sub_type;
 #if defined(_TARGET_AMD64_)
     uint64_t m_sub_low_pc, m_sub_high_pc;
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
     uint32_t m_sub_low_pc, m_sub_high_pc;
 #else
 #error Unsupported platform!
