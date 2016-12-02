@@ -118,6 +118,7 @@ null_gc_sources = \
 
 common_sources = \
 	$(platform_sources)	\
+	appdomain-icalls.h	\
 	assembly.c		\
 	assembly-internals.h	\
 	attach.h		\

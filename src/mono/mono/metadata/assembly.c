@@ -2723,27 +2723,21 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	res = probe_for_partial_name (gacpath, fullname, aname, status);
 	g_free (gacpath);
 
+	g_free (fullname);
+	mono_assembly_name_free (aname);
+
 	if (res)
 		res->in_gac = TRUE;
 	else {
 		MonoDomain *domain = mono_domain_get ();
-		MonoReflectionAssembly *refasm;
 
-		refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), NULL, FALSE, &error);
+		res = mono_try_assembly_resolve (domain, name, NULL, FALSE, &error);
 		if (!is_ok (&error)) {
-			g_free (fullname);
-			mono_assembly_name_free (aname);
 			mono_error_cleanup (&error);
 			if (*status == MONO_IMAGE_OK)
 				*status = MONO_IMAGE_IMAGE_INVALID;
 		}
-
-		if (refasm)
-			res = refasm->assembly;
 	}
-	
-	g_free (fullname);
-	mono_assembly_name_free (aname);
 
 	return res;
 }

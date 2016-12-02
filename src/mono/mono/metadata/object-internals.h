@@ -169,6 +169,9 @@ struct _MonoAppDomain {
 	MonoDomain *data;
 };
 
+/* Safely access System.AppDomain from native code */
+TYPED_HANDLE_DECL (MonoAppDomain);
+
 typedef struct _MonoStringBuilder MonoStringBuilder;
 
 struct _MonoStringBuilder {
@@ -1068,6 +1071,9 @@ typedef struct {
 	MonoArray *pktoken; /* as hexadecimal byte[] */
 } MonoReflectionAssemblyBuilder;
 
+/* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
+TYPED_HANDLE_DECL (MonoReflectionAssemblyBuilder);
+
 typedef struct {
 	MonoObject object;
 	guint32 attrs;
@@ -1132,6 +1138,9 @@ typedef struct {
 	gboolean is_main;
 	MonoArray *resources;
 } MonoReflectionModuleBuilder;
+
+/* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
+TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef struct {
 	MonoReflectionType type;
@@ -1796,5 +1805,8 @@ ves_icall_ModuleBuilder_getUSIndex (MonoReflectionModuleBuilder *module, MonoStr
 
 void
 ves_icall_ModuleBuilder_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflectionType *type);
+
+MonoAssembly*
+mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

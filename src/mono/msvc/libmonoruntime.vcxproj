@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\metadata\appdomain.h" />
+    <ClInclude Include="..\mono\metadata\appdomain-icalls.h" />
     <ClInclude Include="..\mono\metadata\assembly.h" />
     <ClInclude Include="..\mono\metadata\attach.h" />
     <ClInclude Include="..\mono\metadata\cil-coff.h" />

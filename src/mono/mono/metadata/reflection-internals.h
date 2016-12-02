@@ -64,9 +64,6 @@ mono_identifier_unescape_type_name_chars (char* identifier);
 MonoImage *
 mono_find_dynamic_image_owner (void *ptr);
 
-MonoReflectionAssembly*
-mono_assembly_get_object_checked (MonoDomain *domain, MonoAssembly *assembly, MonoError *error);
-
 MonoReflectionAssemblyHandle
 mono_assembly_get_object_handle (MonoDomain *domain, MonoAssembly *assembly, MonoError *error);
 

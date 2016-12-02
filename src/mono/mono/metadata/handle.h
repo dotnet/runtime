@@ -117,6 +117,11 @@ Icall macros
 	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
 	mono_stack_mark_pop (__info, &__mark);
 
+#define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
+	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
+	(RESULT) = mono_stack_mark_pop_value (__info, &__mark, (HANDLE));
+
+
 #define HANDLE_FUNCTION_ENTER() do {				\
 	MonoThreadInfo *__info = mono_thread_info_current ();	\
 	SETUP_ICALL_FRAME					\
@@ -135,6 +140,13 @@ Icall macros
 		void* __result = (MONO_HANDLE_RAW (HANDLE));	\
 		CLEAR_ICALL_FRAME;				\
 		return __result;				\
+	} while (0); } while (0);
+
+#define HANDLE_FUNCTION_RETURN_REF(TYPE, HANDLE)			\
+	do {								\
+		MonoRawHandle __result;					\
+		CLEAR_ICALL_FRAME_VALUE (__result, ((MonoRawHandle) (HANDLE))); \
+		return MONO_HANDLE_CAST (TYPE, __result);		\
 	} while (0); } while (0);
 
 #ifdef MONO_NEEDS_STACK_WATERMARK
@@ -330,7 +342,7 @@ extern const MonoObjectHandle mono_null_value_handle;
 static inline void
 mono_handle_assign (MonoObjectHandleOut dest, MonoObjectHandle src)
 {
-	mono_gc_wbarrier_generic_store (&dest->__obj, MONO_HANDLE_RAW(src));
+	mono_gc_wbarrier_generic_store (&dest->__obj, src ? MONO_HANDLE_RAW(src) : NULL);
 }
 
 //FIXME this should go somewhere else

@@ -52,7 +52,6 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
-#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/reflection-internals.h>
@@ -61,6 +60,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
+#include <mono/metadata/appdomain-icalls.h>
 #include <mono/metadata/string-icalls.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/w32process.h>
@@ -107,7 +107,7 @@
 
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
-ICALL_EXPORT MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
+ICALL_EXPORT MonoReflectionAssemblyHandle ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error);
 
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (system_version, System, Version)
@@ -2615,15 +2615,14 @@ ves_icall_RuntimeTypeHandle_GetModule (MonoReflectionTypeHandle type, MonoError 
 	return mono_module_get_object_handle (domain, klass->image, error);
 }
 
-ICALL_EXPORT MonoReflectionAssembly*
-ves_icall_RuntimeTypeHandle_GetAssembly (MonoReflectionType *type)
+ICALL_EXPORT MonoReflectionAssemblyHandle
+ves_icall_RuntimeTypeHandle_GetAssembly (MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass = mono_class_from_mono_type (type->type);
-	MonoReflectionAssembly *result = mono_assembly_get_object_checked (domain, klass->image->assembly, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	MonoType *t = MONO_HANDLE_GETVAL (type, type);
+	MonoClass *klass = mono_class_from_mono_type (t);
+	return mono_assembly_get_object_handle (domain, klass->image->assembly, error);
 }
 
 ICALL_EXPORT MonoReflectionType*
@@ -4537,27 +4536,24 @@ ves_icall_System_Reflection_Assembly_get_global_assembly_cache (MonoReflectionAs
 	return mass->in_gac;
 }
 
-ICALL_EXPORT MonoReflectionAssembly*
-ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoString *mname, MonoObject *evidence)
+ICALL_EXPORT MonoReflectionAssemblyHandle
+ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoStringHandle mname, MonoObjectHandle evidence, MonoError *error)
 {
-	MonoError error;
 	gchar *name;
-	MonoAssembly *res;
 	MonoImageOpenStatus status;
-	MonoReflectionAssembly* result = NULL;
+	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	
-	name = mono_string_to_utf8_checked (mname, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
-	res = mono_assembly_load_with_partial_name (name, &status);
+	name = mono_string_handle_to_utf8 (mname, error);
+	if (!is_ok (error))
+		goto leave;
+	MonoAssembly *res = mono_assembly_load_with_partial_name (name, &status);
 
 	g_free (name);
 
 	if (res == NULL)
-		return NULL;
-	result = mono_assembly_get_object_checked (mono_domain_get (), res, &error);
-	if (!result)
-		mono_error_set_pending_exception (&error);
+		goto leave;
+	result = mono_assembly_get_object_handle (mono_domain_get (), res, error);
+leave:
 	return result;
 }
 
@@ -5108,45 +5104,37 @@ ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal (MonoMethod *method
 	return result;
 }
 
-ICALL_EXPORT MonoReflectionAssembly*
-ves_icall_System_Reflection_Assembly_GetExecutingAssembly (void)
+ICALL_EXPORT MonoReflectionAssemblyHandle
+ves_icall_System_Reflection_Assembly_GetExecutingAssembly (MonoError *error)
 {
-	MonoError error;
-	MonoReflectionAssembly *result;
-	MonoMethod *dest = NULL;
+	mono_error_init (error);
 
+	MonoMethod *dest = NULL;
 	mono_stack_walk_no_il (get_executing, &dest);
 	g_assert (dest);
-	result = mono_assembly_get_object_checked (mono_domain_get (), dest->klass->image->assembly, &error);
-	if (!result)
-		mono_error_set_pending_exception (&error);
-	return result;
+	return mono_assembly_get_object_handle (mono_domain_get (), dest->klass->image->assembly, error);
 }
 
 
-ICALL_EXPORT MonoReflectionAssembly*
-ves_icall_System_Reflection_Assembly_GetEntryAssembly (void)
+ICALL_EXPORT MonoReflectionAssemblyHandle
+ves_icall_System_Reflection_Assembly_GetEntryAssembly (MonoError *error)
 {
-	MonoError error;
-	MonoReflectionAssembly *result;
+	mono_error_init (error);
+
 	MonoDomain* domain = mono_domain_get ();
 
 	if (!domain->entry_assembly)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 
-	result = mono_assembly_get_object_checked (domain, domain->entry_assembly, &error);
-	if (!result)
-		mono_error_set_pending_exception (&error);
-	return result;
+	return mono_assembly_get_object_handle (domain, domain->entry_assembly, error);
 }
 
-ICALL_EXPORT MonoReflectionAssembly*
-ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
+ICALL_EXPORT MonoReflectionAssemblyHandle
+ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoMethod *m;
 	MonoMethod *dest;
-	MonoReflectionAssembly *result;
 
 	dest = NULL;
 	mono_stack_walk_no_il (get_executing, &dest);
@@ -5155,13 +5143,10 @@ ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 	if (!dest)
 		dest = m;
 	if (!m) {
-		mono_set_pending_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
-		return NULL;
+		mono_error_set_not_supported (error, "Stack walks are not supported on this platform.");
+		return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
-	result = mono_assembly_get_object_checked (mono_domain_get (), dest->klass->image->assembly, &error);
-	if (!result)
-		mono_error_set_pending_exception (&error);
-	return result;
+	return mono_assembly_get_object_handle (mono_domain_get (), dest->klass->image->assembly, error);
 }
 
 ICALL_EXPORT MonoStringHandle

@@ -230,24 +230,6 @@ mono_assembly_get_object_handle (MonoDomain *domain, MonoAssembly *assembly, Mon
 	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssemblyHandle, assembly, NULL, assembly_object_construct, NULL);
 }
 
-/*
- * mono_assembly_get_object_handle:
- * @domain: an app domain
- * @assembly: an assembly
- *
- * Return an System.Reflection.Assembly object representing the MonoAssembly @assembly.
- */
-MonoReflectionAssembly*
-mono_assembly_get_object_checked (MonoDomain *domain, MonoAssembly *assembly, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	mono_error_init (error);
-	MonoReflectionAssemblyHandle result = mono_assembly_get_object_handle (domain, assembly, error);
-	HANDLE_FUNCTION_RETURN_OBJ (result);
-}
-
-
-
 MonoReflectionModule*   
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
@@ -1958,44 +1940,74 @@ mono_reflection_get_type_checked (MonoImage *rootimage, MonoImage* image, MonoTy
 
 
 static MonoType*
+module_builder_array_get_type (MonoArrayHandle module_builders, int i, MonoImage *rootimage, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoType *type = NULL;
+	MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_NEW (MonoReflectionModuleBuilder, NULL);
+	MONO_HANDLE_ARRAY_GETREF (mb, module_builders, i);
+	MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (mb, dynamic_image);
+	type = mono_reflection_get_type_internal (rootimage, &dynamic_image->image, info, ignorecase, error);
+	HANDLE_FUNCTION_RETURN_VAL (type);
+}
+
+static MonoType*
+module_array_get_type (MonoArrayHandle modules, int i, MonoImage *rootimage, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoType *type = NULL;
+	MonoReflectionModuleHandle mod = MONO_HANDLE_NEW (MonoReflectionModule, NULL);
+	MONO_HANDLE_ARRAY_GETREF (mod, modules, i);
+	MonoImage *image = MONO_HANDLE_GETVAL (mod, image);
+	type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase, error);
+	HANDLE_FUNCTION_RETURN_VAL (type);
+}
+
+static MonoType*
 mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *assembly, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
 {
-	MonoReflectionAssemblyBuilder *abuilder;
-	MonoType *type;
+	HANDLE_FUNCTION_ENTER ();
+	MonoType *type = NULL;
 	int i;
 
 	mono_error_init (error);
 	g_assert (assembly_is_dynamic (assembly));
-	abuilder = (MonoReflectionAssemblyBuilder*)mono_assembly_get_object_checked (((MonoDynamicAssembly*)assembly)->domain, assembly, error);
-	if (!abuilder)
-		return NULL;
+	MonoReflectionAssemblyBuilderHandle abuilder = MONO_HANDLE_CAST (MonoReflectionAssemblyBuilder, mono_assembly_get_object_handle (((MonoDynamicAssembly*)assembly)->domain, assembly, error));
+	if (!is_ok (error))
+		goto leave;
 
 	/* Enumerate all modules */
 
-	type = NULL;
-	if (abuilder->modules) {
-		for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
-			MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-			type = mono_reflection_get_type_internal (rootimage, &mb->dynamic_image->image, info, ignorecase, error);
+	MonoArrayHandle modules = MONO_HANDLE_NEW (MonoArray, NULL);
+	MONO_HANDLE_GET (modules, abuilder, modules);
+	if (!MONO_HANDLE_IS_NULL (modules)) {
+		int n = mono_array_handle_length (modules);
+		for (i = 0; i < n; ++i) {
+			type = module_builder_array_get_type (modules, i, rootimage, info, ignorecase, error);
 			if (type)
 				break;
-			if (!mono_error_ok (error))
-				return NULL;
+			if (!is_ok (error))
+				goto leave;
 		}
 	}
 
-	if (!type && abuilder->loaded_modules) {
-		for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
-			MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-			type = mono_reflection_get_type_internal (rootimage, mod->image, info, ignorecase, error);
+	MonoArrayHandle loaded_modules = MONO_HANDLE_NEW (MonoArray, NULL);
+	MONO_HANDLE_GET (loaded_modules, abuilder, loaded_modules);
+	if (!type && !MONO_HANDLE_IS_NULL(loaded_modules)) {
+		int n = mono_array_handle_length (loaded_modules);
+		for (i = 0; i < n; ++i) {
+			type = module_array_get_type (loaded_modules, i, rootimage, info, ignorecase, error);
 			if (type)
 				break;
-			if (!mono_error_ok (error))
-				return NULL;
+			if (!is_ok (error))
+				goto leave;
 		}
 	}
 
-	return type;
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (type);
 }
 	
 MonoType*

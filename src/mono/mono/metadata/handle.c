@@ -198,7 +198,9 @@ mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, c
 MonoRawHandle
 mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value)
 {
-	g_error ("impl me");
+	MonoObject *obj = value ? *((MonoObject**)value) : NULL;
+	mono_stack_mark_pop (info, stackmark);
+	return mono_handle_new (obj);
 }
 
 /* Temporary place for some of the handle enabled wrapper functions*/

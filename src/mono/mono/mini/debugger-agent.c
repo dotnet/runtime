@@ -7742,6 +7742,23 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
+get_assembly_object_command (MonoDomain *domain, MonoAssembly *ass, Buffer *buf, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER();
+	ErrorCode err = ERR_NONE;
+	mono_error_init (error);
+	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (domain, ass, error);
+	if (MONO_HANDLE_IS_NULL (o)) {
+		err = ERR_INVALID_OBJECT;
+		goto leave;
+	}
+	buffer_add_objid (buf, MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, o)));
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (err);
+}
+
+
+static ErrorCode
 assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
 	ErrorCode err;
@@ -7783,13 +7800,9 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_ASSEMBLY_GET_OBJECT: {
 		MonoError error;
-		MonoObject *o = (MonoObject*)mono_assembly_get_object_checked (domain, ass, &error);
-		if (!o) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			return ERR_INVALID_OBJECT;
-		}
-		buffer_add_objid (buf, o);
-		break;
+		err = get_assembly_object_command (domain, ass, buf, &error);
+		mono_error_cleanup (&error);
+		return err;
 	}
 	case CMD_ASSEMBLY_GET_TYPE: {
 		MonoError error;

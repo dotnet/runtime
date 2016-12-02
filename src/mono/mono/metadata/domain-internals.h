@@ -546,99 +546,6 @@ void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
 void
 mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
 
-MonoAppDomain *
-ves_icall_System_AppDomain_getCurDomain            (void);
-
-MonoAppDomain *
-ves_icall_System_AppDomain_getRootDomain           (void);
-
-MonoAppDomain *
-ves_icall_System_AppDomain_createDomain            (MonoString         *friendly_name,
-						    MonoAppDomainSetup *setup);
-
-MonoObject *
-ves_icall_System_AppDomain_GetData                 (MonoAppDomain *ad, 
-						    MonoString    *name);
-
-MonoReflectionAssembly *
-ves_icall_System_AppDomain_LoadAssemblyRaw         (MonoAppDomain *ad,
-    						    MonoArray *raw_assembly, 
-						    MonoArray *raw_symbol_store,
-						    MonoObject *evidence,
-						    MonoBoolean refonly);
-
-void
-ves_icall_System_AppDomain_SetData                 (MonoAppDomain *ad, 
-						    MonoString    *name, 
-						    MonoObject    *data);
-
-MonoAppDomainSetup *
-ves_icall_System_AppDomain_getSetup                (MonoAppDomain *ad);
-
-MonoString *
-ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomain *ad);
-
-MonoArray *
-ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomain *ad,
-						    MonoBoolean refonly);
-
-MonoReflectionAssembly *
-ves_icall_System_Reflection_Assembly_LoadFrom      (MonoString *fname,
-						    MonoBoolean refonly);
-
-MonoReflectionAssembly *
-ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad, 
-						    MonoString *assRef,
-						    MonoObject    *evidence,
-						    MonoBoolean refonly);
-
-gboolean
-ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id);
-
-void
-ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id);
-
-void
-ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc);
-
-gint32
-ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
-													MonoReflectionAssembly *refass,
-													MonoArray     *args);
-
-MonoAppDomain * 
-ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
-
-MonoAppDomain * 
-ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
-
-void
-ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad);
-
-void
-ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id);
-
-void
-ves_icall_System_AppDomain_InternalPopDomainRef (void);
-
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetContext      (void);
-
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetDefaultContext      (void);
-
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
-
-gint32 
-ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
-
-MonoString *
-ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
-
-MonoBoolean
-ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions (void);
-
 MonoAssembly *
 mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
 
@@ -661,8 +568,8 @@ MonoImage *mono_assembly_open_from_bundle (const char *filename,
 MONO_API void
 mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointer data, guint32 *bitmap);
 
-MonoReflectionAssembly *
-mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+MonoAssembly *
+mono_try_assembly_resolve (MonoDomain *domain, const char *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
 
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly);
