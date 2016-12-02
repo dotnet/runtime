@@ -1939,5 +1939,53 @@ public unsafe class Tests {
 		}
 		return mono_test_marshal_pointer_array (arr2);
 	}
+
+    [StructLayout(LayoutKind.Sequential)]
+	public struct FixedBufferChar {
+        public fixed char array[16];
+		public char c;
+	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_fixed_buffer_char")]
+	public static extern int mono_test_marshal_fixed_buffer_char (ref FixedBufferChar s);
+
+	public static unsafe int test_0_fixed_buffer_char () {
+		var s = new FixedBufferChar ();
+		s.array [0] = 'A';
+		s.array [1] = 'B';
+		s.array [2] = 'C';
+		s.c = 'D';
+
+		int res = mono_test_marshal_fixed_buffer_char (ref s);
+		if (res != 0)
+			return 1;
+		if (s.array [0] != 'E' || s.array [1] != 'F' || s.c != 'G')
+			return 2;
+		return 0;
+	}
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+	public struct FixedBufferUnicode {
+        public fixed char array[16];
+		public char c;
+	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_fixed_buffer_unicode")]
+	public static extern int mono_test_marshal_fixed_buffer_unicode (ref FixedBufferUnicode s);
+
+	public static unsafe int test_0_fixed_buffer_unicode () {
+		var s = new FixedBufferUnicode ();
+		s.array [0] = 'A';
+		s.array [1] = 'B';
+		s.array [2] = 'C';
+		s.c = 'D';
+
+		int res = mono_test_marshal_fixed_buffer_unicode (ref s);
+		if (res != 0)
+			return 1;
+		if (s.array [0] != 'E' || s.array [1] != 'F' || s.c != 'G')
+			return 2;
+		return 0;
+	}
 }
 

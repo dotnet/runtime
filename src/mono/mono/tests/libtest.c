@@ -7230,6 +7230,38 @@ mono_test_marshal_fixed_array (FixedArrayStruct s)
 	return s.array [0] + s.array [1] + s.array [2];
 }
 
+typedef struct {
+	char array [16];
+	char c;
+} FixedBufferChar;
+
+LIBTEST_API int STDCALL
+mono_test_marshal_fixed_buffer_char (FixedBufferChar *s)
+{
+	if (!(s->array [0] == 'A' && s->array [1] == 'B' && s->array [2] == 'C' && s->c == 'D'))
+		return 1;
+	s->array [0] = 'E';
+	s->array [1] = 'F';
+	s->c = 'G';
+	return 0;
+}
+
+typedef struct {
+	short array [16];
+	short c;
+} FixedBufferUnicode;
+
+LIBTEST_API int STDCALL
+mono_test_marshal_fixed_buffer_unicode (FixedBufferUnicode *s)
+{
+	if (!(s->array [0] == 'A' && s->array [1] == 'B' && s->array [2] == 'C' && s->c == 'D'))
+		return 1;
+	s->array [0] = 'E';
+	s->array [1] = 'F';
+	s->c = 'G';
+	return 0;
+}
+
 const int NSTRINGS = 6;
 //test strings
 const char  *utf8Strings[] = {  
