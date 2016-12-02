@@ -49,7 +49,6 @@
 #define LockFile wapi_LockFile 
 #define UnlockFile wapi_UnlockFile 
 #define GetVolumeInformation wapi_GetVolumeInformation 
-#define FormatMessage wapi_FormatMessage 
 #define ImpersonateLoggedOnUser wapi_ImpersonateLoggedOnUser 
 #define RevertToSelf wapi_RevertToSelf 
 #define WSASetLastError wapi_WSASetLastError

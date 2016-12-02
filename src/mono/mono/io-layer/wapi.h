@@ -17,7 +17,6 @@
 #include <mono/io-layer/wapi-remap.h>
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/error.h>
-#include <mono/io-layer/messages.h>
 #include <mono/io-layer/sockets.h>
 #include <mono/io-layer/versioninfo.h>
 

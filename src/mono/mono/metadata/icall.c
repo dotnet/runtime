@@ -7808,28 +7808,6 @@ ves_icall_Mono_Runtime_GetDisplayName (MonoError *error)
 	return display_name;
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage (guint32 code)
-{
-	MonoError error;
-	MonoString *message;
-	guint32 ret;
-	gunichar2 buf[256];
-	
-	ret = FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM |
-			     FORMAT_MESSAGE_IGNORE_INSERTS, NULL, code, 0,
-			     buf, 255, NULL);
-	if (ret == 0) {
-		message = mono_string_new (mono_domain_get (), "Error looking up error string");
-	} else {
-		message = mono_string_new_utf16_checked (mono_domain_get (), buf, ret, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-	}
-	
-	return message;
-}
-
 #ifndef HOST_WIN32
 static inline gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)

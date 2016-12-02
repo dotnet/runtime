@@ -16,7 +16,6 @@ OTHER_H = \
 	io-trace.h	\
 	io-layer.h	\
 	io-portability.h	\
-	messages.h	\
 	sockets.h	\
 	uglify.h	\
 	versioninfo.h	\
@@ -33,8 +32,6 @@ OTHER_SRC = \
 	io-private.h		\
 	io-layer.h		\
 	locking.c		\
-	messages.c		\
-	messages.h		\
 	posix.c			\
 	sockets.c		\
 	sockets.h		\
