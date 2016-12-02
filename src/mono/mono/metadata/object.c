@@ -483,7 +483,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class)
 			pending_tae = exc;
 		//TAEs are blocked around .cctors, they must escape as soon as no cctor is left to run.
-		if (!pending_tae)
+		if (!pending_tae && mono_get_eh_callbacks ()->mono_above_abort_threshold ())
 			pending_tae = mono_thread_try_resume_interruption ();
 	} else {
 		/* this just blocks until the initializing thread is done */
