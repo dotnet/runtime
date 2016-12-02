@@ -88,3 +88,8 @@ extern "C"
     {
     }
 };
+
+VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
+{
+    PORTABILITY_ASSERT("Implement for PAL");
+}
