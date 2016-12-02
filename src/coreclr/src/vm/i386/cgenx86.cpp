@@ -1682,6 +1682,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #endif // !EnC_SUPPORTED
 
 
+#ifndef FEATURE_PAL
 #pragma warning(push)
 #pragma warning(disable: 4035)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
@@ -1755,6 +1756,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 
 #pragma warning(pop)
 
+#endif
 
 // This function returns the number of logical processors on a given physical chip.  If it cannot
 // determine the number of logical cpus, or the machine is not populated uniformly with the same
