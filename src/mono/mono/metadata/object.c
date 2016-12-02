@@ -5921,7 +5921,7 @@ ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n)
  * Returns: The same empty string instance as the managed string.Empty
  */
 MonoString*
-mono_string_empty_wrapper ()
+mono_string_empty_wrapper (void)
 {
 	MonoDomain *domain = mono_domain_get ();
 	return mono_string_empty (domain);

@@ -117,7 +117,7 @@ mono_string_empty	      (MonoDomain *domain);
 
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
-mono_string_empty_wrapper   ();
+mono_string_empty_wrapper   (void);
 
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
