@@ -76,9 +76,11 @@ void ExInfo::CopyAndClearSource(ExInfo *from)
     // Finally, initialize the source ExInfo.
     from->Init();
 
+#ifndef FEATURE_PAL
     // Clear the Watson Bucketing information as well since they
     // have been transferred over by the "memcpy" above.
     from->GetWatsonBucketTracker()->Init();
+#endif // FEATURE_PAL
 }
 
 void ExInfo::Init()
@@ -136,8 +138,10 @@ ExInfo::ExInfo()
     m_hThrowable = NULL;
     Init();
 
+#ifndef FEATURE_PAL
     // Init the WatsonBucketTracker
     m_WatsonBucketTracker.Init();
+#endif // FEATURE_PAL
 }
 
 //*******************************************************************************
@@ -206,9 +210,11 @@ void ExInfo::UnwindExInfo(VOID* limit)
             pPrevNestedInfo->DestroyExceptionHandle();
         }
 
+        #ifndef FEATURE_PAL
         // Free the Watson bucket details when ExInfo
         // is being released
         pPrevNestedInfo->GetWatsonBucketTracker()->ClearWatsonBucketDetails();
+        #endif // FEATURE_PAL
 
         pPrevNestedInfo->m_StackTraceInfo.FreeStackTrace();
 
@@ -256,8 +262,10 @@ void ExInfo::UnwindExInfo(VOID* limit)
         // We just do a basic Init of the current top ExInfo here.
         Init();
 
+        #ifndef FEATURE_PAL
         // Init the Watson buckets as well
         GetWatsonBucketTracker()->ClearWatsonBucketDetails();
+        #endif // FEATURE_PAL
     }
 }
 #endif // DACCESS_COMPILE
