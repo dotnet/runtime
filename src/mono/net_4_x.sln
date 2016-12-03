@@ -315,6 +315,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Runtime.Seri
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Runtime.Serialization.Xml-net_4_x", "mcs/class/Facades/System.Runtime.Serialization.Xml/Facades_System.Runtime.Serialization.Xml-net_4_x.csproj", "{C948B3D4-0BEE-4363-B4A7-635A169C8D63}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Security.Cryptography.Algorithms-net_4_x", "mcs/class/Facades/System.Security.Cryptography.Algorithms/Facades_System.Security.Cryptography.Algorithms-net_4_x.csproj", "{B044DB11-DC90-4C35-B766-F2D24D7C3009}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Drawing.Primitives-net_4_x", "mcs/class/Facades/System.Drawing.Primitives/Facades_System.Drawing.Primitives-net_4_x.csproj", "{1AFDB281-5FB8-48A9-8694-7F515D835862}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Collections.Concurrent-net_4_x", "mcs/class/Facades/System.Collections.Concurrent/Facades_System.Collections.Concurrent-net_4_x.csproj", "{EFD0287C-3651-4D42-B8CA-430776CB1E6D}"
@@ -554,8 +556,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.ServiceProcess.ServiceController-net_4_x", "mcs/class/Facades/System.ServiceProcess.ServiceController/Facades_System.ServiceProcess.ServiceController-net_4_x.csproj", "{8C71A924-2561-434B-A792-2F84ABA1C0C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.IO.Pipes-net_4_x", "mcs/class/Facades/System.IO.Pipes/Facades_System.IO.Pipes-net_4_x.csproj", "{D835F3A9-C4FE-4162-8AB5-DC26D06AC81F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Security.Cryptography.Algorithms-net_4_x", "mcs/class/Facades/System.Security.Cryptography.Algorithms/Facades_System.Security.Cryptography.Algorithms-net_4_x.csproj", "{B044DB11-DC90-4C35-B766-F2D24D7C3009}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnit.Framework-net_4_x", "mcs/nunit24/NUnitFramework/framework/NUnit.Framework-net_4_x.csproj", "{B2272696-96AA-4638-B17C-60A4BA37CA0E}"
 EndProject
@@ -1307,6 +1307,10 @@ Global
 		{C948B3D4-0BEE-4363-B4A7-635A169C8D63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C948B3D4-0BEE-4363-B4A7-635A169C8D63}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C948B3D4-0BEE-4363-B4A7-635A169C8D63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1AFDB281-5FB8-48A9-8694-7F515D835862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1AFDB281-5FB8-48A9-8694-7F515D835862}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AFDB281-5FB8-48A9-8694-7F515D835862}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -1787,10 +1791,6 @@ Global
 		{D835F3A9-C4FE-4162-8AB5-DC26D06AC81F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D835F3A9-C4FE-4162-8AB5-DC26D06AC81F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D835F3A9-C4FE-4162-8AB5-DC26D06AC81F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B044DB11-DC90-4C35-B766-F2D24D7C3009}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B2272696-96AA-4638-B17C-60A4BA37CA0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B2272696-96AA-4638-B17C-60A4BA37CA0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2272696-96AA-4638-B17C-60A4BA37CA0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
