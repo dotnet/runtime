@@ -18,7 +18,6 @@ OTHER_H = \
 	io-portability.h	\
 	sockets.h	\
 	uglify.h	\
-	versioninfo.h	\
 	wapi.h		\
 	wapi-remap.h
 
@@ -38,8 +37,6 @@ OTHER_SRC = \
 	socket-private.h	\
 	socket-wrappers.h	\
 	uglify.h		\
-	versioninfo.c		\
-	versioninfo.h		\
 	wapi_glob.h		\
 	wapi_glob.c		\
 	wapi.h			\

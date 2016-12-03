@@ -46,6 +46,30 @@ mono_w32process_module_get_information (gpointer process, gpointer module, MODUL
 	return GetModuleInformation (process, module, modinfo, size);
 }
 
+static guint32
+mono_w32process_get_fileversion_info_size (gunichar2 *filename, guint32 *handle)
+{
+	return GetFileVersionInfoSize (filename, handle);
+}
+
+static gboolean
+mono_w32process_get_fileversion_info (gunichar2 *filename, guint32 handle, guint32 len, gpointer data)
+{
+	return GetFileVersionInfo (filename, handle, len, data);
+}
+
+static gboolean
+mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subblock, gpointer *buffer, guint32 *len)
+{
+	return VerQueryValue (datablock, subblock, buffer, len);
+}
+
+static guint32
+mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
+{
+	return VerLanguageName (lang, lang_out, lang_len);
+}
+
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32) */
 
 static MonoImage *system_image;
@@ -263,7 +287,7 @@ process_module_string_read (MonoObject *filever, gpointer data, const gchar *fie
 
 	lang_key = g_utf8_to_utf16 (lang_key_utf8, -1, NULL, NULL, NULL);
 
-	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &chars) && chars > 0) {
+	if (mono_w32process_ver_query_value (data, lang_key, (gpointer *)&buffer, &chars) && chars > 0) {
 		LOGDEBUG (g_message ("%s: found %d chars of [%s]", __func__, chars, g_utf16_to_utf8 (buffer, chars, NULL, NULL, NULL)));
 		/* chars includes trailing null */
 		process_set_field_string (filever, fieldname, buffer, chars - 1, error);
@@ -301,10 +325,10 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 
 	mono_error_init (error);
 
-	datalen = GetFileVersionInfoSize (filename, &verinfohandle);
+	datalen = mono_w32process_get_fileversion_info_size (filename, &verinfohandle);
 	if (datalen) {
 		data = g_malloc0 (datalen);
-		ok = GetFileVersionInfo (filename, verinfohandle, datalen, data);
+		ok = mono_w32process_get_fileversion_info (filename, verinfohandle, datalen, data);
 		if (ok) {
 			query = g_utf8_to_utf16 ("\\", -1, NULL, NULL, NULL);
 			if (query == NULL) {
@@ -312,7 +336,7 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 				return;
 			}
 
-			if (VerQueryValue (data, query, (gpointer *)&ffi, &ffi_size)) {
+			if (mono_w32process_ver_query_value (data, query, (gpointer *)&ffi, &ffi_size)) {
 				#define LOWORD(i32) ((guint16)((i32) & 0xFFFF))
 				#define HIWORD(i32) ((guint16)(((guint32)(i32) >> 16) & 0xFFFF))
 
@@ -347,13 +371,13 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 				return;
 			}
 
-			if (VerQueryValue (data, query, (gpointer *)&trans_data, &trans_size)) {
+			if (mono_w32process_ver_query_value (data, query, (gpointer *)&trans_data, &trans_size)) {
 				/* use the first language ID we see */
 				if (trans_size >= 4) {
 		 			LOGDEBUG (g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[0], trans_data[1], trans_data[2], trans_data[3]));
 					lang = (trans_data[0]) | (trans_data[1] << 8) | (trans_data[2] << 16) | (trans_data[3] << 24);
-					/* Only give the lower 16 bits to VerLanguageName, as Windows gets confused otherwise  */
-					lang_count = VerLanguageName (lang & 0xFFFF, lang_buf, 128);
+					/* Only give the lower 16 bits to mono_w32process_ver_language_name, as Windows gets confused otherwise  */
+					lang_count = mono_w32process_ver_language_name (lang & 0xFFFF, lang_buf, 128);
 					if (lang_count) {
 						process_set_field_string (filever, "language", lang_buf, lang_count, error);
 						return_if_nok (error);
@@ -371,7 +395,7 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 				}
 
 				/* And language seems to be set to en_US according to bug 374600 */
-				lang_count = VerLanguageName (0x0409, lang_buf, 128);
+				lang_count = mono_w32process_ver_language_name (0x0409, lang_buf, 128);
 				if (lang_count) {
 					process_set_field_string (filever, "language", lang_buf, lang_count, error);
 					return_if_nok (error);
