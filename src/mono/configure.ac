@@ -1404,7 +1404,15 @@ if test x$host_win32 = xno; then
 		# We have the new, three-parameter version
 		AC_MSG_RESULT(no)
 	])
-
+	AC_TRY_COMPILE([#include <sched.h>], [
+	     CPU_COUNT((void *) 0);
+	], [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(GLIBC_HAS_CPU_COUNT, 1, [GLIBC has CPU_COUNT macro in sched.h])
+	], [
+		# We have the new, three-parameter version
+		AC_MSG_RESULT(no)
+	])
 
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
