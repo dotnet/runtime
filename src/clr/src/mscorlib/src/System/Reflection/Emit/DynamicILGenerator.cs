@@ -394,7 +394,18 @@ namespace System.Reflection.Emit
 
         public override void BeginExceptFilterBlock()
         {
-            throw new NotSupportedException(Environment.GetResourceString("InvalidOperation_NotAllowedInDynamicMethod"));
+            // Begins an exception filter block. Emits a branch instruction to the end of the current exception block.
+
+            if (CurrExcStackCount == 0)
+                throw new NotSupportedException(Environment.GetResourceString("Argument_NotInExceptionBlock"));
+
+            __ExceptionInfo current = CurrExcStack[CurrExcStackCount - 1];
+
+            Label endLabel = current.GetEndLabel();
+            Emit(OpCodes.Leave, endLabel);
+            UpdateStackSize(OpCodes.Nop, 1);
+
+            current.MarkFilterAddr(ILOffset);
         }
 
         public override void BeginCatchBlock(Type exceptionType)
@@ -415,6 +426,8 @@ namespace System.Reflection.Emit
                 }
 
                 this.Emit(OpCodes.Endfilter);
+
+                current.MarkCatchAddr(ILOffset, null);
             }
             else
             {
@@ -430,19 +443,14 @@ namespace System.Reflection.Emit
 
                 // if this is a catch block the exception will be pushed on the stack and we need to update the stack info
                 UpdateStackSize(OpCodes.Nop, 1);
+
+                current.MarkCatchAddr(ILOffset, exceptionType);
+
+
+                // this is relying on too much implementation details of the base and so it's highly breaking
+                // Need to have a more integreted story for exceptions
+                current.m_filterAddr[current.m_currentCatch - 1] = GetTokenFor(rtType);
             }
-
-            current.MarkCatchAddr(ILOffset, exceptionType);
-
-
-            // this is relying on too much implementation details of the base and so it's highly breaking
-            // Need to have a more integreted story for exceptions
-            current.m_filterAddr[current.m_currentCatch - 1] = GetTokenFor(rtType);
-        }
-
-        public override void BeginFaultBlock()
-        {
-            throw new NotSupportedException(Environment.GetResourceString("InvalidOperation_NotAllowedInDynamicMethod"));
         }
 
         public override void BeginFinallyBlock()
