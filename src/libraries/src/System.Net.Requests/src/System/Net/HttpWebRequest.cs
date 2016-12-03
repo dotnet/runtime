@@ -95,86 +95,17 @@ namespace System.Net
         [Obsolete("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
-#endif
-            _webHeaderCollection = (WebHeaderCollection)serializationInfo.GetValue("_HttpRequestHeaders", typeof(WebHeaderCollection));
-            Proxy = (IWebProxy)serializationInfo.GetValue("_Proxy", typeof(IWebProxy));
-            KeepAlive = serializationInfo.GetBoolean("_KeepAlive");
-            Pipelined = serializationInfo.GetBoolean("_Pipelined");
-            AllowAutoRedirect = serializationInfo.GetBoolean("_AllowAutoRedirect");
-            if (!serializationInfo.GetBoolean("_AllowWriteStreamBuffering"))
-            {
-                _booleans &= ~Booleans.AllowWriteStreamBuffering;
-            }            
-            _maximumAllowedRedirections = serializationInfo.GetInt32("_MaximumAllowedRedirections");
-            AllowAutoRedirect = serializationInfo.GetInt32("_AutoRedirects") > 0;
-            Timeout = serializationInfo.GetInt32("_Timeout");
-
-            try
-            {
-                ReadWriteTimeout = serializationInfo.GetInt32("_ReadWriteTimeout");
-            }
-            catch
-            { // default
-            }
-            try
-            {
-                MaximumResponseHeadersLength = serializationInfo.GetInt32("_MaximumResponseHeadersLength");
-            }
-            catch
-            {
-                // default
-            }
-            ContentLength = serializationInfo.GetInt64("_ContentLength");
-            MediaType = serializationInfo.GetString("_MediaType");
-            _originVerb = serializationInfo.GetString("_OriginVerb");
-            ConnectionGroupName = serializationInfo.GetString("_ConnectionGroupName");
-            ProtocolVersion = (Version)serializationInfo.GetValue("_Version", typeof(Version));
-            _requestUri = (Uri)serializationInfo.GetValue("_OriginUri", typeof(Uri));
-#if DEBUG
-            }
-#endif
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
-
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
-#endif
-            GetObjectData(serializationInfo, streamingContext);
-#if DEBUG
-            }
-#endif
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
         
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
-#endif           
-            serializationInfo.AddValue("_HttpRequestHeaders", _webHeaderCollection, typeof(WebHeaderCollection));
-            serializationInfo.AddValue("_Proxy", _proxy, typeof(IWebProxy));
-            serializationInfo.AddValue("_KeepAlive", KeepAlive);
-            serializationInfo.AddValue("_Pipelined", Pipelined);
-            serializationInfo.AddValue("_AllowAutoRedirect", AllowAutoRedirect);
-            serializationInfo.AddValue("_AllowWriteStreamBuffering", AllowWriteStreamBuffering);
-            serializationInfo.AddValue("_MaximumAllowedRedirections", AllowAutoRedirect);
-            serializationInfo.AddValue("_AutoRedirects", AllowAutoRedirect);
-            serializationInfo.AddValue("_Timeout", Timeout);
-            serializationInfo.AddValue("_ReadWriteTimeout", ReadWriteTimeout);
-            serializationInfo.AddValue("_MaximumResponseHeadersLength", _defaultMaxResponseHeaderLength);
-            serializationInfo.AddValue("_ContentLength", ContentLength);
-            serializationInfo.AddValue("_MediaType", MediaType);
-            serializationInfo.AddValue("_OriginVerb", _originVerb);
-            serializationInfo.AddValue("_ConnectionGroupName", ConnectionGroupName);
-            serializationInfo.AddValue("_Version", ProtocolVersion, typeof(Version));
-            serializationInfo.AddValue("_OriginUri", Address, typeof(Uri));
-            base.GetObjectData(serializationInfo, streamingContext);
-#if DEBUG
-            }
-#endif
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
         internal HttpWebRequest(Uri uri)

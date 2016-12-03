@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
-    public class HttpWebRequestTest
+    public partial class HttpWebRequestTest
     {
         private const string RequestBody = "This is data to POST.";
         private readonly byte[] _requestBodyBytes = Encoding.UTF8.GetBytes(RequestBody);

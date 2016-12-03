@@ -34,31 +34,18 @@ namespace System.Net
         [ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
-            // Trick the cloned object into not thinking it's disposed.
-            _httpResponseMessage = new HttpResponseMessage();
-            _webHeaderCollection = (WebHeaderCollection)serializationInfo.GetValue("_HttpResponseHeaders", typeof(WebHeaderCollection));
-            _requestUri = (Uri)serializationInfo.GetValue("_Uri", typeof(Uri));
-            Version version = (Version)serializationInfo.GetValue("_Version", typeof(Version));
-            _isVersionHttp11 = version.Equals(HttpVersion.Version11);
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
      
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            GetObjectData(serializationInfo, streamingContext);
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {           
-            serializationInfo.AddValue("_HttpResponseHeaders", _webHeaderCollection, typeof(WebHeaderCollection));
-            serializationInfo.AddValue("_Uri", _requestUri, typeof(Uri));
-            serializationInfo.AddValue("_Version", ProtocolVersion, typeof(Version));
-            serializationInfo.AddValue("_StatusCode", StatusCode);
-            serializationInfo.AddValue("_ContentLength", ContentLength);
-            serializationInfo.AddValue("_Verb", Method);
-            serializationInfo.AddValue("_StatusDescription", StatusDescription);
-            base.GetObjectData(serializationInfo, streamingContext);
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
-
 
         internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer cookieContainer)
         {
