@@ -1615,6 +1615,47 @@ mono_thread_internal_current (void)
 	return res;
 }
 
+static MonoThreadInfoWaitRet
+mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError *error)
+{
+	MonoException *exc;
+	MonoThreadInfoWaitRet ret;
+	gint64 start;
+	gint32 diff_ms;
+	gint32 wait = ms;
+
+	mono_error_init (error);
+
+	start = (ms == -1) ? 0 : mono_msec_ticks ();
+	for (;;) {
+		MONO_ENTER_GC_SAFE;
+		ret = mono_thread_info_wait_one_handle (thread_to_join, ms, TRUE);
+		MONO_EXIT_GC_SAFE;
+
+		if (ret != MONO_THREAD_INFO_WAIT_RET_ALERTED)
+			return ret;
+
+		exc = mono_thread_execute_interruption ();
+		if (exc) {
+			mono_error_set_exception_instance (error, exc);
+			return ret;
+		}
+
+		if (ms == -1)
+			continue;
+
+		/* Re-calculate ms according to the time passed */
+		diff_ms = (gint32)(mono_msec_ticks () - start);
+		if (diff_ms >= ms) {
+			ret = MONO_THREAD_INFO_WAIT_RET_TIMEOUT;
+			return ret;
+		}
+		wait = ms - diff_ms;
+	}
+
+	return ret;
+}
+
 gboolean
 ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 {
@@ -1731,47 +1772,6 @@ mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointe
 		wait = ms - diff_ms;
 	} while (TRUE);
 	
-	return ret;
-}
-
-static MonoThreadInfoWaitRet
-mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError *error)
-{
-	MonoException *exc;
-	MonoThreadInfoWaitRet ret;
-	gint64 start;
-	gint32 diff_ms;
-	gint32 wait = ms;
-
-	mono_error_init (error);
-
-	start = (ms == -1) ? 0 : mono_msec_ticks ();
-	for (;;) {
-		MONO_ENTER_GC_SAFE;
-		ret = mono_thread_info_wait_one_handle (thread_to_join, ms, TRUE);
-		MONO_EXIT_GC_SAFE;
-
-		if (ret != MONO_THREAD_INFO_WAIT_RET_ALERTED)
-			return ret;
-
-		exc = mono_thread_execute_interruption ();
-		if (exc) {
-			mono_error_set_exception_instance (error, exc);
-			return ret;
-		}
-
-		if (ms == -1)
-			continue;
-
-		/* Re-calculate ms according to the time passed */
-		diff_ms = (gint32)(mono_msec_ticks () - start);
-		if (diff_ms >= ms) {
-			ret = MONO_THREAD_INFO_WAIT_RET_TIMEOUT;
-			return ret;
-		}
-		wait = ms - diff_ms;
-	}
-
 	return ret;
 }
 
