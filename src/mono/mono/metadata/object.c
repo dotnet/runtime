@@ -974,6 +974,7 @@ ves_icall_string_alloc (int length)
 	return str;
 }
 
+/* LOCKING: Acquires the loader lock */
 void
 mono_class_compute_gc_descriptor (MonoClass *klass)
 {
@@ -983,6 +984,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	gsize *bitmap;
 	gsize default_bitmap [4] = {0};
 	static gboolean gcj_inited = FALSE;
+	MonoGCDescriptor gc_descr;
 
 	if (!gcj_inited) {
 		mono_loader_lock ();
@@ -1000,23 +1002,20 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	if (klass->gc_descr_inited)
 		return;
 
-	klass->gc_descr_inited = TRUE;
-	klass->gc_descr = MONO_GC_DESCRIPTOR_NULL;
-
 	bitmap = default_bitmap;
 	if (klass == mono_defaults.string_class) {
-		klass->gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
+		gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
 	} else if (klass->rank) {
 		mono_class_compute_gc_descriptor (klass->element_class);
 		if (MONO_TYPE_IS_REFERENCE (&klass->element_class->byval_arg)) {
 			gsize abm = 1;
-			klass->gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
+			gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
 			/*printf ("new array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
 			bitmap = compute_class_bitmap (klass->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
-			klass->gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
+			gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 			if (bitmap != default_bitmap)
@@ -1027,7 +1026,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		if (count++ > 58)
 			return;*/
 		bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
-		klass->gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, klass->instance_size);
+		gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, klass->instance_size);
 		/*
 		if (class->gc_descr == MONO_GC_DESCRIPTOR_NULL)
 			g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);
@@ -1036,6 +1035,13 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		if (bitmap != default_bitmap)
 			g_free (bitmap);
 	}
+
+	/* Publish the data */
+	mono_loader_lock ();
+	klass->gc_descr = gc_descr;
+	mono_memory_barrier ();
+	klass->gc_descr_inited = TRUE;
+	mono_loader_unlock ();
 }
 
 /**
