@@ -1622,6 +1622,7 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	MonoThreadHandle *handle = thread->handle;
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
+	MonoError error;
 
 	if (mono_thread_current_check_pending_interrupt ())
 		return FALSE;
@@ -1645,11 +1646,13 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
 
 	MONO_ENTER_GC_SAFE;
-	ret=mono_thread_info_wait_one_handle (handle, ms, TRUE);
+	ret=mono_join_uninterrupted (handle, ms, &error);
 	MONO_EXIT_GC_SAFE;
 
 	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
-	
+
+	mono_error_set_pending_exception (&error);
+
 	if(ret==MONO_THREAD_INFO_WAIT_RET_SUCCESS_0) {
 		THREAD_DEBUG (g_message ("%s: join successful", __func__));
 
@@ -1728,6 +1731,47 @@ mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointe
 		wait = ms - diff_ms;
 	} while (TRUE);
 	
+	return ret;
+}
+
+static MonoThreadInfoWaitRet
+mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError *error)
+{
+	MonoException *exc;
+	MonoThreadInfoWaitRet ret;
+	gint64 start;
+	gint32 diff_ms;
+	gint32 wait = ms;
+
+	mono_error_init (error);
+
+	start = (ms == -1) ? 0 : mono_msec_ticks ();
+	for (;;) {
+		MONO_ENTER_GC_SAFE;
+		ret = mono_thread_info_wait_one_handle (thread_to_join, ms, TRUE);
+		MONO_EXIT_GC_SAFE;
+
+		if (ret != MONO_THREAD_INFO_WAIT_RET_ALERTED)
+			return ret;
+
+		exc = mono_thread_execute_interruption ();
+		if (exc) {
+			mono_error_set_exception_instance (error, exc);
+			return ret;
+		}
+
+		if (ms == -1)
+			continue;
+
+		/* Re-calculate ms according to the time passed */
+		diff_ms = (gint32)(mono_msec_ticks () - start);
+		if (diff_ms >= ms) {
+			ret = MONO_THREAD_INFO_WAIT_RET_TIMEOUT;
+			return ret;
+		}
+		wait = ms - diff_ms;
+	}
+
 	return ret;
 }
 
