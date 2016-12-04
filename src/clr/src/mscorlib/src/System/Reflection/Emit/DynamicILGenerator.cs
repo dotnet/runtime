@@ -382,16 +382,6 @@ namespace System.Reflection.Emit
         // Exception related generation
         //
         //
-        public override Label BeginExceptionBlock()
-        {
-            return base.BeginExceptionBlock();
-        }
-
-        public override void EndExceptionBlock()
-        {
-            base.EndExceptionBlock();
-        }
-
         public override void BeginExceptFilterBlock()
         {
             // Begins an exception filter block. Emits a branch instruction to the end of the current exception block.
@@ -451,11 +441,6 @@ namespace System.Reflection.Emit
                 // Need to have a more integreted story for exceptions
                 current.m_filterAddr[current.m_currentCatch - 1] = GetTokenFor(rtType);
             }
-        }
-
-        public override void BeginFinallyBlock()
-        {
-            base.BeginFinallyBlock();
         }
 
         //
