@@ -142,5 +142,37 @@ namespace System.Net.WebHeaderCollectionTests
             WebHeaderCollection w = new WebHeaderCollection();
             Assert.Throws<ArgumentNullException>(() => w.Remove(null));
         }
+
+        [Fact]
+        public void HttpResponseHeader_Set_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Set(HttpResponseHeader.ProxyAuthenticate, "value123");
+
+            Assert.Equal("value123", w[HttpResponseHeader.ProxyAuthenticate]);
+        }
+
+        [Fact]
+        public void HttpRequestHeader_Set_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Set(HttpRequestHeader.Connection, "keep-alive");
+
+            Assert.Equal(1, w.Count);
+            Assert.Equal("keep-alive", w[HttpRequestHeader.Connection]);
+            Assert.Equal("Connection", w.AllKeys[0]);
+        }
+
+        [Fact]
+        public void NameValue_Set_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Set("firstName", "first");
+            Assert.Equal(1, w.Count);
+            Assert.NotEmpty(w);
+            Assert.NotEmpty(w.AllKeys);
+            Assert.Equal(new[] { "firstName" }, w.AllKeys);
+            Assert.Equal("first", w["firstName"]);
+        }        
     }
 }
