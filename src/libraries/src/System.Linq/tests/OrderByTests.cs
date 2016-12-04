@@ -297,6 +297,16 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void LastOnOrderedMatchingCases()
+        {
+            object[] boxedInts = new object[] {0, 1, 2, 9, 1, 2, 3, 9, 4, 5, 7, 8, 9, 0, 1};
+            Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).Last());
+            Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).LastOrDefault());
+            Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).Last(o => (int)o % 2 == 1));
+            Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).LastOrDefault(o => (int)o % 2 == 1));
+        }
+
+        [Fact]
         public void LastOnEmptyOrderedThrows()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().OrderBy(i => i).Last());
