@@ -438,7 +438,7 @@ namespace System.Reflection.Emit
 
 
                 // this is relying on too much implementation details of the base and so it's highly breaking
-                // Need to have a more integreted story for exceptions
+                // Need to have a more integrated story for exceptions
                 current.m_filterAddr[current.m_currentCatch - 1] = GetTokenFor(rtType);
             }
         }
