@@ -377,13 +377,16 @@ class StubLinkerCPU : public StubLinker
                                            BOOL bShouldProfile);
 #endif // FEATURE_COMINTEROP && _TARGET_X86_
 
+#ifndef FEATURE_STUBS_AS_IL
         //===========================================================================
         // Computes hash code for MulticastDelegate.Invoke()
         static UINT_PTR HashMulticastInvoke(MetaSig* pSig);
 
+#ifdef _TARGET_X86_
         //===========================================================================
         // Emits code for Delegate.Invoke() any delegate type
         VOID EmitDelegateInvoke();
+#endif // _TARGET_X86_
 
         //===========================================================================
         // Emits code for MulticastDelegate.Invoke() - sig specific
@@ -392,6 +395,7 @@ class StubLinkerCPU : public StubLinker
         //===========================================================================
         // Emits code for Delegate.Invoke() on delegates that recorded creator assembly
         VOID EmitSecureDelegateInvoke(UINT_PTR hash);
+#endif // !FEATURE_STUBS_AS_IL
 
         //===========================================================================
         // Emits code to adjust for a static delegate target.
@@ -405,9 +409,11 @@ class StubLinkerCPU : public StubLinker
         //Worker function to emit throw helpers for array ops.
         VOID EmitArrayOpStubThrow(unsigned exConst, unsigned cbRetArg);
 
+#ifndef FEATURE_STUBS_AS_IL
         //===========================================================================
         // Emits code to break into debugger
         VOID EmitDebugBreak();
+#endif // !FEATURE_STUBS_AS_IL
 
 #if defined(_DEBUG) && (defined(_TARGET_AMD64_) || defined(_TARGET_X86_)) && !defined(FEATURE_PAL)
         //===========================================================================
