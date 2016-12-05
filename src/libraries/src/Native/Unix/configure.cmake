@@ -228,6 +228,7 @@ check_cxx_source_compiles(
 
 check_cxx_source_compiles(
     "
+    #include <stdlib.h>
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <sys/uio.h>
