@@ -1019,7 +1019,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginExceptFilterBlock() 
         {
-            // Begins a eception filter block.  Emits a branch instruction to the end of the current exception block.
+            // Begins an exception filter block.  Emits a branch instruction to the end of the current exception block.
 
             if (m_currExcStackCount == 0)
                 throw new NotSupportedException(Environment.GetResourceString("Argument_NotInExceptionBlock"));

@@ -697,7 +697,7 @@ public:
     //       fLoadTypes=DontLoadTypes:  if type isn't already in the loader's table, return NULL
     //       fLoadTypes=LoadTypes: if type isn't already in the loader's table, then create it
     // Each comes in two variants, LoadXThrowing and LoadXNoThrow, the latter being just
-    // a exception-handling wrapper around the former.
+    // an exception-handling wrapper around the former.
     //
     // Each also allows types to be loaded only up to a particular level (see classloadlevel.h).
     // The class loader itself makes use of these levels to "break" recursion across
