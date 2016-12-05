@@ -8,6 +8,11 @@ namespace System.Security.Cryptography
 {
     public abstract class HashAlgorithm : IDisposable, ICryptoTransform
     {
+        private bool _disposed;
+        protected int HashSizeValue;
+        protected internal byte[] HashValue;
+        protected int State = 0;
+
         protected HashAlgorithm() { }
 
         public static HashAlgorithm Create()
@@ -20,13 +25,7 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        public virtual int HashSize
-        {
-            get
-            {
-                return 0;  // For desktop compatibility, return 0 as this property was always initialized by a subclass.
-            }
-        }
+        public virtual int HashSize => HashSizeValue;
 
         public virtual byte[] Hash
         {
@@ -199,9 +198,5 @@ namespace System.Security.Cryptography
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
         protected abstract byte[] HashFinal();
         public abstract void Initialize();
-
-        private bool _disposed;
-        protected internal byte[] HashValue;
-        protected int State = 0;
     }
 }

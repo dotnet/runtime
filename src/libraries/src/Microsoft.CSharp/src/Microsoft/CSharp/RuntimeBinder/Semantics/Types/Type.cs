@@ -44,24 +44,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsWindowsRuntimeType()
         {
-            return (this.AssociatedSystemType.GetTypeInfo().Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime;
+            return (AssociatedSystemType.GetTypeInfo().Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime;
         }
 
         public bool IsCollectionType()
         {
-            if ((this.AssociatedSystemType.GetTypeInfo().IsGenericType &&
-                 (this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.IList<>) ||
-                  this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.ICollection<>) ||
-                  this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.IEnumerable<>) ||
-                  this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.IReadOnlyList<>) ||
-                  this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.IReadOnlyCollection<>) ||
-                  this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.IDictionary<,>) ||
-                  this.AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(System.Collections.Generic.IReadOnlyDictionary<,>))) ||
-                this.AssociatedSystemType == typeof(System.Collections.IList) ||
-                this.AssociatedSystemType == typeof(System.Collections.ICollection) ||
-                this.AssociatedSystemType == typeof(System.Collections.IEnumerable) ||
-                this.AssociatedSystemType == typeof(System.Collections.Specialized.INotifyCollectionChanged) ||
-                this.AssociatedSystemType == typeof(System.ComponentModel.INotifyPropertyChanged))
+            if ((AssociatedSystemType.GetTypeInfo().IsGenericType &&
+                 (AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IList<>) ||
+                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IEnumerable<>) ||
+                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ||
+                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>) ||
+                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
+                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))) ||
+                AssociatedSystemType == typeof(System.Collections.IList) ||
+                AssociatedSystemType == typeof(System.Collections.ICollection) ||
+                AssociatedSystemType == typeof(System.Collections.IEnumerable) ||
+                AssociatedSystemType == typeof(System.Collections.Specialized.INotifyCollectionChanged) ||
+                AssociatedSystemType == typeof(System.ComponentModel.INotifyPropertyChanged))
             {
                 return true;
             }
@@ -71,7 +71,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // API similar to System.Type
         public bool IsGenericParameter
         {
-            get { return this.IsTypeParameterType(); }
+            get { return IsTypeParameterType(); }
         }
 
         private Type _associatedSystemType;
@@ -131,7 +131,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_TypeParameterType:
                     TypeParameterType t = src.AsTypeParameterType();
-                    Type parentType = null;
                     if (t.IsMethodTypeParameter())
                     {
                         MethodInfo meth = t.GetOwningSymbol().AsMethodSymbol().AssociatedMemberInfo as MethodInfo;
@@ -139,7 +138,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
+                        Type parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
                         result = parentType.GetTypeInfo().GenericTypeParameters[t.GetIndexInOwnParameters()];
                     }
                     break;
@@ -351,11 +350,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // struct/value type
         public FUNDTYPE fundType()
         {
-            switch (this.GetTypeKind())
+            switch (GetTypeKind())
             {
                 case TypeKind.TK_AggregateType:
                     {
-                        AggregateSymbol sym = this.AsAggregateType().getAggregate();
+                        AggregateSymbol sym = AsAggregateType().getAggregate();
 
                         // Treat enums like their underlying types.
                         if (sym.IsEnum())
@@ -392,12 +391,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public ConstValKind constValKind()
         {
-            if (this.isPointerLike())
+            if (isPointerLike())
             {
                 return ConstValKind.IntPtr;
             }
 
-            switch (this.fundType())
+            switch (fundType())
             {
                 case FUNDTYPE.FT_I8:
                 case FUNDTYPE.FT_U8:
@@ -405,9 +404,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case FUNDTYPE.FT_STRUCT:
                     // Here we can either have a decimal type, or an enum 
                     // whose fundamental type is decimal.
-                    Debug.Assert((this.getAggregate().IsEnum() && this.getAggregate().GetUnderlyingType().getPredefType() == PredefinedType.PT_DECIMAL)
-                        || (this.isPredefined() && this.getPredefType() == PredefinedType.PT_DATETIME)
-                        || (this.isPredefined() && this.getPredefType() == PredefinedType.PT_DECIMAL));
+                    Debug.Assert((getAggregate().IsEnum() && getAggregate().GetUnderlyingType().getPredefType() == PredefinedType.PT_DECIMAL)
+                        || (isPredefined() && getPredefType() == PredefinedType.PT_DATETIME)
+                        || (isPredefined() && getPredefType() == PredefinedType.PT_DECIMAL));
 
                     if (isPredefined() && getPredefType() == PredefinedType.PT_DATETIME)
                     {
@@ -416,7 +415,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return ConstValKind.Decimal;
 
                 case FUNDTYPE.FT_REF:
-                    if (this.isPredefined() && this.getPredefType() == PredefinedType.PT_STRING)
+                    if (isPredefined() && getPredefType() == PredefinedType.PT_STRING)
                     {
                         return ConstValKind.String;
                     }
@@ -436,7 +435,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public CType underlyingType()
         {
-            if (this.IsAggregateType() && getAggregate().IsEnum())
+            if (IsAggregateType() && getAggregate().IsEnum())
                 return getAggregate().GetUnderlyingType();
             return this;
         }
@@ -501,7 +500,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool isDelegateType()
         {
-            return (this.IsAggregateType() && this.getAggregate().IsDelegate());
+            return (IsAggregateType() && getAggregate().IsDelegate());
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -510,8 +509,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // conversions.
         public bool isSimpleType()
         {
-            return (this.isPredefined() &&
-                    PredefinedTypeFacts.IsSimpleType(this.getPredefType()));
+            return (isPredefined() &&
+                    PredefinedTypeFacts.IsSimpleType(getPredefType()));
         }
         public bool isSimpleOrEnum()
         {
@@ -524,7 +523,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool isPointerLike()
         {
-            return IsPointerType() || this.isPredefType(PredefinedType.PT_INTPTR) || this.isPredefType(PredefinedType.PT_UINTPTR);
+            return IsPointerType() || isPredefType(PredefinedType.PT_INTPTR) || isPredefType(PredefinedType.PT_UINTPTR);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -532,8 +531,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // types the compiler knows about for operators and conversions.
         public bool isNumericType()
         {
-            return (this.isPredefined() &&
-                    PredefinedTypeFacts.IsNumericType(this.getPredefType()));
+            return (isPredefined() &&
+                    PredefinedTypeFacts.IsNumericType(getPredefType()));
         }
         public bool isStructOrEnum()
         {
@@ -541,7 +540,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool isStructType()
         {
-            return this.IsAggregateType() && this.getAggregate().IsStruct() || this.IsNullableType();
+            return IsAggregateType() && getAggregate().IsStruct() || IsNullableType();
         }
         public bool isEnumType()
         {
@@ -549,11 +548,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool isInterfaceType()
         {
-            return (this.IsAggregateType() && this.getAggregate().IsInterface());
+            return (IsAggregateType() && getAggregate().IsInterface());
         }
         public bool isClassType()
         {
-            return (this.IsAggregateType() && this.getAggregate().IsClass());
+            return (IsAggregateType() && getAggregate().IsClass());
         }
         public AggregateType underlyingEnumType()
         {
@@ -562,9 +561,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool isUnsigned()
         {
-            if (this.IsAggregateType())
+            if (IsAggregateType())
             {
-                AggregateType sym = this.AsAggregateType();
+                AggregateType sym = AsAggregateType();
                 if (sym.isEnumType())
                 {
                     sym = sym.underlyingEnumType();
@@ -581,29 +580,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else
             {
-                return this.IsPointerType();
+                return IsPointerType();
             }
         }
         public bool isUnsafe()
         {
             // Pointer types are the only unsafe types.
             // Note that generics may not be instantiated with pointer types
-            return (this != null && (this.IsPointerType() || (this.IsArrayType() && this.AsArrayType().GetElementType().isUnsafe())));
+            return (this != null && (IsPointerType() || (IsArrayType() && AsArrayType().GetElementType().isUnsafe())));
         }
         public bool isPredefType(PredefinedType pt)
         {
-            if (this.IsAggregateType())
-                return this.AsAggregateType().getAggregate().IsPredefined() && this.AsAggregateType().getAggregate().GetPredefType() == pt;
-            return (this.IsVoidType() && pt == PredefinedType.PT_VOID);
+            if (IsAggregateType())
+                return AsAggregateType().getAggregate().IsPredefined() && AsAggregateType().getAggregate().GetPredefType() == pt;
+            return (IsVoidType() && pt == PredefinedType.PT_VOID);
         }
         public bool isPredefined()
         {
-            return this.IsAggregateType() && this.getAggregate().IsPredefined();
+            return IsAggregateType() && getAggregate().IsPredefined();
         }
         public PredefinedType getPredefType()
         {
             //ASSERT(isPredefined());
-            return this.getAggregate().GetPredefType();
+            return getAggregate().GetPredefType();
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -618,7 +617,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool isStaticClass()
         {
-            AggregateSymbol agg = this.GetNakedAgg(false);
+            AggregateSymbol agg = GetNakedAgg(false);
             if (agg == null)
                 return false;
 
@@ -629,10 +628,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool computeManagedType(SymbolLoader symbolLoader)
         {
-            if (this.IsVoidType())
+            if (IsVoidType())
                 return false;
 
-            switch (this.fundType())
+            switch (fundType())
             {
                 case FUNDTYPE.FT_NONE:
                 case FUNDTYPE.FT_REF:
@@ -640,13 +639,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
 
                 case FUNDTYPE.FT_STRUCT:
-                    if (this.IsNullableType())
+                    if (IsNullableType())
                     {
                         return true;
                     }
                     else
                     {
-                        AggregateSymbol aggT = this.getAggregate();
+                        AggregateSymbol aggT = getAggregate();
 
                         // See if we already know.
                         if (aggT.IsKnownManagedStructStatus())
@@ -698,7 +697,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (isPredefType(PredefinedType.PT_G_EXPRESSION))
             {
-                return this.AsAggregateType().GetTypeArgsThis().Item(0);
+                return AsAggregateType().GetTypeArgsThis().Item(0);
             }
 
             return this;
@@ -707,12 +706,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // These check for AGGTYPESYMs, TYVARSYMs and others as appropriate.
         public bool IsValType()
         {
-            switch (this.GetTypeKind())
+            switch (GetTypeKind())
             {
                 case TypeKind.TK_TypeParameterType:
-                    return this.AsTypeParameterType().IsValueType();
+                    return AsTypeParameterType().IsValueType();
                 case TypeKind.TK_AggregateType:
-                    return this.AsAggregateType().getAggregate().IsValueType();
+                    return AsAggregateType().getAggregate().IsValueType();
                 case TypeKind.TK_NullableType:
                     return true;
                 default:
@@ -721,12 +720,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool IsNonNubValType()
         {
-            switch (this.GetTypeKind())
+            switch (GetTypeKind())
             {
                 case TypeKind.TK_TypeParameterType:
-                    return this.AsTypeParameterType().IsNonNullableValueType();
+                    return AsTypeParameterType().IsNonNullableValueType();
                 case TypeKind.TK_AggregateType:
-                    return this.AsAggregateType().getAggregate().IsValueType();
+                    return AsAggregateType().getAggregate().IsValueType();
                 case TypeKind.TK_NullableType:
                     return false;
                 default:
@@ -735,15 +734,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool IsRefType()
         {
-            switch (this.GetTypeKind())
+            switch (GetTypeKind())
             {
                 case TypeKind.TK_ArrayType:
                 case TypeKind.TK_NullType:
                     return true;
                 case TypeKind.TK_TypeParameterType:
-                    return this.AsTypeParameterType().IsReferenceType();
+                    return AsTypeParameterType().IsReferenceType();
                 case TypeKind.TK_AggregateType:
-                    return this.AsAggregateType().getAggregate().IsRefType();
+                    return AsAggregateType().getAggregate().IsRefType();
                 default:
                     return false;
             }

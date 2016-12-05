@@ -101,17 +101,17 @@ namespace System.Linq.Expressions.Tests
 
         public static void VerifyInstructions(this LambdaExpression expression, string expected)
         {
-            var actual = expression.GetInstructions();
+            string actual = expression.GetInstructions();
 
-            var nExpected = Normalize(expected);
-            var nActual = Normalize(actual);
+            string nExpected = Normalize(expected);
+            string nActual = Normalize(actual);
 
             Assert.Equal(nExpected, nActual);
         }
 
         private static string Normalize(string s)
         {
-            var lines =
+            Collections.Generic.IEnumerable<string> lines =
                 s
                 .Replace("\r\n", "\n")
                 .Split(new[] { '\n' })

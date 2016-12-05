@@ -19,7 +19,7 @@ namespace System.Dynamic
     public abstract class BindingRestrictions
     {
         /// <summary>
-        /// Represents an empty set of binding restrictions. This field is read only.
+        /// Represents an empty set of binding restrictions. This field is read-only.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
@@ -314,26 +314,28 @@ namespace System.Dynamic
                 ParameterExpression temp = Expression.Parameter(typeof(object), null);
                 return Expression.Block(
                     new TrueReadOnlyCollection<ParameterExpression>(temp),
+                    new TrueReadOnlyCollection<Expression>(
 #if ENABLEDYNAMICPROGRAMMING
-                    Expression.Assign(
-                        temp,
-                        Expression.Property(
-                            Expression.Constant(new WeakReference(_instance)),
-                            typeof(WeakReference).GetProperty("Target")
-                        )
-                    ),
+                        Expression.Assign(
+                            temp,
+                            Expression.Property(
+                                Expression.Constant(new WeakReference(_instance)),
+                                typeof(WeakReference).GetProperty("Target")
+                            )
+                        ),
 #else
-                    Expression.Assign(
-                        temp,
-                        Expression.Constant(_instance, typeof(object))
-                    ),
+                        Expression.Assign(
+                            temp,
+                            Expression.Constant(_instance, typeof(object))
+                        ),
 #endif
-                    Expression.AndAlso(
-                        //check that WeakReference was not collected.
-                        Expression.NotEqual(temp, AstUtils.Null),
-                        Expression.Equal(
-                            Expression.Convert(_expression, typeof(object)),
-                            temp
+                        Expression.AndAlso(
+                            //check that WeakReference was not collected.
+                            Expression.NotEqual(temp, AstUtils.Null),
+                            Expression.Equal(
+                                Expression.Convert(_expression, typeof(object)),
+                                temp
+                            )
                         )
                     )
                 );
@@ -348,6 +350,7 @@ namespace System.Dynamic
 
             public BindingRestrictionsProxy(BindingRestrictions node)
             {
+                ContractUtils.RequiresNotNull(node, nameof(node));
                 _node = node;
             }
 

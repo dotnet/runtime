@@ -250,7 +250,7 @@ namespace System.Linq.Expressions
                 arrayType = type.MakeArrayType(dimensions);
             }
 
-            return NewArrayExpression.Make(ExpressionType.NewArrayBounds, arrayType, bounds.ToReadOnly());
+            return NewArrayExpression.Make(ExpressionType.NewArrayBounds, arrayType, boundsList);
         }
 
         #endregion

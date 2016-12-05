@@ -1059,5 +1059,52 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Theory]
+        [MemberData(nameof(ToCollectionData))]
+        public void ToCollection(IEnumerable<int> source)
+        {
+            foreach (IEnumerable<int> equivalent in new[] { source.Where(s => true), source.Where(s => true).Select(s => s) })
+            {
+                Assert.Equal(source, equivalent);
+                Assert.Equal(source, equivalent.ToArray());
+                Assert.Equal(source, equivalent.ToList());
+                Assert.Equal(source.Count(), equivalent.Count()); // Count may be optimized. The above asserts do not imply this will pass.
+
+                using (IEnumerator<int> en = equivalent.GetEnumerator())
+                {
+                    for (int i = 0; i < equivalent.Count(); i++)
+                    {
+                        Assert.True(en.MoveNext());
+                    }
+
+                    Assert.False(en.MoveNext()); // No more items, this should dispose.
+                    Assert.Equal(0, en.Current); // Reset to default value
+
+                    Assert.False(en.MoveNext()); // Want to be sure MoveNext after disposing still works.
+                    Assert.Equal(0, en.Current);
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> ToCollectionData()
+        {
+            IEnumerable<int> seq = GenerateRandomSequnce(seed: 0xdeadbeef, count: 10);
+
+            foreach (IEnumerable<int> seq2 in IdentityTransforms<int>().Select(t => t(seq)))
+            {
+                yield return new object[] { seq2 };
+            }
+        }
+
+        private static IEnumerable<int> GenerateRandomSequnce(uint seed, int count)
+        {
+            var random = new Random((int)seed);
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return random.Next(int.MinValue, int.MaxValue);
+            }
+        }
     }
 }

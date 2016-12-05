@@ -10,8 +10,8 @@ namespace System.Dynamic
     /// Represents a dynamic object, that can have its operations bound at runtime.
     /// </summary>
     /// <remarks>
-    /// Objects that want to participate in the binding process should implement an IDynamicMetaObjectProvider interface,
-    /// and implement <see cref="IDynamicMetaObjectProvider.GetMetaObject" /> to return a <see cref="DynamicMetaObject" />.
+    /// Objects that want to participate in the binding process should implement an <see cref="IDynamicMetaObjectProvider"/> interface,
+    /// and implement <see cref="GetMetaObject" /> to return a <see cref="DynamicMetaObject" />.
     /// </remarks>
     public interface IDynamicMetaObjectProvider
     {

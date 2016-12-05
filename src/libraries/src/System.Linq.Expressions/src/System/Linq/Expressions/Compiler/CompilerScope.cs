@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 using static System.Linq.Expressions.CachedReflectionInfo;
+using System.Collections;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -323,10 +324,10 @@ namespace System.Linq.Expressions.Compiler
                 lc.IL.EmitInt(i++);
                 Type boxType = typeof(StrongBox<>).MakeGenericType(v.Type);
 
-                if (IsMethod && lc.Parameters.Contains(v))
+                int index;
+                if (IsMethod && (index = lc.Parameters.IndexOf(v)) >= 0)
                 {
                     // array[i] = new StrongBox<T>(argument);
-                    int index = lc.Parameters.IndexOf(v);
                     lc.EmitLambdaArgument(index);
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
                 }
@@ -484,7 +485,7 @@ namespace System.Linq.Expressions.Compiler
             var lambda = scope as LambdaExpression;
             if (lambda != null)
             {
-                return lambda.Parameters;
+                return new ParameterList(lambda);
             }
             var block = scope as BlockExpression;
             if (block != null)
@@ -511,5 +512,56 @@ namespace System.Linq.Expressions.Compiler
                 throw ContractUtils.Unreachable;
             }
         }
+    }
+
+    internal static class ParameterProviderExtensions
+    {
+        public static int IndexOf(this IParameterProvider provider, ParameterExpression parameter)
+        {
+            for (int i = 0, n = provider.ParameterCount; i < n; i++)
+            {
+                if (provider.GetParameter(i) == parameter)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static bool Contains(this IParameterProvider provider, ParameterExpression parameter)
+        {
+            return provider.IndexOf(parameter) >= 0;
+        }
+    }
+
+    internal sealed class ParameterList : IReadOnlyList<ParameterExpression>
+    {
+        private readonly IParameterProvider _provider;
+
+        public ParameterList(IParameterProvider provider)
+        {
+            _provider = provider;
+        }
+
+        public ParameterExpression this[int index]
+        {
+            get
+            {
+                return _provider.GetParameter(index);
+            }
+        }
+
+        public int Count => _provider.ParameterCount;
+
+        public IEnumerator<ParameterExpression> GetEnumerator()
+        {
+            for (int i = 0, n = _provider.ParameterCount; i < n; i++)
+            {
+                yield return _provider.GetParameter(i);
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

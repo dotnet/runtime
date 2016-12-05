@@ -1083,18 +1083,18 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.LeftShift(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e1 = Expression.LeftShift(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a << b)", e1.ToString());
 
-            var e2 = Expression.RightShift(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e2 = Expression.RightShift(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a >> b)", e2.ToString());
         }
 
         [Theory, InlineData(typeof(E)), InlineData(typeof(El)), InlineData(typeof(string))]
         public static void IncorrectLHSTypes(Type type)
         {
-            var lhs = Expression.Default(type);
-            var rhs = Expression.Constant(0);
+            DefaultExpression lhs = Expression.Default(type);
+            ConstantExpression rhs = Expression.Constant(0);
             Assert.Throws<InvalidOperationException>(() => Expression.LeftShift(lhs, rhs));
             Assert.Throws<InvalidOperationException>(() => Expression.RightShift(lhs, rhs));
         }
@@ -1103,8 +1103,8 @@ namespace System.Linq.Expressions.Tests
          InlineData(typeof(short)), InlineData(typeof(uint))]
         public static void IncorrectRHSTypes(Type type)
         {
-            var lhs = Expression.Constant(0);
-            var rhs = Expression.Default(type);
+            ConstantExpression lhs = Expression.Constant(0);
+            DefaultExpression rhs = Expression.Default(type);
             Assert.Throws<InvalidOperationException>(() => Expression.LeftShift(lhs, rhs));
             Assert.Throws<InvalidOperationException>(() => Expression.RightShift(lhs, rhs));
         }

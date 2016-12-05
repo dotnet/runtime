@@ -243,9 +243,15 @@ namespace System.Net
     {
         public NetworkCredential() { }
         public NetworkCredential(string userName, string password) { }
+        [System.CLSCompliant(false)]
+        public NetworkCredential(string userName, System.Security.SecureString password) { }
         public NetworkCredential(string userName, string password, string domain) { }
+        [System.CLSCompliant(false)]
+        public NetworkCredential(string userName, System.Security.SecureString password, string domain) { }
         public string Domain { get { throw null; } set { } }
         public string Password { get { throw null; } set { } }
+        [System.CLSCompliant(false)]
+        public System.Security.SecureString SecurePassword { get { throw null; } set { } }
         public string UserName { get { throw null; } set { } }
         public System.Net.NetworkCredential GetCredential(string host, int port, string authenticationType) { throw null; }
         public System.Net.NetworkCredential GetCredential(System.Uri uri, string authType) { throw null; }
@@ -357,6 +363,7 @@ namespace System.Net.Sockets
         Irda = 26,
         Iso = 7,
         Lat = 14,
+        Max = 29,
         NetBios = 17,
         NetworkDesigners = 28,
         NS = 6,

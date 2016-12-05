@@ -156,6 +156,9 @@
   <data name="SetterMustBeVoid" xml:space="preserve">
     <value>Setter should have void type.</value>
   </data>
+  <data name="PropertyTypeMustMatchGetter" xml:space="preserve">
+    <value>Property type must match the value type of getter</value>
+  </data>
   <data name="PropertyTypeMustMatchSetter" xml:space="preserve">
     <value>Property type must match the value type of setter</value>
   </data>
@@ -366,9 +369,6 @@
   <data name="ExpressionNotSupportedForType" xml:space="preserve">
     <value>The expression '{0}' is not supported for type '{1}'</value>
   </data>
-  <data name="ExpressionNotSupportedForNullableType" xml:space="preserve">
-    <value>The expression '{0}' is not supported for nullable type '{1}'</value>
-  </data>
   <data name="UnsupportedExpressionType" xml:space="preserve">
     <value>The expression type '{0}' is not supported</value>
   </data>
@@ -447,9 +447,6 @@
   <data name="LogicalOperatorMustHaveBooleanOperators" xml:space="preserve">
     <value>The user-defined operator method '{1}' for operator '{0}' must have associated boolean True and False operators.</value>
   </data>
-  <data name="MethodDoesNotExistOnType" xml:space="preserve">
-    <value>No method '{0}' exists on type '{1}'.</value>
-  </data>
   <data name="MethodWithArgsDoesNotExistOnType" xml:space="preserve">
     <value>No method '{0}' on type '{1}' is compatible with the supplied arguments.</value>
   </data>
@@ -463,10 +460,10 @@
     <value>More than one property '{0}' on type '{1}' is compatible with the supplied arguments.</value>
   </data>
   <data name="IncorrectNumberOfTypeArgsForFunc" xml:space="preserve">
-    <value>An incorrect number of type args were specified for the declaration of a Func type.</value>
+    <value>An incorrect number of type arguments were specified for the declaration of a Func type.</value>
   </data>
   <data name="IncorrectNumberOfTypeArgsForAction" xml:space="preserve">
-    <value>An incorrect number of type args were specified for the declaration of an Action type.</value>
+    <value>An incorrect number of type arguments were specified for the declaration of an Action type.</value>
   </data>
   <data name="ArgumentCannotBeOfTypeVoid" xml:space="preserve">
     <value>Argument type cannot be System.Void.</value>
@@ -512,9 +509,6 @@
   </data>
   <data name="UnknownLiftType" xml:space="preserve">
     <value>unknown lift type: '{0}'.</value>
-  </data>
-  <data name="IllegalNewGenericParams" xml:space="preserve">
-    <value>Cannot create instance of {0} because it contains generic parameters</value>
   </data>
   <data name="UndefinedVariable" xml:space="preserve">
     <value>variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined</value>
@@ -639,9 +633,6 @@
   <data name="InvalidMetaObjectCreated" xml:space="preserve">
     <value>An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.</value>
   </data>
-  <data name="MethodPreconditionViolated" xml:space="preserve">
-    <value>Method precondition violated</value>
-  </data>
   <data name="AmbiguousMatchInExpandoObject" xml:space="preserve">
     <value>More than one key matching '{0}' was found in the ExpandoObject.</value>
   </data>
@@ -653,8 +644,5 @@
   </data>
   <data name="SameKeyExistsInExpando" xml:space="preserve">
     <value>An element with the same key '{0}' already exists in the ExpandoObject.</value>
-  </data>
-  <data name="InterpreterCannotThrowNonExceptions" xml:space="preserve">
-    <value>Interpreted expressions cannot throw an object of a type that is not derived from System.Exception.</value>
   </data>
 </root>

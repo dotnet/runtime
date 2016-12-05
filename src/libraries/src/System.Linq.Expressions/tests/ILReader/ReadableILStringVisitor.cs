@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Tests
         {
             foreach (var e in exceptions)
             {
-                var startCount = 0;
+                int startCount = 0;
                 if (!_startCounts.TryGetValue(e.StartAddress, out startCount))
                 {
                     _startCounts.Add(e.StartAddress, startCount);
@@ -91,7 +91,7 @@ namespace System.Linq.Expressions.Tests
                         _startCatch.Add(c.StartAddress, c.Type);
                     }
 
-                    var endCount = 0;
+                    int endCount = 0;
 
                     if (!_endCounts.TryGetValue(c.EndAddress, out endCount))
                     {
@@ -105,7 +105,7 @@ namespace System.Linq.Expressions.Tests
 
         public override void Process(ILInstruction instruction, string operandString)
         {
-            var endCount = 0;
+            int endCount = 0;
             if (_endCounts.TryGetValue(instruction.Offset, out endCount))
             {
                 for (var i = 0; i < endCount; i++)
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Tests
                 }
             }
 
-            var startCount = 0;
+            int startCount = 0;
             if (_startCounts.TryGetValue(instruction.Offset, out startCount))
             {
                 for (var i = 0; i < startCount; i++)
@@ -291,8 +291,8 @@ namespace System.Linq.Expressions.Tests
             string member;
             try
             {
-                var prefix = "";
-                var token = "";
+                string prefix = "";
+                string token = "";
                 switch (inlineTokInstruction.Member.MemberType)
                 {
                     case MemberTypes.Method:
@@ -445,14 +445,14 @@ namespace System.Linq.Expressions.Tests
                 }
                 else
                 {
-                    var bounds = string.Join(",", Enumerable.Repeat("...", type.GetArrayRank()));
+                    string bounds = string.Join(",", Enumerable.Repeat("...", type.GetArrayRank()));
                     return ToIL(type.GetElementType()) + "[" + bounds + "]";
                 }
             }
             else if (type.IsGenericType && !type.IsGenericTypeDefinition && !type.IsGenericParameter /* TODO */)
             {
-                var args = string.Join(",", type.GetGenericArguments().Select(ToIL));
-                var def = ToIL(type.GetGenericTypeDefinition());
+                string args = string.Join(",", type.GetGenericArguments().Select(ToIL));
+                string def = ToIL(type.GetGenericTypeDefinition());
                 return def + "<" + args + ">";
             }
             else if (type.IsByRef)
@@ -491,7 +491,7 @@ namespace System.Linq.Expressions.Tests
                 return "";
             }
 
-            var res = "";
+            string res = "";
 
             if (!method.IsStatic)
             {
@@ -499,7 +499,7 @@ namespace System.Linq.Expressions.Tests
             }
 
             var mtd = method as MethodInfo;
-            var ret = mtd?.ReturnType ?? typeof(void);
+            Type ret = mtd?.ReturnType ?? typeof(void);
 
             res += ret.ToIL() + " ";
             res += method.DeclaringType.ToIL();

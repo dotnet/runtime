@@ -16,13 +16,14 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static MethodInfo GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
         {
-            foreach (MethodInfo method in type.GetTypeInfo().DeclaredMethods)
+            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly))
             {
-                if (method.IsStatic && method.Name == name && method.MatchesArgumentTypes(types))
+                if (method.Name == name && method.MatchesArgumentTypes(types))
                 {
                     return method;
                 }
             }
+
             return null;
         }
 
@@ -41,7 +42,8 @@ namespace System.Dynamic.Utils
             {
                 return false;
             }
-            ParameterInfo[] ps = mi.GetParameters();
+
+            ParameterInfo[] ps = mi.GetParametersCached();
 
             if (ps.Length != argTypes.Length)
             {
@@ -55,6 +57,7 @@ namespace System.Dynamic.Utils
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -63,55 +66,6 @@ namespace System.Dynamic.Utils
             return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
         }
 
-        public static TypeCode GetTypeCode(this Type type)
-        {
-            if (type == null)
-                return TypeCode.Empty;
-            else if (type == typeof(bool))
-                return TypeCode.Boolean;
-            else if (type == typeof(char))
-                return TypeCode.Char;
-            else if (type == typeof(sbyte))
-                return TypeCode.SByte;
-            else if (type == typeof(byte))
-                return TypeCode.Byte;
-            else if (type == typeof(short))
-                return TypeCode.Int16;
-            else if (type == typeof(ushort))
-                return TypeCode.UInt16;
-            else if (type == typeof(int))
-                return TypeCode.Int32;
-            else if (type == typeof(uint))
-                return TypeCode.UInt32;
-            else if (type == typeof(long))
-                return TypeCode.Int64;
-            else if (type == typeof(ulong))
-                return TypeCode.UInt64;
-            else if (type == typeof(float))
-                return TypeCode.Single;
-            else if (type == typeof(double))
-                return TypeCode.Double;
-            else if (type == typeof(decimal))
-                return TypeCode.Decimal;
-            else if (type == typeof(DateTime))
-                return TypeCode.DateTime;
-            else if (type == typeof(string))
-                return TypeCode.String;
-            else if (type.GetTypeInfo().IsEnum)
-                return Enum.GetUnderlyingType(type).GetTypeCode();
-            else
-                return TypeCode.Object;
-        }
-
-        public static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
-        {
-            foreach (MethodInfo method in type.GetRuntimeMethods())
-            {
-                if (method.IsStatic)
-                {
-                    yield return method;
-                }
-            }
-        }
+        public static TypeCode GetTypeCode(this Type type) => Type.GetTypeCode(type);
     }
 }

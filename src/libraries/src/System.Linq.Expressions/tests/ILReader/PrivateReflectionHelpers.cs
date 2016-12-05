@@ -11,21 +11,21 @@ namespace System.Linq.Expressions.Tests
     {
         public static FieldInfo GetFieldAssert(this Type type, string name)
         {
-            var field = type.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            FieldInfo field = type.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
             Debug.Assert(field != null, $"Expected field '{name}' on type '{type.Name}'.");
             return field;
         }
 
         public static MethodInfo GetMethodAssert(this Type type, string name)
         {
-            var method = type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            MethodInfo method = type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
             Debug.Assert(method != null, $"Expected method '{name}' on type '{type.Name}'.");
             return method;
         }
 
         public static PropertyInfo GetPropertyAssert(this Type type, string name)
         {
-            var property = type.GetProperty(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            PropertyInfo property = type.GetProperty(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
             Debug.Assert(property != null, $"Expected property '{name}' on type '{type.Name}'.");
             return property;
         }

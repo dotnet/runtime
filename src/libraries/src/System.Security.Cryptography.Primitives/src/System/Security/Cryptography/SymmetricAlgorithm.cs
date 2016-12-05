@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (!(value == PaddingMode.None || value == PaddingMode.PKCS7 || value == PaddingMode.Zeros))
+                if ((value < PaddingMode.None) || (value > PaddingMode.ISO10126))
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
                 PaddingValue = value;
             }

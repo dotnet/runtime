@@ -228,7 +228,9 @@ namespace System.Dynamic
             );
         }
 
-        // used to detect standard MetaObjectBinders.
+        /// <summary>
+        /// Returns <c>true</c> for standard <see cref="DynamicMetaObjectBinder"/>s; otherwise, <c>false</c>.
+        /// </summary>
         internal virtual bool IsStandardBinder => false;
     }
 }

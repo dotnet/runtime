@@ -15,11 +15,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private class ExplicitConversion
         {
-            private ExpressionBinder _binder;
+            private readonly ExpressionBinder _binder;
             private EXPR _exprSrc;
-            private CType _typeSrc;
-            private CType _typeDest;
-            private EXPRTYPEORNAMESPACE _exprTypeDest;
+            private readonly CType _typeSrc;
+            private readonly CType _typeDest;
+            private readonly EXPRTYPEORNAMESPACE _exprTypeDest;
 
             // This is for lambda error reporting. The reason we have this is because we 
             // store errors for lambda conversions, and then we don't bind the conversion
@@ -36,10 +36,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // to report the error on, so that when the lambda conversion fails, it reports
             // errors on the correct type.
 
-            private CType _pDestinationTypeForLambdaErrorReporting;
+            private readonly CType _pDestinationTypeForLambdaErrorReporting;
             private EXPR _exprDest;
-            private bool _needsExprDest;
-            private CONVERTTYPE _flags;
+            private readonly bool _needsExprDest;
+            private readonly CONVERTTYPE _flags;
 
             // ----------------------------------------------------------------------------
             // BindExplicitConversion
@@ -800,9 +800,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return AggCastResult.Abort;
                 }
 
-                AggCastResult result;
-
-                result = bindExplicitConversionFromEnumToAggregate(aggTypeDest);
+                AggCastResult result = bindExplicitConversionFromEnumToAggregate(aggTypeDest);
                 if (result != AggCastResult.Failure)
                 {
                     return result;

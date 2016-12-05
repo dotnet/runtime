@@ -109,7 +109,16 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                EmitExpressionAddress(node, type);
+                // NB: Stack spilling can generate ref locals.
+
+                if (node.Type.IsByRef && node.Type.GetElementType() == type)
+                {
+                    EmitExpression(node);
+                }
+                else
+                {
+                    EmitExpressionAddress(node, type);
+                }
             }
         }
 

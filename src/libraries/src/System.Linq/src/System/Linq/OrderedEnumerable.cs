@@ -444,7 +444,7 @@ namespace System.Linq
                 while (e.MoveNext())
                 {
                     TElement x = e.Current;
-                    if (predicate(x) && comparer.Compare(x, false) > 0)
+                    if (predicate(x) && comparer.Compare(x, false) >= 0)
                     {
                         value = x;
                     }

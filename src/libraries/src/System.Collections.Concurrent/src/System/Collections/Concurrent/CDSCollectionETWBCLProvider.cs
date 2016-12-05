@@ -14,10 +14,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-#if FEATURE_TRACING
 using System.Diagnostics.Tracing;
 
 namespace System.Collections.Concurrent
@@ -118,4 +114,3 @@ namespace System.Collections.Concurrent
         }
     }
 }
-#endif // FEATURE_TRACING

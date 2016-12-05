@@ -59,6 +59,7 @@ namespace System.Security.Cryptography
         public override long Position { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void FlushFinalBlock() { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -77,6 +78,7 @@ namespace System.Security.Cryptography
     public abstract partial class HashAlgorithm : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
         protected internal byte[] HashValue;
+        protected int HashSizeValue;
         protected int State;
         protected HashAlgorithm() { }
         public virtual bool CanReuseTransform { get { throw null; } }
@@ -159,6 +161,8 @@ namespace System.Security.Cryptography
         None = 1,
         PKCS7 = 2,
         Zeros = 3,
+        ANSIX923 = 4,
+        ISO10126 = 5,
     }
     public abstract partial class SymmetricAlgorithm : System.IDisposable
     {

@@ -27,7 +27,7 @@ namespace System.IO
             }
 
             bool destinationCanWrite = destination.CanWrite;
-            if (!destination.CanRead && !destinationCanWrite)
+            if (!destinationCanWrite && !destination.CanRead)
             {
                 throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
             }

@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.CryptoConfigTests
@@ -232,6 +234,69 @@ namespace System.Security.Cryptography.CryptoConfigTests
 
             ClassWithCtorArguments ctorObj = (ClassWithCtorArguments)obj;
             Assert.Equal("Hello", ctorObj.MyString);
+        }
+
+        [Fact]
+        public static void EncodeOID_Validation()
+        {
+            Assert.Throws<ArgumentNullException>(() => CryptoConfig.EncodeOID(null));
+            Assert.Throws<FormatException>(() => CryptoConfig.EncodeOID(string.Empty));
+            Assert.Throws<FormatException>(() => CryptoConfig.EncodeOID("BAD.OID"));
+            Assert.Throws<FormatException>(() => CryptoConfig.EncodeOID("1.2.BAD.OID"));
+            Assert.Throws<OverflowException>(() => CryptoConfig.EncodeOID("1." + uint.MaxValue));
+        }
+
+        [Fact]
+        public static void EncodeOID_Compat()
+        {
+            string actual = CryptoConfig.EncodeOID("-1.2.-3").ByteArrayToHex();
+            Assert.Equal("0602DAFD", actual); // Negative values not checked
+        }
+
+        [Fact]
+        public static void EncodeOID_Length_Boundary()
+        {
+            string valueToRepeat = "1.1";
+
+            // Build a string like 1.11.11.11. ... .11.1, which has 0x80 separators.
+            // The BER/DER encoding of an OID has a minimum number of bytes as the number of separator characters,
+            // so this would produce an OID with a length segment of more than one byte, which EncodeOID can't handle.
+            string s = new StringBuilder(valueToRepeat.Length * 0x80).Insert(0, valueToRepeat, 0x80).ToString();
+            Assert.Throws<CryptographicUnexpectedOperationException>(() => CryptoConfig.EncodeOID(s));
+
+            // Try again with one less separator for the boundary case, but the particular output is really long
+            // and would just clutter up this test, so only verify it doesn't throw.
+            s = new StringBuilder(valueToRepeat.Length * 0x7f).Insert(0, valueToRepeat, 0x7f).ToString();
+            CryptoConfig.EncodeOID(s);
+        }
+
+        [Theory]
+        [InlineData(0x4000, "0603818028")]
+        [InlineData(0x200000, "060481808028")]
+        [InlineData(0x10000000, "06058180808028")]
+        [InlineData(0x10000001, "06058180808029")]
+        [InlineData(int.MaxValue, "060127")]
+        public static void EncodeOID_Value_Boundary_And_Compat(uint elementValue, string expectedEncoding)
+        {
+            // Boundary cases in EncodeOID; output may produce the wrong value mathematically due to encoding
+            // algorithm semantics but included here for compat reasons.
+            byte[] actual = CryptoConfig.EncodeOID("1." + elementValue.ToString());
+            byte[] expected = expectedEncoding.HexToByteArray();
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData("SHA1", "1.3.14.3.2.26", "06052B0E03021A")]
+        [InlineData("DES", "1.3.14.3.2.7", "06052B0E030207")]
+        [InlineData("MD5", "1.2.840.113549.2.5", "06082A864886F70D0205")]
+        public static void MapAndEncodeOID(string alg, string expectedOid, string expectedEncoding)
+        {
+            string oid = CryptoConfig.MapNameToOID(alg);
+            Assert.Equal(expectedOid, oid);
+
+            byte[] actual = CryptoConfig.EncodeOID(oid);
+            byte[] expected = expectedEncoding.HexToByteArray();
+            Assert.Equal(expected, actual);
         }
 
         private static void VerifyCreateFromName<TExpected>(string name)

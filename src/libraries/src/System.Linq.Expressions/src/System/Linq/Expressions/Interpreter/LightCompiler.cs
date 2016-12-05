@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal bool HasHandler(InterpretedFrame frame, ref Exception exception, out ExceptionHandler handler)
+        internal bool HasHandler(InterpretedFrame frame, Exception exception, out ExceptionHandler handler, out object unwrappedException)
         {
 #if DEBUG
             if (exception is RethrowException)
@@ -124,6 +124,7 @@ namespace System.Linq.Expressions.Interpreter
                 // Want to assert that this case isn't hit, but an assertion failure here will be eaten because
                 // we are in an exception filter. Therefore return true here and assert in the catch block.
                 handler = null;
+                unwrappedException = exception;
                 return true;
             }
 #endif
@@ -131,23 +132,29 @@ namespace System.Linq.Expressions.Interpreter
 
             if (IsCatchBlockExist)
             {
-                Type exceptionType = exception.GetType();
+                RuntimeWrappedException rwe = exception as RuntimeWrappedException;
+                unwrappedException = rwe != null ? rwe.WrappedException : exception;
+                Type exceptionType = unwrappedException.GetType();
                 for (int i = 0; i != _handlers.Length; ++i)
                 {
                     ExceptionHandler candidate = _handlers[i];
-                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref exception, candidate.Filter)))
+                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
                     {
                         handler = candidate;
                         return true;
                     }
                 }
             }
+            else
+            {
+                unwrappedException = null;
+            }
 
             handler = null;
             return false;
         }
 
-        internal bool FilterPasses(InterpretedFrame frame, ref Exception exception, ExceptionFilter filter)
+        internal bool FilterPasses(InterpretedFrame frame, ref object exception, ExceptionFilter filter)
         {
             Interpreter interpreter = frame.Interpreter;
             Instruction[] instructions = interpreter.Instructions.Instructions;
@@ -310,8 +317,9 @@ namespace System.Linq.Expressions.Interpreter
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
             //Console.WriteLine(node.DebugView);
-            foreach (ParameterExpression p in node.Parameters)
+            for (int i = 0, n = node.ParameterCount; i < n; i++)
             {
+                ParameterExpression p = node.GetParameter(i);
                 LocalDefinition local = _locals.DefineLocal(p, 0);
                 _instructions.EmitInitializeParameter(local.Index);
             }
@@ -332,6 +340,10 @@ namespace System.Linq.Expressions.Interpreter
         private Interpreter MakeInterpreter(string lambdaName)
         {
             DebugInfo[] debugInfos = _debugInfos.ToArray();
+            foreach (KeyValuePair<LabelTarget, LabelInfo> kvp in _treeLabels)
+            {
+                kvp.Value.ValidateFinish();
+            }
             return new Interpreter(lambdaName, _locals, _instructions.ToArray(), debugInfos);
         }
 
@@ -961,9 +973,25 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+#if DEBUG
+        private static bool IsNullComparison(Expression left, Expression right)
+        {
+            return IsNullConstant(left)
+                ? !IsNullConstant(right) && right.Type.IsNullableType()
+                : IsNullConstant(right) && left.Type.IsNullableType();
+        }
+
+        private static bool IsNullConstant(Expression e)
+        {
+            var c = e as ConstantExpression;
+            return c != null && c.Value == null;
+        }
+#endif
         private void CompileEqual(Expression left, Expression right, bool liftedToNull)
         {
-            Debug.Assert(left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#if DEBUG
+            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#endif
             Compile(left);
             Compile(right);
             _instructions.EmitEqual(left.Type, liftedToNull);
@@ -971,7 +999,9 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileNotEqual(Expression left, Expression right, bool liftedToNull)
         {
-            Debug.Assert(left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#if DEBUG
+            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+#endif
             Compile(left);
             Compile(right);
             _instructions.EmitNotEqual(left.Type, liftedToNull);
@@ -2096,7 +2126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMethodCallExpression(Expression @object, MethodInfo method, IArgumentProvider arguments)
         {
-            ParameterInfo[] parameters = method.GetParameters();
+            ParameterInfo[] parameters = method.GetParametersCached();
 
             // TODO: Support pass by reference.
             List<ByRefUpdater> updaters = null;
@@ -2350,7 +2380,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (node.Constructor.DeclaringType.GetTypeInfo().IsAbstract)
                     throw Error.NonAbstractConstructorRequired();
 
-                ParameterInfo[] parameters = node.Constructor.GetParameters();
+                ParameterInfo[] parameters = node.Constructor.GetParametersCached();
                 List<ByRefUpdater> updaters = null;
 
                 for (int i = 0; i < parameters.Length; i++)
@@ -2627,7 +2657,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileListInitExpression(Expression expr)
         {
             var node = (ListInitExpression)expr;
@@ -2653,7 +2682,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileMemberInitExpression(Expression expr)
         {
             var node = (MemberInitExpression)expr;
@@ -2709,7 +2737,6 @@ namespace System.Linq.Expressions.Interpreter
             throw new InvalidOperationException("MemberNotFieldOrProperty");
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileQuoteUnaryExpression(Expression expr)
         {
             var unary = (UnaryExpression)expr;
@@ -2770,16 +2797,32 @@ namespace System.Linq.Expressions.Interpreter
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                PushParameters(node.Parameters);
+                IEnumerable<ParameterExpression> parameters = Array.Empty<ParameterExpression>();
+
+                int count = node.ParameterCount;
+
+                if (count > 0)
+                {
+                    var parameterList = new List<ParameterExpression>(count);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        parameterList.Add(node.GetParameter(i));
+                    }
+
+                    parameters = parameterList;
+                }
+
+                PushParameters(parameters);
 
                 base.VisitLambda(node);
 
-                PopParameters(node.Parameters);
+                PopParameters(parameters);
 
                 return node;
             }
 
-            private void PushParameters(ICollection<ParameterExpression> parameters)
+            private void PushParameters(IEnumerable<ParameterExpression> parameters)
             {
                 foreach (ParameterExpression param in parameters)
                 {
@@ -2795,7 +2838,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            private void PopParameters(ICollection<ParameterExpression> parameters)
+            private void PopParameters(IEnumerable<ParameterExpression> parameters)
             {
                 foreach (ParameterExpression param in parameters)
                 {
@@ -2940,7 +2983,7 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void CompileNoLabelPush(Expression expr)
         {
-            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,
             // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
             // another thread when we run out of stack space.
             if (!_guard.TryEnterOnCurrentStack())

@@ -49,6 +49,7 @@ namespace System.Net
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeaderLen = _defaultMaxResponseHeaderLength;
         private ServicePoint _servicePoint;
+        private int _timeout = WebRequest.DefaultTimeoutMilliseconds;
         private HttpContinueDelegate _continueDelegate;
 
         private RequestStream _requestStream;
@@ -59,8 +60,9 @@ namespace System.Net
         private int _abortCalled = 0;
         private CancellationTokenSource _sendRequestCts;
         private X509CertificateCollection _clientCertificates;
-        private Booleans _Booleans = Booleans.Default;        
+        private Booleans _booleans = Booleans.Default;
         private bool _pipelined = true;
+        private bool _preAuthenticate;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         //these should be safe.
@@ -103,7 +105,7 @@ namespace System.Net
             AllowAutoRedirect = serializationInfo.GetBoolean("_AllowAutoRedirect");
             if (!serializationInfo.GetBoolean("_AllowWriteStreamBuffering"))
             {
-                _Booleans &= ~Booleans.AllowWriteStreamBuffering;
+                _booleans &= ~Booleans.AllowWriteStreamBuffering;
             }            
             _maximumAllowedRedirections = serializationInfo.GetInt32("_MaximumAllowedRedirections");
             AllowAutoRedirect = serializationInfo.GetInt32("_AutoRedirects") > 0;
@@ -129,7 +131,7 @@ namespace System.Net
             _originVerb = serializationInfo.GetString("_OriginVerb");
             ConnectionGroupName = serializationInfo.GetString("_ConnectionGroupName");
             ProtocolVersion = (Version)serializationInfo.GetValue("_Version", typeof(Version));
-            _requestUri = (Uri)serializationInfo.GetValue("_OriginUri", typeof(Uri));            
+            _requestUri = (Uri)serializationInfo.GetValue("_OriginUri", typeof(Uri));
 #if DEBUG
             }
 #endif
@@ -157,7 +159,7 @@ namespace System.Net
             serializationInfo.AddValue("_KeepAlive", KeepAlive);
             serializationInfo.AddValue("_Pipelined", Pipelined);
             serializationInfo.AddValue("_AllowAutoRedirect", AllowAutoRedirect);
-            serializationInfo.AddValue("_AllowWriteStreamBuffering", AllowWriteStreamBuffering);            
+            serializationInfo.AddValue("_AllowWriteStreamBuffering", AllowWriteStreamBuffering);
             serializationInfo.AddValue("_MaximumAllowedRedirections", AllowAutoRedirect);
             serializationInfo.AddValue("_AutoRedirects", AllowAutoRedirect);
             serializationInfo.AddValue("_Timeout", Timeout);
@@ -272,7 +274,46 @@ namespace System.Net
                 _continueTimeout = value;
             }
         }
-      
+
+        public override int Timeout
+        {
+            get
+            {
+                return _timeout;
+            }
+            set
+            {
+                if (value < 0 && value != System.Threading.Timeout.Infinite)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
+                }
+
+                _timeout = value;
+            }
+        }
+
+        public override long ContentLength
+        {
+            get
+            {
+                long value;
+                long.TryParse(_webHeaderCollection[HttpKnownHeaderNames.ContentLength], out value);
+                return value;
+            }
+            set
+            {
+                if (RequestSubmitted)
+                {
+                    throw new InvalidOperationException(SR.net_writestarted);
+                }
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
+                }
+                SetSpecialHeaders(HttpKnownHeaderNames.ContentLength, value.ToString());
+            }
+        }
+
         public Uri Address
         {
             get
@@ -432,17 +473,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.UnsafeAuthenticatedConnectionSharing) != 0;
+                return (_booleans & Booleans.UnsafeAuthenticatedConnectionSharing) != 0;
             }
             set
             {                
                 if (value)
                 {
-                    _Booleans |= Booleans.UnsafeAuthenticatedConnectionSharing;
+                    _booleans |= Booleans.UnsafeAuthenticatedConnectionSharing;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.UnsafeAuthenticatedConnectionSharing;
+                    _booleans &= ~Booleans.UnsafeAuthenticatedConnectionSharing;
                 }
             }
         }
@@ -468,17 +509,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.AllowWriteStreamBuffering) != 0;
+                return (_booleans & Booleans.AllowWriteStreamBuffering) != 0;
             }
             set
             {
                 if (value)
                 {
-                    _Booleans |= Booleans.AllowWriteStreamBuffering;
+                    _booleans |= Booleans.AllowWriteStreamBuffering;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.AllowWriteStreamBuffering;
+                    _booleans &= ~Booleans.AllowWriteStreamBuffering;
                 }
             }
         }  
@@ -492,17 +533,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.AllowAutoRedirect) != 0;
+                return (_booleans & Booleans.AllowAutoRedirect) != 0;
             }
             set
             {
                 if (value)
                 {
-                    _Booleans |= Booleans.AllowAutoRedirect;
+                    _booleans |= Booleans.AllowAutoRedirect;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.AllowAutoRedirect;
+                    _booleans &= ~Booleans.AllowAutoRedirect;
                 }
             }
         }
@@ -516,6 +557,18 @@ namespace System.Net
             set
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+        }
+
+        public override bool PreAuthenticate
+        {
+            get
+            {
+                return _preAuthenticate;
+            }
+            set
+            {
+                _preAuthenticate = value;
             }
         }
 
@@ -687,7 +740,7 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.SendChunked) != 0;
+                return (_booleans & Booleans.SendChunked) != 0;
             }
             set
             {
@@ -697,11 +750,11 @@ namespace System.Net
                 }
                 if (value)
                 {
-                    _Booleans |= Booleans.SendChunked;
+                    _booleans |= Booleans.SendChunked;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.SendChunked;
+                    _booleans &= ~Booleans.SendChunked;
                 }
             }
         }
@@ -978,17 +1031,17 @@ namespace System.Net
         {
             get
             {
-                return (_Booleans & Booleans.IsVersionHttp10) != 0;
+                return (_booleans & Booleans.IsVersionHttp10) != 0;
             }
             set
             {
                 if (value)
                 {
-                    _Booleans |= Booleans.IsVersionHttp10;
+                    _booleans |= Booleans.IsVersionHttp10;
                 }
                 else
                 {
-                    _Booleans &= ~Booleans.IsVersionHttp10;
+                    _booleans &= ~Booleans.IsVersionHttp10;
                 }
             }
         }
@@ -998,7 +1051,7 @@ namespace System.Net
             try
             {
                 _sendRequestCts = new CancellationTokenSource();
-                return SendRequest().Result;
+                return SendRequest().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -1131,12 +1184,16 @@ namespace System.Net
                     request.Content = new ByteArrayContent(bytes.Array, bytes.Offset, bytes.Count);
                 }
 
-                // set up the various properties
                 handler.AutomaticDecompression = AutomaticDecompression;
                 handler.Credentials = _credentials;
                 handler.AllowAutoRedirect = AllowAutoRedirect;
                 handler.MaxAutomaticRedirections = MaximumAutomaticRedirections;
                 handler.MaxResponseHeadersLength = MaximumResponseHeadersLength;
+                handler.PreAuthenticate = PreAuthenticate;
+                client.Timeout = Timeout == Threading.Timeout.Infinite ?
+                    Threading.Timeout.InfiniteTimeSpan :
+                    TimeSpan.FromMilliseconds(Timeout);
+
                 if (_cookieContainer != null)
                 {
                     handler.CookieContainer = _cookieContainer;

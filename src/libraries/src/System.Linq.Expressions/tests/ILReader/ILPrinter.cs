@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Tests
             MethodInfo method = d.GetMethodInfo();
             ITypeFactory typeFactory = GetTypeFactory(expression);
 
-            var oldCulture = CultureInfo.CurrentCulture;
+            CultureInfo oldCulture = CultureInfo.CurrentCulture;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             try
             {
@@ -65,15 +65,15 @@ namespace System.Linq.Expressions.Tests
 
         private static void AppendIL(MethodInfo method, StringWriter sw, ITypeFactory typeFactory)
         {
-            var reader = ILReaderFactory.Create(method);
-            var exceptions = reader.ILProvider.GetExceptionInfos();
+            ILReader reader = ILReaderFactory.Create(method);
+            ExceptionInfo[] exceptions = reader.ILProvider.GetExceptionInfos();
             var writer = new RichILStringToTextWriter(sw, exceptions);
 
             sw.WriteLine(".method " + method.ToIL());
             sw.WriteLine("{");
             sw.WriteLine("  .maxstack " + reader.ILProvider.MaxStackSize);
 
-            var sig = reader.ILProvider.GetLocalSignature();
+            byte[] sig = reader.ILProvider.GetLocalSignature();
             var lsp = new LocalsSignatureParser(reader.Resolver, typeFactory);
             var locals = default(Type[]);
             if (lsp.Parse(sig, out locals) && locals.Length > 0)
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Tests
 
             private void Visit(Type type)
             {
-                var ti = type.GetTypeInfo();
+                TypeInfo ti = type.GetTypeInfo();
 
                 if (ti.IsArray || ti.IsPointer || ti.IsByRef)
                 {

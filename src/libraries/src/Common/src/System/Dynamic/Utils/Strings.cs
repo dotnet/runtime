@@ -19,34 +19,22 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// A string like "The value null is not of type '{0}' and cannot be used in this collection."
         /// </summary>
-        internal static string InvalidNullValue(object p0)
-        {
-            return SR.Format(SR.InvalidNullValue, p0);
-        }
+        internal static string InvalidNullValue(object p0) => SR.Format(SR.InvalidNullValue, p0);
 
         /// <summary>
         /// A string like "The value '{0}' is not of type '{1}' and cannot be used in this collection."
         /// </summary>
-        internal static string InvalidObjectType(object p0, object p1)
-        {
-            return SR.Format(SR.InvalidObjectType, p0, p1);
-        }
+        internal static string InvalidObjectType(object p0, object p1) => SR.Format(SR.InvalidObjectType, p0, p1);
 
         /// <summary>
         /// A string like "Type {0} contains generic parameters"
         /// </summary>
-        internal static string TypeContainsGenericParameters(object p0)
-        {
-            return SR.Format(SR.TypeContainsGenericParameters, p0);
-        }
+        internal static string TypeContainsGenericParameters(object p0) => SR.Format(SR.TypeContainsGenericParameters, p0);
 
         /// <summary>
         /// A string like "Type {0} is a generic type definition"
         /// </summary>
-        internal static string TypeIsGeneric(object p0)
-        {
-            return SR.Format(SR.TypeIsGeneric, p0);
-        }
+        internal static string TypeIsGeneric(object p0) => SR.Format(SR.TypeIsGeneric, p0);
 
         /// <summary>
         /// A string like "Collection was modified; enumeration operation may not execute."
@@ -66,33 +54,22 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// A string like "Expression of type '{0}' cannot be used for parameter of type '{1}' of method '{2}'"
         /// </summary>
-        internal static string ExpressionTypeDoesNotMatchMethodParameter(object p0, object p1, object p2)
-        {
-            return SR.Format(SR.ExpressionTypeDoesNotMatchMethodParameter, p0, p1, p2);
-        }
+        internal static string ExpressionTypeDoesNotMatchMethodParameter(object p0, object p1, object p2) => SR.Format(SR.ExpressionTypeDoesNotMatchMethodParameter, p0, p1, p2);
 
         /// <summary>
         /// A string like "Expression of type '{0}' cannot be used for parameter of type '{1}'"
         /// </summary>
-        internal static string ExpressionTypeDoesNotMatchParameter(object p0, object p1)
-        {
-            return SR.Format(SR.ExpressionTypeDoesNotMatchParameter, p0, p1);
-        }
+        internal static string ExpressionTypeDoesNotMatchParameter(object p0, object p1) => SR.Format(SR.ExpressionTypeDoesNotMatchParameter, p0, p1);
 
         /// <summary>
         /// A string like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
         /// </summary>
-        internal static string ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1)
-        {
-            return SR.Format(SR.ExpressionTypeDoesNotMatchConstructorParameter, p0, p1);
-        }
+        internal static string ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1) => SR.Format(SR.ExpressionTypeDoesNotMatchConstructorParameter, p0, p1);
+
         /// <summary>
         /// A string like "Incorrect number of arguments supplied for call to method '{0}'"
         /// </summary>
-        internal static string IncorrectNumberOfMethodCallArguments(object p0)
-        {
-            return SR.Format(SR.IncorrectNumberOfMethodCallArguments, p0);
-        }
+        internal static string IncorrectNumberOfMethodCallArguments(object p0) => SR.Format(SR.IncorrectNumberOfMethodCallArguments, p0);
 
         /// <summary>
         /// A string like "Incorrect number of arguments supplied for lambda invocation"

@@ -514,8 +514,8 @@ namespace System.Xml.Schema
         // only for debug
 #if DEBUG
         public void PrintTree (StreamWriter msw) {
-            for (int i = 0; i < fAxisArray.Count; ++i) {
-                ForwardAxis axis = (ForwardAxis)fAxisArray[i];
+            for (int i = 0; i < _fAxisArray.Count; ++i) {
+                ForwardAxis axis = (ForwardAxis)_fAxisArray[i];
                 msw.WriteLine("<Tree IsDss=\"{0}\" IsAttribute=\"{1}\">", axis.IsDss, axis.IsAttribute);
                 DoubleLinkAxis printaxis = axis.TopNode;
                 while ( printaxis != null ) {
