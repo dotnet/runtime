@@ -113,7 +113,7 @@
 //    |   +-ComPrestubMethodFrame - prestub frame for calls from COM to CLR
 //    |
 #endif //FEATURE_COMINTEROP
-#if defined(_TARGET_X86_)
+#ifdef _TARGET_X86_
 //    | +-UMThkCallFrame        - this frame represents an unmanaged->managed
 //    |                           transition through N/Direct
 #endif
@@ -268,7 +268,7 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerSecurityCodeMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
-#if defined(_TARGET_X86_)
+#ifdef _TARGET_X86_
 FRAME_TYPE_NAME(UMThkCallFrame)
 #endif
 #if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
