@@ -768,12 +768,14 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <SafehandleSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Unix.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\Environment.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <SafehandleSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Win32.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStreamCompletionSource.Win32.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\Win32Marshal.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\Environment.Win32.cs" />
   </ItemGroup>
   <ItemGroup>
     <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.cs" />

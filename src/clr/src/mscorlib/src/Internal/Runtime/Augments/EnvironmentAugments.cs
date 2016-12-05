@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 
 namespace Internal.Runtime.Augments
 {
@@ -17,5 +18,11 @@ namespace Internal.Runtime.Augments
         public static bool HasShutdownStarted => Environment.HasShutdownStarted;
         public static string StackTrace => Environment.StackTrace;
         public static int TickCount => Environment.TickCount;
+        public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(variable, target);
+        public static IDictionary GetEnvironmentVariables() => Environment.GetEnvironmentVariables();
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => Environment.GetEnvironmentVariables(target);
+        public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
     }
 }

@@ -2015,6 +2015,12 @@
       <Member Name="Exit(System.Int32)" />
       <Member Name="FailFast(System.String,System.Exception)"  />
       <Member Name="GetCommandLineArgs" />
+      <Member Name="GetEnvironmentVariable(System.String)" />
+      <Member Name="GetEnvironmentVariable(System.String,System.EnvironmentVariableTarget)" />
+      <Member Name="GetEnvironmentVariables" />
+      <Member Name="GetEnvironmentVariables(System.EnvironmentVariableTarget)" />
+      <Member Name="SetEnvironmentVariable(System.String,System.String)" />
+      <Member Name="SetEnvironmentVariable(System.String,System.String,System.EnvironmentVariableTarget)" />
     </Type>
     <Type Name="System.EventArgs">
       <Member MemberType="Field" Name="Empty" />
