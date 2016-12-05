@@ -593,7 +593,7 @@ private:
     regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskTP availableRegs);
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
-    // Note that this can be combined with LsraSpillAlways (or not)
+    // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
     enum LsraReload{LSRA_NO_RELOAD_IF_SAME = 0, LSRA_ALWAYS_INSERT_RELOAD = 0x400, LSRA_RELOAD_MASK = 0x400};
     LsraReload getLsraReload()
     {
