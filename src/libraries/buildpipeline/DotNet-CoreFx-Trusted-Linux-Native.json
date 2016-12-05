@@ -569,7 +569,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)/corefx/Tools/dotnetcli/dotnet",
-        "arguments": "$(Build.SourcesDirectory)/corefx/Tools/msbuild $(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
+        "arguments": "$(Build.SourcesDirectory)/corefx/Tools/msbuild.sh $(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
