@@ -2395,7 +2395,7 @@ PCODE COMDelegate::TheDelegateInvokeStub()
     }
     CONTRACT_END;
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
     static PCODE s_pInvokeStub;
 
     if (s_pInvokeStub == NULL)
@@ -2415,7 +2415,7 @@ PCODE COMDelegate::TheDelegateInvokeStub()
     RETURN s_pInvokeStub;
 #else
     RETURN GetEEFuncEntryPoint(SinglecastDelegateInvokeStub);
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 }
 
 // Get the cpu stub for a delegate invoke.
