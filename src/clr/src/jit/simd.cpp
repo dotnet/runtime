@@ -78,10 +78,9 @@ int Compiler::getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
 int Compiler::getSIMDTypeAlignment(var_types simdType)
 {
 #ifdef _TARGET_XARCH_
-    // TODO-x86: Need to figure out stack alignment for SIMD on x86.
     // Fixed length vectors have the following alignment preference
-    // Vector2/3 = 8 byte alignment
-    // Vector4 = 16-byte alignment
+    // Vector2   = 8 byte alignment
+    // Vector3/4 = 16-byte alignment
     unsigned size = genTypeSize(simdType);
 
     // preferred alignment for SSE2 128-bit vectors is 16-bytes
@@ -89,13 +88,16 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
     {
         return 8;
     }
-
-    // As per Intel manual, AVX vectors preferred alignment is 32-bytes but on Amd64
-    // RSP/EBP is aligned at 16-bytes, therefore to align SIMD types at 32-bytes we need even
-    // RSP/EBP to be 32-byte aligned. It is not clear whether additional stack space used in
-    // aligning stack is worth the benefit and for now will use 16-byte alignment for AVX
-    // 256-bit vectors with unaligned load/stores to/from memory.
-    return 16;
+    else if (size <= 16)
+    {
+        assert((size == 12) || (size == 16));
+        return 16;
+    }
+    else
+    {
+        assert(size == 32);
+        return 32;
+    }
 #else
     assert(!"getSIMDTypeAlignment() unimplemented on target arch");
     unreached();
@@ -2472,7 +2474,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             }
 
 #else // !_TARGET_XARCH_
-            assert(!"Abs intrinsic on non-Amd64 target not implemented");
+            assert(!"Abs intrinsic on non-xarch target not implemented");
             unreached();
 #endif // !_TARGET_XARCH_
         }

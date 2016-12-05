@@ -105,8 +105,8 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
         return;
     }
 
-    // If the operand of is a GT_ADDR(GT_LCL_VAR) and LclVar is known to be of simdType,
-    // replace obj by GT_LCL_VAR.
+    // If we have GT_IND(GT_LCL_VAR_ADDR) and the GT_LCL_VAR_ADDR is TYP_BYREF/TYP_I_IMPL,
+    // and the var is a SIMD type, replace the expression by GT_LCL_VAR.
     GenTree* addr = tree->AsIndir()->Addr();
     if (addr->OperIsLocalAddr() && comp->isAddrOfSIMDType(addr))
     {
@@ -116,6 +116,17 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
         addr->gtType = simdType;
         use.ReplaceWith(comp, addr);
     }
+#if defined(_TARGET_X86_)
+    // For x86, if we have GT_IND(GT_ADDR(GT_SIMD)), remove the GT_IND(GT_ADDR()), leaving just
+    // the GT_SIMD.
+    else if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->OperGet() == GT_SIMD))
+    {
+        BlockRange().Remove(tree);
+        BlockRange().Remove(addr);
+
+        use.ReplaceWith(comp, addr->gtGetOp1());
+    }
+#endif // defined(_TARGET_X86_)
     else if (!keepBlk)
     {
         tree->SetOper(GT_IND);

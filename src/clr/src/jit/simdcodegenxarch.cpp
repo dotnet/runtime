@@ -2037,9 +2037,9 @@ void CodeGen::genStoreLclFldTypeSIMD12(GenTree* treeNode)
 }
 
 //-----------------------------------------------------------------------------
-// genLoadLclFldTypeSIMD12: load a TYP_SIMD12 (i.e. Vector3) type field.
-// Since Vector3 is not a hardware supported write size, it is performed
-// as two reads: 8 byte followed by 4-byte.
+// genLoadLclTypeSIMD12: load a TYP_SIMD12 (i.e. Vector3) type field.
+// Since Vector3 is not a hardware supported read size, it is performed
+// as two reads: 4 byte followed by 8 byte.
 //
 // Arguments:
 //    treeNode - tree node that is attempting to load TYP_SIMD12 field
@@ -2047,16 +2047,21 @@ void CodeGen::genStoreLclFldTypeSIMD12(GenTree* treeNode)
 // Return Value:
 //    None.
 //
-void CodeGen::genLoadLclFldTypeSIMD12(GenTree* treeNode)
+void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_LCL_FLD);
+    assert((treeNode->OperGet() == GT_LCL_FLD) || (treeNode->OperGet() == GT_LCL_VAR));
 
     regNumber targetReg = treeNode->gtRegNum;
-    unsigned  offs      = treeNode->gtLclFld.gtLclOffs;
+    unsigned  offs      = 0;
     unsigned  varNum    = treeNode->gtLclVarCommon.gtLclNum;
     assert(varNum < compiler->lvaCount);
 
-    // Need an addtional Xmm register that is different from
+    if (treeNode->OperGet() == GT_LCL_FLD)
+    {
+        offs = treeNode->gtLclFld.gtLclOffs;
+    }
+
+    // Need an additional Xmm register that is different from
     // targetReg to read upper 4 bytes.
     assert(treeNode->gtRsvdRegs != RBM_NONE);
     assert(genCountBits(treeNode->gtRsvdRegs) == 1);
@@ -2075,6 +2080,49 @@ void CodeGen::genLoadLclFldTypeSIMD12(GenTree* treeNode)
 
     genProduceReg(treeNode);
 }
+
+#ifdef _TARGET_X86_
+
+//-----------------------------------------------------------------------------
+// genPutArgStkSIMD12: store a TYP_SIMD12 (i.e. Vector3) type field.
+// Since Vector3 is not a hardware supported write size, it is performed
+// as two stores: 8 byte followed by 4-byte.
+//
+// Arguments:
+//    treeNode - tree node that is attempting to store TYP_SIMD12 field
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_PUTARG_STK);
+
+    GenTreePtr op1 = treeNode->gtOp.gtOp1;
+    assert(!op1->isContained());
+    regNumber operandReg = genConsumeReg(op1);
+
+    // Need an addtional Xmm register to extract upper 4 bytes from data.
+    assert(treeNode->gtRsvdRegs != RBM_NONE);
+    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
+    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+
+    // Subtract from ESP; create space for argument.
+    // TODO-CQ: use 'push' instead?
+    inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+    genStackLevel += 12;
+
+    // 8-byte write
+    getEmitter()->emitIns_AR_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, REG_SPBASE, 0);
+
+    // Extract upper 4-bytes from data
+    getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
+
+    // 4-byte write
+    getEmitter()->emitIns_AR_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, REG_SPBASE, 8);
+}
+
+#endif // _TARGET_X86_
 
 //-----------------------------------------------------------------------------
 // genSIMDIntrinsicUpperSave: save the upper half of a TYP_SIMD32 vector to

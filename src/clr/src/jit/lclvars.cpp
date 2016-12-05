@@ -2036,7 +2036,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
 
 #ifndef _TARGET_64BIT_
-    bool fDoubleAlignHint = FALSE;
+    BOOL fDoubleAlignHint = FALSE;
 #ifdef _TARGET_X86_
     fDoubleAlignHint = TRUE;
 #endif
