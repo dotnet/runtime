@@ -284,7 +284,7 @@ namespace System.Linq.Tests
                 e => e.Concat(ForceNotCollection(Array.Empty<T>())),
                 e => e.Where(i => true)
             };
-	}
+        }
 
         protected class DelegateBasedEnumerator<T> : IEnumerator<T>
         {
