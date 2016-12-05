@@ -2535,7 +2535,7 @@ VOID StubLinkerCPU::X86EmitCurrentAppDomainFetch(X86Reg dstreg, unsigned preserv
 #endif // FEATURE_IMPLICIT_TLS
 }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_)
 
 #ifdef PROFILING_SUPPORTED
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
@@ -2860,6 +2860,7 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
 {
     STANDARD_VM_CONTRACT;
 
+#ifndef FEATURE_PAL
 #ifdef FEATURE_IMPLICIT_TLS
     DWORD idx = 0;
     TLSACCESSMODE mode = TLSACCESS_GENERIC;
@@ -2920,6 +2921,9 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
     X86EmitDebugTrashReg(kEDX);
 #endif
 
+#else  // FEATURE_PAL
+    PORTABILITY_ASSERT("StubLinkerCPU::EmitSetup");
+#endif // FEATURE_PAL
 }
 
 VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
@@ -2946,7 +2950,7 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
 }
 
 //========================================================================
-#endif // _TARGET_X86_ && !FEATURE_PAL
+#endif // _TARGET_X86_
 //========================================================================
 #if defined(FEATURE_COMINTEROP) && defined(_TARGET_X86_)
 //========================================================================
