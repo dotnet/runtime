@@ -6,7 +6,7 @@
 
 extern "C"
 {
-    void RedirectForThrowControl()
+    void ThrowControlForThread()
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
