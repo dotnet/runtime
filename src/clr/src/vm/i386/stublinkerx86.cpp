@@ -64,6 +64,7 @@ extern "C" HRESULT __cdecl StubRareDisableHR(Thread *pThread);
 #endif // FEATURE_COMINTEROP
 extern "C" VOID __cdecl StubRareDisableTHROW(Thread *pThread, Frame *pFrame);
 
+#ifndef FEATURE_ARRAYSTUB_AS_IL
 extern "C" VOID __cdecl ArrayOpStubNullException(void);
 extern "C" VOID __cdecl ArrayOpStubRangeException(void);
 extern "C" VOID __cdecl ArrayOpStubTypeMismatchException(void);
@@ -78,10 +79,13 @@ EXCEPTION_HELPERS(ArrayOpStubNullException);
 EXCEPTION_HELPERS(ArrayOpStubRangeException);
 EXCEPTION_HELPERS(ArrayOpStubTypeMismatchException);
 #undef EXCEPTION_HELPERS
+#endif // !_TARGET_AMD64_
+#endif // !FEATURE_ARRAYSTUB_AS_IL
 
-#if defined(_DEBUG) 
+#if defined(_TARGET_AMD64_)
+#if defined(_DEBUG)
 extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
-#endif
+#endif // _DEBUG
 #endif // _TARGET_AMD64_
 
 // Presumably this code knows what it is doing with TLS.  If we are hiding these
