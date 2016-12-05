@@ -1690,6 +1690,7 @@ BOOL LeaveCatch(ICodeManager* pEECM,
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_PAL
     // We can assert these things here, and skip a call
     // to COMPlusCheckForAbort later.
 
@@ -1707,6 +1708,10 @@ BOOL LeaveCatch(ICodeManager* pEECM,
 
     SetSP(pCtx, (UINT_PTR)esp);
     return TRUE;
+#else // FEATURE_PAL
+    PORTABILITY_ASSERT("LeaveCatch");
+    return FALSE;
+#endif
 }
 #endif // WIN64EXCEPTIONS
 
