@@ -853,7 +853,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             GenTreeLclVarCommon* lcl    = unspillTree->AsLclVarCommon();
             LclVarDsc*           varDsc = &compiler->lvaTable[lcl->gtLclNum];
 
-// TODO-Cleanup: The following code could probably be further merged and cleand up.
+// TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #ifdef _TARGET_XARCH_
             // Load local variable from its home location.
             // In most cases the tree type will indicate the correct type to use for the load.

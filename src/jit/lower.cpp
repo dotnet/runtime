@@ -205,7 +205,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_LCL_VAR:
             if (node->TypeGet() == TYP_SIMD12)
             {
-#ifdef _TARGET_64BIT_
                 // Assumption 1:
                 // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
                 // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
@@ -228,10 +227,29 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 // Vector3 return values are returned two return registers and Caller assembles them into a
                 // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
                 // type args in prolog and Vector3 type return value of a call
+                //
+                // RyuJIT x86 Windows: all non-param Vector3 local vars are allocated as 16 bytes. Vector3 arguments
+                // are pushed as 12 bytes. For return values, a 16-byte local is allocated and the address passed
+                // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
+                // it either.
+
+                unsigned   varNum = node->AsLclVarCommon()->GetLclNum();
+                LclVarDsc* varDsc = &comp->lvaTable[varNum];
+
+#if defined(_TARGET_64BIT_)
+                assert(varDsc->lvSize() == 16);
                 node->gtType = TYP_SIMD16;
-#else
-                NYI("Lowering of TYP_SIMD12 locals");
-#endif // _TARGET_64BIT_
+#else  // !_TARGET_64BIT_
+                if (varDsc->lvSize() == 16)
+                {
+                    node->gtType = TYP_SIMD16;
+                }
+                else
+                {
+                    // The following assert is guaranteed by lvSize().
+                    assert(varDsc->lvIsParam);
+                }
+#endif // !_TARGET_64BIT_
             }
 #endif // FEATURE_SIMD
             __fallthrough;
@@ -710,7 +728,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 // Arguments:
 //    call - the call whose arg is being rewritten.
 //    arg  - the arg being rewritten.
-//    info - the ArgTabEntry information for the argument.
+//    info - the fgArgTabEntry information for the argument.
 //    type - the type of the argument.
 //
 // Return Value:
@@ -726,7 +744,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 //    for two eightbyte structs.
 //
 //    For STK passed structs the method generates GT_PUTARG_STK tree. For System V systems with native struct passing
-//    (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined) this method also sets the GP pointers count and the pointers
+//    (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined) this method also sets the GC pointers count and the pointers
 //    layout object, so the codegen of the GT_PUTARG_STK could use this for optimizing copying to the stack by value.
 //    (using block copy primitives for non GC pointers and a single TARGET_POINTER_SIZE copy with recording GC info.)
 //
@@ -946,8 +964,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         // pair copying using XMM registers or rep mov instructions.
         if (info->isStruct)
         {
-            unsigned numRefs  = 0;
-            BYTE*    gcLayout = new (comp, CMK_Codegen) BYTE[info->numSlots];
             // We use GT_OBJ for non-SIMD struct arguments. However, for
             // SIMD arguments the GT_OBJ has already been transformed.
             if (arg->gtOper != GT_OBJ)
@@ -956,11 +972,12 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             }
             else
             {
+                unsigned numRefs  = 0;
+                BYTE*    gcLayout = new (comp, CMK_Codegen) BYTE[info->numSlots];
                 assert(!varTypeIsSIMD(arg));
                 numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
+                putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
             }
-
-            putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
         }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     }
@@ -1037,6 +1054,22 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         // Normalize 'type', it represents the item that we will be storing in the Outgoing Args
         type = TYP_INT;
     }
+
+#if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+    // Non-param TYP_SIMD12 local var nodes are massaged in Lower to TYP_SIMD16 to match their
+    // allocated size (see lvSize()). However, when passing the variables as arguments, and
+    // storing the variables to the outgoing argument area on the stack, we must use their
+    // actual TYP_SIMD12 type, so exactly 12 bytes is allocated and written.
+    if (type == TYP_SIMD16)
+    {
+        if ((arg->OperGet() == GT_LCL_VAR) || (arg->OperGet() == GT_STORE_LCL_VAR))
+        {
+            unsigned   varNum = arg->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* varDsc = &comp->lvaTable[varNum];
+            type              = varDsc->lvType;
+        }
+    }
+#endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
 
     GenTreePtr putArg;
 

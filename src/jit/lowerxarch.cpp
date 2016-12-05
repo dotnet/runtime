@@ -177,6 +177,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_LCL_FLD:
+        case GT_LCL_VAR:
             info->srcCount = 0;
             info->dstCount = 1;
 
@@ -2195,6 +2196,18 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
         return;
     }
 #endif // _TARGET_X86_
+
+#if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+    // For PutArgStk of a TYP_SIMD12, we need an extra register.
+    if (putArgStk->TypeGet() == TYP_SIMD12)
+    {
+        info->srcCount           = putArgStk->gtOp1->gtLsraInfo.dstCount;
+        info->dstCount           = 0;
+        info->internalFloatCount = 1;
+        info->setInternalCandidates(l, l->allSIMDRegs());
+        return;
+    }
+#endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
 
     if (putArgStk->TypeGet() != TYP_STRUCT)
     {
