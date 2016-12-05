@@ -333,6 +333,7 @@ extern "C" __declspec(naked) Object* F_CALL_CONV JIT_ChkCastClassSpecial(MethodT
 }
 #endif // FEATURE_PAL
 
+#ifndef FEATURE_PAL
 HCIMPL1_V(INT32, JIT_Dbl2IntOvf, double val)
 {
     FCALL_CONTRACT;
@@ -348,6 +349,7 @@ THROW:
     FCThrow(kOverflowException);
 }
 HCIMPLEND
+#endif // FEATURE_PAL
 
 
 FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
