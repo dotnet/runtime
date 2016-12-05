@@ -11910,7 +11910,7 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                             //
                             // Save off this breakpoint, so that if the exception gets unwound before we hit
-                            // the breakpoint - the exeception info can call back to remove it.
+                            // the breakpoint - the exception info can call back to remove it.
                             //
                             pExState->GetDebuggerState()->SetDebuggerInterceptContext((void *)pBreakpoint);
 

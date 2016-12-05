@@ -4940,7 +4940,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
 // Currently only ManagedToNativeComInteropStubAttribute is supported.
 // It returns NULL if no such attribute(s) can be found.  
 // But if the attribute is found and is invalid, or something went wrong in the looking up
-// process, a exception will be thrown. If everything goes well, you'll get the MethodDesc
+// process, an exception will be thrown. If everything goes well, you'll get the MethodDesc
 // of the stub method
 HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, MethodDesc **ppRetStubMD)
 {
