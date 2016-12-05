@@ -115,7 +115,7 @@ ICALL(KPAIR_5, "_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersi
 
 ICALL_TYPE(APPDOM, "System.AppDomain", APPDOM_23)
 ICALL(APPDOM_23, "DoUnhandledException", ves_icall_System_AppDomain_DoUnhandledException)
-ICALL(APPDOM_1, "ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly)
+HANDLES(ICALL(APPDOM_1, "ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly))
 HANDLES(ICALL(APPDOM_2, "GetAssemblies", ves_icall_System_AppDomain_GetAssemblies))
 ICALL(APPDOM_3, "GetData", ves_icall_System_AppDomain_GetData)
 ICALL(APPDOM_4, "InternalGetContext", ves_icall_System_AppDomain_InternalGetContext)
@@ -502,27 +502,27 @@ HANDLES(ICALL(ASSEM_1a, "GetAotId", ves_icall_System_Reflection_Assembly_GetAotI
 HANDLES(ICALL(ASSEM_2, "GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly))
 HANDLES(ICALL(ASSEM_3, "GetEntryAssembly", ves_icall_System_Reflection_Assembly_GetEntryAssembly))
 HANDLES(ICALL(ASSEM_4, "GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly))
-ICALL(ASSEM_5, "GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal)
+HANDLES(ICALL(ASSEM_5, "GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal))
 HANDLES(ICALL(ASSEM_6, "GetManifestModuleInternal", ves_icall_System_Reflection_Assembly_GetManifestModuleInternal))
 HANDLES(ICALL(ASSEM_7, "GetManifestResourceInfoInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal))
 HANDLES(ICALL(ASSEM_8, "GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal))
-ICALL(ASSEM_9, "GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames)
+HANDLES(ICALL(ASSEM_9, "GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames))
 HANDLES(ICALL(ASSEM_10, "GetModulesInternal", ves_icall_System_Reflection_Assembly_GetModulesInternal))
 //ICALL(ASSEM_11, "GetNamespaces", ves_icall_System_Reflection_Assembly_GetNamespaces)
 HANDLES(ICALL(ASSEM_13, "GetTypes", ves_icall_System_Reflection_Assembly_GetTypes))
 HANDLES(ICALL(ASSEM_14, "InternalGetAssemblyName", ves_icall_System_Reflection_Assembly_InternalGetAssemblyName))
 HANDLES(ICALL(ASSEM_12, "InternalGetReferencedAssemblies", ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies))
-ICALL(ASSEM_15, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType)
+HANDLES(ICALL(ASSEM_15, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType))
 HANDLES(ICALL(ASSEM_16, "InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion))
 HANDLES(ICALL(ASSEM_17, "LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom))
-ICALL(ASSEM_18, "LoadPermissions", ves_icall_System_Reflection_Assembly_LoadPermissions)
+HANDLES(ICALL(ASSEM_18, "LoadPermissions", ves_icall_System_Reflection_Assembly_LoadPermissions))
 
 	/* normal icalls again */
-ICALL(ASSEM_20, "get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint)
-ICALL(ASSEM_21, "get_ReflectionOnly", ves_icall_System_Reflection_Assembly_get_ReflectionOnly)
-ICALL(ASSEM_22, "get_code_base", ves_icall_System_Reflection_Assembly_get_code_base)
-ICALL(ASSEM_23, "get_fullname", ves_icall_System_Reflection_Assembly_get_fullName)
-ICALL(ASSEM_24, "get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache)
+HANDLES(ICALL(ASSEM_20, "get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint))
+HANDLES(ICALL(ASSEM_21, "get_ReflectionOnly", ves_icall_System_Reflection_Assembly_get_ReflectionOnly))
+HANDLES(ICALL(ASSEM_22, "get_code_base", ves_icall_System_Reflection_Assembly_get_code_base))
+HANDLES(ICALL(ASSEM_23, "get_fullname", ves_icall_System_Reflection_Assembly_get_fullName))
+HANDLES(ICALL(ASSEM_24, "get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache))
 HANDLES(ICALL(ASSEM_25, "get_location", ves_icall_System_Reflection_Assembly_get_location))
 HANDLES(ICALL(ASSEM_26, "load_with_partial_name", ves_icall_System_Reflection_Assembly_load_with_partial_name))
 
@@ -826,7 +826,7 @@ ICALL(RNG_4, "RngOpen", ves_icall_System_Security_Cryptography_RNGCryptoServiceP
 
 #ifndef DISABLE_POLICY_EVIDENCE
 ICALL_TYPE(EVID, "System.Security.Policy.Evidence", EVID_1)
-ICALL(EVID_1, "IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent)
+HANDLES(ICALL(EVID_1, "IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent))
 
 ICALL_TYPE(WINID, "System.Security.Principal.WindowsIdentity", WINID_1)
 ICALL(WINID_1, "GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken)
@@ -1051,7 +1051,7 @@ ICALL(VALUET_2, "InternalGetHashCode", ves_icall_System_ValueType_InternalGetHas
 ICALL_TYPE(WEBIC, "System.Web.Util.ICalls", WEBIC_1)
 ICALL(WEBIC_1, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
 ICALL(WEBIC_2, "GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir)
-ICALL(WEBIC_3, "GetUnmanagedResourcesPtr", ves_icall_get_resources_ptr)
+HANDLES(ICALL(WEBIC_3, "GetUnmanagedResourcesPtr", ves_icall_get_resources_ptr))
 
 #ifndef DISABLE_COM
 ICALL_TYPE(COMOBJ, "System.__ComObject", COMOBJ_1)

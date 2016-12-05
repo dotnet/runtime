@@ -729,6 +729,9 @@ struct _MonoReflectionMethod {
 	MonoReflectionType *reftype;
 };
 
+/* Safely access System.Reflection.MonoMethod from native code */
+TYPED_HANDLE_DECL (MonoReflectionMethod);
+
 typedef struct _MonoReflectionGenericMethod MonoReflectionGenericMethod;
 struct _MonoReflectionGenericMethod {
 	MonoReflectionMethod method;

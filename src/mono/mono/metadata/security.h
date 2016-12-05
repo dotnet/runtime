@@ -13,7 +13,9 @@
 
 #include <glib.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-error.h>
 #include <mono/utils/mono-publib.h>
 
 G_BEGIN_DECLS
@@ -50,7 +52,7 @@ extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_Prote
 
 
 /* System.Security.Policy.Evidence */
-MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass);
+MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssemblyHandle refass, MonoError *error);
 
 /* System.Security.SecureString */
 extern void ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope);

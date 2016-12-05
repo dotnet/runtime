@@ -79,6 +79,9 @@ mono_field_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoClassFi
 MonoReflectionMethod*
 mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
 
+MonoReflectionMethodHandle
+mono_method_get_object_handle (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
+
 MonoReflectionProperty*
 mono_property_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error);
 

@@ -549,14 +549,14 @@ mono_type_get_object_handle (MonoDomain *domain, MonoType *type, MonoError *erro
 MonoReflectionMethod*
 mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
-	MonoReflectionMethod *ret = NULL;
-	ret = mono_method_get_object_checked (domain, method, refclass, &error);
+	MonoReflectionMethodHandle ret = mono_method_get_object_handle (domain, method, refclass, &error);
 	mono_error_cleanup (&error);
-	return ret;
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
 
-static MonoReflectionMethod*
+static MonoReflectionMethodHandle
 method_object_construct (MonoDomain *domain, MonoClass *refclass, MonoMethod *method, gpointer user_data, MonoError *error)
 {
 	mono_error_init (error);
@@ -565,9 +565,7 @@ method_object_construct (MonoDomain *domain, MonoClass *refclass, MonoMethod *me
 	 * We use the same C representation for methods and constructors, but the type 
 	 * name in C# is different.
 	 */
-	MonoReflectionType *rt;
 	MonoClass *klass;
-	MonoReflectionMethod *ret;
 
 	mono_error_init (error);
 
@@ -577,24 +575,40 @@ method_object_construct (MonoDomain *domain, MonoClass *refclass, MonoMethod *me
 	else {
 		klass = mono_class_get_mono_method_class ();
 	}
-	ret = (MonoReflectionMethod*)mono_object_new_checked (domain, klass, error);
+	MonoReflectionMethodHandle ret = MONO_HANDLE_NEW (MonoReflectionMethod, mono_object_new_checked (domain, klass, error));
 	if (!mono_error_ok (error))
 		goto leave;
-	ret->method = method;
+	MONO_HANDLE_SETVAL (ret, method, MonoMethod*, method);
 
-	rt = mono_type_get_object_checked (domain, &refclass->byval_arg, error);
+	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &refclass->byval_arg, error);
 	if (!mono_error_ok (error))
 		goto leave;
 
-	MONO_OBJECT_SETREF (ret, reftype, rt);
-
-	return ret;
+	MONO_HANDLE_SET (ret, reftype, rt);
 
 leave:
-	g_assert (!mono_error_ok (error));
-	return NULL;
+	return ret;
 }
 
+/*
+ * mono_method_get_object_handle:
+ * @domain: an app domain
+ * @method: a method
+ * @refclass: the reflected type (can be NULL)
+ * @error: set on error.
+ *
+ * Return an System.Reflection.MonoMethod object representing the method @method.
+ * Returns NULL and sets @error on error.
+ */
+MonoReflectionMethodHandle
+mono_method_get_object_handle (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error)
+{
+	mono_error_init (error);
+	if (!refclass)
+		refclass = method->klass;
+
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethodHandle, method, refclass, method_object_construct, NULL);
+}
 /*
  * mono_method_get_object_checked:
  * @domain: an app domain
@@ -608,11 +622,10 @@ leave:
 MonoReflectionMethod*
 mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
 	mono_error_init (error);
-	if (!refclass)
-		refclass = method->klass;
-
-	return CHECK_OR_CONSTRUCT (MonoReflectionMethod*, method, refclass, method_object_construct, NULL);
+	MonoReflectionMethodHandle result = mono_method_get_object_handle (domain, method, refclass, error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 /*

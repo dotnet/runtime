@@ -2157,29 +2157,31 @@ ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc)
 }
 
 gint32
-ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, 
-											MonoReflectionAssembly *refass, MonoArray *args)
+ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomainHandle ad,
+					    MonoReflectionAssemblyHandle refass, MonoArrayHandle args,
+					    MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoImage *image;
 	MonoMethod *method;
 
-	g_assert (refass);
-	image = refass->assembly->image;
+	g_assert (!MONO_HANDLE_IS_NULL (refass));
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (refass, assembly);
+	image = assembly->image;
 	g_assert (image);
 
-	method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, NULL, &error);
+	method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, NULL, error);
 
 	if (!method)
-		g_error ("No entry point method found in %s due to %s", image->name, mono_error_get_message (&error));
+		g_error ("No entry point method found in %s due to %s", image->name, mono_error_get_message (error));
 
-	if (!args) {
-		args = (MonoArray *) mono_array_new_checked (ad->data, mono_defaults.string_class, 0, &error);
-		mono_error_assert_ok (&error);
+	if (MONO_HANDLE_IS_NULL (args)) {
+		MonoDomain *domain = MONO_HANDLE_GETVAL (ad, data);
+		MONO_HANDLE_ASSIGN (args , mono_array_new_handle (domain, mono_defaults.string_class, 0, error));
+		mono_error_assert_ok (error);
 	}
 
-	int res = mono_runtime_exec_main_checked (method, (MonoArray *)args, &error);
-	mono_error_set_pending_exception (&error);
+	int res = mono_runtime_exec_main_checked (method, MONO_HANDLE_RAW (args), error);
 	return res;
 }
 

@@ -550,10 +550,14 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString 
  * Note: Neither the structure nor the signature is verified by this function.
  */
 MonoBoolean
-ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass)
+ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssemblyHandle refass, MonoError *error)
 {
-	if (refass && refass->assembly && refass->assembly->image) {
-		return (MonoBoolean)mono_image_has_authenticode_entry (refass->assembly->image);
+	mono_error_init (error);
+	if (MONO_HANDLE_IS_NULL (refass))
+		return FALSE;
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (refass, assembly);
+	if (assembly && assembly->image) {
+		return (MonoBoolean)mono_image_has_authenticode_entry (assembly->image);
 	}
 	return FALSE;
 }

@@ -71,9 +71,10 @@ void
 ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc);
 
 gint32
-ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
-						    MonoReflectionAssembly *refass,
-						    MonoArray     *args);
+ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomainHandle ad,
+						    MonoReflectionAssemblyHandle refass,
+						    MonoArrayHandle args,
+						    MonoError *error);
 
 MonoAppDomain * 
 ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
