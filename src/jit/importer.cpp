@@ -2853,27 +2853,6 @@ GenTreePtr Compiler::impImplicitR4orR8Cast(GenTreePtr tree, var_types dstTyp)
     return tree;
 }
 
-/*****************************************************************************/
-BOOL Compiler::impLocAllocOnStack()
-{
-    if (!compLocallocUsed)
-    {
-        return (FALSE);
-    }
-
-    // Returns true if a GT_LCLHEAP node is encountered in any of the trees
-    // that have been pushed on the importer evaluatuion stack.
-    //
-    for (unsigned i = 0; i < verCurrentState.esStackDepth; i++)
-    {
-        if (fgWalkTreePre(&verCurrentState.esStack[i].val, Compiler::fgChkLocAllocCB) == WALK_ABORT)
-        {
-            return (TRUE);
-        }
-    }
-    return (FALSE);
-}
-
 //------------------------------------------------------------------------
 // impInitializeArrayIntrinsic: Attempts to replace a call to InitializeArray
 //    with a GT_COPYBLK node.
@@ -5372,9 +5351,8 @@ GenTreePtr Compiler::impTransformThis(GenTreePtr              thisPtr,
 // qualifies as an inline pinvoke.
 //
 // Arguments:
-//    callRetTyp - return type of the call
 //    block      - block contaning the call, or for inlinees, block
-//                 contaiing the call being inlined
+//                 containing the call being inlined
 //
 // Return Value:
 //    true if this call qualifies as an inline pinvoke, false otherwise
@@ -5383,9 +5361,9 @@ GenTreePtr Compiler::impTransformThis(GenTreePtr              thisPtr,
 //    Checks basic legality and then a number of ambient conditions
 //    where we could pinvoke but choose not to
 
-bool Compiler::impCanPInvokeInline(var_types callRetTyp, BasicBlock* block)
+bool Compiler::impCanPInvokeInline(BasicBlock* block)
 {
-    return impCanPInvokeInlineCallSite(callRetTyp, block) && getInlinePInvokeEnabled() && (!opts.compDbgCode) &&
+    return impCanPInvokeInlineCallSite(block) && getInlinePInvokeEnabled() && (!opts.compDbgCode) &&
            (compCodeOpt() != SMALL_CODE) && (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
         ;
 }
@@ -5395,59 +5373,58 @@ bool Compiler::impCanPInvokeInline(var_types callRetTyp, BasicBlock* block)
 // from a call to see if the call qualifies as an inline pinvoke.
 //
 // Arguments:
-//    callRetTyp - return type of the call
 //    block      - block contaning the call, or for inlinees, block
-//                 contaiing the call being inlined
+//                 containing the call being inlined
 //
 // Return Value:
 //    true if this call can legally qualify as an inline pinvoke, false otherwise
 //
 // Notes:
-//    Inline PInvoke is not legal in these cases:
-//    * Within handler regions (finally/catch/filter)
-//    * Within trees with localloc
-//    * If the call returns a struct
+//    For runtimes that support exception handling interop there are
+//    restrictions on using inline pinvoke in handler regions.
 //
-//    We have to disable pinvoke inlining inside of filters
-//    because in case the main execution (i.e. in the try block) is inside
-//    unmanaged code, we cannot reuse the inlined stub (we still need the
-//    original state until we are in the catch handler)
+//    * We have to disable pinvoke inlining inside of filters because
+//    in case the main execution (i.e. in the try block) is inside
+//    unmanaged code, we cannot reuse the inlined stub (we still need
+//    the original state until we are in the catch handler)
 //
-//    We disable pinvoke inlining inside handlers since the GSCookie is
-//    in the inlined Frame (see CORINFO_EE_INFO::InlinedCallFrameInfo::offsetOfGSCookie),
-//    but this would not protect framelets/return-address of handlers.
+//    * We disable pinvoke inlining inside handlers since the GSCookie
+//    is in the inlined Frame (see
+//    CORINFO_EE_INFO::InlinedCallFrameInfo::offsetOfGSCookie), but
+//    this would not protect framelets/return-address of handlers.
 //
-//    On x64, we disable pinvoke inlining inside of try regions.
-//    Here is the comment from JIT64 explaining why:
-//
-//      [VSWhidbey: 611015] - because the jitted code links in the
-//      Frame (instead of the stub) we rely on the Frame not being
-//      'active' until inside the stub.  This normally happens by the
-//      stub setting the return address pointer in the Frame object
-//      inside the stub.  On a normal return, the return address
-//      pointer is zeroed out so the Frame can be safely re-used, but
-//      if an exception occurs, nobody zeros out the return address
-//      pointer.  Thus if we re-used the Frame object, it would go
-//      'active' as soon as we link it into the Frame chain.
-//
-//      Technically we only need to disable PInvoke inlining if we're
-//      in a handler or if we're in a try body with a catch or
-//      filter/except where other non-handler code in this method
-//      might run and try to re-use the dirty Frame object.
-//
-//      A desktop test case where this seems to matter is
-//      jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
+//    These restrictions are currently also in place for CoreCLR but
+//    can be relaxed when coreclr/#8459 is addressed.
 
-bool Compiler::impCanPInvokeInlineCallSite(var_types callRetTyp, BasicBlock* block)
+bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 {
-
 #ifdef _TARGET_AMD64_
+    // On x64, we disable pinvoke inlining inside of try regions.
+    // Here is the comment from JIT64 explaining why:
+    //
+    //   [VSWhidbey: 611015] - because the jitted code links in the
+    //   Frame (instead of the stub) we rely on the Frame not being
+    //   'active' until inside the stub.  This normally happens by the
+    //   stub setting the return address pointer in the Frame object
+    //   inside the stub.  On a normal return, the return address
+    //   pointer is zeroed out so the Frame can be safely re-used, but
+    //   if an exception occurs, nobody zeros out the return address
+    //   pointer.  Thus if we re-used the Frame object, it would go
+    //   'active' as soon as we link it into the Frame chain.
+    //
+    //   Technically we only need to disable PInvoke inlining if we're
+    //   in a handler or if we're in a try body with a catch or
+    //   filter/except where other non-handler code in this method
+    //   might run and try to re-use the dirty Frame object.
+    //
+    //   A desktop test case where this seems to matter is
+    //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
     const bool inX64Try = block->hasTryIndex();
 #else
     const bool inX64Try = false;
 #endif // _TARGET_AMD64_
 
-    return !inX64Try && !block->hasHndIndex() && !impLocAllocOnStack() && (callRetTyp != TYP_STRUCT);
+    return !inX64Try && !block->hasHndIndex();
 }
 
 //------------------------------------------------------------------------
@@ -5460,7 +5437,7 @@ bool Compiler::impCanPInvokeInlineCallSite(var_types callRetTyp, BasicBlock* blo
 //    sig        - signature of the method being called
 //    mflags     - method flags for the method being called
 //    block      - block contaning the call, or for inlinees, block
-//                 contaiing the call being inlined
+//                 containing the call being inlined
 //
 // Notes:
 //   Sets GTF_CALL_M_PINVOKE on the call for pinvokes.
@@ -5473,7 +5450,6 @@ bool Compiler::impCanPInvokeInlineCallSite(var_types callRetTyp, BasicBlock* blo
 void Compiler::impCheckForPInvokeCall(
     GenTreePtr call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
 {
-    var_types                callRetTyp = JITtype2varType(sig->retType);
     CorInfoUnmanagedCallConv unmanagedCallConv;
 
     // If VM flagged it as Pinvoke, flag the call node accordingly
@@ -5516,15 +5492,12 @@ void Compiler::impCheckForPInvokeCall(
 
     if (opts.compMustInlinePInvokeCalli && methHnd == nullptr)
     {
-#ifdef _TARGET_X86_
-        // CALLI in IL stubs must be inlined
-        assert(impCanPInvokeInlineCallSite(callRetTyp, block));
-        assert(!info.compCompHnd->pInvokeMarshalingRequired(methHnd, sig));
-#endif // _TARGET_X86_
+        // Always inline pinvoke.
     }
     else
     {
-        if (!impCanPInvokeInline(callRetTyp, block))
+        // Check legality and profitability.
+        if (!impCanPInvokeInline(block))
         {
             return;
         }
