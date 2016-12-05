@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <BuildingForReliabilityFramework>true</BuildingForReliabilityFramework>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AssemblyName>ReliabilityFramework</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
@@ -53,6 +52,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   
   <Target Name="AfterBuild">
-    <MSBuild Projects="@(StressTests)" Properties="OutputPath=$(OutDir)\Tests" />
+    <MSBuild Projects="@(StressTests)" Properties="OutputPath=$(OutDir)\Tests;BuildingForReliabilityFramework=true" />
   </Target>
 </Project>
