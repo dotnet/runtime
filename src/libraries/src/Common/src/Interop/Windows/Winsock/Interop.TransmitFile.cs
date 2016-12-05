@@ -11,17 +11,17 @@ internal static partial class Interop
     internal static partial class Mswsock
     {
         [DllImport(Interop.Libraries.Mswsock, SetLastError = true)]
-        internal static extern bool TransmitFile(
+        internal static extern unsafe bool TransmitFile(
             SafeHandle socket,
             SafeHandle fileHandle,
             int numberOfBytesToWrite,
             int numberOfBytesPerSend,
             SafeHandle overlapped,
-            TransmitFileBuffers buffers,
+            TransmitFileBuffers* buffers,
             TransmitFileOptions flags);
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class TransmitFileBuffers
+        internal struct TransmitFileBuffers
         {
             internal IntPtr Head;
             internal int HeadLength;

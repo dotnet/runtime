@@ -11,7 +11,6 @@ namespace System.Net.Sockets
     {
         private FileStream _fileStream;
         private bool _doDisconnect;
-        private Interop.Mswsock.TransmitFileBuffers _transmitFileBuffers;
 
         internal TransmitFileAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
@@ -23,8 +22,6 @@ namespace System.Net.Sockets
             _fileStream = fileStream;
             _doDisconnect = doDisconnect;
 
-            // Construct TransmitFileBuffers, if necessary
-            _transmitFileBuffers = null;
             int buffsNumber = 0;
 
             if (preBuffer != null && preBuffer.Length > 0)
@@ -36,41 +33,20 @@ namespace System.Net.Sockets
             object[] objectsToPin = null;
             if (buffsNumber != 0)
             {
-                ++buffsNumber;
                 objectsToPin = new object[buffsNumber];
-
-                _transmitFileBuffers = new Interop.Mswsock.TransmitFileBuffers();
-
-                objectsToPin[--buffsNumber] = _transmitFileBuffers;
 
                 if (preBuffer != null && preBuffer.Length > 0)
                 {
-                    _transmitFileBuffers.HeadLength = preBuffer.Length;
                     objectsToPin[--buffsNumber] = preBuffer;
                 }
 
                 if (postBuffer != null && postBuffer.Length > 0)
                 {
-                    _transmitFileBuffers.TailLength = postBuffer.Length;
                     objectsToPin[--buffsNumber] = postBuffer;
                 }
-
-                base.SetUnmanagedStructures(objectsToPin);
-
-                if (preBuffer != null && preBuffer.Length > 0)
-                {
-                    _transmitFileBuffers.Head = Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0);
-                }
-
-                if (postBuffer != null && postBuffer.Length > 0)
-                {
-                    _transmitFileBuffers.Tail = Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0);
-                }
             }
-            else
-            {
-                base.SetUnmanagedStructures(null);
-            }
+
+            base.SetUnmanagedStructures(objectsToPin);
         }
 
         protected override void ForceReleaseUnmanagedStructures()
@@ -83,8 +59,6 @@ namespace System.Net.Sockets
 
             base.ForceReleaseUnmanagedStructures();
         }
-
-        internal Interop.Mswsock.TransmitFileBuffers TransmitFileBuffers => _transmitFileBuffers;
 
         internal bool DoDisconnect => _doDisconnect;
     } 
