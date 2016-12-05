@@ -53,13 +53,15 @@ VOID STDCALL ResumeAtJitEHHelper(EHContext *pContext);
 int STDCALL CallJitEHFilterHelper(size_t *pShadowSP, EHContext *pContext);
 VOID STDCALL CallJitEHFinallyHelper(size_t *pShadowSP, EHContext *pContext);
 
+typedef void (*RtlUnwindCallbackType)(void);
+
 BOOL CallRtlUnwind(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
-           void *callback,
+           RtlUnwindCallbackType callback,
            EXCEPTION_RECORD *pExceptionRecord,
            void *retval);
 
 BOOL CallRtlUnwindSafe(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
-           void *callback,
+           RtlUnwindCallbackType callback,
            EXCEPTION_RECORD *pExceptionRecord,
            void *retval);
 }
@@ -608,7 +610,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(EXCEPTION_REGISTRATION_REC
 // This rethrow issue does not affect COMPLUS exceptions since we always create a brand new exception
 // record for them in RaiseTheExceptionInternalOnly.
 BOOL CallRtlUnwindSafe(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
-           void *callback,
+           RtlUnwindCallbackType callback,
            EXCEPTION_RECORD *pExceptionRecord,
            void *retval)
 {
