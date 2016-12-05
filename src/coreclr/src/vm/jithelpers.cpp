@@ -654,7 +654,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
 HCIMPLEND
 
 
-#if !defined(_TARGET_X86_)
+#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
 
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
@@ -755,7 +755,7 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 }
 HCIMPLEND
 
-#endif // !defined(_TARGET_X86_)
+#endif // !_TARGET_X86_ || FEATURE_PAL
 
 #include <optdefault.h>
 
