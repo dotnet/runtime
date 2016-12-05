@@ -82,7 +82,7 @@ static const char* const negNumberFormats[] = {
 
 static const char posNumberFormat[] = "#";
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
 extern "C" void _cdecl /*__stdcall*/ DoubleToNumber(double value, int precision, NUMBER* number);
 extern "C" void _cdecl /*__stdcall*/ NumberToDouble(NUMBER* number, double* value);
@@ -132,7 +132,7 @@ unsigned int Int64DivMod1E9(unsigned __int64* value)
 
 #pragma warning(default:4035)
 
-#else // !(defined(_TARGET_X86_)
+#else // _TARGET_X86_ && !FEATURE_PAL
 
 #pragma warning(disable:4273)
 extern "C" char* __cdecl _ecvt(double, int, int*, int*);
@@ -607,7 +607,7 @@ unsigned int Int64DivMod1E9(unsigned __int64* value)
 
 
 
-#endif // !(defined(_TARGET_X86_)
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
 #if defined(_MSC_VER) && defined(_TARGET_X86_)
 #pragma optimize("y", on)		// Small critical routines, don't put in EBP frame 
