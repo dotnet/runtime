@@ -10579,7 +10579,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 {
                     // We should check whether op2 should be assigned to a SIMD field or not.
                     // If it is, we should tranlate the tree to simd intrinsic.
-                    assert((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0);
+                    assert(!fgGlobalMorph || ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0));
                     GenTreePtr newTree = fgMorphFieldAssignToSIMDIntrinsicSet(tree);
                     typ                = tree->TypeGet();
                     op1                = tree->gtGetOp1();
