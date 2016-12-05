@@ -35,7 +35,7 @@
 
   <Target Name="Build">
     <PropertyGroup>
-      <ConfigurationPropsFolder>$(CoreFxToolsDir)projectCongifuration</ConfigurationPropsFolder>
+      <ConfigurationPropsFolder>$(CoreFxToolsDir)configuration</ConfigurationPropsFolder>
     </PropertyGroup>
 
     <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(ConfigurationPropsFolder)" />

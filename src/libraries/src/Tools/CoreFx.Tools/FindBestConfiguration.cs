@@ -13,10 +13,10 @@ namespace Microsoft.DotNet.Build.Tasks
     public class FindBestConfiguration : ConfigurationTask
     {
         [Required]
-        public string[] ProjectConfigurations { get; set; }
+        public string BuildConfiguration { get; set; }
 
         [Required]
-        public string BuildConfiguration { get; set; }
+        public string[] BuildConfigurations { get; set; }
 
         public bool DoNotAllowCompatibleValues { get; set; }
 
@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             LoadConfiguration();
 
-            var supportedProjectConfigurations = new HashSet<Configuration>(ProjectConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)));
+            var supportedProjectConfigurations = new HashSet<Configuration>(BuildConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)));
 
             var buildConfiguration = ConfigurationFactory.ParseConfiguration(BuildConfiguration);
 
