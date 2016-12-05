@@ -24,6 +24,8 @@ namespace Microsoft.DotNet.Build.Tasks
 
         private Dictionary<string, PropertyValue> AllPropertyValues { get; }
 
+        public Configuration IdentityConfiguration { get; }
+
         public ConfigurationFactory(ITaskItem[] properties, ITaskItem[] propertyValues)
         {
             Properties = properties.Select(p => new PropertyInfo(p))
@@ -59,6 +61,8 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 property.ConnectDefault(AllPropertyValues);
             }
+
+            IdentityConfiguration = new Configuration(PropertiesByOrder.Select(p => p.IdentityValue).ToArray());
         }
 
         public IEnumerable<PropertyInfo> GetProperties()
@@ -136,6 +140,15 @@ namespace Microsoft.DotNet.Build.Tasks
         public IEnumerable<Configuration> GetAllConfigurations()
         {
             return GetConfigurations(p => GetValues(p));
+        }
+
+        /// <summary>
+        /// Gets all significant combinations in order of precedence
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Configuration> GetSignficantConfigurations()
+        {
+            return GetConfigurations(p => p.Insignificant ? new[] { p.IdentityValue } : GetValues(p));
         }
 
         /// <summary>
