@@ -11,7 +11,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'net45_Debug'" />
   <ItemGroup>
+    <Compile Include="ConfigurationTask.cs" />
     <Compile Include="BuildTask.cs" />
+    <Compile Include="Configuration\Configuration.cs" />
+    <Compile Include="Configuration\ConfigurationFactory.cs" />
+    <Compile Include="Configuration\PropertyValue.cs" />
+    <Compile Include="Configuration\PropertyInfo.cs" />
     <Compile Include="GenerateConfigurationProps.cs" />
     <Compile Include="FindBestConfiguration.cs" />
   </ItemGroup>
