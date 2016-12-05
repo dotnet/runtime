@@ -431,18 +431,6 @@ CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
 #endif // FEATURE_HIJACK
 
 
-// We want to leave true null reference exceptions alone.  But if we are
-// trashing memory, we don't want the application to swallow it.  The 0x100
-// below will give us false positives for debugging, if the app is accessing
-// a field more than 256 bytes down an object, where the reference is null.
-//
-// Removed use of the IgnoreUnmanagedExceptions reg key...simply return false now.
-//
-static inline BOOL
-CPFH_ShouldIgnoreException(EXCEPTION_RECORD *pExceptionRecord) {
-    LIMITED_METHOD_CONTRACT;
-     return FALSE;
-}
 
 static inline void
 CPFH_UpdatePerformanceCounters() {
