@@ -1647,9 +1647,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 // use the prestub.
 //==========================================================================
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#ifdef _TARGET_X86_
 static PCODE g_UMThunkPreStub;
-#endif
+#endif // _TARGET_X86_
 
 #ifndef DACCESS_COMPILE 
 
@@ -1676,9 +1676,9 @@ void InitPreStubManager(void)
         return;
     }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#ifdef _TARGET_X86_
     g_UMThunkPreStub = GenerateUMThunkPrestub()->GetEntryPoint();
-#endif
+#endif // _TARGET_X86_
 
     ThePreStubManager::Init();
 }
@@ -1687,11 +1687,11 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#ifdef _TARGET_X86_
     return g_UMThunkPreStub;
-#else
+#else  // _TARGET_X86_
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
-#endif
+#endif // _TARGET_X86_
 }
 
 PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
