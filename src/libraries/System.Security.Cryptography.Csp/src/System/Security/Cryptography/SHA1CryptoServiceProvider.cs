@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
         public SHA1CryptoServiceProvider()
         {
             _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
+            HashSizeValue = HashSizeBits;
         }
 
         public override void Initialize()
@@ -33,8 +34,7 @@ namespace System.Security.Cryptography
             return _incrementalHash.GetHashAndReset();
         }
 
-        // The Hash property is not overridden since the correct value exists on base.
-        public override int HashSize => HashSizeBits;
+        // The Hash and HashSize properties are not overridden since the correct values are returned from base.
 
         protected sealed override void Dispose(bool disposing)
         {

@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static CallInstruction Create(MethodInfo info)
         {
-            return Create(info, info.GetParameters());
+            return Create(info, info.GetParametersCached());
         }
 
         /// <summary>
@@ -141,19 +141,19 @@ namespace System.Linq.Expressions.Interpreter
                 case 1:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter1");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter1));
                     break;
 
                 case 2:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter2");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter2));
                     break;
 
                 case 3:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter3");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter3));
                     break;
             }
 
@@ -164,7 +164,6 @@ namespace System.Linq.Expressions.Interpreter
 
             return Create(alternativeMethod);
         }
-
 
         public static void ArrayItemSetter1(Array array, int index0, object value)
         {
@@ -268,9 +267,6 @@ namespace System.Linq.Expressions.Interpreter
         /// over enclosed instance lightLambda, return that instance.
         /// We can interpret LightLambdas directly.
         /// </summary>
-        /// <param name="instance"></param>
-        /// <param name="lightLambda"></param>
-        /// <returns></returns>
         protected static bool TryGetLightLambdaTarget(object instance, out LightLambda lightLambda)
         {
             var del = instance as Delegate;

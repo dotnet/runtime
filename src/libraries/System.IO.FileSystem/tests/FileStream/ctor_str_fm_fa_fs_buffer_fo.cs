@@ -29,19 +29,17 @@ namespace System.IO.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(FileOptions.None)]
         [InlineData(FileOptions.DeleteOnClose)]
-        [InlineData(FileOptions.Encrypted)]
         [InlineData(FileOptions.RandomAccess)]
         [InlineData(FileOptions.SequentialScan)]
         [InlineData(FileOptions.WriteThrough)]
         [InlineData((FileOptions)0x20000000)] // FILE_FLAG_NO_BUFFERING on Windows
         [InlineData(FileOptions.Asynchronous)]
         [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose)]
-        [InlineData(FileOptions.Asynchronous | FileOptions.Encrypted)]
         [InlineData(FileOptions.Asynchronous | FileOptions.RandomAccess)]
         [InlineData(FileOptions.Asynchronous | FileOptions.SequentialScan)]
         [InlineData(FileOptions.Asynchronous | FileOptions.WriteThrough)]
         [InlineData(FileOptions.Asynchronous | (FileOptions)0x20000000)]
-        [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose | FileOptions.Encrypted | FileOptions.RandomAccess | FileOptions.SequentialScan | FileOptions.WriteThrough)]
+        [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose | FileOptions.RandomAccess | FileOptions.SequentialScan | FileOptions.WriteThrough)]
         public void ValidFileOptions(FileOptions option)
         {
             byte[] data = new byte[c_DefaultBufferSize];
@@ -64,6 +62,16 @@ namespace System.IO.Tests
                     totalRead += numRead;
                 }
             }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(FileOptions.Encrypted)]
+        [InlineData(FileOptions.Asynchronous | FileOptions.Encrypted)]
+        [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose | FileOptions.Encrypted | FileOptions.RandomAccess | FileOptions.SequentialScan | FileOptions.WriteThrough)]
+        public void ValidFileOptions_Encrypted(FileOptions option)
+        {
+            try { ValidFileOptions(option); }
+            catch (UnauthorizedAccessException) { /* may not be allowed for some users */ }
         }
 
         [Theory]

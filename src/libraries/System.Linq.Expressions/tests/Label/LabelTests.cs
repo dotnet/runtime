@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -65,8 +63,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void AssignableDefaultByQuotingAllowed()
         {
-            var lambda = Expression.Lambda<Func<int>>(Expression.Constant(0));
-            var label = Expression.Label(Expression.Label(typeof(Expression<Func<int>>)), lambda);
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(Expression.Constant(0));
+            LabelExpression label = Expression.Label(Expression.Label(typeof(Expression<Func<int>>)), lambda);
             Assert.Equal(typeof(Expression<Func<int>>), label.Type);
             Assert.Equal(ExpressionType.Quote, label.DefaultValue.NodeType);
             Assert.Same(lambda, ((UnaryExpression)label.DefaultValue).Operand);

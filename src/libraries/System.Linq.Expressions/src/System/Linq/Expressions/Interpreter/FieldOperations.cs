@@ -7,14 +7,25 @@ using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class LoadStaticFieldInstruction : Instruction
+    internal abstract class FieldInstruction : Instruction
     {
-        private readonly FieldInfo _field;
+        protected readonly FieldInfo _field;
 
+        public FieldInstruction(FieldInfo field)
+        {
+            Assert.NotNull(field);
+            _field = field;
+        }
+
+        public override string ToString() => InstructionName + "(" + _field + ")";
+    }
+
+    internal sealed class LoadStaticFieldInstruction : FieldInstruction
+    {
         public LoadStaticFieldInstruction(FieldInfo field)
+            : base(field)
         {
             Debug.Assert(field.IsStatic);
-            _field = field;
         }
 
         public override string InstructionName => "LoadStaticField";
@@ -27,14 +38,11 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal sealed class LoadFieldInstruction : Instruction
+    internal sealed class LoadFieldInstruction : FieldInstruction
     {
-        private readonly FieldInfo _field;
-
         public LoadFieldInstruction(FieldInfo field)
+            : base(field)
         {
-            Assert.NotNull(field);
-            _field = field;
         }
 
         public override string InstructionName => "LoadField";
@@ -51,14 +59,12 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal sealed class StoreFieldInstruction : Instruction
+    internal sealed class StoreFieldInstruction : FieldInstruction
     {
-        private readonly FieldInfo _field;
-
         public StoreFieldInstruction(FieldInfo field)
+            : base(field)
         {
             Assert.NotNull(field);
-            _field = field;
         }
 
         public override string InstructionName => "StoreField";
@@ -76,14 +82,12 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal sealed class StoreStaticFieldInstruction : Instruction
+    internal sealed class StoreStaticFieldInstruction : FieldInstruction
     {
-        private readonly FieldInfo _field;
-
         public StoreStaticFieldInstruction(FieldInfo field)
+            : base(field)
         {
-            Assert.NotNull(field);
-            _field = field;
+            Debug.Assert(field.IsStatic);
         }
 
         public override string InstructionName => "StoreStaticField";

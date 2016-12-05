@@ -66,12 +66,14 @@ namespace System.Dynamic
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             ContractUtils.RequiresNotNull(target, nameof(target));
-            ContractUtils.Requires(args == null || args.Length == 0);
+            ContractUtils.Requires(args == null || args.Length == 0, nameof(args));
 
             return target.BindDeleteMember(this);
         }
 
-        // this is a standard DynamicMetaObjectBinder
+        /// <summary>
+        /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
+        /// </summary>
         internal override sealed bool IsStandardBinder => true;
     }
 }

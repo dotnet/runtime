@@ -5,6 +5,7 @@
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
+#include "opensslshim.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -13,13 +14,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <openssl/asn1.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
 #include <memory>
 
 // See X509NameType.SimpleName
@@ -84,7 +78,11 @@ extern "C" int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int
         return -SHA_DIGEST_LENGTH;
     }
 
-    memcpy_s(pBuf, UnsignedCast(cBuf), x509->sha1_hash, SHA_DIGEST_LENGTH);
+    if (!X509_digest(x509, EVP_sha1(), pBuf, NULL))
+    {
+        return 0;
+    }
+
     return 1;
 }
 

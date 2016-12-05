@@ -46,6 +46,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionArray array)
             {
+                ContractUtils.RequiresNotNull(array, nameof(array));
                 _array = array;
             }
 
@@ -90,6 +91,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionList list)
             {
+                ContractUtils.RequiresNotNull(list, nameof(list));
                 _list = list;
             }
 
@@ -695,7 +697,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         public void EmitSub(Type type, bool @checked)
         {
             if (@checked)
@@ -708,7 +709,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         public void EmitMul(Type type, bool @checked)
         {
             if (@checked)
@@ -840,7 +840,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitNew(ConstructorInfo constructorInfo)
         {
-            EmitNew(constructorInfo, constructorInfo.GetParameters());
+            EmitNew(constructorInfo, constructorInfo.GetParametersCached());
         }
 
         public void EmitNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters)
@@ -850,7 +850,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitByRefNew(ConstructorInfo constructorInfo, ByRefUpdater[] updaters)
         {
-            EmitByRefNew(constructorInfo, constructorInfo.GetParameters(), updaters);
+            EmitByRefNew(constructorInfo, constructorInfo.GetParametersCached(), updaters);
         }
 
         public void EmitByRefNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters, ByRefUpdater[] updaters)
@@ -959,7 +959,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitCall(MethodInfo method)
         {
-            EmitCall(method, method.GetParameters());
+            EmitCall(method, method.GetParametersCached());
         }
 
         public void EmitCall(MethodInfo method, ParameterInfo[] parameters)

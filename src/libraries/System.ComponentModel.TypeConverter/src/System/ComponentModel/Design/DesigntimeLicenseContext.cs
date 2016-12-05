@@ -115,8 +115,7 @@ namespace System.ComponentModel.Design
                         //
                         string fileName;
 
-                        // TODO NESTANDARD2.0: asm.EscapedCodeBase
-                        fileName = GetLocalPath(System.Stub.Assembly_EscapedCodeBase());
+                        fileName = GetLocalPath(asm.EscapedCodeBase);
                         fileName = new FileInfo(fileName).Name;
 
                         Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
@@ -139,8 +138,7 @@ namespace System.ComponentModel.Design
                     Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is not null");
                     string fileName;
 
-                    //TODO NETSTANDARD2.0: resourceAssembly.EscapedCodeBase
-                    fileName = GetLocalPath(System.Stub.Assembly_EscapedCodeBase());
+                    fileName = GetLocalPath(resourceAssembly.EscapedCodeBase);
 
                     fileName = Path.GetFileName(fileName); // we don't want to use FileInfo here... it requests FileIOPermission that we
                     // might now have... see VSWhidbey 527758

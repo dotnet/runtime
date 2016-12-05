@@ -668,29 +668,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
             AggregateType type = typeDst.AsAggregateType();
-            MethodSymbol methCtor;
-            MethodSymbol methInvoke;
-            methCtor = SymbolLoader.PredefinedMembers.FindDelegateConstructor(type.getAggregate(), fReportErrors);
+            MethodSymbol methCtor = SymbolLoader.PredefinedMembers.FindDelegateConstructor(type.getAggregate(), fReportErrors);
             if (methCtor == null)
                 return false;
             // Now, find the invoke function on the delegate.
-            methInvoke = SymbolLoader.LookupInvokeMeth(type.getAggregate());
+            MethodSymbol methInvoke = SymbolLoader.LookupInvokeMeth(type.getAggregate());
             Debug.Assert(methInvoke != null && methInvoke.isInvoke());
             TypeArray @params = GetTypes().SubstTypeArray(methInvoke.Params, type);
             CType typeRet = GetTypes().SubstType(methInvoke.RetType, type);
             // Next, verify that the function has a suitable type for the invoke method.
             MethPropWithInst mpwiWrap;
             MethPropWithInst mpwiAmbig;
-            MethWithInst mwiWrap;
-            MethWithInst mwiAmbig;
 
             if (!BindGrpConversionCore(out mpwiWrap, BindingFlag.BIND_NOPARAMS, grp, ref @params, type, fReportErrors, out mpwiAmbig))
             {
                 return false;
             }
 
-            mwiWrap = new MethWithInst(mpwiWrap);
-            mwiAmbig = new MethWithInst(mpwiAmbig);
+            MethWithInst mwiWrap = new MethWithInst(mpwiWrap);
+            MethWithInst mwiAmbig = new MethWithInst(mpwiAmbig);
 
             bool isExtensionMethod = false;
             // If the method we have bound to is an extension method and we are using it as an extension and not as a static method
@@ -770,8 +766,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!needDest)
                 return true;
 
-            EXPRFUNCPTR funcPtr;
-            funcPtr = ExprFactory.CreateFunctionPointer(grp.flags & EXPRFLAG.EXF_BASECALL, getVoidType(), null, mwiWrap);
+            EXPRFUNCPTR funcPtr = ExprFactory.CreateFunctionPointer(grp.flags & EXPRFLAG.EXF_BASECALL, getVoidType(), null, mwiWrap);
             if (!mwiWrap.Meth().isStatic || isExtensionMethod)
             {
                 if (mwiWrap.Meth().getClass().isPredefAgg(PredefinedType.PT_G_OPTIONAL))
@@ -961,7 +956,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (typeSrcBase.IsTypeParameterType())
             {
                 AggregateType atsBase = typeSrcBase.AsTypeParameterType().GetEffectiveBaseClass();
-                if (atsBase != null && atsBase.getAggregate().HasConversion(this.GetSymbolLoader()))
+                if (atsBase != null && atsBase.getAggregate().HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = atsBase;
                 }
@@ -973,7 +968,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // nullable of it) as its from-type.
                 fImplicitOrExactSrc = true;
             }
-            else if (typeSrcBase.IsAggregateType() && typeSrcBase.getAggregate().HasConversion(this.GetSymbolLoader()))
+            else if (typeSrcBase.IsAggregateType() && typeSrcBase.getAggregate().HasConversion(GetSymbolLoader()))
             {
                 rgats[cats++] = typeSrcBase.AsAggregateType();
                 fIntPtrOverride2 = typeSrcBase.isPredefType(PredefinedType.PT_INTPTR) || typeSrcBase.isPredefType(PredefinedType.PT_UINTPTR);
@@ -986,14 +981,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // an explicit conversion exists from typeSrc to typeDst. An implicit is no better
                 // than an explicit.
                 AggregateType atsBase;
-                if (!fImplicitOnly && (atsBase = typeDstBase.AsTypeParameterType().GetEffectiveBaseClass()).getAggregate().HasConversion(this.GetSymbolLoader()))
+                if (!fImplicitOnly && (atsBase = typeDstBase.AsTypeParameterType().GetEffectiveBaseClass()).getAggregate().HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = atsBase;
                 }
             }
             else if (typeDstBase.IsAggregateType())
             {
-                if (typeDstBase.getAggregate().HasConversion(this.GetSymbolLoader()))
+                if (typeDstBase.getAggregate().HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = typeDstBase.AsAggregateType();
                 }
@@ -1026,7 +1021,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // In the first pass if we find types that are non-comparable, keep one of the types and keep going.
             for (int iats = 0; iats < cats; iats++)
             {
-                for (AggregateType atsCur = rgats[iats]; atsCur != null && atsCur.getAggregate().HasConversion(this.GetSymbolLoader()); atsCur = atsCur.GetBaseClass())
+                for (AggregateType atsCur = rgats[iats]; atsCur != null && atsCur.getAggregate().HasConversion(GetSymbolLoader()); atsCur = atsCur.GetBaseClass())
                 {
                     AggregateSymbol aggCur = atsCur.getAggregate();
 
@@ -1391,12 +1386,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private EXPR HandleAmbiguity(EXPR exprSrc, CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
         {
-            EXPR pexprDst;
             Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
             Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count);
             ErrorContext.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].mwt, prguci[iuciBestDst].mwt, typeSrc, typeDst);
             EXPRCLASS exprClass = ExprFactory.MakeClass(typeDst);
-            pexprDst = ExprFactory.CreateCast(0, exprClass, exprSrc);
+            EXPR pexprDst = ExprFactory.CreateCast(0, exprClass, exprSrc);
             pexprDst.SetError();
             return pexprDst;
         }

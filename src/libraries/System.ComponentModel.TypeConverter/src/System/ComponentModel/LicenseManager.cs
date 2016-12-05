@@ -303,16 +303,7 @@ namespace System.ComponentModel
                 // NOTE : Must look directly at the class, we want no inheritance.
                 //
 
-                //TODO NETSTANDARD2.0
-                // original:                 LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
-
-                IEnumerator attributes = CustomAttributeExtensions.GetCustomAttributes<LicenseProviderAttribute>(type, false).GetEnumerator();
-                LicenseProviderAttribute attr = null;
-                if (attributes.MoveNext())
-                    attr = (LicenseProviderAttribute)attributes.Current;
-
-                // END_TODO NETSTANDARD2.0
-
+                LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
 
                 if (attr != null)
                 {

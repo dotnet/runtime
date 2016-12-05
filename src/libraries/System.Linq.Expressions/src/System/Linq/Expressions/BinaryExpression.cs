@@ -231,7 +231,7 @@ namespace System.Linq.Expressions
 
                 return Expression.Block(
                     new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
-                    e1, e2, e3, e4
+                    new TrueReadOnlyCollection<Expression>(e1, e2, e3, e4)
                 );
             }
         }
@@ -422,30 +422,34 @@ namespace System.Linq.Expressions
 
             return Block(
                 new TrueReadOnlyCollection<ParameterExpression>(left),
-                Assign(left, Left),
-                Condition(
-                    Property(left, "HasValue"),
+                new TrueReadOnlyCollection<Expression>(
+                    Assign(left, Left),
                     Condition(
-                        Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
-                        left,
-                        Block(
-                            new TrueReadOnlyCollection<ParameterExpression>(right),
-                            Assign(right, Right),
-                            Condition(
-                                Property(right, "HasValue"),
-                                Convert(
-                                    Call(
-                                        Method,
-                                        Call(left, "GetValueOrDefault", null),
-                                        Call(right, "GetValueOrDefault", null)
-                                    ),
-                                    Type
-                                ),
-                                Constant(null, Type)
+                        Property(left, "HasValue"),
+                        Condition(
+                            Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
+                            left,
+                            Block(
+                                new TrueReadOnlyCollection<ParameterExpression>(right),
+                                new TrueReadOnlyCollection<Expression>(
+                                    Assign(right, Right),
+                                    Condition(
+                                        Property(right, "HasValue"),
+                                        Convert(
+                                            Call(
+                                                Method,
+                                                Call(left, "GetValueOrDefault", null),
+                                                Call(right, "GetValueOrDefault", null)
+                                            ),
+                                            Type
+                                        ),
+                                        Constant(null, Type)
+                                    )
+                                )
                             )
-                        )
-                    ),
-                    Constant(null, Type)
+                        ),
+                        Constant(null, Type)
+                    )
                 )
             );
         }
@@ -467,16 +471,40 @@ namespace System.Linq.Expressions
     }
 
     // Optimized assignment node, only holds onto children
-    internal sealed class AssignBinaryExpression : BinaryExpression
+    internal class AssignBinaryExpression : BinaryExpression
     {
         internal AssignBinaryExpression(Expression left, Expression right)
             : base(left, right)
         {
         }
 
+        public static AssignBinaryExpression Make(Expression left, Expression right, bool byRef)
+        {
+            if (byRef)
+            {
+                return new ByRefAssignBinaryExpression(left, right);
+            }
+            else
+            {
+                return new AssignBinaryExpression(left, right);
+            }
+        }
+
+        internal virtual bool IsByRef => false;
+
         public sealed override Type Type => Left.Type;
 
         public sealed override ExpressionType NodeType => ExpressionType.Assign;
+    }
+
+    internal class ByRefAssignBinaryExpression : AssignBinaryExpression
+    {
+        internal ByRefAssignBinaryExpression(Expression left, Expression right)
+            : base(left, right)
+        {
+        }
+
+        internal override bool IsByRef => true;
     }
 
     // Coalesce with conversion
@@ -1407,7 +1435,7 @@ namespace System.Linq.Expressions
                 throw Error.UserDefinedOperatorMustNotBeVoid(conversion, nameof(conversion));
             }
             ParameterInfo[] pms = method.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1559,7 +1587,7 @@ namespace System.Linq.Expressions
             Debug.Assert(typeof(System.MulticastDelegate).IsAssignableFrom(delegateType) && delegateType != typeof(System.MulticastDelegate));
             MethodInfo mi = delegateType.GetMethod("Invoke");
             ParameterInfo[] pms = mi.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1568,13 +1596,11 @@ namespace System.Linq.Expressions
             {
                 throw Error.OperandTypesDoNotMatchParameters(nodeType, conversion.ToString());
             }
-            if (method != null)
+            Debug.Assert(method != null);
+            // The parameter type of conversion lambda must be the same as the return type of the overload method
+            if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
             {
-                // The parameter type of conversion lambda must be the same as the return type of the overload method
-                if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
-                {
-                    throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
-                }
+                throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
             }
         }
 

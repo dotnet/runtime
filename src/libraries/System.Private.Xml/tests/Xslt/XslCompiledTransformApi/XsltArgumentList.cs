@@ -653,9 +653,11 @@ namespace System.Xml.Tests
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -751,9 +753,11 @@ namespace System.Xml.Tests
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectLongNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectLongNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -872,9 +876,11 @@ namespace System.Xml.Tests
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -965,9 +971,11 @@ namespace System.Xml.Tests
                 }
             }
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1571,20 +1579,27 @@ namespace System.Xml.Tests
         [Theory]
         public void AddExtObject32()
         {
+            string expected1 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: first</out>";
+            string expected2 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: second</out>";
+
             if (LoadXSL("test_Param.xsl") == 1)
             {
                 m_xsltArg = new XsltArgumentList();
                 m_xsltArg.AddParam("myParam1", szEmpty, "first");
 
                 // Transform once
-                if ((Transform_ArgList("foo.xml") == 1) && (CheckResult(383.6292620645) == 1))
+                if (Transform_ArgList("foo.xml") == 1)
                 {
+                    VerifyResult(expected1);
                     m_xsltArg = new XsltArgumentList();
                     m_xsltArg.AddParam("myParam1", szEmpty, "second");
 
                     // Transform again to make sure that parameter from first transform are not cached
-                    if ((Transform_ArgList("foo.xml") == 1) && (CheckResult(384.9801823644) == 1))
+                    if (Transform_ArgList("foo.xml") == 1)
+                    {
+                        VerifyResult(expected2);
                         return;
+                    }
                 }
             }
             Assert.True(false);
@@ -2009,14 +2024,21 @@ namespace System.Xml.Tests
         [Theory]
         public void AddExtObject10()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+
+		Test1
+		Test2: 0</result>";
+
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
             ///nonePermSet.PermitOnly(); ;
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_Null.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(424.8906559839) == 1 || CheckResult(425.0247531107) == 1 /* for writer */))
+            if ((LoadXSL("MyObject_Null.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2192,14 +2214,20 @@ namespace System.Xml.Tests
         [Theory]
         public void AddExtObject17()
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		Here:End
+		</result>";
+
             MyObject obj = new MyObject(17, _output);
             m_xsltArg = new XsltArgumentList();
             ///nonePermSet.PermitOnly(); ;
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_ConsoleWrite.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(421.8660259804) == 1 || CheckResult(421.8527116762) == 1 /* for writer */))
+            if ((LoadXSL("MyObject_ConsoleWrite.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -2360,7 +2388,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Deliberately Messing Up the Stylesheet", Param = "MyObject_KillerStrings.txt")]
-        [ActiveIssue(9877)]
         [InlineData("MyObject_KillerStrings.txt")]
         [Theory]
         public void AddExtObject28(object param)
@@ -2457,7 +2484,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
-        [PlatformSpecific(TestPlatforms.Windows)] // Non Windows is not supported yet
         [InlineData("sort.xsl", "sort.txt")]
         [Theory]
         public void AddExtObject33_ActiveIssue9997(object param0, object param1)
