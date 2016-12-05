@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GenerateProps", "GeneratePr
 	ProjectSection(SolutionItems) = preProject
 		GenerateProps\GenerateProps.proj = GenerateProps\GenerateProps.proj
 		GenerateProps\osgroups.props = GenerateProps\osgroups.props
+		GenerateProps\properties.props = GenerateProps\properties.props
 		GenerateProps\targetgroups.props = GenerateProps\targetgroups.props
 	EndProjectSection
 EndProject
