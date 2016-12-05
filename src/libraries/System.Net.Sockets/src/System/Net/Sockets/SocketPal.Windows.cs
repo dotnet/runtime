@@ -207,24 +207,8 @@ namespace System.Net.Sockets
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
             {
-                Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = null;
-                if (preBuffer != null || postBuffer != null)
-                {
-                    transmitFileBuffers = new Interop.Mswsock.TransmitFileBuffers();
-                    transmitFileBuffers.Head = (IntPtr)prePinnedBuffer;
-                    transmitFileBuffers.HeadLength = (preBuffer != null ? preBuffer.Length : 0);
-                    transmitFileBuffers.Tail = (IntPtr)postPinnedBuffer;
-                    transmitFileBuffers.TailLength = (postBuffer != null ? postBuffer.Length : 0);
-                }
-
-                bool success = Interop.Mswsock.TransmitFile(handle, fileHandle, 0, 0, SafeNativeOverlapped.Zero, transmitFileBuffers, flags);
-                if (!success)
-                {
-                    return GetLastSocketError();
-                }
+                return TransmitFileHelper(handle, fileHandle, SafeNativeOverlapped.Zero, preBuffer, postBuffer, flags);
             }
-
-            return SocketError.Success;
         }
 
         public static unsafe SocketError SendTo(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
@@ -811,18 +795,44 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
+        // This assumes preBuffer/postBuffer are pinned already 
+
+        private static unsafe SocketError TransmitFileHelper(
+            SafeHandle socket, 
+            SafeHandle fileHandle,
+            SafeHandle overlapped,
+            byte[] preBuffer,
+            byte[] postBuffer,
+            TransmitFileOptions flags)
+        {
+            bool needTransmitFileBuffers = false;
+            Interop.Mswsock.TransmitFileBuffers transmitFileBuffers;
+
+            if (preBuffer != null && preBuffer.Length > 0)
+            {
+                needTransmitFileBuffers = true;
+                transmitFileBuffers.Head = Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0);
+                transmitFileBuffers.HeadLength = preBuffer.Length;
+            }
+
+            if (postBuffer != null && postBuffer.Length > 0)
+            {
+                needTransmitFileBuffers = true;
+                transmitFileBuffers.Tail = Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0);
+                transmitFileBuffers.TailLength = postBuffer.Length;
+            }
+
+            bool success = Interop.Mswsock.TransmitFile(socket, fileHandle, 0, 0, overlapped,
+                needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
+
+            return success ? SocketError.Success : GetLastSocketError();
+        }
+
         public static unsafe SocketError SendFileAsync(SafeCloseSocket handle, FileStream fileStream, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
 
-            SocketError errorCode = SocketError.Success;
-            bool result;
-            result = Interop.Mswsock.TransmitFile(handle, fileStream?.SafeFileHandle, 0, 0, asyncResult.OverlappedHandle, asyncResult.TransmitFileBuffers, flags);
-
-            if (!result)
-            {
-                errorCode = GetLastSocketError();
-            }
+            SocketError errorCode = TransmitFileHelper(handle, fileStream?.SafeFileHandle, asyncResult.OverlappedHandle, preBuffer, postBuffer, flags);
 
             // This will release resources if necessary
             errorCode = asyncResult.CheckAsyncCallOverlappedResult(errorCode);
