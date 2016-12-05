@@ -8,7 +8,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -28,7 +28,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -44,7 +44,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -62,7 +62,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -80,7 +80,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -98,7 +98,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -116,7 +116,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -134,7 +134,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -152,7 +152,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -170,7 +170,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -188,7 +188,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -206,7 +206,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -225,7 +225,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -243,7 +243,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -266,7 +266,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "af503aa3-9d06-44b6-a549-d063a544a5c5",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -283,7 +283,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
-        "versionSpec": "*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -305,7 +305,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {}
@@ -318,7 +318,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -337,7 +337,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -345,6 +345,33 @@
         "arguments": "",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Report / Clean agent",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
+        "platform": "",
+        "configuration": "",
+        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x86",
+        "msbuildLocation": ""
       }
     }
   ],
@@ -440,6 +467,9 @@
     },
     "Build.Clean": {
       "value": "all"
+    },
+    "CleanAgent": {
+      "value": "false"
     }
   },
   "demands": [
