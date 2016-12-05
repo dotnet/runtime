@@ -20,19 +20,41 @@ namespace Microsoft.DotNet.Build.Tasks
     {
         private string defaultValue;
         public PropertyValue DefaultValue { get; private set; }
-        
+
+        public PropertyValue IdentityValue { get; }
+
         public string Name { get; }
 
         public int Order { get; }
 
         public int Precedence { get; }
 
+        public bool Insignificant { get; }
+
+        public bool Ignored { get; }
+
         public PropertyInfo(ITaskItem propertyItem)
         {
             Name = propertyItem.ItemSpec;
             defaultValue = propertyItem.GetMetadata(nameof(DefaultValue));
-            Precedence = ParseIntMetadata(propertyItem, nameof(Precedence));
-            Order = ParseIntMetadata(propertyItem, nameof(Order)); ;
+            Order = ParseIntMetadata(propertyItem, nameof(Order));
+
+            Precedence = int.MaxValue;
+            var precedence = propertyItem.GetMetadata(nameof(Precedence));
+            if (precedence.Equals(nameof(Ignored), StringComparison.OrdinalIgnoreCase))
+            {
+                Ignored = Insignificant = true;
+            }
+            else if (precedence.Equals(nameof(Insignificant), StringComparison.OrdinalIgnoreCase))
+            {
+                Insignificant = true;
+            }
+            else
+            {
+                Precedence = ParseIntMetadata(propertyItem, nameof(Precedence));
+            }
+
+            IdentityValue = new PropertyValue($"$({Name})", this);
         }
 
         private static int ParseIntMetadata(ITaskItem item, string name)

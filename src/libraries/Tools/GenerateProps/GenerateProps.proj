@@ -22,8 +22,8 @@
     
     <FindBestConfiguration Properties="@(Property)" 
                            PropertyValues="@(PropertyValue)" 
-                           ProjectConfigurations="$(ProjectConfigurations)"
-                           BuildConfiguration="netcoreapp1.1-Windows_NT">
+                           BuildConfigurations="$(ProjectConfigurations)"
+                           BuildConfiguration="netcoreapp1.1-Windows_NT-Debug-x64">
       <Output TaskParameter="BestConfiguration" ItemName="ProjectConfiguration" />
     </FindBestConfiguration>
   </Target>
