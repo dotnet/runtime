@@ -307,11 +307,18 @@
             "#import": [ "ubuntu", "debian-x64" ]
         },
 
+        "ubuntu-arm": {
+            "#import": [ "ubuntu", "debian-arm" ]
+        },
+
         "ubuntu.14.04": {
             "#import": [ "ubuntu" ]
         },
         "ubuntu.14.04-x64": {
             "#import": [ "ubuntu.14.04", "ubuntu-x64" ]
+        },
+        "ubuntu.14.04-arm": {
+            "#import": [ "ubuntu.14.04", "ubuntu-arm" ]
         },
 
         "ubuntu.14.10": {
@@ -320,12 +327,18 @@
         "ubuntu.14.10-x64": {
             "#import": [ "ubuntu.14.10", "ubuntu-x64" ]
         },
+        "ubuntu.14.10-arm": {
+            "#import": [ "ubuntu.14.10", "ubuntu-arm" ]
+        },
 
         "ubuntu.15.04": {
             "#import": [ "ubuntu" ]
         },
         "ubuntu.15.04-x64": {
             "#import": [ "ubuntu.15.04", "ubuntu-x64" ]
+        },
+        "ubuntu.15.04-arm": {
+            "#import": [ "ubuntu.15.04", "ubuntu-arm" ]
         },
 
         "ubuntu.15.10": {
@@ -334,6 +347,9 @@
         "ubuntu.15.10-x64": {
             "#import": [ "ubuntu.15.10", "ubuntu-x64" ]
         },
+        "ubuntu.15.10-arm": {
+            "#import": [ "ubuntu.15.10", "ubuntu-arm" ]
+        },
 
         "ubuntu.16.04": {
             "#import": [ "ubuntu" ]
@@ -341,12 +357,18 @@
         "ubuntu.16.04-x64": {
             "#import": [ "ubuntu.16.04", "ubuntu-x64" ]
         },
+        "ubuntu.16.04-arm": {
+            "#import": [ "ubuntu.16.04", "ubuntu-arm" ]
+        },
 
         "ubuntu.16.10": {
             "#import": [ "ubuntu" ]
         },
         "ubuntu.16.10-x64": {
             "#import": [ "ubuntu.16.10", "ubuntu-x64" ]
+        },
+        "ubuntu.16.10-arm": {
+            "#import": [ "ubuntu.16.10", "ubuntu-arm" ]
         },
 
         "linuxmint.17": {
