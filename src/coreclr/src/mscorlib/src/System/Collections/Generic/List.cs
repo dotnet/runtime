@@ -91,14 +91,7 @@ namespace System.Collections.Generic {
             else {                
                 _size = 0;
                 _items = _emptyArray;
-                // This enumerable could be empty.  Let Add allocate a new array, if needed.
-                // Note it will also go to _defaultCapacity first, not 1, then 2, etc.
-                
-                using(IEnumerator<T> en = collection.GetEnumerator()) {
-                    while(en.MoveNext()) {
-                        Add(en.Current);                                    
-                    }
-                }
+                AddEnumerable(collection);
             }
         }
         
@@ -393,7 +386,7 @@ namespace System.Collections.Generic {
         }
 
         // Ensures that the capacity of this list is at least the given minimum
-        // value. If the currect capacity of the list is less than min, the
+        // value. If the current capacity of the list is less than min, the
         // capacity is increased to twice the current capacity or to min,
         // whichever is larger.
         private void EnsureCapacity(int min) {
@@ -724,12 +717,18 @@ namespace System.Collections.Generic {
                     _size += count;
                 }                
             }
-            else {
+            else if (index < _size) {
+                // We're inserting a lazy enumerable. Call Insert on each of the constituent items.
                 using(IEnumerator<T> en = collection.GetEnumerator()) {
                     while(en.MoveNext()) {
                         Insert(index++, en.Current);                                    
                     }                
                 }
+            }
+            else
+            {
+                // We're adding a lazy enumerable because the index is at the end of this list.
+                AddEnumerable(collection);
             }
             _version++;            
         }
@@ -989,12 +988,10 @@ namespace System.Collections.Generic {
             Contract.Ensures(Contract.Result<T[]>() != null);
             Contract.Ensures(Contract.Result<T[]>().Length == Count);
 
-#if FEATURE_CORECLR
             if (_size == 0)
             {
                 return _emptyArray;
             }
-#endif
 
             T[] array = new T[_size];
             Array.Copy(_items, 0, array, 0, _size);
@@ -1029,6 +1026,31 @@ namespace System.Collections.Generic {
                 }
             }
             return true;
+        }
+
+        private void AddEnumerable(IEnumerable<T> enumerable)
+        {
+            Contract.Assert(enumerable != null);
+            Contract.Assert(!(enumerable is ICollection<T>), "We should have optimized for this beforehand.");
+
+            using (IEnumerator<T> en = enumerable.GetEnumerator())
+            {
+                _version++; // Even if the enumerable has no items, we can update _version.
+
+                while (en.MoveNext())
+                {
+                    // Capture Current before doing anything else. If this throws
+                    // an exception, we want to make a clean break.
+                    T current = en.Current;
+
+                    if (_size == _items.Length)
+                    {
+                        EnsureCapacity(_size + 1);
+                    }
+
+                    _items[_size++] = current;
+                }
+            }
         }
 
         [Serializable]
