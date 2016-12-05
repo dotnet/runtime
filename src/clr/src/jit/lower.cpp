@@ -2963,7 +2963,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
 
     // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets thi
-    // happens after every PInvoke call in non-stubs.
+    // happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
@@ -2972,6 +2972,18 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         tree = CreateFrameLinkUpdate(PopFrame);
         BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     }
+#else
+    const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
+
+    GenTreeLclFld* const storeCallSiteTracker =
+        new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
+                                                   callFrameInfo.offsetOfReturnAddress);
+
+    GenTreeIntCon* const constantZero = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
+
+    storeCallSiteTracker->gtOp1 = constantZero;
+
+    BlockRange().InsertBefore(insertionPoint, constantZero, storeCallSiteTracker);
 #endif // _TARGET_64BIT_
 }
 
