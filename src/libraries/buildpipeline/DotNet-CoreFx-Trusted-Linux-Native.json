@@ -568,7 +568,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corefx/Tools/dotnetcli/dotnet.exe",
+        "filename": "$(Build.SourcesDirectory)/corefx/Tools/dotnetcli/dotnet",
         "arguments": "$(Build.SourcesDirectory)/corefx/Tools/msbuild.exe $(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
         "workingFolder": "",
         "failOnStandardError": "false"
