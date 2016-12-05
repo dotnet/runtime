@@ -1686,9 +1686,7 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	
 	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
 
-	MONO_ENTER_GC_SAFE;
 	ret=mono_join_uninterrupted (handle, ms, &error);
-	MONO_EXIT_GC_SAFE;
 
 	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
 
