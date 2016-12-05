@@ -808,6 +808,7 @@ function finish_remaining_tests {
 
 function prep_test {
     local scriptFilePath=$1
+    local scriptFileDir=$(dirname "$scriptFilePath")
 
     test "$verbose" == 1 && echo "Preparing $scriptFilePath"
 
@@ -820,8 +821,8 @@ function prep_test {
     chmod +x "$scriptFilePath"
 
     #remove any NI and Locks
-    rm -f *.ni.*
-    rm -rf lock
+    rm -f $scriptFileDir/*.ni.*
+    rm -rf $scriptFileDir/lock
 }
 
 function start_test {
