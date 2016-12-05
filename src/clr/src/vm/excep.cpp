@@ -12197,7 +12197,7 @@ done:
 // CE can be caught in the VM and later reraised again. Examples of such scenarios
 // include AD transition, COM interop, Reflection invocation, to name a few.
 // In such cases, we want to mark the corruption severity for reuse upon reraise,
-// implying that when the VM does a reraise of such a exception, we should use
+// implying that when the VM does a reraise of such an exception, we should use
 // the original corruption severity for the new raised exception, instead of creating
 // a new one for it.
 /* static */

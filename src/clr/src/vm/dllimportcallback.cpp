@@ -1372,7 +1372,7 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
 #ifndef CROSSGEN_COMPILE
 //----------------------------------------------------------
 // This initializer finishes the init started by LoadTimeInit.
-// It does stub creation and can throw a exception.
+// It does stub creation and can throw an exception.
 //
 // It can safely be called multiple times and by concurrent
 // threads.
