@@ -143,20 +143,20 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *
 						  mono_process_info->domain ? mono_string_chars (mono_process_info->domain) : NULL,
 						  (const gunichar2 *)mono_process_info->password,
 						  logon_flags,
-						  shell_path,
+						  NULL,
 						  cmd ? mono_string_chars (cmd) : NULL,
 						  creation_flags,
-						  (gchar*) env_vars, dir, start_info, process_info);
+						  env_vars, dir, start_info, process_info);
 
 	} else {
 
-		result = CreateProcess (shell_path,
+		result = CreateProcessW (NULL,
 					cmd ? mono_string_chars (cmd): NULL,
 					NULL,
 					NULL,
 					TRUE,
 					creation_flags,
-					(gchar*) env_vars,
+					env_vars,
 					dir,
 					start_info,
 					process_info);
@@ -297,20 +297,20 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 
 			len += mono_string_length (var) * sizeof (gunichar2);
 
-			/* it's null-separated and null-terminated */
+			/* null-separated */
 			len += sizeof (gunichar2);
 		}
+		/* null-terminated */
+		len += sizeof (gunichar2);
 
-		env_vars = ptr = g_new (gunichar2, len);
+		env_vars = ptr = g_new0 (gunichar2, len);
 
 		for (i = 0; i < mono_array_length (process_info->env_variables); i++) {
 			var = mono_array_get (process_info->env_variables, MonoString*, i);
 
 			memcpy (ptr, mono_string_chars (var), mono_string_length (var) * sizeof (gunichar2));
-			ptr += mono_string_length (key);
-
-			memset (ptr, 0, sizeof (gunichar2));
-			ptr += 1;
+			ptr += mono_string_length (var);
+			ptr += 1; // Skip over the null-separator
 		}
 	}
 	
@@ -322,7 +322,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	else
 		dir = mono_string_chars (proc_start_info->working_directory);
 
-	ret = mono_process_create_process (process_info, NULL, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	ret = mono_process_create_process (process_info, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
 
 	g_free (env_vars);
 
