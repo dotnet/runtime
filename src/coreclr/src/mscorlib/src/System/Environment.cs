@@ -32,17 +32,16 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     [ComVisible(true)]
-    public enum EnvironmentVariableTarget {
+    public enum EnvironmentVariableTarget
+    {
         Process = 0,
-#if FEATURE_WIN32_REGISTRY            
         User = 1,
         Machine = 2,
-#endif        
     }
 
     [ComVisible(true)]
-    public static class Environment {
-
+    public static partial class Environment
+    {
         // Assume the following constants include the terminating '\0' - use <, not <=
         const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value
         // System environment variables are stored in the registry, and have 
@@ -617,119 +616,24 @@ namespace System {
         }
 #endif
 
-        /*============================GetEnvironmentVariable============================
-        **Action:
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ==============================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static String GetEnvironmentVariable(String variable)
-        {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-            Contract.EndContractBlock();
-
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode()) {
-                // Environment variable accessors are not approved modern API.
-                // Behave as if the variable was not found in this case.
-                return null; 
-            }
-
-#if !FEATURE_CORECLR
-            (new EnvironmentPermission(EnvironmentPermissionAccess.Read, variable)).Demand();
-#endif //!FEATURE_CORECLR
-            
-            StringBuilder blob = StringBuilderCache.Acquire(128); // A somewhat reasonable default size
-            int requiredSize = Win32Native.GetEnvironmentVariable(variable, blob, blob.Capacity);
-
-            if (requiredSize == 0) {  //  GetEnvironmentVariable failed
-                if (Marshal.GetLastWin32Error() == Win32Native.ERROR_ENVVAR_NOT_FOUND) {
-                    StringBuilderCache.Release(blob);
-                    return null;
-                }
-            }
-
-            while (requiredSize > blob.Capacity) { // need to retry since the environment variable might be changed 
-                blob.Capacity = requiredSize;
-                blob.Length = 0;
-                requiredSize = Win32Native.GetEnvironmentVariable(variable, blob, blob.Capacity);
-            }
-            return StringBuilderCache.GetStringAndRelease(blob);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static string GetEnvironmentVariable( string variable, EnvironmentVariableTarget target)                
-        {
-            if (variable == null)
-            {
-                throw new ArgumentNullException(nameof(variable));
-            }
-            Contract.EndContractBlock();
-
-            if (target == EnvironmentVariableTarget.Process)
-            {
-                return GetEnvironmentVariable(variable);
-            }
-
-#if FEATURE_WIN32_REGISTRY
-            (new EnvironmentPermission(PermissionState.Unrestricted)).Demand();
-
-            if( target == EnvironmentVariableTarget.Machine) {
-                using (RegistryKey environmentKey = 
-                       Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", false)) {
-
-                   Contract.Assert(environmentKey != null, @"HKLM\System\CurrentControlSet\Control\Session Manager\Environment is missing!");
-                   if (environmentKey == null) {
-                       return null; 
-                   }
-
-                   string value = environmentKey.GetValue(variable) as string;
-                   return value;
-                }
-            }
-            else if( target == EnvironmentVariableTarget.User) {
-                using (RegistryKey environmentKey = 
-                       Registry.CurrentUser.OpenSubKey("Environment", false)) {
-
-                   Contract.Assert(environmentKey != null, @"HKCU\Environment is missing!");
-                   if (environmentKey == null) {
-                       return null; 
-                   }
-
-                   string value = environmentKey.GetValue(variable) as string;
-                   return value;
-                }
-            }
-            else 
-#endif // FEATURE_WIN32_REGISTRY                
-                {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)target));
-            }
-        }
-
-        /*===========================GetEnvironmentVariables============================
-        **Action: Returns an IDictionary containing all enviroment variables and their values.
-        **Returns: An IDictionary containing all environment variables and their values.
-        **Arguments: None.
-        **Exceptions: None.
-        ==============================================================================*/
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe static char[] GetEnvironmentCharArray()
         {
             char[] block = null;
 
             // Make sure pStrings is not leaked with async exceptions
             RuntimeHelpers.PrepareConstrainedRegions();
-            try {
+            try
+            {
             }
-            finally {
-                char * pStrings = null;
+            finally
+            {
+                char* pStrings = null;
 
                 try
                 {
                     pStrings = Win32Native.GetEnvironmentStrings();
-                    if (pStrings == null) {
+                    if (pStrings == null)
+                    {
                         throw new OutOfMemoryException();
                     }
 
@@ -739,7 +643,7 @@ namespace System {
                     // CreateProcess page (null-terminated array of null-terminated strings).
 
                     // Search for terminating \0\0 (two unicode \0's).
-                    char * p = pStrings;
+                    char* p = pStrings;
                     while (!(*p == '\0' && *(p + 1) == '\0'))
                         p++;
 
@@ -747,7 +651,7 @@ namespace System {
                     block = new char[len];
 
                     fixed (char* pBlock = block)
-                        String.wstrcpy(pBlock, pStrings, len);
+                        string.wstrcpy(pBlock, pStrings, len);
                 }
                 finally
                 {
@@ -759,268 +663,6 @@ namespace System {
             return block;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static IDictionary GetEnvironmentVariables()
-        {
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode()) {
-                // Environment variable accessors are not approved modern API.
-                // Behave as if no environment variables are defined in this case.
-                return new Hashtable(0);
-            }
-
-#if !FEATURE_CORECLR
-            bool isFullTrust = CodeAccessSecurityEngine.QuickCheckForAllDemands();
-            StringBuilder vars = isFullTrust ? null : new StringBuilder();  
-            bool first = true;
-#endif
-
-            char[] block = GetEnvironmentCharArray();
-
-            Hashtable table = new Hashtable(20);
-
-            // Copy strings out, parsing into pairs and inserting into the table.
-            // The first few environment variable entries start with an '='!
-            // The current working directory of every drive (except for those drives
-            // you haven't cd'ed into in your DOS window) are stored in the 
-            // environment block (as =C:=pwd) and the program's exit code is 
-            // as well (=ExitCode=00000000)  Skip all that start with =.
-            // Read docs about Environment Blocks on MSDN's CreateProcess page.
-            
-            // Format for GetEnvironmentStrings is:
-            // (=HiddenVar=value\0 | Variable=value\0)* \0
-            // See the description of Environment Blocks in MSDN's
-            // CreateProcess page (null-terminated array of null-terminated strings).
-            // Note the =HiddenVar's aren't always at the beginning.
-            
-            for(int i=0; i<block.Length; i++) {
-                int startKey = i;
-                // Skip to key
-                // On some old OS, the environment block can be corrupted. 
-                // Someline will not have '=', so we need to check for '\0'. 
-                while(block[i]!='=' && block[i] != '\0') {
-                    i++;
-                }
-
-                if(block[i] == '\0') {
-                    continue;
-                }
-
-                // Skip over environment variables starting with '='
-                if (i-startKey==0) {
-                    while(block[i]!=0) {
-                        i++;
-                    }
-                    continue;
-                }
-                String key = new String(block, startKey, i-startKey);
-                i++;  // skip over '='
-                int startValue = i;
-                while(block[i]!=0) {
-                    // Read to end of this entry 
-                    i++;
-                }
-
-                String value = new String(block, startValue, i-startValue);
-                // skip over 0 handled by for loop's i++
-                table[key]=value;
-
-#if !FEATURE_CORECLR
-                if (!isFullTrust) {
-                    if( first) {      
-                        first = false;
-                    }
-                    else {
-                        vars.Append(';');
-                    }
-                    vars.Append(key);
-                }
-#endif
-            }
-
-#if !FEATURE_CORECLR
-            if (!isFullTrust)
-                new EnvironmentPermission(EnvironmentPermissionAccess.Read, vars.ToString()).Demand();
-#endif
-            return table;
-        }
-
-#if FEATURE_WIN32_REGISTRY
-        internal static IDictionary GetRegistryKeyNameValuePairs(RegistryKey registryKey) {
-            Hashtable table = new Hashtable(20);
-
-            if (registryKey != null) {
-                string[] names = registryKey.GetValueNames();
-                foreach( string name in names) {
-                    string value = registryKey.GetValue(name, "").ToString();
-                    table.Add(name, value);                
-                }            
-            }
-            return table;
-        }
-#endif
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static IDictionary GetEnvironmentVariables( EnvironmentVariableTarget target) {
-            if( target == EnvironmentVariableTarget.Process) {
-                return GetEnvironmentVariables();
-            }
-
-#if FEATURE_WIN32_REGISTRY
-            (new EnvironmentPermission(PermissionState.Unrestricted)).Demand();
-
-            if( target == EnvironmentVariableTarget.Machine) {
-                using (RegistryKey environmentKey = 
-                       Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", false)) {
-
-                   return GetRegistryKeyNameValuePairs(environmentKey);
-                }
-            }
-            else if( target == EnvironmentVariableTarget.User) {
-                using (RegistryKey environmentKey = 
-                       Registry.CurrentUser.OpenSubKey("Environment", false)) {
-                   return GetRegistryKeyNameValuePairs(environmentKey);
-                }
-            }
-            else 
-#endif // FEATURE_WIN32_REGISTRY                
-                {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)target));
-            }
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static void SetEnvironmentVariable(string variable, string value) {
-            CheckEnvironmentVariableName(variable);
-
-#if !FEATURE_CORECLR
-            new EnvironmentPermission(PermissionState.Unrestricted).Demand();
-#endif
-            // explicitly null out value if is the empty string. 
-            if (String.IsNullOrEmpty(value) || value[0] == '\0') {
-                value = null;
-            }
-            else {
-                if( value.Length >= MaxEnvVariableValueLength) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_LongEnvVarValue"));                                    
-                }
-            }
-
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode()) {
-                // Environment variable accessors are not approved modern API.
-                // so we throw PlatformNotSupportedException.
-                throw new PlatformNotSupportedException();
-            }
-
-            if(!Win32Native.SetEnvironmentVariable(variable, value)) {
-                int errorCode = Marshal.GetLastWin32Error();
-                
-                // Allow user to try to clear a environment variable                
-                if( errorCode == Win32Native.ERROR_ENVVAR_NOT_FOUND) {
-                    return;
-                }
-                
-                // The error message from Win32 is "The filename or extension is too long",
-                // which is not accurate.
-                if( errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_LongEnvVarValue"));
-                }
-                
-                throw new ArgumentException(Win32Native.GetMessage(errorCode));
-            }
-        }
-
-        private static void CheckEnvironmentVariableName(string variable) {
-            if (variable == null) {
-                throw new ArgumentNullException(nameof(variable));
-            }
-
-            if( variable.Length == 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), nameof(variable));
-            }
-
-            if( variable[0] == '\0') {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringFirstCharIsZero"), nameof(variable));
-            }
-
-            // Make sure the environment variable name isn't longer than the 
-            // max limit on environment variable values.  (MSDN is ambiguous 
-            // on whether this check is necessary.)
-            if( variable.Length >= MaxEnvVariableValueLength ) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_LongEnvVarValue"));                
-            }
-            
-            if( variable.IndexOf('=') != -1) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalEnvVarName"));
-            }
-            Contract.EndContractBlock();
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) { 
-            if( target == EnvironmentVariableTarget.Process) {
-                SetEnvironmentVariable(variable, value);
-                return;
-            }
-        
-            CheckEnvironmentVariableName(variable);
-
-            // System-wide environment variables stored in the registry are
-            // limited to 1024 chars for the environment variable name.
-            if (variable.Length >= MaxSystemEnvVariableLength) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_LongEnvVarName"));
-            }
-
-            new EnvironmentPermission(PermissionState.Unrestricted).Demand();
-            // explicitly null out value if is the empty string. 
-            if (String.IsNullOrEmpty(value) || value[0] == '\0') {
-                value = null;
-            }
-#if FEATURE_WIN32_REGISTRY
-            if( target == EnvironmentVariableTarget.Machine) {
-                using (RegistryKey environmentKey = 
-                       Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", true)) {
-
-                   Contract.Assert(environmentKey != null, @"HKLM\System\CurrentControlSet\Control\Session Manager\Environment is missing!");
-                   if (environmentKey != null) {
-                       if (value == null)
-                           environmentKey.DeleteValue(variable, false);
-                       else
-                           environmentKey.SetValue(variable, value);
-                   }
-                }
-            }
-            else if( target == EnvironmentVariableTarget.User) {
-                // User-wide environment variables stored in the registry are
-                // limited to 255 chars for the environment variable name.
-                if (variable.Length >= MaxUserEnvVariableLength) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_LongEnvVarValue"));
-                }
-                using (RegistryKey environmentKey = 
-                       Registry.CurrentUser.OpenSubKey("Environment", true)) {
-                   Contract.Assert(environmentKey != null, @"HKCU\Environment is missing!");
-                   if (environmentKey != null) {
-                      if (value == null)
-                          environmentKey.DeleteValue(variable, false);
-                      else
-                          environmentKey.SetValue(variable, value);
-                   }
-                }
-            }
-            else
-            {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)target));
-            }
-            // send a WM_SETTINGCHANGE message to all windows
-            IntPtr r = Win32Native.SendMessageTimeout(new IntPtr(Win32Native.HWND_BROADCAST), Win32Native.WM_SETTINGCHANGE, IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
-
-            if (r == IntPtr.Zero) BCLDebug.Assert(false, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
-
-#else // FEATURE_WIN32_REGISTRY
-            throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)target));
-#endif
-        }
-
-        
         /*===============================GetLogicalDrives===============================
         **Action: Retrieves the names of the logical drives on this machine in the  form "C:\". 
         **Arguments:   None.
@@ -1820,6 +1462,149 @@ namespace System {
             [System.Security.SecuritySafeCritical]
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
+        }
+
+        public static string GetEnvironmentVariable(string variable)
+        {
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+
+            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
+            return GetEnvironmentVariableCore(variable);
+        }
+
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
+        {
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+
+            ValidateTarget(target);
+
+            return GetEnvironmentVariableCore(variable, target);
+        }
+
+        public static IDictionary GetEnvironmentVariables()
+        {
+            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
+            return GetEnvironmentVariablesCore();
+        }
+
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
+        {
+            ValidateTarget(target);
+
+            return GetEnvironmentVariablesCore(target);
+        }
+
+        public static void SetEnvironmentVariable(string variable, string value)
+        {
+            ValidateVariableAndValue(variable, ref value);
+
+            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
+            SetEnvironmentVariableCore(variable, value);
+        }
+
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
+        {
+            ValidateVariableAndValue(variable, ref value);
+            ValidateTarget(target);
+
+            SetEnvironmentVariableCore(variable, value, target);
+        }
+
+        private static void ValidateVariableAndValue(string variable, ref string value)
+        {
+            const int MaxEnvVariableValueLength = 32767;
+
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+            if (variable.Length == 0)
+            {
+                throw new ArgumentException(GetResourceString("Argument_StringZeroLength"), nameof(variable));
+            }
+            if (variable[0] == '\0')
+            {
+                throw new ArgumentException(GetResourceString("Argument_StringFirstCharIsZero"), nameof(variable));
+            }
+            if (variable.Length >= MaxEnvVariableValueLength)
+            {
+                throw new ArgumentException(GetResourceString("Argument_LongEnvVarValue"), nameof(variable));
+            }
+            if (variable.IndexOf('=') != -1)
+            {
+                throw new ArgumentException(GetResourceString("Argument_IllegalEnvVarName"), nameof(variable));
+            }
+
+            if (string.IsNullOrEmpty(value) || value[0] == '\0')
+            {
+                // Explicitly null out value if it's empty
+                value = null;
+            }
+            else if (value.Length >= MaxEnvVariableValueLength)
+            {
+                throw new ArgumentException(GetResourceString("Argument_LongEnvVarValue"), nameof(value));
+            }
+        }
+
+        private static void ValidateTarget(EnvironmentVariableTarget target)
+        {
+            if (target != EnvironmentVariableTarget.Process &&
+                target != EnvironmentVariableTarget.Machine &&
+                target != EnvironmentVariableTarget.User)
+            {
+                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(GetResourceString("Arg_EnumIllegalVal"), target));
+            }
+        }
+
+        private static Dictionary<string, string> GetRawEnvironmentVariables()
+        {
+            // Format for GetEnvironmentStrings is:
+            // (=HiddenVar=value\0 | Variable=value\0)* \0
+            // See the description of Environment Blocks in MSDN's
+            // CreateProcess page (null-terminated array of null-terminated strings).
+            // Note the =HiddenVar's aren't always at the beginning.
+
+            // Copy strings out, parsing into pairs and inserting into the table.
+            // The first few environment variable entries start with an '='.
+            // The current working directory of every drive (except for those drives
+            // you haven't cd'ed into in your DOS window) are stored in the 
+            // environment block (as =C:=pwd) and the program's exit code is 
+            // as well (=ExitCode=00000000).
+
+            var results = new Dictionary<string, string>();
+            char[] block = GetEnvironmentCharArray();
+            for (int i = 0; i < block.Length; i++)
+            {
+                int startKey = i;
+
+                // Skip to key. On some old OS, the environment block can be corrupted.
+                // Some will not have '=', so we need to check for '\0'. 
+                while (block[i] != '=' && block[i] != '\0') i++;
+                if (block[i] == '\0') continue;
+
+                // Skip over environment variables starting with '='
+                if (i - startKey == 0)
+                {
+                    while (block[i] != 0) i++;
+                    continue;
+                }
+
+                string key = new string(block, startKey, i - startKey);
+                i++;  // skip over '='
+
+                int startValue = i;
+                while (block[i] != 0) i++; // Read to end of this entry 
+                string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
+
+                results[key] = value;
+            }
+            return results;
         }
     }
 }
