@@ -210,8 +210,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "corefx/Tools/dotnetcli/dotnet.exe",
-        "arguments": "corefx/Tools/msbuild.exe corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
+        "filename": "$(Agent.BuildDirectory)/s/corefx/Tools/dotnetcli/dotnet.exe",
+        "arguments": "$(Agent.BuildDirectory)/s/corefx/Tools/msbuild.exe $(Agent.BuildDirectory)/s/corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
