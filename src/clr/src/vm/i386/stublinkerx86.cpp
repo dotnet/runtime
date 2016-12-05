@@ -2624,6 +2624,7 @@ VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
 #endif // PROFILING_SUPPORTED
 
 
+#ifndef FEATURE_STUBS_AS_IL
 //========================================================================
 //  Prolog for entering managed code from COM
 //  pushes the appropriate frame ptr
@@ -2850,6 +2851,7 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     EmitLabel(rgRareLabels[0]);  // label for rare setup thread
     EmitRareSetup(rgRejoinLabels[0], /*fThrow*/ TRUE); // emit rare setup thread
 }
+#endif // !FEATURE_STUBS_AS_IL
 
 //---------------------------------------------------------------
 // Emit code to store the setup current Thread structure in eax.
