@@ -1414,7 +1414,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             if (isRegCandidate && !(treeNode->gtFlags & GTF_VAR_DEATH))
             {
-                assert((treeNode->InReg()) || (treeNode->gtFlags & GTF_SPILLED));
+                assert(treeNode->InReg() || (treeNode->gtFlags & GTF_SPILLED));
             }
 
             // If this is a register candidate that has been spilled, genConsumeReg() will
@@ -1423,6 +1423,15 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             if (!treeNode->InReg() && !(treeNode->gtFlags & GTF_SPILLED))
             {
                 assert(!isRegCandidate);
+
+#if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+                // Loading of TYP_SIMD12 (i.e. Vector3) variable
+                if (treeNode->TypeGet() == TYP_SIMD12)
+                {
+                    genLoadLclTypeSIMD12(treeNode);
+                    break;
+                }
+#endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
 
                 emit->emitIns_R_S(ins_Load(treeNode->TypeGet(), compiler->isSIMDTypeLocalAligned(lcl->gtLclNum)),
                                   emitTypeSize(treeNode), treeNode->gtRegNum, lcl->gtLclNum, 0);
@@ -1452,7 +1461,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // Loading of TYP_SIMD12 (i.e. Vector3) field
             if (treeNode->TypeGet() == TYP_SIMD12)
             {
-                genLoadLclFldTypeSIMD12(treeNode);
+                genLoadLclTypeSIMD12(treeNode);
                 break;
             }
 #endif
@@ -7752,6 +7761,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     var_types targetType = putArgStk->TypeGet();
 
 #ifdef _TARGET_X86_
+
+#ifdef FEATURE_SIMD
+    if (targetType == TYP_SIMD12)
+    {
+        genPutArgStkSIMD12(putArgStk);
+        return;
+    }
+#endif // FEATURE_SIMD
+
     if (varTypeIsStruct(targetType))
     {
         (void)genAdjustStackForPutArgStk(putArgStk);
@@ -7911,6 +7929,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
     instruction ins;
     emitAttr    attr;
     unsigned    size;
+
     if (type == TYP_STRUCT)
     {
         ins = INS_movdqu;
@@ -7924,7 +7943,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         if (varTypeIsSIMD(type))
         {
             assert(genIsValidFloatReg(srcReg));
-            ins = ins_Store(type);
+            ins = ins_Store(type); // TODO-CQ: pass 'aligned' correctly
         }
         else
 #endif // FEATURE_SIMD
@@ -7944,6 +7963,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         attr = emitTypeSize(type);
         size = genTypeSize(type);
     }
+
 #ifdef _TARGET_X86_
     if (m_pushStkArg)
     {
