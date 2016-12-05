@@ -7354,7 +7354,7 @@ Exit:
 
 //----------------------------------------------------------------------------
 // 
-// IsExceptionFromManagedCode - report if pExceptionRecord points to a exception belonging to the current runtime
+// IsExceptionFromManagedCode - report if pExceptionRecord points to an exception belonging to the current runtime
 // 
 // Arguments:
 //    pExceptionRecord - the exception record

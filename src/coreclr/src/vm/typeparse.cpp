@@ -1926,7 +1926,7 @@ DomainAssembly * LoadDomainAssembly(
         {
             Exception *ex = GET_EXCEPTION();
 
-            // Let non-File-not-found execeptions propagate
+            // Let non-File-not-found exceptions propagate
             if (EEFileLoadException::GetFileLoadKind(ex->GetHR()) != kFileNotFoundException)
                 EX_RETHROW;
         }

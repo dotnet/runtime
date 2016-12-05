@@ -1069,7 +1069,7 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     NONPAL_RETAIL_ASSERT("Failed to locate thread from state.");
 }
 
-// Transform a exception handler behavior type into the corresponding Mach message ID for the notification.
+// Transform an exception handler behavior type into the corresponding Mach message ID for the notification.
 mach_msg_id_t MachMessage::MapBehaviorToNotificationType(exception_behavior_t eBehavior)
 {
     switch ((uint)eBehavior)

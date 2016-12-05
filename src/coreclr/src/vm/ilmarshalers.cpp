@@ -4177,7 +4177,7 @@ void ILNativeArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit
     if (IsByref(m_dwMarshalFlags))
     {
         //
-        // Reset the element count just in case there is a exception thrown in the code emitted by
+        // Reset the element count just in case there is an exception thrown in the code emitted by
         // EmitLoadElementCount. The best thing we can do here is to avoid a crash.
         //
         _ASSERTE(m_dwSavedSizeArg != LOCAL_NUM_UNUSED);

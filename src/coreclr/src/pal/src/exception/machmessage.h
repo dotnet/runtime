@@ -395,7 +395,7 @@ private:
     // x86_THREAD_STATE and x86_THREAD_STATE32 state flavors are supported.
     thread_act_t GetThreadFromState(thread_state_flavor_t eFlavor, thread_state_t pState);
 
-    // Transform a exception handler behavior type into the corresponding Mach message ID for the
+    // Transform an exception handler behavior type into the corresponding Mach message ID for the
     // notification.
     mach_msg_id_t MapBehaviorToNotificationType(exception_behavior_t eBehavior);
 
