@@ -568,8 +568,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "corefx/Tools/dotnetcli/dotnet.exe",
-        "arguments": "corefx/Tools/msbuild.exe corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
+        "filename": "$(Build.SourcesDirectory)/corefx/Tools/dotnetcli/dotnet.exe",
+        "arguments": "$(Build.SourcesDirectory)/corefx/Tools/msbuild.exe $(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(CleanAgent)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -683,9 +683,6 @@
     },
     "VsoCorefxGitUrl": {
       "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepoName)/"
-    },
-    "Build.Clean": {
-      "value": "all"
     },
     "CleanAgent": {
       "value": "false"
