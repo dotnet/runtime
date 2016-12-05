@@ -16,9 +16,9 @@ namespace Microsoft.DotNet.Build.Tasks
         private const char ConfigurationSeperator = ';';
         private const string ConfigurationSeperatorString = ";";
         private const string BuildConfigurationProperty = "BuildConfiguration";
-        private const string ProjectConfigurationsProperty = "ProjectConfigurations";
-        private const string ProjectConfigurationProperty = "ProjectConfiguration";
-        private const string PropsFileName = "projectConfiguration";
+        private const string AvailableBuildConfigurationsProperty = "BuildConfigurations";
+        private const string ConfigurationProperty = "Configuration";
+        private const string PropsFileName = "configuration";
         private const string ConfigurationPropsPrefix = "buildConfiguration";
         private const string PropsFileExtension = ".props";
         private const string ErrorMessageProperty = "ConfigurationErrorMsg";
@@ -29,6 +29,13 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string PropsFolder { get; set; }
 
+        /// <summary>
+        /// Generates a set of props files which can statically determine the best $(Configuration) for 
+        /// a given $(BuildConfiguration) from a set of configurations $(BuildConfigurations).
+        /// Props files also set properties based on $(Configuration) like TargetGroup, OSGroup, 
+        /// NuGetTargetMoniker, etc.
+        /// </summary>
+        /// <returns></returns>
         public override bool Execute()
         {
             LoadConfiguration();
@@ -38,8 +45,8 @@ namespace Microsoft.DotNet.Build.Tasks
             // Set error on missing import
             var buildConfigurationsPropertyGroup = project.AddPropertyGroup();
             var buildConfigurationImportPath = $"{ConfigurationPropsPrefix}.$({BuildConfigurationProperty}){PropsFileExtension}";
-            var projectConfigurationNotSetCondition = $"'$({ProjectConfigurationProperty})' == ''";
-            var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"{ProjectConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
+            var projectConfigurationNotSetCondition = $"'$({ConfigurationProperty})' == ''";
+            var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"{ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
             missingImportError.Condition = $"{projectConfigurationNotSetCondition} AND !Exists('{buildConfigurationImportPath}')";
 
             // import props to set ProjectConfiguration
@@ -52,15 +59,15 @@ namespace Microsoft.DotNet.Build.Tasks
                 CreateBuildConfigurationPropsFile(buildConfiguration);
             }
 
-            // delimit ProjectConfiguration for parsing
-            var parseProjectConfigurationPropertyGroup = project.CreatePropertyGroupElement();
-            project.AppendChild(parseProjectConfigurationPropertyGroup);
+            // delimit Configuration for parsing, this gaurntees that every property value is surrounded in delimiters
+            var parseConfigurationPropertyGroup = project.CreatePropertyGroupElement();
+            project.AppendChild(parseConfigurationPropertyGroup);
 
-            var parseProjectConfigurationName = $"_parse_{ProjectConfigurationProperty}";
-            var parseProjectConfigurationValue = $"{ConfigurationFactory.PropertySeperator}$({ProjectConfigurationProperty}){ConfigurationFactory.PropertySeperator}";
-            parseProjectConfigurationPropertyGroup.AddProperty(parseProjectConfigurationName, parseProjectConfigurationValue);
+            var parseConfigurationName = $"_parse_{ConfigurationProperty}";
+            var parseConfigurationValue = $"{ConfigurationFactory.PropertySeperator}$({ConfigurationProperty}){ConfigurationFactory.PropertySeperator}";
+            parseConfigurationPropertyGroup.AddProperty(parseConfigurationName, parseConfigurationValue);
 
-            // foreach property, pull it out of ProjectConfiguration and set derived values.
+            // foreach property, pull it out of Configuration and set derived values.
             foreach (var property in ConfigurationFactory.GetProperties())
             {
                 var choosePropertiesElement = project.CreateChooseElement();
@@ -68,7 +75,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 foreach (var value in ConfigurationFactory.GetValues(property))
                 {
-                    var propertiesCondition = CreateContainsCondition(parseProjectConfigurationName, ConfigurationFactory.PropertySeperator + value.Value + ConfigurationFactory.PropertySeperator);
+                    var propertiesCondition = CreateContainsCondition(parseConfigurationName, ConfigurationFactory.PropertySeperator + value.Value + ConfigurationFactory.PropertySeperator);
                     var whenPropertiesElement = project.CreateWhenElement(propertiesCondition);
                     choosePropertiesElement.AppendChild(whenPropertiesElement);
 
@@ -87,7 +94,7 @@ namespace Microsoft.DotNet.Build.Tasks
                     var otherwiseErrorPropertyGroup = project.CreatePropertyGroupElement();
                     otherwisePropertiesElement.AppendChild(otherwiseErrorPropertyGroup);
 
-                    otherwiseErrorPropertyGroup.AddProperty(ErrorMessageProperty, $"Could not find a value for {property.Name} from {ProjectConfigurationProperty} '$({ProjectConfigurationProperty})'.");
+                    otherwiseErrorPropertyGroup.AddProperty(ErrorMessageProperty, $"Could not find a value for {property.Name} from {ConfigurationProperty} '$({ConfigurationProperty})'.");
                 }
 
             }
@@ -100,58 +107,58 @@ namespace Microsoft.DotNet.Build.Tasks
 
         private void CreateBuildConfigurationPropsFile(Configuration buildConfiguration)
         {
-            var configurationProject = ProjectRootElement.Create();
+            var configurationSpecificProps = ProjectRootElement.Create();
             var compatibleConfigurationStrings = new StringBuilder();
 
-            // delimit ProjectConfigurations for parsing
-            var configurationProjectPropertyGroup = configurationProject.AddPropertyGroup();
-            var parseProjectConfigurationsName = $"_parse_{ProjectConfigurationsProperty}";
-            var parseProjectConfigurationsValue = $"{ConfigurationSeperator}$({ProjectConfigurationsProperty}){ConfigurationSeperator}";
-            configurationProjectPropertyGroup.AddProperty(parseProjectConfigurationsName, parseProjectConfigurationsValue);
+            // delimit BuildConfigurations for parsing
+            var parseBuildConfigurationsPropertyGroup = configurationSpecificProps.AddPropertyGroup();
+            var parseBuildConfigurationsName = $"_parse_{AvailableBuildConfigurationsProperty}";
+            var parseBuildConfigurationsValue = $"{ConfigurationSeperator}$({AvailableBuildConfigurationsProperty}){ConfigurationSeperator}";
+            parseBuildConfigurationsPropertyGroup.AddProperty(parseBuildConfigurationsName, parseBuildConfigurationsValue);
 
-            var chooseProjectConfigurationElement = configurationProject.CreateChooseElement();
-            configurationProject.AppendChild(chooseProjectConfigurationElement);
+            var chooseConfigurationElement = configurationSpecificProps.CreateChooseElement();
+            configurationSpecificProps.AppendChild(chooseConfigurationElement);
 
             // determine compatible project configurations and select best one
-            foreach (var compatibleProjectConfiguration in ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration))
+            foreach (var compatibleConfiguration in ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration))
             {
-                var projectConfigurationStrings = compatibleProjectConfiguration.GetConfigurationStrings();
+                var configurationStrings = compatibleConfiguration.GetConfigurationStrings();
 
                 if (compatibleConfigurationStrings.Length > 0)
                 {
                     compatibleConfigurationStrings.Append(ConfigurationSeperatorString);
                 }
-                compatibleConfigurationStrings.Append(string.Join(ConfigurationSeperatorString, projectConfigurationStrings));
+                compatibleConfigurationStrings.Append(string.Join(ConfigurationSeperatorString, configurationStrings));
 
-                var gaurdedProjectConfigurationStrings = projectConfigurationStrings.Select(c => ConfigurationSeperator + c + ConfigurationSeperator);
-                var projectConfigurationCondition = CreateContainsCondition(parseProjectConfigurationsName, gaurdedProjectConfigurationStrings);
-                var whenProjectConfigurationElement = configurationProject.CreateWhenElement(projectConfigurationCondition);
-                chooseProjectConfigurationElement.AppendChild(whenProjectConfigurationElement);
+                var gaurdedProjectConfigurationStrings = configurationStrings.Select(c => ConfigurationSeperator + c + ConfigurationSeperator);
+                var configurationCondition = CreateContainsCondition(parseBuildConfigurationsName, gaurdedProjectConfigurationStrings);
+                var whenConfigurationElement = configurationSpecificProps.CreateWhenElement(configurationCondition);
+                chooseConfigurationElement.AppendChild(whenConfigurationElement);
 
-                // add property to set ProjectConfiguration
-                var projectConfigurationPropertyGroup = configurationProject.CreatePropertyGroupElement();
-                whenProjectConfigurationElement.AppendChild(projectConfigurationPropertyGroup);
+                // add property to set Configuration
+                var setConfigurationPropertyGroup = configurationSpecificProps.CreatePropertyGroupElement();
+                whenConfigurationElement.AppendChild(setConfigurationPropertyGroup);
 
                 // set project configuration
-                projectConfigurationPropertyGroup.AddProperty(ProjectConfigurationProperty, projectConfigurationStrings.First());
+                setConfigurationPropertyGroup.AddProperty(ConfigurationProperty, configurationStrings.First());
             }
 
-            var configurationOtherwiseElement = configurationProject.CreateOtherwiseElement();
-            chooseProjectConfigurationElement.AppendChild(configurationOtherwiseElement);
+            var configurationOtherwiseElement = configurationSpecificProps.CreateOtherwiseElement();
+            chooseConfigurationElement.AppendChild(configurationOtherwiseElement);
 
-            var configurationOtherwisePropertyGroup = configurationProject.CreatePropertyGroupElement();
+            var configurationOtherwisePropertyGroup = configurationSpecificProps.CreatePropertyGroupElement();
             configurationOtherwiseElement.AppendChild(configurationOtherwisePropertyGroup);
 
             configurationOtherwisePropertyGroup.AddProperty(ErrorMessageProperty,
                 $"Could not find a compatible configuration for {BuildConfigurationProperty} '$({BuildConfigurationProperty})' " +
-                $"from {ProjectConfigurationsProperty} '$({ProjectConfigurationsProperty})'.  " +
+                $"from {AvailableBuildConfigurationsProperty} '$({AvailableBuildConfigurationsProperty})'.  " +
                 $"Considered {compatibleConfigurationStrings}.");
 
             // save a copy of for each synonymous config string
             foreach (var configurationString in buildConfiguration.GetConfigurationStrings())
             {
                 var configurationProjectPath = Path.Combine(PropsFolder, $"{ConfigurationPropsPrefix}.{configurationString}{PropsFileExtension}");
-                configurationProject.Save(configurationProjectPath);
+                configurationSpecificProps.Save(configurationProjectPath);
             }
         }
 
