@@ -15,14 +15,13 @@
 #include <glib.h>
 
 #include <mono/metadata/object.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-compiler.h>
 
 G_BEGIN_DECLS
 
 void mono_console_init (void);
 void mono_console_handle_async_ops (void);
-MonoBoolean ves_icall_System_ConsoleDriver_Isatty (HANDLE handle);
+MonoBoolean ves_icall_System_ConsoleDriver_Isatty (gpointer handle);
 gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout);
 MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo);
 MonoBoolean ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break);

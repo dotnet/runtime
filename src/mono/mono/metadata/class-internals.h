@@ -10,7 +10,6 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/property-bag.h>
-#include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
 #include "mono/sgen/gc-internal-agnostic.h"

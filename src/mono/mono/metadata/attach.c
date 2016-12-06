@@ -42,6 +42,8 @@
 #include <mono/utils/mono-threads.h>
 #include "attach.h"
 
+#include <mono/io-layer/io-layer.h>
+
 /*
  * This module enables other processes to attach to a running mono process and
  * load agent assemblies. 

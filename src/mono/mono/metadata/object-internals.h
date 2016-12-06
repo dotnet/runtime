@@ -8,7 +8,6 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/handle.h>
-#include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
@@ -353,7 +352,7 @@ struct _MonoInternalThread {
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
 	MonoThreadHandle *handle;
-	HANDLE native_handle;
+	gpointer native_handle;
 	MonoArray  *cached_culture_info;
 	gunichar2  *name;
 	guint32	    name_len;
@@ -615,16 +614,16 @@ MONO_COLD void mono_set_pending_exception (MonoException *exc);
 /* remoting and async support */
 
 MonoAsyncResult *
-mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
+mono_async_result_new	    (MonoDomain *domain, gpointer handle, 
 			     MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error);
 
 MonoObject *
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *ares);
 
 MonoWaitHandle *
-mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle, MonoError *error);
+mono_wait_handle_new	    (MonoDomain *domain, gpointer handle, MonoError *error);
 
-HANDLE
+gpointer
 mono_wait_handle_get_handle (MonoWaitHandle *handle);
 
 gboolean
@@ -1351,7 +1350,7 @@ typedef struct {
 	MonoProperty *prop;
 } CattrNamedArg;
 
-gboolean          mono_image_create_pefile (MonoReflectionModuleBuilder *module, HANDLE file, MonoError *error);
+gboolean          mono_image_create_pefile (MonoReflectionModuleBuilder *module, gpointer file, MonoError *error);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj, gboolean create_methodspec, gboolean register_token, MonoError *error);
 guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types, MonoError *error);
@@ -1770,7 +1769,7 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 										MonoArray *opt_param_types);
 
 void
-ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file);
+ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, gpointer file);
 
 void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb);

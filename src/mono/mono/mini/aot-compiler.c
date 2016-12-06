@@ -55,6 +55,7 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/io-layer/io-layer.h>
 
 #include "aot-compiler.h"
 #include "seq-points.h"

@@ -13,7 +13,6 @@
 #include <mono/metadata/mono-hash.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-internal-hash.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/metadata/mempool-internals.h>
 
 /*

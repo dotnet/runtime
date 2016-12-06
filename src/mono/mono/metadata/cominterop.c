@@ -38,6 +38,7 @@
 #include "mono/utils/atomic.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
+#include "mono/io-layer/io-layer.h"
 #include <string.h>
 #include <errno.h>
 

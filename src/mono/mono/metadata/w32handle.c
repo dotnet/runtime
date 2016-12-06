@@ -844,7 +844,7 @@ mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *aler
 	MonoW32HandleType type;
 
 	if (!mono_w32handle_lookup_data (handle, &handle_data)) {
-		return(WAIT_FAILED);
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
 	}
 
 	type = handle_data->type;
@@ -853,7 +853,7 @@ mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *aler
 	    handle_ops[type]->special_wait != NULL) {
 		return(handle_ops[type]->special_wait (handle, timeout, alerted));
 	} else {
-		return(WAIT_FAILED);
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
 	}
 }
 

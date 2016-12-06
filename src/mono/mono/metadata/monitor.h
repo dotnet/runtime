@@ -12,7 +12,6 @@
 
 #include <glib.h>
 #include <mono/metadata/object.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-coop-semaphore.h>
 

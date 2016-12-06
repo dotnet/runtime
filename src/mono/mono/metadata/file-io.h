@@ -17,7 +17,6 @@
 #include <glib.h>
 
 #include <mono/metadata/object-internals.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-compiler.h>
 
 G_BEGIN_DECLS
@@ -126,20 +125,20 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 						 gint mask, gint attrs,
 						 gint32 *error);
 
-extern HANDLE
+extern gpointer
 ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern,
 						MonoString **file_name,
 						gint32 *file_attr,
 						gint32 *ioerror);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_FindNextFile (HANDLE hnd,
+ves_icall_System_IO_MonoIO_FindNextFile (gpointer hnd,
 						MonoString **file_name,
 						gint32 *file_attr,
 						gint32 *ioerror);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_FindCloseFile (HANDLE hnd);
+ves_icall_System_IO_MonoIO_FindCloseFile (gpointer hnd);
 
 extern MonoString *
 ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
@@ -179,64 +178,64 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 					      gint32 *error);
 
 extern gint32
-ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error);
+ves_icall_System_IO_MonoIO_GetFileType (gpointer handle, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 					gint32 *error);
 
-extern HANDLE 
+extern gpointer 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 				 gint32 access_mode, gint32 share, gint32 options,
 				 gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error);
+ves_icall_System_IO_MonoIO_Close (gpointer handle, gint32 *error);
 
 extern gint32 
-ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
+ves_icall_System_IO_MonoIO_Read (gpointer handle, MonoArray *dest,
 				 gint32 dest_offset, gint32 count,
 				 gint32 *error);
 
 extern gint32 
-ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
+ves_icall_System_IO_MonoIO_Write (gpointer handle, MonoArray *src,
 				  gint32 src_offset, gint32 count,
 				  gint32 *error);
 
 extern gint64 
-ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
+ves_icall_System_IO_MonoIO_Seek (gpointer handle, gint64 offset, gint32 origin,
 				 gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error);
+ves_icall_System_IO_MonoIO_Flush (gpointer handle, gint32 *error);
 
 extern gint64 
-ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error);
+ves_icall_System_IO_MonoIO_GetLength (gpointer handle, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
+ves_icall_System_IO_MonoIO_SetLength (gpointer handle, gint64 length,
 				      gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
+ves_icall_System_IO_MonoIO_SetFileTime (gpointer handle, gint64 creation_time,
 					gint64 last_access_time,
 					gint64 last_write_time, gint32 *error);
 
-extern HANDLE 
+extern gpointer 
 ves_icall_System_IO_MonoIO_get_ConsoleOutput (void);
 
-extern HANDLE 
+extern gpointer 
 ves_icall_System_IO_MonoIO_get_ConsoleInput (void);
 
-extern HANDLE 
+extern gpointer 
 ves_icall_System_IO_MonoIO_get_ConsoleError (void);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle, HANDLE *write_handle, gint32 *error);
+ves_icall_System_IO_MonoIO_CreatePipe (gpointer *read_handle, gpointer *write_handle, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE source_handle,
-		HANDLE target_process_handle, HANDLE *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error);
+ves_icall_System_IO_MonoIO_DuplicateHandle (gpointer source_process_handle, gpointer source_handle,
+		gpointer target_process_handle, gpointer *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error);
 
 extern gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void);
@@ -253,9 +252,9 @@ ves_icall_System_IO_MonoIO_get_PathSeparator (void);
 extern MonoArray *
 ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
 
-extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
+extern void ves_icall_System_IO_MonoIO_Lock (gpointer handle, gint64 position,
 					     gint64 length, gint32 *error);
-extern void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
+extern void ves_icall_System_IO_MonoIO_Unlock (gpointer handle, gint64 position,
 					       gint64 length, gint32 *error);
 
 extern MonoBoolean

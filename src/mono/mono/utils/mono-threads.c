@@ -32,6 +32,8 @@
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/os-event.h>
 
+#include <mono/io-layer/io-layer.h>
+
 #include <errno.h>
 
 #if defined(__MACH__)
