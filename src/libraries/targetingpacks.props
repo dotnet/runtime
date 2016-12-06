@@ -6,6 +6,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <TestRuntimeDir>$(BinDir)/tests/test-runtime/netcoreapp</TestRuntimeDir>
     <ContractOutputPath>$(BinDir)netcoreapp/TargetingPack</ContractOutputPath>
     <FrameworkPathOverride>$(ContractOutputPath)</FrameworkPathOverride>
     <AssemblySearchPaths>$(AssemblySearchPaths);$(ContractOutputPath);{RawFileName}</AssemblySearchPaths>
