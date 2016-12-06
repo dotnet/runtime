@@ -9217,9 +9217,18 @@ GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
         if (blkNode->AsDynBlk()->gtDynamicSize->IsCnsIntOrI())
         {
             unsigned size = (unsigned)blkNode->AsDynBlk()->gtDynamicSize->AsIntConCommon()->IconValue();
-            blkNode->AsDynBlk()->gtDynamicSize = nullptr;
-            blkNode->ChangeOper(GT_BLK);
-            blkNode->gtBlkSize = size;
+            // A GT_BLK with size of zero is not supported,
+            // so if we encounter such a thing we just leave it as a GT_DYN_BLK
+            if (size != 0)
+            {
+                blkNode->AsDynBlk()->gtDynamicSize = nullptr;
+                blkNode->ChangeOper(GT_BLK);
+                blkNode->gtBlkSize = size;
+            }
+            else
+            {
+                return tree;
+            }
         }
         else
         {
