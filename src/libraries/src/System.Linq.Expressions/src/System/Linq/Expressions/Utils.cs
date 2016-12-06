@@ -8,11 +8,25 @@ namespace System.Linq.Expressions
     {
         public static readonly object BoxedFalse = false;
         public static readonly object BoxedTrue = true;
+
         public static readonly object BoxedIntM1 = -1;
         public static readonly object BoxedInt0 = 0;
         public static readonly object BoxedInt1 = 1;
         public static readonly object BoxedInt2 = 2;
         public static readonly object BoxedInt3 = 3;
+
+        public static readonly object BoxedDefaultSByte = default(sbyte);
+        public static readonly object BoxedDefaultChar = default(char);
+        public static readonly object BoxedDefaultInt16 = default(short);
+        public static readonly object BoxedDefaultInt64 = default(long);
+        public static readonly object BoxedDefaultByte = default(byte);
+        public static readonly object BoxedDefaultUInt16 = default(ushort);
+        public static readonly object BoxedDefaultUInt32 = default(uint);
+        public static readonly object BoxedDefaultUInt64 = default(ulong);
+        public static readonly object BoxedDefaultSingle = default(float);
+        public static readonly object BoxedDefaultDouble = default(double);
+        public static readonly object BoxedDefaultDecimal = default(decimal);
+        public static readonly object BoxedDefaultDateTime = default(DateTime);
 
         private static readonly ConstantExpression s_true = Expression.Constant(BoxedTrue);
         private static readonly ConstantExpression s_false = Expression.Constant(BoxedFalse);
