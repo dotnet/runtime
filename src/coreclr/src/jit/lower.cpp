@@ -2975,6 +2975,9 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 #else
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
 
+    // ----------------------------------------------------------------------------------
+    // InlinedCallFrame.m_pCallerReturnAddress = nullptr
+
     GenTreeLclFld* const storeCallSiteTracker =
         new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
                                                    callFrameInfo.offsetOfReturnAddress);
