@@ -234,7 +234,7 @@ namespace System.Net.Sockets
         private static unsafe long SendFile(SafeCloseSocket socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
         {
             long bytesSent; 
-            errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, &bytesSent);
+            errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
 
             if (errno != Interop.Error.SUCCESS)
             {
