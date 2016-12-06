@@ -114,40 +114,40 @@ namespace System.Linq.Expressions.Interpreter
                     result = Utils.BoxedFalse;
                     break;
                 case TypeCode.SByte:
-                    result = default(sbyte);
+                    result = Utils.BoxedDefaultSByte;
                     break;
                 case TypeCode.Byte:
-                    result = default(byte);
+                    result = Utils.BoxedDefaultByte;
                     break;
                 case TypeCode.Char:
-                    result = default(char);
+                    result = Utils.BoxedDefaultChar;
                     break;
                 case TypeCode.Int16:
-                    result = default(short);
+                    result = Utils.BoxedDefaultInt16;
                     break;
                 case TypeCode.Int32:
                     result = Utils.BoxedInt0;
                     break;
                 case TypeCode.Int64:
-                    result = default(long);
+                    result = Utils.BoxedDefaultInt64;
                     break;
                 case TypeCode.UInt16:
-                    result = default(ushort);
+                    result = Utils.BoxedDefaultUInt16;
                     break;
                 case TypeCode.UInt32:
-                    result = default(uint);
+                    result = Utils.BoxedDefaultUInt32;
                     break;
                 case TypeCode.UInt64:
-                    result = default(ulong);
+                    result = Utils.BoxedDefaultUInt64;
                     break;
                 case TypeCode.Single:
-                    return default(float);
+                    return Utils.BoxedDefaultSingle;
                 case TypeCode.Double:
-                    return default(double);
+                    return Utils.BoxedDefaultDouble;
                 case TypeCode.DateTime:
-                    return default(DateTime);
+                    return Utils.BoxedDefaultDateTime;
                 case TypeCode.Decimal:
-                    return default(decimal);
+                    return Utils.BoxedDefaultDecimal;
                 default:
                     // Also covers DBNull which is a class.
                     return null;
