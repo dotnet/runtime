@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Interpreter
                 object obj = frame.Pop();
                 if (obj == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(0));
+                    frame.Push(0);
                 }
                 else
                 {
