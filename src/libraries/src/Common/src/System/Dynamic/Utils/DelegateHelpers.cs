@@ -12,7 +12,7 @@ namespace System.Dynamic.Utils
 {
     internal static partial class DelegateHelpers
     {
-        internal static Delegate CreateObjectArrayDelegate(Type delegateType, System.Func<object[], object> handler)
+        internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object[], object> handler)
         {
 #if !FEATURE_DYNAMIC_DELEGATE
             return CreateObjectArrayDelegateRefEmit(delegateType, handler);
@@ -23,6 +23,9 @@ namespace System.Dynamic.Utils
 
 
 #if !FEATURE_DYNAMIC_DELEGATE
+
+        private static readonly MethodInfo s_FuncInvoke = typeof(Func<object[], object>).GetMethod("Invoke");
+        private static readonly MethodInfo s_ArrayEmpty = typeof(Array).GetMethod(nameof(Array.Empty)).MakeGenericMethod(typeof(object));
 
         // We will generate the following code:
         //
@@ -37,7 +40,7 @@ namespace System.Dynamic.Utils
         //      param0 = (T0)args[0];   // only generated for each byref argument
         // }
         // return (TRet)ret;
-        private static Delegate CreateObjectArrayDelegateRefEmit(Type delegateType, System.Func<object[], object> handler)
+        private static Delegate CreateObjectArrayDelegateRefEmit(Type delegateType, Func<object[], object> handler)
         {
             MethodInfo delegateInvokeMethod = delegateType.GetMethod("Invoke");
 
@@ -59,8 +62,15 @@ namespace System.Dynamic.Utils
             LocalBuilder retValue = ilgen.DeclareLocal(typeof(object));
 
             // create the argument array
-            ilgen.Emit(OpCodes.Ldc_I4, parameters.Length);
-            ilgen.Emit(OpCodes.Newarr, typeof(object));
+            if (parameters.Length == 0)
+            {
+                ilgen.Emit(OpCodes.Call, s_ArrayEmpty);
+            }
+            else
+            {
+                ilgen.Emit(OpCodes.Ldc_I4, parameters.Length);
+                ilgen.Emit(OpCodes.Newarr, typeof(object));
+            }
             ilgen.Emit(OpCodes.Stloc, argArray);
 
             // populate object array
@@ -99,8 +109,7 @@ namespace System.Dynamic.Utils
             ilgen.Emit(OpCodes.Ldloc, argArray);
 
             // invoke Invoke
-            MethodInfo invoke = typeof(Func<object[], object>).GetMethod("Invoke");
-            ilgen.Emit(OpCodes.Callvirt, invoke);
+            ilgen.Emit(OpCodes.Callvirt, s_FuncInvoke);
             ilgen.Emit(OpCodes.Stloc, retValue);
 
             if (hasRefArgs)
