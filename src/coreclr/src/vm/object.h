@@ -2880,8 +2880,10 @@ class FrameSecurityDescriptorBaseObject : public Object
         LIMITED_METHOD_CONTRACT;
         m_declSecComputed = !!declSec;
     }
+#ifndef FEATURE_PAL
     LPVOID GetCallerToken();
     LPVOID GetImpersonationToken();
+#endif  // FEATURE_PAL
 };
 
 #ifdef FEATURE_COMPRESSEDSTACK
