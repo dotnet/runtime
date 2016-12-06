@@ -2853,27 +2853,6 @@ GenTreePtr Compiler::impImplicitR4orR8Cast(GenTreePtr tree, var_types dstTyp)
     return tree;
 }
 
-/*****************************************************************************/
-BOOL Compiler::impLocAllocOnStack()
-{
-    if (!compLocallocUsed)
-    {
-        return (FALSE);
-    }
-
-    // Returns true if a GT_LCLHEAP node is encountered in any of the trees
-    // that have been pushed on the importer evaluatuion stack.
-    //
-    for (unsigned i = 0; i < verCurrentState.esStackDepth; i++)
-    {
-        if (fgWalkTreePre(&verCurrentState.esStack[i].val, Compiler::fgChkLocAllocCB) == WALK_ABORT)
-        {
-            return (TRUE);
-        }
-    }
-    return (FALSE);
-}
-
 //------------------------------------------------------------------------
 // impInitializeArrayIntrinsic: Attempts to replace a call to InitializeArray
 //    with a GT_COPYBLK node.
@@ -5367,61 +5346,110 @@ GenTreePtr Compiler::impTransformThis(GenTreePtr              thisPtr,
     }
 }
 
-bool Compiler::impCanPInvokeInline(var_types callRetTyp)
+//------------------------------------------------------------------------
+// impCanPInvokeInline: examine information from a call to see if the call
+// qualifies as an inline pinvoke.
+//
+// Arguments:
+//    block      - block contaning the call, or for inlinees, block
+//                 containing the call being inlined
+//
+// Return Value:
+//    true if this call qualifies as an inline pinvoke, false otherwise
+//
+// Notes:
+//    Checks basic legality and then a number of ambient conditions
+//    where we could pinvoke but choose not to
+
+bool Compiler::impCanPInvokeInline(BasicBlock* block)
 {
-    return impCanPInvokeInlineCallSite(callRetTyp) && getInlinePInvokeEnabled() && (!opts.compDbgCode) &&
+    return impCanPInvokeInlineCallSite(block) && getInlinePInvokeEnabled() && (!opts.compDbgCode) &&
            (compCodeOpt() != SMALL_CODE) && (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
         ;
 }
 
-// Returns false only if the callsite really cannot be inlined. Ignores global variables
-// like debugger, profiler etc.
-bool Compiler::impCanPInvokeInlineCallSite(var_types callRetTyp)
+//------------------------------------------------------------------------
+// impCanPInvokeInlineSallSite: basic legality checks using information
+// from a call to see if the call qualifies as an inline pinvoke.
+//
+// Arguments:
+//    block      - block contaning the call, or for inlinees, block
+//                 containing the call being inlined
+//
+// Return Value:
+//    true if this call can legally qualify as an inline pinvoke, false otherwise
+//
+// Notes:
+//    For runtimes that support exception handling interop there are
+//    restrictions on using inline pinvoke in handler regions.
+//
+//    * We have to disable pinvoke inlining inside of filters because
+//    in case the main execution (i.e. in the try block) is inside
+//    unmanaged code, we cannot reuse the inlined stub (we still need
+//    the original state until we are in the catch handler)
+//
+//    * We disable pinvoke inlining inside handlers since the GSCookie
+//    is in the inlined Frame (see
+//    CORINFO_EE_INFO::InlinedCallFrameInfo::offsetOfGSCookie), but
+//    this would not protect framelets/return-address of handlers.
+//
+//    These restrictions are currently also in place for CoreCLR but
+//    can be relaxed when coreclr/#8459 is addressed.
+
+bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 {
-    return
-        // We have to disable pinvoke inlining inside of filters
-        // because in case the main execution (i.e. in the try block) is inside
-        // unmanaged code, we cannot reuse the inlined stub (we still need the
-        // original state until we are in the catch handler)
-        (!bbInFilterILRange(compCurBB)) &&
-        // We disable pinvoke inlining inside handlers since the GSCookie is
-        // in the inlined Frame (see CORINFO_EE_INFO::InlinedCallFrameInfo::offsetOfGSCookie),
-        // but this would not protect framelets/return-address of handlers.
-        !compCurBB->hasHndIndex() &&
 #ifdef _TARGET_AMD64_
-        // Turns out JIT64 doesn't perform PInvoke inlining inside try regions, here's an excerpt of
-        // the comment from JIT64 explaining why:
-        //
-        //// [VSWhidbey: 611015] - because the jitted code links in the Frame (instead
-        //// of the stub) we rely on the Frame not being 'active' until inside the
-        //// stub.  This normally happens by the stub setting the return address
-        //// pointer in the Frame object inside the stub.  On a normal return, the
-        //// return address pointer is zeroed out so the Frame can be safely re-used,
-        //// but if an exception occurs, nobody zeros out the return address pointer.
-        //// Thus if we re-used the Frame object, it would go 'active' as soon as we
-        //// link it into the Frame chain.
-        ////
-        //// Technically we only need to disable PInvoke inlining if we're in a
-        //// handler or if we're
-        //// in a try body with a catch or filter/except where other non-handler code
-        //// in this method might run and try to re-use the dirty Frame object.
-        //
-        // Now, because of this, the VM actually assumes that in 64 bit we never PInvoke
-        // inline calls on any EH construct, you can verify that on VM\ExceptionHandling.cpp:203
-        // The method responsible for resuming execution is UpdateObjectRefInResumeContextCallback
-        // you can see how it aligns with JIT64 policy of not inlining PInvoke calls almost right
-        // at the beginning of the body of the method.
-        !compCurBB->hasTryIndex() &&
-#endif
-        (!impLocAllocOnStack()) && (callRetTyp != TYP_STRUCT);
+    // On x64, we disable pinvoke inlining inside of try regions.
+    // Here is the comment from JIT64 explaining why:
+    //
+    //   [VSWhidbey: 611015] - because the jitted code links in the
+    //   Frame (instead of the stub) we rely on the Frame not being
+    //   'active' until inside the stub.  This normally happens by the
+    //   stub setting the return address pointer in the Frame object
+    //   inside the stub.  On a normal return, the return address
+    //   pointer is zeroed out so the Frame can be safely re-used, but
+    //   if an exception occurs, nobody zeros out the return address
+    //   pointer.  Thus if we re-used the Frame object, it would go
+    //   'active' as soon as we link it into the Frame chain.
+    //
+    //   Technically we only need to disable PInvoke inlining if we're
+    //   in a handler or if we're in a try body with a catch or
+    //   filter/except where other non-handler code in this method
+    //   might run and try to re-use the dirty Frame object.
+    //
+    //   A desktop test case where this seems to matter is
+    //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
+    const bool inX64Try = block->hasTryIndex();
+#else
+    const bool inX64Try = false;
+#endif // _TARGET_AMD64_
+
+    return !inX64Try && !block->hasHndIndex();
 }
 
-void Compiler::impCheckForPInvokeCall(GenTreePtr            call,
-                                      CORINFO_METHOD_HANDLE methHnd,
-                                      CORINFO_SIG_INFO*     sig,
-                                      unsigned              mflags)
+//------------------------------------------------------------------------
+// impCheckForPInvokeCall examine call to see if it is a pinvoke and if so
+// if it can be expressed as an inline pinvoke.
+//
+// Arguments:
+//    call       - tree for the call
+//    methHnd    - handle for the method being called (may be null)
+//    sig        - signature of the method being called
+//    mflags     - method flags for the method being called
+//    block      - block contaning the call, or for inlinees, block
+//                 containing the call being inlined
+//
+// Notes:
+//   Sets GTF_CALL_M_PINVOKE on the call for pinvokes.
+//
+//   Also sets GTF_CALL_UNMANAGED on call for inline pinvokes if the
+//   call passes a combination of legality and profitabilty checks.
+//
+//   If GTF_CALL_UNMANAGED is set, increments info.compCallUnmanaged
+
+void Compiler::impCheckForPInvokeCall(
+    GenTreePtr call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
 {
-    var_types                callRetTyp = JITtype2varType(sig->retType);
     CorInfoUnmanagedCallConv unmanagedCallConv;
 
     // If VM flagged it as Pinvoke, flag the call node accordingly
@@ -5464,20 +5492,25 @@ void Compiler::impCheckForPInvokeCall(GenTreePtr            call,
 
     if (opts.compMustInlinePInvokeCalli && methHnd == nullptr)
     {
-#ifdef _TARGET_X86_
-        // CALLI in IL stubs must be inlined
-        assert(impCanPInvokeInlineCallSite(callRetTyp));
-        assert(!info.compCompHnd->pInvokeMarshalingRequired(methHnd, sig));
-#endif // _TARGET_X86_
+        // Always inline pinvoke.
     }
     else
     {
-        if (!impCanPInvokeInline(callRetTyp))
+        // Check legality and profitability.
+        if (!impCanPInvokeInline(block))
         {
             return;
         }
 
         if (info.compCompHnd->pInvokeMarshalingRequired(methHnd, sig))
+        {
+            return;
+        }
+
+        // Size-speed tradeoff: don't use inline pinvoke at rarely
+        // executed call sites.  The non-inline version is more
+        // compact.
+        if (block->isRunRarely())
         {
             return;
         }
@@ -5487,8 +5520,6 @@ void Compiler::impCheckForPInvokeCall(GenTreePtr            call,
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
     info.compCallUnmanaged++;
-
-    assert(!compIsForInlining());
 
     // AMD64 convention is same for native and managed
     if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_C)
@@ -6146,7 +6177,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
              ((nextOpcode == CEE_NOP) || ((nextOpcode == CEE_POP) && (++cntPop == 1)))); // Next opcode = nop or exactly
                                                                                          // one pop seen so far.
 #else
-    nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
+    nextOpcode          = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
 #endif
 
     if (isCallPopAndRet)
@@ -6920,9 +6951,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     //--------------------------- Inline NDirect ------------------------------
 
-    if (!compIsForInlining())
+    // For inline cases we technically should look at both the current
+    // block and the call site block (or just the latter if we've
+    // fused the EH trees). However the block-related checks pertain to
+    // EH and we currently won't inline a method with EH. So for
+    // inlinees, just checking the call site block is sufficient.
     {
-        impCheckForPInvokeCall(call, methHnd, sig, mflags);
+        // New lexical block here to avoid compilation errors because of GOTOs.
+        BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
+        impCheckForPInvokeCall(call, methHnd, sig, mflags, block);
     }
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
