@@ -70,8 +70,8 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     | [@alexperovich](https://github.com/alexperovich), [@kouvel](https://github.com/kouvel) |  |
 | [System.Net](https://github.com/dotnet/corefx/labels/area-System.Net)                         |  | **Pending triage** |
 | [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | [@mellinoe](https://github.com/mellinoe) |  |
-| [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           |  | **Pending triage** |
-| [System.Reflection.Emit](https://github.com/dotnet/corefx/labels/area-System.Reflection.Emit) |  | **Pending triage** |
+| [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           | [@dnlharvey] (https://github.com/dnlharvey), [@AtsushiKan] (https://github.com/AtsushiKan) | **Pending triage** |
+| [System.Reflection.Emit](https://github.com/dotnet/corefx/labels/area-System.Reflection.Emit) | [@dnlharvey] (https://github.com/dnlharvey), [@AtsushiKan] (https://github.com/AtsushiKan) | **Pending triage** |
 | [System.Reflection.Metadata](https://github.com/dotnet/corefx/labels/area-System.Reflection.Metadata) | [@tmat](https://github.com/tmat), [@nguerrera](https://github.com/nguerrera) |  |
 | [System.Resources](https://github.com/dotnet/corefx/labels/area-System.Resources)             | [@ramarag](https://github.com/ramarag), [@tarekgh](https://github.com/tarekgh) | **Pending triage** |
 | [System.Runtime](https://github.com/dotnet/corefx/labels/area-System.Runtime)                 | [@AlexGhiondea](https://github.com/AlexGhiondea), [@joperezr](https://github.com/dotnet/joperezr) | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>WebUtility -> System.Net</li></ul> **Triage in progress** |
