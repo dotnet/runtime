@@ -141,7 +141,7 @@ namespace System.Net
     }
     public partial class HttpListenerTimeoutManager
     {
-        private HttpListenerTimeoutManager() { }
+        internal HttpListenerTimeoutManager() { }
         public TimeSpan DrainEntityBody { get { throw null; } set { } }
         public TimeSpan EntityBody { get { throw null; } set { } }
         public TimeSpan HeaderWait { get { throw null; } set { } }
