@@ -149,6 +149,20 @@
     </PropertyGroup>
     
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Using RuntimeIdentifier = '$(TestNugetRuntimeId)'" />
+    
+    <PropertyGroup>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'netcoreapp1.0'">.NETCoreApp,Version=v1.0</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'netcoreapp1.1'">.NETCoreApp,Version=v1.1</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net463'">.NETFramework,Version=v4.6.3</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net462'">.NETFramework,Version=v4.6.2</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net461'">.NETFramework,Version=v4.6.1</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net46'">.NETFramework,Version=v4.6</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net45'">.NETFramework,Version=v4.5</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net451'">.NETFramework,Version=v4.5.1</FilterTestNugetTargetMoniker>
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'net452'">.NETFramework,Version=v4.5.2</FilterTestNugetTargetMoniker>
+      <!-- Project template for UWP Apps uses uap10.0, this mapping allows support for the Debug and Release scenarios -->
+      <FilterTestNugetTargetMoniker Condition="'$(FilterToTestTFM)' == 'netcore50aot' Or '$(FilterToTestTFM)' == 'netcore50'">UAP,Version=v10.0</FilterTestNugetTargetMoniker>
+    </PropertyGroup>
 
     <AddDependenciesToProjectJson AdditionalDependencies="@(_InjectProjectReferenceDependency)"
                                   PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
@@ -159,7 +173,7 @@
                                   UseNewestAvailablePackages="$(UseNewestAvailablePackages)"
                                   SupportsFile="$(CommonTestProjectJson)"
                                   TestRuntime="$(TestNugetRuntimeId)"
-                                  TestTargetFramework="$(FilterToTestTFM)"
+                                  TestTargetFramework="$(FilterTestNugetTargetMoniker)"
                                   />
   </Target>
 
