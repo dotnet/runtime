@@ -295,29 +295,7 @@ inline CORDB_ADDRESS ALIGN_ADDRESS( CORDB_ADDRESS val, CORDB_ADDRESS alignment )
     return result;
 }
 
-// 
-// Whenever a structure is marshalled between different platforms, we need to ensure the
-// layout is the same in both cases.  We tell GCC to use the MSVC-style packing with
-// the following attribute.  The main thing this appears to control is whether
-// 8-byte values are aligned at 4-bytes (GCC default) or 8-bytes (MSVC default).
-// This attribute affects only the immediate struct it is applied to, you must also apply
-// it to any nested structs if you want their layout affected as well.  You also must
-// apply this to unions embedded in other structures, since it can influence the starting
-// alignment.
-//
-// Note that there doesn't appear to be any disadvantage to applying this a little
-// more agressively than necessary, so we generally use it on all classes / structures 
-// defined in a file that defines marshalled data types (eg. DacDbiStructures.h)
-// The -mms-bitfields compiler option also does this for the whole file, but we don't
-// want to go changing the layout of, for example, structures defined in OS header files
-// so we explicitly opt-in with this attribute.
-//  
-#ifdef __GNUC__
-#define MSLAYOUT __attribute__((__ms_struct__))
-#else
-#define MSLAYOUT
-#endif
-
+#include "dacprivate.h" // for MSLAYOUT
 #include "dumpcommon.h"
 
 #endif //DEBUGGER_COMMON_H
