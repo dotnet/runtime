@@ -8,7 +8,7 @@ def projectName = Utilities.getFolderName(project)
 def projectFolder = projectName + '/' + Utilities.getFolderName(branch)
 
 def static getOSGroup(def os) {
-    def osGroupMap = ['Ubuntu':'Linux',
+    def osGroupMap = ['Ubuntu14.04':'Linux',
         'RHEL7.2': 'Linux',
         'Ubuntu16.04': 'Linux',
         'Debian8.4':'Linux',
@@ -85,25 +85,40 @@ def static getOSGroup(def os) {
 
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 [true, false].each { isPR ->
-    ['Ubuntu'].each { os ->
+    ['Ubuntu14.04'].each { os ->
         def osGroup = getOSGroup(os)
         def architecture = 'x64'
         def configuration = 'Release'
+		def runType = isPR ? 'private' : 'rolling'
+		def benchViewName = isPR ? 'coreclr private \$ghprbPullTitle' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
         def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
+			
+			label('linux_clr_perf')
+				wrappers {
+					credentialsBinding {
+						string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+					}
+				}
+			
             steps {
-                shell("sudo bash ./tests/scripts/perf-prep.sh --branch=${projectName}")
-                shell("sudo ./init-tools.sh")
-                shell("""sudo bash ./tests/scripts/run-xunit-perf.sh \\
+                shell("bash ./tests/scripts/perf-prep.sh")
+                shell("./init-tools.sh")
+				shell("./build.sh ${architecture} ${configuration}")
+				shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
+				"python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user " + "\"dotnet-bot@microsoft.com\"\n" +
+				"python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type " + runType)
+                shell("""sudo -E bash ./tests/scripts/run-xunit-perf.sh \\
                 --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.${configuration};\${WORKSPACE}/bin/Unix.AnyCPU.${configuration};\${WORKSPACE}/bin/AnyOS.AnyCPU.${configuration}\" \\
-                --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.${configuration}\"""")
+                --coreFxBinDir=\"\${WORKSPACE}/corefx/bin/${osGroup}.AnyCPU.${configuration};\${WORKSPACE}/corefx/bin/Unix.AnyCPU.${configuration};\${WORKSPACE}/corefx/bin/AnyOS.AnyCPU.${configuration}\" \\
+                --coreFxNativeBinDir=\"\${WORKSPACE}/corefx/bin/${osGroup}.${architecture}.${configuration}\" \\
+				--runType=\"${runType}\" \\
+				--benchViewOS=\"${os}\" \\
+				--uploadToBenchview""")
             }
         }
-
-        Utilities.setMachineAffinity(newJob, os, 'latest-or-auto') // Just run against Linux VM's for now.
 
         // Save machinedata.json to /artifact/bin/ Jenkins dir
         def archiveSettings = new ArchivalSettings()
