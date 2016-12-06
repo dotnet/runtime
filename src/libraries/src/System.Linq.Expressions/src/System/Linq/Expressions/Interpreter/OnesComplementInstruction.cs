@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((long)(~(long)obj));
+                    frame.Push(~(long)obj);
                 }
                 return +1;
             }
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((uint)(~(uint)obj));
+                    frame.Push(~(uint)obj);
                 }
                 return +1;
             }
@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((ulong)(~(ulong)obj));
+                    frame.Push(~(ulong)obj);
                 }
                 return +1;
             }

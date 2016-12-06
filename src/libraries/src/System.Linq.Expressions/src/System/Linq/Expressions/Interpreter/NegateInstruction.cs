@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((long)(-(long)obj)));
+                    frame.Push(unchecked(-(long)obj));
                 }
                 return +1;
             }
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((float)(-(float)obj)));
+                    frame.Push(unchecked(-(float)obj));
                 }
                 return +1;
             }
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((double)(-(double)obj)));
+                    frame.Push(unchecked(-(double)obj));
                 }
                 return +1;
             }
@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((long)(-(long)obj)));
+                    frame.Push(checked(-(long)obj));
                 }
                 return +1;
             }
@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((float)(-(float)obj)));
+                    frame.Push(checked(-(float)obj));
                 }
                 return +1;
             }
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((double)(-(double)obj)));
+                    frame.Push(checked(-(double)obj));
                 }
                 return +1;
             }
