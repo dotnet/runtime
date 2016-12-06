@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(unchecked(-(int)obj)));
+                    frame.Push(unchecked(-(int)obj));
                 }
                 return +1;
             }
@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(checked(-(int)obj)));
+                    frame.Push(checked(-(int)obj));
                 }
                 return +1;
             }
