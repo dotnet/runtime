@@ -806,7 +806,7 @@ namespace System.Net.Sockets
             TransmitFileOptions flags)
         {
             bool needTransmitFileBuffers = false;
-            Interop.Mswsock.TransmitFileBuffers transmitFileBuffers;
+            Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default(Interop.Mswsock.TransmitFileBuffers);
 
             if (preBuffer != null && preBuffer.Length > 0)
             {
