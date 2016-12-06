@@ -2778,12 +2778,20 @@ extern "C" Error SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t 
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
 #elif HAVE_SENDFILE_6
-    off_t len = 0;
+    off_t len = count;
     ssize_t res;
     while (CheckInterrupted(res = sendfile(infd, outfd, static_cast<off_t>(offset), &len, nullptr, 0)));
     if (res != -1)
     {
-        *sent = len;
+        if (len == 0)
+        {
+            // This indicates EOF
+            *sent = count;
+        }
+        else
+        {
+            *sent = len;
+        }
         return PAL_SUCCESS;
     }
 
