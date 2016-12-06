@@ -28,7 +28,7 @@ namespace System.Collections.Concurrent.Tests
         protected virtual IProducerConsumerCollection<int> CreateOracle() => CreateOracle(Enumerable.Empty<int>());
         protected abstract IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection);
 
-        private readonly static TaskFactory s_threadFactory = new TaskFactory(
+        protected static TaskFactory ThreadFactory { get; } = new TaskFactory(
             CancellationToken.None, TaskCreationOptions.LongRunning, TaskContinuationOptions.LongRunning, TaskScheduler.Default);
 
         [Fact]
@@ -187,7 +187,7 @@ namespace System.Collections.Concurrent.Tests
 
             using (var b = new Barrier(threadsCount))
             {
-                WaitAllOrAnyFailed(Enumerable.Range(0, threadsCount).Select(threadNum => s_threadFactory.StartNew(() =>
+                WaitAllOrAnyFailed(Enumerable.Range(0, threadsCount).Select(threadNum => ThreadFactory.StartNew(() =>
                 {
                     b.SignalAndWait();
                     for (int j = 0; j < itemsPerThread; j++)
@@ -265,7 +265,7 @@ namespace System.Collections.Concurrent.Tests
             for (int i = 0; i < 1000; i += 100)
             {
                 // Create a thread that adds items to the bag
-                s_threadFactory.StartNew(() =>
+                ThreadFactory.StartNew(() =>
                 {
                     for (int j = i; j < i + 100; j++)
                     {
@@ -439,7 +439,7 @@ namespace System.Collections.Concurrent.Tests
             Array dest = new int[10];
 
             Assert.Throws<ArgumentNullException>("array", () => bag.CopyTo(null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => bag.CopyTo(dest, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => bag.CopyTo(dest, -1));
             Assert.Throws<ArgumentException>(() => bag.CopyTo(dest, dest.Length));
             Assert.Throws<ArgumentException>(() => bag.CopyTo(dest, dest.Length - 2));
         }
@@ -452,7 +452,7 @@ namespace System.Collections.Concurrent.Tests
             var bc = new BlockingCollection<int>(CreateProducerConsumerCollection());
             long dummy = 0;
 
-            Task[] producers = Enumerable.Range(0, numThreadsPerConsumerProducer).Select(_ => s_threadFactory.StartNew(() =>
+            Task[] producers = Enumerable.Range(0, numThreadsPerConsumerProducer).Select(_ => ThreadFactory.StartNew(() =>
             {
                 for (int i = 1; i <= numItemsPerThread; i++)
                 {
@@ -461,7 +461,7 @@ namespace System.Collections.Concurrent.Tests
                 }
             })).ToArray();
 
-            Task[] consumers = Enumerable.Range(0, numThreadsPerConsumerProducer).Select(_ => s_threadFactory.StartNew(() =>
+            Task[] consumers = Enumerable.Range(0, numThreadsPerConsumerProducer).Select(_ => ThreadFactory.StartNew(() =>
             {
                 for (int i = 0; i < numItemsPerThread; i++)
                 {
@@ -568,7 +568,7 @@ namespace System.Collections.Concurrent.Tests
             }
             else
             {
-                await s_threadFactory.StartNew(consume);
+                await ThreadFactory.StartNew(consume);
             }
         }
 
@@ -620,6 +620,30 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public void ToArray_AddTakeSameThread_ExpectedResultsAfterAddsAndTakes()
+        {
+            const int Items = 20;
+
+            IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
+            IProducerConsumerCollection<int> oracle = CreateOracle();
+
+            for (int i = 0; i < Items; i++)
+            {
+                Assert.True(c.TryAdd(i));
+                Assert.True(oracle.TryAdd(i));
+                Assert.Equal(oracle.ToArray(), c.ToArray());
+            }
+
+            for (int i = Items - 1; i >= 0; i--)
+            {
+                int expected, actual;
+                Assert.Equal(oracle.TryTake(out expected), c.TryTake(out actual));
+                Assert.Equal(expected, actual);
+                Assert.Equal(oracle.ToArray(), c.ToArray());
+            }
+        }
+
+        [Fact]
         public void GetEnumerator_ParallelInvocations_Succeed()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
@@ -646,7 +670,7 @@ namespace System.Collections.Concurrent.Tests
             DateTime end = default(DateTime);
             using (var b = new Barrier(Environment.ProcessorCount, _ => end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds)))
             {
-                Task<int>[] tasks = Enumerable.Range(0, b.ParticipantCount).Select(_ => s_threadFactory.StartNew(() =>
+                Task<int>[] tasks = Enumerable.Range(0, b.ParticipantCount).Select(_ => ThreadFactory.StartNew(() =>
                 {
                     b.SignalAndWait();
 
@@ -683,7 +707,7 @@ namespace System.Collections.Concurrent.Tests
             DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
 
             // Thread that adds
-            Task<HashSet<int>> adds = s_threadFactory.StartNew(() =>
+            Task<HashSet<int>> adds = ThreadFactory.StartNew(() =>
             {
                 var added = new HashSet<int>();
                 int i = int.MinValue;
@@ -697,7 +721,7 @@ namespace System.Collections.Concurrent.Tests
             });
 
             // Thread that adds and takes
-            Task<KeyValuePair<HashSet<int>, HashSet<int>>> addsAndTakes = s_threadFactory.StartNew(() =>
+            Task<KeyValuePair<HashSet<int>, HashSet<int>>> addsAndTakes = ThreadFactory.StartNew(() =>
             {
                 var added = new HashSet<int>();
                 var taken = new HashSet<int>();
@@ -721,7 +745,7 @@ namespace System.Collections.Concurrent.Tests
             });
 
             // Thread that just takes
-            Task<HashSet<int>> takes = s_threadFactory.StartNew(() =>
+            Task<HashSet<int>> takes = ThreadFactory.StartNew(() =>
             {
                 var taken = new HashSet<int>();
                 while (DateTime.UtcNow < end)
@@ -758,7 +782,7 @@ namespace System.Collections.Concurrent.Tests
 
             DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
 
-            Task<long> addsTakes = s_threadFactory.StartNew(() =>
+            Task<long> addsTakes = ThreadFactory.StartNew(() =>
             {
                 long total = 0;
                 while (DateTime.UtcNow < end)
@@ -787,7 +811,7 @@ namespace System.Collections.Concurrent.Tests
                 return total;
             });
 
-            Task<long> takesFromOtherThread = s_threadFactory.StartNew(() =>
+            Task<long> takesFromOtherThread = ThreadFactory.StartNew(() =>
             {
                 long total = 0;
                 int item;
@@ -817,7 +841,7 @@ namespace System.Collections.Concurrent.Tests
 
             DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
 
-            Task<long> addsTakes = s_threadFactory.StartNew(() =>
+            Task<long> addsTakes = ThreadFactory.StartNew(() =>
             {
                 long total = 0;
                 while (DateTime.UtcNow < end)
@@ -844,7 +868,7 @@ namespace System.Collections.Concurrent.Tests
                 return total;
             });
 
-            Task peeksFromOtherThread = s_threadFactory.StartNew(() =>
+            Task peeksFromOtherThread = ThreadFactory.StartNew(() =>
             {
                 int item;
                 while (DateTime.UtcNow < end)
@@ -870,7 +894,7 @@ namespace System.Collections.Concurrent.Tests
 
             DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
 
-            Task addsTakes = s_threadFactory.StartNew(() =>
+            Task addsTakes = ThreadFactory.StartNew(() =>
             {
                 while (DateTime.UtcNow < end)
                 {
@@ -908,7 +932,7 @@ namespace System.Collections.Concurrent.Tests
 
             DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
 
-            Task addsTakes = s_threadFactory.StartNew(() =>
+            Task addsTakes = ThreadFactory.StartNew(() =>
             {
                 while (DateTime.UtcNow < end)
                 {
