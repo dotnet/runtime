@@ -26,6 +26,6 @@ namespace System.Linq.Expressions.Interpreter
             return +1;
         }
 
-        public override string ToString() => "New " + _type;
+        public override string ToString() => "DefaultValue " + _type;
     }
 }
