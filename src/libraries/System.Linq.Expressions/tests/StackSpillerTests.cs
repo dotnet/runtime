@@ -1257,7 +1257,7 @@ namespace System.Linq.Expressions.Tests
                       .maxcontinuation 1
 
                       IP_0000: InitMutableValue(0)
-                      IP_0001: New System.Linq.Expressions.Tests.StackSpillerTests+ValueList
+                      IP_0001: DefaultValue System.Linq.Expressions.Tests.StackSpillerTests+ValueList
                       IP_0002: Dup()
                       .try
                       {
@@ -1364,7 +1364,7 @@ namespace System.Linq.Expressions.Tests
                       .maxcontinuation 1
 
                       IP_0000: InitMutableValue(0)
-                      IP_0001: New System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
+                      IP_0001: DefaultValue System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
                       IP_0002: Dup()
                       .try
                       {
@@ -1471,7 +1471,7 @@ namespace System.Linq.Expressions.Tests
                       .maxcontinuation 1
 
                       IP_0000: InitMutableValue(0)
-                      IP_0001: New System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
+                      IP_0001: DefaultValue System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
                       IP_0002: Dup()
                       .try
                       {
@@ -1653,7 +1653,7 @@ namespace System.Linq.Expressions.Tests
                       .maxcontinuation 1
 
                       IP_0000: InitMutableValue(0)
-                      IP_0001: New System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
+                      IP_0001: DefaultValue System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
                       IP_0002: Dup()
                       IP_0003: Call(System.Collections.Generic.List`1[System.Int32] get_Xs())
                       IP_0004: Dup()
