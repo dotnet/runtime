@@ -21981,6 +21981,9 @@ _Done:
     compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout  |= InlineeCompiler->compGSReorderStackLayout;
 
+    // Update unmanaged call count
+    info.compCallUnmanaged    += InlineeCompiler->info.compCallUnmanaged;
+
     // Update optMethodFlags
 
 #ifdef DEBUG
