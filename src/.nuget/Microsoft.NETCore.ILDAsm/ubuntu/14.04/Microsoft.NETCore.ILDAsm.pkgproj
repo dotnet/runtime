@@ -5,7 +5,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageTargetRuntime>ubuntu.14.04-$(PackagePlatform)</PackageTargetRuntime>
     <!-- build for x64, arm -->
-    <PackagePlatforms>x64;arm</PackagePlatforms>
+    <PackagePlatforms>x64;arm;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeSplittableBinary Include="$(BinDir)ildasm" />
