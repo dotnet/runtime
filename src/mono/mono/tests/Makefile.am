@@ -476,7 +476,8 @@ BASE_TEST_CS_SRC=		\
 	generic-unloading.2.cs	\
 	namedmutex-destroy-race.cs	\
 	thread6.cs	\
-	appdomain-threadpool-unload.cs
+	appdomain-threadpool-unload.cs	\
+	process-unref-race.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -587,7 +588,7 @@ if X86
 
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
-	bug-18026.exe monitor.exe threadpool-exceptions5.exe
+	bug-18026.exe monitor.exe threadpool-exceptions5.exe process-unref-race.exe
 endif
 
 endif

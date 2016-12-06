@@ -507,12 +507,18 @@ static gboolean
 mono_w32handle_ref_core (gpointer handle, MonoW32HandleBase *handle_data);
 
 static gboolean
-mono_w32handle_unref_core (gpointer handle, MonoW32HandleBase *handle_data, guint minimum);
+mono_w32handle_unref_core (gpointer handle, MonoW32HandleBase *handle_data);
+
+static void
+w32handle_destroy (gpointer handle);
 
 void
 mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpointer user_data), gpointer user_data)
 {
+	GPtrArray *handles_to_destroy;
 	guint32 i, k;
+
+	handles_to_destroy = NULL;
 
 	mono_os_mutex_lock (&scan_mutex);
 
@@ -539,10 +545,18 @@ mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpoi
 
 			finished = on_each (handle, handle_data->specific, user_data);
 
-			/* we do not want to have to destroy the handle here,
-			 * as it would means the ref/unref are unbalanced */
-			destroy = mono_w32handle_unref_core (handle, handle_data, 2);
-			g_assert (!destroy);
+			/* we might have to destroy the handle here, as
+			 * it could have been unrefed in another thread */
+			destroy = mono_w32handle_unref_core (handle, handle_data);
+			if (destroy) {
+				/* we do not destroy it while holding the scan_mutex
+				 * lock, because w32handle_destroy also needs to take
+				 * the lock, and it calls user code which might lead
+				 * to a deadlock */
+				if (!handles_to_destroy)
+					handles_to_destroy = g_ptr_array_sized_new (4);
+				g_ptr_array_add (handles_to_destroy, handle);
+			}
 
 			if (finished)
 				goto done;
@@ -551,6 +565,13 @@ mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpoi
 
 done:
 	mono_os_mutex_unlock (&scan_mutex);
+
+	if (handles_to_destroy) {
+		for (i = 0; i < handles_to_destroy->len; ++i)
+			w32handle_destroy (handles_to_destroy->pdata [i]);
+
+		g_ptr_array_free (handles_to_destroy, TRUE);
+	}
 }
 
 static gboolean
@@ -573,7 +594,7 @@ mono_w32handle_ref_core (gpointer handle, MonoW32HandleBase *handle_data)
 }
 
 static gboolean
-mono_w32handle_unref_core (gpointer handle, MonoW32HandleBase *handle_data, guint minimum)
+mono_w32handle_unref_core (gpointer handle, MonoW32HandleBase *handle_data)
 {
 	MonoW32HandleType type;
 	guint old, new;
@@ -582,8 +603,8 @@ mono_w32handle_unref_core (gpointer handle, MonoW32HandleBase *handle_data, guin
 
 	do {
 		old = handle_data->ref;
-		if (!(old >= minimum))
-			g_error ("%s: handle %p has ref %d, it should be >= %d", __func__, handle, old, minimum);
+		if (!(old >= 1))
+			g_error ("%s: handle %p has ref %d, it should be >= 1", __func__, handle, old);
 
 		new = old - 1;
 	} while (InterlockedCompareExchange ((gint32*) &handle_data->ref, new, old) != old);
@@ -612,6 +633,45 @@ void mono_w32handle_ref (gpointer handle)
 
 static void (*_wapi_handle_ops_get_close_func (MonoW32HandleType type))(gpointer, gpointer);
 
+static void
+w32handle_destroy (gpointer handle)
+{
+	/* Need to copy the handle info, reset the slot in the
+	 * array, and _only then_ call the close function to
+	 * avoid race conditions (eg file descriptors being
+	 * closed, and another file being opened getting the
+	 * same fd racing the memset())
+	 */
+	MonoW32HandleBase *handle_data;
+	MonoW32HandleType type;
+	gpointer handle_specific;
+	void (*close_func)(gpointer, gpointer);
+
+	if (!mono_w32handle_lookup_data (handle, &handle_data))
+		g_error ("%s: unknown handle %p", __func__, handle);
+
+	type = handle_data->type;
+	handle_specific = handle_data->specific;
+
+	mono_os_mutex_lock (&scan_mutex);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: destroy %s handle %p", __func__, mono_w32handle_ops_typename (type), handle);
+
+	mono_os_mutex_destroy (&handle_data->signal_mutex);
+	mono_os_cond_destroy (&handle_data->signal_cond);
+
+	memset (handle_data, 0, sizeof (MonoW32HandleBase));
+
+	mono_os_mutex_unlock (&scan_mutex);
+
+	close_func = _wapi_handle_ops_get_close_func (type);
+	if (close_func != NULL) {
+		close_func (handle, handle_specific);
+	}
+
+	g_free (handle_specific);
+}
+
 /* The handle must not be locked on entry to this function */
 void
 mono_w32handle_unref (gpointer handle)
@@ -625,40 +685,9 @@ mono_w32handle_unref (gpointer handle)
 		return;
 	}
 
-	destroy = mono_w32handle_unref_core (handle, handle_data, 1);
-
-	if (destroy) {
-		/* Need to copy the handle info, reset the slot in the
-		 * array, and _only then_ call the close function to
-		 * avoid race conditions (eg file descriptors being
-		 * closed, and another file being opened getting the
-		 * same fd racing the memset())
-		 */
-		MonoW32HandleType type;
-		gpointer handle_specific;
-		void (*close_func)(gpointer, gpointer);
-
-		type = handle_data->type;
-		handle_specific = handle_data->specific;
-
-		mono_os_mutex_lock (&scan_mutex);
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: destroy %s handle %p", __func__, mono_w32handle_ops_typename (type), handle);
-
-		mono_os_mutex_destroy (&handle_data->signal_mutex);
-		mono_os_cond_destroy (&handle_data->signal_cond);
-
-		memset (handle_data, 0, sizeof (MonoW32HandleBase));
-
-		mono_os_mutex_unlock (&scan_mutex);
-
-		close_func = _wapi_handle_ops_get_close_func (type);
-		if (close_func != NULL) {
-			close_func (handle, handle_specific);
-		}
-
-		g_free (handle_specific);
-	}
+	destroy = mono_w32handle_unref_core (handle, handle_data);
+	if (destroy)
+		w32handle_destroy (handle);
 }
 
 static void
