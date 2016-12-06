@@ -252,6 +252,7 @@
     <Compile Include="System\Linq\Expressions\Interpreter\ExclusiveOrInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\FieldOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\GreaterThanInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\GreaterThanOrEqualInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\IncrementInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Instruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\InstructionList.cs" />
@@ -260,12 +261,14 @@
     <Compile Include="System\Linq\Expressions\Interpreter\LabelInfo.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LeftShiftInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LessThanInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\LessThanOrEqualInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightCompiler.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightDelegateCreator.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightLambda.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightLambda.Generated.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LocalAccess.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LocalVariables.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\ModuloInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\MulInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NegateInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NewInstruction.cs" />
