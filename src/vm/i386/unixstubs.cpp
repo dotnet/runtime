@@ -87,6 +87,19 @@ extern "C"
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
+
+    _Unwind_Reason_Code
+    UnhandledExceptionHandlerUnix(
+                IN int version,
+                IN _Unwind_Action action,
+                IN uint64_t exceptionClass,
+                IN struct _Unwind_Exception *exception,
+                IN struct _Unwind_Context *context
+              )
+    {
+        PORTABILITY_ASSERT("UnhandledExceptionHandlerUnix");
+        return _URC_FATAL_PHASE1_ERROR;
+    }
 };
 
 VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
