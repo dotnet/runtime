@@ -1171,6 +1171,16 @@ public:
         return OperIsBlk(OperGet());
     }
 
+    static bool OperIsDynBlk(genTreeOps gtOper)
+    {
+        return ((gtOper == GT_DYN_BLK) || (gtOper == GT_STORE_DYN_BLK));
+    }
+
+    bool OperIsDynBlk() const
+    {
+        return OperIsDynBlk(OperGet());
+    }
+
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
         return ((gtOper == GT_STORE_BLK) || (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
