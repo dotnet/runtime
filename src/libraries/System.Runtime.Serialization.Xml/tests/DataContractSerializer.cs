@@ -2748,24 +2748,12 @@ public static partial class DataContractSerializerTests
             t, mi, out xname);
     }
 
-    [ActiveIssue(12772)]
     [Fact]
     public static void XsdDataContractExporterTest()
     {
         XsdDataContractExporter exporter = new XsdDataContractExporter();
-        if (exporter.CanExport(typeof(Employee)))
-        {
-            exporter.Export(typeof(Employee));
-            Assert.Equal(3,exporter.Schemas.Count);
-
-            XmlSchemaSet mySchemas = exporter.Schemas;
-
-            XmlQualifiedName XmlNameValue = exporter.GetRootElementName(typeof(Employee));
-            string EmployeeNameSpace = XmlNameValue.Namespace;
-            Assert.Equal("www.msn.com/Examples/", EmployeeNameSpace);
-            XmlSchema schema = mySchemas.Schemas(EmployeeNameSpace).Cast<XmlSchema>().FirstOrDefault();
-            Assert.NotNull(schema);
-        }
+        Assert.Throws<PlatformNotSupportedException>(() => exporter.CanExport(typeof(Employee)));
+        Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
     }
 
 #if ReflectionOnly

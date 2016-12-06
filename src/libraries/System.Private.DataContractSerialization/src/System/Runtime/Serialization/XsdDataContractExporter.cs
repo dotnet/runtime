@@ -58,11 +58,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                //if (dataContractSet == null)
-                //{
-                //    dataContractSet = new DataContractSet((Options == null) ? null : Options.GetSurrogate());
-                //}
-                return _dataContractSet;
+                throw new PlatformNotSupportedException();
             }
         }
 
