@@ -31,8 +31,6 @@ namespace System.Runtime.Serialization
     internal sealed class XmlFormatReaderGenerator
 #endif
     {
-        private static readonly ConcurrentDictionary<Type, bool> s_typeHasDefaultConstructorMap = new ConcurrentDictionary<Type, bool>();
-
         private CriticalHelper _helper;
 
         public XmlFormatReaderGenerator()
@@ -932,7 +930,7 @@ namespace System.Runtime.Serialization
         static internal object UnsafeGetUninitializedObject(Type type)
         {
 #if !NET_NATIVE
-            return FormatterServices.GetUninitializedObject(type) ?? Activator.CreateInstance(type);
+            return FormatterServices.GetUninitializedObject(type);
 #else
             return RuntimeAugments.NewObject(type.TypeHandle);
 #endif
