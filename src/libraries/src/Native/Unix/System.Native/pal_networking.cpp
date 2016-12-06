@@ -2761,6 +2761,8 @@ extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* 
 
 extern "C" Error SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent)
 {
+    assert(sent != nullptr);
+
     int outfd = ToFileDescriptor(out_fd);
     int infd = ToFileDescriptor(in_fd);
 
