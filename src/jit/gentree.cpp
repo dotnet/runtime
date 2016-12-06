@@ -9244,30 +9244,53 @@ GenTree** GenTreeUseEdgeIterator::GetNextUseEdge() const
         }
 
         case GT_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
             switch (m_state)
             {
                 case 0:
-                    return &(m_node->AsDynBlk()->gtOp1);
+                    return dynBlock->gtEvalSizeFirst ? &dynBlock->gtDynamicSize : &dynBlock->gtOp1;
                 case 1:
-                    return &(m_node->AsDynBlk()->gtDynamicSize);
+                    return dynBlock->gtEvalSizeFirst ? &dynBlock->gtOp1 : &dynBlock->gtDynamicSize;
                 default:
                     return nullptr;
             }
-            break;
+        }
+        break;
 
         case GT_STORE_DYN_BLK:
-            switch (m_state)
+        {
+            GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
+            if (dynBlock->gtEvalSizeFirst)
             {
-                case 0:
-                    return &(m_node->AsDynBlk()->gtOp1);
-                case 1:
-                    return &(m_node->AsDynBlk()->gtOp2);
-                case 2:
-                    return &(m_node->AsDynBlk()->gtDynamicSize);
-                default:
-                    return nullptr;
+                switch (m_state)
+                {
+                    case 0:
+                        return &dynBlock->gtDynamicSize;
+                    case 1:
+                        return dynBlock->IsReverseOp() ? &dynBlock->gtOp2 : &dynBlock->gtOp1;
+                    case 2:
+                        return dynBlock->IsReverseOp() ? &dynBlock->gtOp1 : &dynBlock->gtOp2;
+                    default:
+                        return nullptr;
+                }
             }
-            break;
+            else
+            {
+                switch (m_state)
+                {
+                    case 0:
+                        return dynBlock->IsReverseOp() ? &dynBlock->gtOp2 : &dynBlock->gtOp1;
+                    case 1:
+                        return dynBlock->IsReverseOp() ? &dynBlock->gtOp1 : &dynBlock->gtOp2;
+                    case 2:
+                        return &dynBlock->gtDynamicSize;
+                    default:
+                        return nullptr;
+                }
+            }
+        }
+        break;
 
         case GT_LEA:
         {
