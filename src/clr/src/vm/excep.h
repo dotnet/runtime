@@ -88,9 +88,11 @@ struct ThrowCallbackType
     MethodDesc * pProfilerNotify;   // Context for profiler callbacks -- see COMPlusFrameHandler().
     BOOL    bReplaceStack;  // Used to pass info to SaveStackTrace call
     BOOL    bSkipLastElement;// Used to pass info to SaveStackTrace call
+#ifndef FEATURE_PAL
     HANDLE hCallerToken;
     HANDLE hImpersonationToken;
     BOOL bImpersonationTokenSet;
+#endif // !FEATURE_PAL
 #ifdef _DEBUG
     void * pCurrentExceptionRecord;
     void * pPrevExceptionRecord;
@@ -114,9 +116,11 @@ struct ThrowCallbackType
         pProfilerNotify = NULL;
         bReplaceStack = FALSE;
         bSkipLastElement = FALSE;
+#ifndef FEATURE_PAL
         hCallerToken = NULL;
         hImpersonationToken = NULL;
         bImpersonationTokenSet = FALSE;
+#endif // !FEATURE_PAL
         
 #ifdef _DEBUG
         pCurrentExceptionRecord = 0;

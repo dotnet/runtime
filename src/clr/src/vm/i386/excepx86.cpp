@@ -2424,6 +2424,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         pData->bSkipLastElement = FALSE;
     }
 
+#ifndef FEATURE_PAL
     // Check for any impersonation on the frame and save that for use during EH filter callbacks
     OBJECTREF* pRefSecDesc = pCf->GetAddrOfSecurityObject();
     if (pRefSecDesc != NULL && *pRefSecDesc != NULL)
@@ -2442,6 +2443,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
             }
         }
     }
+#endif // !FEATURE_PAL
 
     // now we've got the stack trace, if we aren't allowed to catch this and we're first pass, return
     if (pData->bDontCatch)
