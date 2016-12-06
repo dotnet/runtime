@@ -147,6 +147,7 @@ JIT/Directed/intrinsic/interlocked/rva_rvastatic3/rva_rvastatic3.sh
 JIT/Directed/intrinsic/interlocked/rva_rvastatic4/rva_rvastatic4.sh
 JIT/Directed/pinvoke/calli_excep/calli_excep.sh
 JIT/Directed/pinvoke/jump/jump.sh
+JIT/Directed/pinvoke/pinvoke-bug/pinvoke-bug.sh
 JIT/Directed/pinvoke/sin/sin.sh
 JIT/Directed/pinvoke/sysinfo_cs/sysinfo_cs.sh
 JIT/Directed/pinvoke/sysinfo_il/sysinfo_il.sh
