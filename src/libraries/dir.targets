@@ -42,8 +42,6 @@
     <ProjectJson Condition="'$(ProjectJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.json</ProjectJson>
     <!-- If project specific project.json exists then don't skip generating test project.json files -->
     <SkipGenerateTestProjectJson Condition="'$(ProjectJson)'==''" >true</SkipGenerateTestProjectJson>
-    <ProjectJson Condition="'$(ProjectJson)'==''">$(CommonTestProjectJson)</ProjectJson>
-    <ProjectLockJson Condition="'$(ProjectJson)'=='$(CommonTestProjectJson)'">$(CommonTestProjectLockJson)</ProjectLockJson>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
