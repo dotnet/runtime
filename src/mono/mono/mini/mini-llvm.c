@@ -5871,8 +5871,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			const char *name = (const char*)ins->inst_p0;
 			LLVMValueRef var;
 
-			if (!ctx->module->objc_selector_to_var)
+			if (!ctx->module->objc_selector_to_var) {
 				ctx->module->objc_selector_to_var = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+				LLVMValueRef info_var = LLVMAddGlobal (ctx->lmodule, LLVMArrayType (LLVMInt8Type (), 8), "@OBJC_IMAGE_INFO");
+				int32_t objc_imageinfo [] = { 0, 16 };
+				LLVMSetInitializer (info_var, mono_llvm_create_constant_data_array ((uint8_t *) &objc_imageinfo, 8));
+				LLVMSetLinkage (info_var, LLVMPrivateLinkage);
+				LLVMSetExternallyInitialized (info_var, TRUE);
+				LLVMSetSection (info_var, "__DATA, __objc_imageinfo,regular,no_dead_strip");
+				LLVMSetAlignment (info_var, sizeof (mgreg_t));
+				mark_as_used (ctx->module, info_var);
+			}
+
 			var = g_hash_table_lookup (ctx->module->objc_selector_to_var, name);
 			if (!var) {
 				LLVMValueRef indexes [16];
