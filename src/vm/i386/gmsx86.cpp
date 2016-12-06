@@ -42,7 +42,9 @@
    
 #if !defined(DACCESS_COMPILE)
 
+#ifdef _MSC_VER
 #pragma optimize("gsy", on )        // optimize to insure that code generation does not have junk in it
+#endif // _MSC_VER
 #pragma warning(disable:4717) 
 
 static int __stdcall zeroFtn() {
@@ -62,7 +64,9 @@ static int __stdcall recursiveFtn() {
 #pragma clang diagnostic pop
 #endif
 
+#ifdef _MSC_VER
 #pragma optimize("", on )
+#endif // _MSC_VER
 
 
 /* Has mscorwks been instrumented so that calls are morphed into push XXXX call <helper> */
