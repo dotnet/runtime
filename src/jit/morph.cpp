@@ -5925,7 +5925,15 @@ GenTreePtr Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varTyp
                                         lclOffs));
 
         // Access the argument through the local
-        GenTreePtr tree = gtNewOperNode(GT_IND, varType, ptrArg);
+        GenTreePtr tree;
+        if (varType == TYP_STRUCT)
+        {
+            tree = gtNewBlockVal(ptrArg, varDsc->lvExactSize);
+        }
+        else
+        {
+            tree = gtNewOperNode(GT_IND, varType, ptrArg);
+        }
         tree->gtFlags |= GTF_IND_TGTANYWHERE;
 
         if (varDsc->lvAddrExposed)
@@ -5962,8 +5970,14 @@ GenTreePtr Compiler::fgMorphLocalVar(GenTreePtr tree)
     if (info.compIsVarArgs)
     {
         GenTreePtr newTree = fgMorphStackArgForVarArgs(lclNum, varType, 0);
-        if (newTree != NULL)
+        if (newTree != nullptr)
+        {
+            if (newTree->OperIsBlk() && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+            {
+                fgMorphBlkToInd(newTree->AsBlk(), newTree->gtType);
+            }
             return newTree;
+        }
     }
 #endif // _TARGET_X86_
 
@@ -8340,8 +8354,14 @@ GenTreePtr Compiler::fgMorphLeaf(GenTreePtr tree)
         {
             GenTreePtr newTree =
                 fgMorphStackArgForVarArgs(tree->gtLclFld.gtLclNum, tree->gtType, tree->gtLclFld.gtLclOffs);
-            if (newTree != NULL)
+            if (newTree != nullptr)
+            {
+                if (newTree->OperIsBlk() && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+                {
+                    fgMorphBlkToInd(newTree->AsBlk(), newTree->gtType);
+                }
                 return newTree;
+            }
         }
     }
 #endif // _TARGET_X86_
