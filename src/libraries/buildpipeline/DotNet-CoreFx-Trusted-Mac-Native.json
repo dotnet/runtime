@@ -297,9 +297,6 @@
     "VsoCorefxGitUrl": {
       "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepositoryName)/"
     },
-    "Build.Clean": {
-      "value": "all"
-    },
     "CleanAgent": {
       "value": "false"
     }
