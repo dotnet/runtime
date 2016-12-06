@@ -144,7 +144,7 @@
   <data name="BlockingCollection_CopyTo_NonNegative" xml:space="preserve">
     <value>The index argument must be greater than or equal zero.</value>
   </data>
-  <data name="BlockingCollection_CopyTo_TooManyElems" xml:space="preserve">
+  <data name="Collection_CopyTo_TooManyElems" xml:space="preserve">
     <value>The number of elements in the collection is greater than the available space from index to the end of the destination array.</value>
   </data>
   <data name="BlockingCollection_ctor_BoundedCapacityRange" xml:space="preserve">

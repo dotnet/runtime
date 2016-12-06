@@ -290,12 +290,35 @@ namespace System.Collections.Concurrent
             try
             {
                 FreezeBag(ref lockTaken);
-                ToList().CopyTo(array, index);
+
+                // Make sure we won't go out of bounds on the array
+                int count = DangerousCount;
+                if (index > array.Length - count)
+                {
+                    throw new ArgumentException(SR.Collection_CopyTo_TooManyElems, nameof(index));
+                }
+
+                // Do the copy
+                int copied = CopyFromEachQueueToArray(array, index);
+                Debug.Assert(copied == count);
             }
             finally
             {
                 UnfreezeBag(lockTaken);
             }
+        }
+
+        /// <summary>Copies from each queue to the target array, starting at the specified index.</summary>
+        private int CopyFromEachQueueToArray(T[] array, int index)
+        {
+            Debug.Assert(Monitor.IsEntered(GlobalQueuesLock));
+
+            int i = index;
+            for (WorkStealingQueue queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
+            {
+                i += queue.DangerousCopyTo(array, i);
+            }
+            return i - index;
         }
 
         /// <summary>
@@ -325,21 +348,22 @@ namespace System.Collections.Concurrent
         /// </exception>
         void ICollection.CopyTo(Array array, int index)
         {
+            // If the destination is actually a T[], use the strongly-typed
+            // overload that doesn't allocate/copy an extra array.
+            T[] szArray = array as T[];
+            if (szArray != null)
+            {
+                CopyTo(szArray, index);
+                return;
+            }
+
+            // Otherwise, fall back to first storing the contents to an array,
+            // and then relying on its CopyTo to copy to the target Array.
             if (array == null)
             {
                 throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
             }
-
-            bool lockTaken = false;
-            try
-            {
-                FreezeBag(ref lockTaken);
-                ((ICollection)ToList()).CopyTo(array, index);
-            }
-            finally
-            {
-                UnfreezeBag(lockTaken);
-            }
+            ToArray().CopyTo(array, index);
         }
 
         /// <summary>
@@ -349,22 +373,30 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentBag{T}"/>.</returns>
         public T[] ToArray()
         {
-            // Short path if the bag is empty
-            if (_workStealingQueues == null)
+            if (_workStealingQueues != null)
             {
-                return Array.Empty<T>();
+                bool lockTaken = false;
+                try
+                {
+                    FreezeBag(ref lockTaken);
+
+                    int count = DangerousCount;
+                    if (count > 0)
+                    {
+                        var arr = new T[count];
+                        int copied = CopyFromEachQueueToArray(arr, 0);
+                        Debug.Assert(copied == count);
+                        return arr;
+                    }
+                }
+                finally
+                {
+                    UnfreezeBag(lockTaken);
+                }
             }
 
-            bool lockTaken = false;
-            try
-            {
-                FreezeBag(ref lockTaken);
-                return ToList().ToArray();
-            }
-            finally
-            {
-                UnfreezeBag(lockTaken);
-            }
+            // Bag was empty
+            return Array.Empty<T>();
         }
 
         /// <summary>
@@ -379,25 +411,7 @@ namespace System.Collections.Concurrent
         /// <see cref="GetEnumerator"/> was called.  The enumerator is safe to use
         /// concurrently with reads from and writes to the bag.
         /// </remarks>
-        public IEnumerator<T> GetEnumerator()
-        {
-            // Short path if the bag is empty
-            if (_workStealingQueues == null)
-            {
-                return ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
-            }
-
-            bool lockTaken = false;
-            try
-            {
-                FreezeBag(ref lockTaken);
-                return ToList().GetEnumerator();
-            }
-            finally
-            {
-                UnfreezeBag(lockTaken);
-            }
-        }
+        public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)ToArray()).GetEnumerator();
 
         /// <summary>
         /// Returns an enumerator that iterates through the <see
@@ -435,12 +449,29 @@ namespace System.Collections.Concurrent
                 try
                 {
                     FreezeBag(ref lockTaken);
-                    return GetCountInternal();
+                    return DangerousCount;
                 }
                 finally
                 {
                     UnfreezeBag(lockTaken);
                 }
+            }
+        }
+
+        /// <summary>Gets the number of items stored in the bag.</summary>
+        /// <remarks>Only provides a stable result when the bag is frozen.</remarks>
+        private int DangerousCount
+        {
+            get
+            {
+                int count = 0;
+                for (WorkStealingQueue queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
+                {
+                    checked { count += queue.DangerousCount; }
+                }
+
+                Debug.Assert(count >= 0);
+                return count;
             }
         }
 
@@ -452,26 +483,49 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                if (_workStealingQueues != null)
+                // Fast-path based on the current thread's local queue.
+                WorkStealingQueue local = GetCurrentThreadWorkStealingQueue(forceCreate: false);
+                if (local != null)
                 {
-                    bool lockTaken = false;
-                    try
+                    // We don't need the lock to check the local queue, as no other thread
+                    // could be adding to it, and a concurrent steal that transitions from
+                    // non-empty to empty doesn't matter because if we see this as non-empty,
+                    // then that's a valid moment-in-time answer, and if we see this as empty,
+                    // we check other things.
+                    if (!local.IsEmpty)
                     {
-                        FreezeBag(ref lockTaken);
-                        for (WorkStealingQueue queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
-                        {
-                            if (!queue.IsEmpty)
-                            {
-                                return false;
-                            }
-                        }
+                        return false;
                     }
-                    finally
+
+                    // We know the local queue is empty (no one besides this thread could have
+                    // added to it since we checked).  If the local queue is the only one
+                    // in the bag, then the bag is empty, too.
+                    if (local._nextQueue == null && local == _workStealingQueues)
                     {
-                        UnfreezeBag(lockTaken);
+                        return true;
                     }
                 }
 
+                // Couldn't take a fast path. Freeze the bag, and enumerate the queues to see if
+                // any is non-empty.
+                bool lockTaken = false;
+                try
+                {
+                    FreezeBag(ref lockTaken);
+                    for (WorkStealingQueue queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
+                    {
+                        if (!queue.IsEmpty)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                finally
+                {
+                    UnfreezeBag(lockTaken);
+                }
+
+                // All queues were empty, so the bag was empty.
                 return true;
             }
         }
@@ -557,41 +611,6 @@ namespace System.Collections.Concurrent
             }
         }
 
-        /// <summary>
-        /// Local helper function to get the bag count, the caller should call it from Freeze/Unfreeze block
-        /// </summary>
-        /// <returns>The current bag count</returns>
-        private int GetCountInternal()
-        {
-            Debug.Assert(Monitor.IsEntered(GlobalQueuesLock));
-
-            int count = 0;
-            for (WorkStealingQueue queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
-            {
-                checked { count += queue.Count; }
-            }
-            return count;
-        }
-
-        /// <summary>
-        /// Local helper function to return the bag's contents in a list, this is mainly used by CopyTo and ToArray
-        /// This is not thread safe, should be called in Freeze/UnFreeze bag block
-        /// </summary>
-        /// <returns>List the contains the bag items</returns>
-        private List<T> ToList()
-        {
-            Debug.Assert(Monitor.IsEntered(GlobalQueuesLock));
-
-            var list = new List<T>();
-
-            for (WorkStealingQueue queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
-            {
-                queue.AddToList(list);
-            }
-
-            return list;
-        }
-
         /// <summary>Provides a work-stealing queue data structure stored per thread.</summary>
         private sealed class WorkStealingQueue
         {
@@ -634,7 +653,18 @@ namespace System.Collections.Concurrent
             }
 
             /// <summary>Gets whether the queue is empty.</summary>
-            internal bool IsEmpty => _headIndex >= _tailIndex;
+            internal bool IsEmpty
+            {
+                get
+                {
+                    /// _tailIndex can be decremented even while the bag is frozen, as the decrement in TryLocalPop happens prior
+                    /// to the check for _frozen.  But that's ok, as if _tailIndex is being decremented such that _headIndex becomes
+                    /// >= _tailIndex, then the queue is about to be empty.  This does mean, though, that while holding the lock,
+                    /// it is possible to observe Count == 1 but IsEmpty == true.  As such, we simply need to avoid doing any operation
+                    /// while the bag is frozen that requires those values to be consistent.
+                    return _headIndex >= _tailIndex;
+                }
+            }
 
             /// <summary>
             /// Add new item to the tail of the queue.
@@ -891,16 +921,47 @@ namespace System.Collections.Concurrent
                 return false;
             }
 
-            /// <summary>Add the contents of this queue to the specified list.</summary>
-            internal void AddToList(List<T> list)
+            /// <summary>Copies the contents of this queue to the target array starting at the specified index.</summary>
+            internal int DangerousCopyTo(T[] array, int arrayIndex)
             {
                 Debug.Assert(Monitor.IsEntered(this));
                 Debug.Assert(_frozen);
+                Debug.Assert(array != null);
+                Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
-                for (int i = _headIndex; i < _tailIndex; i++)
+                int headIndex = _headIndex;
+                int count = DangerousCount;
+                Debug.Assert(
+                    count == (_tailIndex - _headIndex) ||
+                    count == (_tailIndex + 1 - _headIndex),
+                    "Count should be the same as tail - head, but allowing for the possibilty that " + 
+                    "a peek decremented _tailIndex before seeing that a freeze was happening.");
+                Debug.Assert(arrayIndex <= array.Length - count);
+
+                if (count > 0)
                 {
-                    list.Add(_array[i & _mask]);
+                    int head = headIndex & _mask;
+                    if (count == 1)
+                    {
+                        array[arrayIndex] = _array[head];
+                    }
+                    else
+                    {
+                        int tail = (headIndex + count) & _mask;
+                        if (head < tail)
+                        {
+                            Array.Copy(_array, head, array, arrayIndex, count);
+                        }
+                        else
+                        {
+                            int firstSegmentCount = _array.Length - head;
+                            Array.Copy(_array, head, array, arrayIndex, firstSegmentCount);
+                            Array.Copy(_array, 0, array, arrayIndex + firstSegmentCount, tail);
+                        }
+                    }
                 }
+
+                return count;
             }
 
             /// <summary>Gets the total number of items in the queue.</summary>
@@ -908,7 +969,16 @@ namespace System.Collections.Concurrent
             /// This is not thread safe, only providing an accurate result either from the owning
             /// thread while its lock is held or from any thread while the bag is frozen.
             /// </remarks>
-            internal int Count => _addTakeCount - _stealCount;
+            internal int DangerousCount
+            {
+                get
+                {
+                    Debug.Assert(Monitor.IsEntered(this));
+                    int count = _addTakeCount - _stealCount;
+                    Debug.Assert(count >= 0);
+                    return count;
+                }
+            }
         }
 
         /// <summary>Lock-free operations performed on a queue.</summary>
