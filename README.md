@@ -14,7 +14,7 @@ as part of the application (if desired), and thus can be updated quickly to fix 
 
 ## If You Just Want to Use .NET Core
 
-Most users don't need build .NET Core from source since there is already an built and tested version for any supported platform.
+Most users don't need to build .NET Core from source since there is already an built and tested version for any supported platform.
 You can get the latest **released** version of the .NET Core SDK by following the instructions on 
 the [.NET Core Getting Started](http://dotnet.github.io/getting-started/) page.
 If you need the most up to date (daily) version of this .NET Core installer you can get it from the
