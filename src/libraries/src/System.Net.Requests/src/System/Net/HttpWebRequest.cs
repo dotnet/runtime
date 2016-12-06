@@ -95,17 +95,17 @@ namespace System.Net
         [Obsolete("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+            throw new PlatformNotSupportedException();
         }
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+            throw new PlatformNotSupportedException();
         }
         
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+            throw new PlatformNotSupportedException();
         }
 
         internal HttpWebRequest(Uri uri)

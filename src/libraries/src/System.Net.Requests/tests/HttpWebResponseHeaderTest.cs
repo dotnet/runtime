@@ -103,7 +103,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task Serialize()
+        public async Task HttpWebResponse_Serialize_Fails()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -120,7 +120,7 @@ namespace System.Net.Tests
                         BinaryFormatter formatter = new BinaryFormatter();
                         HttpWebResponse hwr = (HttpWebResponse)response;
 
-                        Assert.Throws<NotImplementedException>(() => formatter.Serialize(fs, hwr));
+                        Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
                     }
                 }
             });

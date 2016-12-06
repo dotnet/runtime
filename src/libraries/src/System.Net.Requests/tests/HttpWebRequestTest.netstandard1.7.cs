@@ -11,17 +11,17 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
-    public partial class HttpWebRequestTest17
+    public partial class HttpWebRequestTest
     {
         [Fact]
-        public void Serialize()
+        public void HttpWebRequest_Serialize_Fails()
         {
             using (MemoryStream fs = new MemoryStream())
             {
                 BinaryFormatter formatter = new BinaryFormatter();
                 var hwr = HttpWebRequest.CreateHttp("http://localhost");
 
-                Assert.Throws<NotImplementedException>(() => formatter.Serialize(fs, hwr));
+                Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
             }
         }
     }
