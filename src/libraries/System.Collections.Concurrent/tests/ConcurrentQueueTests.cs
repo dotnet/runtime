@@ -187,14 +187,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public void ICollection_CopyTo_InvalidArg_ThrowsException()
-        {
-            Assert.Throws<ArgumentNullException>(() => ((ICollection)new ConcurrentQueue<int>()).CopyTo(null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => ((ICollection)new ConcurrentQueue<int>()).CopyTo(new int[0], -1));
-            Assert.Throws<ArgumentException>(() => ((ICollection)new ConcurrentQueue<int>()).CopyTo(new int[0], 1));
-        }
-
-        [Fact]
         public void IEnumerable_GetAllExpectedItems()
         {
             IEnumerable<int> enumerable1 = new ConcurrentQueue<int>(Enumerable.Range(1, 5));
@@ -251,6 +243,56 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(Array.TrueForAll(mres, e => e.IsSet));
 
             GC.KeepAlive(queue);
+        }
+
+        [Fact]
+        public void ManySegments_ConcurrentDequeues_RemainsConsistent()
+        {
+            var cq = new ConcurrentQueue<int>();
+            const int Iters = 10000;
+
+            for (int i = 0; i < Iters; i++)
+            {
+                cq.Enqueue(i);
+                cq.GetEnumerator().Dispose(); // force new segment
+            }
+
+            int dequeues = 0;
+            Parallel.For(0, Environment.ProcessorCount, i =>
+            {
+                while (!cq.IsEmpty)
+                {
+                    int item;
+                    if (cq.TryDequeue(out item))
+                    {
+                        Interlocked.Increment(ref dequeues);
+                    }
+                }
+            });
+
+            Assert.Equal(0, cq.Count);
+            Assert.True(cq.IsEmpty);
+            Assert.Equal(Iters, dequeues);
+        }
+
+        [Fact]
+        public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
+        {
+            var cq = new ConcurrentQueue<int>();
+            const int ItemsPerThread = 1000;
+            int threads = Environment.ProcessorCount;
+
+            Parallel.For(0, threads, i =>
+            {
+                for (int item = 0; item < ItemsPerThread; item++)
+                {
+                    cq.Enqueue(item + (i * ItemsPerThread));
+                    cq.GetEnumerator().Dispose();
+                }
+            });
+
+            Assert.Equal(ItemsPerThread * threads, cq.Count);
+            Assert.Equal(Enumerable.Range(0, ItemsPerThread * threads), cq.OrderBy(i => i));
         }
 
         /// <summary>Sets an event when finalized.</summary>
