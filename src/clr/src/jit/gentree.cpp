@@ -9874,7 +9874,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
     {
         sprintf_s(bufp, sizeof(buf), " %s_ovfl%c", name, 0);
     }
-    else if (tree->OperIsBlk() && (tree->AsBlk()->gtBlkSize != 0))
+    else if (tree->OperIsBlk() && !tree->OperIsDynBlk())
     {
         sprintf_s(bufp, sizeof(buf), " %s(%d)", name, tree->AsBlk()->gtBlkSize);
     }
