@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -388,8 +389,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 catch (TargetInvocationException e)
                 {
-                    ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                    throw e.InnerException;
+                    ExceptionHelpers.UnwrapAndRethrow(e);
+                    throw ContractUtils.Unreachable;
                 }
 
                 return 1;
@@ -423,8 +424,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 catch (TargetInvocationException e)
                 {
-                    ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                    throw e.InnerException;
+                    ExceptionHelpers.UnwrapAndRethrow(e);
+                    throw ContractUtils.Unreachable;
                 }
 
                 frame.Data[_index] = new StrongBox<object>(value);
