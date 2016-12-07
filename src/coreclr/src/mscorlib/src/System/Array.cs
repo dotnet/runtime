@@ -1933,8 +1933,7 @@ namespace System {
             }
             Contract.EndContractBlock();
 
-            IComparer<T> comparer = Comparer<T>.Create(comparison);
-            Array.Sort(array, comparer);
+            ArraySortHelper<T>.Sort(array, 0, array.Length, comparison);
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match) {
@@ -2005,123 +2004,8 @@ namespace System {
 
             internal void Sort(int left, int length)
             {
-#if FEATURE_CORECLR
-                // Since QuickSort and IntrospectiveSort produce different sorting sequence for equal keys the upgrade 
-                // to IntrospectiveSort was quirked. However since the phone builds always shipped with the new sort aka 
-                // IntrospectiveSort and we would want to continue using this sort moving forward CoreCLR always uses the new sort.
-
                 IntrospectiveSort(left, length);
-#else
-                if (BinaryCompatibility.TargetsAtLeast_Desktop_V4_5)
-                {
-                    IntrospectiveSort(left, length);
-                }
-                else
-                {
-                    DepthLimitedQuickSort(left, length + left - 1, IntrospectiveSortUtilities.QuickSortDepthThreshold);
-                }
-#endif
             }
-
-#if !FEATURE_CORECLR
-            private void DepthLimitedQuickSort(int left, int right, int depthLimit)
-            {
-                // Can use the much faster jit helpers for array access.
-                do
-                {
-                    if (depthLimit == 0)
-                    {
-                        // Add a try block here to detect IComparers (or their
-                        // underlying IComparables, etc) that are bogus.
-                        try
-                        {
-                            Heapsort(left, right);
-                            return;
-                        }
-                        catch (IndexOutOfRangeException)
-                        {
-                            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_BogusIComparer, ExceptionArgument.comparer);
-                        }
-                        catch (Exception e)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                        }
-                    }
-
-                    int i = left;
-                    int j = right;
-
-                    // pre-sort the low, middle (pivot), and high values in place.
-                    // this improves performance in the face of already sorted data, or 
-                    // data that is made up of multiple sorted runs appended together.
-                    int middle = GetMedian(i, j);
-
-                    // Add a try block here to detect IComparers (or their
-                    // underlying IComparables, etc) that are bogus.
-                    try
-                    {
-                        SwapIfGreaterWithItems(i, middle); // swap the low with the mid point
-                        SwapIfGreaterWithItems(i, j);      // swap the low with the high
-                        SwapIfGreaterWithItems(middle, j); // swap the middle with the high
-                    }
-                    catch (Exception e)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                    }
-                    Object x = keys[middle];
-                    do
-                    {
-                        // Add a try block here to detect IComparers (or their
-                        // underlying IComparables, etc) that are bogus.
-                        try
-                        {
-                            while (comparer.Compare(keys[i], x) < 0) i++;
-                            while (comparer.Compare(x, keys[j]) < 0) j--;
-                        }
-                        catch (IndexOutOfRangeException)
-                        {
-                            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_BogusIComparer, ExceptionArgument.comparer);
-                        }
-                        catch (Exception e)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                        }
-                        Contract.Assert(i >= left && j <= right, "(i>=left && j<=right)  Sort failed - Is your IComparer bogus?");
-                        if (i > j) break;
-                        if (i < j)
-                        {
-                            Object key = keys[i];
-                            keys[i] = keys[j];
-                            keys[j] = key;
-                            if (items != null)
-                            {
-                                Object item = items[i];
-                                items[i] = items[j];
-                                items[j] = item;
-                            }
-                        }
-                        i++;
-                        j--;
-                    } while (i <= j);
-
-                    // The next iteration of the while loop is to "recursively" sort the larger half of the array and the
-                    // following calls recursively sort the smaller half.  So we subtract one from depthLimit here so
-                    // both sorts see the new value.
-                    depthLimit--;
-
-                    if (j - left <= right - i)
-                    {
-                        if (left < j) DepthLimitedQuickSort(left, j, depthLimit);
-                        left = i;
-                    }
-                    else
-                    {
-                        if (i < right) DepthLimitedQuickSort(i, right, depthLimit);
-                        right = j;
-                    }
-                } while (left < right);
-            }
-#endif
 
             private void IntrospectiveSort(int left, int length)
             {
@@ -2326,121 +2210,8 @@ namespace System {
 
             internal void Sort(int left, int length)
             {
-#if FEATURE_CORECLR
-                // Since QuickSort and IntrospectiveSort produce different sorting sequence for equal keys the upgrade 
-                // to IntrospectiveSort was quirked. However since the phone builds always shipped with the new sort aka 
-                // IntrospectiveSort and we would want to continue using this sort moving forward CoreCLR always uses the new sort.
-
                 IntrospectiveSort(left, length);
-#else
-                if (BinaryCompatibility.TargetsAtLeast_Desktop_V4_5)
-                {
-                    IntrospectiveSort(left, length);
-                }
-                else
-                {
-                    DepthLimitedQuickSort(left, length + left - 1, IntrospectiveSortUtilities.QuickSortDepthThreshold);
-                }
-#endif
             }
-
-#if !FEATURE_CORECLR
-            private void DepthLimitedQuickSort(int left, int right, int depthLimit)
-            {
-                // Must use slow Array accessors (GetValue & SetValue)
-                do
-                {
-                    if (depthLimit == 0)
-                    {
-                        // Add a try block here to detect IComparers (or their
-                        // underlying IComparables, etc) that are bogus.
-                        try
-                        {
-                            Heapsort(left, right);
-                            return;
-                        }
-                        catch (IndexOutOfRangeException)
-                        {
-                            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_BogusIComparer, ExceptionArgument.comparer);
-                        }
-                        catch (Exception e)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                        }
-                    }
-
-                    int i = left;
-                    int j = right;
-
-                    // pre-sort the low, middle (pivot), and high values in place.
-                    // this improves performance in the face of already sorted data, or 
-                    // data that is made up of multiple sorted runs appended together.
-                    int middle = GetMedian(i, j);
-                    try
-                    {
-                        SwapIfGreaterWithItems(i, middle); // swap the low with the mid point
-                        SwapIfGreaterWithItems(i, j);      // swap the low with the high
-                        SwapIfGreaterWithItems(middle, j); // swap the middle with the high
-                    }
-                    catch (Exception e)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                    }
-
-                    Object x = keys.GetValue(middle);
-                    do
-                    {
-                        // Add a try block here to detect IComparers (or their
-                        // underlying IComparables, etc) that are bogus.
-                        try
-                        {
-                            while (comparer.Compare(keys.GetValue(i), x) < 0) i++;
-                            while (comparer.Compare(x, keys.GetValue(j)) < 0) j--;
-                        }
-                        catch (IndexOutOfRangeException)
-                        {
-                            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_BogusIComparer, ExceptionArgument.comparer);
-                        }
-                        catch (Exception e)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                        }
-                        Contract.Assert(i >= left && j <= right, "(i>=left && j<=right)  Sort failed - Is your IComparer bogus?");
-                        if (i > j) break;
-                        if (i < j)
-                        {
-                            Object key = keys.GetValue(i);
-                            keys.SetValue(keys.GetValue(j), i);
-                            keys.SetValue(key, j);
-                            if (items != null)
-                            {
-                                Object item = items.GetValue(i);
-                                items.SetValue(items.GetValue(j), i);
-                                items.SetValue(item, j);
-                            }
-                        }
-                        if (i != Int32.MaxValue) ++i;
-                        if (j != Int32.MinValue) --j;
-                    } while (i <= j);
-
-                    // The next iteration of the while loop is to "recursively" sort the larger half of the array and the
-                    // following calls recursively sort the smaller half.  So we subtract one from depthLimit here so
-                    // both sorts see the new value.
-                    depthLimit--;
-
-                    if (j - left <= right - i)
-                    {
-                        if (left < j) DepthLimitedQuickSort(left, j, depthLimit);
-                        left = i;
-                    }
-                    else
-                    {
-                        if (i < right) DepthLimitedQuickSort(i, right, depthLimit);
-                        right = j;
-                    }
-                } while (left < right);
-            }
-#endif
 
             private void IntrospectiveSort(int left, int length)
             {
