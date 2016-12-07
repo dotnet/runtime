@@ -754,7 +754,7 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
     //
     // Equality(v1, v2):
     // tmp = (v1 == v2) i.e. compare for equality as if v1 and v2 are vector<int>
-    // result = BitwiseAnd(t, shuffle(t, (2, 3, 1 0)))
+    // result = BitwiseAnd(t, shuffle(t, (2, 3, 0, 1)))
     // Shuffle is meant to swap the comparison results of low-32-bits and high 32-bits of respective long elements.
 
     // Compare vector<long> as if they were vector<int> and assign the result to a temp
@@ -768,7 +768,7 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
     // op2 = Shuffle(tmp, 0xB1)
     // IntrinsicId = BitwiseAnd
     *pOp1 = gtNewOperNode(GT_COMMA, simdType, asg, tmp);
-    *pOp2 = gtNewSIMDNode(simdType, gtNewLclvNode(lclNum, simdType), gtNewIconNode(SHUFFLE_ZWYX, TYP_INT),
+    *pOp2 = gtNewSIMDNode(simdType, gtNewLclvNode(lclNum, simdType), gtNewIconNode(SHUFFLE_ZWXY, TYP_INT),
                           SIMDIntrinsicShuffleSSE2, TYP_INT, size);
     return SIMDIntrinsicBitwiseAnd;
 }
@@ -2248,7 +2248,11 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             assert(op2->TypeGet() == simdType);
 
             simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpEquality, baseType, size);
-            retVal   = simdTree;
+            if (simdType == TYP_SIMD12)
+            {
+                simdTree->gtFlags |= GTF_SIMD12_OP;
+            }
+            retVal = simdTree;
         }
         break;
 
@@ -2259,7 +2263,11 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             op2      = impSIMDPopStack(simdType);
             op1      = impSIMDPopStack(simdType, instMethod);
             simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpInEquality, baseType, size);
-            retVal   = simdTree;
+            if (simdType == TYP_SIMD12)
+            {
+                simdTree->gtFlags |= GTF_SIMD12_OP;
+            }
+            retVal = simdTree;
         }
         break;
 
@@ -2407,7 +2415,11 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             op1 = impSIMDPopStack(simdType, instMethod);
 
             simdTree = gtNewSIMDNode(baseType, op1, op2, simdIntrinsicID, baseType, size);
-            retVal   = simdTree;
+            if (simdType == TYP_SIMD12)
+            {
+                simdTree->gtFlags |= GTF_SIMD12_OP;
+            }
+            retVal = simdTree;
         }
         break;
 
