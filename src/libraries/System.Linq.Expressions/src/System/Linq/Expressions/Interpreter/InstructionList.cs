@@ -318,7 +318,7 @@ namespace System.Linq.Expressions.Interpreter
         private static Instruction s_null;
         private static Instruction s_true;
         private static Instruction s_false;
-        private static Instruction[] s_ints;
+        private static Instruction[] s_Ints;
         private static Instruction[] s_loadObjectCached;
 
         public void EmitLoad(object value)
@@ -359,12 +359,12 @@ namespace System.Linq.Expressions.Interpreter
                     int i = (int)value;
                     if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue)
                     {
-                        if (s_ints == null)
+                        if (s_Ints == null)
                         {
-                            s_ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
+                            s_Ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
                         }
                         i -= PushIntMinCachedValue;
-                        Emit(s_ints[i] ?? (s_ints[i] = new LoadObjectInstruction(value)));
+                        Emit(s_Ints[i] ?? (s_Ints[i] = new LoadObjectInstruction(value)));
                         return;
                     }
                 }

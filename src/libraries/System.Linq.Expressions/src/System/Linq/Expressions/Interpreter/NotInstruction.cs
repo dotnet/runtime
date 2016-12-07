@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(!(bool)value);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(~(long)value);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(~(int)value);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((short)(~(short)value));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(~(ulong)value);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(~(uint)value);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((ushort)(~(ushort)value));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((byte)(~(byte)value));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((sbyte)(~(sbyte)value));
                 }
-                return +1;
+                return 1;
             }
         }
 

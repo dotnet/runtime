@@ -9,7 +9,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class MulInstruction : Instruction
     {
-        private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
+        private static Instruction s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l * (int)r));
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l * (short)r));
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -70,7 +70,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = unchecked((long)l * (long)r);
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = unchecked((ushort)((ushort)l * (ushort)r));
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = unchecked((uint)l * (uint)r);
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -127,7 +127,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = unchecked((ulong)l * (ulong)r);
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -146,7 +146,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = (float)l * (float)r;
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = (double)l * (double)r;
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -174,14 +174,14 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(type.IsArithmetic());
             switch (type.GetNonNullableType().GetTypeCode())
             {
-                case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulInt16());
-                case TypeCode.Int32: return s_int32 ?? (s_int32 = new MulInt32());
-                case TypeCode.Int64: return s_int64 ?? (s_int64 = new MulInt64());
+                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new MulInt16());
+                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new MulInt32());
+                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new MulInt64());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new MulUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new MulUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new MulUInt64());
-                case TypeCode.Single: return s_single ?? (s_single = new MulSingle());
-                case TypeCode.Double: return s_double ?? (s_double = new MulDouble());
+                case TypeCode.Single: return s_Single ?? (s_Single = new MulSingle());
+                case TypeCode.Double: return s_Double ?? (s_Double = new MulDouble());
 
                 default:
                     throw ContractUtils.Unreachable;
@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class MulOvfInstruction : Instruction
     {
-        private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64;
+        private static Instruction s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -214,7 +214,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l * (int)r));
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -233,7 +233,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = checked((short)((short)l * (short)r));
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -252,7 +252,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = checked((long)l * (long)r);
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = checked((ushort)((ushort)l * (ushort)r));
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -290,7 +290,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = checked((uint)l * (uint)r);
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -309,7 +309,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Data[frame.StackIndex - 2] = checked((ulong)l * (ulong)r);
                 }
                 frame.StackIndex--;
-                return +1;
+                return 1;
             }
         }
 
@@ -318,9 +318,9 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(type.IsArithmetic());
             switch (type.GetNonNullableType().GetTypeCode())
             {
-                case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulOvfInt16());
-                case TypeCode.Int32: return s_int32 ?? (s_int32 = new MulOvfInt32());
-                case TypeCode.Int64: return s_int64 ?? (s_int64 = new MulOvfInt64());
+                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new MulOvfInt16());
+                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new MulOvfInt32());
+                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new MulOvfInt64());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new MulOvfUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new MulOvfUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new MulOvfUInt64());
