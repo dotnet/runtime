@@ -2866,7 +2866,6 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_PAL
 #ifdef FEATURE_IMPLICIT_TLS
     DWORD idx = 0;
     TLSACCESSMODE mode = TLSACCESS_GENERIC;
@@ -2889,6 +2888,7 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
     switch (mode)
     {
         case TLSACCESS_WNT: 
+#ifndef FEATURE_PAL
             {
                 unsigned __int32 tlsofs = offsetof(TEB, TlsSlots) + (idx * sizeof(void*));
 
@@ -2896,6 +2896,9 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
                 EmitBytes(code, sizeof(code));
                 Emit32(tlsofs);
             }
+#else  // !FEATURE_PAL
+            _ASSERTE("TLSACCESS_WNT mode is not supported");
+#endif // !FEATURE_PAL
             break;
 
         case TLSACCESS_GENERIC:
@@ -2926,10 +2929,6 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
     X86EmitDebugTrashReg(kECX);
     X86EmitDebugTrashReg(kEDX);
 #endif
-
-#else  // FEATURE_PAL
-    PORTABILITY_ASSERT("StubLinkerCPU::EmitSetup");
-#endif // FEATURE_PAL
 }
 
 VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
