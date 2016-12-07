@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public PropertyValue[] Values { get; }
 
+        public static IEqualityComparer<Configuration> CompatibleComparer { get; } = new CompatibleConfigurationComparer();
 
         /// <summary>
         /// Constructs a configuration string from this configuration
@@ -33,16 +34,28 @@ namespace Microsoft.DotNet.Build.Tasks
         /// <param name="allowDefaults">true to omit default values from configuration string</param>
         /// <param name="encounteredDefault">true if a default value was omitted</param>
         /// <returns>configuration string</returns>
-        private string GetConfigurationString(bool allowDefaults, out bool encounteredDefault)
+        private string GetConfigurationString(bool allowDefaults, bool includeInsignificant, out bool encounteredDefault)
         {
             encounteredDefault = false;
             var configurationBuilder = new StringBuilder();
             foreach (var value in Values)
             {
+                if (value.Property.Ignored)
+                {
+                    // skip ignored properties
+                    continue;
+                }
+
                 if (allowDefaults && value == value.Property.DefaultValue)
                 {
                     // skip default value
                     encounteredDefault = true;
+                    continue;
+                }
+
+                if (!includeInsignificant && value.Property.Insignificant)
+                {
+                    // skip insignificant properties
                     continue;
                 }
 
@@ -78,19 +91,14 @@ namespace Microsoft.DotNet.Build.Tasks
         }
 
         private static bool[] s_boolValues = new[] { true, false /*, FileNotFound */ };
-        /// <summary>
-        /// Given a list of property values, returns valid configuration strings for those values.
-        /// </summary>
-        /// <param name="valueSet"></param>
-        /// <returns></returns>
-        public IEnumerable<string> GetConfigurationStrings()
+        private IEnumerable<string> GetConfigurationStrings(bool includeInsignificant)
         {
             // only allow all defaults or no defaults.
             foreach (var allowDefaults in s_boolValues)
             {
                 var encounteredDefault = false;
 
-                yield return GetConfigurationString(allowDefaults, out encounteredDefault);
+                yield return GetConfigurationString(allowDefaults, includeInsignificant, out encounteredDefault);
                 if (!encounteredDefault)
                 {
                     // if we didn't encounter a default value don't bother with
@@ -98,6 +106,22 @@ namespace Microsoft.DotNet.Build.Tasks
                     break;
                 }
             }
+        }
+
+        public IEnumerable<string> GetConfigurationStrings()
+        {
+            return GetConfigurationStrings(includeInsignificant: true);
+        }
+
+        public IEnumerable<string> GetSignificantConfigurationStrings()
+        {
+            return GetConfigurationStrings(includeInsignificant: false);
+        }
+
+        public string GetDefaultConfigurationString()
+        {
+            var unused = false;
+            return GetConfigurationString(allowDefaults: true, includeInsignificant: true, encounteredDefault: out unused);
         }
 
         public override bool Equals(object obj)
@@ -122,6 +146,7 @@ namespace Microsoft.DotNet.Build.Tasks
         }
 
         private Nullable<int> hashCode;
+        private Nullable<int> compatibleHashCode;
         public override int GetHashCode()
         {
             if (hashCode == null)
@@ -129,16 +154,55 @@ namespace Microsoft.DotNet.Build.Tasks
                 hashCode = 0;
                 foreach (var value in Values)
                 {
-                    hashCode ^= hashCode;
+                    hashCode ^= value.GetHashCode();
                 }
             }
             return hashCode.Value;
+        }
+        
+        // Only examines significant properties for equality
+        private class CompatibleConfigurationComparer : IEqualityComparer<Configuration>
+        {
+            public bool Equals(Configuration x, Configuration y)
+            {
+                if (ReferenceEquals(x, y))
+                {
+                    return true;
+                }
+
+                if (x == null || y == null)
+                {
+                    return false;
+                }
+
+                var xValues = x.Values.Where(v => !v.Property.Insignificant);
+                var yValues = y.Values.Where(v => !v.Property.Insignificant);
+
+                return xValues.SequenceEqual(yValues);
+            }
+
+            public int GetHashCode(Configuration obj)
+            {
+                if (obj.compatibleHashCode == null)
+                {
+                    obj.compatibleHashCode = 0;
+                    foreach (var value in obj.Values)
+                    {
+                        if (!value.Property.Insignificant)
+                        {
+                            obj.compatibleHashCode ^= value.GetHashCode();
+                        }
+                    }
+                }
+                return obj.compatibleHashCode.Value;
+            }
         }
 
         public override string ToString()
         {
             var unused = false;
-            return GetConfigurationString(true, out unused);
+            return GetConfigurationString(true, true, out unused);
         }
+
     }
 }

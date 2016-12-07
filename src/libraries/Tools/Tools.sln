@@ -7,8 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreFx.Tools", "CoreFx.Tool
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GenerateProps", "GenerateProps", "{976C66AC-9E5A-476C-A474-DD82322E4B64}"
 	ProjectSection(SolutionItems) = preProject
+		GenerateProps\archgroups.props = GenerateProps\archgroups.props
+		GenerateProps\configurationgroups.props = GenerateProps\configurationgroups.props
 		GenerateProps\GenerateProps.proj = GenerateProps\GenerateProps.proj
 		GenerateProps\osgroups.props = GenerateProps\osgroups.props
+		GenerateProps\properties.props = GenerateProps\properties.props
 		GenerateProps\targetgroups.props = GenerateProps\targetgroups.props
 	EndProjectSection
 EndProject

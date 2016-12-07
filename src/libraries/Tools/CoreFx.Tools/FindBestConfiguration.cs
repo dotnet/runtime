@@ -7,6 +7,7 @@ using Microsoft.Build.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
@@ -27,7 +28,9 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             LoadConfiguration();
 
-            var supportedProjectConfigurations = new HashSet<Configuration>(BuildConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)));
+            var supportedProjectConfigurations = new HashSet<Configuration>(
+                BuildConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)),
+                Configuration.CompatibleComparer);
 
             var buildConfiguration = ConfigurationFactory.ParseConfiguration(BuildConfiguration);
 
