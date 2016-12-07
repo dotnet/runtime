@@ -84,11 +84,16 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public ListInitExpression Update(NewExpression newExpression, IEnumerable<ElementInit> initializers)
         {
-            if (newExpression == NewExpression && initializers == Initializers)
+            if (newExpression == NewExpression & initializers != null)
             {
-                return this;
+                initializers = initializers as ICollection<ElementInit> ?? initializers.ToReadOnly();
+                if (ExpressionUtils.SameElements(initializers, Initializers))
+                {
+                    return this;
+                }
             }
-            return Expression.ListInit(newExpression, initializers);
+
+            return ListInit(newExpression, initializers);
         }
     }
 
