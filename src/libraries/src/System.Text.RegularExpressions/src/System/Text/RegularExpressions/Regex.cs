@@ -175,9 +175,7 @@ namespace System.Text.RegularExpressions
              && (options & ~(RegexOptions.ECMAScript |
                              RegexOptions.IgnoreCase |
                              RegexOptions.Multiline |
-#if !SILVERLIGHT || FEATURE_LEGACYNETCF
                              RegexOptions.Compiled |
-#endif
                              RegexOptions.CultureInvariant
 #if DEBUG
                            | RegexOptions.Debug
