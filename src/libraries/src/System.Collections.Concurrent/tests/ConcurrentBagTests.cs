@@ -129,6 +129,16 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public static void CopyTo_TypeMismatch()
+        {
+            const int Size = 10;
+
+            var c = new ConcurrentBag<Exception>(Enumerable.Range(0, Size).Select(_ => new Exception()));
+            c.CopyTo(new Exception[Size], 0);
+            Assert.Throws<InvalidCastException>(() => c.CopyTo(new InvalidOperationException[Size], 0));
+        }
+
+        [Fact]
         public static void ICollectionCopyTo_TypeMismatch()
         {
             const int Size = 10;
@@ -162,7 +172,7 @@ namespace System.Collections.Concurrent.Tests
                     Assert.True(bag.TryTake(out item));
                     Assert.Equal(item, i);
                 }).GetAwaiter().GetResult();
-                Assert.Equal(Enumerable.Range(i + 1, initialCount), bag.ToArray());
+                Assert.Equal(Enumerable.Range(i + 1, initialCount).Reverse(), bag.ToArray());
             }
         }
 
@@ -173,10 +183,10 @@ namespace System.Collections.Concurrent.Tests
             public int Count => _stack.Count;
             public bool IsSynchronized => false;
             public object SyncRoot => null;
-            public void CopyTo(Array array, int index) => _stack.Reverse().ToArray().CopyTo(array, index);
-            public void CopyTo(int[] array, int index) => _stack.Reverse().ToArray().CopyTo(array, index);
-            public IEnumerator<int> GetEnumerator() => _stack.Reverse().GetEnumerator();
-            public int[] ToArray() => _stack.Reverse().ToArray();
+            public void CopyTo(Array array, int index) => _stack.ToArray().CopyTo(array, index);
+            public void CopyTo(int[] array, int index) => _stack.ToArray().CopyTo(array, index);
+            public IEnumerator<int> GetEnumerator() => _stack.GetEnumerator();
+            public int[] ToArray() => _stack.ToArray();
             public bool TryAdd(int item) { _stack.Push(item); return true; }
             public bool TryTake(out int item)
             {
