@@ -8,7 +8,7 @@
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
     <NugetRuntimeIdentifier>win7-x64</NugetRuntimeIdentifier>
-    <OutputPath>$(TestRuntimeDir)</OutputPath>
+    <OutputPath>$(RuntimeDir)</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -17,9 +17,13 @@
   <Target Name="FilterNugetPackage" AfterTargets="ResolveNuGetPackages">
     <!-- Filter down to just xunit assets -->
     <ItemGroup>
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.DotNet.BuildTools.TestSuite' And 
-                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.xunit.netcore.extensions' And
-                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.console.netcore'" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.abstractions' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.assert' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.extensibility.core' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.extensibility.execution' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.console.netcore' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.runner.utility' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.xunit.netcore.extensions'" />
     </ItemGroup>
   </Target>
 </Project>
