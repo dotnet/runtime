@@ -56,12 +56,18 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public InvocationExpression Update(Expression expression, IEnumerable<Expression> arguments)
         {
-            if (expression == Expression && arguments == Arguments)
+            if (expression == Expression & arguments != null)
             {
-                return this;
+                // Ensure arguments is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                arguments = arguments as ICollection<Expression> ?? arguments.ToReadOnly();
+                if (ExpressionUtils.SameElements(arguments, Arguments))
+                {
+                    return this;
+                }
             }
 
-            return Expression.Invoke(expression, arguments);
+            return Invoke(expression, arguments);
         }
 
         [ExcludeFromCodeCoverage] // Unreachable

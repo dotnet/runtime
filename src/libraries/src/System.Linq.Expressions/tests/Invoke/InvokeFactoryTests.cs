@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Tests
 
             InvocationExpression res = node.Update(node.Expression, node.Arguments.ToArray());
 
-            Assert.NotSame(node, res);
+            Assert.Same(node, res);
 
             return res;
         }
