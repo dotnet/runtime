@@ -2836,7 +2836,8 @@ protected:
 
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
-    GenTreePtr impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
+    GenTreePtr impIntrinsic(GenTreePtr            newobjThis,
+                            CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             int                   memberRef,
