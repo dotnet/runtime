@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -115,12 +116,12 @@ namespace System.Linq.Expressions
             return esb.ToString();
         }
 
-        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions, char close) where T : Expression
+        private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close) where T : Expression
         {
             VisitExpressions(open, expressions, close, ", ");
         }
 
-        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions, char close, string seperator) where T : Expression
+        private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close, string seperator) where T : Expression
         {
             Out(open);
             if (expressions != null)
@@ -508,7 +509,7 @@ namespace System.Linq.Expressions
             Out("new ");
             Out(node.Type.Name);
             Out('(');
-            Collections.ObjectModel.ReadOnlyCollection<MemberInfo> members = node.Members;
+            ReadOnlyCollection<MemberInfo> members = node.Members;
             for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
