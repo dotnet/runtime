@@ -175,6 +175,7 @@ namespace System.Text.RegularExpressions
              && (options & ~(RegexOptions.ECMAScript |
                              RegexOptions.IgnoreCase |
                              RegexOptions.Multiline |
+                             RegexOptions.Compiled |
                              RegexOptions.CultureInvariant
 #if DEBUG
                            | RegexOptions.Debug
