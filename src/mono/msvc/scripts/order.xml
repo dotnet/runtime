@@ -418,6 +418,17 @@
       <resources></resources>
       <response>System.Diagnostics.FileVersionInfo.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.Security.Cryptography.Primitives" library="Facades_System.Security.Cryptography.Primitives-basic">
+      <boot>true</boot>
+      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../../class/lib/basic/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/basic/System.dll</flags>
+      <output>System.Security.Cryptography.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/basic/Facades/System.Security.Cryptography.Primitives.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>basic</profile>
+      <resources></resources>
+      <response>System.Security.Cryptography.Primitives.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.Security.Cryptography.Algorithms" library="Facades_System.Security.Cryptography.Algorithms-basic">
       <boot>true</boot>
       <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../../class/lib/basic/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/basic/System.dll -r:./../../../class/lib/basic/System.Core.dll</flags>
@@ -901,6 +912,17 @@
       <profile>build</profile>
       <resources></resources>
       <response>System.Diagnostics.FileVersionInfo.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Security.Cryptography.Primitives" library="Facades_System.Security.Cryptography.Primitives-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/build/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/build/System.dll</flags>
+      <output>System.Security.Cryptography.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/build/Facades/System.Security.Cryptography.Primitives.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>System.Security.Cryptography.Primitives.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Security.Cryptography.Algorithms" library="Facades_System.Security.Cryptography.Algorithms-build">
       <boot>false</boot>
