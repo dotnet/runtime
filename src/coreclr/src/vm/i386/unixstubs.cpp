@@ -100,6 +100,12 @@ extern "C"
         PORTABILITY_ASSERT("UnhandledExceptionHandlerUnix");
         return _URC_FATAL_PHASE1_ERROR;
     }
+
+    BOOL CallRtlUnwind()
+    {
+        PORTABILITY_ASSERT("CallRtlUnwind");
+        return FALSE;
+    }
 };
 
 VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
