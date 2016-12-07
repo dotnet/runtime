@@ -207,10 +207,17 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression> parameters)
         {
-            if (body == Body && parameters == Parameters)
+            if (body == Body & parameters != null)
             {
-                return this;
+                // Ensure parameters is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                parameters = parameters as ICollection<ParameterExpression> ?? parameters.ToReadOnly();
+                if (ExpressionUtils.SameElements(parameters, Parameters))
+                {
+                    return this;
+                }
             }
+
             return Expression.Lambda<TDelegate>(body, Name, TailCall, parameters);
         }
 
