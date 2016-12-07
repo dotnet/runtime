@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.Build.Tasks
         private const string AvailableBuildConfigurationsProperty = "BuildConfigurations";
         private const string ConfigurationProperty = "Configuration";
         private const string PropsFileName = "configuration";
-        private const string ConfigurationPropsPrefix = "buildConfiguration";
+        private const string ConfigurationPropsPrefix = "setConfiguration";
         private const string PropsFileExtension = ".props";
         private const string ErrorMessageProperty = "ConfigurationErrorMsg";
 
@@ -42,33 +42,44 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var project = ProjectRootElement.Create();
 
-            // Set error on missing import
-            var buildConfigurationsPropertyGroup = project.AddPropertyGroup();
-            var buildConfigurationImportPath = $"{ConfigurationPropsPrefix}.$({BuildConfigurationProperty}){PropsFileExtension}";
             var projectConfigurationNotSetCondition = $"'$({ConfigurationProperty})' == ''";
-            var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"{ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
-            missingImportError.Condition = $"{projectConfigurationNotSetCondition} AND !Exists('{buildConfigurationImportPath}')";
+            var buildConfigurationPropsFilePath = $"{ConfigurationPropsPrefix}{PropsFileExtension}";
+            var buildConfigurationImport = project.AddImport(buildConfigurationPropsFilePath);
+            buildConfigurationImport.Condition = projectConfigurationNotSetCondition;
 
-            // import props to set ProjectConfiguration
-            var buildConfigurationImport = project.AddImport(buildConfigurationImportPath);
-            buildConfigurationImport.Condition = $"{projectConfigurationNotSetCondition} AND Exists('{buildConfigurationImportPath}')";
+            CreateBuildConfigurationPropsFile(buildConfigurationPropsFilePath);
 
-            // iterate over all possible configuration strings
-            foreach (var buildConfiguration in ConfigurationFactory.GetAllConfigurations())
+            ParseConfigurationString(ConfigurationProperty, project, includeAdditionalProperites:true);
+
+            var projectPath = Path.Combine(PropsFolder, $"{PropsFileName}{PropsFileExtension}");
+            project.Save(projectPath);
+
+            return !Log.HasLoggedErrors;
+        }
+
+
+        /// <summary>
+        /// Generates choose/when statements to parse values from configuration string
+        /// </summary>
+        /// <param name="propertyName">name of property to parse</param>
+        /// <param name="project">project to update</param>
+        private void ParseConfigurationString(string propertyName, ProjectRootElement project, bool includeAdditionalProperites)
+        {
+            var parseConfigurationPropertyGroup = project.LastChild as ProjectPropertyGroupElement;
+
+            if (parseConfigurationPropertyGroup == null || !string.IsNullOrEmpty(project.LastChild.Condition))
             {
-                CreateBuildConfigurationPropsFile(buildConfiguration);
+                parseConfigurationPropertyGroup = project.CreatePropertyGroupElement();
+                project.AppendChild(parseConfigurationPropertyGroup);
             }
 
-            // delimit Configuration for parsing, this gaurntees that every property value is surrounded in delimiters
-            var parseConfigurationPropertyGroup = project.CreatePropertyGroupElement();
-            project.AppendChild(parseConfigurationPropertyGroup);
-
-            var parseConfigurationName = $"_parse_{ConfigurationProperty}";
-            var parseConfigurationValue = $"{ConfigurationFactory.PropertySeperator}$({ConfigurationProperty}){ConfigurationFactory.PropertySeperator}";
+            // delimit property for parsing, this gaurntees that every property value is surrounded in delimiters
+            var parseConfigurationName = $"_parse_{propertyName}";
+            var parseConfigurationValue = $"{ConfigurationFactory.PropertySeperator}$({propertyName}){ConfigurationFactory.PropertySeperator}";
             parseConfigurationPropertyGroup.AddProperty(parseConfigurationName, parseConfigurationValue);
 
             // foreach property, pull it out of Configuration and set derived values.
-            foreach (var property in ConfigurationFactory.GetProperties())
+            foreach (var property in ConfigurationFactory.GetProperties().Where(p => !p.Ignored))
             {
                 var choosePropertiesElement = project.CreateChooseElement();
                 project.AppendChild(choosePropertiesElement);
@@ -79,7 +90,7 @@ namespace Microsoft.DotNet.Build.Tasks
                     var whenPropertiesElement = project.CreateWhenElement(propertiesCondition);
                     choosePropertiesElement.AppendChild(whenPropertiesElement);
 
-                    AddProperties(whenPropertiesElement, value);
+                    AddProperties(whenPropertiesElement, value, includeAdditionalProperites);
                 }
 
                 var otherwisePropertiesElement = project.CreateOtherwiseElement();
@@ -87,24 +98,60 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 if (property.DefaultValue != null)
                 {
-                    AddProperties(otherwisePropertiesElement, property.DefaultValue);
+                    AddProperties(otherwisePropertiesElement, property.DefaultValue, includeAdditionalProperites);
                 }
                 else
                 {
                     var otherwiseErrorPropertyGroup = project.CreatePropertyGroupElement();
                     otherwisePropertiesElement.AppendChild(otherwiseErrorPropertyGroup);
 
-                    otherwiseErrorPropertyGroup.AddProperty(ErrorMessageProperty, $"Could not find a value for {property.Name} from {ConfigurationProperty} '$({ConfigurationProperty})'.");
+                    otherwiseErrorPropertyGroup.AddProperty(ErrorMessageProperty, $"Could not find a value for {property.Name} from {propertyName} '$({propertyName})'.");
                 }
-
             }
-
-            var projectPath = Path.Combine(PropsFolder, $"{PropsFileName}{PropsFileExtension}");
-            project.Save(projectPath);
-
-            return !Log.HasLoggedErrors;
         }
 
+        /// <summary>
+        /// Creates a props file to find best $(Configuration) from $(BuildConfigurations) for any $(BuildConfiguration)
+        /// </summary>
+        private void CreateBuildConfigurationPropsFile(string fileName)
+        {
+            var buildConfigurationProps = ProjectRootElement.Create();
+
+            // pull apart BuildConfiguration, but don't set any derived properties
+            ParseConfigurationString(BuildConfigurationProperty, buildConfigurationProps, includeAdditionalProperites:false);
+
+            // Set error on missing import
+            var buildConfigurationsPropertyGroup = buildConfigurationProps.CreatePropertyGroupElement();
+            buildConfigurationProps.AppendChild(buildConfigurationsPropertyGroup);
+
+            // get path to import
+            var buildConfigurationImportName = $"_import_{BuildConfigurationProperty}_props";
+            var significantBuildConfiguration = ConfigurationFactory.IdentityConfiguration.GetSignificantConfigurationStrings().First();
+            var buildConfigurationImportPath = $"{ConfigurationPropsPrefix}.{significantBuildConfiguration}{PropsFileExtension}";
+            buildConfigurationsPropertyGroup.AddProperty(buildConfigurationImportName, buildConfigurationImportPath);
+
+            var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"{ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
+            missingImportError.Condition = $"!Exists('$({buildConfigurationImportName})')";
+
+            // import props to set ProjectConfiguration
+            var buildConfigurationImport = buildConfigurationProps.CreateImportElement($"$({buildConfigurationImportName})");
+            buildConfigurationImport.Condition = $"Exists('$({buildConfigurationImportName})')";
+            buildConfigurationProps.AppendChild(buildConfigurationImport);
+
+            // iterate over all possible configuration strings
+            foreach (var buildConfiguration in ConfigurationFactory.GetSignficantConfigurations())
+            {
+                CreateBuildConfigurationPropsFile(buildConfiguration);
+            }
+
+
+            buildConfigurationProps.Save(Path.Combine(PropsFolder, fileName));
+        }
+
+        /// <summary>
+        /// Creates a props file to find best $(Configuration) from $(BuildConfigurations) for a specific $(BuildConfiguration)
+        /// </summary>
+        /// <param name="buildConfiguration"></param>
         private void CreateBuildConfigurationPropsFile(Configuration buildConfiguration)
         {
             var configurationSpecificProps = ProjectRootElement.Create();
@@ -122,7 +169,7 @@ namespace Microsoft.DotNet.Build.Tasks
             // determine compatible project configurations and select best one
             foreach (var compatibleConfiguration in ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration))
             {
-                var configurationStrings = compatibleConfiguration.GetConfigurationStrings();
+                var configurationStrings = compatibleConfiguration.GetSignificantConfigurationStrings();
 
                 if (compatibleConfigurationStrings.Length > 0)
                 {
@@ -140,7 +187,7 @@ namespace Microsoft.DotNet.Build.Tasks
                 whenConfigurationElement.AppendChild(setConfigurationPropertyGroup);
 
                 // set project configuration
-                setConfigurationPropertyGroup.AddProperty(ConfigurationProperty, configurationStrings.First());
+                setConfigurationPropertyGroup.AddProperty(ConfigurationProperty, compatibleConfiguration.GetDefaultConfigurationString());
             }
 
             var configurationOtherwiseElement = configurationSpecificProps.CreateOtherwiseElement();
@@ -155,23 +202,26 @@ namespace Microsoft.DotNet.Build.Tasks
                 $"Considered {compatibleConfigurationStrings}.");
 
             // save a copy of for each synonymous config string
-            foreach (var configurationString in buildConfiguration.GetConfigurationStrings())
+            foreach (var configurationString in buildConfiguration.GetSignificantConfigurationStrings())
             {
                 var configurationProjectPath = Path.Combine(PropsFolder, $"{ConfigurationPropsPrefix}.{configurationString}{PropsFileExtension}");
                 configurationSpecificProps.Save(configurationProjectPath);
             }
         }
 
-        private void AddProperties(ProjectElementContainer parent, PropertyValue value)
+        private void AddProperties(ProjectElementContainer parent, PropertyValue value, bool includeAddtionalProperties)
         {
             var propertyGroup = parent.ContainingProject.CreatePropertyGroupElement();
             parent.AppendChild(propertyGroup);
 
             propertyGroup.AddProperty(value.Property.Name, value.Value);
 
-            foreach (var additionalProperty in value.AdditionalProperties)
+            if (includeAddtionalProperties)
             {
-                propertyGroup.AddProperty(additionalProperty.Key, additionalProperty.Value);
+                foreach (var additionalProperty in value.AdditionalProperties)
+                {
+                    propertyGroup.AddProperty(additionalProperty.Key, additionalProperty.Value);
+                }
             }
         }
 
