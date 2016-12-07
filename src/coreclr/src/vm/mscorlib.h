@@ -1053,6 +1053,7 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
 #ifdef FEATURE_SPAN_OF_T
+DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
 #endif
@@ -1352,6 +1353,7 @@ DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
+DEFINE_METHOD(UNSAFE,               AS_REF,                 AsRef, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)
