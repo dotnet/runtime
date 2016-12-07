@@ -272,6 +272,8 @@ namespace System.Net.Sockets
         public bool DisconnectAsync(SocketAsyncEventArgs e) { throw null; }
         public SocketInformation DuplicateAndClose(int targetProcessId) { throw null; }
         public Socket EndAccept(IAsyncResult asyncResult) { throw null; }
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult) { throw null; }
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult) { throw null; }
         public void EndConnect(IAsyncResult asyncResult) { }
         public void EndDisconnect(IAsyncResult asyncResult) { }
         public int EndReceive(IAsyncResult asyncResult) { throw null; }
@@ -343,6 +345,7 @@ namespace System.Net.Sockets
         public System.Net.Sockets.IPPacketInformation ReceiveMessageFromPacketInfo { get { throw null; } }
         public System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
         public System.Net.Sockets.SendPacketsElement[] SendPacketsElements { get { throw null; } set { } }
+        public System.Net.Sockets.TransmitFileOptions SendPacketsFlags { get { throw null; } set { } }
         public int SendPacketsSendSize { get { throw null; } set { } }
         public System.Net.Sockets.SocketError SocketError { get { throw null; } set { } }
         public System.Net.Sockets.SocketFlags SocketFlags { get { throw null; } set { } }
