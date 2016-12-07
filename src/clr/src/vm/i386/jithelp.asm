@@ -92,6 +92,8 @@ EXTERN _TransparentProxyStub_CrossContext@0:PROC
 EXTERN _InContextTPQuickDispatchAsmStub@0:PROC
 endif
 
+EXTERN _COMPlusEndCatch@20:PROC
+
 .686P
 .XMM
 ; The following macro is needed because of a MASM issue with the
@@ -2570,5 +2572,33 @@ ChkCastInterfaceIsNullInst:
         ret
 
 @JIT_ChkCastInterface@8 endp
+
+; Note that the debugger skips this entirely when doing SetIP,
+; since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
+; asserts that to be true.  If this ends up doing more work, then the
+; debugger may need additional support.
+; void __stdcall JIT_EndCatch();
+JIT_EndCatch PROC stdcall public
+
+    ; make temp storage for return address, and push the address of that
+    ; as the last arg to COMPlusEndCatch
+    mov     ecx, [esp]
+    push    ecx;
+    push    esp;
+
+    ; push the rest of COMPlusEndCatch's args, right-to-left
+    push    esi
+    push    edi
+    push    ebx
+    push    ebp
+
+    call    _COMPlusEndCatch@20 ; returns old esp value in eax, stores jump address
+    ; now eax = new esp, [esp] = new eip
+
+    pop     edx         ; edx = new eip
+    mov     esp, eax    ; esp = new esp
+    jmp     edx         ; eip = new eip
+
+JIT_EndCatch ENDP
 
     end
