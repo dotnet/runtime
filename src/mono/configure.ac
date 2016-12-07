@@ -799,7 +799,7 @@ AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to b
 AC_ARG_WITH(aot_hybrid,      [  --with-aot_hybrid=yes,no        If you want to build the aot_hybrid assemblies (defaults to no)],     [], [with_aot_hybrid=default])
 AC_ARG_WITH(aot_only,        [  --with-aot_only=yes,no          If you want to build the aot_only assemblies (defaults to no)],       [], [with_aot_only=default])
 
-AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,aot_preferred,aot_only,bitcode   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 
 dnl
 dnl Profile defaults
@@ -832,7 +832,7 @@ elif test x$with_runtime_preset = xall; then
    with_monotouch_watch_default=yes
    with_monotouch_tv_default=yes
    with_xammac_default=yes
-elif test x$with_runtime_preset = xaot_only; then
+elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
    with_aot_only_default=yes
    TEST_PROFILE=aot_only 
@@ -861,7 +861,7 @@ elif test x$with_runtime_preset = xbitcode; then
 
    AOT_BUILD_FLAGS="--aot=llvmonly,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--llvmonly"
-elif test x$with_runtime_preset = xaot_preferred; then
+elif test x$with_runtime_preset = xhybridaot; then
    DISABLE_MCS_DOCS_default=yes
    with_aot_hybrid_default=yes
    TEST_PROFILE=aot_hybrid 
