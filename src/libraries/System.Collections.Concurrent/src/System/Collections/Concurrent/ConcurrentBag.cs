@@ -299,8 +299,16 @@ namespace System.Collections.Concurrent
                 }
 
                 // Do the copy
-                int copied = CopyFromEachQueueToArray(array, index);
-                Debug.Assert(copied == count);
+                try
+                {
+                    int copied = CopyFromEachQueueToArray(array, index);
+                    Debug.Assert(copied == count);
+                }
+                catch (ArrayTypeMismatchException e)
+                {
+                    // Propagate same exception as in desktop
+                    throw new InvalidCastException(e.Message, e);
+                }
             }
             finally
             {
@@ -934,31 +942,15 @@ namespace System.Collections.Concurrent
                 Debug.Assert(
                     count == (_tailIndex - _headIndex) ||
                     count == (_tailIndex + 1 - _headIndex),
-                    "Count should be the same as tail - head, but allowing for the possibilty that " + 
+                    "Count should be the same as tail - head, but allowing for the possibilty that " +
                     "a peek decremented _tailIndex before seeing that a freeze was happening.");
                 Debug.Assert(arrayIndex <= array.Length - count);
 
-                if (count > 0)
+                // Copy from this queue's array to the destination array, but in reverse
+                // order to match the ordering of desktop.
+                for (int i = arrayIndex + count - 1; i >= arrayIndex; i--)
                 {
-                    int head = headIndex & _mask;
-                    if (count == 1)
-                    {
-                        array[arrayIndex] = _array[head];
-                    }
-                    else
-                    {
-                        int tail = (headIndex + count) & _mask;
-                        if (head < tail)
-                        {
-                            Array.Copy(_array, head, array, arrayIndex, count);
-                        }
-                        else
-                        {
-                            int firstSegmentCount = _array.Length - head;
-                            Array.Copy(_array, head, array, arrayIndex, firstSegmentCount);
-                            Array.Copy(_array, 0, array, arrayIndex + firstSegmentCount, tail);
-                        }
-                    }
+                    array[i] = _array[headIndex++ & _mask];
                 }
 
                 return count;
