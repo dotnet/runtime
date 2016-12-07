@@ -73,9 +73,17 @@ namespace System.Runtime.CompilerServices
         where TValue : class
     {
         #region Fields
-        private const int InitialCapacity = 8;        // Must be a power of two
-        private readonly object _lock = new object(); // This lock protects all mutation of data in the table.  Readers do not take this lock.
-        private volatile Container _container = new Container();
+        private const int InitialCapacity = 8;  // Initial length of the table. Must be a power of two.
+        private readonly object _lock;          // This lock protects all mutation of data in the table.  Readers do not take this lock.
+        private volatile Container _container;  // The actual storage for the table; swapped out as the table grows.
+        #endregion
+
+        #region Constructors
+        public ConditionalWeakTable()
+        {
+            _lock = new object();
+            _container = new Container(this);
+        }
         #endregion
 
         #region Public Members
@@ -273,7 +281,7 @@ namespace System.Runtime.CompilerServices
         {
             lock (_lock)
             {
-                _container = new Container();
+                _container.Clear();
             }
         }
 
@@ -352,14 +360,19 @@ namespace System.Runtime.CompilerServices
         //
         private sealed class Container
         {
-            private int[] _buckets;             // _buckets[hashcode & (_buckets.Length - 1)] contains index of the first entry in bucket (-1 if empty)
-            private Entry[] _entries;
-            private int _firstFreeEntry;        // _firstFreeEntry < _entries.Length => table has capacity,  entries grow from the bottom of the table.
-            private bool _invalid;              // flag detects if OOM or other background exception threw us out of the lock.
+            private readonly ConditionalWeakTable<TKey, TValue> _parent;  // the ConditionalWeakTable with which this container is associated
+            private int[] _buckets;                // _buckets[hashcode & (_buckets.Length - 1)] contains index of the first entry in bucket (-1 if empty)
+            private Entry[] _entries;              // the table entries containing the stored dependency handles
+            private int _firstFreeEntry;           // _firstFreeEntry < _entries.Length => table has capacity,  entries grow from the bottom of the table.
+            private bool _invalid;                 // flag detects if OOM or other background exception threw us out of the lock.
+            private bool _finalized;               // set to true when initially finalized
+            private volatile object _oldKeepAlive; // used to ensure the next allocated container isn't finalized until this one is GC'd
 
-            internal Container()
+            internal Container(ConditionalWeakTable<TKey, TValue> parent)
             {
+                Debug.Assert(parent != null);
                 Debug.Assert(IsPowerOfTwo(InitialCapacity));
+
                 int size = InitialCapacity;
                 _buckets = new int[size];
                 for (int i = 0; i < _buckets.Length; i++)
@@ -367,10 +380,23 @@ namespace System.Runtime.CompilerServices
                     _buckets[i] = -1;
                 }
                 _entries = new Entry[size];
+
+                // Only store the parent after all of the allocations have happened successfully.
+                // Otherwise, as part of growing or clearing the container, we could end up allocating
+                // a new Container that fails (OOMs) part way through construction but that gets finalized
+                // and ends up clearing out some other container present in the associated CWT.
+                _parent = parent;
             }
 
-            private Container(int[] buckets, Entry[] entries, int firstFreeEntry)
+            private Container(ConditionalWeakTable<TKey, TValue> parent, int[] buckets, Entry[] entries, int firstFreeEntry)
             {
+                Debug.Assert(parent != null);
+                Debug.Assert(buckets != null);
+                Debug.Assert(entries != null);
+                Debug.Assert(buckets.Length == entries.Length);
+                Debug.Assert(IsPowerOfTwo(buckets.Length));
+
+                _parent = parent;
                 _buckets = buckets;
                 _entries = entries;
                 _firstFreeEntry = firstFreeEntry;
@@ -469,6 +495,16 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
+            internal void Clear()
+            {
+                // Remove all handles (as in Remove, just by setting the hashcode and leaving
+                // actual removal up to the finalizer).
+                for (int i = 0; i < _firstFreeEntry; i++)
+                {
+                    Volatile.Write(ref _entries[i].HashCode, -1);
+                }
+            }
+
             //----------------------------------------------------------------------------------------
             // This does two things: resize and scrub expired keys off bucket lists.
             //
@@ -537,21 +573,32 @@ namespace System.Runtime.CompilerServices
                         if (primary != null)
                         {
                             // Entry is used and has not expired. Link it into the appropriate bucket list.
-                            // Note that we have to copy the DependentHandle, since the original copy will be freed
-                            // by the Container's finalizer.  
                             newEntries[newEntriesIndex].HashCode = hashCode;
-                            newEntries[newEntriesIndex].depHnd = depHnd.AllocateCopy();
+                            newEntries[newEntriesIndex].depHnd = depHnd;
                             int bucket = hashCode & (newBuckets.Length - 1);
                             newEntries[newEntriesIndex].Next = newBuckets[bucket];
                             newBuckets[bucket] = newEntriesIndex;
                             newEntriesIndex++;
                         }
+                        else
+                        {
+                            // Pretend the item was removed, so that this container's finalizer
+                            // will clean up this dependent handle.
+                            Volatile.Write(ref _entries[entriesIndex].HashCode, -1);
+                        }
                     }
                 }
 
+                // Create the new container.  We want to transfer the responsibility of freeing the handles from
+                // the old container to the new container, and also ensure that the new container isn't finalized
+                // while the old container may still be in use.  As such, we store a reference from the old container
+                // to the new one, which will keep the new container alive as long as the old one is.
+                var newContainer = new Container(_parent, newBuckets, newEntries, newEntriesIndex);
+                _oldKeepAlive = newContainer; // once this is set, the old container's finalizer will not free transferred dependent handles
+
                 GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
-                return new Container(newBuckets, newEntries, newEntriesIndex);
+                return newContainer;
             }
 
             internal ICollection<TKey> Keys
@@ -650,19 +697,36 @@ namespace System.Runtime.CompilerServices
             ~Container()
             {
                 // We're just freeing per-appdomain unmanaged handles here. If we're already shutting down the AD,
-                // don't bother.
-                //
-                // (Despite its name, Environment.HasShutdownStart also returns true if the current AD is finalizing.)
-
-                if (Environment.HasShutdownStarted || _invalid)
+                // don't bother. (Despite its name, Environment.HasShutdownStart also returns true if the current
+                // AD is finalizing.)  We also skip doing anything if the container is invalid, including if someone
+                // the container object was allocated but its associated table never set.
+                if (Environment.HasShutdownStarted || _invalid || _parent == null)
                 {
                     return;
                 }
 
-                Entry[] entries = _entries;
+                // It's possible that the ConditionalWeakTable could have been resurrected, in which case code could
+                // be accessing this Container as it's being finalized.  We don't support usage after finalization,
+                // but we also don't want to potentially corrupt state by allowing dependency handles to be used as
+                // or after they've been freed.  To avoid that, if it's at all possible that another thread has a
+                // reference to this container via the CWT, we remove such a reference and then re-register for
+                // finalization: the next time around, we can be sure that no references remain to this and we can
+                // clean up the dependency handles without fear of corruption.
+                if (!_finalized)
+                {
+                    _finalized = true;
+                    lock (_parent._lock)
+                    {
+                        if (_parent._container == this)
+                        {
+                            _parent._container = null;
+                        }
+                    }
+                    GC.ReRegisterForFinalize(this); // next time it's finalized, we'll be sure there are no remaining refs
+                    return;
+                }
 
-                // Make sure anyone sneaking into the table post-resurrection
-                // gets booted before they can damage the native handle table.
+                Entry[] entries = _entries;
                 _invalid = true;
                 _entries = null;
                 _buckets = null;
@@ -671,7 +735,15 @@ namespace System.Runtime.CompilerServices
                 {
                     for (int entriesIndex = 0; entriesIndex < entries.Length; entriesIndex++)
                     {
-                        entries[entriesIndex].depHnd.Free();
+                        // We need to free handles in two cases:
+                        // - If this container still owns the dependency handle (meaning ownership hasn't been transferred
+                        //   to another container that replaced this one), then it should be freed.
+                        // - If this container had the entry removed, then even if in general ownership was transferred to
+                        //   another container, removed entries are not, therefore this container must free them.
+                        if (_oldKeepAlive == null || entries[entriesIndex].HashCode == -1)
+                        {
+                            entries[entriesIndex].depHnd.Free();
+                        }
                     }
                 }
             }
@@ -715,14 +787,6 @@ namespace System.Runtime.CompilerServices
             nInitialize(primary, secondary, out handle);
             // no need to check for null result: nInitialize expected to throw OOM.
             _handle = handle;
-        }
-
-        public DependentHandle AllocateCopy()
-
-        {
-            object primary, secondary;
-            GetPrimaryAndSecondary(out primary, out secondary);
-            return new DependentHandle(primary, secondary);
         }
         #endregion
 
