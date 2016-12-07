@@ -1112,8 +1112,9 @@
             "GitHubRepositoryName": "corefx"
           },
           "ReportingParameters": {
-            "TargetQueue": null,
-            "Type": "build/tests/"
+            "TaskName": "Package Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Release - Push to MyGet Feed"
           }
         }
       ],
@@ -1137,8 +1138,9 @@
             "GitHubRepositoryName": "corefx"
           },
           "ReportingParameters": {
-            "TargetQueue": null,
-            "Type": "build/tests/"
+            "TaskName": "Package Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Debug - Push to Azure Storage"
           }
         }
       ],
