@@ -467,21 +467,23 @@ namespace System.Dynamic
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    ContractUtils.Requires(args[i] is ParameterExpression, nameof(args));
-                    if (((ParameterExpression)args[i]).IsByRef)
+                    ParameterExpression variable = args[i] as ParameterExpression;
+                    ContractUtils.Requires(variable != null, nameof(args));
+
+                    if (variable.IsByRef)
                     {
                         if (block == null)
                             block = new ReadOnlyCollectionBuilder<Expression>();
 
                         block.Add(
                             Expression.Assign(
-                                args[i],
+                                variable,
                                 Expression.Convert(
                                     Expression.ArrayIndex(
                                         callArgs,
                                         AstUtils.Constant(i)
                                     ),
-                                    args[i].Type
+                                    variable.Type
                                 )
                             )
                         );
