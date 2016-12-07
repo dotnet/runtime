@@ -67,12 +67,30 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public BlockExpression Update(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
         {
-            if (variables == Variables && expressions == Expressions)
+            if (expressions != null)
             {
-                return this;
+                // Ensure variables is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                variables = variables as ICollection<ParameterExpression> ?? variables.ToReadOnly();
+                if (ExpressionUtils.SameElements(variables, Variables))
+                {
+                    // Ensure expressions is safe to enumerate twice.
+                    // (If this means a second call to ToReadOnly it will return quickly).
+                    expressions = expressions as ICollection<Expression> ?? expressions.ToReadOnly();
+                    if (SameExpressions(expressions))
+                    {
+                        return this;
+                    }
+                }
             }
 
-            return Expression.Block(Type, variables, expressions);
+            return Block(Type, variables, expressions);
+        }
+
+        [ExcludeFromCodeCoverage] // Unreachable
+        internal virtual bool SameExpressions(IEnumerable<Expression> expressions)
+        {
+            throw ContractUtils.Unreachable;
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
@@ -171,6 +189,23 @@ namespace System.Linq.Expressions
             }
         }
 
+        internal override bool SameExpressions(IEnumerable<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+            if (alreadyCollection != null)
+            {
+                return ExpressionUtils.SameElements(alreadyCollection, expressions);
+            }
+
+            using (IEnumerator<Expression> en = expressions.GetEnumerator())
+            {
+                return en.MoveNext() && en.Current == _arg0
+                    && en.MoveNext() && en.Current == _arg1
+                    && !en.MoveNext();
+            }
+        }
+
         internal override int ExpressionCount => 2;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
@@ -198,6 +233,24 @@ namespace System.Linq.Expressions
             _arg0 = arg0;
             _arg1 = arg1;
             _arg2 = arg2;
+        }
+
+        internal override bool SameExpressions(IEnumerable<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+            if (alreadyCollection != null)
+            {
+                return ExpressionUtils.SameElements(alreadyCollection, expressions);
+            }
+
+            using (IEnumerator<Expression> en = expressions.GetEnumerator())
+            {
+                return en.MoveNext() && en.Current == _arg0
+                    && en.MoveNext() && en.Current == _arg1
+                    && en.MoveNext() && en.Current == _arg2
+                    && !en.MoveNext();
+            }
         }
 
         internal override Expression GetExpression(int index)
@@ -239,6 +292,25 @@ namespace System.Linq.Expressions
             _arg1 = arg1;
             _arg2 = arg2;
             _arg3 = arg3;
+        }
+
+        internal override bool SameExpressions(IEnumerable<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+            if (alreadyCollection != null)
+            {
+                return ExpressionUtils.SameElements(alreadyCollection, expressions);
+            }
+
+            using (IEnumerator<Expression> en = expressions.GetEnumerator())
+            {
+                return en.MoveNext() && en.Current == _arg0
+                    && en.MoveNext() && en.Current == _arg1
+                    && en.MoveNext() && en.Current == _arg2
+                    && en.MoveNext() && en.Current == _arg3
+                    && !en.MoveNext();
+            }
         }
 
         internal override Expression GetExpression(int index)
@@ -297,6 +369,26 @@ namespace System.Linq.Expressions
             }
         }
 
+        internal override bool SameExpressions(IEnumerable<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+            if (alreadyCollection != null)
+            {
+                return ExpressionUtils.SameElements(alreadyCollection, expressions);
+            }
+
+            using (IEnumerator<Expression> en = expressions.GetEnumerator())
+            {
+                return en.MoveNext() && en.Current == _arg0
+                    && en.MoveNext() && en.Current == _arg1
+                    && en.MoveNext() && en.Current == _arg2
+                    && en.MoveNext() && en.Current == _arg3
+                    && en.MoveNext() && en.Current == _arg4
+                    && !en.MoveNext();
+            }
+        }
+
         internal override int ExpressionCount => 5;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
@@ -324,6 +416,9 @@ namespace System.Linq.Expressions
 
             _expressions = expressions;
         }
+
+        internal override bool SameExpressions(IEnumerable<Expression> expressions) =>
+            ExpressionUtils.SameElements(_expressions, expressions);
 
         internal override Expression GetExpression(int index)
         {
@@ -395,6 +490,21 @@ namespace System.Linq.Expressions
             _body = body;
         }
 
+        internal override bool SameExpressions(IEnumerable<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            ReadOnlyCollection<Expression> alreadyCollection = _body as ReadOnlyCollection<Expression>;
+            if (alreadyCollection != null)
+            {
+                return ExpressionUtils.SameElements(alreadyCollection, expressions);
+            }
+
+            using (IEnumerator<Expression> en = expressions.GetEnumerator())
+            {
+                return en.MoveNext() && _body == en.Current && !en.MoveNext();
+            }
+        }
+
         internal override Expression GetExpression(int index)
         {
             switch (index)
@@ -435,6 +545,9 @@ namespace System.Linq.Expressions
         {
             _body = body;
         }
+
+        internal override bool SameExpressions(IEnumerable<Expression> expressions) =>
+            ExpressionUtils.SameElements(_body, expressions);
 
         protected IReadOnlyList<Expression> Body => _body;
 

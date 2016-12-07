@@ -226,5 +226,44 @@ namespace System.Dynamic.Utils
             }
             return pis;
         }
+
+        internal static bool SameElements<T>(IEnumerable<T> first, IEnumerable<T> second)
+        {
+            if (first == second)
+                return true;
+
+            if (first == null | second == null)
+            {
+                // Consider empty and null equivalent.
+                using (IEnumerator<T> en = (first ?? second).GetEnumerator())
+                {
+                    return !en.MoveNext();
+                }
+            }
+
+            ICollection<T> firstCol = first as ICollection<T>;
+            if (firstCol != null)
+            {
+                ICollection<T> secondCol = second as ICollection<T>;
+                if (secondCol != null && firstCol.Count != secondCol.Count)
+                {
+                    return false;
+                }
+            }
+
+            using (IEnumerator<T> e0 = first.GetEnumerator())
+            using (IEnumerator<T> e1 = second.GetEnumerator())
+            {
+                while (e0.MoveNext())
+                {
+                    if (!e1.MoveNext() || (object)e0.Current != (object)e1.Current)
+                    {
+                        return false;
+                    }
+                }
+
+                return !e1.MoveNext();
+            }
+        }
     }
 }
