@@ -324,5 +324,5 @@ namespace System.Net.Sockets
                 int elementCount,
                 int sendSize,
                 SafeNativeOverlapped overlapped,
-                int flags);
+                TransmitFileOptions flags);
 }

@@ -279,6 +279,26 @@ namespace System.Net.Sockets.Tests
 
         #endregion Buffers
 
+        #region TransmitFileOptions
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void SocketDisconnected_TransmitFileOptionDisconnect(SocketImplementationType type)
+        {
+            SendPackets(type, new SendPacketsElement(new byte[10], 4, 4), TransmitFileOptions.Disconnect, 4);
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void SocketDisconnectedAndReusable_TransmitFileOptionReuseSocket(SocketImplementationType type)
+        {
+            SendPackets(type, new SendPacketsElement(new byte[10], 4, 4), TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket, 4);
+        }
+        #endregion
+
         #region Files
 
         [Theory]
@@ -422,9 +442,50 @@ namespace System.Net.Sockets.Tests
                 GC.WaitForPendingFinalizers();
             }
         }
-        #endregion 
+        #endregion
 
         #region Helpers
+        private void SendPackets(SocketImplementationType type, SendPacketsElement element, TransmitFileOptions flags, int bytesExpected)
+        {
+            Assert.True(Capability.IPv6Support());
+
+            EventWaitHandle completed = new ManualResetEvent(false);
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(type, _serverAddress, out port))
+            {
+                using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    sock.Connect(new IPEndPoint(_serverAddress, port));
+                    using (SocketAsyncEventArgs args = new SocketAsyncEventArgs())
+                    {
+                        args.Completed += OnCompleted;
+                        args.UserToken = completed;
+                        args.SendPacketsElements = new[] { element };
+                        args.SendPacketsFlags = flags;
+
+                        if (sock.SendPacketsAsync(args))
+                        {
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
+                        }
+                        Assert.Equal(SocketError.Success, args.SocketError);
+                        Assert.Equal(bytesExpected, args.BytesTransferred);
+                    }
+
+                    switch (flags)
+                    {
+                        case TransmitFileOptions.Disconnect:
+                            // Sending data again throws with socket shut down error.
+                            Assert.Throws<SocketException>(() => { sock.Send(new byte[1] { 01 }); });
+                            break;
+                        case TransmitFileOptions.ReuseSocket & TransmitFileOptions.Disconnect:
+                            // Able to send data again with reuse socket flag set.
+                            Assert.Equal(1, sock.Send(new byte[1] { 01 }));
+                            break;
+                    }
+                }
+            }
+        }
 
         private void SendPackets(SocketImplementationType type, SendPacketsElement element, int bytesExpected)
         {
