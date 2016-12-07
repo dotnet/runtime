@@ -189,7 +189,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Constant(1),
                 Expression.Constant(2),
                 Expression.Constant(3));
-            Assert.Same(init, init.Update(init.NewExpression, init.Initializers));
+            Assert.Same(init, init.Update(init.NewExpression, init.Initializers.ToArray()));
         }
 
         [Fact]
@@ -214,6 +214,12 @@ namespace System.Linq.Expressions.Tests
                 Expression.ElementInit(meth, Expression.Constant(3))
             };
             ListInitExpression init = Expression.ListInit(Expression.New(typeof(List<int>)), inits);
+            inits = new[]
+            {
+                Expression.ElementInit(meth, Expression.Constant(1)),
+                Expression.ElementInit(meth, Expression.Constant(2)),
+                Expression.ElementInit(meth, Expression.Constant(3))
+            };
             Assert.NotSame(init, init.Update(Expression.New(typeof(List<int>)), inits));
         }
 
