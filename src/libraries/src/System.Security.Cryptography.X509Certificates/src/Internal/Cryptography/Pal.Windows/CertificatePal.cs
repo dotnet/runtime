@@ -24,6 +24,8 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal : IDisposable, ICertificatePal
     {
+        private SafeCertContextHandle _certContext;
+
         public static ICertificatePal FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
@@ -40,20 +42,14 @@ namespace Internal.Cryptography.Pal
         }
 
         /// <summary>
-        /// Returns the SafeCertContextHandle. Use this instead of FromHandle property when
+        /// Returns the SafeCertContextHandle. Use this instead of FromHandle() when
         /// creating another X509Certificate object based on this one to ensure the underlying
         /// cert context is not released at the wrong time.
         /// </summary>
-        /// <param name="cert"></param>
-        /// <returns></returns>
-        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        public static ICertificatePal FromOtherCert(X509Certificate copyFrom)
         {
-            CertificatePal newCert = (CertificatePal)FromHandle(cert.Handle);
-            newCert._certContextCloned = true;
-
-            ((CertificatePal)cert.Pal)._certContextCloned = true;
-
-            return newCert;
+            CertificatePal pal = new CertificatePal((CertificatePal)copyFrom.Pal);
+            return pal;
         }
 
         public IntPtr Handle
@@ -490,10 +486,7 @@ namespace Internal.Cryptography.Pal
             _certContext = null;
             if (certContext != null && !certContext.IsInvalid)
             {
-                if (!_certContextCloned)
-                {
-                    certContext.Dispose();
-                }
+                certContext.Dispose();
             }
         }
 
@@ -549,6 +542,13 @@ namespace Internal.Cryptography.Pal
             return sb.ToString();
         }
 
+        private CertificatePal(CertificatePal copyFrom)
+        {
+            // Use _certContext (instead of CertContext) to keep the original context handle from being
+            // finalized until all cert copies are no longer referenced.
+            _certContext = new SafeCertContextHandle(copyFrom._certContext);
+        }
+
         private CertificatePal(SafeCertContextHandle certContext, bool deleteKeyContainer)
         {
             if (deleteKeyContainer)
@@ -561,8 +561,5 @@ namespace Internal.Cryptography.Pal
             }
             _certContext = certContext;
         }
-
-        private SafeCertContextHandle _certContext;
-        private bool _certContextCloned;
     }
 }

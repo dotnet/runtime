@@ -44,9 +44,38 @@ namespace Internal.Cryptography.Pal.Native
     /// </summary>
     internal class SafeCertContextHandle : SafePointerHandle<SafeCertContextHandle>
     {
+        private SafeCertContextHandle _parent;
+
+        public SafeCertContextHandle() { }
+
+        public SafeCertContextHandle(SafeCertContextHandle parent)
+        {
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+
+            Debug.Assert(!parent.IsInvalid);
+            Debug.Assert(!parent.IsClosed);
+
+            bool ignored = false;
+            parent.DangerousAddRef(ref ignored);
+            _parent = parent;
+
+            SetHandle(_parent.handle);
+        }
+
         protected override bool ReleaseHandle()
         {
-            Interop.crypt32.CertFreeCertificateContext(handle);  // CertFreeCertificateContext always returns true so checking the return value is pointless.
+            if (_parent != null)
+            {
+                _parent.DangerousRelease();
+                _parent = null;
+            }
+            else
+            {
+                Interop.crypt32.CertFreeCertificateContext(handle);
+            }
+
+            SetHandle(IntPtr.Zero);
             return true;
         }
 
@@ -135,7 +164,7 @@ namespace Internal.Cryptography.Pal.Native
                     {
                         // dwProvType being 0 indicates that the key is stored in CNG.
                         // dwProvType being non-zero indicates that the key is stored in CAPI.
-                            
+
                         string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName));
                         string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName));
 
