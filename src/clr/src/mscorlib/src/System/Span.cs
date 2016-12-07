@@ -13,10 +13,10 @@ namespace System
     /// characteristics on par with T[]. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
-    public unsafe struct Span<T>
+    public struct Span<T>
     {
-        /// <summary>A byref or a native ptr. Do not access directly</summary>
-        private readonly IntPtr _rawPointer;
+        /// <summary>A byref or a native ptr.</summary>
+        private readonly ByReference<T> _pointer;
         /// <summary>The number of elements this Span contains.</summary>
         private readonly int _length;
 
@@ -36,8 +36,7 @@ namespace System
                     ThrowHelper.ThrowArrayTypeMismatchException();
             }
 
-            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-            _rawPointer = (IntPtr)Unsafe.AsPointer(ref JitHelpers.GetArrayData(array));
+            _pointer = new ByReference<T>(ref JitHelpers.GetArrayData(array));
             _length = array.Length;
         }
 
@@ -64,8 +63,7 @@ namespace System
             if ((uint)start > (uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-            _rawPointer = (IntPtr)Unsafe.AsPointer(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
+            _pointer = new ByReference<T>(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
             _length = array.Length - start;
         }
 
@@ -93,8 +91,7 @@ namespace System
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-            _rawPointer = (IntPtr)Unsafe.AsPointer(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
+            _pointer = new ByReference<T>(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
             _length = length;
         }
 
@@ -120,7 +117,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _rawPointer = (IntPtr)pointer;
+            _pointer = new ByReference<T>(ref Unsafe.AsRef<T>(pointer));
             _length = length;
         }
 
@@ -129,18 +126,17 @@ namespace System
         /// </summary>
         internal Span(ref T ptr, int length)
         {
-            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-            _rawPointer = (IntPtr)Unsafe.AsPointer(ref ptr);
+            _pointer = new ByReference<T>(ref ptr);
             _length = length;
         }
 
         /// <summary>
-        /// An internal helper for accessing spans.
+        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
-        internal unsafe ref T GetRawPointer()
+        public ref T DangerousGetPinnableReference()
         {
-            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-            return ref Unsafe.As<IntPtr, T>(ref *(IntPtr*)_rawPointer);
+            return ref _pointer.Value;
         }
 
         /// <summary>
@@ -196,14 +192,14 @@ namespace System
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                return Unsafe.Add(ref GetRawPointer(), index);
+                return Unsafe.Add(ref DangerousGetPinnableReference(), index);
             }
             set
             {
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                Unsafe.Add(ref GetRawPointer(), index) = value;
+                Unsafe.Add(ref DangerousGetPinnableReference(), index) = value;
             }
         }
 
@@ -218,7 +214,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref GetRawPointer(), _length);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref DangerousGetPinnableReference(), _length);
             return destination;
         }
 
@@ -235,7 +231,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref GetRawPointer(), start), _length - start);
+            return new Span<T>(ref Unsafe.Add(ref DangerousGetPinnableReference(), start), _length - start);
         }
 
         /// <summary>
@@ -252,7 +248,7 @@ namespace System
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref GetRawPointer(), start), length);
+            return new Span<T>(ref Unsafe.Add(ref DangerousGetPinnableReference(), start), length);
         }
 
         /// <summary>
@@ -262,7 +258,7 @@ namespace System
         public bool Equals(Span<T> other)
         {
             return (_length == other.Length) &&
-                (_length == 0 || Unsafe.AreSame(ref GetRawPointer(), ref other.GetRawPointer()));
+                (_length == 0 || Unsafe.AreSame(ref DangerousGetPinnableReference(), ref other.DangerousGetPinnableReference()));
         }
 
         /// <summary>
@@ -275,7 +271,7 @@ namespace System
             if ((uint)_length > (uint)destination.Length)
                 return false;
 
-            SpanHelper.CopyTo<T>(ref destination.GetRawPointer(), ref GetRawPointer(), _length);
+            SpanHelper.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref DangerousGetPinnableReference(), _length);
             return true;
         }
 
@@ -287,7 +283,7 @@ namespace System
             if ((uint)values.Length > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            SpanHelper.CopyTo<T>(ref GetRawPointer(), ref values.GetRawPointer(), values.Length);
+            SpanHelper.CopyTo<T>(ref DangerousGetPinnableReference(), ref values.DangerousGetPinnableReference(), values.Length);
         }
     }
 
@@ -308,7 +304,7 @@ namespace System
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
             return new Span<byte>(
-                ref Unsafe.As<T, byte>(ref source.GetRawPointer()),
+                ref Unsafe.As<T, byte>(ref source.DangerousGetPinnableReference()),
                 checked(source.Length * Unsafe.SizeOf<T>()));
         }
 
@@ -327,7 +323,7 @@ namespace System
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
             return new ReadOnlySpan<byte>(
-                ref Unsafe.As<T, byte>(ref source.GetRawPointer()),
+                ref Unsafe.As<T, byte>(ref source.DangerousGetPinnableReference()),
                 checked(source.Length * Unsafe.SizeOf<T>()));
         }
 
@@ -342,7 +338,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
-        public static unsafe Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
+        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
             where TFrom : struct
             where TTo : struct
         {
@@ -352,7 +348,7 @@ namespace System
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
 
             return new Span<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref source.GetRawPointer()),
+                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
                 checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
         }
 
@@ -367,7 +363,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
-        public static unsafe ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
+        public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
             where TFrom : struct
             where TTo : struct
         {
@@ -377,7 +373,7 @@ namespace System
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
 
             return new ReadOnlySpan<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref source.GetRawPointer()),
+                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
                 checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
         }
     }

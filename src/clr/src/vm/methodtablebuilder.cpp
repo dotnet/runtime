@@ -1862,6 +1862,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pMT->SetHasBoxedRegularStatics();
     }
 
+    if (bmtFP->fIsByRefLikeType)
+    {
+        pMT->SetIsByRefLike();
+    }
+
     if (IsValueClass())
     {
         if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverLayedField())
@@ -4214,14 +4219,12 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     goto GOT_ELEMENT_TYPE;
                 }
                 
-                // There are just few types with code:IsByRefLike set - see code:CheckForSystemTypes.
-                // Note: None of them will ever have self-referencing static ValueType field (we cannot assert it now because the IsByRefLike 
-                // status for this type has not been initialized yet).
+                // Inherit IsByRefLike characteristic from fields
                 if (!IsSelfRef(pByValueClass) && pByValueClass->IsByRefLike())
-                {   // Cannot have embedded valuetypes that contain a field that require stack allocation.
-                    BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
+                {
+                    bmtFP->fIsByRefLikeType = true;
                 }
-                
+
                 if (!IsSelfRef(pByValueClass) && pByValueClass->GetClass()->HasNonPublicFields())
                 {   // If a class has a field of type ValueType with non-public fields in it,
                     // the class must "inherit" this characteristic
@@ -10207,19 +10210,10 @@ void MethodTableBuilder::CheckForSystemTypes()
     if (bmtGenerics->HasInstantiation() && g_pNullableClass != NULL)
     {
 #ifdef FEATURE_SPAN_OF_T
-        _ASSERTE(g_pSpanClass != NULL);
-        _ASSERTE(g_pReadOnlySpanClass != NULL);
+        _ASSERTE(g_pByReferenceClass != NULL);
+        _ASSERTE(g_pByReferenceClass->IsByRefLike());
 
-        _ASSERTE(g_pSpanClass->IsByRefLike());
-        _ASSERTE(g_pReadOnlySpanClass->IsByRefLike());
-
-        if (GetCl() == g_pSpanClass->GetCl())
-        {
-            pMT->SetIsByRefLike();
-            return;
-        }
-
-        if (GetCl() == g_pReadOnlySpanClass->GetCl())
+        if (GetCl() == g_pByReferenceClass->GetCl())
         {
             pMT->SetIsByRefLike();
             return;
@@ -10281,11 +10275,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetIsNullable();
         }
 #ifdef FEATURE_SPAN_OF_T
-        else if (strcmp(name, g_SpanName) == 0)
-        {
-            pMT->SetIsByRefLike();
-        }
-        else if (strcmp(name, g_ReadOnlySpanName) == 0)
+        else if (strcmp(name, g_ByReferenceName) == 0)
         {
             pMT->SetIsByRefLike();
         }

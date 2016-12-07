@@ -2081,6 +2081,7 @@ private:
         DWORD NumGCPointerSeries;
         DWORD NumInstanceFieldBytes;
 
+        bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
         bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
 
