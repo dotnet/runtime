@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Tests
                 Assert.Same(args[i], arguments[i]);
             }
 
-            MethodCallExpression updated = expr.Update(obj, arguments);
+            MethodCallExpression updated = expr.Update(obj, arguments.ToList());
             Assert.Same(expr, updated);
 
             var visited = (MethodCallExpression)new NopVisitor().Visit(expr);
@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Tests
 
             MethodCallExpression res = node.Update(node.Object, node.Arguments.ToArray());
 
-            Assert.NotSame(node, res);
+            Assert.Same(node, res);
 
             return res;
         }

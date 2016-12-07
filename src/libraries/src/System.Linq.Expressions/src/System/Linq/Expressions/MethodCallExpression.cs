@@ -62,11 +62,16 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MethodCallExpression Update(Expression @object, IEnumerable<Expression> arguments)
         {
-            if (@object == Object && arguments == Arguments)
+            if (@object == Object & arguments != null)
             {
-                return this;
+                arguments = arguments as ICollection<Expression> ?? arguments.ToReadOnly();
+                if (ExpressionUtils.SameElements(arguments, Arguments))
+                {
+                    return this;
+                }
             }
-            return Expression.Call(@object, Method, arguments);
+
+            return Call(@object, Method, arguments);
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
