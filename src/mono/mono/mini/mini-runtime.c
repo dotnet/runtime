@@ -3717,6 +3717,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_set_generic_sharing_supported (TRUE);
 #endif
 
+	mono_threads_signals_init ();
+
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_install_handlers ();
 #endif

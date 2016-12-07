@@ -19,18 +19,6 @@
 
 #include "mono-threads-debug.h"
 
-#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-#define DEFAULT_SUSPEND_SIGNAL SIGXFSZ
-#else
-#define DEFAULT_SUSPEND_SIGNAL SIGPWR
-#endif
-#define DEFAULT_RESTART_SIGNAL SIGXCPU
-
-static int abort_signal_num;
-
-static sigset_t suspend_signal_mask;
-static sigset_t suspend_ack_signal_mask;
-
 gint
 mono_threads_suspend_search_alternative_signal (void)
 {
@@ -50,25 +38,26 @@ mono_threads_suspend_search_alternative_signal (void)
 #endif
 }
 
+#ifndef __native_client__
+
+static int suspend_signal_num = -1;
+static int restart_signal_num = -1;
+static int abort_signal_num = -1;
+
+static sigset_t suspend_signal_mask;
+static sigset_t suspend_ack_signal_mask;
+
 static void
-signal_add_handler (int signo, gpointer handler, int flags)
+signal_add_handler (int signo, void (*handler)(int, siginfo_t *, void *), int flags)
 {
-#if defined(__native_client__)
-	g_assert_not_reached ();
-#else
-	/*FIXME, move the code from mini to utils and do the right thing!*/
 	struct sigaction sa;
-	struct sigaction previous_sa;
 	int ret;
 
-	sa.sa_sigaction = (void (*)(int, siginfo_t *, void *))handler;
+	sa.sa_sigaction = handler;
 	sigfillset (&sa.sa_mask);
-
 	sa.sa_flags = SA_SIGINFO | flags;
-	ret = sigaction (signo, &sa, &previous_sa);
-
+	ret = sigaction (signo, &sa, NULL);
 	g_assert (ret != -1);
-#endif
 }
 
 static int
@@ -84,37 +73,58 @@ abort_signal_get (void)
 #elif defined (SIGTTIN)
 	return SIGTTIN;
 #else
-	return -1;
+	g_error ("unable to get abort signal");
+#endif
+}
+
+static int
+suspend_signal_get (void)
+{
+#ifdef SIGRTMIN
+	static int suspend_signum = -1;
+	if (suspend_signum == -1)
+		suspend_signum = mono_threads_suspend_search_alternative_signal ();
+	return suspend_signum;
+#else
+#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+	return SIGXFSZ;
+#else
+	return SIGPWR;
+#endif
+#endif
+}
+
+static int
+restart_signal_get (void)
+{
+#ifdef SIGRTMIN
+	static int restart_signum = -1;
+	if (restart_signum == -1)
+		restart_signum = mono_threads_suspend_search_alternative_signal ();
+	return restart_signum;
+#else
+	return SIGXCPU;
 #endif
 }
 
 static void
 restart_signal_handler (int _dummy, siginfo_t *_info, void *context)
 {
-#if defined(__native_client__)
-	g_assert_not_reached ();
-#else
 	MonoThreadInfo *info;
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-	info->signal = DEFAULT_RESTART_SIGNAL;
+	info->signal = restart_signal_num;
 	errno = old_errno;
-#endif
 }
 
 static void
 suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 {
-#if defined(__native_client__)
-	g_assert_not_reached ();
-#else
 	int old_errno = errno;
 	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
-
 	MonoThreadInfo *current = mono_thread_info_current ();
-	gboolean ret;
 
 	THREADS_SUSPEND_DEBUG ("SIGNAL HANDLER FOR %p [%p]\n", mono_thread_info_get_tid (current), (void*)current->native_handle);
 	if (current->syscall_break_signal) {
@@ -162,7 +172,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	do {
 		current->signal = 0;
 		sigsuspend (&suspend_signal_mask);
-	} while (current->signal != DEFAULT_RESTART_SIGNAL);
+	} while (current->signal != restart_signal_num);
 
 	/* Unblock the restart signal. */
 	pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
@@ -185,7 +195,6 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 done:
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
 	errno = old_errno;
-#endif
 }
 
 void
@@ -195,18 +204,27 @@ mono_threads_suspend_init_signals (void)
 
 	sigemptyset (&signal_set);
 
+	/* add suspend signal */
+	suspend_signal_num = suspend_signal_get ();
+
+	signal_add_handler (suspend_signal_num, suspend_signal_handler, SA_RESTART);
+
+	sigaddset (&signal_set, suspend_signal_num);
+
+	/* add restart signal */
+	restart_signal_num = restart_signal_get ();
+
 	sigfillset (&suspend_signal_mask);
-	sigdelset (&suspend_signal_mask, DEFAULT_RESTART_SIGNAL);
+	sigdelset (&suspend_signal_mask, restart_signal_num);
 
 	sigemptyset (&suspend_ack_signal_mask);
-	sigaddset (&suspend_ack_signal_mask, DEFAULT_RESTART_SIGNAL);
+	sigaddset (&suspend_ack_signal_mask, restart_signal_num);
 
-	signal_add_handler (DEFAULT_SUSPEND_SIGNAL, suspend_signal_handler, SA_RESTART);
-	signal_add_handler (DEFAULT_RESTART_SIGNAL, restart_signal_handler, SA_RESTART);
+	signal_add_handler (restart_signal_num, restart_signal_handler, SA_RESTART);
 
-	sigaddset (&signal_set, DEFAULT_SUSPEND_SIGNAL);
-	sigaddset (&signal_set, DEFAULT_RESTART_SIGNAL);
+	sigaddset (&signal_set, restart_signal_num);
 
+	/* add abort signal */
 	abort_signal_num = abort_signal_get ();
 
 	/* the difference between abort and suspend here is made by not
@@ -223,19 +241,51 @@ mono_threads_suspend_init_signals (void)
 gint
 mono_threads_suspend_get_suspend_signal (void)
 {
-	return DEFAULT_SUSPEND_SIGNAL;
+	g_assert (suspend_signal_num != -1);
+	return suspend_signal_num;
 }
 
 gint
 mono_threads_suspend_get_restart_signal (void)
 {
-	return DEFAULT_RESTART_SIGNAL;
+	g_assert (restart_signal_num != -1);
+	return restart_signal_num;
 }
 
 gint
 mono_threads_suspend_get_abort_signal (void)
 {
+	g_assert (abort_signal_num != -1);
 	return abort_signal_num;
 }
+
+#else
+
+void
+mono_threads_suspend_init_signals (void)
+{
+	g_assert_not_reached ();
+}
+
+gint
+mono_threads_suspend_get_suspend_signal (void)
+{
+	return -1;
+}
+
+gint
+mono_threads_suspend_get_restart_signal (void)
+{
+	return -1;
+}
+
+gint
+mono_threads_suspend_get_abort_signal (void)
+{
+	return -1;
+}
+
+#endif /* __native_client__ */
+
 
 #endif /* defined(USE_POSIX_BACKEND) */

@@ -710,7 +710,6 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
 	mono_threads_suspend_init ();
-	mono_threads_suspend_init_signals ();
 	mono_threads_coop_init ();
 
 #if defined(__MACH__)
@@ -720,6 +719,12 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_threads_inited = TRUE;
 
 	g_assert (sizeof (MonoNativeThreadId) <= sizeof (uintptr_t));
+}
+
+void
+mono_threads_signals_init (void)
+{
+	mono_threads_suspend_init_signals ();
 }
 
 void
