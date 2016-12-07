@@ -529,7 +529,9 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void SwitchCaseUpdateSameToSame()
         {
-            SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant(2));
+            Expression[] tests = {Expression.Constant(0), Expression.Constant(2)};
+            SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), tests);
+            Assert.Same(sc, sc.Update(tests, sc.Body));
             Assert.Same(sc, sc.Update(sc.TestValues, sc.Body));
         }
 

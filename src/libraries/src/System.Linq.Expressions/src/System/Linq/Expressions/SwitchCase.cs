@@ -50,10 +50,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public SwitchCase Update(IEnumerable<Expression> testValues, Expression body)
         {
-            if (testValues == TestValues && body == Body)
+            if (body == Body & testValues != null)
             {
-                return this;
+                testValues = testValues as ICollection<Expression> ?? testValues.ToReadOnly();
+                if (ExpressionUtils.SameElements(testValues, TestValues))
+                {
+                    return this;
+                }
             }
+
             return Expression.SwitchCase(body, testValues);
         }
     }
