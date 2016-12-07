@@ -512,14 +512,17 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
     }
 
     assert(tree->OperIsIndir());
-    if (tree->AsIndir()->Addr()->OperGet() == GT_LCL_VAR)
+
+    GenTree* const addr = tree->AsIndir()->Addr();
+    if (addr->OperGet() == GT_LCL_VAR)
     {
         // Check if we have the pattern above and find the nullcheck node if we do.
 
         // Find the definition of the indirected local (x in the picture)
-        GenTreePtr indLocalTree = tree->gtGetOp1();
-        unsigned   lclNum       = indLocalTree->AsLclVarCommon()->GetLclNum();
-        unsigned   ssaNum       = indLocalTree->AsLclVarCommon()->GetSsaNum();
+        GenTreeLclVarCommon* const lclVarNode = addr->AsLclVarCommon();
+
+        const unsigned lclNum = lclVarNode->GetLclNum();
+        const unsigned ssaNum = lclVarNode->GetSsaNum();
 
         if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
         {
@@ -557,7 +560,7 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
                                             {
                                                 // Walk from the use to the def in reverse execution order to see
                                                 // if any nodes have unsafe side effects.
-                                                GenTreePtr     currentTree        = indLocalTree->gtPrev;
+                                                GenTreePtr     currentTree        = lclVarNode->gtPrev;
                                                 bool           isInsideTry        = compCurBB->hasTryIndex();
                                                 bool           canRemoveNullCheck = true;
                                                 const unsigned maxNodesWalked     = 25;
