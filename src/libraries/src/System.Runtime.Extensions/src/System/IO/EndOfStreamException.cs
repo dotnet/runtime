@@ -6,7 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    [Serializable]
+    // TODO: Uncomment for uap101aot build when base ctor available
+    //[Serializable]
     public class EndOfStreamException : IOException
     {
         public EndOfStreamException()

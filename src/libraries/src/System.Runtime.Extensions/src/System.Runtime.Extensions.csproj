@@ -17,6 +17,8 @@
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
+    <!-- Temporarily ignore missing types for uap101aot -->
+    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -35,7 +37,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <StringResourcesPath>Resources\Strings.netcore50aot.resx</StringResourcesPath>
-    <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <ContractProject Include="..\ref\System.Runtime.Extensions.csproj">
@@ -43,7 +44,8 @@
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
-    <Compile Include="System\AppDomain.cs" />
+    <!-- Temporarily skip AppDomain.cs for uap101aot -->
+    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uap101aot'" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
@@ -140,9 +142,6 @@
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
-      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -164,9 +163,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
-      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathName.cs</Link>
     </Compile>
@@ -181,9 +177,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetTempPathW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.MaxLengths.cs</Link>
@@ -226,6 +219,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs</Link>
     </Compile>
@@ -234,6 +230,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\sspicli\Interop.GetUserNameExW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
@@ -326,6 +325,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -402,6 +404,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Unix.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
@@ -415,15 +420,23 @@
   <!-- WINDOWS: UAP -->
   <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <Compile Include="System\Environment.Uap.cs" />
-    <Compile Include="System\IO\Path.Uap.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
+    <Compile Include="System\IO\Path.Uap.cs" />
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" />
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Uap.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Uap.cs</Link>
+    </Compile>
+    <!-- Temporary - until text normalization is added to System.Private.Corelib -->
+    <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs">
+      <Link>Common\System\Text\NormalizationForm.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -440,8 +453,7 @@
     <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
       <Aliases>System_Security_Principal</Aliases>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
@@ -453,9 +465,8 @@
   <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <TargetingPackReference Include="System.Private.Interop" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.depproj">
-      <TargetGroup>uap101aot</TargetGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

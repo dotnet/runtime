@@ -153,9 +153,6 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
   </data>
-  <data name="InvalidOperation_TimeoutsNotSupported" xml:space="preserve">
-    <value>Timeouts are not supported on this stream.</value>
-  </data>
   <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
     <value>Cannot read from a closed TextReader.</value>
   </data>
@@ -207,12 +204,6 @@
   <data name="GenericInvalidData" xml:space="preserve">
     <value>Found invalid data while decoding.</value>
   </data>
-  <data name="Arg_DirectoryNotFoundException" xml:space="preserve">
-    <value>Attempted to access a path that is not on the disk.</value>
-  </data>
-  <data name="InvalidOperation_Calling" xml:space="preserve">
-    <value>WinRT Interop has already been initialized and cannot be initialized again.</value>
-  </data>
   <data name="ArgumentOutOfRange_MustBePositive" xml:space="preserve">
     <value>'{0}' must be greater than zero.</value>
   </data>
@@ -227,5 +218,254 @@
   </data>
   <data name="Argument_EmptyPath" xml:space="preserve">
     <value>Empty path name is not legal.</value>
+  </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
+  </data>
+  <data name="Argument_EmptyApplicationName" xml:space="preserve">
+    <value>ApplicationId cannot have an empty string for the name.</value>
+  </data>
+  <data name="Argument_FrameworkNameMissingVersion" xml:space="preserve">
+    <value>FrameworkName version component is missing.</value>
+  </data>
+  <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
+    <value> FrameworkName is invalid.</value>
+  </data>
+  <data name="Argument_FrameworkNameInvalidVersion" xml:space="preserve">
+    <value>FrameworkName version component is invalid.</value>
+  </data>
+  <data name="Argument_FrameworkNameTooShort" xml:space="preserve">
+    <value>FrameworkName cannot have less than two components or more than three components.</value>
+  </data>
+  <data name="net_emptystringcall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
+  <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
+    <value>Array is not long enough. Check array index and length.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GenericPositive" xml:space="preserve">
+    <value>Value must be positive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
+    <value>The specified length exceeds the maximum value of {0}.</value>
+  </data>
+  <data name="Arg_PathIllegal" xml:space="preserve">
+    <value>The path is not of a legal form.</value>
+  </data>
+  <data name="Arg_PathIllegalUNC" xml:space="preserve">
+    <value>The UNC path should be of the form \\\\server\\share.</value>
+  </data>
+  <data name="Argument_InvalidPathChars" xml:space="preserve">
+    <value>Illegal characters in path.</value>
+  </data>
+  <data name="Argument_PathEmpty" xml:space="preserve">
+    <value>Path cannot be the empty string or all whitespace.</value>
+  </data>
+  <data name="Argument_PathFormatNotSupported" xml:space="preserve">
+    <value>The given path's format is not supported.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}</value>
+  </data>
+  <data name="Argument_IllegalEnvVarName" xml:space="preserve">
+    <value>Environment variable name cannot contain equal character.</value>
+  </data>
+  <data name="Argument_LongEnvVarValue" xml:space="preserve">
+    <value>Environment variable name or value is too long.</value>
+  </data>
+  <data name="Argument_StringFirstCharIsZero" xml:space="preserve">
+    <value>The first char in the string is the null character.</value>
+  </data>
+  <data name="Argument_StringZeroLength" xml:space="preserve">
+    <value>String cannot be of zero length.</value>
+  </data>
+  <data name="Argument_BadResourceScopeTypeBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource type bits may be set.</value>
+  </data>
+  <data name="Argument_BadResourceScopeVisibilityBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.</value>
+  </data>
+  <data name="ArgumentNull_TypeRequiredByResourceScope" xml:space="preserve">
+    <value>The type parameter cannot be null when scoping the resource's visibility to Private or Assembly.</value>
+  </data>
+  <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
+    <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
+  </data>
+  <data name="AppDomain_Name" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="AppDomain_NoContextPolicies" xml:space="preserve">
+    <value>There are no context policies.</value>
+  </data>
+  <data name="Arg_MustBeTrue" xml:space="preserve">
+    <value>Argument must be true.</value>
+  </data>
+  <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
+    <value>Attempt to unload the AppDomain failed.</value>
+  </data>
+  <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
+    <value>Attempted to access an unloaded AppDomain.</value>
+  </data>
+  <data name="ZeroLengthString" xml:space="preserve">
+    <value>String cannot have zero length.</value>
+  </data>
+  <data name="EntryPointNotFound" xml:space="preserve">
+    <value>Entry point not found in assembly</value>
+  </data>
+  <data name="NotSupported" xml:space="preserve">
+    <value>Not supported on this platform.</value>
+  </data>
+  <data name="AppDomain_ResMonNotAvail" xml:space="preserve">
+    <value>This API is not available when AppDomain Resource Monitoring is not turned on.</value>
+  </data>
+  <data name="Arg_ContextMarshalException" xml:space="preserve">
+    <value>Attempted to marshal an object across a context boundary.</value>
+  </data>
+  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
+    <value>Default principal object cannot be set twice.</value>
+  </data>
+  <data name="ArgumentNull_Array" xml:space="preserve">
+    <value>Array cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_Collection" xml:space="preserve">
+    <value>Collection cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_Dictionary" xml:space="preserve">
+    <value>Dictionary cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_Key" xml:space="preserve">
+    <value>Key cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ArrayListInsert" xml:space="preserve">
+    <value>Insertion index was out of range. Must be non-negative and less than or equal to size.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
+    <value>Larger than collection size.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Count" xml:space="preserve">
+    <value>Count must be positive and count must refer to a location within the string/array/collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_HashtableLoadFactor" xml:space="preserve">
+    <value>Load factor needs to be between 0.1 and 1.0.</value>
+  </data>
+  <data name="ArgumentOutOfRange_MustBeNonNegNum" xml:space="preserve">
+    <value>'{0}' must be non-negative.</value>
+  </data>
+  <data name="Argument_AddingDuplicate__" xml:space="preserve">
+    <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
+  </data>
+  <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
+    <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
+  </data>
+  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="InvalidOperation_EnumEnded" xml:space="preserve">
+    <value>Enumeration already finished.</value>
+  </data>
+  <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
+    <value>Collection was modified; enumeration operation may not execute.</value>
+  </data>
+  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
+    <value>Enumeration has not started. Call MoveNext.</value>
+  </data>
+  <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
+  </data>
+  <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
+    <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
+  </data>
+  <data name="InvalidOperation_UnderlyingArrayListChanged" xml:space="preserve">
+    <value>This range in the underlying list is invalid. A possible cause is that elements were removed.</value>
+  </data>
+  <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
+    <value>Collection was of a fixed size.</value>
+  </data>
+  <data name="NotSupported_RangeCollection" xml:space="preserve">
+    <value>The specified operation is not supported on Ranges.</value>
+  </data>
+  <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="Serialization_InsufficientState" xml:space="preserve">
+    <value>Insufficient state to return the real object.</value>
+  </data>
+  <data name="Serialization_InvalidOnDeser" xml:space="preserve">
+    <value>OnDeserialization method was called while the object was not being deserialized.</value>
+  </data>
+  <data name="Serialization_KeyValueDifferentSizes" xml:space="preserve">
+    <value>The keys and values arrays have different sizes.</value>
+  </data>
+  <data name="Serialization_MissingKeys" xml:space="preserve">
+    <value>The Keys for this Hashtable are missing.</value>
+  </data>
+  <data name="Serialization_MissingValues" xml:space="preserve">
+    <value>The Values for this Hashtable are missing.</value>
+  </data>
+  <data name="Serialization_NullKey" xml:space="preserve">
+    <value>One of the serialized keys is null.</value>
+  </data>
+  <data name="Argument_ImplementIComparable" xml:space="preserve">
+    <value>At least one object must implement IComparable.</value>
+  </data>
+  <data name="ArgumentNull_Child" xml:space="preserve">
+    <value>Cannot have a null child.</value>
+  </data>
+  <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
+    <value>Attribute names must be unique.</value>
+  </data>
+  <data name="Argument_InvalidElementName" xml:space="preserve">
+    <value>Invalid element name '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementTag" xml:space="preserve">
+    <value>Invalid element tag '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementText" xml:space="preserve">
+    <value>Invalid element text '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementValue" xml:space="preserve">
+    <value>Invalid element value '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidFlag" xml:space="preserve">
+    <value>Value of flags is invalid.</value>
   </data>
 </root>
