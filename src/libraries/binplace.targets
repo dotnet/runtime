@@ -3,13 +3,17 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true'">true</IsRuntimeAssembly>
-    <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
-    <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
+    <!-- Try to determine if this is a simple library without a ref project.
+         https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
+    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
+    <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
+    <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
   </PropertyGroup>
 
   <Target Name="BinPlaceStuff" DependsOnTargets="$(BinPlaceStuffDependsOn)" AfterTargets="CopyFilesToOutputDirectory">
     <Message Importance="low" Text="IsRuntimeAssembly: $(IsRuntimeAssembly)" />
     <Message Importance="low" Text="IsReferenceAssembly: $(IsReferenceAssembly)" />
+    <Message Importance="low" Text="IsRuntimeAndReferenceAssembly: $(IsRuntimeAndReferenceAssembly)" />
   </Target>
 
   <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetTargetingPackDir">
