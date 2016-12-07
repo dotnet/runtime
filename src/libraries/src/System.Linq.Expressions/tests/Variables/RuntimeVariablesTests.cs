@@ -162,7 +162,9 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void UpdateSameCollectionSameNode()
         {
-            RuntimeVariablesExpression varExp = Expression.RuntimeVariables(Enumerable.Repeat(Expression.Variable(typeof(RuntimeVariablesTests)), 1));
+            ParameterExpression[] variables = {Expression.Variable(typeof(RuntimeVariablesTests))};
+            RuntimeVariablesExpression varExp = Expression.RuntimeVariables(variables);
+            Assert.Same(varExp, varExp.Update(variables));
             Assert.Same(varExp, varExp.Update(varExp.Variables));
             Assert.Same(varExp, NoOpVisitor.Instance.Visit(varExp));
         }
