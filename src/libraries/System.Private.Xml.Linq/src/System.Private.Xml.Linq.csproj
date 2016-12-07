@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{BAC347A3-9841-44FC-B1E3-2344D1152C23}</ProjectGuid>
     <AssemblyName>System.Private.Xml.Linq</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <RootNamespace>System.Xml</RootNamespace>
     <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
