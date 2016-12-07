@@ -95,6 +95,24 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(() => Expression.MemberInit(newExp, bind));
         }
 
+        [Fact]
+        public void UpdateSameReturnsSame()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.Same(memberBind, memberBind.Update(Enumerable.Repeat(bind, 1)));
+        }
+
+
+        [Fact]
+        public void UpdateDifferentReturnsDifferet()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.NotSame(memberBind, memberBind.Update(new[] {Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))}));
+            Assert.NotSame(memberBind, memberBind.Update(Enumerable.Empty<MemberBinding>()));
+        }
+
         [Theory, ClassData(typeof(CompilationTypes))]
         public void InnerProperty(bool useInterpreter)
         {
