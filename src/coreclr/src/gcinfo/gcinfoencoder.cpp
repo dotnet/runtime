@@ -1163,7 +1163,8 @@ void GcInfoEncoder::Build()
     int size_tCount = (m_NumSlots + BITS_PER_SIZE_T - 1) / BITS_PER_SIZE_T;
     BitArray liveState(m_pAllocator, size_tCount);
     BitArray couldBeLive(m_pAllocator, size_tCount);
-
+    liveState.ClearAll();
+    couldBeLive.ClearAll();
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     _ASSERTE(m_NumCallSites == 0 || m_pCallSites != NULL);
