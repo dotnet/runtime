@@ -1933,8 +1933,7 @@ namespace System {
             }
             Contract.EndContractBlock();
 
-            IComparer<T> comparer = Comparer<T>.Create(comparison);
-            Array.Sort(array, comparer);
+            ArraySortHelper<T>.Sort(array, 0, array.Length, comparison);
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match) {
