@@ -10,6 +10,14 @@ namespace System.Net.Sockets.Tests
     public class SocketAsyncEventArgsTest
     {
         [Fact]
+        public void TestDefaultConstructor()
+        {
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            Assert.Equal(0, args.SendPacketsSendSize);
+            Assert.Equal((TransmitFileOptions)0, args.SendPacketsFlags);
+        }
+
+        [Fact]
         public async Task ReuseSocketAsyncEventArgs_SameInstance_MultipleSockets()
         {
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

@@ -3915,7 +3915,7 @@ namespace System.Net.Sockets
             return EndAccept(out buffer, out bytesTransferred, asyncResult);
         }
 
-        internal Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
             int bytesTransferred;
             byte[] innerBuffer;
@@ -3926,7 +3926,7 @@ namespace System.Net.Sockets
             return socket;
         }
 
-        internal Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
             if (CleanedUp)
