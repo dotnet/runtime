@@ -1,0 +1,449 @@
+{
+  "Packages": {
+    "Microsoft.CSharp": {
+      "BaselineVersion": "4.3.0"
+    },
+    "Microsoft.NETCore.Platforms": {
+      "BaselineVersion": "1.1.0"
+    },
+    "Microsoft.NETCore.Targets": {
+      "BaselineVersion": "1.1.0"
+    },
+    "Microsoft.VisualBasic": {
+      "BaselineVersion": "10.1.0"
+    },
+    "Microsoft.Win32.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "Microsoft.Win32.Registry": {
+      "BaselineVersion": "4.3.0"
+    },
+    "Microsoft.Win32.Registry.AccessControl": {
+      "BaselineVersion": "4.3.0"
+    },
+    "NETStandard.Library": {
+      "BaselineVersion": "1.6.1"
+    },
+    "System.AppContext": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Buffers": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Collections": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Collections.Concurrent": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Collections.Immutable": {
+      "BaselineVersion": "1.3.0"
+    },
+    "System.Collections.NonGeneric": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Collections.Specialized": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ComponentModel": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ComponentModel.Annotations": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ComponentModel.EventBasedAsync": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ComponentModel.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ComponentModel.TypeConverter": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Console": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Data.Common": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Data.SqlClient": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.Contracts": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.Debug": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.DiagnosticSource": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.FileVersionInfo": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.Process": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.StackTrace": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.TextWriterTraceListener": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.Tools": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.TraceSource": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Diagnostics.Tracing": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Drawing.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Dynamic.Runtime": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Globalization": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Globalization.Calendars": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Globalization.Extensions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.Compression": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.Compression.ZipFile": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.FileSystem": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.FileSystem.AccessControl": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.FileSystem.DriveInfo": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.FileSystem.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.FileSystem.Watcher": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.IsolatedStorage": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.MemoryMappedFiles": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.Packaging": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.Pipes": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.IO.UnmanagedMemoryStream": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Linq": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Linq.Expressions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Linq.Parallel": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Linq.Queryable": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Http": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Http.Rtc": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Http.WinHttpHandler": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.NameResolution": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.NetworkInformation": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Ping": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Requests": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Security": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.Sockets": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.WebHeaderCollection": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.WebSockets": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Net.WebSockets.Client": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Numerics.Vectors": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Numerics.Vectors.WindowsRuntime": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ObjectModel": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Private.DataContractSerialization": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Private.Uri": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.Context": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.DispatchProxy": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.Emit": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.Emit.ILGeneration": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.Emit.Lightweight": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.Extensions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.Metadata": {
+      "BaselineVersion": "1.4.1"
+    },
+    "System.Reflection.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Reflection.TypeExtensions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Resources.Reader": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Resources.ResourceManager": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Resources.Writer": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.CompilerServices.Unsafe": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.CompilerServices.VisualC": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Extensions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Handles": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.InteropServices": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.InteropServices.RuntimeInformation": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.InteropServices.WindowsRuntime": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Loader": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Numerics": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Serialization.Json": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Serialization.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Serialization.Xml": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.WindowsRuntime": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.WindowsRuntime.UI.Xaml": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.AccessControl": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Claims": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.Algorithms": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.Cng": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.Csp": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.Encoding": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.Pkcs": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.Primitives": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.ProtectedData": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Cryptography.X509Certificates": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Principal": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.Principal.Windows": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Security.SecureString": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ServiceProcess.ServiceController": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Text.Encoding": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Text.Encoding.CodePages": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Text.Encoding.Extensions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Text.Encodings.Web": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Text.RegularExpressions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.AccessControl": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.Overlapped": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.Tasks": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.Tasks.Dataflow": {
+      "BaselineVersion": "4.7.0"
+    },
+    "System.Threading.Tasks.Extensions": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.Tasks.Parallel": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.Thread": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.ThreadPool": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Threading.Timer": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.ReaderWriter": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.XDocument": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.XmlDocument": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.XmlSerializer": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.XPath": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.XPath.XDocument": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Xml.XPath.XmlDocument": {
+      "BaselineVersion": "4.3.0"
+    },
+    "Microsoft.Private.PackageBaseline": {
+      "BaselineVersion": "1.0.1"
+    },
+    "System.Composition.AttributedModel": {
+      "BaselineVersion": "1.0.31"
+    },
+    "System.Composition.Convention": {
+      "BaselineVersion": "1.0.31"
+    },
+    "System.Composition.Hosting": {
+      "BaselineVersion": "1.0.31"
+    },
+    "System.Composition.Runtime": {
+      "BaselineVersion": "1.0.31"
+    },
+    "System.Composition.TypedParts": {
+      "BaselineVersion": "1.0.31"
+    },
+    "System.Composition": {
+      "BaselineVersion": "1.0.31"
+    },
+    "System.IO.Pipes.AccessControl": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.Runtime.Serialization.Formatters": {
+      "BaselineVersion": "4.3.0"
+    },
+    "System.ValueTuple": {
+      "BaselineVersion": "4.3.0"
+    }
+  },
+  "ModulesToPackages": {}
+}
