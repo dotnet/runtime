@@ -449,7 +449,7 @@ namespace System.Linq.Expressions.Tests
         {
             ParameterExpression param = Expression.Parameter(typeof(int));
             Expression<Func<int, int>> identExp = Expression.Lambda<Func<int, int>>(param, param);
-            Assert.Same(identExp, identExp.Update(param, identExp.Parameters));
+            Assert.Same(identExp, identExp.Update(param, new[] {param}));
         }
 
         [Fact]
