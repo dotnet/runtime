@@ -799,7 +799,7 @@ AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to b
 AC_ARG_WITH(aot_hybrid,      [  --with-aot_hybrid=yes,no        If you want to build the aot_hybrid assemblies (defaults to no)],     [], [with_aot_hybrid=default])
 AC_ARG_WITH(aot_only,        [  --with-aot_only=yes,no          If you want to build the aot_only assemblies (defaults to no)],       [], [with_aot_only=default])
 
-AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot_preferred,aot_only,bitcode_aot_only   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,aot_preferred,aot_only,bitcode_aot_only   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 
 dnl
 dnl Profile defaults
@@ -872,6 +872,13 @@ elif test x$with_runtime_preset = xaot_preferred; then
 
    AOT_BUILD_FLAGS="--aot=hybrid,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--hybrid-aot"
+elif test x$with_runtime_preset = xaot; then
+   with_profile4_x_default=yes
+
+   AOT_BUILD_FLAGS="--aot=$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS=""
+
+   DISABLE_MCS_DOCS_default=yes
 else
    with_profile4_x_default=yes
 fi
