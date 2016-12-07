@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Tests
             SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
             IndexExpression expr = instance.DefaultIndexExpression;
 
-            IndexExpression exprUpdated = expr.Update(expr.Object, expr.Arguments);
+            IndexExpression exprUpdated = expr.Update(expr.Object, instance.DefaultArguments);
 
             // Has to be the same, because everything is the same.
             Assert.Same(expr, exprUpdated);
