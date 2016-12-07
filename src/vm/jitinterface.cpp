@@ -2303,13 +2303,9 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
-    if (pMT == g_TypedReferenceMT) // if (pMT->IsByRefLike()) // TODO-SPAN: Proper GC reporting
+    if (pMT->IsByRefLike())
     {
-        if (pMT == g_TypedReferenceMT
-#ifdef FEATURE_SPAN_OF_T
-            || pMT->HasSameTypeDefAs(g_pSpanClass) || pMT->HasSameTypeDefAs(g_pReadOnlySpanClass)
-#endif
-            )
+        if (pMT == g_TypedReferenceMT)
         {
             gcPtrs[0] = TYPE_GC_BYREF;
             gcPtrs[1] = TYPE_GC_NONE;
@@ -2317,6 +2313,9 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         }
         else
         {
+            // TODO-SPAN: Proper GC reporting
+            memset(gcPtrs, TYPE_GC_NONE,
+                   (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
             result = 0;
         }
     }
@@ -7034,7 +7033,9 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef())
+    else if ((tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__AS_REF)->GetMemberDef()) ||
+             (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef()))
+             
     {
         // Return the argument that was passed in.
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
