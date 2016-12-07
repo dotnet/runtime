@@ -70,8 +70,7 @@ GPTR_IMPL(MethodTable,      g_pArrayClass);
 GPTR_IMPL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_IMPL(MethodTable,      g_pNullableClass);
 #ifdef FEATURE_SPAN_OF_T
-GPTR_IMPL(MethodTable,      g_pSpanClass);
-GPTR_IMPL(MethodTable,      g_pReadOnlySpanClass);
+GPTR_IMPL(MethodTable,      g_pByReferenceClass);
 #endif
 GPTR_IMPL(MethodTable,      g_pExceptionClass);
 GPTR_IMPL(MethodTable,      g_pThreadAbortExceptionClass);
