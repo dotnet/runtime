@@ -5,7 +5,7 @@
     <PackageRid>ubuntu.16.10-$(PackagePlatform)</PackageRid>
     <IdPrefix>runtime.$(PackageRid).</IdPrefix>
     <!-- only build for x64 -->
-    <PackagePlatforms>x64;</PackagePlatforms>
+    <PackagePlatforms>x64;arm;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeFile Include="$(Ubuntu1610NativePath)System.Security.Cryptography.Native.OpenSsl.so">

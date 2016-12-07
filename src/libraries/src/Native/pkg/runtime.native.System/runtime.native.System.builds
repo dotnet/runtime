@@ -23,13 +23,25 @@
       <OSGroup>ubuntu.14.04</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="ubuntu\14.04\runtime.native.System.pkgproj">
+      <OSGroup>ubuntu.14.04</OSGroup>
+      <Platform>arm</Platform>
+    </Project>
     <Project Include="ubuntu\16.04\runtime.native.System.pkgproj">
       <OSGroup>ubuntu.16.04</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="ubuntu\16.04\runtime.native.System.pkgproj">
+      <OSGroup>ubuntu.16.04</OSGroup>
+      <Platform>arm</Platform>
+    </Project>
     <Project Include="ubuntu\16.10\runtime.native.System.pkgproj">
       <OSGroup>ubuntu.16.10</OSGroup>
       <Platform>amd64</Platform>
+    </Project>
+    <Project Include="ubuntu\16.10\runtime.native.System.pkgproj">
+      <OSGroup>ubuntu.16.10</OSGroup>
+      <Platform>arm</Platform>
     </Project>
     <Project Include="osx\runtime.native.System.pkgproj">
       <OSGroup>osx.10</OSGroup>
