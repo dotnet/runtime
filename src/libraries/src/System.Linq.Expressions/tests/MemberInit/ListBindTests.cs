@@ -237,8 +237,12 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void UpdateSameReturnsSame()
         {
-            MemberListBinding binding = Expression.ListBind(typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), Enumerable.Range(0, 3).Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i))));
-            Assert.Same(binding, binding.Update(binding.Initializers));
+            ElementInit[] initializers = Enumerable.Range(0, 3)
+                .Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i)))
+                .ToArray();
+            MemberListBinding binding = Expression.ListBind(
+                typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), initializers);
+            Assert.Same(binding, binding.Update(initializers));
         }
     }
 }
