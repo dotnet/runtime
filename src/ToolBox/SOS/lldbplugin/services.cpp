@@ -167,6 +167,8 @@ LLDBServices::VirtualUnwind(
 
 #ifdef DBG_TARGET_AMD64
     DWORD64 spToFind = dtcontext->Rsp;
+#elif DBG_TARGET_X86
+    DWORD spToFind = dtcontext->Esp;
 #elif DBG_TARGET_ARM
     DWORD spToFind = dtcontext->Sp;
 #endif
