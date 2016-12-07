@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Linq.Expressions.Interpreter
@@ -164,55 +165,14 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class ExceptionHelpers
     {
-#if FEATURE_STACK_TRACES
-        private const string prevStackTraces = "PreviousStackTraces";
-#endif
-
         /// <summary>
         /// Updates an exception before it's getting re-thrown so
         /// we can present a reasonable stack trace to the user.
         /// </summary>
-        public static Exception UpdateForRethrow(Exception rethrow)
+        public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-#if FEATURE_STACK_TRACES
-            List<StackTrace> prev;
-
-            // we don't have any dynamic stack trace data, capture the data we can
-            // from the raw exception object.
-            StackTrace st = new StackTrace(rethrow, true);
-
-            if (!TryGetAssociatedStackTraces(rethrow, out prev))
-            {
-                prev = new List<StackTrace>();
-                AssociateStackTraces(rethrow, prev);
-            }
-
-            prev.Add(st);
-
-#endif // FEATURE_STACK_TRACES
-            return rethrow;
+            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
         }
-#if FEATURE_STACK_TRACES
-        /// <summary>
-        /// Returns all the stack traces associates with an exception
-        /// </summary>
-        public static IList<StackTrace> GetExceptionStackTraces(Exception rethrow)
-        {
-            List<StackTrace> result;
-            return TryGetAssociatedStackTraces(rethrow, out result) ? result : null;
-        }
-
-        private static void AssociateStackTraces(Exception e, List<StackTrace> traces)
-        {
-            e.Data[prevStackTraces] = traces;
-        }
-
-        private static bool TryGetAssociatedStackTraces(Exception e, out List<StackTrace> traces)
-        {
-            traces = e.Data[prevStackTraces] as List<StackTrace>;
-            return traces != null;
-        }
-#endif // FEATURE_STACK_TRACES
     }
 
     /// <summary>
