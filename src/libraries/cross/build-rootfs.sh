@@ -3,7 +3,7 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [UbuntuCodeName]"
-    echo "BuildArch can be: arm, arm-softfp, arm64"
+    echo "BuildArch can be: arm, arm-softfp, arm64, x86"
     echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily. If BuildArch is arm-softfp, UbuntuCodeName is ignored."
 
     exit 1
@@ -55,6 +55,11 @@ for i in "$@" ; do
             __BuildArch=arm64
             __UbuntuArch=arm64
             __MachineTriple=aarch64-linux-gnu
+            ;;
+        x86)
+            __BuildArch=x86
+            __UbuntuArch=i386
+            __UbuntuRepo="http://archive.ubuntu.com/ubuntu"
             ;;
         arm-softfp)
             __BuildArch=arm-softfp
