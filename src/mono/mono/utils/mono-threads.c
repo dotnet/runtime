@@ -711,6 +711,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_thread_smr_init ();
 	mono_threads_suspend_init ();
 	mono_threads_coop_init ();
+	mono_threads_platform_init ();
 
 #if defined(__MACH__)
 	mono_mach_init (thread_info_key);
@@ -830,6 +831,9 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	MonoJitInfo *ji;
 	gpointer stack_start;
 	MonoThreadUnwindState *state;
+
+	if (mono_threads_platform_in_critical_region (mono_thread_info_get_tid (info)))
+		return TRUE;
 
 	/* Are we inside a system critical region? */
 	if (info->inside_critical_region)
