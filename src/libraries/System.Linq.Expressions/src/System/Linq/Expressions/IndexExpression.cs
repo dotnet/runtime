@@ -86,11 +86,18 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public IndexExpression Update(Expression @object, IEnumerable<Expression> arguments)
         {
-            if (@object == Object && arguments == Arguments)
+            if (@object == Object & arguments != null)
             {
-                return this;
+                // Ensure arguments is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                arguments = arguments as ICollection<Expression> ?? arguments.ToReadOnly();
+                if (ExpressionUtils.SameElements(arguments, Arguments))
+                {
+                    return this;
+                }
             }
-            return Expression.MakeIndex(@object, Indexer, arguments);
+
+            return MakeIndex(@object, Indexer, arguments);
         }
 
         /// <summary>
