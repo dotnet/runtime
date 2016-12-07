@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Interpreter
     internal abstract class LessThanOrEqualInstruction : Instruction
     {
         private readonly object _nullValue;
-        private static Instruction s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
+        private static Instruction s_SByte, s_Int16, s_char, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
         public override int ConsumedStack => 2;
@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((sbyte)left <= (sbyte)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((short)left <= (short)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((char)left <= (char)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((int)left <= (int)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -134,7 +134,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((long)left <= (long)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((byte)left <= (byte)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -180,7 +180,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((ushort)left <= (ushort)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -203,7 +203,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((uint)left <= (uint)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -226,7 +226,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((ulong)left <= (ulong)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -249,7 +249,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((float)left <= (float)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -272,7 +272,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((double)left <= (double)right);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -304,16 +304,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanOrEqualSByte(Utils.BoxedFalse));
-                    case TypeCode.Byte: return s_byte ?? (s_byte = new LessThanOrEqualByte(Utils.BoxedFalse));
+                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new LessThanOrEqualByte(Utils.BoxedFalse));
                     case TypeCode.Char: return s_char ?? (s_char = new LessThanOrEqualChar(Utils.BoxedFalse));
-                    case TypeCode.Int16: return s_int16 ?? (s_int16 = new LessThanOrEqualInt16(Utils.BoxedFalse));
-                    case TypeCode.Int32: return s_int32 ?? (s_int32 = new LessThanOrEqualInt32(Utils.BoxedFalse));
-                    case TypeCode.Int64: return s_int64 ?? (s_int64 = new LessThanOrEqualInt64(Utils.BoxedFalse));
+                    case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new LessThanOrEqualInt16(Utils.BoxedFalse));
+                    case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new LessThanOrEqualInt32(Utils.BoxedFalse));
+                    case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new LessThanOrEqualInt64(Utils.BoxedFalse));
                     case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanOrEqualUInt16(Utils.BoxedFalse));
                     case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanOrEqualUInt32(Utils.BoxedFalse));
                     case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanOrEqualUInt64(Utils.BoxedFalse));
-                    case TypeCode.Single: return s_single ?? (s_single = new LessThanOrEqualSingle(Utils.BoxedFalse));
-                    case TypeCode.Double: return s_double ?? (s_double = new LessThanOrEqualDouble(Utils.BoxedFalse));
+                    case TypeCode.Single: return s_Single ?? (s_Single = new LessThanOrEqualSingle(Utils.BoxedFalse));
+                    case TypeCode.Double: return s_Double ?? (s_Double = new LessThanOrEqualDouble(Utils.BoxedFalse));
 
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThanOrEqual", type);

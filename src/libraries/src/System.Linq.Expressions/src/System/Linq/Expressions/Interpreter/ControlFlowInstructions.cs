@@ -76,7 +76,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
