@@ -6563,7 +6563,7 @@ namespace System.Diagnostics.Tracing
             // very early in the app domain creation, when _FusionStore is not set up yet, resulting in a failure to run the static constructory
             // for BinaryCompatibility. This failure is then cached and a TypeInitializationException is thrown every time some code attampts to
             // access BinaryCompatibility.
-            ArraySortHelper<string>.IntrospectiveSort(sortedStrings, 0, sortedStrings.Length, Comparer<string>.Default);
+            ArraySortHelper<string>.IntrospectiveSort(sortedStrings, 0, sortedStrings.Length, string.Compare);
 #endif
             foreach (var ci in cultures)
             {
