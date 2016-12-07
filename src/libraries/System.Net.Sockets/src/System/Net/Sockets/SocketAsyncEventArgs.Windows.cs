@@ -637,7 +637,8 @@ namespace System.Net.Sockets
                 _ptrSendPacketsDescriptor,
                 _sendPacketsDescriptor.Length,
                 _sendPacketsSendSize,
-                _ptrNativeOverlapped);
+                _ptrNativeOverlapped,
+                _sendPacketsFlags);
 
             return result ? SocketError.Success : SocketPal.GetLastSocketError();
         }
