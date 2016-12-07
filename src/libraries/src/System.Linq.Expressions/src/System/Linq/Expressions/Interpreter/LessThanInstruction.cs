@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((sbyte)left) < (sbyte)right);
+                    frame.Push((sbyte)left < (sbyte)right);
                 }
                 return +1;
             }
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((short)left) < (short)right);
+                    frame.Push((short)left < (short)right);
                 }
                 return +1;
             }
@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((char)left) < (char)right);
+                    frame.Push((char)left < (char)right);
                 }
                 return +1;
             }
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((int)left) < (int)right);
+                    frame.Push((int)left < (int)right);
                 }
                 return +1;
             }
@@ -133,7 +133,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((long)left) < (long)right);
+                    frame.Push((long)left < (long)right);
                 }
                 return +1;
             }
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((byte)left) < (byte)right);
+                    frame.Push((byte)left < (byte)right);
                 }
                 return +1;
             }
@@ -179,7 +179,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((ushort)left) < (ushort)right);
+                    frame.Push((ushort)left < (ushort)right);
                 }
                 return +1;
             }
@@ -202,7 +202,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((uint)left) < (uint)right);
+                    frame.Push((uint)left < (uint)right);
                 }
                 return +1;
             }
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((ulong)left) < (ulong)right);
+                    frame.Push((ulong)left < (ulong)right);
                 }
                 return +1;
             }
@@ -248,7 +248,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((float)left) < (float)right);
+                    frame.Push((float)left < (float)right);
                 }
                 return +1;
             }
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((double)left) < (double)right);
+                    frame.Push((double)left < (double)right);
                 }
                 return +1;
             }
