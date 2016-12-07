@@ -865,7 +865,6 @@ elif test x$with_runtime_preset = xaot_preferred; then
    DISABLE_MCS_DOCS_default=yes
    with_aot_hybrid_default=yes
    TEST_PROFILE=aot_hybrid 
-   enable_llvm_default=yes
 
    mono_feature_disable_com='yes'
    mono_feature_disable_remoting='yes'
