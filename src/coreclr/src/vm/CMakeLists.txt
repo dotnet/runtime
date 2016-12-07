@@ -377,6 +377,7 @@ else(WIN32)
         )
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/gmsasm.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
