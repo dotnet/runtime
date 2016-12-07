@@ -552,13 +552,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void SwitchUpdateSameToSame()
         {
+            SwitchCase[] cases =
+            {
+                Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
+                Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+            };
+
             SwitchExpression sw = Expression.Switch(
                 Expression.Constant(0),
                 Expression.Constant(0),
-                Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
-                Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+                cases
                 );
-            Assert.Same(sw, sw.Update(sw.SwitchValue, sw.Cases, sw.DefaultBody));
+            Assert.Same(sw, sw.Update(sw.SwitchValue, cases.Skip(0), sw.DefaultBody));
+            Assert.Same(sw, sw.Update(sw.SwitchValue, cases, sw.DefaultBody));
             Assert.Same(sw, NoOpVisitor.Instance.Visit(sw));
         }
 

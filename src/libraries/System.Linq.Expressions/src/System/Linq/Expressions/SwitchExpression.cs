@@ -90,9 +90,13 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase> cases, Expression defaultBody)
         {
-            if (switchValue == SwitchValue && cases == Cases && defaultBody == DefaultBody)
+            if (switchValue == SwitchValue & defaultBody == DefaultBody & cases != null)
             {
-                return this;
+                cases = cases as ICollection<SwitchCase> ?? cases.ToReadOnly();
+                if (ExpressionUtils.SameElements(cases, Cases))
+                {
+                    return this;
+                }
             }
             return Expression.Switch(Type, switchValue, defaultBody, Comparison, cases);
         }
