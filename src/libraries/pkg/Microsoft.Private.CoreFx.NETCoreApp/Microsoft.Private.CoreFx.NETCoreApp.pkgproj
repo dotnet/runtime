@@ -32,7 +32,9 @@
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    
+
+    <NativeBinDir>$(BinDir)$(OSGroup).$(PackagePlatform).$(ConfigurationGroup)/native</NativeBinDir>
+
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
     <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
     <NETStandardVersion>1.7</NETStandardVersion>
@@ -71,7 +73,8 @@
     </File>
 
     <!-- Include native -->
-    <File Include="$(BinDir)*/native/*.*">
+    <ExcludeNative Include="$(NativeBinDir)/*.lib" />
+    <File Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
