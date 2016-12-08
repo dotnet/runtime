@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -452,5 +453,25 @@ namespace System.Linq.Expressions.Tests
             expression.VerifyInstructions(instructions);
 #endif
         }
+    }
+
+    public class RunOnceEnumerable<T> : IEnumerable<T>
+    {
+        private readonly IEnumerable<T> _source;
+        private bool _called;
+
+        public RunOnceEnumerable(IEnumerable<T> source)
+        {
+            _source = source;
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            Assert.False(_called);
+            _called = true;
+            return _source.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

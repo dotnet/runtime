@@ -536,6 +536,14 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void SwitchCaseUpdateNullTestsToSame()
+        {
+            SwitchCase sc = Expression.SwitchCase(Expression.Constant(0), Expression.Constant(1));
+            Assert.Throws<ArgumentException>("testValues", () => sc.Update(null, sc.Body));
+            Assert.Throws<ArgumentNullException>("body", () => sc.Update(sc.TestValues, null));
+        }
+
+        [Fact]
         public void SwitchCaseDifferentBodyToDifferent()
         {
             SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant(2));
@@ -547,6 +555,13 @@ namespace System.Linq.Expressions.Tests
         {
             SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant(2));
             Assert.NotSame(sc, sc.Update(new[] { Expression.Constant(0), Expression.Constant(2) }, sc.Body));
+        }
+
+        [Fact]
+        public void SwitchCaseUpdateDoesntRepeatEnumeration()
+        {
+            SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant(2));
+            Assert.NotSame(sc, sc.Update(new RunOnceEnumerable<Expression>(new[] { Expression.Constant(0), Expression.Constant(2) }), sc.Body));
         }
 
         [Fact]
@@ -607,6 +622,27 @@ namespace System.Linq.Expressions.Tests
                 Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
                 Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
             };
+
+            Assert.NotSame(sw, sw.Update(sw.SwitchValue, newCases, sw.DefaultBody));
+        }
+
+        [Fact]
+        public void SwitchUpdateDoesntRepeatEnumeration()
+        {
+            SwitchExpression sw = Expression.Switch(
+                Expression.Constant(0),
+                Expression.Constant(0),
+                Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
+                Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+                );
+
+            IEnumerable<SwitchCase> newCases =
+                new RunOnceEnumerable<SwitchCase>(
+                    new SwitchCase[]
+                    {
+                        Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
+                        Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+                    });
 
             Assert.NotSame(sw, sw.Update(sw.SwitchValue, newCases, sw.DefaultBody));
         }
