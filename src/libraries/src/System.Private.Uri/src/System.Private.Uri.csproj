@@ -44,6 +44,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="System\DomainNameHelper.cs" />
     <Compile Include="System\GenericUriParser.cs" />
     <Compile Include="System\IPv4AddressHelper.cs" />
