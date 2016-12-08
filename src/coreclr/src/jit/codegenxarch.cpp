@@ -2193,7 +2193,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         {
 #ifdef DEBUG
             char message[256];
-            sprintf(message, "Unimplemented node type %s\n", GenTree::NodeName(treeNode->OperGet()));
+            _snprintf_s(message, _countof(message), _TRUNCATE, "Unimplemented node type %s\n",
+                        GenTree::NodeName(treeNode->OperGet()));
 #endif
             assert(!"Unknown node in codegen");
         }

@@ -33,9 +33,9 @@ int __cdecl main(int argc, char *argv[])
 
     /*Module name without extension but with a trailing dot*/
 #if WIN32
-    sprintf(ModuleName,"%s","rotor_pal.");
+    sprintf_s(ModuleName, _countof(ModuleName),"%s","rotor_pal.");
 #else
-    sprintf(ModuleName,"%s","librotor_pal.");
+    sprintf_s(ModuleName, _countof(ModuleName),"%s","librotor_pal.");
 #endif
 
     /* convert a normal string to a wide one */

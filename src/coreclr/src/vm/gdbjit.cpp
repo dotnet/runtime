@@ -1471,11 +1471,12 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
         method[method_index]->GetLocalsDebugInfo(pTypeMap, locals, symInfo[firstLineIndex].nativeOffset);
         method[method_index]->m_sub_low_pc = pCode + method_start;
         method[method_index]->m_sub_high_pc = method_size;
-        method[method_index]->m_member_name = new char[strlen(methodName) + 10];
+        size_t methodNameSize = strlen(methodName) + 10;
+        method[method_index]->m_member_name = new char[methodNameSize];
         if (method_index == 0)
-            sprintf(method[method_index]->m_member_name, "%s", methodName);
+            sprintf_s(method[method_index]->m_member_name, methodNameSize, "%s", methodName);
         else
-            sprintf(method[method_index]->m_member_name, "%s_%i", methodName, method_index);
+            sprintf_s(method[method_index]->m_member_name, methodNameSize, "%s_%i", methodName, method_index);
 
         // method's class
         GetTypeInfoFromTypeHandle(TypeHandle(method[method_index]->md->GetMethodTable()), pTypeMap);
@@ -2168,7 +2169,7 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods)
             int symbolNameLength = strlen(methodName) + sizeof("__thunk_");
             SymbolNames[i].m_name = new char[symbolNameLength];
             SymbolNames[i].m_releaseName = true;
-            sprintf((char*)SymbolNames[i].m_name, "__thunk_%s", methodName);
+            sprintf_s((char*)SymbolNames[i].m_name, symbolNameLength, "__thunk_%s", methodName);
             SymbolNames[i].m_value = callAddr;
             ++i;
             codeAddrs.Add(callAddr);
@@ -2300,7 +2301,7 @@ bool NotifyGdb::BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf)
         bool isThunkSection = i >= SectionNamesCount;
         if (isThunkSection)
         {
-            sprintf(thunkSectNameBuf, ".thunk_%i", i);
+            sprintf_s(thunkSectNameBuf, _countof(thunkSectNameBuf), ".thunk_%i", i);
             sectName = thunkSectNameBuf;
         }
         else

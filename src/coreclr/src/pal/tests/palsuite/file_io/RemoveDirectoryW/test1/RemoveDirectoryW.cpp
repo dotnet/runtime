@@ -114,7 +114,7 @@ int __cdecl main(int argc, char *argv[])
      * directories with dots 
      */
     memset(szDirName, 0, 252);
-    sprintf(szDirName, ".dotDirectory");
+    sprintf_s(szDirName, _countof(szDirName), ".dotDirectory");
     szwTemp = convert(szDirName);
     bRc = CreateDirectoryW(szwTemp, NULL);
     if (bRc == FALSE)
@@ -142,7 +142,7 @@ int __cdecl main(int argc, char *argv[])
      * Try calling RemoveDirectory with a file name
      */
     memset(szDirName, 0, 252);
-    sprintf(szDirName, "removedirectoryw.c");
+    sprintf_s(szDirName, _countof(szDirName), "removedirectoryw.c");
     szwTemp = convert(szDirName);
 
     bRc = RemoveDirectoryW(szwTemp);

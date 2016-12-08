@@ -34,9 +34,9 @@ int __cdecl main(int argc, char *argv[])
     }
 
 #if WIN32
-    sprintf(executableFileName,"%s","executable.exe");
+    sprintf_s(executableFileName, _countof(executableFileName),"%s","executable.exe");
 #else
-    sprintf(executableFileName,"%s","executable");
+    sprintf_s(executableFileName, _countof(executableFileName),"%s","executable");
 #endif
 
     //conver string to a unicode one

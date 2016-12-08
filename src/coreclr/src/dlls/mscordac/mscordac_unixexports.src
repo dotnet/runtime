@@ -57,6 +57,7 @@ _vsnwprintf_s
 _itow_s
 _i64tow_s
 memcpy_s
+sscanf_s
 
 CoCreateGuid
 CopyFileW
