@@ -1014,8 +1014,9 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 	return -1;
 }
 
-gboolean 
-mono_monitor_enter (MonoObject *obj)
+/* This is an icall */
+MonoBoolean
+mono_monitor_enter_internal (MonoObject *obj)
 {
 	gint32 res;
 	gboolean allow_interruption = TRUE;
@@ -1048,7 +1049,14 @@ mono_monitor_enter (MonoObject *obj)
 	return TRUE;
 }
 
-gboolean 
+gboolean
+mono_monitor_enter (MonoObject *obj)
+{
+	return mono_monitor_enter_internal (obj);
+}
+
+/* Called from JITted code so we return guint32 instead of gboolean */
+guint32
 mono_monitor_enter_fast (MonoObject *obj)
 {
 	if (G_UNLIKELY (!obj)) {
@@ -1126,7 +1134,7 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 }
 
 void
-ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
+ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken)
 {
 	gint32 res;
 	gboolean allow_interruption = TRUE;
@@ -1160,6 +1168,21 @@ mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 		return;
 	}
 
+	MonoBoolean taken;
+
+	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, &taken);
+	*lock_taken = taken;
+}
+
+/* Called from JITted code */
+void
+mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken)
+{
+	if (*lock_taken == 1) {
+		mono_set_pending_exception (mono_get_exception_argument ("lockTaken", "lockTaken is already true"));
+		return;
+	}
+
 	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, lock_taken);
 }
 
@@ -1169,9 +1192,10 @@ mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
  *   Same as mono_monitor_enter_v4, but return immediately if the
  * monitor cannot be acquired.
  * Returns TRUE if the lock was acquired, FALSE otherwise.
+ * Called from JITted code so we return guint32 instead of gboolean.
  */
-gboolean
-mono_monitor_enter_v4_fast (MonoObject *obj, char *lock_taken)
+guint32
+mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken)
 {
 	if (*lock_taken == 1)
 		return FALSE;
@@ -1182,7 +1206,7 @@ mono_monitor_enter_v4_fast (MonoObject *obj, char *lock_taken)
 	return res == 1;
 }
 
-gboolean 
+MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 {
 	LockWord lw;
@@ -1200,7 +1224,7 @@ ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 	return(FALSE);
 }
 
-gboolean 
+MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObject *obj)
 {
 	LockWord lw;
@@ -1287,7 +1311,7 @@ ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 	}
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 {
 	LockWord lw;
