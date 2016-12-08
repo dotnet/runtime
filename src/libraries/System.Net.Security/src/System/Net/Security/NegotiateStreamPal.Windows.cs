@@ -80,17 +80,6 @@ namespace System.Net.Security
         {
             return SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES) as string;
         }
-
-        internal static string QueryContextAuthenticationPackage(SafeDeleteContext securityContext)
-        {
-            var negotiationInfoClass = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO) as NegotiationInfoClass;
-            return negotiationInfoClass?.AuthenticationPackage;
-        }
-
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
-        {
-            return SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET) as string;
-        }
         
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
