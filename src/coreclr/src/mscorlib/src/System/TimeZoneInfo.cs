@@ -946,11 +946,7 @@ namespace System {
         }
 
         public override bool Equals(object obj) {
-            TimeZoneInfo tzi = obj as TimeZoneInfo;            
-            if (null == tzi) {
-                return false;
-            }            
-            return Equals(tzi);
+            return Equals(obj as TimeZoneInfo);
         }
 
         //    
