@@ -3564,14 +3564,16 @@ namespace System.ComponentModel
         public DefaultValueAttribute(object value) { }
         public DefaultValueAttribute(float value) { }
         public DefaultValueAttribute(string value) { }
-        [CLSCompliant(false)]
+#if netcoreapp11
+        [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(sbyte value) { }
-        [CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(ushort value) { }
-        [CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(uint value) { }
-        [CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(ulong value) { }
+#endif
         public DefaultValueAttribute(System.Type type, string value) { }
         public virtual object Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
