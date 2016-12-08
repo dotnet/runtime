@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "Not";
 
-        private sealed class BoolNot : NotInstruction
+        private sealed class NotBoolean : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class Int64Not : NotInstruction
+        private sealed class NotInt64 : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class Int32Not : NotInstruction
+        private sealed class NotInt32 : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class Int16Not : NotInstruction
+        private sealed class NotInt16 : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class UInt64Not : NotInstruction
+        private sealed class NotUInt64 : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class UInt32Not : NotInstruction
+        private sealed class NotUInt32 : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class UInt16Not : NotInstruction
+        private sealed class NotUInt16 : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -135,7 +135,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class ByteNot : NotInstruction
+        private sealed class NotByte : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -152,7 +152,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class SByteNot : NotInstruction
+        private sealed class NotSByte : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -173,16 +173,15 @@ namespace System.Linq.Expressions.Interpreter
         {
             switch (type.GetNonNullableType().GetTypeCode())
             {
-                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new BoolNot());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new Int64Not());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new Int32Not());
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new Int16Not());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new UInt64Not());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new UInt32Not());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new UInt16Not());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new ByteNot());
-                case TypeCode.SByte: return s_SByte ?? (s_SByte = new SByteNot());
-
+                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new NotBoolean());
+                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new NotInt64());
+                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new NotInt32());
+                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new NotInt16());
+                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new NotUInt64());
+                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new NotUInt32());
+                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new NotUInt16());
+                case TypeCode.Byte: return s_Byte ?? (s_Byte = new NotByte());
+                case TypeCode.SByte: return s_SByte ?? (s_SByte = new NotSByte());
                 default:
                     throw Error.ExpressionNotSupportedForType("Not", type);
             }

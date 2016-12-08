@@ -18,25 +18,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private DivInstruction() { }
 
-        private sealed class DivInt32 : DivInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((int)l / (int)r);
-                }
-                frame.StackIndex--;
-                return 1;
-            }
-        }
-
         private sealed class DivInt16 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -50,6 +31,25 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Data[frame.StackIndex - 2] = (short)((short)l / (short)r);
+                }
+                frame.StackIndex--;
+                return 1;
+            }
+        }
+
+        private sealed class DivInt32 : DivInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object l = frame.Data[frame.StackIndex - 2];
+                object r = frame.Data[frame.StackIndex - 1];
+                if (l == null || r == null)
+                {
+                    frame.Data[frame.StackIndex - 2] = null;
+                }
+                else
+                {
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((int)l / (int)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -183,7 +183,6 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new DivUInt64());
                 case TypeCode.Single: return s_Single ?? (s_Single = new DivSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new DivDouble());
-
                 default:
                     throw Error.ExpressionNotSupportedForType("Div", type);
             }

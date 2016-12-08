@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class AndBool : AndInstruction
+        private sealed class AndBoolean : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -182,15 +182,14 @@ namespace System.Linq.Expressions.Interpreter
             switch (underlyingType.GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new AndSByte());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new AndByte());
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new AndInt16());
                 case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new AndInt32());
                 case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new AndInt64());
+                case TypeCode.Byte: return s_Byte ?? (s_Byte = new AndByte());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new AndUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new AndUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new AndUInt64());
-                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new AndBool());
-
+                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new AndBoolean());
                 default:
                     throw Error.ExpressionNotSupportedForType("And", type);
             }

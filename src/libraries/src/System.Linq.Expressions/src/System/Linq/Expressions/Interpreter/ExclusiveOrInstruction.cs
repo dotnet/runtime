@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private sealed class ExclusiveOrBool : ExclusiveOrInstruction
+        private sealed class ExclusiveOrBoolean : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -170,16 +170,14 @@ namespace System.Linq.Expressions.Interpreter
             switch (underlyingType.GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new ExclusiveOrSByte());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new ExclusiveOrByte());
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new ExclusiveOrInt16());
                 case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new ExclusiveOrInt32());
                 case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new ExclusiveOrInt64());
-
+                case TypeCode.Byte: return s_Byte ?? (s_Byte = new ExclusiveOrByte());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new ExclusiveOrUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new ExclusiveOrUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new ExclusiveOrUInt64());
-                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new ExclusiveOrBool());
-
+                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new ExclusiveOrBoolean());
                 default:
                     throw Error.ExpressionNotSupportedForType("ExclusiveOr", type);
             }
