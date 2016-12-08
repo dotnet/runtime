@@ -2551,7 +2551,7 @@ extern BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
 extern void ShutdownRuntimeWithoutExiting(int exitCode);
 extern BOOL IsRuntimeStarted(DWORD *pdwStartupFlags);
 
-void * GetCLRFunction(LPCSTR FunctionName)
+void * __stdcall GetCLRFunction(LPCSTR FunctionName)
 {
 
     void* func = NULL;
