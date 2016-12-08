@@ -2256,7 +2256,7 @@ void FindTextInListbox(HWND hwnd, FINDREPLACEW* lpfr)
         if(pos >= 0)
         {
             //char sz[32];
-            //sprintf(sz,"%d:%d",strFind.chrg.cpMin,strFind.chrg.cpMax);
+            //sprintf_s(sz, _countof(sz), "%d:%d",strFind.chrg.cpMin,strFind.chrg.cpMax);
             //MessageBox(hwnd,sz,"Find",MB_OK);
             SendMessage(hwndLB,EM_SETSEL,(WPARAM)pos,(LPARAM)(pos+wcslen(lpfr->lpstrFindWhat)));
         }

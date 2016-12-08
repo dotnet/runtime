@@ -133,7 +133,7 @@ int __cdecl main(int argc, char *argv[]) {
     }
 
     memset(fileloc, 0, _MAX_PATH);
-    sprintf(fileloc, "%s%s", fullPath, szFileNameExistsWithExt);
+    sprintf_s(fileloc, _countof(fileloc), "%s%s", fullPath, szFileNameExistsWithExt);
 
     RemoveAll();
 

@@ -18,7 +18,7 @@
 #include <palsuite.h>
 
 /*
- * Notes: uses memcmp and the (pal) sprintf
+ * Notes: uses memcmp and the (pal) sprintf_s
  */
 
 int __cdecl main(int argc, char *argv[])
@@ -60,7 +60,7 @@ int __cdecl main(int argc, char *argv[])
 
     if (memcmp(dest, test, sizeof(test)) != 0)
     {
-        sprintf(buffer, "%S", dest);
+        sprintf_s(buffer, _countof(buffer), "%S", dest);
         Fail("ERROR: Expected wcscat to give \"%s\", got \"%s\"\n", 
             "foo bar baz", buffer);
     }

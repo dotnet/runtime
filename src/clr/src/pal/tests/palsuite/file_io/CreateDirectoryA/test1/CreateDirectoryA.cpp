@@ -254,7 +254,7 @@ int __cdecl main(int argc, char *argv[])
 
     /* directories with dots  */
     memset(szDirName, 0, buf_size);
-    sprintf(szDirName, szDotDir);
+    sprintf_s(szDirName, _countof(szDirName), szDotDir);
     bRc = CreateDirectoryA(szDirName, NULL);
     if (bRc == FALSE)
     {

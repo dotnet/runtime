@@ -67,7 +67,7 @@ int __cdecl main(int argc, char *argv[])
     ResetEvent(hEvFromHelper);
     ResetEvent(hEvToHelper);
     
-    if (!sprintf(cmdComposeBuf, "helper %s", commsFileName)) 
+    if (!sprintf_s(cmdComposeBuf, _countof(cmdComposeBuf), "helper %s", commsFileName)) 
     {
         Fail("Could not convert command line\n");
     }

@@ -36,7 +36,7 @@ using namespace CorUnix;
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            sprintf(_szError, "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \

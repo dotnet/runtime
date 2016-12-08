@@ -857,7 +857,7 @@ DBGDetachProcess(
     if (nbAttachLeft == 0)
     {
 #if HAVE_PROCFS_CTL
-        sprintf(ctlPath, sizeof(ctlPath), "/proc/%d/ctl", processId);
+        snprintf(ctlPath, sizeof(ctlPath), "/proc/%d/ctl", processId);
         fd = InternalOpen(pThread, ctlPath, O_WRONLY);
         if (fd == -1)
         {

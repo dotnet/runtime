@@ -48,7 +48,7 @@ int __cdecl main(int argc, char *argv[])
      * remove a directory that does not exist 
      */
     szTemp = (char *) malloc (sizeof("test_directory"));
-    sprintf(szTemp, "test_directory");
+    sprintf_s(szTemp, sizeof("test_directory"), "test_directory");
     bRc = RemoveDirectoryA(szTemp);
     if (bRc != FALSE)
     {
@@ -69,7 +69,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     char *szSymlinkName = (char *) malloc (sizeof("test_directory_symlink"));
-    sprintf(szSymlinkName, "test_directory_symlink");
+    sprintf_s(szSymlinkName, sizeof("test_directory_symlink"), "test_directory_symlink");
     if (symlink(szTemp, szSymlinkName) != 0)
     {
         Fail("Error:RemoveDirectoryA: Failed to create a symlink to the directory \"test_directory\".\n");
@@ -140,7 +140,7 @@ int __cdecl main(int argc, char *argv[])
      * directories with dots 
      */
     memset(szDirName, 0, 252);
-    sprintf(szDirName, ".dotDirectory");
+    sprintf_s(szDirName, _countof(szDirName), ".dotDirectory");
     szTemp = (char *) malloc (sizeof(szDirName));
     szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
 
@@ -170,7 +170,7 @@ int __cdecl main(int argc, char *argv[])
      * Try calling RemoveDirectory with a file name
      */
     memset(szDirName, 0, 252);
-    sprintf(szDirName, "removedirectoryw.c");
+    sprintf_s(szDirName, _countof(szDirName), "removedirectoryw.c");
     szTemp = (char *) malloc (sizeof(szDirName));
     szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
 
@@ -201,7 +201,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Create non_empty_dir */
-    sprintf( szDirName, "non_empty_dir");
+    sprintf_s(szDirName, _countof(szDirName), "non_empty_dir");
     szTemp = (char *) malloc (sizeof(szDirName));
     szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
     bRc = CreateDirectoryA(szTemp, NULL);
@@ -229,7 +229,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Create sub_dir */
-    sprintf (szDirName, "sub_dir");
+    sprintf_s(szDirName, _countof(szDirName), "sub_dir");
     szTemp2 = (char *) malloc (sizeof(szDirName));
     szTemp2 = strncpy(szTemp2, szDirName, strlen(szDirName) + 1);
     bRc = CreateDirectoryA(szTemp2, NULL);
