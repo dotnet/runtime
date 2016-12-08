@@ -51,5 +51,12 @@ namespace System.Collections {
                 _value = value;
             }
         }
+
+        //[EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out object key, out object value)
+        {
+            key = Key;
+            value = Value;
+        }
     }
 }
