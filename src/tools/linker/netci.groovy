@@ -5,13 +5,9 @@ def branch = GithubBranchName
 
 def static setRecursiveSubmoduleOption(def job) {
     job.with {
-        scm {
-            git {
-                configure { gitscm ->
-                    gitscm / 'extensions' << 'hudson.plugins.git.extensions.impl.SubmoduleOption' {
-                        recursiveSubmodules(true)
-                    }
-                }
+        configure {
+            it / 'scm' / 'extensions' << 'hudson.plugins.git.extensions.impl.SubmoduleOption' {
+                recursiveSubmodules(true)
             }
         }
     }
@@ -39,7 +35,7 @@ def static setRecursiveSubmoduleOption(def job) {
         Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
 
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-        setRecursiveSubmoduleOption(job)
+        setRecursiveSubmoduleOption(newJob)
 
         if (isPR) {
             Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} Build")
