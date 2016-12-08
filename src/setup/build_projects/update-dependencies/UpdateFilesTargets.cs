@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.Scripts
     public static class UpdateFilesTargets
     {
         private static HttpClient s_client = new HttpClient();
+        private static readonly string FileUrlScheme = "file://";
 
         [Target(nameof(GetDependencies), nameof(ReplaceVersions))]
         public static BuildTargetResult UpdateFiles(BuildTargetContext c) => c.Success();
@@ -42,7 +43,7 @@ namespace Microsoft.DotNet.Scripts
         {
             List<PackageInfo> newPackageVersions = new List<PackageInfo>();
 
-            using (Stream versionsStream = await s_client.GetStreamAsync(packageVersionsUrl))
+            using (Stream versionsStream = packageVersionsUrl.StartsWith(FileUrlScheme, StringComparison.Ordinal) ? File.OpenRead(packageVersionsUrl.Substring(FileUrlScheme.Length)) : await s_client.GetStreamAsync(packageVersionsUrl))
             using (StreamReader reader = new StreamReader(versionsStream))
             {
                 string currentLine;
