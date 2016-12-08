@@ -32,7 +32,11 @@
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
+    <!-- don't build if we're missing files, we'll intentionally add a missing file if native build is missing -->
+    <SkipCreatePackageOnMissingFiles>true</SkipCreatePackageOnMissingFiles>
 
+    <RefBinDir>$(BinDir)$(TargetFrameworkName)/pkg/ref</RefBinDir>
+    <LibBinDir>$(BinDir)$(TargetFrameworkName)/pkg/lib</LibBinDir>
     <NativeBinDir>$(BinDir)$(OSGroup).$(PackagePlatform).$(ConfigurationGroup)/native</NativeBinDir>
 
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
@@ -57,7 +61,7 @@
     <ProjectReference Include="@(Project)" />
     
     <!-- Include refs -->
-    <File Include="$(BinDir)$(TargetFrameworkName)/pkg/ref/*.*">
+    <File Include="$(RefBinDir)/*.*">
       <TargetPath>ref/$(TargetFramework)</TargetPath>
     </File>
 
@@ -68,15 +72,18 @@
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
     <!-- Include lib -->
-    <File Include="$(BinDir)$(TargetFrameworkName)/pkg/lib/*.*">
+    <File Include="$(LibBinDir)/*.*">
       <TargetPath>runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</TargetPath>
     </File>
 
     <!-- Include native -->
     <ExcludeNative Include="$(NativeBinDir)/*.lib" />
-    <File Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)">
+    <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
+    </NativeFile>
+    <File Include="@(NativeFile)" />
+    <!-- force a missing file if native build is absent -->
+    <File Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
   </ItemGroup>
 
   <ItemGroup>
@@ -84,7 +91,11 @@
   </ItemGroup>
 
   <Target Name="VerifyClosure" AfterTargets="Build">
-    <VerifyClosure Sources="@(File)"
+    <ItemGroup>
+      <_fileExisting Include="@(File)" Condition="Exists(%(FullPath))"/>
+    </ItemGroup>
+
+    <VerifyClosure Sources="@(_fileExisting)"
                    IgnoredReferences="@(IgnoredReference)" />
   </Target>
 

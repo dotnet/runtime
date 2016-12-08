@@ -9,4 +9,27 @@
     <Project Include="$(MSBuildProjectName).pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+
+  <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="FilterPackageProjects" AfterTargets="FilterProjects">
+    <!-- If we're not on Windows, and RID wasn't specified, get native RID -->
+    <GetTargetMachineInfo Condition="'$(OS)' != 'Windows_NT' AND '$(TestNugetRuntimeId)' == ''">
+      <Output TaskParameter="RuntimeIdentifier" PropertyName="TestNugetRuntimeId" />
+    </GetTargetMachineInfo>
+    
+    <!-- If on Windows and RID isn't specified, filter by OSGroup --> 
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT' AND '$(TestNugetRuntimeId)' == ''">
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)' == '' OR '%(Project.OSGroup)' == 'Windows_NT'" />
+    </ItemGroup>
+    
+    <!-- If RID is specified, use it -->
+    <ItemGroup Condition="'$(TestNugetRuntimeId)' != ''">
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(TestNugetRuntimeId)' OR '%(Project.PackageTargetRuntime)' == ''" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_projectsToBuild)' != ''">
+      <Project Remove="@(Project)" />
+      <Project Include="@(_projectsToBuild)" />
+    </ItemGroup>
+  </Target>
 </Project>
