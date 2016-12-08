@@ -322,10 +322,75 @@ namespace System.Collections.Concurrent
             get
             {
                 Segment head, tail;
-                int headHead, tailTail;
-                SnapForObservation(out head, out headHead, out tail, out tailTail);
-                return unchecked((int)GetCount(head, headHead, tail, tailTail));
+                int headHead, headTail, tailHead, tailTail;
+                var spinner = new SpinWait();
+                while (true)
+                {
+                    // Capture the head and tail, as well as the head's head and tail.
+                    head = _head;
+                    tail = _tail;
+                    headHead = Volatile.Read(ref head._headAndTail.Head);
+                    headTail = Volatile.Read(ref head._headAndTail.Tail);
+
+                    if (head == tail)
+                    {
+                        // There was a single segment in the queue.  If the captured
+                        // values still (or again) represent reality, return the segment's
+                        // count. A single segment should be the most common case once the
+                        // queue's size has stabilized after segments have grown to
+                        // the point where growing is no longer needed.
+                        if (head == _head &&
+                            head == _tail &&
+                            headHead == Volatile.Read(ref head._headAndTail.Head) &&
+                            headTail == Volatile.Read(ref head._headAndTail.Tail))
+                        {
+                            return GetCount(head, headHead, headTail);
+                        }
+                    }
+                    else if (head._nextSegment == tail)
+                    {
+                        // There were two segments in the queue.  Get the positions
+                        // from the tail, and if the captured values still (or again) match
+                        // reality, return the sum of the counts from both segments.
+                        tailHead = Volatile.Read(ref tail._headAndTail.Head);
+                        tailTail = Volatile.Read(ref tail._headAndTail.Tail);
+                        if (head == _head &&
+                            tail == _tail &&
+                            headHead == Volatile.Read(ref head._headAndTail.Head) &&
+                            headTail == Volatile.Read(ref head._headAndTail.Tail) &&
+                            tailHead == Volatile.Read(ref tail._headAndTail.Head) &&
+                            tailTail == Volatile.Read(ref tail._headAndTail.Tail))
+                        {
+                            // We got stable values, so we can just compute the sizes based on those
+                            // values and return the sum of the counts of the segments.
+                            return GetCount(head, headHead, headTail) + GetCount(tail, tailHead, tailTail);
+                        }
+                    }
+                    else
+                    {
+                        // There were more than two segments.  Take the slower path, where we freeze the
+                        // queue and then count the now stable segments.
+                        SnapForObservation(out head, out headHead, out tail, out tailTail);
+                        return unchecked((int)GetCount(head, headHead, tail, tailTail));
+                    }
+
+                    // We raced with enqueues/dequeues and captured an inconsistent picture of the queue.
+                    // Spin and try again.
+                    spinner.SpinOnce();
+                }
             }
+        }
+
+        /// <summary>Computes the number of items in a segment based on a fixed head and tail in that segment.</summary>
+        private static int GetCount(Segment s, int head, int tail)
+        {
+            if (head != tail && head != tail - s.FreezeOffset)
+            {
+                head &= s._slotsMask;
+                tail &= s._slotsMask;
+                return head < tail ? tail - head : s._slots.Length - head + tail;
+            }
+            return 0;
         }
 
         /// <summary>Gets the number of items in snapped region.</summary>
@@ -710,6 +775,10 @@ namespace System.Collections.Concurrent
         /// if the operation failed.
         /// </param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
+        /// <remarks>
+        /// For determining whether the collection contains any items, use of the <see cref="IsEmpty"/>
+        /// property is recommended rather than peeking.
+        /// </remarks>
         public bool TryPeek(out T result)
         {
             // Look at each segment, in order, for an item
@@ -902,7 +971,9 @@ namespace System.Collections.Concurrent
                 if (resultUsed)
                 {
                     // In order to ensure we don't get a torn read on the value, we mark the segment
-                    // as preserving for observation.  This segment will no longer be reusable.
+                    // as preserving for observation.  Additional items can still be enqueued to this
+                    // segment, but no space will be freed during dequeues, such that the segment will
+                    // no longer be reusable.
                     _preservedForObservation = true;
                     Interlocked.MemoryBarrier();
                 }
