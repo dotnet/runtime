@@ -671,7 +671,7 @@ scanit:
 #endif  /* _SECURE_SCANF */
 #ifndef _UNICODE
                                     if (fl_wchar_arg) {
-                                        wctemp = L'?';
+                                        wctemp = W('?');
                                         char temp[2];
                                         temp[0] = (char) ch;
 #if 0       // we are not supporting multibyte input strings
@@ -682,7 +682,7 @@ scanit:
 #endif  /* 0 */
                                         _MBTOWC(&wctemp, temp, MB_CUR_MAX);
                                         *(wchar_t UNALIGNED *)pointer = wctemp;
-                                        /* just copy L'?' if mbtowc fails, errno is set by mbtowc */
+                                        /* just copy W('?') if mbtowc fails, errno is set by mbtowc */
                                         pointer = (wchar_t *)pointer + 1;
 #ifdef _SECURE_SCANF
                                         --array_width;

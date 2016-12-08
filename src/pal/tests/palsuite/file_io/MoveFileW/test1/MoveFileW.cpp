@@ -59,7 +59,7 @@ int createExisting(void)
     }
 
     memset(szBuffer, 0, 100);
-    sprintf(szBuffer, "%s/test01.txt", lpSource[2]);
+    sprintf_s(szBuffer, _countof(szBuffer), "%s/test01.txt", lpSource[2]);
     tempFile = fopen(szBuffer, "w");
     if (tempFile != NULL)
     {
@@ -73,7 +73,7 @@ int createExisting(void)
     }
 
     memset(szBuffer, 0, 100);
-    sprintf(szBuffer, "%s/test02.txt", lpSource[2]);
+    sprintf_s(szBuffer, _countof(szBuffer), "%s/test02.txt", lpSource[2]);
     tempFile = fopen(szBuffer, "w");
     if (tempFile != NULL)
     {
@@ -186,10 +186,10 @@ void removeAll(void)
     dwAtt = GetFileAttributesA(lpSource[2]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        sprintf(szTemp, "%s/test01.txt", lpSource[2]);
+        sprintf_s(szTemp, _countof(szTemp), "%s/test01.txt", lpSource[2]);
         removeFileHelper(szTemp, 18);
     
-        sprintf(szTemp, "%s/test02.txt", lpSource[2]);    
+        sprintf_s(szTemp, _countof(szTemp), "%s/test02.txt", lpSource[2]);    
         removeFileHelper(szTemp, 19);
         removeDirectoryHelper(lpSource[2], 103);
     }
@@ -202,10 +202,10 @@ void removeAll(void)
     dwAtt = GetFileAttributesA(lpSource[3]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        sprintf(szTemp, "%s/test01.txt", lpSource[3]);
+        sprintf_s(szTemp, _countof(szTemp), "%s/test01.txt", lpSource[3]);
         removeFileHelper(szTemp, 18);
     
-        sprintf(szTemp, "%s/test02.txt", lpSource[3]);    
+        sprintf_s(szTemp, _countof(szTemp), "%s/test02.txt", lpSource[3]);    
         removeFileHelper(szTemp, 19);
         removeDirectoryHelper(lpSource[3], 103);
     }
@@ -218,10 +218,10 @@ void removeAll(void)
     dwAtt = GetFileAttributesA(lpDestination[0]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        sprintf(szTemp, "%s/test01.txt", lpDestination[0]);
+        sprintf_s(szTemp, _countof(szTemp), "%s/test01.txt", lpDestination[0]);
         removeFileHelper(szTemp, 18);
     
-        sprintf(szTemp, "%s/test02.txt", lpDestination[0]);    
+        sprintf_s(szTemp, _countof(szTemp), "%s/test02.txt", lpDestination[0]);    
         removeFileHelper(szTemp, 19);
         removeDirectoryHelper(lpDestination[0], 103);
     }
@@ -233,10 +233,10 @@ void removeAll(void)
     dwAtt = GetFileAttributesA(lpDestination[1]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        sprintf(szTemp, "%s/test01.txt", lpDestination[1]);
+        sprintf_s(szTemp, _countof(szTemp), "%s/test01.txt", lpDestination[1]);
         removeFileHelper(szTemp, 18);
     
-        sprintf(szTemp, "%s/test02.txt", lpDestination[1]);    
+        sprintf_s(szTemp, _countof(szTemp), "%s/test02.txt", lpDestination[1]);    
         removeFileHelper(szTemp, 19);
         removeDirectoryHelper(lpDestination[1], 103);
     }
@@ -248,10 +248,10 @@ void removeAll(void)
     dwAtt = GetFileAttributesA(lpDestination[2]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        sprintf(szTemp, "%s/test01.txt", lpDestination[2]);
+        sprintf_s(szTemp, _countof(szTemp), "%s/test01.txt", lpDestination[2]);
         removeFileHelper(szTemp, 18);
     
-        sprintf(szTemp, "%s/test02.txt", lpDestination[2]);    
+        sprintf_s(szTemp, _countof(szTemp), "%s/test02.txt", lpDestination[2]);    
         removeFileHelper(szTemp, 19);
         removeDirectoryHelper(lpDestination[2], 103);
     }
@@ -263,10 +263,10 @@ void removeAll(void)
     dwAtt = GetFileAttributesA(lpDestination[3]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        sprintf(szTemp, "%s/test01.txt", lpDestination[3]);
+        sprintf_s(szTemp, _countof(szTemp), "%s/test01.txt", lpDestination[3]);
         removeFileHelper(szTemp, 18);
     
-        sprintf(szTemp, "%s/test02.txt", lpDestination[3]);    
+        sprintf_s(szTemp, _countof(szTemp), "%s/test02.txt", lpDestination[3]);    
         removeFileHelper(szTemp, 19);
         removeDirectoryHelper(lpDestination[3], 103);
     }

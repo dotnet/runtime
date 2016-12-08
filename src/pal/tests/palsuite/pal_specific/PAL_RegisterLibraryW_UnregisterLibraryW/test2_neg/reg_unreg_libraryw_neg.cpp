@@ -30,7 +30,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     memset(ModuleName, 0, 64);
-    sprintf(ModuleName, "%s", "not_exist_module_name");
+    sprintf_s(ModuleName, _countof(ModuleName), "%s", "not_exist_module_name");
 
     /*convert a normal string to a wide one*/
     wpModuleName = convert(ModuleName);

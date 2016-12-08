@@ -73,7 +73,7 @@ int __cdecl main(int argc, char *argv[])
     ResetEvent(hEvFromHelper);
     ResetEvent(hEvToHelper);
     
-    if (!sprintf(cmdComposeBuf, "helper %s", commsFileName)) 
+    if (!sprintf_s(cmdComposeBuf, _countof(cmdComposeBuf), "helper %s", commsFileName)) 
     {
         Fail("Could not convert command line\n");
     }
@@ -138,7 +138,7 @@ int __cdecl main(int argc, char *argv[])
                   errno, GetLastError());
         }
         PEDANTIC1(fclose,(commsFile));
-        sscanf(incomingCMDBuffer, LLFORMAT " " LLFORMAT, &pDestMemory, &Count);
+        sscanf_s(incomingCMDBuffer, LLFORMAT " " LLFORMAT, &pDestMemory, &Count);
         if (argc > 1) 
         {
             Trace("Preparing to write to " LLFORMAT " bytes @ " LLFORMAT "('%s')\n", 

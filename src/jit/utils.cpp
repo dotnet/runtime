@@ -657,7 +657,7 @@ void dumpILRange(const BYTE* const codeAddr, unsigned codeSize) // in bytes
     for (IL_OFFSET offs = 0; offs < codeSize;)
     {
         char prefix[100];
-        sprintf(prefix, "IL_%04x ", offs);
+        sprintf_s(prefix, _countof(prefix), "IL_%04x ", offs);
         unsigned codeBytesDumped = dumpSingleInstr(codeAddr, offs, prefix);
         offs += codeBytesDumped;
     }

@@ -138,7 +138,7 @@ bool WriteArrayToMCL(char *mclFilename, int *arr, int count)
         DWORD charCount = 0;
         DWORD bytesWritten = 0;
 
-        charCount = sprintf(strMethodIndex, "%d\r\n", arr[i]);
+        charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", arr[i]);
 
         if (!WriteFile(hMCLFile, strMethodIndex, charCount, &bytesWritten, nullptr) || (bytesWritten != charCount))
         {
@@ -232,7 +232,7 @@ void ProcessChildStdOut(const CommandLine::Options& o, char *stdoutFilename, int
             if (o.applyDiff)
             {
                 int temp1 = 0, temp2 = 0, temp3 = 0, temp4 = 0;
-                int converted = sscanf(buff, g_AsmDiffsSummaryFormatString, &temp1, &temp2, &temp3, &temp4);
+                int converted = sscanf_s(buff, g_AsmDiffsSummaryFormatString, &temp1, &temp2, &temp3, &temp4);
                 if (converted != 4)
                 {
                     LogError("Couldn't parse status message: \"%s\"", buff);
@@ -248,7 +248,7 @@ void ProcessChildStdOut(const CommandLine::Options& o, char *stdoutFilename, int
             else
             {
                 int temp1 = 0, temp2 = 0, temp3 = 0;
-                int converted = sscanf(buff, g_SummaryFormatString, &temp1, &temp2, &temp3);
+                int converted = sscanf_s(buff, g_SummaryFormatString, &temp1, &temp2, &temp3);
                 if (converted != 3)
                 {
                     LogError("Couldn't parse status message: \"%s\"", buff);

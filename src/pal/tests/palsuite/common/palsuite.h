@@ -133,7 +133,7 @@ inline ULONG   VAL32(ULONG x)
 #define th_htons(w)  (((w) >> 8) | ((w) << 8))
 #endif  // BIGENDIAN
 
-
+#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 
 WCHAR* convert(const char * aString) 
 {

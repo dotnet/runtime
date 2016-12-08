@@ -104,7 +104,7 @@ int __cdecl main(int argc, char *argv[])
         }
 
         /* now verify that it only used the first 3 characters of the prefix */
-        sprintf(szTempString, "%s\\%s", szDot, szLongValidPrefix);
+        sprintf_s(szTempString, _countof(szTempString), "%s\\%s", szDot, szLongValidPrefix);
         if (strncmp(szTempString, szReturnedName, 6) == 0)
         {
             Fail("GetTempFileNameA: ERROR -> It appears that an improper prefix "

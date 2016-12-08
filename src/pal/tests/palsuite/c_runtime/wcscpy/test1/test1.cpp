@@ -15,7 +15,7 @@
 #include <palsuite.h>
 
 /*
- * Notes: uses memcmp and sprintf.
+ * Notes: uses memcmp and sprintf_s.
  */
 
 int __cdecl main(int argc, char *argv[])
@@ -37,7 +37,7 @@ int __cdecl main(int argc, char *argv[])
     
     if (ret != dest || memcmp(dest, result, sizeof(result)) != 0)
     {
-        sprintf(buffer, "%S", dest);
+        sprintf_s(buffer, _countof(buffer), "%S", dest);
         Fail("Expected wcscpy to give \"%s\" with a return value of %p, got \"%s\" "
             "with a return value of %p.\n", "foo", dest, buffer, ret);
     }
