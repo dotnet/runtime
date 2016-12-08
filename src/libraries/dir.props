@@ -389,6 +389,20 @@
         <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='netcoreapp1.2'">
+      <PropertyGroup>
+        <PackageTargetFramework>netcoreapp1.2</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netcoreapp1.2corert'">
+      <PropertyGroup>
+        <PackageTargetFramework>netcoreapp1.2</PackageTargetFramework>
+        <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' != ''">$(PackageTargetRuntime)-corert</PackageTargetRuntime>
+        <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == ''">corert</PackageTargetRuntime>
+        <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(TargetGroup)'=='dnxcore50'">
       <PropertyGroup>
         <ConfigurationErrorMsg>$(ConfigurationErrorMsg);DNXCore50 has been deprecated.  Please use NETStandard1.X or NETCoreApp1.0 instead.</ConfigurationErrorMsg>
