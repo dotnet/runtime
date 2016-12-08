@@ -4258,6 +4258,8 @@ public:
     GenTreeDynBlk(GenTreePtr addr, GenTreePtr dynamicSize)
         : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, 0), gtDynamicSize(dynamicSize), gtEvalSizeFirst(false)
     {
+        // Conservatively the 'addr' could be null or point into the global heap.
+        gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
         gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
     }
 
