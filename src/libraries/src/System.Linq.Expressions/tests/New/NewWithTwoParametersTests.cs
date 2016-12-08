@@ -128,6 +128,20 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(newExp, newExp.Update(new[] { Expression.Constant("x"), Expression.Constant(23) }));
         }
 
+        [Fact]
+        public static void UpdateDoesntRepeatEnumeration()
+        {
+            ConstructorInfo constructor = typeof(Sp).GetConstructor(new[] { typeof(int), typeof(double) });
+            NewExpression newExp = Expression.New(constructor, Expression.Constant(23), Expression.Constant(40.0));
+            Assert.NotSame(newExp, newExp.Update(new[] { Expression.Constant(23), Expression.Constant(40.0) }));
+
+            constructor = typeof(TestClass).GetConstructor(new[] { typeof(string), typeof(int) });
+            MemberInfo[] members = { typeof(TestClass).GetField(nameof(TestClass.S)), typeof(TestClass).GetProperty(nameof(TestClass.Val)) };
+
+            newExp = Expression.New(constructor, new[] { Expression.Constant("x"), Expression.Constant(23) }, members);
+            Assert.NotSame(newExp, newExp.Update(new RunOnceEnumerable<Expression>(new[] { Expression.Constant("x"), Expression.Constant(23) })));
+        }
+
         private class TestClass
         {
             public TestClass(string s, int val)

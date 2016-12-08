@@ -105,12 +105,28 @@ namespace System.Linq.Expressions.Tests
 
 
         [Fact]
-        public void UpdateDifferentReturnsDifferet()
+        public void UpdateDifferentReturnsDifferent()
         {
             MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
             MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
             Assert.NotSame(memberBind, memberBind.Update(new[] {Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))}));
             Assert.NotSame(memberBind, memberBind.Update(Enumerable.Empty<MemberBinding>()));
+        }
+
+        [Fact]
+        public void UpdateNullThrows()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.Throws<ArgumentNullException>("bindings", () => memberBind.Update(null));
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.NotSame(memberBind, memberBind.Update(new RunOnceEnumerable<MemberBinding>(new[] { Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3)) })));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

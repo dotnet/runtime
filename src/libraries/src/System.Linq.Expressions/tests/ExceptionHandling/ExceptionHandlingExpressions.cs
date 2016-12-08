@@ -1303,6 +1303,15 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            TryExpression tryExp = Expression.TryCatchFinally(Expression.Empty(), Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));
+            IEnumerable<CatchBlock> newHandlers =
+                new RunOnceEnumerable<CatchBlock>(new[] {Expression.Catch(typeof(Exception), Expression.Empty())});
+            Assert.NotSame(tryExp, tryExp.Update(tryExp.Body, newHandlers, tryExp.Finally, null));
+        }
+
+        [Fact]
         public void UpdateTryDiffFinallyDiffNode()
         {
             TryExpression tryExp = Expression.TryCatchFinally(Expression.Empty(), Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));

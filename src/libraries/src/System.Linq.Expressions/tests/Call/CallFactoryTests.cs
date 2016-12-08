@@ -321,6 +321,109 @@ namespace System.Linq.Expressions.Tests
             return res;
         }
 
+        [Fact]
+        public static void UpdateStaticNull()
+        {
+            MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod(nameof(MS.S0)));
+            Assert.Same(expr, expr.Update(null, null));
+
+            for (int argNum = 1; argNum != 7; ++argNum)
+            {
+                ConstantExpression[] args = Enumerable.Range(0, argNum).Select(i => Expression.Constant(i)).ToArray();
+
+                expr = Expression.Call(typeof(MS).GetMethod("S" + argNum), args);
+
+                // Should attempt to create new expression, and fail due to incorrect arguments.
+                Assert.Throws<ArgumentException>("method", () => expr.Update(null, null));
+            }
+        }
+
+        [Fact]
+        public static void UpdateInstanceNull()
+        {
+            ConstantExpression instance = Expression.Constant(new MS());
+            MethodCallExpression expr = Expression.Call(instance, typeof(MS).GetMethod(nameof(MS.I0)));
+            Assert.Same(expr, expr.Update(instance, null));
+
+            for (int argNum = 1; argNum != 6; ++argNum)
+            {
+                ConstantExpression[] args = Enumerable.Range(0, argNum).Select(i => Expression.Constant(i)).ToArray();
+
+                expr = Expression.Call(instance, typeof(MS).GetMethod("I" + argNum), args);
+
+                // Should attempt to create new expression, and fail due to incorrect arguments.
+                Assert.Throws<ArgumentException>("method", () => expr.Update(instance, null));
+            }
+        }
+
+        [Fact]
+        public static void UpdateStaticExtraArguments()
+        {
+            for (int argNum = 0; argNum != 7; ++argNum)
+            {
+                ConstantExpression[] args = Enumerable.Range(0, argNum).Select(i => Expression.Constant(i)).ToArray();
+
+                MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S" + argNum), args);
+
+                // Should attempt to create new expression, and fail due to incorrect arguments.
+                Assert.Throws<ArgumentException>("method", () => expr.Update(null, args.Append(Expression.Constant(-1))));
+            }
+        }
+
+        [Fact]
+        public static void UpdateInstanceExtraArguments()
+        {
+            ConstantExpression instance = Expression.Constant(new MS());
+            for (int argNum = 0; argNum != 6; ++argNum)
+            {
+                ConstantExpression[] args = Enumerable.Range(0, argNum).Select(i => Expression.Constant(i)).ToArray();
+
+                MethodCallExpression expr = Expression.Call(instance, typeof(MS).GetMethod("I" + argNum), args);
+
+                // Should attempt to create new expression, and fail due to incorrect arguments.
+                Assert.Throws<ArgumentException>("method", () => expr.Update(instance, args.Append(Expression.Constant(-1))));
+            }
+        }
+
+        [Fact]
+        public static void UpdateStaticDifferentArguments()
+        {
+            for (int argNum = 1; argNum != 7; ++argNum)
+            {
+                ConstantExpression[] args = Enumerable.Range(0, argNum).Select(i => Expression.Constant(i)).ToArray();
+
+                MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S" + argNum), args);
+
+                ConstantExpression[] newArgs = new ConstantExpression[argNum];
+                for (int i = 0; i != argNum; ++i)
+                {
+                    args.CopyTo(newArgs, 0);
+                    newArgs[i] = Expression.Constant(i);
+                    Assert.NotSame(expr, expr.Update(null, newArgs));
+                }
+            }
+        }
+
+        [Fact]
+        public static void UpdateInstanceDifferentArguments()
+        {
+            ConstantExpression instance = Expression.Constant(new MS());
+            for (int argNum = 1; argNum != 6; ++argNum)
+            {
+                ConstantExpression[] args = Enumerable.Range(0, argNum).Select(i => Expression.Constant(i)).ToArray();
+
+                MethodCallExpression expr = Expression.Call(instance, typeof(MS).GetMethod("I" + argNum), args);
+
+                ConstantExpression[] newArgs = new ConstantExpression[argNum];
+                for (int i = 0; i != argNum; ++i)
+                {
+                    args.CopyTo(newArgs, 0);
+                    newArgs[i] = Expression.Constant(i);
+                    Assert.NotSame(expr, expr.Update(instance, newArgs));
+                }
+            }
+        }
+
         private static MethodCallExpression UpdateObj(MethodCallExpression node)
         {
             // Tests the call of Update to Expression.Call factories.

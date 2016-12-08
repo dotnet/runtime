@@ -63,13 +63,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewArrayExpression Update(IEnumerable<Expression> expressions)
         {
-            if (expressions != null)
+            // Explicit null check here as otherwise wrong parameter name will be used.
+            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+
+            // Ensure expressions is safe to enumerate twice.
+            // (If this means a second call to ToReadOnly it will return quickly).
+            expressions = expressions as ICollection<Expression> ?? expressions.ToReadOnly();
+            if (ExpressionUtils.SameElements(expressions, Expressions))
             {
-                expressions = expressions as ICollection<Expression> ?? expressions.ToReadOnly();
-                if (ExpressionUtils.SameElements(expressions, Expressions))
-                {
-                    return this;
-                }
+                return this;
             }
 
             return NodeType == ExpressionType.NewArrayInit

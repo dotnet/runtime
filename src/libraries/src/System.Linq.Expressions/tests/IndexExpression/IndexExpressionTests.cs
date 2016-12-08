@@ -28,6 +28,33 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            IndexExpression expr = instance.DefaultIndexExpression;
+
+            Assert.Same(expr, expr.Update(expr.Object, new RunOnceEnumerable<Expression>(instance.DefaultArguments)));
+        }
+
+        [Fact]
+        public void UpdateDifferentObjectTest()
+        {
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            IndexExpression expr = instance.DefaultIndexExpression;
+
+            Assert.NotSame(expr, expr.Update(instance.DefaultPropertyExpression, instance.DefaultArguments));
+        }
+
+        [Fact]
+        public void UpdateDifferentArgumentsTest()
+        {
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            IndexExpression expr = instance.DefaultIndexExpression;
+
+            Assert.NotSame(expr, expr.Update(expr.Object, new [] { Expression.Constant(0)}));
+        }
+
+        [Fact]
         public void UpdateTest()
         {
             SampleClassWithProperties instance = new SampleClassWithProperties
