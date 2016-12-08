@@ -65,6 +65,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-proclib.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/threadpool.h>
 
@@ -1756,6 +1757,191 @@ no_gsharedvt_in_wrapper (void)
 	g_assert_not_reached ();
 }
 
+/*
+Overall algorithm:
+
+Limit JITing to mono_cpu_count
+	This ensures there's always room for application progress and not just JITing.
+
+When a JIT request is made, we check if there's an outstanding one for that method and, if it exits, put the thread to sleep.
+	If the current thread is already JITing another method, don't wait as it might cause a deadlock.
+	Dependency management in this case is too complex to justify implementing it.
+
+If there are no outstanding requests, the current thread is doing nothing and there are already mono_cpu_count threads JITing, go to sleep.
+
+TODO:
+	Get rid of cctor invocatio from within the JIT, it increases JIT duration and complicates things A LOT.
+	Verify that we don't have too many spurious wakeups.
+	Experiment with limiting to values around mono_cpu_count +/- 1 as this would enable progress during warmup.
+*/
+typedef struct {
+	MonoMethod *method;
+	MonoDomain *domain;
+	int count;
+} JitCompilationEntry;
+
+typedef struct {
+	GPtrArray *in_flight_methods; //JitCompilationEntry*
+	int active_threads;
+	int threads_waiting;
+	MonoCoopMutex lock;
+	MonoCoopCond cond;
+} JitCompilationData;
+
+static JitCompilationData compilation_data;
+static int jit_methods_waited, jit_methods_multiple, jit_methods_overload, jit_spurious_wakeups;
+
+static void
+mini_jit_init_job_control (void)
+{
+	mono_coop_mutex_init (&compilation_data.lock);
+	mono_coop_cond_init (&compilation_data.cond);
+	compilation_data.in_flight_methods = g_ptr_array_new ();
+}
+
+static void
+lock_compilation_data (void)
+{
+	mono_coop_mutex_lock (&compilation_data.lock);
+	fflush (stdout);
+}
+
+static void
+unlock_compilation_data (void)
+{
+	fflush (stdout);
+	mono_coop_mutex_unlock (&compilation_data.lock);
+}
+
+static JitCompilationEntry*
+find_method (MonoMethod *method, MonoDomain *domain)
+{
+	int i;
+	for (i = 0; i < compilation_data.in_flight_methods->len; ++i){
+		JitCompilationEntry *e = compilation_data.in_flight_methods->pdata [i];
+		if (e->method == method && e->domain == domain)
+			return e;
+	}
+
+	return NULL;
+}
+
+static void
+add_current_thread (MonoJitTlsData *jit_tls)
+{
+	if (jit_tls->active_jit_methods == 0)
+		++compilation_data.active_threads;
+	++jit_tls->active_jit_methods;
+}
+
+//Returns true if this thread should wait
+static gboolean
+should_wait_for_available_cpu_capacity (void)
+{
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+
+	//We can't suspend threads that are already JIT'ing something or we risk deadlocking
+	if (jit_tls->active_jit_methods > 0)
+		return FALSE;
+
+	//If there are as many active threads as cores, JITing more will cause thrashing
+	if (compilation_data.active_threads >= mono_cpu_count ()) {
+		++jit_methods_overload;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ * Returns true if this method waited successfully for another thread to JIT it
+ */
+static gboolean
+wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
+{
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	JitCompilationEntry *entry;
+
+
+	static gboolean inited;
+	if (!inited) {
+		mono_counters_register ("JIT compile waited others", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_waited);
+		mono_counters_register ("JIT compile 1+ jobs", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_multiple);
+		mono_counters_register ("JIT compile overload wait", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_overload);
+		mono_counters_register ("JIT compile spurious wakeups", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_spurious_wakeups);
+		inited = TRUE;
+	}
+
+	lock_compilation_data ();
+
+	int waits = 0;
+	while (should_wait_for_available_cpu_capacity ()) {
+		fflush (stdout);
+		++compilation_data.threads_waiting;
+		mono_coop_cond_wait (&compilation_data.cond, &compilation_data.lock);
+		--compilation_data.threads_waiting;
+		if (waits)
+			++jit_spurious_wakeups;
+		++waits;
+	}
+
+	if (!(entry = find_method (method, domain))) {
+		entry = g_new (JitCompilationEntry, 1);
+		entry->method = method;
+		entry->domain = domain;
+		entry->count = 1;
+		g_ptr_array_add (compilation_data.in_flight_methods, entry);
+		add_current_thread (jit_tls);
+		unlock_compilation_data ();
+		return FALSE;
+	} else if (jit_tls->active_jit_methods > 0) {
+		//We can't suspend the current thread if it's already JITing a method.
+		//Dependency management is too compilated and we want to get rid of this anyways.
+		++entry->count;
+		++jit_methods_multiple;
+		unlock_compilation_data ();
+		return FALSE;
+	} else {
+		++jit_methods_waited;
+		while (TRUE) {
+			fflush (stdout);
+			++compilation_data.threads_waiting;
+			mono_coop_cond_wait (&compilation_data.cond, &compilation_data.lock);
+			--compilation_data.threads_waiting;
+
+			if (!find_method (method, domain)) {
+				unlock_compilation_data ();
+				return TRUE;
+			} else {
+				++jit_spurious_wakeups;
+			}
+		}
+	}
+}
+
+static void
+unregister_method_for_compile (MonoMethod *method, MonoDomain *target_domain)
+{
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+
+	lock_compilation_data ();
+
+	--jit_tls->active_jit_methods;
+	if (jit_tls->active_jit_methods == 0)
+		--compilation_data.active_threads;
+
+	JitCompilationEntry *entry = find_method (method, target_domain);
+	g_assert (entry); // It would be weird to fail
+	if (--entry->count == 0) {
+		g_ptr_array_remove (compilation_data.in_flight_methods, entry);
+		g_free (entry);
+	}
+
+	if (compilation_data.threads_waiting)
+		mono_coop_cond_broadcast (&compilation_data.cond);
+	unlock_compilation_data ();
+}
+
+
 static gpointer
 mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_only, MonoError *error)
 {
@@ -1818,6 +2004,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		}
 	}
 
+lookup_start:
 	info = lookup_method (target_domain, method);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
@@ -1885,8 +2072,12 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		}
 	}
 
-	if (!code)
+	if (!code) {
+		if (wait_or_register_method_to_compile (method, target_domain))
+			goto lookup_start;
 		code = mono_jit_compile_method_inner (method, target_domain, opt, error);
+		unregister_method_for_compile (method, target_domain);
+	}
 	if (!mono_error_ok (error))
 		return NULL;
 
@@ -3552,6 +3743,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_counters_init ();
 
 	mini_jit_init ();
+
+	mini_jit_init_job_control ();
 
 	/* Happens when using the embedding interface */
 	if (!default_opt_set)

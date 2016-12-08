@@ -1202,6 +1202,12 @@ typedef struct {
 	 * the catch block that caught the ThreadAbortException).
 	 */
 	gpointer abort_exc_stack_threshold;
+
+
+	/*
+	 * List of methods being JIT'd in the current thread.
+	 */
+	int active_jit_methods;
 } MonoJitTlsData;
 
 /*
