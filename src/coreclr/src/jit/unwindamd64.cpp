@@ -481,6 +481,13 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
 }
 
 #ifdef UNIX_AMD64_ABI
+//------------------------------------------------------------------------
+// Compiler::unwindSetFrameRegCFI: Record a cfi info for a frame register set.
+//
+// Arguments:
+//    reg    - The register being set as the frame register.
+//    offset - The offset from the current stack pointer that the frame pointer will point at.
+//
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
     assert(compGeneratingProlog);
@@ -492,7 +499,13 @@ void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
     createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
     if (offset != 0)
     {
-        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, offset);
+        // before: cfa = rsp + old_cfa_offset;
+        //         rbp = rsp + offset;
+        // after: cfa should be based on rbp, but points to the old address:
+        //         rsp + old_cfa_offset == rbp + old_cfa_offset + adjust;
+        // adjust = -offset;
+        int adjust = -(int)offset;
+        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, adjust);
     }
 }
 #endif // UNIX_AMD64_ABI
