@@ -13,10 +13,10 @@ namespace System.Collections.Concurrent.Tests
     public class ConcurrentBagTests : ProducerConsumerCollectionTests
     {
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
-        protected override IProducerConsumerCollection<int> CreateProducerConsumerCollection() => new ConcurrentBag<int>();
+        protected override IProducerConsumerCollection<T> CreateProducerConsumerCollection<T>() => new ConcurrentBag<T>();
         protected override IProducerConsumerCollection<int> CreateProducerConsumerCollection(IEnumerable<int> collection) => new ConcurrentBag<int>(collection);
         protected override bool IsEmpty(IProducerConsumerCollection<int> pcc) => ((ConcurrentBag<int>)pcc).IsEmpty;
-        protected override bool TryPeek(IProducerConsumerCollection<int> pcc, out int result) => ((ConcurrentBag<int>)pcc).TryPeek(out result);
+        protected override bool TryPeek<T>(IProducerConsumerCollection<T> pcc, out T result) => ((ConcurrentBag<T>)pcc).TryPeek(out result);
         protected override IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection) => new BagOracle(collection);
 
         [Theory]
