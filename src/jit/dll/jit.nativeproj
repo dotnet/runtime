@@ -37,9 +37,9 @@
 
     <!-- Profile-guided optimization -->
 
-    <PogoOptimize Condition="('$(BuildArchitecture)' == 'arm')">false</PogoOptimize>
-    <PogoInstrument Condition="('$(BuildArchitecture)' == 'arm') and ('$(_BuildType)' == 'ret') and ('$(BuildProjectName)' == '')">true</PogoInstrument>
-    <PogoUpdate Condition="('$(BuildArchitecture)' == 'arm') and ('$(_BuildType)' == 'ret') and ('$(BuildProjectName)' == '')">true</PogoUpdate>
+    <PogoOptimize Condition="('$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm')">false</PogoOptimize>
+    <PogoInstrument Condition="('$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm') and ('$(_BuildType)' == 'ret') and ('$(BuildProjectName)' == '')">true</PogoInstrument>
+    <PogoUpdate Condition="('$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm') and ('$(_BuildType)' == 'ret') and ('$(BuildProjectName)' == '')">true</PogoUpdate>
     <Win32DllLibs Condition="'$(PogoInstrument)' == 'true' and '$(BuildArchitecture)' == 'amd64'">$(Win32DllLibs);$(CrtLibPath)\pgort.lib</Win32DllLibs>
     <Win32DllLibs Condition="'$(PogoInstrument)' == 'true' and '$(BuildArchitecture)' == 'arm'">$(Win32DllLibs);$(CrtLibPath)\pgort.lib;$(SdkLibPath)\ntdll.lib</Win32DllLibs>
     <OptimizationDataRelativeDir>$(_BuildArch)\CLR\Base</OptimizationDataRelativeDir>
