@@ -11,7 +11,6 @@ namespace System.Linq.Expressions.Interpreter
     internal abstract class LessThanInstruction : Instruction
     {
         private readonly object _nullValue;
-
         private static Instruction s_SByte, s_Int16, s_Char, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
@@ -284,17 +283,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanSByte(null));
-                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanByte(null));
-                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new LessThanChar(null));
                     case TypeCode.Int16: return s_liftedToNullInt16 ?? (s_liftedToNullInt16 = new LessThanInt16(null));
+                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new LessThanChar(null));
                     case TypeCode.Int32: return s_liftedToNullInt32 ?? (s_liftedToNullInt32 = new LessThanInt32(null));
                     case TypeCode.Int64: return s_liftedToNullInt64 ?? (s_liftedToNullInt64 = new LessThanInt64(null));
+                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanByte(null));
                     case TypeCode.UInt16: return s_liftedToNullUInt16 ?? (s_liftedToNullUInt16 = new LessThanUInt16(null));
                     case TypeCode.UInt32: return s_liftedToNullUInt32 ?? (s_liftedToNullUInt32 = new LessThanUInt32(null));
                     case TypeCode.UInt64: return s_liftedToNullUInt64 ?? (s_liftedToNullUInt64 = new LessThanUInt64(null));
                     case TypeCode.Single: return s_liftedToNullSingle ?? (s_liftedToNullSingle = new LessThanSingle(null));
                     case TypeCode.Double: return s_liftedToNullDouble ?? (s_liftedToNullDouble = new LessThanDouble(null));
-
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThan", type);
                 }
@@ -304,17 +302,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanSByte(Utils.BoxedFalse));
-                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new LessThanByte(Utils.BoxedFalse));
-                    case TypeCode.Char: return s_Char ?? (s_Char = new LessThanChar(Utils.BoxedFalse));
                     case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new LessThanInt16(Utils.BoxedFalse));
+                    case TypeCode.Char: return s_Char ?? (s_Char = new LessThanChar(Utils.BoxedFalse));
                     case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new LessThanInt32(Utils.BoxedFalse));
                     case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new LessThanInt64(Utils.BoxedFalse));
+                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new LessThanByte(Utils.BoxedFalse));
                     case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanUInt16(Utils.BoxedFalse));
                     case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanUInt32(Utils.BoxedFalse));
                     case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanUInt64(Utils.BoxedFalse));
                     case TypeCode.Single: return s_Single ?? (s_Single = new LessThanSingle(Utils.BoxedFalse));
                     case TypeCode.Double: return s_Double ?? (s_Double = new LessThanDouble(Utils.BoxedFalse));
-
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThan", type);
                 }

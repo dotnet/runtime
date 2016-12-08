@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Interpreter
     internal abstract class LessThanOrEqualInstruction : Instruction
     {
         private readonly object _nullValue;
-        private static Instruction s_SByte, s_Int16, s_char, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
+        private static Instruction s_SByte, s_Int16, s_Char, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
         public override int ConsumedStack => 2;
@@ -284,17 +284,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanOrEqualSByte(null));
-                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanOrEqualByte(null));
-                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new LessThanOrEqualChar(null));
                     case TypeCode.Int16: return s_liftedToNullInt16 ?? (s_liftedToNullInt16 = new LessThanOrEqualInt16(null));
+                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new LessThanOrEqualChar(null));
                     case TypeCode.Int32: return s_liftedToNullInt32 ?? (s_liftedToNullInt32 = new LessThanOrEqualInt32(null));
                     case TypeCode.Int64: return s_liftedToNullInt64 ?? (s_liftedToNullInt64 = new LessThanOrEqualInt64(null));
+                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanOrEqualByte(null));
                     case TypeCode.UInt16: return s_liftedToNullUInt16 ?? (s_liftedToNullUInt16 = new LessThanOrEqualUInt16(null));
                     case TypeCode.UInt32: return s_liftedToNullUInt32 ?? (s_liftedToNullUInt32 = new LessThanOrEqualUInt32(null));
                     case TypeCode.UInt64: return s_liftedToNullUInt64 ?? (s_liftedToNullUInt64 = new LessThanOrEqualUInt64(null));
                     case TypeCode.Single: return s_liftedToNullSingle ?? (s_liftedToNullSingle = new LessThanOrEqualSingle(null));
                     case TypeCode.Double: return s_liftedToNullDouble ?? (s_liftedToNullDouble = new LessThanOrEqualDouble(null));
-
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThanOrEqual", type);
                 }
@@ -304,17 +303,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new LessThanOrEqualSByte(Utils.BoxedFalse));
-                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new LessThanOrEqualByte(Utils.BoxedFalse));
-                    case TypeCode.Char: return s_char ?? (s_char = new LessThanOrEqualChar(Utils.BoxedFalse));
                     case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new LessThanOrEqualInt16(Utils.BoxedFalse));
+                    case TypeCode.Char: return s_Char ?? (s_Char = new LessThanOrEqualChar(Utils.BoxedFalse));
                     case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new LessThanOrEqualInt32(Utils.BoxedFalse));
                     case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new LessThanOrEqualInt64(Utils.BoxedFalse));
+                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new LessThanOrEqualByte(Utils.BoxedFalse));
                     case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new LessThanOrEqualUInt16(Utils.BoxedFalse));
                     case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new LessThanOrEqualUInt32(Utils.BoxedFalse));
                     case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new LessThanOrEqualUInt64(Utils.BoxedFalse));
                     case TypeCode.Single: return s_Single ?? (s_Single = new LessThanOrEqualSingle(Utils.BoxedFalse));
                     case TypeCode.Double: return s_Double ?? (s_Double = new LessThanOrEqualDouble(Utils.BoxedFalse));
-
                     default:
                         throw Error.ExpressionNotSupportedForType("LessThanOrEqual", type);
                 }

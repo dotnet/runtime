@@ -284,17 +284,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new GreaterThanSByte(null));
-                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new GreaterThanByte(null));
-                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new GreaterThanChar(null));
                     case TypeCode.Int16: return s_liftedToNullInt16 ?? (s_liftedToNullInt16 = new GreaterThanInt16(null));
+                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new GreaterThanChar(null));
                     case TypeCode.Int32: return s_liftedToNullInt32 ?? (s_liftedToNullInt32 = new GreaterThanInt32(null));
                     case TypeCode.Int64: return s_liftedToNullInt64 ?? (s_liftedToNullInt64 = new GreaterThanInt64(null));
+                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new GreaterThanByte(null));
                     case TypeCode.UInt16: return s_liftedToNullUInt16 ?? (s_liftedToNullUInt16 = new GreaterThanUInt16(null));
                     case TypeCode.UInt32: return s_liftedToNullUInt32 ?? (s_liftedToNullUInt32 = new GreaterThanUInt32(null));
                     case TypeCode.UInt64: return s_liftedToNullUInt64 ?? (s_liftedToNullUInt64 = new GreaterThanUInt64(null));
                     case TypeCode.Single: return s_liftedToNullSingle ?? (s_liftedToNullSingle = new GreaterThanSingle(null));
                     case TypeCode.Double: return s_liftedToNullDouble ?? (s_liftedToNullDouble = new GreaterThanDouble(null));
-
                     default:
                         throw Error.ExpressionNotSupportedForType("GreaterThan", type);
                 }
@@ -304,17 +303,16 @@ namespace System.Linq.Expressions.Interpreter
                 switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanSByte(Utils.BoxedFalse));
-                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new GreaterThanByte(Utils.BoxedFalse));
-                    case TypeCode.Char: return s_Char ?? (s_Char = new GreaterThanChar(Utils.BoxedFalse));
                     case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new GreaterThanInt16(Utils.BoxedFalse));
+                    case TypeCode.Char: return s_Char ?? (s_Char = new GreaterThanChar(Utils.BoxedFalse));
                     case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new GreaterThanInt32(Utils.BoxedFalse));
                     case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new GreaterThanInt64(Utils.BoxedFalse));
+                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new GreaterThanByte(Utils.BoxedFalse));
                     case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new GreaterThanUInt16(Utils.BoxedFalse));
                     case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new GreaterThanUInt32(Utils.BoxedFalse));
                     case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new GreaterThanUInt64(Utils.BoxedFalse));
                     case TypeCode.Single: return s_Single ?? (s_Single = new GreaterThanSingle(Utils.BoxedFalse));
                     case TypeCode.Double: return s_Double ?? (s_Double = new GreaterThanDouble(Utils.BoxedFalse));
-
                     default:
                         throw Error.ExpressionNotSupportedForType("GreaterThan", type);
                 }

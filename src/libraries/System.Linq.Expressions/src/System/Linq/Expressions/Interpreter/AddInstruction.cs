@@ -17,25 +17,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private AddInstruction() { }
 
-        private sealed class AddInt32 : AddInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l + (int)r));
-                }
-                frame.StackIndex--;
-                return 1;
-            }
-        }
-
         private sealed class AddInt16 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -49,6 +30,25 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l + (short)r));
+                }
+                frame.StackIndex--;
+                return 1;
+            }
+        }
+
+        private sealed class AddInt32 : AddInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object l = frame.Data[frame.StackIndex - 2];
+                object r = frame.Data[frame.StackIndex - 1];
+                if (l == null || r == null)
+                {
+                    frame.Data[frame.StackIndex - 2] = null;
+                }
+                else
+                {
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l + (int)r));
                 }
                 frame.StackIndex--;
                 return 1;
@@ -198,25 +198,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private AddOvfInstruction() { }
 
-        private sealed class AddOvfInt32 : AddOvfInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l + (int)r));
-                }
-                frame.StackIndex--;
-                return 1;
-            }
-        }
-
         private sealed class AddOvfInt16 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -230,6 +211,25 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Data[frame.StackIndex - 2] = checked((short)((short)l + (short)r));
+                }
+                frame.StackIndex--;
+                return 1;
+            }
+        }
+
+        private sealed class AddOvfInt32 : AddOvfInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object l = frame.Data[frame.StackIndex - 2];
+                object r = frame.Data[frame.StackIndex - 1];
+                if (l == null || r == null)
+                {
+                    frame.Data[frame.StackIndex - 2] = null;
+                }
+                else
+                {
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l + (int)r));
                 }
                 frame.StackIndex--;
                 return 1;
@@ -323,7 +323,6 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new AddOvfUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new AddOvfUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new AddOvfUInt64());
-
                 default:
                     return AddInstruction.Create(type);
             }

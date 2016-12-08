@@ -17,25 +17,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private SubInstruction() { }
 
-        private sealed class SubInt32 : SubInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l - (int)r));
-                }
-                frame.StackIndex--;
-                return 1;
-            }
-        }
-
         private sealed class SubInt16 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -49,6 +30,25 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l - (short)r));
+                }
+                frame.StackIndex--;
+                return 1;
+            }
+        }
+
+        private sealed class SubInt32 : SubInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object l = frame.Data[frame.StackIndex - 2];
+                object r = frame.Data[frame.StackIndex - 1];
+                if (l == null || r == null)
+                {
+                    frame.Data[frame.StackIndex - 2] = null;
+                }
+                else
+                {
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l - (int)r));
                 }
                 frame.StackIndex--;
                 return 1;
@@ -198,25 +198,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private SubOvfInstruction() { }
 
-        private sealed class SubOvfInt32 : SubOvfInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l - (int)r));
-                }
-                frame.StackIndex--;
-                return 1;
-            }
-        }
-
         private sealed class SubOvfInt16 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -230,6 +211,25 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Data[frame.StackIndex - 2] = checked((short)((short)l - (short)r));
+                }
+                frame.StackIndex--;
+                return 1;
+            }
+        }
+
+        private sealed class SubOvfInt32 : SubOvfInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object l = frame.Data[frame.StackIndex - 2];
+                object r = frame.Data[frame.StackIndex - 1];
+                if (l == null || r == null)
+                {
+                    frame.Data[frame.StackIndex - 2] = null;
+                }
+                else
+                {
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l - (int)r));
                 }
                 frame.StackIndex--;
                 return 1;

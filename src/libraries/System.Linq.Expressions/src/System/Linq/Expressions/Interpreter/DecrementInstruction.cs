@@ -18,23 +18,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private DecrementInstruction() { }
 
-        private sealed class DecrementInt32 : DecrementInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(null);
-                }
-                else
-                {
-                    frame.Push(unchecked((int)obj - 1));
-                }
-                return 1;
-            }
-        }
-
         private sealed class DecrementInt16 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -47,6 +30,23 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Push(unchecked((short)((short)obj - 1)));
+                }
+                return 1;
+            }
+        }
+
+        private sealed class DecrementInt32 : DecrementInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object obj = frame.Pop();
+                if (obj == null)
+                {
+                    frame.Push(null);
+                }
+                else
+                {
+                    frame.Push(unchecked((int)obj - 1));
                 }
                 return 1;
             }
@@ -167,7 +167,6 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new DecrementUInt64());
                 case TypeCode.Single: return s_Single ?? (s_Single = new DecrementSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new DecrementDouble());
-
                 default:
                     throw Error.ExpressionNotSupportedForType("Decrement", type);
             }

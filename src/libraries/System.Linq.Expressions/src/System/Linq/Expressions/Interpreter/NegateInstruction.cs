@@ -18,23 +18,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private NegateInstruction() { }
 
-        private sealed class NegateInt32 : NegateInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(null);
-                }
-                else
-                {
-                    frame.Push(unchecked(-(int)obj));
-                }
-                return 1;
-            }
-        }
-
         private sealed class NegateInt16 : NegateInstruction
         {
             public override int Run(InterpretedFrame frame)
@@ -47,6 +30,23 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Push(unchecked((short)(-(short)obj)));
+                }
+                return 1;
+            }
+        }
+
+        private sealed class NegateInt32 : NegateInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object obj = frame.Pop();
+                if (obj == null)
+                {
+                    frame.Push(null);
+                }
+                else
+                {
+                    frame.Push(unchecked(-(int)obj));
                 }
                 return 1;
             }
@@ -113,7 +113,6 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new NegateInt64());
                 case TypeCode.Single: return s_Single ?? (s_Single = new NegateSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new NegateDouble());
-
                 default:
                     throw Error.ExpressionNotSupportedForType("Negate", type);
             }
@@ -180,6 +179,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
         }
+
         private sealed class NegateCheckedSingle : NegateCheckedInstruction
         {
             public override int Run(InterpretedFrame frame)
