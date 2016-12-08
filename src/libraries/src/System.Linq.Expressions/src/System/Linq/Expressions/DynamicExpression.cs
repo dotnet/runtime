@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Linq.Expressions.Compiler;
 using System.Reflection;
@@ -174,12 +175,32 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public DynamicExpression Update(IEnumerable<Expression> arguments)
         {
-            if (arguments == Arguments)
+            ICollection<Expression> args;
+            if (arguments == null)
+            {
+                args = null;
+            }
+            else
+            {
+                args = arguments as ICollection<Expression>;
+                if (args == null)
+                {
+                    arguments = args = arguments.ToReadOnly();
+                }
+            }
+
+            if (SameArguments(args))
             {
                 return this;
             }
 
             return ExpressionExtension.MakeDynamic(DelegateType, Binder, arguments);
+        }
+
+        [ExcludeFromCodeCoverage] // Unreachable
+        internal virtual bool SameArguments(ICollection<Expression> arguments)
+        {
+            throw ContractUtils.Unreachable;
         }
 
         #region IArgumentProvider Members
@@ -468,6 +489,9 @@ namespace System.Linq.Expressions
 
         Expression IArgumentProvider.GetArgument(int index) => _arguments[index];
 
+        internal override bool SameArguments(ICollection<Expression> arguments) =>
+            ExpressionUtils.SameElements(arguments, _arguments);
+
         int IArgumentProvider.ArgumentCount => _arguments.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
@@ -516,6 +540,20 @@ namespace System.Linq.Expressions
 
         int IArgumentProvider.ArgumentCount => 1;
 
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 1)
+            {
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    return en.Current == ReturnObject<Expression>(_arg0);
+                }
+            }
+
+            return false;
+        }
+
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
@@ -563,6 +601,30 @@ namespace System.Linq.Expressions
         }
 
         int IArgumentProvider.ArgumentCount => 2;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 2)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        return en.Current == _arg1;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -613,6 +675,34 @@ namespace System.Linq.Expressions
         }
 
         int IArgumentProvider.ArgumentCount => 3;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 3)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            return en.Current == _arg2;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -665,6 +755,38 @@ namespace System.Linq.Expressions
         }
 
         int IArgumentProvider.ArgumentCount => 4;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 4)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            if (en.Current == _arg2)
+                            {
+                                en.MoveNext();
+                                return en.Current == _arg3;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
