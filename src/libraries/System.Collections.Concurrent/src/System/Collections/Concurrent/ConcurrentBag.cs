@@ -277,7 +277,7 @@ namespace System.Collections.Concurrent
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentBag_CopyTo_ArgumentOutOfRangeException);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);
             }
 
             // Short path if the bag is empty
