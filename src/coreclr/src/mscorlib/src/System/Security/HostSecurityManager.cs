@@ -9,13 +9,9 @@
 // participate in the security decisions in the AppDomain.
 //
 
-namespace System.Security {
+namespace System.Security
+{
     using System.Collections;
-#if FEATURE_CLICKONCE        
-    using System.Deployment.Internal.Isolation;
-    using System.Deployment.Internal.Isolation.Manifest;
-    using System.Runtime.Hosting;    
-#endif
     using System.Reflection;
     using System.Security;
     using System.Security.Permissions;
@@ -24,7 +20,7 @@ namespace System.Security {
     using System.Diagnostics.Contracts;
 
 
-[Serializable]
+    [Serializable]
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum HostSecurityManagerOptions {
@@ -79,109 +75,6 @@ namespace System.Security {
             // The default implementation does not modify the input evidence.
             return inputEvidence;
         }
-
-#if FEATURE_CLICKONCE
-        [System.Security.SecurityCritical]  // auto-generated
-        [SecurityPermissionAttribute(SecurityAction.Assert, Unrestricted=true)]
-        public virtual ApplicationTrust DetermineApplicationTrust(Evidence applicationEvidence, Evidence activatorEvidence, TrustManagerContext context)
-        {
-            if (applicationEvidence == null)
-                throw new ArgumentNullException(nameof(applicationEvidence));
-            Contract.EndContractBlock();
-
-            // This method looks for a trust decision for the ActivationContext in three locations, in order
-            // of preference:
-            //
-            // 1. Supplied by the host in the AppDomainSetup. If the host supplied a decision this way, it
-            //    will be in the applicationEvidence.
-            // 2. Reuse the ApplicationTrust from the current AppDomain
-            // 3. Ask the TrustManager for a trust decision
-
-            // get the activation context from the application evidence.
-            // The default HostSecurityManager does not examine the activatorEvidence
-            // but other security managers could use it to figure out the 
-            // evidence of the domain attempting to activate the application.
-
-            ActivationArguments activationArgs = applicationEvidence.GetHostEvidence<ActivationArguments>();
-            if (activationArgs == null)
-                throw new ArgumentException(Environment.GetResourceString("Policy_MissingActivationContextInAppEvidence"));
-
-            ActivationContext actCtx = activationArgs.ActivationContext;
-            if (actCtx == null)
-                throw new ArgumentException(Environment.GetResourceString("Policy_MissingActivationContextInAppEvidence"));
-
-            // Make sure that any ApplicationTrust we find applies to the ActivationContext we're
-            // creating the new AppDomain for.
-            ApplicationTrust appTrust = applicationEvidence.GetHostEvidence<ApplicationTrust>();
-            if (appTrust != null &&
-                !CmsUtils.CompareIdentities(appTrust.ApplicationIdentity, activationArgs.ApplicationIdentity, ApplicationVersionMatch.MatchExactVersion))
-            {
-                appTrust = null;
-            }
-
-            // If there was not a trust decision supplied in the Evidence, we can reuse the existing trust
-            // decision from this domain if its identity matches the ActivationContext of the new domain.
-            // Otherwise consult the TrustManager for a trust decision
-            if (appTrust == null)
-            {
-                if (AppDomain.CurrentDomain.ApplicationTrust != null &&
-                    CmsUtils.CompareIdentities(AppDomain.CurrentDomain.ApplicationTrust.ApplicationIdentity, activationArgs.ApplicationIdentity, ApplicationVersionMatch.MatchExactVersion))
-                {
-                    appTrust = AppDomain.CurrentDomain.ApplicationTrust;
-                }
-                else
-                {
-                    appTrust = ApplicationSecurityManager.DetermineApplicationTrustInternal(actCtx, context);
-                }
-            }
-
-            // If the trust decision allows the application to run, then it should also have a permission set
-            // which is at least the permission set the application requested.
-            ApplicationSecurityInfo appRequest = new ApplicationSecurityInfo(actCtx);
-            if (appTrust != null && 
-                appTrust.IsApplicationTrustedToRun &&
-                !appRequest.DefaultRequestSet.IsSubsetOf(appTrust.DefaultGrantSet.PermissionSet))
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("Policy_AppTrustMustGrantAppRequest"));
-            }
-
-                return appTrust;
-        }
-#endif // FEATURE_CLICKONCE
-
-#if FEATURE_CAS_POLICY        
-        // Query the CLR to see what it would have granted a specific set of evidence
-        public virtual PermissionSet ResolvePolicy(Evidence evidence)
-        {
-            if (evidence == null)
-                throw new ArgumentNullException(nameof(evidence));
-            Contract.EndContractBlock();
-
-            //
-            // If the evidence is from the GAC then the result is full trust.
-            // In a homogenous domain, then the application trust object provides the grant set.
-            // When CAS policy is disabled, the result is full trust.
-            // Otherwise, the result comes from evaluating CAS policy.
-            //
-
-            if (evidence.GetHostEvidence<GacInstalled>() != null)
-            {
-                return new PermissionSet(PermissionState.Unrestricted);
-            }
-            else if (AppDomain.CurrentDomain.IsHomogenous)
-            {
-                return AppDomain.CurrentDomain.GetHomogenousGrantSet(evidence);
-            }
-            else if (!AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-            {
-                return new PermissionSet(PermissionState.Unrestricted);
-            }
-            else
-            {
-                return SecurityManager.PolicyManager.CodeGroupResolve(evidence, false);
-            }
-        }
-#endif
 
         /// <summary>
         ///     Determine what types of evidence the host might be able to supply for the AppDomain if requested

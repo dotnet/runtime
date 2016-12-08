@@ -1088,21 +1088,10 @@ namespace System.Security.Permissions {
             // Callers should have already made checks for invalid path format via normalization. This method will only make the
             // additional checks needed to throw the same exceptions that would normally throw when using FileIOPermission.
             // These checks are done via CheckIllegalCharacters() and StringExpressionSet in AddPathList() above.
-            //
-            // We have to check the beginning as some paths may be passed in as path + @"\.", which will be normalized away.
-#if !FEATURE_CORECLR
-            BCLDebug.Assert(
-                fullPath.StartsWith(Path.NormalizePath(fullPath, fullCheck: false), StringComparison.OrdinalIgnoreCase),
-                string.Format("path isn't normalized: {0}", fullPath));
-#endif
 
 #if !PLATFORM_UNIX
             // Checking for colon / invalid characters on device paths blocks legitimate access to objects such as named pipes.
-            if (
-    #if FEATURE_PATHCOMPAT
-                AppContextSwitches.UseLegacyPathHandling ||
-    #endif
-                !PathInternal.IsDevice(fullPath))
+            if (!PathInternal.IsDevice(fullPath))
             {
                 // GetFullPath already checks normal invalid path characters. We need to just check additional (wildcard) characters here.
                 // (By calling the standard helper we can allow extended paths \\?\ through when the support is enabled.)

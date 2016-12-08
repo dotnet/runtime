@@ -487,38 +487,6 @@ namespace System.Reflection {
             _StrongNameKeyPair = keyPair;
         }
 
-#if !FEATURE_CORECLR
-        void _AssemblyName.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _AssemblyName.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _AssemblyName.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _AssemblyName.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
-
-#if FEATURE_APTCA
-        internal string GetNameWithPublicKey()
-        {
-            byte[] key = GetPublicKey();
-
-            // The following string should not be localized because it is used in security decisions.
-            return Name + ", PublicKey=" + System.Security.Util.Hex.EncodeHexString(key);
-        }
-#endif
-
         // This call opens and closes the file, but does not add the
         // assembly to the domain.
         [System.Security.SecurityCritical]  // auto-generated
@@ -532,7 +500,7 @@ namespace System.Reflection {
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern byte[] nGetPublicKeyToken();
-    
+
         [System.Security.SecurityCritical]  // auto-generated
         static internal String EscapeCodeBase(String codebase)
         {
@@ -544,7 +512,7 @@ namespace System.Reflection {
             if (dest == null)
                 return codebase;
 
-            return new string(dest, 0, position);            
+            return new string(dest, 0, position);
         }
 
         // This implementation of EscapeString has been copied from System.Private.Uri from corefx repo

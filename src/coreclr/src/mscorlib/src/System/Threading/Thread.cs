@@ -348,14 +348,10 @@ namespace System.Threading {
                     ExecutionContext.CaptureOptions.IgnoreSyncCtx);
                 t.SetExecutionContextHelper(ec);
             }
-#if FEATURE_IMPERSONATION
-            IPrincipal principal = (IPrincipal)CallContext.Principal;
-#else
+
             IPrincipal principal = null;
-#endif
             StartInternal(principal, ref stackMark);
         }
-
 
 #if FEATURE_CORECLR
         internal ExecutionContext ExecutionContext
@@ -1231,95 +1227,6 @@ namespace System.Threading {
         private static extern void nativeInitCultureAccessors();
 #endif
 
-        /*=============================================================*/
-
-        /*======================================================================
-        **  Current thread context is stored in a slot in the thread local store
-        **  CurrentContext gets the Context from the slot.
-        ======================================================================*/
-#if FEATURE_REMOTING
-        public static Context CurrentContext
-        {
-            [System.Security.SecurityCritical]  // auto-generated_required
-            get
-            {
-                return CurrentThread.GetCurrentContextInternal();
-            }
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        internal Context GetCurrentContextInternal()
-        {
-            if (m_Context == null)
-            {
-                m_Context = Context.DefaultContext;
-            }
-            return m_Context;
-        }
-#endif
-
-
-#if FEATURE_IMPERSONATION
-        // Get and set thread's current principal (for role based security).
-        public static IPrincipal CurrentPrincipal
-        {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get
-            {
-                lock (CurrentThread)
-                {
-                    IPrincipal principal = (IPrincipal)
-                        CallContext.Principal;
-                    if (principal == null)
-                    {
-                        principal = GetDomain().GetThreadPrincipal();
-                        CallContext.Principal = principal;
-                    }
-                    return principal;
-                }
-            }
-
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            [SecurityPermissionAttribute(SecurityAction.Demand, Flags=SecurityPermissionFlag.ControlPrincipal)]
-            set
-            {
-                CallContext.Principal = value;
-            }
-        }
-
-        // Private routine called from unmanaged code to set an initial
-        // principal for a newly created thread.
-        [System.Security.SecurityCritical]  // auto-generated
-        private void SetPrincipalInternal(IPrincipal principal)
-        {
-            GetMutableExecutionContext().LogicalCallContext.SecurityData.Principal = principal;
-        }
-#endif // FEATURE_IMPERSONATION
-
-#if FEATURE_REMOTING
-
-        // This returns the exposed context for a given context ID.
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Context GetContextInternal(IntPtr id);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern Object InternalCrossContextCallback(Context ctx, IntPtr ctxID, Int32 appDomainID, InternalCrossContextDelegate ftnToCall, Object[] args);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        internal Object InternalCrossContextCallback(Context ctx, InternalCrossContextDelegate ftnToCall, Object[] args)
-        {
-            return InternalCrossContextCallback(ctx, ctx.InternalContextID, 0, ftnToCall, args);
-        }
-
-        // CompleteCrossContextCallback is called by the EE after transitioning to the requested context
-        private static Object CompleteCrossContextCallback(InternalCrossContextDelegate ftnToCall, Object[] args)
-        {
-            return ftnToCall(args);
-        }
-#endif // FEATURE_REMOTING
-
         /*======================================================================
         ** Returns the current domain in which current thread is running.
         ======================================================================*/
@@ -1342,9 +1249,6 @@ namespace System.Threading {
             if (ad == null)
                 ad = GetDomainInternal();
 
-#if FEATURE_REMOTING
-            Contract.Assert(CurrentThread.m_Context == null || CurrentThread.m_Context.AppDomain == ad, "AppDomains on the managed & unmanaged threads should match");
-#endif
             return ad;
         }
 

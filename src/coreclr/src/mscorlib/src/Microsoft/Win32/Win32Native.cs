@@ -90,9 +90,6 @@
 namespace Microsoft.Win32 {
     using System;
     using System.Security;
-#if FEATURE_IMPERSONATION
-    using System.Security.Principal;
-#endif
     using System.Text;
     using System.Configuration.Assemblies;
     using System.Runtime.Remoting;
@@ -1930,28 +1927,6 @@ namespace Microsoft.Win32 {
             [In]     bool                       bInheritHandle,
             [In]     uint                       dwOptions);
 
-#if FEATURE_IMPERSONATION
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, SetLastError=true)]
-        internal static extern 
-        bool DuplicateTokenEx (
-            [In]     SafeAccessTokenHandle       ExistingTokenHandle,
-            [In]     TokenAccessLevels           DesiredAccess,
-            [In]     IntPtr                      TokenAttributes,
-            [In]     SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
-            [In]     System.Security.Principal.TokenType TokenType,
-            [In,Out] ref SafeAccessTokenHandle   DuplicateTokenHandle );
-
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, SetLastError=true)]
-        internal static extern 
-        bool DuplicateTokenEx (
-            [In]     SafeAccessTokenHandle      hExistingToken,
-            [In]     uint                       dwDesiredAccess,
-            [In]     IntPtr                     lpTokenAttributes,   // LPSECURITY_ATTRIBUTES
-            [In]     uint                       ImpersonationLevel,
-            [In]     uint                       TokenType,
-            [In,Out] ref SafeAccessTokenHandle  phNewToken);
-#endif
         [DllImport(
              ADVAPI32,
              EntryPoint="EqualDomainSid",
@@ -2345,15 +2320,6 @@ namespace Microsoft.Win32 {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern int LsaFreeReturnBuffer(IntPtr handle);
 
-#if FEATURE_IMPERSONATION
-        [DllImport (ADVAPI32, CharSet=CharSet.Unicode, SetLastError=true)]
-        internal static extern 
-        bool OpenProcessToken (
-            [In]     IntPtr                     ProcessToken,
-            [In]     TokenAccessLevels          DesiredAccess,
-            [Out]    out SafeAccessTokenHandle  TokenHandle);
-#endif
-
         [DllImport(
              ADVAPI32,
              EntryPoint="SetNamedSecurityInfoW",
@@ -2385,15 +2351,6 @@ namespace Microsoft.Win32 {
             byte[] group,
             byte[] dacl,
             byte[] sacl );
-
-        // Fusion APIs
-#if FEATURE_FUSION
-        [DllImport(MSCORWKS, CharSet=CharSet.Unicode)]
-        internal static extern int CreateAssemblyNameObject(out IAssemblyName ppEnum, String szAssemblyName, uint dwFlags, IntPtr pvReserved);
-    
-        [DllImport(MSCORWKS, CharSet=CharSet.Auto)]
-        internal static extern int CreateAssemblyEnum(out IAssemblyEnum ppEnum, IApplicationContext pAppCtx, IAssemblyName pName, uint dwFlags, IntPtr pvReserved);
-#endif // FEATURE_FUSION
 
 #if FEATURE_CORECLR
         [DllImport(KERNEL32, CharSet=CharSet.Unicode)]
