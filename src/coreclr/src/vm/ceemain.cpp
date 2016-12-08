@@ -306,7 +306,6 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 
 #if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-void* __stdcall GetCLRFunction(LPCSTR FunctionName);
 
 // Pointer to the activated CLR interface provided by the shim.
 ICLRRuntimeInfo *g_pCLRRuntime = NULL;

@@ -5766,4 +5766,6 @@ extern SpinConstants g_SpinConstants;
 
 // ======================================================================================
 
+void* __stdcall GetCLRFunction(LPCSTR FunctionName);
+
 #endif // __UtilCode_h__
