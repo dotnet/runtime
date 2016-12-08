@@ -969,7 +969,7 @@ namespace System {
         // GetHashCode -
         //
         public override int GetHashCode() {
-            return m_id.ToUpper(CultureInfo.InvariantCulture).GetHashCode();
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(m_id);
         }
 
         //
