@@ -2049,18 +2049,18 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     // According to `man proc`, the second field in the stat file is the filename of the executable,
     // in parentheses. Tokenizing the stat file using spaces as separators breaks when that name
-    // has spaces in it, so we start using sscanf after skipping everything up to and including the
+    // has spaces in it, so we start using sscanf_s after skipping everything up to and including the
     // last closing paren and the space after it.
     char *scanStartPosition = strrchr(line, ')') + 2;
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
-    int sscanfRet = sscanf(scanStartPosition, 
+    int sscanfRet = sscanf_s(scanStartPosition, 
         "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
          &starttime);
 
     if (sscanfRet != 1)
     {
-        _ASSERTE(!"Failed to parse stat file contents with sscanf.");
+        _ASSERTE(!"Failed to parse stat file contents with sscanf_s.");
         return FALSE;
     }
 
@@ -2690,7 +2690,7 @@ CreateProcessModules(
         char moduleName[PATH_MAX];
         int size;
 
-        if (sscanf(line, "__TEXT %p-%p [ %dK] %*[-/rwxsp] SM=%*[A-Z] %s\n", &startAddress, &endAddress, &size, moduleName) == 4)
+        if (sscanf_s(line, "__TEXT %p-%p [ %dK] %*[-/rwxsp] SM=%*[A-Z] %s\n", &startAddress, &endAddress, &size, moduleName, _countof(moduleName)) == 4)
         {
             bool dup = false;
             for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
@@ -2768,7 +2768,7 @@ exit:
         int devHi, devLo, inode;
         char moduleName[PATH_MAX];
 
-        if (sscanf(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName) == 7)
+        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, _countof(moduleName)) == 7)
         {
             if (inode != 0)
             {

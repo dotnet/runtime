@@ -597,8 +597,8 @@ void DoAssertOnType(DebuggerIPCEventType event, int count)
         if (g_iDbgRuntimeCounter[event & 0x00ff] == count)
         {
             char        tmpStr[256];
-            sprintf(tmpStr, "%s == %d, break now!",
-                     IPCENames::GetName(event), count);
+            _snprintf_s(tmpStr, _countof(tmpStr), _TRUNCATE, "%s == %d, break now!",
+                        IPCENames::GetName(event), count);
 
             // fire the assertion
             DbgAssertDialog(__FILE__, __LINE__, tmpStr);
@@ -611,8 +611,8 @@ void DoAssertOnType(DebuggerIPCEventType event, int count)
         if (g_iDbgDebuggerCounter[event & 0x00ff] == count)
         {
             char        tmpStr[256];
-            sprintf(tmpStr, "%s == %d, break now!",
-                     IPCENames::GetName(event), count);
+            _snprintf_s(tmpStr, _countof(tmpStr), _TRUNCATE, "%s == %d, break now!",
+                        IPCENames::GetName(event), count);
 
             // fire the assertion
             DbgAssertDialog(__FILE__, __LINE__, tmpStr);

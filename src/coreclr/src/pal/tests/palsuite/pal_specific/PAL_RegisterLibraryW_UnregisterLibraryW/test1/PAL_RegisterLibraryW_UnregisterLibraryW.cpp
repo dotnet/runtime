@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[])
 
     /*zero the buffer*/
     memset(ModuleName,0,64);
-    sprintf(ModuleName, "%s", "rotor_pal");
+    sprintf_s(ModuleName, _countof(ModuleName), "%s", "rotor_pal");
 
     /*convert a normal string to a wide one*/
     wpModuleName = convert(ModuleName);

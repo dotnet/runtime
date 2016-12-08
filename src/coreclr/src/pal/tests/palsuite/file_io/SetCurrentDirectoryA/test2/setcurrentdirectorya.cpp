@@ -62,9 +62,9 @@ int __cdecl main(int argc, char *argv[])
      /* append the temp name to the "home" directory */
     memset(szBuiltDir, 0, (_MAX_DIR+1));
 #if WIN32
-    sprintf(szBuiltDir,"%s\\..\\", szDirName);
+    sprintf_s(szBuiltDir, _countof(szBuiltDir),"%s\\..\\", szDirName);
 #else
-    sprintf(szBuiltDir,"%s/../", szDirName);
+    sprintf_s(szBuiltDir, _countof(szBuiltDir),"%s/../", szDirName);
 #endif
 
 

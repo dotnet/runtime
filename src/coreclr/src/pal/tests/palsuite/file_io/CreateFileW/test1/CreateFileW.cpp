@@ -21,7 +21,7 @@ BOOL Cleanup(void)
 
     // loop through all accesses, modes, dispositions and flags
     for (i=0; i<4*8*4*5; ++i) {
-        sprintf(FileName, "test%03d.txt", i);
+        sprintf_s(FileName, _countof(FileName), "test%03d.txt", i);
 	if (DeleteFileA(FileName) == FALSE) {
 	    if (GetLastError() != ERROR_FILE_NOT_FOUND) {
 		bRet = FALSE;
@@ -99,7 +99,7 @@ int __cdecl main(int argc, char *argv[])
                 // creation disp loop
                 for (l = 0; l < 5; l++)
                 {
-                    sprintf(string, "test%03d.txt", nCounter);
+                    sprintf_s(string, _countof(string), "test%03d.txt", nCounter);
                     lpFileName = convert(string);
                     hFile = CreateFileW(lpFileName,
                                         dwDesiredAccess[i],
