@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true'">true</IsRuntimeAssembly>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
