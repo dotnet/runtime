@@ -12,19 +12,28 @@ namespace System.Linq.Expressions.Tests
     public class DynamicExpressionTests
     {
         public static IEnumerable<object[]> SizesAndSuffixes =>
-            Enumerable.Range(0, 6).Select(i => new object[] {i, i > 0 & i < 5 ? i.ToString() : "N"});
+            Enumerable.Range(0, 6).Select(i => new object[] { i, i > 0 & i < 5 ? i.ToString() : "N" });
 
         [Theory, MemberData(nameof(SizesAndSuffixes))]
         public void AritySpecialisedUsedWhenPossible(int size, string nameSuffix)
         {
             CallSiteBinder binder = Binder.GetMember(
                 CSharpBinderFlags.None, "Member", GetType(),
-                new[] {CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)});
+                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
             Type delType = Expression.GetFuncType(
                 Enumerable.Repeat(typeof(object), size + 1).Prepend(typeof(CallSite)).ToArray());
             DynamicExpression exp = DynamicExpression.MakeDynamic(
                 delType, binder, Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
             Assert.Equal("DynamicExpression" + nameSuffix, exp.GetType().Name);
+            exp = Expression.MakeDynamic(
+                delType, binder, Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
+            Assert.Equal("DynamicExpression" + nameSuffix, exp.GetType().Name);
+            if (size != 0)
+            {
+                exp = Expression.Dynamic(
+                    binder, typeof(object), Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
+                Assert.Equal("DynamicExpression" + nameSuffix, exp.GetType().Name);
+            }
         }
 
         [Theory, MemberData(nameof(SizesAndSuffixes))]
@@ -38,6 +47,15 @@ namespace System.Linq.Expressions.Tests
             DynamicExpression exp = DynamicExpression.MakeDynamic(
                 delType, binder, Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
             Assert.Equal("TypedDynamicExpression" + nameSuffix, exp.GetType().Name);
+            exp = Expression.MakeDynamic(
+                delType, binder, Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
+            Assert.Equal("TypedDynamicExpression" + nameSuffix, exp.GetType().Name);
+            if (size != 0)
+            {
+                exp = Expression.Dynamic(
+                    binder, typeof(string), Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
+                Assert.Equal("TypedDynamicExpression" + nameSuffix, exp.GetType().Name);
+            }
         }
 
         [Fact]
