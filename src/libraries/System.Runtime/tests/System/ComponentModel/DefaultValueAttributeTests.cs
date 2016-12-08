@@ -23,6 +23,11 @@ namespace System.ComponentModel.Tests
             Assert.Equal(42L, new DefaultValueAttribute(42L).Value);
             Assert.Equal((short)42, new DefaultValueAttribute((short)42).Value);
 
+            Assert.Equal((sbyte)42, new DefaultValueAttribute((sbyte)42).Value);
+            Assert.Equal((ushort)42, new DefaultValueAttribute((ushort)42).Value);
+            Assert.Equal((uint)42, new DefaultValueAttribute((uint)42).Value);
+            Assert.Equal((ulong)42, new DefaultValueAttribute((ulong)42).Value);
+
             Assert.Equal('c', new DefaultValueAttribute('c').Value);
             Assert.Equal("test", new DefaultValueAttribute("test").Value);
 
