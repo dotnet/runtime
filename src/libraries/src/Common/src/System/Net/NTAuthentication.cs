@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
@@ -24,23 +25,67 @@ namespace System.Net
 
         private bool _isCompleted;
         private string _package;
+        private string _lastProtocolName;
+        private string _protocolName;
+        private string _clientSpecifiedSpn;
 
         private ChannelBinding _channelBinding;
 
         // If set, no more calls should be made.
-        internal bool IsCompleted
+        internal bool IsCompleted => _isCompleted;
+        internal bool IsValidContext => !(_securityContext == null || _securityContext.IsInvalid);
+        internal string Package => _package;
+
+        // True indicates this instance is for Server and will use AcceptSecurityContext SSPI API.
+        internal bool IsServer => _isServer;
+
+        internal string ClientSpecifiedSpn
         {
             get
             {
-                return _isCompleted;
+                if (_clientSpecifiedSpn == null)
+                {
+                    _clientSpecifiedSpn = GetClientSpecifiedSpn();
+                }
+
+                return _clientSpecifiedSpn;
             }
         }
 
-        internal bool IsValidContext
+        internal string ProtocolName
         {
             get
             {
-                return !(_securityContext == null || _securityContext.IsInvalid);
+                // Note: May return string.Empty if the auth is not done yet or failed.
+                if (_protocolName == null)
+                {
+                    string negotiationAuthenticationPackage = null;
+
+                    if (IsValidContext)
+                    {
+                        negotiationAuthenticationPackage = NegotiateStreamPal.QueryContextAuthenticationPackage(_securityContext);
+                        if (IsCompleted)
+                        {
+                            _protocolName = negotiationAuthenticationPackage;
+                        }
+                    }
+                    return negotiationAuthenticationPackage ?? string.Empty;
+                }
+
+                return _protocolName;
+            }
+        }
+
+        internal bool IsKerberos
+        {
+            get
+            {
+                if (_lastProtocolName == null)
+                {
+                    _lastProtocolName = ProtocolName;
+                }
+
+                return (object)_lastProtocolName == (object)NegotiationInfoClass.Kerberos;
             }
         }
 
@@ -80,6 +125,28 @@ namespace System.Net
             {
                 _credentialsHandle = NegotiateStreamPal.AcquireCredentialsHandle(package, _isServer, credential);
             }
+        }
+
+        internal SafeDeleteContext GetContext(out SecurityStatusPal status)
+        {
+            status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            if (!(IsCompleted && IsValidContext))
+            {
+                NetEventSource.Fail(this, "Should be called only when completed with success, currently is not!");
+            }
+
+            if (!IsServer)
+            {
+                NetEventSource.Fail(this, "The method must not be called by the client side!");
+            }
+
+            if (!IsValidContext)
+            {
+                status = new SecurityStatusPal(SecurityStatusPalErrorCode.InvalidHandle);
+                return null;
+            }
+
+            return _securityContext;
         }
 
         internal void CloseContext()
@@ -262,6 +329,20 @@ namespace System.Net
             }
 
             return outSecurityBuffer.token;
+        }
+
+        private string GetClientSpecifiedSpn()
+        {
+            if (!(IsValidContext && IsCompleted))
+            {
+                NetEventSource.Fail(this, "Trying to get the client SPN before handshaking is done!");
+            }
+
+            string spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
+
+            return spn;
         }
     }
 }
