@@ -188,7 +188,7 @@ namespace System
         // Domain security information
         // These fields initialized from the other side only. (NOTE: order 
         // of these fields cannot be changed without changing the layout in 
-        // the EE)
+        // the EE- AppDomainBaseObject in this case)
 
         [System.Security.SecurityCritical] // auto-generated
         private AppDomainManager _domainManager;
@@ -2244,13 +2244,27 @@ namespace System
             Evidence providedSecurityInfo = null;
             Evidence creatorsSecurityInfo = null;
 
-
             AppDomain ad = AppDomain.CurrentDomain;
             AppDomainSetup newSetup=new AppDomainSetup(setup,false);
 
             if(propertyNames!=null && propertyValues != null)
             {
-                StringBuilder normalisedAppPathList = null;
+                for (int i = 0; i < propertyNames.Length; i++)
+                {
+                    // We want to set native dll probing directories before any P/Invokes have a
+                    // chance to fire. The Path class, for one, has P/Invokes.
+                    if (propertyNames[i] == "NATIVE_DLL_SEARCH_DIRECTORIES")
+                    {
+                        if (propertyValues[i] == null)
+                            throw new ArgumentNullException("NATIVE_DLL_SEARCH_DIRECTORIES");
+
+                        string paths = propertyValues[i];
+                        if (paths.Length == 0)
+                            break;
+
+                        nSetNativeDllSearchDirectories(paths);
+                    }
+                }
 
                 for (int i=0; i<propertyNames.Length; i++)
                 {
@@ -2263,11 +2277,9 @@ namespace System
                             throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
 
                         newSetup.ApplicationBase = NormalizePath(propertyValues[i], fullCheck: true);
-
                     }
 #if FEATURE_LOADER_OPTIMIZATION
-                    else
-                    if(propertyNames[i]=="LOADER_OPTIMIZATION")
+                    else if(propertyNames[i]=="LOADER_OPTIMIZATION")
                     {
                         if(propertyValues[i]==null)
                             throw new ArgumentNullException("LOADER_OPTIMIZATION");
@@ -2282,72 +2294,18 @@ namespace System
                         }
                     }
 #endif // FEATURE_LOADER_OPTIMIZATION
-                    else
-                    if(propertyNames[i]=="NATIVE_DLL_SEARCH_DIRECTORIES")
-                    {
-                        if(propertyValues[i]==null)
-                            throw new ArgumentNullException("NATIVE_DLL_SEARCH_DIRECTORIES");
-                        ad.SetDataHelper(propertyNames[i],propertyValues[i],null);
-                        string paths = (string)propertyValues[i];
-                        if( paths.Length==0 )
-                            continue;
-                        nSetNativeDllSearchDirectories(paths);
-                    }
-                    else
-                    if(propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
+                    else if(propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
                        propertyNames[i]=="PLATFORM_RESOURCE_ROOTS" ||
                        propertyNames[i]=="APP_PATHS" ||
                        propertyNames[i]=="APP_NI_PATHS")
                     {
                         string values = propertyValues[i];
-                        if(values==null)
+                        if(values == null)
                             throw new ArgumentNullException(propertyNames[i]);
 
-                        int estimatedLength = values.Length + 1; // +1 for extra separator temporarily added at end
-                        if (normalisedAppPathList == null) {
-                            normalisedAppPathList = new StringBuilder(estimatedLength);
-                        }
-                        else {
-                            normalisedAppPathList.Clear();
-                            if (normalisedAppPathList.Capacity < estimatedLength)
-                                normalisedAppPathList.Capacity = estimatedLength;
-                        }
-
-                        for (int pos = 0; pos < values.Length; pos++)
-                        {
-                            string path;
-
-                            int nextPos = values.IndexOf(Path.PathSeparator, pos);
-                            if (nextPos == -1)
-                            {
-                                path = values.Substring(pos);
-                                pos = values.Length - 1;
-                            }
-                            else
-                            {
-                                path = values.Substring(pos, nextPos - pos);
-                                pos = nextPos;
-                            }
-
-                            if( path.Length==0 )                  // skip empty dirs
-                                continue;
-
-                            if (PathInternal.IsPartiallyQualified(path))
-                                throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
-
-                            string appPath = NormalizePath(path, fullCheck: true);
-                            normalisedAppPathList.Append(appPath);
-                            normalisedAppPathList.Append(Path.PathSeparator);
-                        }
-                        // Strip the last separator
-                        if (normalisedAppPathList.Length > 0)
-                        {
-                            normalisedAppPathList.Remove(normalisedAppPathList.Length - 1, 1);
-                        }
-                        ad.SetDataHelper(propertyNames[i],normalisedAppPathList.ToString(),null);        // not supported by fusion, so set explicitly
+                        ad.SetDataHelper(propertyNames[i], NormalizeAppPaths(values), null);
                     }
-                    else
-                    if(propertyNames[i]!= null)
+                    else if(propertyNames[i]!= null)
                     {
                         ad.SetDataHelper(propertyNames[i],propertyValues[i],null);     // just propagate
                     }
@@ -2391,6 +2349,48 @@ namespace System
             RunInitializer(adSetup);
 
             return null;
+        }
+
+        private static string NormalizeAppPaths(string values)
+        {
+            int estimatedLength = values.Length + 1; // +1 for extra separator temporarily added at end
+            StringBuilder sb = StringBuilderCache.Acquire(estimatedLength);
+
+            for (int pos = 0; pos < values.Length; pos++)
+            {
+                string path;
+
+                int nextPos = values.IndexOf(Path.PathSeparator, pos);
+                if (nextPos == -1)
+                {
+                    path = values.Substring(pos);
+                    pos = values.Length - 1;
+                }
+                else
+                {
+                    path = values.Substring(pos, nextPos - pos);
+                    pos = nextPos;
+                }
+
+                // Skip empty directories
+                if (path.Length == 0)
+                    continue;
+
+                if (PathInternal.IsPartiallyQualified(path))
+                    throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"));
+
+                string appPath = NormalizePath(path, fullCheck: true);
+                sb.Append(appPath);
+                sb.Append(Path.PathSeparator);
+            }
+
+            // Strip the last separator
+            if (sb.Length > 0)
+            {
+                sb.Remove(sb.Length - 1, 1);
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         [SecuritySafeCritical]
