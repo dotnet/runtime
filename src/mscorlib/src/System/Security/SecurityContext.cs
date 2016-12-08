@@ -12,14 +12,11 @@
 ** 
 ===========================================================*/
 namespace System.Security
-{    
+{
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
     using System.Threading;
     using System.Runtime.Remoting;
-#if FEATURE_IMPERSONATION
-    using System.Security.Principal;
-#endif
     using System.Collections;
     using System.Runtime.Serialization;
     using System.Security.Permissions;
@@ -46,15 +43,6 @@ namespace System.Security
         All = 0x3FFF
     }
 
-#if FEATURE_IMPERSONATION
-    internal enum WindowsImpersonationFlowMode { 
-    IMP_FASTFLOW = 0,
-       IMP_NOFLOW = 1,
-       IMP_ALWAYSFLOW = 2,
-       IMP_DEFAULT = IMP_FASTFLOW 
-    }
-#endif
-
 #if FEATURE_COMPRESSEDSTACK
     internal struct SecurityContextSwitcher: IDisposable
     {
@@ -62,9 +50,6 @@ namespace System.Security
         internal SecurityContext currSC; //current SC  - SetSecurityContext that created the switcher set this on the Thread
         internal ExecutionContext currEC; // current ExecutionContext on Thread
         internal CompressedStackSwitcher cssw;
-#if FEATURE_IMPERSONATION
-        internal WindowsImpersonationContext wic;
-#endif
 
         [System.Security.SecuritySafeCritical] // overrides public transparent member
         public void Dispose()
@@ -119,20 +104,7 @@ namespace System.Security
             currSC = null; // this will prevent the switcher object being used again        
 
             bool bNoException = true;
-#if FEATURE_IMPERSONATION
-            try 
-            {
-                if (wic != null)
-                    bNoException &= wic.UndoNoThrow();
-            }
-            catch
-            {
-                // Failfast since we can't continue safely...
-                bNoException &= cssw.UndoNoThrow();
-                System.Environment.FailFast(Environment.GetResourceString("ExecutionContext_UndoFailed"));
-                
-            }
-#endif
+
             bNoException &= cssw.UndoNoThrow();
 
 
@@ -144,15 +116,9 @@ namespace System.Security
 
         }
     }
-    
 
     public sealed class SecurityContext : IDisposable 
     {
-#if FEATURE_IMPERSONATION
-        // Note that only one of the following variables will be true. The way we set up the flow mode in the g_pConfig guarantees this.
-        static bool _LegacyImpersonationPolicy = (GetImpersonationFlowMode() == WindowsImpersonationFlowMode.IMP_NOFLOW);
-        static bool _alwaysFlowImpersonationPolicy = (GetImpersonationFlowMode() == WindowsImpersonationFlowMode.IMP_ALWAYSFLOW);
-#endif
         /*=========================================================================
         ** Data accessed from managed code that needs to be defined in 
         ** SecurityContextObject  to maintain alignment between the two classes.
@@ -160,9 +126,6 @@ namespace System.Security
         =========================================================================*/
         
         private ExecutionContext            _executionContext;
-#if FEATURE_IMPERSONATION
-        private volatile WindowsIdentity             _windowsIdentity;
-#endif
         private volatile CompressedStack          _compressedStack;
         static private volatile SecurityContext _fullTrustSC;
         
@@ -222,27 +185,7 @@ namespace System.Security
                 _executionContext = value;
             }
         }
-                
-#if FEATURE_IMPERSONATION
 
-
-        internal WindowsIdentity WindowsIdentity 
-        {
-            get 
-            {
-                return _windowsIdentity;
-            }
-            set
-            {
-                // Note, we do not dispose of the existing windows identity, since some code such as remoting
-                // relies on reusing that identity.  If you are not going to reuse the existing identity, then
-                // you should dispose of the existing identity before resetting it.
-                    _windowsIdentity = value;
-            }
-        }
-#endif // FEATURE_IMPERSONATION
-
-              
         internal CompressedStack CompressedStack
         {
             get
@@ -258,10 +201,6 @@ namespace System.Security
 
         public void Dispose()
         {
-#if FEATURE_IMPERSONATION
-            if (_windowsIdentity != null)
-                _windowsIdentity.Dispose();
-#endif // FEATURE_IMPERSONATION
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
@@ -307,12 +246,7 @@ namespace System.Security
         {
             return SecurityContext.IsFlowSuppressed(SecurityContextDisableFlow.All);
         }
-#if FEATURE_IMPERSONATION
-        public static bool IsWindowsIdentityFlowSuppressed()
-        {
-            return (_LegacyImpersonationPolicy|| SecurityContext.IsFlowSuppressed(SecurityContextDisableFlow.WI));
-        }
-#endif        
+
         [SecuritySafeCritical]
         internal static bool IsFlowSuppressed(SecurityContextDisableFlow flags)
         {           
@@ -458,22 +392,6 @@ namespace System.Security
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
-#if FEATURE_IMPERSONATION
-                    scsw.wic = null;
-                    if (!_LegacyImpersonationPolicy)
-                    {
-                        if (sc.WindowsIdentity != null)
-                        {
-                            scsw.wic = sc.WindowsIdentity.Impersonate(ref stackMark);
-                        }
-                        else if ( ((_capturedFlowState & SecurityContextDisableFlow.WI) == 0) 
-                            && prevSecurityContext.WindowsIdentity != null)
-                        {
-                            // revert impersonation if there was no WI flow supression at capture and we're currently impersonating
-                            scsw.wic = WindowsIdentity.SafeRevertToSelf(ref stackMark); 
-                        }
-                    }
-#endif
                     scsw.cssw = CompressedStack.SetCompressedStack(sc.CompressedStack, prevSecurityContext.CompressedStack);
                 }
                 catch 
@@ -498,11 +416,6 @@ namespace System.Security
             sc.isNewCapture = true;
             sc._disableFlow = _disableFlow;
 
-#if FEATURE_IMPERSONATION
-            if (WindowsIdentity != null)
-                sc._windowsIdentity = new WindowsIdentity(WindowsIdentity.AccessToken);
-#endif //FEATURE_IMPERSONATION
-
             if (_compressedStack != null)
                 sc._compressedStack = _compressedStack.CreateCopy();
 
@@ -517,11 +430,6 @@ namespace System.Security
 
             SecurityContext sc = new SecurityContext();
             sc._disableFlow = this._disableFlow;
-
-#if FEATURE_IMPERSONATION
-            if (this.WindowsIdentity != null)
-                sc._windowsIdentity = new WindowsIdentity(this.WindowsIdentity.AccessToken);
-#endif //FEATURE_IMPERSONATION
 
             if (this._compressedStack != null)
                 sc._compressedStack = this._compressedStack.CreateCopy();
@@ -566,119 +474,22 @@ namespace System.Security
             SecurityContext sc = new SecurityContext();
             sc.isNewCapture = true;
 
-#if FEATURE_IMPERSONATION
-                // Force create WindowsIdentity
-            if (!IsWindowsIdentityFlowSuppressed())
-            {
-                WindowsIdentity currentIdentity = GetCurrentWI(currThreadEC);
-                if (currentIdentity != null)
-                    sc._windowsIdentity = new WindowsIdentity(currentIdentity.AccessToken);
-            }
-            else
-            {
-                sc._disableFlow = SecurityContextDisableFlow.WI;
-            }
-#endif // FEATURE_IMPERSONATION
-
             // Force create CompressedStack
             sc.CompressedStack = CompressedStack.GetCompressedStack(ref stackMark);
             return sc;
         }
+
         [System.Security.SecurityCritical]  // auto-generated
         static internal SecurityContext CreateFullTrustSecurityContext()
         {
             SecurityContext sc = new SecurityContext();
             sc.isNewCapture = true;
-        
-#if FEATURE_IMPERSONATION
-            if (IsWindowsIdentityFlowSuppressed())
-            {
-                sc._disableFlow = SecurityContextDisableFlow.WI;
-            }
-#endif // FEATURE_IMPERSONATION
-        
 
             // Force create CompressedStack
             sc.CompressedStack = new CompressedStack(null);
             return sc;
         }
 
-#if FEATURE_IMPERSONATION
-
-    static internal bool AlwaysFlowImpersonationPolicy { get { return _alwaysFlowImpersonationPolicy; } }
-
-        // Check to see if we have a WI on the thread and return if we do
-    [System.Security.SecurityCritical]  // auto-generated
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static internal WindowsIdentity GetCurrentWI(ExecutionContext.Reader threadEC)
-    {
-        return GetCurrentWI(threadEC, _alwaysFlowImpersonationPolicy);
-    }
-
-    [System.Security.SecurityCritical]  // auto-generated
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static internal WindowsIdentity GetCurrentWI(ExecutionContext.Reader threadEC, bool cachedAlwaysFlowImpersonationPolicy)
-    {
-        Contract.Assert(cachedAlwaysFlowImpersonationPolicy == _alwaysFlowImpersonationPolicy);
-        if (cachedAlwaysFlowImpersonationPolicy)
-        {
-            // Examine the threadtoken at the cost of a kernel call if the user has set the IMP_ALWAYSFLOW mode
-            return WindowsIdentity.GetCurrentInternal(TokenAccessLevels.MaximumAllowed, true);
-        }
-
-        return threadEC.SecurityContext.WindowsIdentity;
-    }
-
-    [System.Security.SecurityCritical]
-    static internal void RestoreCurrentWI(ExecutionContext.Reader currentEC, ExecutionContext.Reader prevEC, WindowsIdentity targetWI, bool cachedAlwaysFlowImpersonationPolicy)
-    {
-        Contract.Assert(currentEC.IsSame(Thread.CurrentThread.GetExecutionContextReader()));
-        Contract.Assert(cachedAlwaysFlowImpersonationPolicy == _alwaysFlowImpersonationPolicy);
-
-        // NOTE: cachedAlwaysFlowImpersonationPolicy is a perf optimization to avoid always having to access a static variable here.
-        if (cachedAlwaysFlowImpersonationPolicy || prevEC.SecurityContext.WindowsIdentity != targetWI)
-        {
-            //
-            // Either we're always flowing, or the target WI was obtained from the current EC in the first place.
-            //
-            Contract.Assert(_alwaysFlowImpersonationPolicy || currentEC.SecurityContext.WindowsIdentity == targetWI);
-
-            RestoreCurrentWIInternal(targetWI);
-        }
-    }
-
-    [System.Security.SecurityCritical]
-    static private void RestoreCurrentWIInternal(WindowsIdentity targetWI)
-    {
-        int hr = Win32.RevertToSelf();
-        if (hr < 0)
-            Environment.FailFast(Win32Native.GetMessage(hr));
-
-        if (targetWI != null)
-        {   
-            SafeAccessTokenHandle tokenHandle = targetWI.AccessToken;
-            if (tokenHandle != null && !tokenHandle.IsInvalid)
-            {
-                hr = Win32.ImpersonateLoggedOnUser(tokenHandle);
-                if (hr < 0)
-                    Environment.FailFast(Win32Native.GetMessage(hr));
-            }                
-        }
-    }
-
-    [System.Security.SecurityCritical]  // auto-generated
-    internal bool IsDefaultFTSecurityContext()
-    {
-        return (WindowsIdentity == null && (CompressedStack == null || CompressedStack.CompressedStackHandle == null));
-    }
-    [System.Security.SecurityCritical]  // auto-generated
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static internal bool CurrentlyInDefaultFTSecurityContext(ExecutionContext.Reader threadEC)
-    {
-        return (IsDefaultThreadSecurityInfo() && GetCurrentWI(threadEC) == null);
-    }
-#else
-        
         internal bool IsDefaultFTSecurityContext()
         {
             return (CompressedStack == null || CompressedStack.CompressedStackHandle == null);
@@ -687,16 +498,10 @@ namespace System.Security
         {
             return (IsDefaultThreadSecurityInfo());
         }
-#endif
-#if FEATURE_IMPERSONATION
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal extern static WindowsImpersonationFlowMode GetImpersonationFlowMode();
-#endif
+
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal extern static bool IsDefaultThreadSecurityInfo();
-        
     }
 #endif // FEATURE_COMPRESSEDSTACK
 }

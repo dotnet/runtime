@@ -487,9 +487,6 @@ namespace System.Security.Util {
 #if PLATFORM_UNIX
                 Interop.Sys.MaxPath))
 #else
-    #if FEATURE_PATHCOMPAT
-                AppContextSwitches.BlockLongPaths ? PathInternal.MaxShortPath :
-    #endif
                 PathInternal.MaxLongPath))
 #endif
             {

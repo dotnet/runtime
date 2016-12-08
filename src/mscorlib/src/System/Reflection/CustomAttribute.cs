@@ -1885,19 +1885,6 @@ namespace System.Reflection
                 return false;
             }
 
-#if FEATURE_APTCA
-            // APTCA checks
-            RuntimeAssembly attributeAssembly = (RuntimeAssembly)attributeType.Assembly;
-            RuntimeAssembly decoratedModuleAssembly = (RuntimeAssembly)decoratedModule.Assembly;
-
-            if (attributeAssembly != lastAptcaOkAssembly && 
-                !RuntimeAssembly.AptcaCheck(attributeAssembly, decoratedModuleAssembly))
-                return false;
-
-            // Cache last successful APTCA check (optimization)
-            lastAptcaOkAssembly = decoratedModuleAssembly;
-#endif // FEATURE_APTCA
-
             // Resolve the attribute ctor
             ConstArray ctorSig = scope.GetMethodSignature(caRecord.tkCtor);
             isVarArg = (ctorSig[0] & 0x05) != 0;

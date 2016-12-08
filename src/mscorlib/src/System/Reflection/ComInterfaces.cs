@@ -160,89 +160,10 @@ namespace System.Runtime.InteropServices
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
     [TypeLibImportClassAttribute(typeof(System.Reflection.Assembly))]
     [CLSCompliant(false)]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public interface _Assembly
     {
-#if !FEATURE_CORECLR
-        #region Object Members
-        String ToString();
-        bool Equals(Object other);
-        int GetHashCode();
-        Type GetType();
-        #endregion
-
-        #region Assembly Members
-        String CodeBase { 
-#if FEATURE_CORECLR
-[System.Security.SecurityCritical] // auto-generated
-#endif
-get; }
-        String EscapedCodeBase { get; }
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
-        AssemblyName GetName();
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
-        AssemblyName GetName(bool copiedName);
-        String FullName { get; }
-        MethodInfo EntryPoint { get; }
-        Type GetType(String name);
-        Type GetType(String name, bool throwOnError);
-        Type[] GetExportedTypes();
-        Type[] GetTypes();
-        Stream GetManifestResourceStream(Type type, String name);
-        Stream GetManifestResourceStream(String name);
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
-        FileStream GetFile(String name);
-        FileStream[] GetFiles();
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
-        FileStream[] GetFiles(bool getResourceModules);
-        String[] GetManifestResourceNames();
-        ManifestResourceInfo GetManifestResourceInfo(String resourceName);
-        String Location { 
-#if FEATURE_CORECLR
-[System.Security.SecurityCritical] // auto-generated
-#endif
-get; }
-#if FEATURE_CAS_POLICY
-        Evidence Evidence { get; }
-#endif // FEATURE_CAS_POLICY
-        Object[] GetCustomAttributes(Type attributeType, bool inherit);
-        Object[] GetCustomAttributes(bool inherit);
-        bool IsDefined(Type attributeType, bool inherit);
-#if FEATURE_SERIALIZATION
-        [System.Security.SecurityCritical]  // auto-generated_required
-        void GetObjectData(SerializationInfo info, StreamingContext context);
-#endif
-        [method: System.Security.SecurityCritical]
-        event ModuleResolveEventHandler ModuleResolve;
-        Type GetType(String name, bool throwOnError, bool ignoreCase);     
-        Assembly GetSatelliteAssembly(CultureInfo culture);
-        Assembly GetSatelliteAssembly(CultureInfo culture, Version version);
-#if FEATURE_MULTIMODULE_ASSEMBLIES        
-        Module LoadModule(String moduleName, byte[] rawModule);
-        Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore);
-#endif        
-        Object CreateInstance(String typeName);
-        Object CreateInstance(String typeName, bool ignoreCase);
-        Object CreateInstance(String typeName, bool ignoreCase, BindingFlags bindingAttr,  Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes);
-        Module[] GetLoadedModules();
-        Module[] GetLoadedModules(bool getResourceModules);
-        Module[] GetModules();
-        Module[] GetModules(bool getResourceModules);
-        Module GetModule(String name);
-        AssemblyName[] GetReferencedAssemblies();
-        bool GlobalAssemblyCache { get; }
-        #endregion
-#endif
     }
-
 
     [GuidAttribute("f7102fa9-cabb-3a74-a6da-b4567ef1b079")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]

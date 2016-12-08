@@ -554,26 +554,6 @@ Argument_InvalidElementText = Invalid element text '{0}'.
 Argument_InvalidElementName = Invalid element name '{0}'.
 Argument_InvalidElementValue = Invalid element value '{0}'.
 Argument_AttributeNamesMustBeUnique = Attribute names must be unique.
-#if FEATURE_CAS_POLICY
-Argument_UninitializedCertificate = Uninitialized certificate object.
-Argument_MembershipConditionElement = Element must be a <IMembershipCondition> element.
-Argument_ReservedNPMS = Cannot remove or modify reserved permissions set '{0}'.
-Argument_NPMSInUse = Permission set '{0}' was in use and could not be deleted.
-Argument_StrongNameGetPublicKey = Unable to obtain public key for StrongNameKeyPair.
-Argument_SiteCannotBeNull = Site name must be specified.
-Argument_BlobCannotBeNull = Public key must be specified.
-Argument_ZoneCannotBeNull = Zone must be specified.
-Argument_UrlCannotBeNull = URL must be specified.
-Argument_NoNPMS = Unable to find a permission set with the provided name.
-Argument_FailedCodeGroup = Failed to create a code group of type '{0}'.
-Argument_CodeGroupChildrenMustBeCodeGroups = All objects in the input list must have a parent type of 'CodeGroup'.
-#endif // FEATURE_CAS_POLICY
-#if FEATURE_IMPERSONATION
-Argument_InvalidPrivilegeName = Privilege '{0}' is not valid on this system.
-Argument_TokenZero = Token cannot be zero.
-Argument_InvalidImpersonationToken = Invalid token for impersonation - it cannot be duplicated.
-Argument_ImpersonateUser = Unable to impersonate user.
-#endif // FEATURE_IMPERSONATION
 Argument_InvalidHexFormat = Improperly formatted hex string.
 Argument_InvalidSite = Invalid site.
 Argument_InterfaceMap = 'this' type cannot be an interface itself.
@@ -1547,80 +1527,11 @@ PlatformNotSupported_WinRT = Windows Runtime is not supported on this operating 
 ; This still appears in bcl.small but should go away eventually
 Policy_Default = Error occurred while performing a policy operation.
 Policy_CannotLoadSemiTrustAssembliesDuringInit = All assemblies loaded as part of AppDomain initialization must be fully trusted.
-#if FEATURE_IMPERSONATION
-Policy_PrincipalTwice = Default principal object cannot be set twice.
-#endif // FEATURE_IMPERSONATION
-#if FEATURE_CAS_POLICY
-Policy_PolicyAlreadySet = Policy for this domain cannot be set twice.
-Policy_NoExecutionPermission = Execution permission cannot be acquired.
-Policy_NoRequiredPermission = Required permissions cannot be acquired.
-Policy_MultipleExclusive = More than one exclusive group is not allowed.
-Policy_RecoverNotFileBased = PolicyLevel object not based on a file cannot be recovered.
-Policy_RecoverNoConfigFile = No old configuration file exists to recover.
-Policy_UnableToSave = Policy level '{0}' could not be saved: {1}.
-Policy_BadXml = Policy configuration XML is invalid. The required tag '{0}' is missing.
-Policy_NonFullTrustAssembly = Policy references an assembly not in the full trust assemblies list.
-Policy_MissingActivationContextInAppEvidence = The application evidence does not contain a Fusion activation context.
-Policy_NoTrustManager = A trust manager could not be loaded for this application.
-Policy_GrantSetDoesNotMatchDomain = An assembly was provided an invalid grant set by runtime host '{0}'. In a homogenous AppDomain, the only valid grant sets are FullTrust and the AppDomain's sandbox grant set.
-#endif  // FEATURE_CAS_POLICY
 Policy_SaveNotFileBased = PolicyLevel object not based on a file cannot be saved.
 Policy_AppTrustMustGrantAppRequest = ApplicationTrust grant set does not contain ActivationContext's minimum request set.
 
 Error_SecurityPolicyFileParse = Error occurred while parsing the '{0}' policy level. The default policy level was used instead.
 Error_SecurityPolicyFileParseEx = Error '{1}' occurred while parsing the '{0}' policy level. The default policy level was used instead.
-
-#if FEATURE_CAS_POLICY
-Policy_EvidenceMustBeSerializable = Objects used as evidence must be serializable.
-Policy_DuplicateEvidence = The evidence collection already contains evidence of type '{0}'. Multiple pieces of the same type of evidence are not allowed.
-Policy_IncorrectHostEvidence = Runtime host '{0}' returned evidence of type '{1}' from a request for evidence of type '{2}'.
-Policy_NullHostEvidence = Runtime host '{0}' returned null when asked for assembly evidence for assembly '{1}'.
-Policy_NullHostGrantSet = Runtime host '{0}' returned a null grant set from ResolvePolicy.
-#endif // FEATURE_CAS_POLICY
-
-; Policy codegroup and permission set names and descriptions
-#if FEATURE_CAS_POLICY
-Policy_AllCode_Name = All_Code
-Policy_AllCode_DescriptionFullTrust = Code group grants all code full trust and forms the root of the code group tree.
-Policy_AllCode_DescriptionNothing = Code group grants no permissions and forms the root of the code group tree.
-Policy_MyComputer_Name = My_Computer_Zone
-Policy_MyComputer_Description = Code group grants full trust to all code originating on the local computer
-Policy_Intranet_Name = LocalIntranet_Zone
-Policy_Intranet_Description = Code group grants the intranet permission set to code from the intranet zone. This permission set grants intranet code the right to use isolated storage, full UI access, some capability to do reflection, and limited access to environment variables.
-Policy_IntranetNet_Name = Intranet_Same_Site_Access
-Policy_IntranetNet_Description = All intranet code gets the right to connect back to the site of its origin.
-Policy_IntranetFile_Name = Intranet_Same_Directory_Access
-Policy_IntranetFile_Description = All intranet code gets the right to read from its install directory.
-Policy_Internet_Name = Internet_Zone
-Policy_Internet_Description = Code group grants code from the Internet zone the Internet permission set. This permission set grants Internet code the right to use isolated storage and limited UI access.
-Policy_InternetNet_Name = Internet_Same_Site_Access
-Policy_InternetNet_Description = All Internet code gets the right to connect back to the site of its origin.
-Policy_Trusted_Name = Trusted_Zone
-Policy_Trusted_Description = Code from a trusted zone is granted the Internet permission set. This permission set grants the right to use isolated storage and limited UI access.
-Policy_TrustedNet_Name = Trusted_Same_Site_Access
-Policy_TrustedNet_Description = All Trusted Code gets the right to connect back to the site of its origin.
-Policy_Untrusted_Name = Restricted_Zone
-Policy_Untrusted_Description = Code coming from a restricted zone does not receive any permissions.
-Policy_Microsoft_Name = Microsoft_Strong_Name
-Policy_Microsoft_Description = Code group grants full trust to code signed with the Microsoft strong name.
-Policy_Ecma_Name = ECMA_Strong_Name
-Policy_Ecma_Description = Code group grants full trust to code signed with the ECMA strong name.
-
-; Policy permission set descriptions
-Policy_PS_FullTrust = Allows full access to all resources
-Policy_PS_Everything = Allows unrestricted access to all resources covered by built-in permissions
-Policy_PS_Nothing = Denies all resources, including the right to execute
-Policy_PS_Execution = Permits execution
-Policy_PS_SkipVerification = Grants right to bypass the verification
-Policy_PS_Internet = Default rights given to Internet applications
-Policy_PS_LocalIntranet = Default rights given to applications on the local intranet
-
-; default Policy level names
-Policy_PL_Enterprise = Enterprise
-Policy_PL_Machine = Machine
-Policy_PL_User = User
-Policy_PL_AppDomain = AppDomain
-#endif  // FEATURE_CAS_POLICY
 
 ; RankException
 Rank_MultiDimNotSupported = Only single dimension arrays are supported here.
