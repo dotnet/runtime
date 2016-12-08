@@ -496,6 +496,8 @@
     <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
     <!-- we default FilterToTestTFM to DefaultTestTFM if it is not explicity defined -->
     <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
+    <!-- FilterTestNugetTargetMoniker needs to stay in the long form to be used for Framework and Runtime filtering purposes -->
+    <FilterTestNugetTargetMoniker Condition="'$(FilterTestNugetTargetMoniker)'==''">.NETCoreApp,Version=v1.1</FilterTestNugetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
