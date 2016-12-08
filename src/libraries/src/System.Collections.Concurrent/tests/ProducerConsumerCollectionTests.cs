@@ -21,12 +21,13 @@ namespace System.Collections.Concurrent.Tests
         protected override int CreateT(int seed) => new Random(seed).Next();
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
         protected override IEnumerable<int> GenericIEnumerableFactory(int count) => CreateProducerConsumerCollection(count);
+        protected IProducerConsumerCollection<int> CreateProducerConsumerCollection() => CreateProducerConsumerCollection<int>();
         protected IProducerConsumerCollection<int> CreateProducerConsumerCollection(int count) => CreateProducerConsumerCollection(Enumerable.Range(0, count));
 
-        protected abstract IProducerConsumerCollection<int> CreateProducerConsumerCollection();
+        protected abstract IProducerConsumerCollection<T> CreateProducerConsumerCollection<T>();
         protected abstract IProducerConsumerCollection<int> CreateProducerConsumerCollection(IEnumerable<int> collection);
         protected abstract bool IsEmpty(IProducerConsumerCollection<int> pcc);
-        protected abstract bool TryPeek(IProducerConsumerCollection<int> pcc, out int result);
+        protected abstract bool TryPeek<T>(IProducerConsumerCollection<T> pcc, out T result);
         protected virtual IProducerConsumerCollection<int> CreateOracle() => CreateOracle(Enumerable.Empty<int>());
         protected abstract IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection);
 
@@ -867,7 +868,7 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(ConcurrencyTestSeconds)]
         public void ManyConcurrentAddsTakesPeeks_ForceContentionWithOtherThreadsPeeking(double seconds)
         {
-            IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
+            IProducerConsumerCollection<LargeStruct> c = CreateProducerConsumerCollection<LargeStruct>();
             const int MaxCount = 4;
 
             DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
@@ -879,20 +880,20 @@ namespace System.Collections.Concurrent.Tests
                 {
                     for (int i = 1; i <= MaxCount; i++)
                     {
-                        Assert.True(c.TryAdd(i));
+                        Assert.True(c.TryAdd(new LargeStruct(i)));
                         total++;
                     }
 
-                    int item;
+                    LargeStruct item;
                     Assert.True(TryPeek(c, out item));
-                    Assert.InRange(item, 1, MaxCount);
+                    Assert.InRange(item.Value, 1, MaxCount);
 
                     for (int i = 1; i <= MaxCount; i++)
                     {
                         if (c.TryTake(out item))
                         {
                             total--;
-                            Assert.InRange(item, 1, MaxCount);
+                            Assert.InRange(item.Value, 1, MaxCount);
                         }
                     }
                 }
@@ -901,12 +902,12 @@ namespace System.Collections.Concurrent.Tests
 
             Task peeksFromOtherThread = ThreadFactory.StartNew(() =>
             {
-                int item;
+                LargeStruct item;
                 while (DateTime.UtcNow < end)
                 {
                     if (TryPeek(c, out item))
                     {
-                        Assert.InRange(item, 1, MaxCount);
+                        Assert.InRange(item.Value, 1, MaxCount);
                     }
                 }
             });
@@ -1046,6 +1047,25 @@ namespace System.Collections.Concurrent.Tests
                 if (t.IsFaulted)
                 {
                     t.GetAwaiter().GetResult(); // propagate for the first one that failed
+                }
+            }
+        }
+
+        private struct LargeStruct // used to help validate that values aren't torn while being read
+        {
+            private readonly long _a, _b, _c, _d, _e, _f, _g, _h;
+
+            public LargeStruct(long value) { _a = _b = _c = _d = _e = _f = _g = _h = value; }
+
+            public long Value
+            {
+                get
+                {
+                    if (_a != _b || _a != _c || _a != _d || _a != _e || _a != _f || _a != _g || _a != _h)
+                    {
+                        throw new Exception($"Inconsistent {nameof(LargeStruct)}: {_a} {_b} {_c} {_d} {_e} {_f} {_g} {_h}");
+                    }
+                    return _a;
                 }
             }
         }
