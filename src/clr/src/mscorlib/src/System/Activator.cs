@@ -565,28 +565,8 @@ namespace System {
                                                                    null);
         }
 
-#if FEATURE_CLICKONCE
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static ObjectHandle CreateInstance (ActivationContext activationContext) {
-            AppDomainManager domainManager = AppDomain.CurrentDomain.DomainManager;
-            if (domainManager == null)
-                domainManager = new AppDomainManager();
-
-            return domainManager.ApplicationActivator.CreateInstance(activationContext);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static ObjectHandle CreateInstance (ActivationContext activationContext, string[] activationCustomData) {
-            AppDomainManager domainManager = AppDomain.CurrentDomain.DomainManager;
-            if (domainManager == null)
-                domainManager = new AppDomainManager();
-
-            return domainManager.ApplicationActivator.CreateInstance(activationContext, activationCustomData);
-        }
-#endif // FEATURE_CLICKONCE
-
         public static ObjectHandle CreateComInstanceFrom(String assemblyName,
-                                                         String typeName)                                         
+                                                         String typeName)
         {
             return CreateComInstanceFrom(assemblyName,
                                          typeName,

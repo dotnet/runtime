@@ -12,10 +12,6 @@ namespace System
         internal static readonly string SwitchNoAsyncCurrentCulture = "Switch.System.Globalization.NoAsyncCurrentCulture";
         internal static readonly string SwitchThrowExceptionIfDisposedCancellationTokenSource = "Switch.System.Threading.ThrowExceptionIfDisposedCancellationTokenSource";
         internal static readonly string SwitchPreserveEventListnerObjectIdentity = "Switch.System.Diagnostics.EventSource.PreserveEventListnerObjectIdentity";
-#if FEATURE_PATHCOMPAT
-        internal static readonly string SwitchUseLegacyPathHandling = "Switch.System.IO.UseLegacyPathHandling";
-        internal static readonly string SwitchBlockLongPaths = "Switch.System.IO.BlockLongPaths";
-#endif
 
         // This is a partial method. Platforms can provide an implementation of it that will set override values
         // from whatever mechanism is available on that platform. If no implementation is provided, the compiler is going to remove the calls
@@ -43,13 +39,7 @@ namespace System
                             AppContext.DefineSwitchDefault(SwitchNoAsyncCurrentCulture, true);
                             AppContext.DefineSwitchDefault(SwitchThrowExceptionIfDisposedCancellationTokenSource, true);
                         }
-#if FEATURE_PATHCOMPAT
-                        if (version <= 40601)
-                        {
-                            AppContext.DefineSwitchDefault(SwitchUseLegacyPathHandling, true);
-                            AppContext.DefineSwitchDefault(SwitchBlockLongPaths, true);
-                        }
-#endif
+
                         break;
                     }
                 case "WindowsPhone":

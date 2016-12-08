@@ -967,57 +967,16 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         private static string InternalGetCurrentDirectory(bool checkHost)
         {
-            string currentDirectory = (
-#if FEATURE_PATHCOMPAT
-                AppContextSwitches.UseLegacyPathHandling ? LegacyGetCurrentDirectory() : 
-#endif
-                NewGetCurrentDirectory());
-
+            string currentDirectory = NewGetCurrentDirectory();
             string demandPath = GetDemandDir(currentDirectory, true);
 
-#if FEATURE_CORECLR
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPath);
                 state.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandPath, false, false);
-#endif
             return currentDirectory;
         }
-
-#if FEATURE_PATHCOMPAT
-        [System.Security.SecurityCritical]
-        private static String LegacyGetCurrentDirectory()
-        {
-            StringBuilder sb = StringBuilderCache.Acquire(Path.MaxPath + 1);
-            if (Win32Native.GetCurrentDirectory(sb.Capacity, sb) == 0)
-                __Error.WinIOError();
-            String currentDirectory = sb.ToString();
-            // Note that if we have somehow put our command prompt into short
-            // file name mode (ie, by running edlin or a DOS grep, etc), then
-            // this will return a short file name.
-            if (currentDirectory.IndexOf('~') >= 0) {
-                int r = Win32Native.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                if (r == 0 || r >= Path.MaxPath) {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    if (r >= Path.MaxPath)
-                        errorCode = Win32Native.ERROR_FILENAME_EXCED_RANGE;
-                    if (errorCode != Win32Native.ERROR_FILE_NOT_FOUND &&
-                        errorCode != Win32Native.ERROR_PATH_NOT_FOUND &&
-                        errorCode != Win32Native.ERROR_INVALID_FUNCTION &&  // by design - enough said.
-                        errorCode != Win32Native.ERROR_ACCESS_DENIED)
-                        __Error.WinIOError(errorCode, String.Empty);
-                }
-                currentDirectory = sb.ToString();
-            }
-            StringBuilderCache.Release(sb);
-            String demandPath = GetDemandDir(currentDirectory, true);
-
-            return currentDirectory;
-        }
-#endif // FEATURE_PATHCOMPAT
 
         [System.Security.SecurityCritical]
         private static string NewGetCurrentDirectory()
@@ -1047,11 +1006,7 @@ namespace System.IO {
             }
         }
 
-#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-#else
-        [System.Security.SecuritySafeCritical]
-#endif
         public static void SetCurrentDirectory(String path)
         {
             if (path==null)

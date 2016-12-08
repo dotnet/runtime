@@ -379,41 +379,10 @@ namespace System.Reflection.Emit
                     }
                     else if (attribute.m_con.DeclaringType == typeof(SecurityCriticalAttribute))
                     {
-#if !FEATURE_CORECLR
-                        SecurityCriticalScope scope = SecurityCriticalScope.Everything;
-                        if (attribute.m_constructorArgs != null &&
-                            attribute.m_constructorArgs.Length == 1 &&
-                            attribute.m_constructorArgs[0] is SecurityCriticalScope)
-                        {
-                            scope = (SecurityCriticalScope)attribute.m_constructorArgs[0];
-                        }
-
-                        assemblyFlags |= DynamicAssemblyFlags.Critical;
-                        if (scope == SecurityCriticalScope.Everything)
-#endif // !FEATURE_CORECLR
                         {
                             assemblyFlags |= DynamicAssemblyFlags.AllCritical;
                         }
                     }
-#if !FEATURE_CORECLR
-                    else if (attribute.m_con.DeclaringType == typeof(SecurityRulesAttribute))
-                    {
-                        securityRulesBlob = new byte[attribute.m_blob.Length];
-                        Buffer.BlockCopy(attribute.m_blob, 0, securityRulesBlob, 0, securityRulesBlob.Length);
-                    }
-                    else if (attribute.m_con.DeclaringType == typeof(SecurityTreatAsSafeAttribute))
-                    {
-                        assemblyFlags |= DynamicAssemblyFlags.TreatAsSafe;
-                    }
-#endif // !FEATURE_CORECLR
-#if FEATURE_APTCA
-                    else if (attribute.m_con.DeclaringType == typeof(AllowPartiallyTrustedCallersAttribute))
-                    {
-                        assemblyFlags |= DynamicAssemblyFlags.Aptca;
-                        aptcaBlob = new byte[attribute.m_blob.Length];
-                        Buffer.BlockCopy(attribute.m_blob, 0, aptcaBlob, 0, aptcaBlob.Length);
-                    }
-#endif // FEATURE_APTCA
                 }
 #pragma warning restore 618
             }
@@ -639,92 +608,16 @@ namespace System.Reflection.Emit
             ISymbolWriter writer = null;
             IntPtr pInternalSymWriter = new IntPtr();
 
-            // create the dynamic module
-
-#if FEATURE_MULTIMODULE_ASSEMBLIES
-
-#if FEATURE_CORECLR
-#error FEATURE_MULTIMODULE_ASSEMBLIES should always go with !FEATURE_CORECLR
-#endif //FEATURE_CORECLR
-
-            m_assemblyData.CheckNameConflict(name);
-
-            if (m_fManifestModuleUsedAsDefinedModule == true)
-            {   // We need to define a new module
-                int tkFile;
-                InternalModuleBuilder internalDynModule = (InternalModuleBuilder)DefineDynamicModule(
-                    InternalAssembly, 
-                    emitSymbolInfo, 
-                    name,
-                    name,
-                    ref stackMark, 
-                    ref pInternalSymWriter,
-                    true /*fIsTransient*/,
-                    out tkFile);
-                dynModule = new ModuleBuilder(this, internalDynModule);
-
-                // initialize the dynamic module's managed side information
-                dynModule.Init(name, null, tkFile);
-            }
-            else
-            {   // We will reuse the manifest module
-                m_manifestModuleBuilder.ModifyModuleName(name);
-                dynModule = m_manifestModuleBuilder;
-
-                if (emitSymbolInfo)
-                {
-                    pInternalSymWriter = ModuleBuilder.nCreateISymWriterForDynamicModule(dynModule.InternalModule, name);
-                }
-            }
-
-#else // FEATURE_MULTIMODULE_ASSEMBLIES
-            // Without FEATURE_MULTIMODULE_ASSEMBLIES only one ModuleBuilder per AssemblyBuilder can be created
+            // create the dynamic module- only one ModuleBuilder per AssemblyBuilder can be created
             if (m_fManifestModuleUsedAsDefinedModule == true)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NoMultiModuleAssembly"));
 
             // Init(...) has already been called on m_manifestModuleBuilder in InitManifestModule()
             dynModule = m_manifestModuleBuilder;
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
             // Create the symbol writer
             if (emitSymbolInfo)
             {
-#if FEATURE_MULTIMODULE_ASSEMBLIES && !FEATURE_CORECLR
-                // this is the code path for the desktop runtime
-
-                // create the default SymWriter
-                Assembly assem = LoadISymWrapper();
-                Type symWriter = assem.GetType("System.Diagnostics.SymbolStore.SymWriter", true, false);
-                if (symWriter != null && !symWriter.IsVisible)
-                    symWriter = null;
-
-                if (symWriter == null)
-                {
-                    // cannot find SymWriter - throw TypeLoadException since we couldnt find the type.
-                    throw new TypeLoadException(Environment.GetResourceString(ResId.MissingType, "SymWriter"));
-                }
-
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-
-                try
-                {
-                    (new PermissionSet(PermissionState.Unrestricted)).Assert();
-                    writer = (ISymbolWriter)Activator.CreateInstance(symWriter);
-
-                    // Set the underlying writer for the managed writer
-                    // that we're using.  Note that this function requires
-                    // unmanaged code access.
-                    writer.SetUnderlyingWriter(pInternalSymWriter);
-                }
-                finally
-                {
-                    CodeAccessPermission.RevertAssert();
-                }
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES && !FEATURE_CORECLR
-
-#if !FEATURE_MULTIMODULE_ASSEMBLIES && FEATURE_CORECLR
-                // this is the code path for CoreCLR
-
                 writer = SymWrapperCore.SymWriter.CreateSymWriter();
                 // Set the underlying writer for the managed writer
                 // that we're using.  Note that this function requires
@@ -741,7 +634,6 @@ namespace System.Reflection.Emit
                 // In Telesto, we took the SetUnderlyingWriter method private as it's a very rickety method.
                 // This might someday be a good move for the desktop CLR too.
                 ((SymWrapperCore.SymWriter)writer).InternalSetUnderlyingWriter(pInternalSymWriter);
-#endif // !FEATURE_MULTIMODULE_ASSEMBLIES && FEATURE_CORECLR
             } // Creating the symbol writer
 
             dynModule.SetSymWriter(writer);
@@ -754,174 +646,6 @@ namespace System.Reflection.Emit
 
             return dynModule;
         } // DefineDynamicModuleInternalNoLock
-
-#if !FEATURE_CORECLR
-        // All dynamic modules in SilverLight are transient so we removed this overload of DefineDynamicModule
-        // Note that it is assumed that !FEATURE_CORECLR always goes with FEATURE_MULTIMODULE_ASSEMBLIES
-        // If we ever will build a non coreclr version of the runtime without FEATURE_MULTIMODULE_ASSEMBLIES
-        // we will need to make the same changes here as the ones we made in the transient overload
-
-        /**********************************************
-        *
-        * Defines a named dynamic module. It is an error to define multiple 
-        * modules within an Assembly with the same name. No symbol information
-        * will be emitted.
-        * 
-        **********************************************/
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public ModuleBuilder DefineDynamicModule(
-            String name,
-            String fileName)
-        {
-            Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            // delegate to the next DefineDynamicModule 
-            return DefineDynamicModuleInternal(name, fileName, false, ref stackMark);
-        }
-
-        /**********************************************
-        *
-        * Emit symbol information if emitSymbolInfo is true using the
-        * default symbol writer interface.
-        * An exception will be thrown if the assembly is transient.
-        *
-        **********************************************/
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public ModuleBuilder DefineDynamicModule(
-            String name,                   // module name
-            String fileName,               // module file name
-            bool emitSymbolInfo)         // specify if emit symbol info or not
-        {
-            Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return DefineDynamicModuleInternal(name, fileName, emitSymbolInfo, ref stackMark);
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        private ModuleBuilder DefineDynamicModuleInternal(
-            String name,                   // module name
-            String fileName,               // module file name
-            bool emitSymbolInfo,         // specify if emit symbol info or not
-            ref StackCrawlMark stackMark)       // stack crawl mark used to find caller
-        {
-            lock(SyncRoot)
-            {
-                return DefineDynamicModuleInternalNoLock(name, fileName, emitSymbolInfo, ref stackMark);
-            }
-        }
-
-        // "name" will be used for:
-        //     1. The Name field in the Module table.
-        //     2. ModuleBuilder.GetModule(string).
-        // "fileName" will be used for:
-        //     1. The name field in the ModuleRef table when this module is being referenced by
-        //        another module in the same assembly.
-        //     2. .file record in the in memory assembly manifest when the module is created in memory 
-        //     3. .file record in the on disk assembly manifest when the assembly is saved to disk 
-        //     4. The file name of the saved module.
-        [System.Security.SecurityCritical]  // auto-generated
-        private ModuleBuilder DefineDynamicModuleInternalNoLock(
-            String name,                        // module name
-            String fileName,                    // module file name
-            bool   emitSymbolInfo,              // specify if emit symbol info or not
-            ref    StackCrawlMark stackMark)    // stack crawl mark used to find caller
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
-            if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), nameof(name));
-
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            if (fileName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(fileName));
-            if (!String.Equals(fileName, Path.GetFileName(fileName)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), nameof(fileName));
-            Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
-            Contract.EndContractBlock();
-
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.DefineDynamicModule( " + name + ", " + fileName + ", " + emitSymbolInfo + " )");
-            if (m_assemblyData.m_access == AssemblyBuilderAccess.Run)
-            {
-                // Error! You cannot define a persistable module within a transient data.
-                throw new NotSupportedException(Environment.GetResourceString("Argument_BadPersistableModuleInTransientAssembly"));
-            }
-
-            if (m_assemblyData.m_isSaved == true)
-            {
-                // assembly has been saved before!
-                throw new InvalidOperationException(Environment.GetResourceString(
-                    "InvalidOperation_CannotAlterAssembly"));
-            }
-
-            ModuleBuilder dynModule;
-            ISymbolWriter writer = null;
-            IntPtr pInternalSymWriter = new IntPtr();
-
-            // create the dynamic module
-
-            m_assemblyData.CheckNameConflict(name);
-            m_assemblyData.CheckFileNameConflict(fileName);
-
-            int tkFile;
-            InternalModuleBuilder internalDynModule = (InternalModuleBuilder)DefineDynamicModule(
-                InternalAssembly,
-                emitSymbolInfo,
-                name,
-                fileName,
-                ref stackMark,
-                ref pInternalSymWriter,
-                false /*fIsTransient*/,
-                out tkFile);
-            dynModule = new ModuleBuilder(this, internalDynModule);
-
-            // initialize the dynamic module's managed side information
-            dynModule.Init(name, fileName, tkFile);
-
-            // Create the symbol writer
-            if (emitSymbolInfo)
-            {
-                // create the default SymWriter
-                Assembly assem = LoadISymWrapper();
-                Type symWriter = assem.GetType("System.Diagnostics.SymbolStore.SymWriter", true, false);
-                if (symWriter != null && !symWriter.IsVisible)
-                    symWriter = null;
-
-                if (symWriter == null)
-                {
-                    // cannot find SymWriter - throw TypeLoadException since we couldnt find the type.
-                    throw new TypeLoadException(Environment.GetResourceString("MissingType", "SymWriter"));
-                }
-                try
-                {
-                    (new PermissionSet(PermissionState.Unrestricted)).Assert();
-                    writer = (ISymbolWriter)Activator.CreateInstance(symWriter);
-
-                    // Set the underlying writer for the managed writer
-                    // that we're using.  Note that this function requires
-                    // unmanaged code access.
-                    writer.SetUnderlyingWriter(pInternalSymWriter);
-                }
-                finally
-                {
-                    CodeAccessPermission.RevertAssert();
-                }
-            }
-
-            dynModule.SetSymWriter(writer);
-
-            m_assemblyData.AddModule(dynModule);
-
-            return dynModule;
-        } // DefineDynamicModuleInternalNoLock
-#endif // !FEATURE_CORECLR
         #endregion
 
         private Assembly LoadISymWrapper()
