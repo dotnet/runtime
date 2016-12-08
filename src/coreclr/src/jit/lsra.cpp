@@ -11788,15 +11788,14 @@ void LinearScan::verifyFinalAllocation()
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
 
-                    // regRegcord could be null if RefPosition is to be allocated a
-                    // reg only if profitable.
+                    // regRegcord could be null if the RefPosition does not require a register.
                     if (regRecord != nullptr)
                     {
                         regRecord->assignedInterval = nullptr;
                     }
                     else
                     {
-                        assert(currentRefPosition->AllocateIfProfitable());
+                        assert(!currentRefPosition->RequiresRegister());
                     }
                 }
             }
