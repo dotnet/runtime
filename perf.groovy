@@ -28,9 +28,6 @@ def static getOSGroup(def os) {
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
 		['x64'].each { architecture ->
-			def configuration = 'Release'
-			def runType = isPR ? 'private' : 'rolling'
-			def benchViewName = isPR ? 'coreclr private %ghprbPullTitle%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
 			def newJob = job(Utilities.getFullJobName(project, "perf_perflab_${os}", isPR)) {
 				// Set the label.
 				label('windows_clr_perf')
@@ -40,6 +37,17 @@ def static getOSGroup(def os) {
 					}
 				}
 
+			if (isPR)
+			{
+				parameters
+				{
+					stringParam('BenchviewCommitName', '%ghprbPullTitle%', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+				}
+			}
+			def configuration = 'Release'
+			def runType = isPR ? 'private' : 'rolling'
+			def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+				
 				steps {
 					// Batch
 
@@ -86,11 +94,6 @@ def static getOSGroup(def os) {
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 [true, false].each { isPR ->
     ['Ubuntu14.04'].each { os ->
-        def osGroup = getOSGroup(os)
-        def architecture = 'x64'
-        def configuration = 'Release'
-		def runType = isPR ? 'private' : 'rolling'
-		def benchViewName = isPR ? 'coreclr private \$ghprbPullTitle' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
         def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
 			
 			label('linux_clr_perf')
@@ -99,6 +102,19 @@ def static getOSGroup(def os) {
 						string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
 					}
 				}
+			
+			if (isPR)
+			{
+				parameters
+				{
+					stringParam('BenchviewCommitName', '\$ghprbPullTitle', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+				}
+			}
+			def osGroup = getOSGroup(os)
+			def architecture = 'x64'
+			def configuration = 'Release'
+			def runType = isPR ? 'private' : 'rolling'
+			def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
 			
             steps {
                 shell("bash ./tests/scripts/perf-prep.sh")
