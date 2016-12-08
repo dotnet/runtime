@@ -849,13 +849,26 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments)
         {
+            IReadOnlyList<Expression> argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
+            switch (argumentList.Count)
+            {
+                case 1:
+                    return MakeDynamic(delegateType, binder, argumentList[0]);
+                case 2:
+                    return MakeDynamic(delegateType, binder, argumentList[0], argumentList[1]);
+                case 3:
+                    return MakeDynamic(delegateType, binder, argumentList[0], argumentList[1], argumentList[2]);
+                case 4:
+                    return MakeDynamic(delegateType, binder, argumentList[0], argumentList[1], argumentList[2], argumentList[3]);
+            }
+
             ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
             ContractUtils.RequiresNotNull(binder, nameof(binder));
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
 
-            var args = arguments.ToReadOnly();
+            var args = arguments.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 4. Returns fast if it already is.
             ExpressionUtils.ValidateArgumentTypes(method, ExpressionType.Dynamic, ref args, nameof(delegateType));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, args);
