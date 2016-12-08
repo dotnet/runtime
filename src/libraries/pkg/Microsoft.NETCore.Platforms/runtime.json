@@ -141,6 +141,9 @@
         "unix-x64": {
             "#import": [ "unix" ]
         },
+        "unix-x86": {
+            "#import": [ "unix" ]
+        },
         "unix-arm": {
             "#import": [ "unix" ]
         },
@@ -181,6 +184,9 @@
         },
         "linux-x64": {
             "#import": [ "linux", "unix-x64" ]
+        },
+        "linux-x86": {
+            "#import": [ "linux", "unix-x86" ]
         },
         "linux-arm": {
             "#import": [ "linux", "unix-arm" ]
@@ -279,6 +285,9 @@
         "debian-x64": {
             "#import": [ "debian", "linux-x64" ]
         },
+        "debian-x86": {
+            "#import": [ "debian", "linux-x86" ]
+        },
         "debian-arm": {
             "#import": [ "debian", "linux-arm" ]
         },
@@ -291,6 +300,9 @@
         },
         "debian.8-x64": {
             "#import": [ "debian.8", "debian-x64" ]
+        },
+        "debian.8-x86": {
+            "#import": [ "debian.8", "debian-x86" ]
         },
         "debian.8-arm": {
             "#import": [ "debian.8", "debian-arm" ]
@@ -307,6 +319,10 @@
             "#import": [ "ubuntu", "debian-x64" ]
         },
 
+        "ubuntu-x86": {
+            "#import": [ "ubuntu", "debian-x86" ]
+        },
+
         "ubuntu-arm": {
             "#import": [ "ubuntu", "debian-arm" ]
         },
@@ -316,6 +332,9 @@
         },
         "ubuntu.14.04-x64": {
             "#import": [ "ubuntu.14.04", "ubuntu-x64" ]
+        },
+        "ubuntu.14.04-x86": {
+            "#import": [ "ubuntu.14.04", "ubuntu-x86" ]
         },
         "ubuntu.14.04-arm": {
             "#import": [ "ubuntu.14.04", "ubuntu-arm" ]
@@ -327,6 +346,9 @@
         "ubuntu.14.10-x64": {
             "#import": [ "ubuntu.14.10", "ubuntu-x64" ]
         },
+        "ubuntu.14.10-x86": {
+            "#import": [ "ubuntu.14.10", "ubuntu-x86" ]
+        },
         "ubuntu.14.10-arm": {
             "#import": [ "ubuntu.14.10", "ubuntu-arm" ]
         },
@@ -336,6 +358,9 @@
         },
         "ubuntu.15.04-x64": {
             "#import": [ "ubuntu.15.04", "ubuntu-x64" ]
+        },
+        "ubuntu.15.04-x86": {
+            "#import": [ "ubuntu.15.04", "ubuntu-x86" ]
         },
         "ubuntu.15.04-arm": {
             "#import": [ "ubuntu.15.04", "ubuntu-arm" ]
@@ -347,6 +372,9 @@
         "ubuntu.15.10-x64": {
             "#import": [ "ubuntu.15.10", "ubuntu-x64" ]
         },
+        "ubuntu.15.10-x86": {
+            "#import": [ "ubuntu.15.10", "ubuntu-x86" ]
+        },
         "ubuntu.15.10-arm": {
             "#import": [ "ubuntu.15.10", "ubuntu-arm" ]
         },
@@ -357,6 +385,9 @@
         "ubuntu.16.04-x64": {
             "#import": [ "ubuntu.16.04", "ubuntu-x64" ]
         },
+        "ubuntu.16.04-x86": {
+            "#import": [ "ubuntu.16.04", "ubuntu-x86" ]
+        },
         "ubuntu.16.04-arm": {
             "#import": [ "ubuntu.16.04", "ubuntu-arm" ]
         },
@@ -366,6 +397,9 @@
         },
         "ubuntu.16.10-x64": {
             "#import": [ "ubuntu.16.10", "ubuntu-x64" ]
+        },
+        "ubuntu.16.10-x86": {
+            "#import": [ "ubuntu.16.10", "ubuntu-x86" ]
         },
         "ubuntu.16.10-arm": {
             "#import": [ "ubuntu.16.10", "ubuntu-arm" ]
