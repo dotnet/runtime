@@ -3834,7 +3834,6 @@ void Lowering::LowerCast(GenTree* tree)
     var_types  dstType = tree->CastToType();
     var_types  srcType = op1->TypeGet();
     var_types  tmpType = TYP_UNDEF;
-    bool       srcUns  = false;
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->gtFlags & GTF_UNSIGNED)
