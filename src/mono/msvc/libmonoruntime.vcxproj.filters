@@ -163,10 +163,13 @@
     <ClCompile Include="..\mono\metadata\sysmath.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\threadpool-ms.c">
+    <ClCompile Include="..\mono\metadata\threadpool.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\threadpool-ms-io.c">
+    <ClCompile Include="..\mono\metadata\threadpool-worker-default.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\threadpool-io.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\threads.c">
@@ -465,13 +468,16 @@
     <ClInclude Include="..\mono\metadata\tabledefs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\metadata\threadpool-ms.h">
+    <ClInclude Include="..\mono\metadata\threadpool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\threadpool-worker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\wrapper-types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\metadata\threadpool-ms-io.h">
+    <ClInclude Include="..\mono\metadata\threadpool-io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\threads-types.h">

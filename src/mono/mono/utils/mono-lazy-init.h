@@ -20,7 +20,7 @@
 
 /*
  * These functions should be used if you want some form of lazy initialization. You can have a look at the
- * threadpool-ms for a more detailed example.
+ * threadpool for a more detailed example.
  *
  * The idea is that a module can be in 5 different states:
  *  - not initialized: it is the first state it starts in

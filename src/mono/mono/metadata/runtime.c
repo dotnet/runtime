@@ -18,7 +18,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool-ms.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/atomic.h>
 
@@ -110,7 +110,7 @@ mono_runtime_try_shutdown (void)
 	mono_runtime_set_shutting_down ();
 
 	/* This will kill the tp threads which cannot be suspended */
-	mono_threadpool_ms_cleanup ();
+	mono_threadpool_cleanup ();
 
 	/*TODO move the follow to here:
 	mono_thread_suspend_all_other_threads (); OR  mono_thread_wait_all_other_threads

@@ -230,10 +230,12 @@ common_sources = \
 	tabledefs.h 		\
 	threads.c		\
 	threads-types.h		\
-	threadpool-ms.c	\
-	threadpool-ms.h	\
-	threadpool-ms-io.c	\
-	threadpool-ms-io.h	\
+	threadpool.c	\
+	threadpool.h	\
+	threadpool-worker-default.c	\
+	threadpool-worker.h	\
+	threadpool-io.c	\
+	threadpool-io.h	\
 	verify.c		\
 	verify-internals.h	\
 	wrapper-types.h	\
@@ -342,4 +344,4 @@ libmonoruntimeinclude_HEADERS = \
 	verify.h		
 
 EXTRA_DIST = $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
-		threadpool-ms-io-poll.c threadpool-ms-io-epoll.c threadpool-ms-io-kqueue.c sgen-dynarray.h
+		threadpool-io-poll.c threadpool-io-epoll.c threadpool-io-kqueue.c sgen-dynarray.h

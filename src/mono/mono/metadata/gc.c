@@ -24,7 +24,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool-ms.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -556,7 +556,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	}
 
 	if (domain == mono_get_root_domain ()) {
-		mono_threadpool_ms_cleanup ();
+		mono_threadpool_cleanup ();
 		mono_gc_finalize_threadpool_threads ();
 	}
 

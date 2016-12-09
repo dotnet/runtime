@@ -1,5 +1,5 @@
 /*
- * threadpool-ms-io.c: Microsoft IO threadpool runtime support
+ * threadpool-io.c: Microsoft IO threadpool runtime support
  *
  * Author:
  *	Ludovic Henry (ludovic.henry@xamarin.com)
@@ -23,8 +23,8 @@
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-mlist.h>
-#include <mono/metadata/threadpool-ms.h>
-#include <mono/metadata/threadpool-ms-io.h>
+#include <mono/metadata/threadpool.h>
+#include <mono/metadata/threadpool-io.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-lazy-init.h>
@@ -44,9 +44,9 @@ enum MonoIOOperation {
 	EVENT_ERR  = 1 << 2, /* not in managed */
 };
 
-#include "threadpool-ms-io-epoll.c"
-#include "threadpool-ms-io-kqueue.c"
-#include "threadpool-ms-io-poll.c"
+#include "threadpool-io-epoll.c"
+#include "threadpool-io-kqueue.c"
+#include "threadpool-io-poll.c"
 
 #define UPDATES_CAPACITY 128
 
@@ -272,7 +272,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		if (list && (events & EVENT_IN) != 0) {
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_IN);
 			if (job) {
-				mono_threadpool_ms_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
+				mono_threadpool_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
 				mono_error_assert_ok (&error);
 			}
 
@@ -280,7 +280,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		if (list && (events & EVENT_OUT) != 0) {
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_OUT);
 			if (job) {
-				mono_threadpool_ms_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
+				mono_threadpool_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
 				mono_error_assert_ok (&error);
 			}
 		}
@@ -378,7 +378,7 @@ selector_thread (gpointer data)
 					}
 
 					for (; list; list = mono_mlist_remove_item (list, list)) {
-						mono_threadpool_ms_enqueue_work_item (mono_object_domain (mono_mlist_get_data (list)), mono_mlist_get_data (list), &error);
+						mono_threadpool_enqueue_work_item (mono_object_domain (mono_mlist_get_data (list)), mono_mlist_get_data (list), &error);
 						mono_error_assert_ok (&error);
 					}
 
@@ -555,7 +555,7 @@ cleanup (void)
 }
 
 void
-mono_threadpool_ms_io_cleanup (void)
+mono_threadpool_io_cleanup (void)
 {
 	mono_lazy_cleanup (&io_status, cleanup);
 }
@@ -593,11 +593,11 @@ ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 void
 ves_icall_System_IOSelector_Remove (gpointer handle)
 {
-	mono_threadpool_ms_io_remove_socket (GPOINTER_TO_INT (handle));
+	mono_threadpool_io_remove_socket (GPOINTER_TO_INT (handle));
 }
 
 void
-mono_threadpool_ms_io_remove_socket (int fd)
+mono_threadpool_io_remove_socket (int fd)
 {
 	ThreadPoolIOUpdate *update;
 
@@ -619,7 +619,7 @@ mono_threadpool_ms_io_remove_socket (int fd)
 }
 
 void
-mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
+mono_threadpool_io_remove_domain_jobs (MonoDomain *domain)
 {
 	ThreadPoolIOUpdate *update;
 
@@ -655,19 +655,19 @@ ves_icall_System_IOSelector_Remove (gpointer handle)
 }
 
 void
-mono_threadpool_ms_io_cleanup (void)
+mono_threadpool_io_cleanup (void)
 {
 	g_assert_not_reached ();
 }
 
 void
-mono_threadpool_ms_io_remove_socket (int fd)
+mono_threadpool_io_remove_socket (int fd)
 {
 	g_assert_not_reached ();
 }
 
 void
-mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
+mono_threadpool_io_remove_domain_jobs (MonoDomain *domain)
 {
 	g_assert_not_reached ();
 }

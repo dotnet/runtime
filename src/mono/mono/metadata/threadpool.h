@@ -1,5 +1,5 @@
-#ifndef _MONO_THREADPOOL_MICROSOFT_H_
-#define _MONO_THREADPOOL_MICROSOFT_H_
+#ifndef _MONO_METADATA_THREADPOOL_H_
+#define _MONO_METADATA_THREADPOOL_H_
 
 #include <config.h>
 #include <glib.h>
@@ -12,20 +12,20 @@
 typedef struct _MonoNativeOverlapped MonoNativeOverlapped;
 
 void
-mono_threadpool_ms_cleanup (void);
+mono_threadpool_cleanup (void);
 
 MonoAsyncResult *
-mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params, MonoError *error);
+mono_threadpool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params, MonoError *error);
 MonoObject *
-mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc, MonoError *error);
+mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc, MonoError *error);
 
 gboolean
-mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout);
+mono_threadpool_remove_domain_jobs (MonoDomain *domain, int timeout);
 
 void
-mono_threadpool_ms_suspend (void);
+mono_threadpool_suspend (void);
 void
-mono_threadpool_ms_resume (void);
+mono_threadpool_resume (void);
 
 void
 ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads);
@@ -60,6 +60,6 @@ ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (void);
 /* Internals */
 
 gboolean
-mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, MonoError *error);
+mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, MonoError *error);
 
-#endif // _MONO_THREADPOOL_MICROSOFT_H_
+#endif // _MONO_METADATA_THREADPOOL_H_

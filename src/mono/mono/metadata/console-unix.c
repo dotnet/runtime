@@ -34,7 +34,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/metadata.h>
-#include <mono/metadata/threadpool-ms.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
@@ -258,7 +258,7 @@ do_console_cancel_event (void)
 	method = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
 	g_assert (method != NULL);
 
-	mono_threadpool_ms_begin_invoke (domain, (MonoObject*) load_value, method, NULL, &error);
+	mono_threadpool_begin_invoke (domain, (MonoObject*) load_value, method, NULL, &error);
 	if (!is_ok (&error)) {
 		g_warning ("Couldn't invoke System.Console cancel handler due to %s", mono_error_get_message (&error));
 		mono_error_cleanup (&error);

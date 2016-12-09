@@ -54,7 +54,7 @@
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool-ms-io.h>
+#include <mono/metadata/threadpool-io.h>
 #include <mono/utils/mono-poll.h>
 /* FIXME change this code to not mess so much with the internals */
 #include <mono/metadata/class-internals.h>
@@ -646,7 +646,7 @@ ves_icall_System_Net_Sockets_Socket_Close_internal (SOCKET sock, gint32 *werror)
 
 	/* Clear any pending work item from this socket if the underlying
 	 * polling system does not notify when the socket is closed */
-	mono_threadpool_ms_io_remove_socket (GPOINTER_TO_INT (sock));
+	mono_threadpool_io_remove_socket (GPOINTER_TO_INT (sock));
 
 	MONO_ENTER_GC_SAFE;
 	closesocket (sock);
