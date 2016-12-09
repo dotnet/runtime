@@ -504,6 +504,7 @@ Parameters :
 
 --*/
 void
+PALAPI
 CONTEXT_CaptureContext(
     LPCONTEXT lpContext
     );
