@@ -13,8 +13,6 @@ namespace System.ComponentModel.Design.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     public sealed class DesignerSerializerAttribute : Attribute
     {
-        private string _serializerTypeName;
-        private string _serializerBaseTypeName;
         private string _typeId;
 
         /// <summary>
@@ -22,8 +20,8 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(Type serializerType, Type baseSerializerType)
         {
-            _serializerTypeName = serializerType.AssemblyQualifiedName;
-            _serializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
+            SerializerTypeName = serializerType.AssemblyQualifiedName;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -31,8 +29,8 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType)
         {
-            _serializerTypeName = serializerTypeName;
-            _serializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
+            SerializerTypeName = serializerTypeName;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -40,31 +38,19 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName)
         {
-            _serializerTypeName = serializerTypeName;
-            _serializerBaseTypeName = baseSerializerTypeName;
+            SerializerTypeName = serializerTypeName;
+            SerializerBaseTypeName = baseSerializerTypeName;
         }
 
         /// <summary>
         ///     Retrieves the fully qualified type name of the serializer.
         /// </summary>
-        public string SerializerTypeName
-        {
-            get
-            {
-                return _serializerTypeName;
-            }
-        }
+        public string SerializerTypeName { get; }
 
         /// <summary>
         ///     Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
-        public string SerializerBaseTypeName
-        {
-            get
-            {
-                return _serializerBaseTypeName;
-            }
-        }
+        public string SerializerBaseTypeName { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -82,7 +68,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (_typeId == null)
                 {
-                    string baseType = _serializerBaseTypeName;
+                    string baseType = SerializerBaseTypeName;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {

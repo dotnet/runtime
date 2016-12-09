@@ -16,8 +16,6 @@ namespace System.ComponentModel
     [Obsolete("Use System.ComponentModel.SettingsBindableAttribute instead to work with the new settings model.")]
     public class RecommendedAsConfigurableAttribute : Attribute
     {
-        private bool _recommendedAsConfigurable = false;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of
@@ -26,20 +24,14 @@ namespace System.ComponentModel
         /// </summary>
         public RecommendedAsConfigurableAttribute(bool recommendedAsConfigurable)
         {
-            _recommendedAsConfigurable = recommendedAsConfigurable;
+            RecommendedAsConfigurable = recommendedAsConfigurable;
         }
 
         /// <summary>
         ///    <para>Gets a value indicating whether the property this
         ///       attribute is bound to can be used as an application setting.</para>
         /// </summary>
-        public bool RecommendedAsConfigurable
-        {
-            get
-            {
-                return _recommendedAsConfigurable;
-            }
-        }
+        public bool RecommendedAsConfigurable { get; }
 
         /// <summary>
         ///    <para>
@@ -77,7 +69,7 @@ namespace System.ComponentModel
 
             RecommendedAsConfigurableAttribute other = obj as RecommendedAsConfigurableAttribute;
 
-            return other != null && other.RecommendedAsConfigurable == _recommendedAsConfigurable;
+            return other != null && other.RecommendedAsConfigurable == RecommendedAsConfigurable;
         }
 
         /// <summary>
@@ -95,7 +87,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool IsDefaultAttribute()
         {
-            return !_recommendedAsConfigurable;
+            return !RecommendedAsConfigurable;
         }
     }
 }

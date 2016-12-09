@@ -14,10 +14,7 @@ namespace System.ComponentModel.Design
     /// </summary>
     public abstract class DesignerTransaction : IDisposable
     {
-        private bool _committed = false;
-        private bool _canceled = false;
-        private bool _suppressedFinalization = false;
-        private string _desc;
+        private bool _suppressedFinalization;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
@@ -32,51 +29,33 @@ namespace System.ComponentModel.Design
         /// </summary>
         protected DesignerTransaction(string description)
         {
-            _desc = description;
+            Description = description;
         }
 
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public bool Canceled
-        {
-            get
-            {
-                return _canceled;
-            }
-        }
+        public bool Canceled { get; private set; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public bool Committed
-        {
-            get
-            {
-                return _committed;
-            }
-        }
+        public bool Committed { get; private set; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public string Description
-        {
-            get
-            {
-                return _desc;
-            }
-        }
+        public string Description { get; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
         public void Cancel()
         {
-            if (!_canceled && !_committed)
+            if (!Canceled && !Committed)
             {
-                _canceled = true;
+                Canceled = true;
                 GC.SuppressFinalize(this);
                 _suppressedFinalization = true;
                 OnCancel();
@@ -92,9 +71,9 @@ namespace System.ComponentModel.Design
         /// </summary>
         public void Commit()
         {
-            if (!_committed && !_canceled)
+            if (!Committed && !Canceled)
             {
-                _committed = true;
+                Committed = true;
                 GC.SuppressFinalize(this);
                 _suppressedFinalization = true;
                 OnCommit();
@@ -144,7 +123,7 @@ namespace System.ComponentModel.Design
         protected virtual void Dispose(bool disposing)
         {
             System.Diagnostics.Debug.Assert(disposing, "Designer transaction garbage collected, unable to cancel, please Cancel, Close, or Dispose your transaction.");
-            System.Diagnostics.Debug.Assert(disposing || _canceled || _committed, "Disposing DesignerTransaction that has not been comitted or canceled; forcing Cancel");
+            System.Diagnostics.Debug.Assert(disposing || Canceled || Committed, "Disposing DesignerTransaction that has not been comitted or canceled; forcing Cancel");
             Cancel();
         }
     }

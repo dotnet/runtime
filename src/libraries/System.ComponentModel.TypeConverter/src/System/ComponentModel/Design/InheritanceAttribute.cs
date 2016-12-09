@@ -13,8 +13,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event)]
     public sealed class InheritanceAttribute : Attribute
     {
-        private readonly InheritanceLevel _inheritanceLevel;
-
         /// <summary>
         ///    <para>
         ///       Specifies that the component is inherited. This field is
@@ -54,7 +52,7 @@ namespace System.ComponentModel
         /// </summary>
         public InheritanceAttribute()
         {
-            _inheritanceLevel = Default._inheritanceLevel;
+            InheritanceLevel = Default.InheritanceLevel;
         }
 
         /// <summary>
@@ -64,7 +62,7 @@ namespace System.ComponentModel
         /// </summary>
         public InheritanceAttribute(InheritanceLevel inheritanceLevel)
         {
-            _inheritanceLevel = inheritanceLevel;
+            InheritanceLevel = inheritanceLevel;
         }
 
         /// <summary>
@@ -73,13 +71,7 @@ namespace System.ComponentModel
         ///       the current inheritance level stored in this attribute.
         ///    </para>
         /// </summary>
-        public InheritanceLevel InheritanceLevel
-        {
-            get
-            {
-                return _inheritanceLevel;
-            }
-        }
+        public InheritanceLevel InheritanceLevel { get; }
 
         /// <summary>
         ///    <para>
@@ -99,7 +91,7 @@ namespace System.ComponentModel
             }
 
             InheritanceLevel valueLevel = ((InheritanceAttribute)value).InheritanceLevel;
-            return (valueLevel == _inheritanceLevel);
+            return (valueLevel == InheritanceLevel);
         }
 
         /// <summary>

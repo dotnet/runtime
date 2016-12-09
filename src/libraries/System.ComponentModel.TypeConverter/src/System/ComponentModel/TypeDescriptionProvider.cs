@@ -79,12 +79,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual IDictionary GetCache(object instance)
         {
-            if (_parent != null)
-            {
-                return _parent.GetCache(instance);
-            }
-
-            return null;
+            return _parent?.GetCache(instance);
         }
 
         /// <summary>
@@ -108,12 +103,7 @@ namespace System.ComponentModel
                 return _parent.GetExtendedTypeDescriptor(instance);
             }
 
-            if (_emptyDescriptor == null)
-            {
-                _emptyDescriptor = new EmptyCustomTypeDescriptor();
-            }
-
-            return _emptyDescriptor;
+            return _emptyDescriptor ?? (_emptyDescriptor = new EmptyCustomTypeDescriptor());
         }
 
         protected internal virtual IExtenderProvider[] GetExtenderProviders(object instance)
@@ -276,12 +266,7 @@ namespace System.ComponentModel
                 return _parent.GetTypeDescriptor(objectType, instance);
             }
 
-            if (_emptyDescriptor == null)
-            {
-                _emptyDescriptor = new EmptyCustomTypeDescriptor();
-            }
-
-            return _emptyDescriptor;
+            return _emptyDescriptor ?? (_emptyDescriptor = new EmptyCustomTypeDescriptor());
         }
 
         /// <summary>

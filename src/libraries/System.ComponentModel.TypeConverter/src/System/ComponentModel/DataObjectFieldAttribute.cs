@@ -14,11 +14,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class DataObjectFieldAttribute : Attribute
     {
-        private bool _primaryKey;
-        private bool _isIdentity;
-        private bool _isNullable;
-        private int _length;
-
         public DataObjectFieldAttribute(bool primaryKey) : this(primaryKey, false, false, -1)
         {
         }
@@ -33,43 +28,19 @@ namespace System.ComponentModel
 
         public DataObjectFieldAttribute(bool primaryKey, bool isIdentity, bool isNullable, int length)
         {
-            _primaryKey = primaryKey;
-            _isIdentity = isIdentity;
-            _isNullable = isNullable;
-            _length = length;
+            PrimaryKey = primaryKey;
+            IsIdentity = isIdentity;
+            IsNullable = isNullable;
+            Length = length;
         }
 
-        public bool IsIdentity
-        {
-            get
-            {
-                return _isIdentity;
-            }
-        }
+        public bool IsIdentity { get; }
 
-        public bool IsNullable
-        {
-            get
-            {
-                return _isNullable;
-            }
-        }
+        public bool IsNullable { get; }
 
-        public int Length
-        {
-            get
-            {
-                return _length;
-            }
-        }
+        public int Length { get; }
 
-        public bool PrimaryKey
-        {
-            get
-            {
-                return _primaryKey;
-            }
-        }
+        public bool PrimaryKey { get; }
 
         public override bool Equals(object obj)
         {

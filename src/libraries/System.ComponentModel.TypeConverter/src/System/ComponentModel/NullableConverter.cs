@@ -13,24 +13,20 @@ namespace System.ComponentModel
     /// </summary>
     public class NullableConverter : TypeConverter
     {
-        private readonly Type _nullableType;
-        private readonly Type _simpleType;
-        private readonly TypeConverter _simpleTypeConverter;
-
         /// <summary>
         /// Nullable converter is initialized with the underlying simple type.
         /// </summary>
         public NullableConverter(Type type)
         {
-            _nullableType = type;
+            NullableType = type;
 
-            _simpleType = Nullable.GetUnderlyingType(type);
-            if (_simpleType == null)
+            UnderlyingType = Nullable.GetUnderlyingType(type);
+            if (UnderlyingType == null)
             {
                 throw new ArgumentException(SR.NullableConverterBadCtorArg, nameof(type));
             }
 
-            _simpleTypeConverter = TypeDescriptor.GetConverter(_simpleType);
+            UnderlyingTypeConverter = TypeDescriptor.GetConverter(UnderlyingType);
         }
 
         /// <summary>
@@ -39,13 +35,13 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == _simpleType)
+            if (sourceType == UnderlyingType)
             {
                 return true;
             }
-            else if (_simpleTypeConverter != null)
+            else if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.CanConvertFrom(context, sourceType);
+                return UnderlyingTypeConverter.CanConvertFrom(context, sourceType);
             }
             else
             {
@@ -58,7 +54,7 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value == null || value.GetType() == _simpleType)
+            if (value == null || value.GetType() == UnderlyingType)
             {
                 return value;
             }
@@ -66,9 +62,9 @@ namespace System.ComponentModel
             {
                 return null;
             }
-            else if (_simpleTypeConverter != null)
+            else if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.ConvertFrom(context, culture, value);
+                return UnderlyingTypeConverter.ConvertFrom(context, culture, value);
             }
             else
             {
@@ -81,13 +77,13 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == _simpleType)
+            if (destinationType == UnderlyingType)
             {
                 return true;
             }
-            else if (_simpleTypeConverter != null)
+            else if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.CanConvertTo(context, destinationType);
+                return UnderlyingTypeConverter.CanConvertTo(context, destinationType);
             }
             else
             {
@@ -105,7 +101,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == _simpleType && value != null && _nullableType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))
+            if (destinationType == UnderlyingType && value != null && NullableType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))
             {
                 return value;
             }
@@ -117,9 +113,9 @@ namespace System.ComponentModel
                     return string.Empty;
                 }
             }
-            else if (_simpleTypeConverter != null)
+            else if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.ConvertTo(context, culture, value, destinationType);
+                return UnderlyingTypeConverter.ConvertTo(context, culture, value, destinationType);
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -129,9 +125,9 @@ namespace System.ComponentModel
         /// </summary>
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
-                object instance = _simpleTypeConverter.CreateInstance(context, propertyValues);
+                object instance = UnderlyingTypeConverter.CreateInstance(context, propertyValues);
                 return instance;
             }
 
@@ -147,9 +143,9 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext context)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.GetCreateInstanceSupported(context);
+                return UnderlyingTypeConverter.GetCreateInstanceSupported(context);
             }
 
             return base.GetCreateInstanceSupported(context);
@@ -163,10 +159,10 @@ namespace System.ComponentModel
         /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
                 object unwrappedValue = value;
-                return _simpleTypeConverter.GetProperties(context, unwrappedValue, attributes);
+                return UnderlyingTypeConverter.GetProperties(context, unwrappedValue, attributes);
             }
 
             return base.GetProperties(context, value, attributes);
@@ -177,9 +173,9 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.GetPropertiesSupported(context);
+                return UnderlyingTypeConverter.GetPropertiesSupported(context);
             }
 
             return base.GetPropertiesSupported(context);
@@ -190,9 +186,9 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
-                StandardValuesCollection values = _simpleTypeConverter.GetStandardValues(context);
+                StandardValuesCollection values = UnderlyingTypeConverter.GetStandardValues(context);
                 if (GetStandardValuesSupported(context) && values != null)
                 {
                     // Create a set of standard values around nullable instances.  
@@ -221,9 +217,9 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.GetStandardValuesExclusive(context);
+                return UnderlyingTypeConverter.GetStandardValuesExclusive(context);
             }
 
             return base.GetStandardValuesExclusive(context);
@@ -237,9 +233,9 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
-                return _simpleTypeConverter.GetStandardValuesSupported(context);
+                return UnderlyingTypeConverter.GetStandardValuesSupported(context);
             }
 
             return base.GetStandardValuesSupported(context);
@@ -250,7 +246,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool IsValid(ITypeDescriptorContext context, object value)
         {
-            if (_simpleTypeConverter != null)
+            if (UnderlyingTypeConverter != null)
             {
                 object unwrappedValue = value;
                 if (unwrappedValue == null)
@@ -259,7 +255,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    return _simpleTypeConverter.IsValid(context, unwrappedValue);
+                    return UnderlyingTypeConverter.IsValid(context, unwrappedValue);
                 }
             }
 
@@ -269,34 +265,16 @@ namespace System.ComponentModel
         /// <summary>
         /// The type this converter was initialized with.
         /// </summary>
-        public Type NullableType
-        {
-            get
-            {
-                return _nullableType;
-            }
-        }
+        public Type NullableType { get; }
 
         /// <summary>
         /// The simple type that is represented as a nullable.
         /// </summary>
-        public Type UnderlyingType
-        {
-            get
-            {
-                return _simpleType;
-            }
-        }
+        public Type UnderlyingType { get; }
 
         /// <summary>
         /// Converter associated with the underlying simple type.
         /// </summary>
-        public TypeConverter UnderlyingTypeConverter
-        {
-            get
-            {
-                return _simpleTypeConverter;
-            }
-        }
+        public TypeConverter UnderlyingTypeConverter { get; }
     }
 }
