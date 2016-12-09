@@ -82,7 +82,7 @@ LOCAL_LABEL(Done_CONTEXT_EXTENDED_REGISTERS):
     // Restore
     pop   ebx
     pop   eax
-    ret
+    ret   4
 LEAF_END CONTEXT_CaptureContext, _TEXT
 
 LEAF_ENTRY RtlCaptureContext, _TEXT
@@ -91,7 +91,6 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     mov     DWORD PTR [eax + CONTEXT_ContextFlags], (CONTEXT_FLOATING_POINT)
     pop     eax
     jmp     C_FUNC(CONTEXT_CaptureContext)
-    ret
 LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY RtlRestoreContext, _TEXT
@@ -147,6 +146,6 @@ LOCAL_LABEL(Done_Restore_CONTEXT_EXTENDED_REGISTERS):
     pop   esi
     pop   edi
 
-    ret
+    ret   8
 LEAF_END RtlRestoreContext, _TEXT
 
