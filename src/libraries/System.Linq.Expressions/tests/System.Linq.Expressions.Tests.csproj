@@ -108,6 +108,7 @@
     <Compile Include="Dynamic\GetMemberBinderTests.cs" />
     <Compile Include="Dynamic\InvokeBinderTests.cs" />
     <Compile Include="Dynamic\InvokeMemberBindingTests.cs" />
+    <Compile Include="Dynamic\SetIndexBinderTests.cs" />
     <Compile Include="Dynamic\UnaryOperationTests.cs .cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
