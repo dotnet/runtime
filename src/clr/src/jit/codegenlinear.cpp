@@ -1210,13 +1210,13 @@ void CodeGen::genConsumeRegs(GenTree* tree)
     }
 #endif // !defined(_TARGET_64BIT_)
 
-    if (tree->isContained())
+    if (tree->isUsedFromSpillTemp())
     {
-        if (tree->isContainedSpillTemp())
-        {
-            // spill temps are un-tracked and hence no need to update life
-        }
-        else if (tree->isIndir())
+        // spill temps are un-tracked and hence no need to update life
+    }
+    else if (tree->isContained())
+    {
+        if (tree->isIndir())
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }

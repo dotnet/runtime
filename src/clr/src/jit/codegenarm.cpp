@@ -563,8 +563,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     bool      op1Is64Bit = (varTypeIsLong(op1Type) || op1Type == TYP_REF);
                     bool      op2Is64Bit = (varTypeIsLong(op2Type) || op2Type == TYP_REF);
                     NYI_IF(op1Is64Bit || op2Is64Bit, "Long compare");
-                    assert(!op1->isContainedMemoryOp() || op1Type == op2Type);
-                    assert(!op2->isContainedMemoryOp() || op1Type == op2Type);
+                    assert(!op1->isUsedFromMemory() || op1Type == op2Type);
+                    assert(!op2->isUsedFromMemory() || op1Type == op2Type);
                     cmpAttr = emitTypeSize(cmpType);
                 }
             }
