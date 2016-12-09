@@ -341,12 +341,20 @@
         <Member Name="get_Array" />
         <Member Name="get_Count" />
         <Member Name="get_Offset" />
+        <Member Name="GetEnumerator" />
         <Member Name="GetHashCode" />
         <Member Name="op_Equality(System.ArraySegment&lt;T&gt;,System.ArraySegment&lt;T&gt;)" />
         <Member Name="op_Inequality(System.ArraySegment&lt;T&gt;,System.ArraySegment&lt;T&gt;)" />
         <Member MemberType="Property" Name="Array" />
         <Member MemberType="Property" Name="Count" />
         <Member MemberType="Property" Name="Offset" />
+    </Type>
+    <Type Name="System.ArraySegment&lt;T&gt;+Enumerator">
+      <Member Name="Dispose" />
+      <Member Name="get_Current" />
+      <Member Name="MoveNext" />
+      <Member MemberType="Property" Name="Current" />
+      <Member Name="System.Collections.IEnumerator.Reset" />
     </Type>
     <Type Name="System.ArrayTypeMismatchException">
       <Member Name="#ctor" />
