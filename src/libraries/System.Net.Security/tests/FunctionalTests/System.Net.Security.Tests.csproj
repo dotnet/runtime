@@ -158,16 +158,11 @@
     <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <!-- TODO #13073: Remove P2P references. -->
-    <ProjectReference Include="..\..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj">
-      <Project>{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}</Project>
-      <Name>System.Net.Security</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\pkg\System.Net.Security.pkgproj">
       <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>
       <Name>System.Net.Security</Name>
     </ProjectReference>
-	<ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+	  <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>

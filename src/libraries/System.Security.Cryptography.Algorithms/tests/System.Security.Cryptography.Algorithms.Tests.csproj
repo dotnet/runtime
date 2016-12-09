@@ -18,14 +18,6 @@
       <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
       <Name>System.Security.Cryptography.Algorithms</Name>
     </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
@@ -226,12 +218,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\Interop\Unix\" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj">
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -39,11 +39,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-
-  <ItemGroup>
-    <!-- TODO: Remove this when the package reference is ready -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

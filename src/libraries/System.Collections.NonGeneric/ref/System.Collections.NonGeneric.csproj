@@ -10,8 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
-    <!-- ToDo: Remove this P2P reference once packages are updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

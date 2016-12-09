@@ -11,8 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
-    <!-- ToDo: Remove this P2P reference once the required types are pushed in System.Runtime.Serialization.Xml -->
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Xml\ref\System.Runtime.Serialization.Xml.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

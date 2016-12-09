@@ -254,14 +254,6 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <!-- ToDo: Remove these P2P references once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj" />
-  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
