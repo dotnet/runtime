@@ -43,7 +43,7 @@ namespace Windows.Foundation
         private const double EmptyWidth = Double.NegativeInfinity;
         private const double EmptyHeight = Double.NegativeInfinity;
 
-        private readonly static Rect s_empty = CreateEmptyRect();
+        private static readonly Rect s_empty = CreateEmptyRect();
 
         public Rect(double x,
                     double y,

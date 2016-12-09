@@ -1607,7 +1607,7 @@ namespace System.IO
         private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
-            private readonly static Action s_sentinel = () => { };
+            private static readonly Action s_sentinel = () => { };
             /// <summary>Cached delegate to IOCallback.</summary>
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 

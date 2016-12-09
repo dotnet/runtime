@@ -26,7 +26,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     internal struct ImmutableArray<T>
     {
         /// <summary>An empty array.</summary>
-        private readonly static ImmutableArray<T> s_empty = new ImmutableArray<T>(new T[0]);
+        private static readonly ImmutableArray<T> s_empty = new ImmutableArray<T>(new T[0]);
         /// <summary>The immutable data in this array instance.</summary>
         private readonly T[] _array;
 

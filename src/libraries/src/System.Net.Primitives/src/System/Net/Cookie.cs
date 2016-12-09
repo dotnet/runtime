@@ -1333,7 +1333,7 @@ namespace System.Net
         }
 
         // Recognized attributes in order of expected frequency.
-        private readonly static RecognizedAttribute[] s_recognizedAttributes = {
+        private static readonly RecognizedAttribute[] s_recognizedAttributes = {
             new RecognizedAttribute(Cookie.PathAttributeName, CookieToken.Path),
             new RecognizedAttribute(Cookie.MaxAgeAttributeName, CookieToken.MaxAge),
             new RecognizedAttribute(Cookie.ExpiresAttributeName, CookieToken.Expires),
@@ -1347,7 +1347,7 @@ namespace System.Net
             new RecognizedAttribute(Cookie.HttpOnlyAttributeName, CookieToken.HttpOnly),
         };
 
-        private readonly static RecognizedAttribute[] s_recognizedServerAttributes = {
+        private static readonly RecognizedAttribute[] s_recognizedServerAttributes = {
             new RecognizedAttribute('$' + Cookie.PathAttributeName, CookieToken.Path),
             new RecognizedAttribute('$' + Cookie.VersionAttributeName, CookieToken.Version),
             new RecognizedAttribute('$' + Cookie.DomainAttributeName, CookieToken.Domain),

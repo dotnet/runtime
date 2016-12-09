@@ -499,7 +499,7 @@ namespace System.Net
 
         private sealed class WriteAsyncResult : LazyAsyncResult
         {
-            private readonly static AsyncCallback s_onWrite = OnWrite;
+            private static readonly AsyncCallback s_onWrite = OnWrite;
 
             private readonly Base64Stream _parent;
             private readonly byte[] _buffer;

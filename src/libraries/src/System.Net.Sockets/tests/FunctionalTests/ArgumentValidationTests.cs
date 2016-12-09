@@ -42,11 +42,11 @@ namespace System.Net.Sockets.Tests
             public void RemoveAt(int index) { }
         }
 
-        private readonly static byte[] s_buffer = new byte[1];
-        private readonly static IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
-        private readonly static SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();
-        private readonly static Socket s_ipv4Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private readonly static Socket s_ipv6Socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly byte[] s_buffer = new byte[1];
+        private static readonly IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
+        private static readonly SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();
+        private static readonly Socket s_ipv4Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly Socket s_ipv6Socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
 
         private static void TheAsyncCallback(IAsyncResult ar)
         {

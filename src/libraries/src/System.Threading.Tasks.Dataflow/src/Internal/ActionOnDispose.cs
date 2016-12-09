@@ -20,7 +20,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     internal sealed class Disposables
     {
         /// <summary>An IDisposable that does nothing.</summary>
-        internal readonly static IDisposable Nop = new NopDisposable();
+        internal static readonly IDisposable Nop = new NopDisposable();
 
         /// <summary>Creates an IDisposable that runs an action when disposed.</summary>
         /// <typeparam name="T1">Specifies the type of the first argument.</typeparam>
