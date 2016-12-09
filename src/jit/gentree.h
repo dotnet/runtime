@@ -566,7 +566,7 @@ public:
 
     bool isContainedIntOrIImmed() const
     {
-        return isContained() && IsCnsIntOrI() && !isContainedSpillTemp();
+        return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
     bool isContainedFltOrDblImmed() const
@@ -579,17 +579,7 @@ public:
         return OperGet() == GT_LCL_FLD || OperGet() == GT_STORE_LCL_FLD;
     }
 
-    bool isContainedLclField() const
-    {
-        return isContained() && isLclField();
-    }
-
-    bool isContainedLclVar() const
-    {
-        return isContained() && (OperGet() == GT_LCL_VAR);
-    }
-
-    bool isContainedSpillTemp() const;
+    bool isUsedFromSpillTemp() const;
 
     // Indicates whether it is a memory op.
     // Right now it includes Indir and LclField ops.
@@ -598,9 +588,24 @@ public:
         return isIndir() || isLclField();
     }
 
-    bool isContainedMemoryOp() const
+    bool isUsedFromMemory() const
     {
-        return (isContained() && isMemoryOp()) || isContainedLclVar() || isContainedSpillTemp();
+        return ((isContained() && (isMemoryOp() || (OperGet() == GT_LCL_VAR))) || isUsedFromSpillTemp());
+    }
+
+    bool isLclVarUsedFromMemory() const
+    {
+        return (OperGet() == GT_LCL_VAR) && (isContained() || isUsedFromSpillTemp());
+    }
+
+    bool isLclFldUsedFromMemory() const
+    {
+        return isLclField() && (isContained() || isUsedFromSpillTemp());
+    }
+
+    bool isUsedFromReg() const
+    {
+        return !isContained() && !isUsedFromSpillTemp();
     }
 
     regNumber GetRegNum() const
@@ -5319,10 +5324,10 @@ inline bool GenTreeBlk::HasGCPtr()
     return false;
 }
 
-inline bool GenTree::isContainedSpillTemp() const
+inline bool GenTree::isUsedFromSpillTemp() const
 {
 #if !defined(LEGACY_BACKEND)
-    // If spilled and no reg at use, then it is treated as contained.
+    // If spilled and no reg at use, then it is used from the spill temp location rather than being reloaded.
     if (((gtFlags & GTF_SPILLED) != 0) && ((gtFlags & GTF_NOREG_AT_USE) != 0))
     {
         return true;
