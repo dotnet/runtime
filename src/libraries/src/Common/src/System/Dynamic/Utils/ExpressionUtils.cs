@@ -247,15 +247,18 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            int index = 0;
-            foreach(object replacementObject in replacement)
+            if (count != 0)
             {
-                if (replacementObject != current[index])
+                int index = 0;
+                foreach (T replacementObject in replacement)
                 {
-                    return false;
-                }
+                    if (replacementObject != current[index])
+                    {
+                        return false;
+                    }
 
-                index++;
+                    index++;
+                }
             }
 
             return true;
