@@ -377,7 +377,7 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        internal unsafe static bool TryCopyCharacters(char[] source, char* destination, int destinationLength, out int numberOfCharactersWritten)
+        internal static unsafe bool TryCopyCharacters(char[] source, char* destination, int destinationLength, out int numberOfCharactersWritten)
         {
             Debug.Assert(source != null && destination != null && destinationLength >= 0);
 
@@ -397,7 +397,7 @@ namespace System.Text.Encodings.Web
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool TryWriteScalarAsChar(int unicodeScalar, char* destination, int destinationLength, out int numberOfCharactersWritten)
+        internal static unsafe bool TryWriteScalarAsChar(int unicodeScalar, char* destination, int destinationLength, out int numberOfCharactersWritten)
         {
             Debug.Assert(destination != null && destinationLength >= 0);
 

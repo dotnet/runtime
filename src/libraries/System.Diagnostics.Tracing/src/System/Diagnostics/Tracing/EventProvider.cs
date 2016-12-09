@@ -1132,7 +1132,7 @@ namespace System.Diagnostics.Tracing
         // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         [System.Security.SecurityCritical]
-        internal unsafe protected bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
+        protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
             {

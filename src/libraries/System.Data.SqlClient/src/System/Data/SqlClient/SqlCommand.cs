@@ -1792,7 +1792,7 @@ namespace System.Data.SqlClient
         }
 
         // Yukon- column ordinals (this array indexed by ProcParamsColIndex
-        static readonly internal string[] PreKatmaiProcParamsNames = new string[] {
+        internal static readonly string[] PreKatmaiProcParamsNames = new string[] {
             "PARAMETER_NAME",           // ParameterName,
             "PARAMETER_TYPE",           // ParameterType,
             "DATA_TYPE",                // DataType
@@ -1811,7 +1811,7 @@ namespace System.Data.SqlClient
         };
 
         // Katmai+ column ordinals (this array indexed by ProcParamsColIndex
-        static readonly internal string[] KatmaiProcParamsNames = new string[] {
+        internal static readonly string[] KatmaiProcParamsNames = new string[] {
             "PARAMETER_NAME",           // ParameterName,
             "PARAMETER_TYPE",           // ParameterType,
             null,                       // DataType, removed from Katmai+

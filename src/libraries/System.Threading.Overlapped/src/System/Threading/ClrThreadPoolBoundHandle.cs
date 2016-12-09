@@ -275,7 +275,7 @@ namespace System.Threading
         ///     <paramref name="overlapped"/> is <see langword="null"/>.
         /// </exception>
         [CLSCompliant(false)]
-        public unsafe static object GetNativeOverlappedState(NativeOverlapped* overlapped)
+        public static unsafe object GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
             if (overlapped == null)
                 throw new ArgumentNullException(nameof(overlapped));

@@ -179,7 +179,7 @@ namespace System
             }
         }
 
-        private unsafe static char[] GetEnvironmentCharArray()
+        private static unsafe char[] GetEnvironmentCharArray()
         {
             // Format for GetEnvironmentStrings is:
             // [=HiddenVar=value\0]* [Variable=value\0]* \0

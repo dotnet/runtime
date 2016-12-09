@@ -122,7 +122,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper class for detecting address change events.
-        internal unsafe static class AddressChangeListener
+        internal static unsafe class AddressChangeListener
         {
             private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> s_callerArray =
                 new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext>();

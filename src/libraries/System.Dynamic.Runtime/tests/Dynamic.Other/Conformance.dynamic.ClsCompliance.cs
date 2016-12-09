@@ -433,7 +433,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
 
         public class MyClass2 : MyClass
         {
-            //static public dynamic[,,,] array1; //cube array
+            //public static dynamic[,,,] array1; //cube array
             private dynamic _classIdentifier;
             private dynamic MEthod01(int n, ref dynamic d)
             {
@@ -460,7 +460,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
                 return default(object);
             }
 
-            internal protected dynamic method03(U x, ref V y, params dynamic[] ary)
+            protected internal dynamic method03(U x, ref V y, params dynamic[] ary)
             {
                 return default(object);
             }

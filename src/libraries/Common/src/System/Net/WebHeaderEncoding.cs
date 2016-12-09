@@ -59,7 +59,7 @@ namespace System.Net
         {
             return myString.Length;
         }
-        internal unsafe static void GetBytes(string myString, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        internal static unsafe void GetBytes(string myString, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (myString.Length == 0)
             {
@@ -75,7 +75,7 @@ namespace System.Net
                 }
             }
         }
-        internal unsafe static byte[] GetBytes(string myString)
+        internal static unsafe byte[] GetBytes(string myString)
         {
             byte[] bytes = new byte[myString.Length];
             if (myString.Length != 0)
