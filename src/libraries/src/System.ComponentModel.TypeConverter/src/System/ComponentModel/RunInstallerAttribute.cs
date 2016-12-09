@@ -15,9 +15,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class)]
     public class RunInstallerAttribute : Attribute
     {
-        private bool _runInstaller;
-
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of
@@ -26,7 +23,7 @@ namespace System.ComponentModel
         /// </summary>
         public RunInstallerAttribute(bool runInstaller)
         {
-            _runInstaller = runInstaller;
+            RunInstaller = runInstaller;
         }
 
 
@@ -36,13 +33,7 @@ namespace System.ComponentModel
         ///       invoked during installation of an assembly.
         ///    </para>
         /// </summary>
-        public bool RunInstaller
-        {
-            get
-            {
-                return _runInstaller;
-            }
-        }
+        public bool RunInstaller { get; }
 
 
         /// <summary>
@@ -86,7 +77,7 @@ namespace System.ComponentModel
             }
 
             RunInstallerAttribute other = obj as RunInstallerAttribute;
-            return other != null && other.RunInstaller == _runInstaller;
+            return other != null && other.RunInstaller == RunInstaller;
         }
 
 

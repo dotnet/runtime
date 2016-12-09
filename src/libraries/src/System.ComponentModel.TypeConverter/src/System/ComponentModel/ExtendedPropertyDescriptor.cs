@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.ComponentModel
@@ -29,7 +30,7 @@ namespace System.ComponentModel
             Debug.Assert(extenderInfo != null, "ExtendedPropertyDescriptor must have extenderInfo");
             Debug.Assert(provider != null, "ExtendedPropertyDescriptor must have provider");
 
-            ArrayList attrList = new ArrayList(AttributeArray);
+            List<Attribute> attrList = new List<Attribute>(AttributeArray);
             attrList.Add(ExtenderProvidedPropertyAttribute.Create(extenderInfo, receiverType, provider));
             if (extenderInfo.IsReadOnly)
             {
@@ -72,35 +73,17 @@ namespace System.ComponentModel
         /// <summary>
         ///     Retrieves the type of the component this PropertyDescriptor is bound to.
         /// </summary>
-        public override Type ComponentType
-        {
-            get
-            {
-                return _extenderInfo.ComponentType;
-            }
-        }
+        public override Type ComponentType => _extenderInfo.ComponentType;
 
         /// <summary>
         ///     Determines if the property can be written to.
         /// </summary>
-        public override bool IsReadOnly
-        {
-            get
-            {
-                return Attributes[typeof(ReadOnlyAttribute)].Equals(ReadOnlyAttribute.Yes);
-            }
-        }
+        public override bool IsReadOnly => Attributes[typeof(ReadOnlyAttribute)].Equals(ReadOnlyAttribute.Yes);
 
         /// <summary>
         ///     Retrieves the data type of the property.
         /// </summary>
-        public override Type PropertyType
-        {
-            get
-            {
-                return _extenderInfo.ExtenderGetType(_provider);
-            }
-        }
+        public override Type PropertyType => _extenderInfo.ExtenderGetType(_provider);
 
         /// <summary>
         ///     Retrieves the display name of the property.  This is the name that will
@@ -117,13 +100,10 @@ namespace System.ComponentModel
                 if (displayNameAttr == null || displayNameAttr.IsDefaultAttribute())
                 {
                     ISite site = GetSite(_provider);
-                    if (site != null)
+                    string providerName = site?.Name;
+                    if (providerName != null && providerName.Length > 0)
                     {
-                        string providerName = site.Name;
-                        if (providerName != null && providerName.Length > 0)
-                        {
-                            name = string.Format(SR.MetaExtenderName, name, providerName);
-                        }
+                        name = string.Format(SR.MetaExtenderName, name, providerName);
                     }
                 }
                 return name;

@@ -66,7 +66,7 @@ namespace System.ComponentModel
         private MethodInfo _addMethod;     // the method to use when adding an event
         private MethodInfo _removeMethod;  // the method to use when removing an event
         private EventInfo _realEvent;      // actual event info... may be null
-        private bool _filledMethods = false;   // did we already call FillMethods() once?
+        private bool _filledMethods;   // did we already call FillMethods() once?
 
         /// <summary>
         ///     This is the main constructor for an ReflectEventDescriptor.
@@ -82,7 +82,7 @@ namespace System.ComponentModel
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidEventType, name));
             }
-            Debug.Assert(type.GetTypeInfo().IsSubclassOf(typeof(Delegate)), "Not a valid ReflectEvent: " + componentClass.FullName + "." + name + " " + type.FullName);
+            Debug.Assert(type.GetTypeInfo().IsSubclassOf(typeof(Delegate)), $"Not a valid ReflectEvent: {componentClass.FullName}. {name} {type.FullName}");
             _componentClass = componentClass;
             _type = type;
         }
@@ -120,13 +120,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     Retrieves the type of the component this EventDescriptor is bound to.
         /// </summary>
-        public override Type ComponentType
-        {
-            get
-            {
-                return _componentClass;
-            }
-        }
+        public override Type ComponentType => _componentClass;
 
         /// <summary>
         ///     Retrieves the type of the delegate for this event.
@@ -143,13 +137,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     Indicates whether the delegate type for this event is a multicast delegate.
         /// </summary>
-        public override bool IsMulticast
-        {
-            get
-            {
-                return (typeof(MulticastDelegate)).IsAssignableFrom(EventType);
-            }
-        }
+        public override bool IsMulticast => (typeof(MulticastDelegate)).IsAssignableFrom(EventType);
 
         /// <summary>
         ///     This adds the delegate value as a listener to when this event is fired
@@ -211,10 +199,7 @@ namespace System.ComponentModel
 
                 // Now notify the change service that the change was successful.
                 //
-                if (changeService != null)
-                {
-                    changeService.OnComponentChanged(component, this, null, value);
-                }
+                changeService?.OnComponentChanged(component, this, null, value);
             }
         }
 
@@ -249,10 +234,10 @@ namespace System.ComponentModel
             }
             else
             {
-                Debug.Assert(_removeMethod != null, "Null remove method for " + Name);
+                Debug.Assert(_removeMethod != null, $"Null remove method for {Name}");
                 FillSingleMethodAttribute(_removeMethod, attributes);
 
-                Debug.Assert(_addMethod != null, "Null remove method for " + Name);
+                Debug.Assert(_addMethod != null, $"Null remove method for {Name}");
                 FillSingleMethodAttribute(_addMethod, attributes);
             }
 
@@ -379,7 +364,7 @@ namespace System.ComponentModel
                 _removeMethod = FindMethod(_componentClass, "RemoveOn" + Name, argsType, typeof(void));
                 if (_addMethod == null || _removeMethod == null)
                 {
-                    Debug.Fail("Missing event accessors for " + _componentClass.FullName + "." + Name);
+                    Debug.Fail($"Missing event accessors for {_componentClass.FullName}. {Name}");
                     throw new ArgumentException(SR.Format(SR.ErrorMissingEventAccessors, Name));
                 }
             }
@@ -500,10 +485,7 @@ namespace System.ComponentModel
 
                 // Now notify the change service that the change was successful.
                 //
-                if (changeService != null)
-                {
-                    changeService.OnComponentChanged(component, this, null, value);
-                }
+                changeService?.OnComponentChanged(component, this, null, value);
             }
         }
     }

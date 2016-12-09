@@ -14,8 +14,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = true)]
     public sealed class EditorAttribute : Attribute
     {
-        private string _baseTypeName;
-        private string _typeName;
         private string _typeId;
 
         /// <summary>
@@ -24,8 +22,8 @@ namespace System.ComponentModel
         /// </summary>
         public EditorAttribute()
         {
-            _typeName = string.Empty;
-            _baseTypeName = string.Empty;
+            EditorTypeName = string.Empty;
+            EditorBaseTypeName = string.Empty;
         }
 
         /// <summary>
@@ -35,9 +33,9 @@ namespace System.ComponentModel
         public EditorAttribute(string typeName, string baseTypeName)
         {
             string temp = typeName.ToUpper(CultureInfo.InvariantCulture);
-            Debug.Assert(temp.IndexOf(".DLL") == -1, "Came across: " + typeName + " . Please remove the .dll extension");
-            _typeName = typeName;
-            _baseTypeName = baseTypeName;
+            Debug.Assert(temp.IndexOf(".DLL") == -1, $"Came across: {typeName} . Please remove the .dll extension");
+            EditorTypeName = typeName;
+            EditorBaseTypeName = baseTypeName;
         }
 
         /// <summary>
@@ -46,9 +44,9 @@ namespace System.ComponentModel
         public EditorAttribute(string typeName, Type baseType)
         {
             string temp = typeName.ToUpper(CultureInfo.InvariantCulture);
-            Debug.Assert(temp.IndexOf(".DLL") == -1, "Came across: " + typeName + " . Please remove the .dll extension");
-            _typeName = typeName;
-            _baseTypeName = baseType.AssemblyQualifiedName;
+            Debug.Assert(temp.IndexOf(".DLL") == -1, $"Came across: {typeName} . Please remove the .dll extension");
+            EditorTypeName = typeName;
+            EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -57,31 +55,19 @@ namespace System.ComponentModel
         /// </summary>
         public EditorAttribute(Type type, Type baseType)
         {
-            _typeName = type.AssemblyQualifiedName;
-            _baseTypeName = baseType.AssemblyQualifiedName;
+            EditorTypeName = type.AssemblyQualifiedName;
+            EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }
 
         /// <summary>
         ///    <para>Gets the name of the base class or interface serving as a lookup key for this editor.</para>
         /// </summary>
-        public string EditorBaseTypeName
-        {
-            get
-            {
-                return _baseTypeName;
-            }
-        }
+        public string EditorBaseTypeName { get; }
 
         /// <summary>
         ///    <para>Gets the name of the editor class.</para>
         /// </summary>
-        public string EditorTypeName
-        {
-            get
-            {
-                return _typeName;
-            }
-        }
+        public string EditorTypeName { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -99,7 +85,7 @@ namespace System.ComponentModel
             {
                 if (_typeId == null)
                 {
-                    string baseType = _baseTypeName;
+                    string baseType = EditorBaseTypeName;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {
@@ -120,7 +106,7 @@ namespace System.ComponentModel
 
             EditorAttribute other = obj as EditorAttribute;
 
-            return (other != null) && other._typeName == _typeName && other._baseTypeName == _baseTypeName;
+            return (other != null) && other.EditorTypeName == EditorTypeName && other.EditorBaseTypeName == EditorBaseTypeName;
         }
 
         public override int GetHashCode()

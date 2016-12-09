@@ -16,8 +16,6 @@ namespace System.ComponentModel.Design
     /// </summary>
     public class DesignerEventArgs : EventArgs
     {
-        private readonly IDesignerHost _host;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the System.ComponentModel.Design.DesignerEventArgs
@@ -26,7 +24,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerEventArgs(IDesignerHost host)
         {
-            _host = host;
+            Designer = host;
         }
 
         /// <summary>
@@ -35,13 +33,7 @@ namespace System.ComponentModel.Design
         ///       sets the host of the document.
         ///    </para>
         /// </summary>
-        public IDesignerHost Designer
-        {
-            get
-            {
-                return _host;
-            }
-        }
+        public IDesignerHost Designer { get; }
     }
 }
 

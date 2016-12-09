@@ -16,9 +16,6 @@ namespace System.ComponentModel.Design
     /// </summary>
     public class DesignerTransactionCloseEventArgs : EventArgs
     {
-        private bool _commit;
-        private bool _lastTransaction;
-
         /// <summary>
         ///     Creates a new event args.  Commit is true if the transaction is committed.  This
         ///     defaults the LastTransaction property to true.
@@ -34,30 +31,18 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerTransactionCloseEventArgs(bool commit, bool lastTransaction)
         {
-            _commit = commit;
-            _lastTransaction = lastTransaction;
+            TransactionCommitted = commit;
+            LastTransaction = lastTransaction;
         }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public bool TransactionCommitted
-        {
-            get
-            {
-                return _commit;
-            }
-        }
+        public bool TransactionCommitted { get; }
 
         /// <summary>
         ///    Returns true if this is the last transaction to close.
         /// </summary>
-        public bool LastTransaction
-        {
-            get
-            {
-                return _lastTransaction;
-            }
-        }
+        public bool LastTransaction { get; }
     }
 }

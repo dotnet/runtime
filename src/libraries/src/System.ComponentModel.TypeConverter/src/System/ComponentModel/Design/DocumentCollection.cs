@@ -56,25 +56,13 @@ namespace System.ComponentModel.Design
         ///       sets the number
         ///       of documents in the collection.</para>
         /// </summary>
-        public int Count
-        {
-            get
-            {
-                return _designers.Count;
-            }
-        }
+        public int Count => _designers.Count;
 
         /// <summary>
         ///    <para> Gets
         ///       or sets the document at the specified index.</para>
         /// </summary>
-        public virtual IDesignerHost this[int index]
-        {
-            get
-            {
-                return (IDesignerHost)_designers[index];
-            }
-        }
+        public virtual IDesignerHost this[int index] => (IDesignerHost)_designers[index];
 
         /// <summary>
         ///    <para>Creates and retrieves a new enumerator for this collection.</para>
@@ -85,31 +73,13 @@ namespace System.ComponentModel.Design
         }
 
         /// <internalonly/>
-        int ICollection.Count
-        {
-            get
-            {
-                return Count;
-            }
-        }
+        int ICollection.Count => Count;
 
         /// <internalonly/>
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool ICollection.IsSynchronized => false;
 
         /// <internalonly/>
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return null;
-            }
-        }
+        object ICollection.SyncRoot => null;
 
         /// <internalonly/>
         void ICollection.CopyTo(Array array, int index)
