@@ -14,6 +14,7 @@ usage()
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "staticLibLink - Optional argument to statically link any native library."
+    echo "portableLinux - Optional argument to build native libraries portable over GLIBC based Linux distros."
     echo "generateversion - Pass this in to get a version on the build output."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
@@ -112,6 +113,8 @@ __ServerGC=0
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
+__StaticLibLink=0
+__PortableLinux=0
 
 while :; do
     if [ $# -le 0 ]; then
@@ -166,7 +169,10 @@ while :; do
             __VerboseBuild=1
             ;;
         staticliblink)
-            __CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_STATIC_LIB_LINK=1"
+            __StaticLibLink=1
+            ;;
+        portablelinux)
+            __PortableLinux=1
             ;;
         generateversion)
             __generateversionsource=true
@@ -221,6 +227,9 @@ while :; do
 
     shift
 done
+
+__CMakeExtraArgs="$__CMakeExtraArgs -DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableLinux"
+__CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_STATIC_LIB_LINK=$__StaticLibLink"
 
 # Set cross build
 CPUName=$(uname -p)
