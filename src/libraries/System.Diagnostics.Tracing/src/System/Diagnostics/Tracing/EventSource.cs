@@ -3823,7 +3823,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
         [SecuritySafeCritical]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification = "Switch statement is clearer than alternatives")]
-        static private int GetHelperCallFirstArg(MethodInfo method)
+        private static int GetHelperCallFirstArg(MethodInfo method)
         {
 #if (!ES_BUILD_PCL && !PROJECTN)
             // Currently searches for the following pattern

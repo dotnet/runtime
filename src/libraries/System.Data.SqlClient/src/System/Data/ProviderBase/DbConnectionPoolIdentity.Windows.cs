@@ -12,7 +12,7 @@ namespace System.Data.ProviderBase
 {
     partial class DbConnectionPoolIdentity
     {
-        static private DbConnectionPoolIdentity s_lastIdentity = null;
+        private static DbConnectionPoolIdentity s_lastIdentity = null;
 
         internal static DbConnectionPoolIdentity GetCurrent()
         {

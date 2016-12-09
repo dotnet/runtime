@@ -17,7 +17,7 @@ namespace System.Xml
     [DebuggerDisplay("{debuggerDisplayProxy}")]
     public abstract partial class XmlReader : IDisposable
     {
-        static private uint s_isTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
+        private static uint s_isTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
         // 0 None, 
         // 0 Element,
         // 0 Attribute,
@@ -37,7 +37,7 @@ namespace System.Xml
         // 0 EndEntity,
         // 0 XmlDeclaration
 
-        static private uint s_canReadContentAsBitmap = 0x1E1BC; // 01 1110 0001 1011 1100
+        private static uint s_canReadContentAsBitmap = 0x1E1BC; // 01 1110 0001 1011 1100
         // 0 None, 
         // 0 Element,
         // 1 Attribute,
@@ -57,7 +57,7 @@ namespace System.Xml
         // 1 EndEntity,
         // 0 XmlDeclaration
 
-        static private uint s_hasValueBitmap = 0x2659C; // 10 0110 0101 1001 1100
+        private static uint s_hasValueBitmap = 0x2659C; // 10 0110 0101 1001 1100
         // 0 None, 
         // 0 Element,
         // 1 Attribute,

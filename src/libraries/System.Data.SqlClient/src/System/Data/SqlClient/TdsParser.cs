@@ -5843,7 +5843,7 @@ namespace System.Data.SqlClient
             Debug.Assert(!stateObj._attentionSent, "Invalid attentionSent state at end of ProcessAttention");
         }
 
-        static private int StateValueLength(int dataLen)
+        private static int StateValueLength(int dataLen)
         {
             return dataLen < 0xFF ? (dataLen + 1) : (dataLen + 5);
         }
