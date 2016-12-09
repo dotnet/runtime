@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -475,6 +476,11 @@ namespace System.Net.Security
         internal void Flush()
         {
             InnerStream.Flush();
+        }
+
+        internal Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return InnerStream.FlushAsync(cancellationToken);
         }
 
         //

@@ -6,6 +6,8 @@ using System.IO;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -155,6 +157,11 @@ namespace System.Net.Security
         {
         }
 
+        internal Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
         //
         // This is to not depend on GC&SafeHandle class if the context is not needed anymore.
         //
@@ -235,6 +242,11 @@ namespace System.Net.Security
         public override void Flush()
         {
             throw new NotImplementedException();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromException(new NotImplementedException());
         }
 
         public override int Read(byte[] buffer, int offset, int count)
