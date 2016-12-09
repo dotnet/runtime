@@ -1066,3 +1066,52 @@ DYNAMICHELPER DynamicHelperFrameFlags_ObjectArg, _Obj
 DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2), _ObjObj
 
 #endif // FEATURE_READYTORUN
+
+NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
+    //
+    // The stub arguments are where we want to setup the TransitionBlock. We will
+    // setup the TransitionBlock later once we can trash them
+    //
+    // push ebp-frame
+    // push      ebp
+    // mov       ebp,esp
+
+    // save CalleeSavedRegisters
+    // push      ebx
+
+    push        esi
+    push        edi
+
+    // push ArgumentRegisters
+    push        ecx
+    push        edx
+
+    mov         esi, esp
+
+    push        [esi + 4*4]     // dispatch token
+    push        [esi + 5*4]     // siteAddrForRegisterIndirect
+    push        esi             // pTransitionBlock
+
+    // Setup up proper EBP frame now that the stub arguments can be trashed
+    mov         [esi + 4*4],ebx
+    mov         [esi + 5*4],ebp
+    lea         ebp, [esi + 5*4]
+
+    // Make the call
+    call        C_FUNC(VSD_ResolveWorker)
+
+    // From here on, mustn't trash eax
+
+    // pop ArgumentRegisters
+    pop     edx
+    pop     ecx
+
+    // pop CalleeSavedRegisters
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+
+    // Now jump to the target
+    jmp     eax             // continue on into the method
+NESTED_END ResolveWorkerAsmStub, _TEXT
