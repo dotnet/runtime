@@ -1111,7 +1111,6 @@ namespace System.Security {
     
         // Mark this method as requiring a security object on the caller's frame
         // so the caller won't be inlined (which would mess up stack crawling).
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DynamicSecurityMethodAttribute()]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public void Demand()
@@ -1132,7 +1131,6 @@ namespace System.Security {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void DemandNonCAS()
         {
             ContainsNonCodeAccessPermissions();
@@ -1155,7 +1153,6 @@ namespace System.Security {
         // Metadata for this method should be flaged with REQ_SQ so that
         // EE can allocate space on the stack frame for FrameSecurityDescriptor
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DynamicSecurityMethodAttribute()]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public void Assert() 
@@ -1167,7 +1164,6 @@ namespace System.Security {
         // Metadata for this method should be flaged with REQ_SQ so that
         // EE can allocate space on the stack frame for FrameSecurityDescriptor
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DynamicSecurityMethodAttribute()]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
@@ -1180,7 +1176,6 @@ namespace System.Security {
         // Metadata for this method should be flaged with REQ_SQ so that
         // EE can allocate space on the stack frame for FrameSecurityDescriptor
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DynamicSecurityMethodAttribute()]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public void PermitOnly()
@@ -1289,7 +1284,6 @@ namespace System.Security {
 
         // Determines whether the permission set contains any non-code access
         // security permissions.
-        [System.Security.SecurityCritical] // auto-generated
         public bool ContainsNonCodeAccessPermissions()
         {
             if (m_CheckedForNonCas)
@@ -1389,9 +1383,6 @@ namespace System.Security {
         }
 
         // Converts an array of SecurityAttributes to a PermissionSet
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         private static byte[] CreateSerialized(Object[] attrs,
                                                bool serialize,
                                                ref byte[] nonCasBlob,
@@ -1475,7 +1466,6 @@ namespace System.Security {
         }
 #endif
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static void RevertAssert()
         {

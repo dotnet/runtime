@@ -436,7 +436,6 @@ namespace System {
                 Environment.GetResourceString("Format_AttributeUsage", type));
         }
 
-        [System.Security.SecuritySafeCritical]
         private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount)
         {
             return (Attribute[])Array.UnsafeCreateInstance(elementType, elementCount);
@@ -830,7 +829,6 @@ namespace System {
         #endregion
 
         #region Object Overrides
-        [SecuritySafeCritical]
         public override bool Equals(Object obj)
         {
             if (obj == null)
@@ -913,7 +911,6 @@ namespace System {
             return true;
         }
 
-        [SecuritySafeCritical]
         public override int GetHashCode()
         {
             Type type = GetType();

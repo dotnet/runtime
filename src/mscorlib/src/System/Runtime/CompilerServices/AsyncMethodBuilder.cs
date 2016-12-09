@@ -59,7 +59,6 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
-        [SecuritySafeCritical]
         [DebuggerStepThrough]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
@@ -149,7 +148,6 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
-        [SecuritySafeCritical]
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
@@ -294,7 +292,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
-        [SecuritySafeCritical]
         [DebuggerStepThrough]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
@@ -450,7 +447,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
-        [SecuritySafeCritical]
         [DebuggerStepThrough]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
@@ -534,7 +530,6 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
-        [SecuritySafeCritical]
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
@@ -713,7 +708,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="result">The result for which we need a task.</param>
         /// <returns>The completed task containing the result.</returns>
-        [SecuritySafeCritical] // for JitHelpers.UnsafeCast
         private Task<TResult> GetTaskForResult(TResult result)
         {
             Contract.Ensures(
@@ -854,7 +848,6 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument is null (Nothing in Visual Basic).</exception>
-        [SecuritySafeCritical]
         [DebuggerStepThrough]
         internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
@@ -902,7 +895,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="builder">The builder.</param>
         /// <param name="stateMachine">The state machine.</param>
         /// <returns>An Action to provide to the awaiter.</returns>
-        [SecuritySafeCritical]
         internal Action GetCompletionAction(Task taskForTracing, ref MoveNextRunner runnerToInitialize)
         {
             Contract.Assert(m_defaultContextAction == null || m_stateMachine != null,
@@ -1045,14 +1037,12 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Initializes the runner.</summary>
             /// <param name="context">The context with which to run MoveNext.</param>
-            [SecurityCritical] // Run needs to be SSC to map to Action delegate, so to prevent misuse, we only allow construction through SC
             internal MoveNextRunnerWithContext(ExecutionContext context, IAsyncStateMachine stateMachine) : base(stateMachine)
             {
                 m_context = context;
             }
 
             /// <summary>Invokes MoveNext under the provided context.</summary>
-            [SecuritySafeCritical]
             internal void RunWithCapturedContext()
             {
                 Contract.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
@@ -1080,14 +1070,12 @@ namespace System.Runtime.CompilerServices
             internal IAsyncStateMachine m_stateMachine;
 
             /// <summary>Initializes the runner.</summary>
-            [SecurityCritical] // Run needs to be SSC to map to Action delegate, so to prevent misuse, we only allow construction through SC
             internal MoveNextRunner(IAsyncStateMachine stateMachine)
             {
                 m_stateMachine = stateMachine;
             }
 
             /// <summary>Invokes MoveNext under the default context.</summary>
-            [SecuritySafeCritical]
             internal void RunWithDefaultContext()
             {
                 Contract.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
@@ -1097,17 +1085,14 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets a delegate to the InvokeMoveNext method.</summary>
             protected static ContextCallback InvokeMoveNextCallback
             {
-                [SecuritySafeCritical]
                 get { return s_invokeMoveNext ?? (s_invokeMoveNext = InvokeMoveNext); }
             }
 
             /// <summary>Cached delegate used with ExecutionContext.Run.</summary>
-            [SecurityCritical]
             private static ContextCallback s_invokeMoveNext; // lazily-initialized due to SecurityCritical attribution
 
             /// <summary>Invokes the MoveNext method on the supplied IAsyncStateMachine.</summary>
             /// <param name="stateMachine">The IAsyncStateMachine machine instance.</param>
-            [SecurityCritical] // necessary for ContextCallback in CoreCLR
             private static void InvokeMoveNext(object stateMachine)
             {
                 ((IAsyncStateMachine)stateMachine).MoveNext();

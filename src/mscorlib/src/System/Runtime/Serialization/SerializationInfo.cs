@@ -106,7 +106,6 @@ namespace System.Runtime.Serialization
             {
                 return m_assemName;
             }
-            [SecuritySafeCritical]
             set
             {
                 if (null == value)
@@ -123,7 +122,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecuritySafeCritical]
         public void SetType(Type type)
         {
             if ((object)type == null)
@@ -165,7 +163,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecuritySafeCritical]
         internal static void DemandForUnsafeAssemblyNameAssignments(string originalAssemblyName, string newAssemblyName)
         {
 #if !FEATURE_CORECLR
@@ -503,7 +500,6 @@ namespace System.Runtime.Serialization
         // form requested.  
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Object GetValue(String name, Type type)
         {
 
@@ -532,7 +528,6 @@ namespace System.Runtime.Serialization
             return m_converter.Convert(value, type);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.InteropServices.ComVisible(true)]
         internal Object GetValueNoThrow(String name, Type type)
         {

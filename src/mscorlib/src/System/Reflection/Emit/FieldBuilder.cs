@@ -29,7 +29,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        [System.Security.SecurityCritical]  // auto-generated
         internal FieldBuilder(TypeBuilder typeBuilder, String fieldName, Type type, 
             Type[] requiredCustomModifiers, Type[] optionalCustomModifiers, FieldAttributes attributes)
         {
@@ -69,7 +68,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetData(byte[] data, int size)
         {
             ModuleBuilder.SetFieldRVAContent(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), m_tkField.Token, data, size);
@@ -181,11 +179,6 @@ namespace System.Reflection.Emit
             return m_tkField;
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         public void SetOffset(int iOffset) 
         {
             m_typeBuilder.ThrowIfCreated();     
@@ -193,7 +186,6 @@ namespace System.Reflection.Emit
             TypeBuilder.SetFieldLayoutOffset(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, iOffset);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetMarshal(UnmanagedMarshal unmanagedMarshal)
         {
@@ -208,7 +200,6 @@ namespace System.Reflection.Emit
             TypeBuilder.SetFieldMarshal(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, ubMarshal, ubMarshal.Length);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetConstant(Object defaultValue) 
         {
             m_typeBuilder.ThrowIfCreated();  
@@ -217,11 +208,6 @@ namespace System.Reflection.Emit
         }
         
 
-#if FEATURE_CORECLR
-[System.Security.SecurityCritical] // auto-generated
-#else
-[System.Security.SecuritySafeCritical]
-#endif
 [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
@@ -240,7 +226,6 @@ namespace System.Reflection.Emit
                 m_tkField.Token, module.GetConstructorToken(con).Token, binaryAttribute, false, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)

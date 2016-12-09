@@ -205,7 +205,6 @@ namespace System.Reflection
         // In V4 RuntimeParameterInfo is introduced. 
         // To support deserializing ParameterInfo instances serialized in earlier versions
         // we need to implement IObjectReference.
-        [System.Security.SecurityCritical]
         public object GetRealObject(StreamingContext context)
         {
             Contract.Ensures(Contract.Result<Object>() != null);
@@ -258,7 +257,6 @@ namespace System.Reflection
     internal unsafe sealed class RuntimeParameterInfo : ParameterInfo, ISerializable
     {
         #region Static Members
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
             Contract.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
@@ -267,7 +265,6 @@ namespace System.Reflection
             return GetParameters(method, member, sig, out dummy, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
             Contract.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
@@ -277,7 +274,6 @@ namespace System.Reflection
             return returnParameter;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static ParameterInfo[] GetParameters(
             IRuntimeMethodInfo methodHandle, MemberInfo member, Signature sig, out ParameterInfo returnParameter, bool fetchReturnParameter)
         {
@@ -396,7 +392,6 @@ namespace System.Reflection
         #endregion
 
         #region VTS magic to serialize/deserialized to/from pre-Whidbey endpoints.
-        [System.Security.SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -521,7 +516,6 @@ namespace System.Reflection
 
         public override String Name
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (!m_nameIsCached)
@@ -585,7 +579,6 @@ namespace System.Reflection
         }
 
         // returns DBNull.Value if the parameter doesn't have a default value
-        [System.Security.SecuritySafeCritical]
         private Object GetDefaultValueInternal(bool raw)
         {
             Contract.Assert(!m_noMetadata);
@@ -739,7 +732,6 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)

@@ -91,7 +91,6 @@ namespace System.Runtime.InteropServices {
         
         #region IRegistrationServices
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual bool RegisterAssembly(Assembly assembly, AssemblyRegistrationFlags flags)
         {
             // Validate the arguments.
@@ -154,7 +153,6 @@ namespace System.Runtime.InteropServices {
                 return false;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual bool UnregisterAssembly(Assembly assembly)
         {
             // Validate the arguments.
@@ -214,7 +212,6 @@ namespace System.Runtime.InteropServices {
                 return false;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual Type[] GetRegistrableTypesInAssembly(Assembly assembly)
         {
             // Validate the arguments.
@@ -246,13 +243,11 @@ namespace System.Runtime.InteropServices {
             return RetArray;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual String GetProgIdForType(Type type)
         {
             return Marshal.GenerateProgIdForType(type);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual void RegisterTypeForComClients(Type type, ref Guid g)
         {
 #if FEATURE_COMINTEROP_MANAGED_ACTIVATION
@@ -276,13 +271,11 @@ namespace System.Runtime.InteropServices {
             return s_ManagedCategoryGuid;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual bool TypeRequiresRegistration(Type type)
         {
             return TypeRequiresRegistrationHelper(type);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public virtual bool TypeRepresentsComType(Type type)
         {
             // If the type is not a COM import, then it does not represent a COM type.
@@ -307,7 +300,6 @@ namespace System.Runtime.InteropServices {
 
         
         #region Public methods not on IRegistrationServices
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ComVisible(false)]
         public virtual int RegisterTypeForComClients(Type type, RegistrationClassContext classContext, RegistrationConnectionType flags)
         {
@@ -327,7 +319,6 @@ namespace System.Runtime.InteropServices {
 #endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ComVisible(false)]
         public virtual void UnregisterTypeForComClients(int cookie)
         {
@@ -340,7 +331,6 @@ namespace System.Runtime.InteropServices {
 
         #region Internal helpers
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         internal static bool TypeRequiresRegistrationHelper(Type type)
         {
             // If the type is not a class or a value class, then it does not get registered.
@@ -365,7 +355,6 @@ namespace System.Runtime.InteropServices {
 
         #region Private helpers
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void RegisterValueType(Type type, String strAsmName, String strAsmVersion, String strAsmCodeBase, String strRuntimeVersion)
         {
             // Retrieve some information that will be used during the registration process.
@@ -397,7 +386,6 @@ namespace System.Runtime.InteropServices {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void RegisterManagedType(Type type, String strAsmName, String strAsmVersion, String strAsmCodeBase, String strRuntimeVersion)
         {
             //
@@ -483,7 +471,6 @@ namespace System.Runtime.InteropServices {
             EnsureManagedCategoryExists();
         } 
         
-        [System.Security.SecurityCritical]  // auto-generated
         private void RegisterComImportedType(Type type, String strAsmName, String strAsmVersion, String strAsmCodeBase, String strRuntimeVersion)
         {
             // Retrieve some information that will be used during the registration process.
@@ -525,7 +512,6 @@ namespace System.Runtime.InteropServices {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private bool UnregisterValueType(Type type, String strAsmVersion)
         {
             bool bAllVersionsGone = true;
@@ -582,7 +568,6 @@ namespace System.Runtime.InteropServices {
         // Return :
         //      true:   All versions are gone.
         //      false:  Some versions are still left in registry
-        [System.Security.SecurityCritical]  // auto-generated
         private bool UnregisterManagedType(Type type,String strAsmVersion)
         {
             bool bAllVersionsGone = true;
@@ -776,7 +761,6 @@ namespace System.Runtime.InteropServices {
         // Return:
         //      true:      All version information are gone.
         //      false:     There are still some version left in registry
-        [System.Security.SecurityCritical]  // auto-generated
         private bool UnregisterComImportedType(Type type, String strAsmVersion)
         {
             bool bAllVersionsGone = true;
@@ -846,7 +830,6 @@ namespace System.Runtime.InteropServices {
             return bAllVersionsGone;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void RegisterPrimaryInteropAssembly(RuntimeAssembly assembly, String strAsmCodeBase, PrimaryInteropAssemblyAttribute attr)
         {
             // Validate that the PIA has a strong name.
@@ -874,7 +857,6 @@ namespace System.Runtime.InteropServices {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void UnregisterPrimaryInteropAssembly(Assembly assembly, PrimaryInteropAssemblyAttribute attr)
         {
             String strTlbId = "{" + Marshal.GetTypeLibGuidForAssembly(assembly).ToString().ToUpper(CultureInfo.InvariantCulture) + "}";
@@ -958,7 +940,6 @@ namespace System.Runtime.InteropServices {
             return true;
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         private void CallUserDefinedRegistrationMethod(Type type, bool bRegister)
         {
             bool bFunctionCalled = false;
@@ -1061,13 +1042,11 @@ namespace System.Runtime.InteropServices {
 #if FEATURE_COMINTEROP_MANAGED_ACTIVATION
         // GUID versioning can be controlled by using the GuidAttribute or 
         // letting the runtime generate it based on type and assembly strong name.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void RegisterTypeForComClientsNative(Type type,ref Guid g);
         
         // GUID versioning can be controlled by using the GuidAttribute or 
         // letting the runtime generate it based on type and assembly strong name.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int RegisterTypeForComClientsExNative(Type t, RegistrationClassContext clsContext, RegistrationConnectionType flags);
 #endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION

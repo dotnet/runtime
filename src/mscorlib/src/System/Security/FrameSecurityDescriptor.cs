@@ -40,10 +40,8 @@ namespace System.Security {
         // if this frame contains a call to any WindowsIdentity.Impersonate(), 
         // we save the previous SafeTokenHandles here (in the next two fields)
         // Used during exceptionstackwalks to revert impersonation before calling filters        
-        [System.Security.SecurityCritical] // auto-generated
         [NonSerialized]
         private SafeAccessTokenHandle     m_callerToken; 
-        [System.Security.SecurityCritical] // auto-generated
         [NonSerialized]
         private SafeAccessTokenHandle     m_impToken;                               
 #endif
@@ -56,16 +54,12 @@ namespace System.Security {
 
  
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void IncrementOverridesCount();
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void DecrementOverridesCount();
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void IncrementAssertCount();
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void DecrementAssertCount();
 
@@ -105,14 +99,12 @@ namespace System.Security {
             // we store declarative actions in both fields, so check if they are different
             return (m_restriction != null);
         }
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetAssert(IPermission perm)
         {            
             m_assertions = CreateSingletonSet(perm);
             IncrementAssertCount();
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetAssert(PermissionSet permSet)
         {            
             m_assertions = permSet.Copy();
@@ -125,7 +117,6 @@ namespace System.Security {
             return (fDeclarative) ? m_DeclarativeAssertions : m_assertions;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetAssertAllPossible()
         {
             m_assertAllPossible = true;
@@ -141,14 +132,12 @@ namespace System.Security {
         // D E N Y
         //-----------------------------------------------------------+
     
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetDeny(IPermission perm)
         {
             m_denials = CreateSingletonSet(perm);
             IncrementOverridesCount();
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetDeny(PermissionSet permSet)
         {
             m_denials = permSet.Copy();
@@ -164,14 +153,12 @@ namespace System.Security {
         // R E S T R I C T
         //-----------------------------------------------------------+
     
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetPermitOnly(IPermission perm)
         {
             m_restriction  = CreateSingletonSet(perm);
             IncrementOverridesCount();
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetPermitOnly(PermissionSet permSet)
         {
             // permSet must not be null
@@ -188,7 +175,6 @@ namespace System.Security {
         //-----------------------------------------------------------+
         // SafeAccessTokenHandle (Impersonation + EH purposes)
         //-----------------------------------------------------------+
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetTokenHandles (SafeAccessTokenHandle callerToken, SafeAccessTokenHandle impToken)
         {
             m_callerToken = callerToken;
@@ -199,7 +185,6 @@ namespace System.Security {
         // R E V E R T
         //-----------------------------------------------------------+
     
-        [System.Security.SecurityCritical]  // auto-generated
         internal void RevertAssert()
         {
             if (m_assertions != null)
@@ -219,7 +204,6 @@ namespace System.Security {
             }
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal void RevertAssertAllPossible()
         {
             if (m_assertAllPossible)
@@ -229,7 +213,6 @@ namespace System.Security {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void RevertDeny()
         {
             if (HasImperativeDenials())
@@ -239,7 +222,6 @@ namespace System.Security {
             }
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal void RevertPermitOnly()
         {
             if (HasImperativeRestrictions())
@@ -249,7 +231,6 @@ namespace System.Security {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void RevertAll()
         {
             RevertAssert();
@@ -265,7 +246,6 @@ namespace System.Security {
 
  
         // This will get called when we hit a FSD while evaluating a demand on the call stack or compressedstack
-        [System.Security.SecurityCritical]  // auto-generated
         internal bool CheckDemand(CodeAccessPermission demand, PermissionToken permToken, RuntimeMethodHandleInternal rmh)
         {
             // imperative security
@@ -278,7 +258,6 @@ namespace System.Security {
             return fContinue;
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal bool CheckDemand2(CodeAccessPermission demand, PermissionToken permToken, RuntimeMethodHandleInternal rmh, bool fDeclarative)
         {
             PermissionSet permSet;
@@ -392,7 +371,6 @@ namespace System.Security {
             return SecurityRuntime.StackContinue;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal bool CheckSetDemand(PermissionSet demandSet,
                                                                    out PermissionSet alteredDemandSet,
                                                                    RuntimeMethodHandleInternal rmh)
@@ -424,7 +402,6 @@ namespace System.Security {
             return fContinue;
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal bool CheckSetDemand2(PermissionSet demandSet,
                                                                    out PermissionSet alteredDemandSet,
                                                                    RuntimeMethodHandleInternal rmh, bool fDeclarative)

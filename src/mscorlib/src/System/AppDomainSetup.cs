@@ -124,7 +124,6 @@ namespace System
         private bool _UseRandomizedStringHashing;
 #endif
 
-        [SecuritySafeCritical]
         internal AppDomainSetup(AppDomainSetup copy, bool copyDomainBoundData)
         {
             string[] mine = Value;
@@ -183,7 +182,6 @@ namespace System
             _LoaderOptimization = LoaderOptimization.NotSpecified;
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         internal void SetupDefaults(string imageLocation, bool imageLocationAlreadyNormalized = false) {
             char[] sep = {'\\', '/'};
             int i = imageLocation.LastIndexOfAny(sep);
@@ -231,19 +229,11 @@ namespace System
 
         public String ApplicationBase
         {
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #else
-            [System.Security.SecuritySafeCritical]
-            #endif
             [Pure]
             get {
                 return VerifyDir(GetUnsecureApplicationBase(), false);
             }
 
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #endif
             set {
                 Value[(int) LoaderInformation.ApplicationBaseValue] = NormalizePath(value, false);
             }
@@ -466,7 +456,6 @@ namespace System
 
         public String ConfigurationFile
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return VerifyDir(Value[(int) LoaderInformation.ConfigurationFileValue], true);
             }
@@ -561,12 +550,10 @@ namespace System
 
         public String DynamicBase
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return VerifyDir(Value[(int) LoaderInformation.DynamicBaseValue], true);
             }
 
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set {
                 if (value == null)
                     Value[(int) LoaderInformation.DynamicBaseValue] = null;
@@ -654,7 +641,6 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private String VerifyDir(String dir, bool normalize)
         {
             if (dir != null) {
@@ -669,7 +655,6 @@ namespace System
             return dir;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void VerifyDirList(String dirs)
         {
             if (dirs != null) {
@@ -683,7 +668,6 @@ namespace System
 
         internal String DeveloperPath
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get {
                 String dirs = Value[(int) LoaderInformation.DevPathValue];
                 VerifyDirList(dirs);
@@ -821,7 +805,6 @@ namespace System
 
         public String PrivateBinPath
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 String dirs = Value[(int) LoaderInformation.PrivateBinPathValue];
                 VerifyDirList(dirs);
@@ -860,7 +843,6 @@ namespace System
 
         public String ShadowCopyDirectories
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 String dirs = Value[(int) LoaderInformation.ShadowCopyDirectoriesValue];
                 VerifyDirList(dirs);
@@ -903,7 +885,6 @@ namespace System
 
         public String CachePath
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return VerifyDir(Value[(int) LoaderInformation.CachePathValue], false);
             }
@@ -922,7 +903,6 @@ namespace System
 
         public String LicenseFile
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return VerifyDir(Value[(int) LoaderInformation.LicenseFileValue], true);
             }

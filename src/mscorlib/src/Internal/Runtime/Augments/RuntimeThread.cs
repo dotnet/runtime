@@ -33,7 +33,6 @@ namespace Internal.Runtime.Augments
         =========================================================================*/
         public extern bool IsAlive
         {
-            [SecuritySafeCritical]  // auto-generated
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
@@ -46,18 +45,14 @@ namespace Internal.Runtime.Augments
         =========================================================================*/
         public bool IsBackground
         {
-            [SecuritySafeCritical]  // auto-generated
             get { return IsBackgroundNative(); }
-            [SecuritySafeCritical]  // auto-generated
             [HostProtection(SelfAffectingThreading = true)]
             set { SetBackgroundNative(value); }
         }
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool IsBackgroundNative();
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetBackgroundNative(bool isBackground);
 
@@ -66,7 +61,6 @@ namespace Internal.Runtime.Augments
         =========================================================================*/
         public extern bool IsThreadPoolThread
         {
-            [SecuritySafeCritical]  // auto-generated
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
@@ -81,18 +75,14 @@ namespace Internal.Runtime.Augments
         =========================================================================*/
         public ThreadPriority Priority
         {
-            [SecuritySafeCritical]  // auto-generated
             get { return (ThreadPriority)GetPriorityNative(); }
-            [SecuritySafeCritical]  // auto-generated
             [HostProtection(SelfAffectingThreading = true)]
             set { SetPriorityNative((int)value); }
         }
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetPriorityNative();
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetPriorityNative(int priority);
 
@@ -102,15 +92,12 @@ namespace Internal.Runtime.Augments
         =========================================================================*/
         public ThreadState ThreadState
         {
-            [SecuritySafeCritical]  // auto-generated
             get { return (ThreadState)GetThreadStateNative(); }
         }
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetThreadStateNative();
 
-        [SecuritySafeCritical]  // auto-generated
         public ApartmentState GetApartmentState()
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -125,7 +112,6 @@ namespace Internal.Runtime.Augments
         ** An unstarted thread can be marked to indicate that it will host a
         ** single-threaded or multi-threaded apartment.
         =========================================================================*/
-        [SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization = true, SelfAffectingThreading = true)]
         public bool TrySetApartmentState(ApartmentState state)
         {
@@ -138,7 +124,6 @@ namespace Internal.Runtime.Augments
         }
 
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        [SecurityCritical]  // auto-generated
         internal bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
         {
             ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state, fireMDAOnMismatch);
@@ -156,22 +141,18 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int GetApartmentStateNative();
 
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP
-        [SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern void DisableComObjectEagerCleanup();
 #else // !FEATURE_COMINTEROP
-        [SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void DisableComObjectEagerCleanup()
         {
@@ -185,18 +166,14 @@ namespace Internal.Runtime.Augments
         ** when it next begins to block.
         =========================================================================*/
 #if FEATURE_CORECLR
-        [SecurityCritical] // auto-generated
 #else
-        [SecuritySafeCritical] // auto-generated
 #endif
 #pragma warning disable 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
-        [SecurityPermission(SecurityAction.Demand, ControlThread = true)]
 #pragma warning restore 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
         public void Interrupt() => InterruptInternal();
 
         // Internal helper (since we can't place security demands on
         // ecalls/fcalls).
-        [SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InterruptInternal();
 
@@ -209,15 +186,12 @@ namespace Internal.Runtime.Augments
         **             ThreadInterruptedException if the thread is interrupted while waiting.
         **             ThreadStateException if the thread has not been started yet.
         =========================================================================*/
-        [SecuritySafeCritical]
         [HostProtection(Synchronization = true, ExternalThreading = true)]
         public void Join() => JoinInternal(Timeout.Infinite);
 
-        [SecuritySafeCritical]
         [HostProtection(Synchronization = true, ExternalThreading = true)]
         public bool Join(int millisecondsTimeout) => JoinInternal(millisecondsTimeout);
 
-        [SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool JoinInternal(int millisecondsTimeout);
 

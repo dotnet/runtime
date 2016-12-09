@@ -40,21 +40,18 @@ namespace System {
         internal static float NegativeZero = BitConverter.Int32BitsToSingle(unchecked((int)0x80000000));
         
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsInfinity(float f) {
             return (*(int*)(&f) & 0x7FFFFFFF) == 0x7F800000;
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsPositiveInfinity(float f) {
             return *(int*)(&f) == 0x7F800000;
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsNegativeInfinity(float f) {
             return *(int*)(&f) == unchecked((int)0xFF800000);
@@ -62,14 +59,12 @@ namespace System {
 
         [Pure]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [System.Security.SecuritySafeCritical]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsNaN(float f) {
             return (*(int*)(&f) & 0x7FFFFFFF) > 0x7F800000;
         }
         
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static bool IsNegative(float f) {
             return (*(uint*)(&f) & 0x80000000) == 0x80000000;
         }
@@ -163,7 +158,6 @@ namespace System {
             return IsNaN(obj) && IsNaN(m_value);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override int GetHashCode() {
             float f = m_value;
             if (f == 0) {
@@ -174,25 +168,21 @@ namespace System {
             return v;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));

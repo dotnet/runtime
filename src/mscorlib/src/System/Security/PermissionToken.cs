@@ -35,7 +35,6 @@ namespace System.Security
             _info = CultureInfo.InvariantCulture.TextInfo;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public int Compare(Object a, Object b)
         {
             String strA = a as String;
@@ -137,7 +136,6 @@ namespace System.Security
             m_type = type;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public static PermissionToken GetToken(Type cls)
         {
             if (cls == null)
@@ -228,7 +226,6 @@ namespace System.Security
             return token;
         }
 
-        [SecuritySafeCritical]
         internal PermissionToken GetToken(Type cls, IPermission perm)
         {
             Contract.Assert( cls != null, "Must pass in valid type" );

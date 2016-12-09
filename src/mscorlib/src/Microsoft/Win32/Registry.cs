@@ -17,7 +17,6 @@ namespace Microsoft.Win32 {
     //This class contains only static members and does not need to be serializable.
     [ComVisible(true)]
     public static class Registry {
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static Registry()
         { 
         }
@@ -70,7 +69,6 @@ namespace Microsoft.Win32 {
         // If the keyName is not valid, we will throw ArgumentException.
         // The return value shouldn't be null. 
         //
-        [System.Security.SecurityCritical]  // auto-generated
         private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName) {
             if( keyName == null) {
                 throw new ArgumentNullException(nameof(keyName));
@@ -117,7 +115,6 @@ namespace Microsoft.Win32 {
             return basekey;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static object GetValue(string keyName, string valueName, object defaultValue ) {
             string subKeyName;
             RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);
@@ -138,7 +135,6 @@ namespace Microsoft.Win32 {
             SetValue(keyName, valueName, value, RegistryValueKind.Unknown);            
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void SetValue(string keyName, string valueName, object value, RegistryValueKind valueKind ) {
             string subKeyName; 
             RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);

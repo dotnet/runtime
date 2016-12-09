@@ -63,68 +63,53 @@ namespace System {
 
     public static class GC 
     {
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetGCLatencyMode();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int SetGCLatencyMode(int newLatencyMode);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern int _EndNoGCRegion();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetLOHCompactionMode();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void SetLOHCompactionMode(int newLOHCompactionMode);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern long GetTotalMemory();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _Collect(int generation, int mode);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
     
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern int _CollectionCount (int generation, int getSpecialGCCount);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsServerGC();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern void _AddMemoryPressure(UInt64 bytesAllocated);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern void _RemoveMemoryPressure(UInt64 bytesAllocated);
         
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static void AddMemoryPressure (long bytesAllocated) {
             if( bytesAllocated <= 0) {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
@@ -140,7 +125,6 @@ namespace System {
             _AddMemoryPressure((ulong)bytesAllocated);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static void RemoveMemoryPressure (long bytesAllocated) {
             if( bytesAllocated <= 0) {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
@@ -159,7 +143,6 @@ namespace System {
 
         // Returns the generation that obj is currently in.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetGeneration(Object obj);
 
@@ -172,25 +155,21 @@ namespace System {
     
         // Garbage Collect all generations.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Collect() {
             //-1 says to GC all generations.
             _Collect(-1, (int)InternalGCCollectionMode.Blocking);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Collect(int generation, GCCollectionMode mode) 
         {
             Collect(generation, mode, true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Collect(int generation, GCCollectionMode mode, bool blocking) 
         {
             Collect(generation, mode, blocking, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
             if (generation<0) 
@@ -227,7 +206,6 @@ namespace System {
             _Collect(generation, iInternalModes);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int CollectionCount (int generation) 
         {
@@ -240,7 +218,6 @@ namespace System {
         }
 
         // pass in true to get the BGC or FGC count.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static int CollectionCount (int generation, bool getSpecialGCCount) 
         {
@@ -295,7 +272,6 @@ namespace System {
 
         // Returns the generation in which wo currently resides.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int GetGeneration(WeakReference wo) {
             int result = GetGenerationWR(wo.m_handle);
             KeepAlive(wo);
@@ -305,16 +281,13 @@ namespace System {
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
         public static int MaxGeneration {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return GetMaxGeneration(); }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _WaitForPendingFinalizers();
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WaitForPendingFinalizers() {
             // QCalls can not be exposed from mscorlib directly, need to wrap it.
             _WaitForPendingFinalizers();
@@ -322,12 +295,10 @@ namespace System {
     
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void _SuppressFinalize(Object o);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static void SuppressFinalize(Object obj) {
             if (obj == null)
@@ -340,11 +311,9 @@ namespace System {
         // for which SuppressFinalize has already been called. The other situation 
         // where calling ReRegisterForFinalize is useful is inside a finalizer that 
         // needs to resurrect itself or an object that it references.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(Object o);
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void ReRegisterForFinalize(Object obj) {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -356,7 +325,6 @@ namespace System {
         // the GC heap.  This does not return the total size of the GC heap, but
         // only the live objects in the GC heap.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static long GetTotalMemory(bool forceFullCollection) {
             long size = GetTotalMemory();
             if (!forceFullCollection)
@@ -379,16 +347,13 @@ namespace System {
             return newSize;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern long _GetAllocatedBytesForCurrentThread();
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static long GetAllocatedBytesForCurrentThread() {
             return _GetAllocatedBytesForCurrentThread();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
 
@@ -401,7 +366,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
 
-        [SecurityCritical]
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {
             if ((maxGenerationThreshold <= 0) || (maxGenerationThreshold >= 100))
@@ -430,7 +394,6 @@ namespace System {
             }
         }
 
-        [SecurityCritical]
         public static void CancelFullGCNotification()
         {
             if (!_CancelFullGCNotification())
@@ -439,13 +402,11 @@ namespace System {
             }
         }
 
-        [SecurityCritical]
         public static GCNotificationStatus WaitForFullGCApproach()
         {
             return (GCNotificationStatus)_WaitForFullGCApproach(-1);
         }
 
-        [SecurityCritical]
         public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
@@ -454,13 +415,11 @@ namespace System {
             return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
         }
 
-        [SecurityCritical]
         public static GCNotificationStatus WaitForFullGCComplete()
         {
             return (GCNotificationStatus)_WaitForFullGCComplete(-1);
         }
 
-        [SecurityCritical]
         public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
@@ -484,7 +443,6 @@ namespace System {
             AllocationExceeded = 3
         }
 
-        [SecurityCritical]
         static bool StartNoGCRegionWorker(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
         {
             StartNoGCRegionStatus status = (StartNoGCRegionStatus)_StartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
@@ -498,31 +456,26 @@ namespace System {
             return true;
         }
 
-        [SecurityCritical]
         public static bool TryStartNoGCRegion(long totalSize)
         {
             return StartNoGCRegionWorker(totalSize, false, 0, false);
         }
 
-        [SecurityCritical]
         public static bool TryStartNoGCRegion(long totalSize, long lohSize)
         {
             return StartNoGCRegionWorker(totalSize, true, lohSize, false);
         }
 
-        [SecurityCritical]
         public static bool TryStartNoGCRegion(long totalSize, bool disallowFullBlockingGC)
         {
             return StartNoGCRegionWorker(totalSize, false, 0, disallowFullBlockingGC);
         }
 
-        [SecurityCritical]
         public static bool TryStartNoGCRegion(long totalSize, long lohSize, bool disallowFullBlockingGC)
         {
             return StartNoGCRegionWorker(totalSize, true, lohSize, disallowFullBlockingGC);
         }
 
-        [SecurityCritical]
         static EndNoGCRegionStatus EndNoGCRegionWorker()
         {
             EndNoGCRegionStatus status = (EndNoGCRegionStatus)_EndNoGCRegion();
@@ -536,7 +489,6 @@ namespace System {
             return EndNoGCRegionStatus.Succeeded;
         }
 
-        [SecurityCritical]
         public static void EndNoGCRegion()
         {
             EndNoGCRegionWorker();

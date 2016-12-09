@@ -318,7 +318,6 @@ namespace System.Threading
         }
 
         // the real work..
-        [SecuritySafeCritical]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext, bool useExecutionContext)
         {

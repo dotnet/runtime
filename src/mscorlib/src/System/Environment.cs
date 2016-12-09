@@ -88,7 +88,6 @@ namespace System {
                 }
             }
             
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             internal String GetResourceString(String key)  {
                 if (key == null || key.Length == 0) {
@@ -124,11 +123,6 @@ namespace System {
                 return userData.m_retVal;
             }
 
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #else
-            [System.Security.SecuritySafeCritical]
-            #endif
             private void GetResourceStringCode(Object userDataIn)
             {
                 GetResourceStringUserData userData = (GetResourceStringUserData) userDataIn;
@@ -193,9 +187,6 @@ namespace System {
                 userData.m_retVal = s;
             }
 
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #endif
             [PrePrepareMethod]
             private void GetResourceStringBackoutCode(Object userDataIn, bool exceptionThrown)
             {
@@ -247,32 +238,24 @@ namespace System {
         **Exceptions: None
         ==============================================================================*/
         public static extern int TickCount {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
         
         // Terminates this process with the given exit code.
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void _Exit(int exitCode);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public static void Exit(int exitCode) {
             _Exit(exitCode);
         }
 
 
         public static extern int ExitCode {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
     
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             set;
         }
@@ -280,11 +263,9 @@ namespace System {
         // Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         // to assign blame for crashes.  Don't mess with this, such as by making it call 
         // another managed helper method, unless you consult with some CLR Watson experts.
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message);
 
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void FailFast(String message, uint exitCode);
 
@@ -301,7 +282,6 @@ namespace System {
         //    if the exception object is preallocated, the runtime will use the callsite's
         //    IP for bucketing. If the exception object is not preallocated, it will use the bucket
         //    details contained in the object (if any).
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message, Exception exception);
 
@@ -318,9 +298,6 @@ namespace System {
                 return Directory.GetCurrentDirectory();
             }
 
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #endif
             set { 
                 Directory.SetCurrentDirectory(value);
             }
@@ -328,11 +305,6 @@ namespace System {
 
         // Returns the system directory (ie, C:\WinNT\System32).
         public static String SystemDirectory {
-#if FEATURE_CORECLR
-            [System.Security.SecurityCritical]
-#else
-            [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
             get {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
@@ -347,7 +319,6 @@ namespace System {
         // Returns the windows directory (ie, C:\WinNT).
         // Used by NLS+ custom culures only at the moment.
         internal static String InternalWindowsDirectory {
-            [System.Security.SecurityCritical]  // auto-generated
             get {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetWindowsDirectory(sb, Path.MaxPath);
@@ -359,7 +330,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
@@ -422,7 +392,6 @@ namespace System {
         }
 
         public static String MachineName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
 
                 // UWP Debug scenarios
@@ -442,20 +411,17 @@ namespace System {
             }
         }
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern Int32 GetProcessorCount();
 
         public static int ProcessorCount {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return GetProcessorCount();
             }
         }
 
         public static int SystemPageSize {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 (new EnvironmentPermission(PermissionState.Unrestricted)).Demand();
                 Win32Native.SYSTEM_INFO info = new Win32Native.SYSTEM_INFO();
@@ -471,7 +437,6 @@ namespace System {
         **Arguments: None
         **Exceptions: None.
         ==============================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String[] GetCommandLineArgs()
         {
             new EnvironmentPermission(EnvironmentPermissionAccess.Read, "Path").Demand();
@@ -494,7 +459,6 @@ namespace System {
             return GetCommandLineArgsNative();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern String[] GetCommandLineArgsNative();
 
@@ -557,7 +521,6 @@ namespace System {
         **Exceptions:  IOException.
         **Permissions: SystemInfo Permission.
         ==============================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String[] GetLogicalDrives() {
             new EnvironmentPermission(PermissionState.Unrestricted).Demand();
                                  
@@ -627,12 +590,10 @@ namespace System {
         **Arguments:
         **Exceptions:
         ==============================================================================*/
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern long GetWorkingSet();
 
         public static long WorkingSet {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 new EnvironmentPermission(PermissionState.Unrestricted).Demand();
                 return GetWorkingSet();
@@ -647,7 +608,6 @@ namespace System {
         **Exceptions:
         ==============================================================================*/
         public static OperatingSystem OSVersion {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<OperatingSystem>() != null);
 
@@ -716,7 +676,6 @@ namespace System {
 
         // Does the current version of Windows have Windows Runtime suppport?
         internal static bool IsWinRTSupported {
-            [SecuritySafeCritical]
             get {
                 if (!s_CheckedWinRT) {
                     s_WinRTSupported = WinRTSupported();
@@ -727,7 +686,6 @@ namespace System {
             }
         }
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -736,11 +694,9 @@ namespace System {
 
 #endif // FEATURE_CORESYSTEM
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool GetVersion(Microsoft.Win32.Win32Native.OSVERSIONINFO  osVer);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool GetVersionEx(Microsoft.Win32.Win32Native.OSVERSIONINFOEX  osVer);
 
@@ -752,7 +708,6 @@ namespace System {
         **Exceptions:
         ==============================================================================*/
         public static String StackTrace {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
 
@@ -761,7 +716,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         internal static String GetStackTrace(Exception e, bool needFileInfo)
         {
             // Note: Setting needFileInfo to true will start up COM and set our
@@ -778,7 +732,6 @@ namespace System {
             return st.ToString( System.Diagnostics.StackTrace.TraceFormat.Normal );
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static void InitResourceHelper() {
             // Only the default AppDomain should have a ResourceHelper.  All calls to 
             // GetResourceString from any AppDomain delegate to GetResourceStringLocal 
@@ -808,7 +761,6 @@ namespace System {
         // if you change this method's signature then you must change the code that calls it
         // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
         // as well as metasig.h to create the new signature type
-        [System.Security.SecurityCritical] // auto-generated
         // NoInlining causes the caller and callee to not be inlined in mscorlib as it is an assumption of StackCrawlMark use
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static String GetResourceStringLocal(String key) {
@@ -818,7 +770,6 @@ namespace System {
             return m_resHelper.GetResourceString(key);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static String GetResourceString(String key) {
             return GetResourceStringLocal(key);
         }
@@ -900,7 +851,6 @@ namespace System {
         }
 
         public static bool Is64BitOperatingSystem {
-            [System.Security.SecuritySafeCritical]
             get {
 #if BIT64
                     // 64-bit programs run only on 64-bit
@@ -915,13 +865,11 @@ namespace System {
         }
 
         public static extern bool HasShutdownStarted {
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
 
         public static string UserName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 new EnvironmentPermission(EnvironmentPermissionAccess.Read,"UserName").Demand();
 
@@ -937,13 +885,11 @@ namespace System {
 
         public static bool UserInteractive
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return true;
             }
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static string GetFolderPath(SpecialFolder folder) {
             if (!Enum.IsDefined(typeof(SpecialFolder), folder))
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)folder));
@@ -952,7 +898,6 @@ namespace System {
             return InternalGetFolderPath(folder, SpecialFolderOption.None);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option) {
             if (!Enum.IsDefined(typeof(SpecialFolder),folder))
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)folder));
@@ -963,13 +908,11 @@ namespace System {
             return InternalGetFolderPath(folder, option);
         }
 
-        [System.Security.SecurityCritical]
         internal static string UnsafeGetFolderPath(SpecialFolder folder)
         {
             return InternalGetFolderPath(folder, SpecialFolderOption.None, suppressSecurityChecks: true);
         }
 
-        [System.Security.SecurityCritical]
         private static string InternalGetFolderPath(SpecialFolder folder, SpecialFolderOption option, bool suppressSecurityChecks = false)
         {
 #if FEATURE_CORESYSTEM
@@ -1043,7 +986,6 @@ namespace System {
 
         public static string UserDomainName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 new EnvironmentPermission(EnvironmentPermissionAccess.Read,"UserDomain").Demand();
 
@@ -1198,7 +1140,6 @@ namespace System {
 
         internal static extern int CurrentProcessorNumber
         {
-            [System.Security.SecuritySafeCritical]
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }

@@ -42,7 +42,6 @@ namespace System.Collections.Generic
         // Note that logic in this method is replicated in vm\compile.cpp to ensure that NGen
         // saves the right instantiations
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static Comparer<T> CreateComparer()
         {
             object result = null;
@@ -216,7 +215,6 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
 
-        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // Previously Comparer<T> was not specialized for enums,
@@ -252,7 +250,6 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
 
-        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(ObjectComparer<T>));
@@ -284,7 +281,6 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
 
-        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(ObjectComparer<T>));
@@ -316,7 +312,6 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
 
-        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(ObjectComparer<T>));

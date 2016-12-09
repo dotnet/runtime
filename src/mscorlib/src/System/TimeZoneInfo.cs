@@ -209,7 +209,6 @@ namespace System {
             public bool m_allSystemTimeZonesRead;
 
 #if FEATURE_WIN32_REGISTRY
-            [System.Security.SecuritySafeCritical]
             private static TimeZoneInfo GetCurrentOneYearLocal() {
                 // load the data from the OS
                 TimeZoneInfo match;
@@ -961,7 +960,6 @@ namespace System {
         // <SecurityKernel Critical="True" Ring="0">
         // <Asserts Name="Imperative: System.Security.PermissionSet" />
         // </SecurityKernel>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static public ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() {
 
             CachedData cachedData = s_cachedData;
@@ -995,7 +993,6 @@ namespace System {
             return cachedData.m_readOnlySystemTimeZones;
         }
 
-        [SecuritySafeCritical]
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
 #if FEATURE_WIN32_REGISTRY
@@ -1138,7 +1135,6 @@ namespace System {
         // private ctor
         //
 #if FEATURE_WIN32_REGISTRY
-        [System.Security.SecurityCritical]  // auto-generated
         private TimeZoneInfo(Win32Native.TimeZoneInformation zone, Boolean dstDisabled) {
             
             if (String.IsNullOrEmpty(zone.StandardName)) {
@@ -1381,7 +1377,6 @@ namespace System {
         }
 
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info == null) {
                 throw new ArgumentNullException(nameof(info));
@@ -1562,7 +1557,6 @@ namespace System {
         //
         // This check is only meant to be used for "Local".
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private Boolean CheckDaylightSavingTimeNotSupported(Win32Native.TimeZoneInformation timeZone) {
             return (   timeZone.DaylightDate.Year         == timeZone.StandardDate.Year
                     && timeZone.DaylightDate.Month        == timeZone.StandardDate.Month
@@ -1620,7 +1614,6 @@ namespace System {
         //
         // Converts a Win32Native.RegistryTimeZoneInformation (REG_TZI_FORMAT struct) to an AdjustmentRule
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(Win32Native.RegistryTimeZoneInformation timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset) {
             AdjustmentRule rule;
             bool supportsDst = (timeZoneInformation.StandardDate.Month != 0);
@@ -1678,7 +1671,6 @@ namespace System {
         // Helper function that searches the registry for a time zone entry
         // that matches the TimeZoneInformation struct
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private String FindIdFromTimeZoneInformation(Win32Native.TimeZoneInformation timeZone, out Boolean dstDisabled) {
             dstDisabled = false;
 
@@ -2115,7 +2107,6 @@ namespace System {
         // assumes cachedData lock is taken
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private TimeZoneInfo GetLocalTimeZone(CachedData cachedData) {
 
 
@@ -2283,7 +2274,6 @@ namespace System {
         /// 3. Look for the data in GetTimeZoneDirectory()/localtime.
         /// 4. Use UTC if all else fails.
         /// </summary>
-        [SecurityCritical]
         private static bool TryGetLocalTzFile(out byte[] rawData, out string id)
         {
             rawData = null;
@@ -2363,7 +2353,6 @@ namespace System {
         /// Finds the time zone id by using 'readlink' on the path to see if tzFilePath is
         /// a symlink to a file 
         /// </summary>
-        [SecuritySafeCritical]
         private static string FindTimeZoneIdUsingReadLink(string tzFilePath)
         {
             string id = null;
@@ -2479,7 +2468,6 @@ namespace System {
         //
         // The TryGetLocalTzFile() call returns a Byte[] containing the compiled tzfile.
         // 
-        [System.Security.SecurityCritical]
         static private TimeZoneInfo GetLocalTimeZoneFromTzFile()
         {
             byte[] rawData;
@@ -2542,7 +2530,6 @@ namespace System {
         // try/catch logic for handling the TimeZoneInfo private constructor that takes
         // a Win32Native.TimeZoneInformation structure.
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private TimeZoneInfo GetLocalTimeZoneFromWin32Data(Win32Native.TimeZoneInformation timeZoneInformation, Boolean dstDisabled) {
             // first try to create the TimeZoneInfo with the original 'dstDisabled' flag
             try {
@@ -2748,7 +2735,6 @@ namespace System {
         // * when the argument 'readStart' is true the corresponding daylightTransitionTimeStart field is read
         // * when the argument 'readStart' is false the corresponding dayightTransitionTimeEnd field is read
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private bool TransitionTimeFromTimeZoneInformation(Win32Native.RegistryTimeZoneInformation timeZoneInformation, out TransitionTime transitionTime, bool readStartDate) {
             //
             // SYSTEMTIME - 
@@ -2954,7 +2940,6 @@ namespace System {
         //
         // This method expects that its caller has already Asserted RegistryPermission.Read
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private bool TryCreateAdjustmentRules(string id, Win32Native.RegistryTimeZoneInformation defaultTimeZoneInformation, out AdjustmentRule[] rules, out Exception e, int defaultBaseUtcOffset) {
             e = null;
 
@@ -3108,7 +3093,6 @@ namespace System {
         // Helper function that compares the StandardBias and StandardDate portion a
         // TimeZoneInformation struct to a time zone registry entry
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private Boolean TryCompareStandardDate(Win32Native.TimeZoneInformation timeZone, Win32Native.RegistryTimeZoneInformation registryTimeZoneInfo) {
             return timeZone.Bias                         == registryTimeZoneInfo.Bias
                    && timeZone.StandardBias              == registryTimeZoneInfo.StandardBias
@@ -3127,7 +3111,6 @@ namespace System {
         //
         // Helper function that compares a TimeZoneInformation struct to a time zone registry entry
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private Boolean TryCompareTimeZoneInformationToRegistry(Win32Native.TimeZoneInformation timeZone, string id, out Boolean dstDisabled)
         {
             dstDisabled = false;
@@ -3210,7 +3193,6 @@ namespace System {
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetFileMUIPath(System.Int32,System.String,System.Text.StringBuilder,System.Int32&,System.Text.StringBuilder,System.Int32&,System.Int64&):System.Boolean" />
         // <ReferencesCritical Name="Method: TryGetLocalizedNameByNativeResource(String, Int32):String" Ring="1" />
         // </SecurityKernel>
-        [System.Security.SecuritySafeCritical]  // auto-generated
 #if !FEATURE_CORECLR
         [FileIOPermissionAttribute(SecurityAction.Assert, AllLocalFiles = FileIOPermissionAccess.PathDiscovery)]
 #endif
@@ -3283,7 +3265,6 @@ namespace System {
         // "resource.dll" is a language-specific resource DLL.
         // If the localized resource DLL exists, LoadString(resource) is returned.
         //
-        [SecurityCritical]
         static private string TryGetLocalizedNameByNativeResource(string filePath, int resource) {
             using (SafeLibraryHandle handle = 
                        UnsafeNativeMethods.LoadLibraryEx(filePath, IntPtr.Zero, Win32Native.LOAD_LIBRARY_AS_DATAFILE)) {
@@ -3314,9 +3295,6 @@ namespace System {
         //
         // This method expects that its caller has already Asserted RegistryPermission.Read
         //
-#if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-#endif
         static private Boolean TryGetLocalizedNamesByRegistryKey(RegistryKey key, out String displayName, out String standardName, out String daylightName) {
             displayName  = String.Empty;
             standardName = String.Empty;
@@ -3393,7 +3371,6 @@ namespace System {
         // * TZI,         REG_BINARY REG_TZI_FORMAT
         //                       See Win32Native.RegistryTimeZoneInformation
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private TimeZoneInfoResult TryGetTimeZoneByRegistryKey(string id, out TimeZoneInfo value, out Exception e) {
             e = null;
 
@@ -4203,7 +4180,6 @@ namespace System {
 
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private unsafe int TZif_ToInt32 (byte[]value, int startIndex) {
             fixed( byte * pbyte = &value[startIndex]) {
                 return (*pbyte << 24) | (*(pbyte + 1) << 16)  | (*(pbyte + 2) << 8) | (*(pbyte + 3));                        
@@ -4212,7 +4188,6 @@ namespace System {
 
         // Converts an array of bytes into a long - always using standard byte order (Big Endian)
         // per TZif file standard
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private unsafe long TZif_ToInt64(byte[] value, int startIndex)
         {
             fixed (byte* pbyte = &value[startIndex])
@@ -4711,7 +4686,6 @@ namespace System {
                 }
             }
 
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
                 if (info == null) {
                     throw new ArgumentNullException(nameof(info));
@@ -4961,7 +4935,6 @@ namespace System {
             }
 
 
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
                 if (info == null) {
                     throw new ArgumentNullException(nameof(info));

@@ -143,7 +143,6 @@ namespace System.Runtime
         private ulong _reservedMemory;  // The size of this request (from user)
         private bool _mustSubtractReservation; // Did we add data to SharedStatics?
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static MemoryFailPoint()
         {
             GetMemorySettings(out GCSegmentSize, out TopOfMemory);
@@ -153,7 +152,6 @@ namespace System.Runtime
         // have scenarios for this in partial trust in the future, but
         // we're doing this just to restrict this in case the code below
         // is somehow incorrect.
-        [System.Security.SecurityCritical]  // auto-generated_required
         public MemoryFailPoint(int sizeInMegabytes)
         {
             if (sizeInMegabytes <= 0)
@@ -306,7 +304,6 @@ namespace System.Runtime
 #endif
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static void CheckForAvailableMemory(out ulong availPageFile, out ulong totalAddressSpaceFree)
         {
             bool r;
@@ -323,7 +320,6 @@ namespace System.Runtime
         // returns whether there is enough space.  In all cases, we update
         // our last known free address space, hopefully avoiding needing to 
         // probe again.
-        [System.Security.SecurityCritical]  // auto-generated
         private static unsafe bool CheckForFreeAddressSpace(ulong size, bool shouldThrow)
         {
             // Start walking the address space at 0.  VirtualAlloc may wrap
@@ -350,7 +346,6 @@ namespace System.Runtime
         // of pages.  If we didn't have enough address space, we still return 
         // a positive value < size, to help potentially avoid the overhead of 
         // this check if we use a MemoryFailPoint with a smaller size next.
-        [System.Security.SecurityCritical]  // auto-generated
         private static unsafe ulong MemFreeAfterAddress(void * address, ulong size)
         {
             if (size >= TopOfMemory)
@@ -377,11 +372,9 @@ namespace System.Runtime
             return largestFreeRegion;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMemorySettings(out ulong maxGCSegmentSize, out ulong topOfMemory);
 
-        [System.Security.SecuritySafeCritical] // destructors should be safe to call
         ~MemoryFailPoint()
         {
             Dispose(false);
@@ -394,14 +387,12 @@ namespace System.Runtime
         // future create an allocation context and release it in the Dispose
         // method.  While the finalizer will eventually free this block of 
         // memory, apps will help their performance greatly by calling Dispose.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private void Dispose(bool disposing)
         {

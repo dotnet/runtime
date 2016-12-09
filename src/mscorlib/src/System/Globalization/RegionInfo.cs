@@ -59,7 +59,6 @@ namespace System.Globalization {
         //  In Silverlight we enforce that RegionInfos must be created with a full culture name
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(String name) {
             if (name==null)
                 throw new ArgumentNullException(nameof(name));
@@ -95,7 +94,6 @@ namespace System.Globalization {
 
 #if FEATURE_USE_LCID
         // We'd rather people use the named version since this doesn't allow custom locales
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(int culture)
         {
             if (culture == CultureInfo.LOCALE_INVARIANT) //The InvariantCulture has no matching region
@@ -127,14 +125,12 @@ namespace System.Globalization {
         }
 #endif
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal RegionInfo(CultureData cultureData)
         {
             this.m_cultureData = cultureData;
             this.m_name = this.m_cultureData.SREGIONNAME;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetName(string name)
         {
 #if FEATURE_CORECLR
@@ -163,7 +159,6 @@ namespace System.Globalization {
         [OptionalField(VersionAdded = 2)]
         internal int m_dataItem = 0;
 
-        [System.Security.SecurityCritical]  // auto-generated
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
@@ -203,7 +198,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
         public static RegionInfo CurrentRegion {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 RegionInfo temp = s_currentRegionInfo;
                 if (temp == null)
@@ -241,7 +235,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String EnglishName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SENGCOUNTRY);
@@ -259,7 +252,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String DisplayName 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get 
             {
                 return (this.m_cultureData.SLOCALIZEDCOUNTRY);
@@ -278,7 +270,6 @@ namespace System.Globalization {
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String NativeName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SNATIVECOUNTRY);
@@ -294,7 +285,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String TwoLetterISORegionName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SISO3166CTRYNAME);
@@ -311,7 +301,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String ThreeLetterISORegionName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SISO3166CTRYNAME2);
@@ -327,7 +316,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String ThreeLetterWindowsRegionName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SABBREVCTRYNAME);
@@ -368,7 +356,6 @@ namespace System.Globalization {
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String CurrencyEnglishName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SENGLISHCURRENCY);
@@ -386,7 +373,6 @@ namespace System.Globalization {
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String CurrencyNativeName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return (this.m_cultureData.SNATIVECURRENCY);
@@ -401,7 +387,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
         public virtual String CurrencySymbol {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return (this.m_cultureData.SCURRENCY);
             }
@@ -415,7 +400,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
         public virtual String ISOCurrencySymbol {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return (this.m_cultureData.SINTLSYMBOL);
             }

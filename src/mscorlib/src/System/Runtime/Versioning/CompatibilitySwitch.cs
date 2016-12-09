@@ -21,13 +21,11 @@ namespace System.Runtime.Versioning
                 *                        
                 *     These apis are for internal use only for FX assmeblies. It has not been decided if they can be used by OOB components due to EULA restrictions
                 */
-        [System.Security.SecurityCritical]
         public static bool IsEnabled(string compatibilitySwitchName)
         {
             return IsEnabledInternalCall(compatibilitySwitchName, true);
         }
 
-        [System.Security.SecurityCritical]
         public static string GetValue(string compatibilitySwitchName)
         {
             // This is used by AppContext.TryGetSwitch to check switch overrides in the Windows Quirk DB
@@ -36,19 +34,16 @@ namespace System.Runtime.Versioning
             return GetValueInternalCall(compatibilitySwitchName, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static bool IsEnabledInternal(string compatibilitySwitchName)
         {
             return IsEnabledInternalCall(compatibilitySwitchName, false);
         }
 
-        [System.Security.SecurityCritical]
         internal static string GetValueInternal(string compatibilitySwitchName)
         {
             return GetValueInternalCall(compatibilitySwitchName, false);
         }
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern string GetAppContextOverridesInternalCall();
 

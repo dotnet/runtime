@@ -88,7 +88,6 @@ namespace System.Runtime.Serialization {
             return m_field.GetValue(obj);
         }
 
-        [System.Security.SecurityCritical]
         internal Object InternalGetValue(Object obj) {
             RtFieldInfo field = m_field as RtFieldInfo;
             if (field != null)
@@ -104,7 +103,6 @@ namespace System.Runtime.Serialization {
             m_field.SetValue(obj, value, invokeAttr, binder, culture);
         }
 
-        [System.Security.SecurityCritical]
         internal void InternalSetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture) {
             RtFieldInfo field = m_field as RtFieldInfo;
             if (field != null)

@@ -29,7 +29,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe int IndexOf(char value, int startIndex, int count) {
             if (startIndex < 0 || startIndex > Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -85,7 +84,6 @@ namespace System
         }
     
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int IndexOfAny(char [] anyOf, int startIndex, int count);
     
@@ -138,7 +136,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]
         public int IndexOf(String value, int startIndex, int count, StringComparison comparisonType) {
             // Validate inputs
             if (value == null)
@@ -194,7 +191,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe int LastIndexOf(char value, int startIndex, int count) {
             if (Length == 0)
                 return -1;
@@ -258,7 +254,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int LastIndexOfAny(char [] anyOf, int startIndex, int count);
     
@@ -299,7 +294,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]
         public int LastIndexOf(String value, int startIndex, int count, StringComparison comparisonType) {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));

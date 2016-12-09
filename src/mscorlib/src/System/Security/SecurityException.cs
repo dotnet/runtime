@@ -34,14 +34,12 @@ namespace System.Security
     [Serializable]
     public class SecurityException : SystemException
     {
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static string GetResString(string sResourceName)
         {
             PermissionSet.s_fullTrust.Assert();
             return Environment.GetResourceString(sResourceName);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
 #pragma warning disable 618
         internal static Exception MakeSecurityException(AssemblyName asmName, Evidence asmEvidence, PermissionSet granted, PermissionSet refused, RuntimeMethodHandleInternal rmh, SecurityAction action, Object demand, IPermission permThatFailed)
 #pragma warning restore 618
@@ -78,7 +76,6 @@ namespace System.Security
         internal SecurityException(string message, Object deny, Object permitOnly, MethodInfo method, Object demanded, IPermission permThatFailed)
                     : this(){}
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected SecurityException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             if (info == null)
@@ -91,7 +88,6 @@ namespace System.Security
             return base.ToString();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private bool CanAccessSensitiveInfo()
         {
             bool retVal = false;
@@ -108,7 +104,6 @@ namespace System.Security
             return retVal;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)

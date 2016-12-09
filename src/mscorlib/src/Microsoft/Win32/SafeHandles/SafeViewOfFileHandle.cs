@@ -22,19 +22,15 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeViewOfFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        [System.Security.SecurityCritical]  // auto-generated_required
         internal SafeViewOfFileHandle() : base(true) {}
 
         // 0 is an Invalid Handle
-        [System.Security.SecurityCritical]  // auto-generated_required
         internal SafeViewOfFileHandle(IntPtr handle, bool ownsHandle) : base (ownsHandle) {
             SetHandle(handle);
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             if (Win32Native.UnmapViewOfFile(handle))

@@ -15,13 +15,11 @@ namespace System
     using System.Security;
     using System.Runtime.InteropServices;
 
-    [System.Security.SecurityCritical]  // auto-generated_required
     [System.Runtime.InteropServices.ComVisible(true)]
     public class AppDomainManager : MarshalByRefObject
     {
         public AppDomainManager () {}
 
-        [System.Security.SecurityCritical]
         public virtual void InitializeNewDomain (AppDomainSetup appDomainInfo)
         {
             // By default, InitializeNewDomain does nothing. AppDomain.CreateAppDomainManager relies on this fact.
@@ -32,7 +30,6 @@ namespace System
 
         private Assembly m_entryAssembly = null;
         public virtual Assembly EntryAssembly {
-            [System.Security.SecurityCritical]  // auto-generated
             get {
                 // The default AppDomainManager sets the EntryAssembly depending on whether the
                 // AppDomain is a manifest application domain or not. In the first case, we parse
@@ -51,7 +48,6 @@ namespace System
         }
 
         internal static AppDomainManager CurrentAppDomainManager {
-            [System.Security.SecurityCritical]  // auto-generated
             get {
                 return AppDomain.CurrentDomain.DomainManager;
             }

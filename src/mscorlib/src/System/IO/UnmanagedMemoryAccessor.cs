@@ -28,7 +28,6 @@ namespace System.IO {
     /// this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable {
 
-        [System.Security.SecurityCritical] // auto-generated
         private SafeBuffer _buffer;
         private Int64 _offset;
         [ContractPublicPropertyName("Capacity")]
@@ -46,20 +45,14 @@ namespace System.IO {
         // <SecurityKernel Critical="True" Ring="1">
         // <ReferencesCritical Name="Method: Initialize(SafeBuffer, Int64, Int64, FileAccess):Void" Ring="1" />
         // </SecurityKernel>
-        [System.Security.SecuritySafeCritical]
         public UnmanagedMemoryAccessor(SafeBuffer buffer, Int64 offset, Int64 capacity) {
             Initialize(buffer, offset, capacity, FileAccess.Read);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public UnmanagedMemoryAccessor(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access) {
             Initialize(buffer, offset, capacity, access);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         protected void Initialize(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access) {
             if (buffer == null) {
                 throw new ArgumentNullException(nameof(buffer));
@@ -155,7 +148,6 @@ namespace System.IO {
             return InternalReadByte(position);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public char ReadChar(Int64 position) {
             int sizeOfType = sizeof(char);
             EnsureSafeToRead(position, sizeOfType);
@@ -192,7 +184,6 @@ namespace System.IO {
         }
 
         // See comment above.
-        [System.Security.SecuritySafeCritical]
         public Int16 ReadInt16(Int64 position) {
             int sizeOfType = sizeof(Int16);
             EnsureSafeToRead(position, sizeOfType);
@@ -229,7 +220,6 @@ namespace System.IO {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Int32 ReadInt32(Int64 position) {
             int sizeOfType = sizeof(Int32);
             EnsureSafeToRead(position, sizeOfType);
@@ -264,7 +254,6 @@ namespace System.IO {
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Int64 ReadInt64(Int64 position) {
             int sizeOfType = sizeof(Int64);
             EnsureSafeToRead(position, sizeOfType);
@@ -301,7 +290,6 @@ namespace System.IO {
             return result;
         }
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe Int32 UnsafeReadInt32(byte* pointer)
         {
@@ -318,7 +306,6 @@ namespace System.IO {
 
             return result;
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Decimal ReadDecimal(Int64 position) {
             const int ScaleMask = 0x00FF0000;
             const int SignMask = unchecked((int)0x80000000);
@@ -360,7 +347,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Single ReadSingle(Int64 position) {
             int sizeOfType = sizeof(Single);
             EnsureSafeToRead(position, sizeOfType);
@@ -396,7 +382,6 @@ namespace System.IO {
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Double ReadDouble(Int64 position) {
             int sizeOfType = sizeof(Double);
             EnsureSafeToRead(position, sizeOfType);
@@ -436,7 +421,6 @@ namespace System.IO {
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public SByte ReadSByte(Int64 position) {
             int sizeOfType = sizeof(SByte);
@@ -461,7 +445,6 @@ namespace System.IO {
             return result;
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public UInt16 ReadUInt16(Int64 position) {
             int sizeOfType = sizeof(UInt16);
@@ -498,7 +481,6 @@ namespace System.IO {
             return result;
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public UInt32 ReadUInt32(Int64 position) {
             int sizeOfType = sizeof(UInt32);
@@ -535,7 +517,6 @@ namespace System.IO {
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public UInt64 ReadUInt64(Int64 position) {
             int sizeOfType = sizeof(UInt64);
@@ -588,7 +569,6 @@ namespace System.IO {
         // such, it is best to use the ReadXXX methods for small standard types such as ints, longs, 
         // bools, etc.
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void Read<T>(Int64 position, out T structure) where T : struct {
             if (position < 0) {
                 throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -621,7 +601,6 @@ namespace System.IO {
         // struct that contains reference members will most likely cause the runtime to AV. This
         // is consistent with Marshal.PtrToStructure.
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public int ReadArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct {
             if (array == null) {
                 throw new ArgumentNullException(nameof(array), "Buffer cannot be null.");
@@ -695,7 +674,6 @@ namespace System.IO {
             InternalWrite(position, value);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, char value) {
             int sizeOfType = sizeof(char);
             EnsureSafeToWrite(position, sizeOfType);
@@ -730,7 +708,6 @@ namespace System.IO {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Int16 value) {
             int sizeOfType = sizeof(Int16);
             EnsureSafeToWrite(position, sizeOfType);
@@ -764,7 +741,6 @@ namespace System.IO {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Int32 value) {
             int sizeOfType = sizeof(Int32);
             EnsureSafeToWrite(position, sizeOfType);
@@ -799,7 +775,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Int64 value) {
             int sizeOfType = sizeof(Int64);
             EnsureSafeToWrite(position, sizeOfType);
@@ -837,7 +812,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe void UnsafeWriteInt32(byte* pointer, Int32 value)
         {
@@ -855,7 +829,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Decimal value) {
             int sizeOfType = sizeof(Decimal);
             EnsureSafeToWrite(position, sizeOfType);
@@ -889,7 +862,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Single value) {
             int sizeOfType = sizeof(Single);
             EnsureSafeToWrite(position, sizeOfType);
@@ -925,7 +897,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Double value) {
             int sizeOfType = sizeof(Double);
             EnsureSafeToWrite(position, sizeOfType);
@@ -965,7 +936,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, SByte value) {
             int sizeOfType = sizeof(SByte);
@@ -987,7 +957,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt16 value) {
             int sizeOfType = sizeof(UInt16);
@@ -1021,7 +990,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt32 value) {
             int sizeOfType = sizeof(UInt32);
@@ -1058,7 +1026,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt64 value) {
             int sizeOfType = sizeof(UInt64);
@@ -1103,7 +1070,6 @@ namespace System.IO {
         // though this is number is JIT and architecture dependent).   As such, it is best to use 
         // the WriteX methods for small standard types such as ints, longs, bools, etc.
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void Write<T>(Int64 position, ref T structure) where T : struct {
             if (position < 0) {
                 throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -1133,7 +1099,6 @@ namespace System.IO {
         // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory. 
 
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void WriteArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct {
             if (array == null) {
                 throw new ArgumentNullException(nameof(array), "Buffer cannot be null.");
@@ -1165,7 +1130,6 @@ namespace System.IO {
             _buffer.WriteArray<T>((UInt64)(_offset + position), array, offset, count);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private byte InternalReadByte(Int64 position) {
             Contract.Assert(CanRead, "UMA not readable");
             Contract.Assert(position >= 0, "position less than 0");
@@ -1188,7 +1152,6 @@ namespace System.IO {
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private void InternalWrite(Int64 position, byte value) {
             Contract.Assert(CanWrite, "UMA not writable");
             Contract.Assert(position >= 0, "position less than 0");

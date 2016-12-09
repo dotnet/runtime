@@ -20,7 +20,6 @@ namespace System {
 [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class ValueType {
 
-        [System.Security.SecuritySafeCritical]
         public override bool Equals (Object obj) {
             BCLDebug.Perf(false, "ValueType::Equals is not fast.  "+this.GetType().FullName+" should override Equals(Object)");
             if (null==obj) {
@@ -60,11 +59,9 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool CanCompareBits(Object obj);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool FastEqualsCheck(Object a, Object b);
 
@@ -78,7 +75,6 @@ namespace System {
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override int GetHashCode();
 

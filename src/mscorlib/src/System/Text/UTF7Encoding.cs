@@ -175,7 +175,6 @@ namespace System.Text
             return EncodingForwarder.GetByteCount(this, s);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetByteCount(char* chars, int count)
@@ -205,7 +204,6 @@ namespace System.Text
             return EncodingForwarder.GetBytes(this, chars, charIndex, charCount, bytes, byteIndex);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
@@ -221,7 +219,6 @@ namespace System.Text
             return EncodingForwarder.GetCharCount(this, bytes, index, count);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
@@ -235,7 +232,6 @@ namespace System.Text
             return EncodingForwarder.GetChars(this, bytes, byteIndex, byteCount, chars, charIndex);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
@@ -254,7 +250,6 @@ namespace System.Text
         
         // End of overridden methods which use EncodingForwarder
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             Contract.Assert(chars!=null, "[UTF7Encoding.GetByteCount]chars!=null");
@@ -264,7 +259,6 @@ namespace System.Text
             return GetBytes(chars, count, null, 0, baseEncoder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
@@ -405,7 +399,6 @@ namespace System.Text
             return buffer.Count;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             Contract.Assert(count >=0, "[UTF7Encoding.GetCharCount]count >=0");
@@ -415,7 +408,6 @@ namespace System.Text
             return GetChars(bytes, count, null, 0, baseDecoder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {
@@ -674,7 +666,6 @@ namespace System.Text
             }
 
             // ISerializable implementation, get data for this object
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
@@ -737,7 +728,6 @@ namespace System.Text
             }
 
             // ISerializable implementation, get data for this object
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
@@ -872,7 +862,6 @@ namespace System.Text
             }
 
             // Clear the buffer
-            [System.Security.SecuritySafeCritical] // overrides public transparent member
             public override unsafe void Reset()
             {
                 iCount = -1;
@@ -880,7 +869,6 @@ namespace System.Text
             }
 
             // This version just counts the fallback and doesn't actually copy anything.
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe override int InternalFallback(byte[] bytes, byte* pBytes)
             // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
             // array, and we might need the index, hence the byte*

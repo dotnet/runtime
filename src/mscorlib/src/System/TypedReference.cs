@@ -23,7 +23,6 @@ namespace System {
         private IntPtr Value;
         private IntPtr Type;
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [CLSCompliant(false)]
         public static TypedReference MakeTypedReference(Object target, FieldInfo[] flds) {
             if (target == null)
@@ -71,7 +70,6 @@ namespace System {
             return result;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
         private unsafe static extern void InternalMakeTypedReference(void* result, Object target, IntPtr[] flds, RuntimeType lastFieldType);
@@ -89,13 +87,11 @@ namespace System {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NYI"));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static Object ToObject(TypedReference value)
         {
             return InternalToObject(&value);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe extern static Object InternalToObject(void * value);
 
@@ -118,14 +114,12 @@ namespace System {
         }
 
         //  This may cause the type to be changed.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe static void SetTypedReference(TypedReference target, Object value)
         {
             InternalSetTypedReference(&target, value);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe extern static void InternalSetTypedReference(void * target, Object value);
     }

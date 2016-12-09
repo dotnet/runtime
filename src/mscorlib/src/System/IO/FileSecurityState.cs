@@ -22,7 +22,6 @@ using System.Security.Permissions;
 
 namespace System.IO
 {
-    [SecurityCritical]
     [System.Runtime.CompilerServices.FriendAccessAllowed]
     internal class FileSecurityState : SecurityState
     {
@@ -35,7 +34,6 @@ namespace System.IO
         private String m_canonicalizedPath;
 
         // default ctor needed for security rule consistency
-        [SecurityCritical]
         private FileSecurityState()
         {
         }
@@ -88,9 +86,6 @@ namespace System.IO
             }
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         public override void EnsureState()
         {
             // this is the case for empty string machine name, etc

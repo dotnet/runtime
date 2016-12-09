@@ -48,7 +48,6 @@ namespace System {
     
         public override String Message
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 if (ClassName == null) {
                     return base.Message;
@@ -62,7 +61,6 @@ namespace System {
         }
     
         // Called to format signature
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String FormatSignature(byte [] signature);
     
@@ -82,7 +80,6 @@ namespace System {
             MemberName  = memberName;
         }
     
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
                 throw new ArgumentNullException(nameof(info));

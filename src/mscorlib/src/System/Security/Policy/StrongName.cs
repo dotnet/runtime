@@ -89,7 +89,6 @@ namespace System.Security.Policy {
 
         bool IDelayEvaluatedEvidence.IsVerified
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 return true;

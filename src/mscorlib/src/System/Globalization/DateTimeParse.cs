@@ -581,7 +581,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // This is the lexer. Check the character at the current index, and put the found token in dtok and
         // some raw date/time information in raw.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static Boolean Lex(DS dps, ref __DTString str, ref DateTimeToken dtok, ref DateTimeRawInfo raw, ref DateTimeResult result, ref DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
 
@@ -2292,7 +2291,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // This is the real method to do the parsing work.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static bool TryParse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles, ref DateTimeResult result) {
             if (s == null) {
                 result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(s));
@@ -4360,7 +4358,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
 
         // Used by DateTime.Parse() to get the next token.
-        [System.Security.SecurityCritical]  // auto-generated
         internal void GetRegularToken(out TokenType tokenType, out int tokenValue, DateTimeFormatInfo dtfi) {
             tokenValue = 0;
             if (Index >= len) {
@@ -4440,7 +4437,6 @@ Start:
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal TokenType GetSeparatorToken(DateTimeFormatInfo dtfi, out int indexBeforeSeparator, out char charBeforeSeparator) {
             indexBeforeSeparator = Index;
             charBeforeSeparator = m_current;
@@ -4851,7 +4847,6 @@ Start:
     //
     internal
     unsafe struct DateTimeRawInfo {
-        [SecurityCritical]
         private  int* num;
         internal int numCount;
         internal int month;
@@ -4865,7 +4860,6 @@ Start:
 
         internal bool timeZone;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void Init(int * numberBuffer) {
             month      = -1;
             year       = -1;
@@ -4875,11 +4869,9 @@ Start:
             fraction = -1;
             num = numberBuffer;
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe void AddNumber(int value) {
             num[numCount++] = value;
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe int GetNumber(int index) {
             return num[index];
         }

@@ -53,7 +53,6 @@ namespace System.Text
 
         // We have to load the 936 code page tables, so impersonate 936 as our base
         // This pretends to be other code pages as far as memory sections are concerned.
-        [System.Security.SecurityCritical]  // auto-generated
         internal ISO2022Encoding(int codePage) : base(codePage, tableBaseCodePages[codePage % 10])
         {
             this.m_bUseMlangTypeForSerialization = true;
@@ -61,7 +60,6 @@ namespace System.Text
 
         // Constructor called by serialization.
         // Note:  We use the base GetObjectData however
-        [System.Security.SecurityCritical]  // auto-generated
         internal ISO2022Encoding(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             // Actually this can't ever get called, CodePageEncoding is our proxy
@@ -102,7 +100,6 @@ namespace System.Text
             ModeNOOP                = -3
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe override String GetMemorySectionName()
         {
             int iUseCodePage = this.bFlagDataTable ? dataTableCodePage : CodePage;
@@ -263,7 +260,6 @@ namespace System.Text
         }
 
         // GetByteCount
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
@@ -274,7 +270,6 @@ namespace System.Text
             return GetBytes(chars, count, null, 0, baseEncoder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
@@ -316,7 +311,6 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
@@ -327,7 +321,6 @@ namespace System.Text
             return GetChars(bytes, count, null, 0, baseDecoder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {
@@ -399,7 +392,6 @@ namespace System.Text
         // undefined, so we maintain that behavior when decoding.  We will never generate characters using
         // that technique, but the decoder will process them.
         //
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe int GetBytesCP5022xJP(char* chars, int charCount,
                                                   byte* bytes, int byteCount, ISO2022Encoder encoder)
         {
@@ -642,7 +634,6 @@ namespace System.Text
         // Also Mlang always assumed KR mode, even if the designator wasn't found yet, so we do that as
         // well.  So basically we just ignore <ESC>$)C when decoding.
         //
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe int GetBytesCP50225KR(char* chars, int charCount,
                                                     byte* bytes, int byteCount, ISO2022Encoder encoder)
         {
@@ -793,7 +784,6 @@ namespace System.Text
         //
         // This encoding is designed for transmission by e-mail and news.  No bytes should have high bit set.
         // (all bytes <= 0x7f)
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe int GetBytesCP52936(char* chars, int charCount,
                                            byte* bytes, int byteCount, ISO2022Encoder encoder)
         {
@@ -928,7 +918,6 @@ namespace System.Text
             return buffer.Count;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe int GetCharsCP5022xJP(byte* bytes, int byteCount,
                                                   char* chars, int charCount, ISO2022Decoder decoder)
         {
@@ -1256,7 +1245,6 @@ namespace System.Text
 
         // Note that in DBCS mode mlang passed through ' ', '\t' and '\n' as SBCS characters
         // probably to allow mailer formatting without too much extra work.
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe int GetCharsCP50225KR(byte* bytes, int byteCount,
                                                    char* chars, int charCount, ISO2022Decoder decoder)
         {
@@ -1496,7 +1484,6 @@ namespace System.Text
         //
         // This encoding is designed for transmission by e-mail and news.  No bytes should have high bit set.
         // (all bytes <= 0x7f)
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe int GetCharsCP52936(byte* bytes, int byteCount,
                                                 char* chars, int charCount, ISO2022Decoder decoder)
         {

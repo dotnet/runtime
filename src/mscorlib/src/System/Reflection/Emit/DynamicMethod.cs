@@ -25,9 +25,6 @@ namespace System.Reflection.Emit
         internal IRuntimeMethodInfo m_methodHandle;
         private RuntimeType m_returnType;
         private DynamicILGenerator m_ilGenerator;
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         private DynamicILInfo m_DynamicILInfo;
         private bool m_fInitLocals;
         private RuntimeModule m_module;
@@ -72,7 +69,6 @@ namespace System.Reflection.Emit
 
         private DynamicMethod() { }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name,
                              Type returnType,
@@ -92,7 +88,6 @@ namespace System.Reflection.Emit
                 ref stackMark);  // transparentMethod
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name,
                              Type returnType,
@@ -113,11 +108,6 @@ namespace System.Reflection.Emit
                 ref stackMark);  // transparentMethod
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name, 
                              Type returnType, 
@@ -137,11 +127,6 @@ namespace System.Reflection.Emit
                 ref stackMark);  // transparentMethod
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name, 
                              Type returnType, 
@@ -162,11 +147,6 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name, 
                              MethodAttributes attributes, 
@@ -189,11 +169,6 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name, 
                              Type returnType, 
@@ -213,11 +188,6 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
         
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name, 
                              Type returnType, 
@@ -238,11 +208,6 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
         
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public DynamicMethod(string name, 
                              MethodAttributes attributes, 
@@ -286,7 +251,6 @@ namespace System.Reflection.Emit
 
         // We create a transparent assembly to host DynamicMethods. Since the assembly does not have any
         // non-public fields (or any fields at all), it is a safe anonymous assembly to host DynamicMethods
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         private static RuntimeModule GetDynamicMethodsModule()
         {
@@ -338,7 +302,6 @@ namespace System.Reflection.Emit
             return s_anonymouslyHostedDynamicMethodsModule;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe void Init(String name, 
                                  MethodAttributes attributes, 
                                  CallingConventions callingConvention, 
@@ -435,7 +398,6 @@ namespace System.Reflection.Emit
             m_dynMethod = new RTDynamicMethod(this, name, attributes, callingConvention);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void PerformSecurityCheck(Module m, ref StackCrawlMark stackMark, bool skipVisibility)
         {
             if (m == null) 
@@ -481,7 +443,6 @@ namespace System.Reflection.Emit
 #endif //!FEATURE_CORECLR
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void PerformSecurityCheck(Type owner, ref StackCrawlMark stackMark, bool skipVisibility)
         {
             if (owner == null)
@@ -529,7 +490,6 @@ namespace System.Reflection.Emit
         // Delegate and method creation
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.InteropServices.ComVisible(true)]
         public sealed override Delegate CreateDelegate(Type delegateType) {
             if (m_restrictedSkipVisibility)
@@ -545,7 +505,6 @@ namespace System.Reflection.Emit
             return d;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.InteropServices.ComVisible(true)]
         public sealed override Delegate CreateDelegate(Type delegateType, Object target) {
             if (m_restrictedSkipVisibility)
@@ -578,7 +537,6 @@ namespace System.Reflection.Emit
 #endif
 
         // This is guaranteed to return a valid handle
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe RuntimeMethodHandle GetMethodDescriptor() {
             if (m_methodHandle == null) {
                 lock (this) {
@@ -639,7 +597,6 @@ namespace System.Reflection.Emit
 #if FEATURE_CORECLR
             get { return true; }
 #else
-            [SecuritySafeCritical]
             get
             {
                 if (m_methodHandle != null)
@@ -669,7 +626,6 @@ namespace System.Reflection.Emit
 #if FEATURE_CORECLR
             get { return false; }
 #else
-            [SecuritySafeCritical]
             get
             {
                 if (m_methodHandle != null)
@@ -699,7 +655,6 @@ namespace System.Reflection.Emit
 #if FEATURE_CORECLR
             get { return false; }
 #else
-            [SecuritySafeCritical]
             get
             {
                 if (m_methodHandle != null)
@@ -724,7 +679,6 @@ namespace System.Reflection.Emit
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture) {
             if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_CallToVarArg"));
@@ -801,7 +755,6 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public DynamicILInfo GetDynamicILInfo()
         {
 #pragma warning disable 618
@@ -814,7 +767,6 @@ namespace System.Reflection.Emit
             return GetDynamicILInfo(new DynamicScope());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal DynamicILInfo GetDynamicILInfo(DynamicScope scope)
         {
             if (m_DynamicILInfo == null)
@@ -831,7 +783,6 @@ namespace System.Reflection.Emit
             return GetILGenerator(64);
         }
 
-       [System.Security.SecuritySafeCritical]  // auto-generated
        public ILGenerator GetILGenerator(int streamSize) 
         {
             if (m_ilGenerator == null)

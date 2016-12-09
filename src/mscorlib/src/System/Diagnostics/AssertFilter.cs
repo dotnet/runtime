@@ -33,7 +33,6 @@ namespace System.Diagnostics {
         {
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override AssertFilters  AssertFailure(String condition, String message, 
                                   StackTrace location, StackTrace.TraceFormat stackTraceFormat,
                                   String windowTitle)

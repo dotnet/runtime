@@ -34,7 +34,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // int Count { get }
         [Pure]
-        [SecurityCritical]
         internal int Count<K, V>()
         {
             object _this = JitHelpers.UnsafeCast<object>(this);
@@ -66,14 +65,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IsReadOnly { get }
-        [SecurityCritical]
         internal bool IsReadOnly<K, V>()
         {
             return false;
         }
 
         // void Add(T item)
-        [SecurityCritical]
         internal void Add<K, V>(KeyValuePair<K, V> item)
         {
             object _this = JitHelpers.UnsafeCast<object>(this);
@@ -91,7 +88,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Clear()
-        [SecurityCritical]
         internal void Clear<K, V>()
         {
             object _this = JitHelpers.UnsafeCast<object>(this);
@@ -109,7 +105,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Contains(T item)
-        [SecurityCritical]
         internal bool Contains<K, V>(KeyValuePair<K, V> item)
         {
             object _this = JitHelpers.UnsafeCast<object>(this);
@@ -135,7 +130,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void CopyTo(T[] array, int arrayIndex)
-        [SecurityCritical]
         internal void CopyTo<K, V>(KeyValuePair<K, V>[] array, int arrayIndex)
         {
             if (array == null)
@@ -160,7 +154,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Remove(T item)
-        [SecurityCritical]
         internal bool Remove<K, V>(KeyValuePair<K, V> item)
         {
             object _this = JitHelpers.UnsafeCast<object>(this);

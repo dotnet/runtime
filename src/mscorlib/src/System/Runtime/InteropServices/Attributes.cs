@@ -525,31 +525,26 @@ namespace System.Runtime.InteropServices{
     [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class MarshalAsAttribute : Attribute
     {
-        [System.Security.SecurityCritical]  // auto-generated
         internal static Attribute GetCustomAttribute(RuntimeParameterInfo parameter)
         {
             return GetCustomAttribute(parameter.MetadataToken, parameter.GetRuntimeModule());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool IsDefined(RuntimeParameterInfo parameter)
         {
             return GetCustomAttribute(parameter) != null;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static Attribute GetCustomAttribute(RuntimeFieldInfo field)
         {
             return GetCustomAttribute(field.MetadataToken, field.GetRuntimeModule()); ;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool IsDefined(RuntimeFieldInfo field)
         {
             return GetCustomAttribute(field) != null;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static Attribute GetCustomAttribute(int token, RuntimeModule scope)
         {
             UnmanagedType unmanagedType, arraySubType;
@@ -772,7 +767,6 @@ namespace System.Runtime.InteropServices{
     [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class DllImportAttribute : Attribute
     {
-        [System.Security.SecurityCritical]  // auto-generated
         internal static Attribute GetCustomAttribute(RuntimeMethodInfo method)
         {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) == 0)
@@ -869,7 +863,6 @@ namespace System.Runtime.InteropServices{
     {
         private const int DEFAULT_PACKING_SIZE = 8;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static Attribute GetCustomAttribute(RuntimeType type)
         {
             if (!IsDefined(type))
@@ -940,7 +933,6 @@ namespace System.Runtime.InteropServices{
     [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class FieldOffsetAttribute : Attribute
     {
-        [System.Security.SecurityCritical]  // auto-generated
         internal static Attribute GetCustomAttribute(RuntimeFieldInfo field)
         {
             int fieldOffset;
@@ -952,7 +944,6 @@ namespace System.Runtime.InteropServices{
             return null;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool IsDefined(RuntimeFieldInfo field)
         {
             return GetCustomAttribute(field) != null;

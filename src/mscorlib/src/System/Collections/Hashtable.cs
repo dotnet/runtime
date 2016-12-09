@@ -1058,7 +1058,6 @@ namespace System.Collections {
         // The ISerializable Implementation
         //
 
-        [System.Security.SecurityCritical]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
                 throw new ArgumentNullException(nameof(info));
@@ -1314,7 +1313,6 @@ namespace System.Collections {
             **           context -- the StreamingContext for the current serialization (ignored)
             **Exceptions: ArgumentNullException if info is null.
             ==============================================================================*/
-            [System.Security.SecurityCritical]  // auto-generated
             public override void GetObjectData(SerializationInfo info, StreamingContext context) {
                 if (info==null) {
                     throw new ArgumentNullException(nameof(info));

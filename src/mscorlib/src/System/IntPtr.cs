@@ -26,13 +26,11 @@ namespace System {
     [System.Runtime.InteropServices.ComVisible(true)]
     public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
-        [SecurityCritical]
         unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
                 
         public static readonly IntPtr Zero;
 
         // fast way to compare IntPtr to (IntPtr)0 while IntPtr.Zero doesn't work due to slow statics access
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe bool IsNull()
@@ -40,7 +38,6 @@ namespace System {
             return (this.m_value == null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(int value)
@@ -52,7 +49,6 @@ namespace System {
 #endif
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(long value)
@@ -64,7 +60,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecurityCritical]
         [CLSCompliant(false)]
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
@@ -73,7 +68,6 @@ namespace System {
             m_value = value;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe IntPtr(SerializationInfo info, StreamingContext context) {
             long l = info.GetInt64("value");
 
@@ -84,7 +78,6 @@ namespace System {
             m_value = (void *)l;
         }
 
-        [System.Security.SecurityCritical]
         unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
                 throw new ArgumentNullException(nameof(info));
@@ -97,7 +90,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override bool Equals(Object obj) {
             if (obj is IntPtr) {
                 return (m_value == ((IntPtr)obj).m_value);
@@ -105,13 +97,11 @@ namespace System {
             return false;
         }
 
-        [SecuritySafeCritical]
         unsafe bool IEquatable<IntPtr>.Equals(IntPtr other)
         {
             return m_value == other.m_value;
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override int GetHashCode() {
 #if FEATURE_CORECLR
 #if BIT64
@@ -125,7 +115,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe int ToInt32() {
@@ -137,7 +126,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe long ToInt64() {
@@ -148,7 +136,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override String ToString() {
 #if BIT64
                 return ((long)m_value).ToString(CultureInfo.InvariantCulture);
@@ -157,7 +144,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe  String ToString(String format) 
         {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -184,7 +170,6 @@ namespace System {
             return new IntPtr(value);
         }
 
-        [System.Security.SecurityCritical]
         [CLSCompliant(false), ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static unsafe explicit operator IntPtr (void* value)
@@ -192,7 +177,6 @@ namespace System {
             return new IntPtr(value);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
         public static unsafe explicit operator void* (IntPtr value)
@@ -200,7 +184,6 @@ namespace System {
             return value.m_value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static explicit operator int (IntPtr  value) 
         {
@@ -212,7 +195,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static explicit operator long (IntPtr  value) 
         {
@@ -223,7 +205,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator == (IntPtr value1, IntPtr value2) 
@@ -231,7 +212,6 @@ namespace System {
             return value1.m_value == value2.m_value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator != (IntPtr value1, IntPtr value2) 
@@ -289,7 +269,6 @@ namespace System {
         }
     
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]

@@ -135,11 +135,9 @@ namespace System.IO {
         }
 
         public String FusionLog {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return _fusionLog; }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             // Serialize data for our base classes.  base will verify info != null.
             base.GetObjectData(info, context);
@@ -156,7 +154,6 @@ namespace System.IO {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static String FormatFileLoadExceptionMessage(String fileName,
             int hResult)
         {
@@ -169,12 +166,10 @@ namespace System.IO {
             return String.Format(CultureInfo.CurrentCulture, format, fileName, message);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetMessageForHR(int hresult, StringHandleOnStack retString);

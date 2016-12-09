@@ -46,14 +46,11 @@ namespace System.Globalization {
         static bool s_initialized = InitTable();
 
         // The native pointer to the 12:4:4 index table of the Unicode cateogry data.
-        [SecurityCritical]
         unsafe static ushort* s_pCategoryLevel1Index;
-        [SecurityCritical]
         unsafe static byte* s_pCategoriesValue;
 
         // The native pointer to the 12:4:4 index table of the Unicode numeric data.
         // The value of this index table is an index into the real value table stored in s_pNumericValues.
-        [SecurityCritical]
         unsafe static ushort* s_pNumericLevel1Index;
 
         // The numeric value table, which is indexed by s_pNumericLevel1Index.
@@ -61,12 +58,10 @@ namespace System.Globalization {
         // unsafe static double* s_pNumericValues;
         // To get around the IA64 alignment issue.  Our double data is aligned in 8-byte boundary, but loader loads the embeded table starting
         // at 4-byte boundary.  This cause a alignment issue since double is 8-byte.
-        [SecurityCritical]
         unsafe static byte* s_pNumericValues;
 
         // The digit value table, which is indexed by s_pNumericLevel1Index.  It shares the same indice as s_pNumericValues.
         // Every item contains the value for decimal digit/digit value.
-        [SecurityCritical]
         unsafe static DigitValues* s_pDigitValues;
 
         internal const String UNICODE_INFO_FILE_NAME = "charinfo.nlp";
@@ -111,7 +106,6 @@ namespace System.Globalization {
         //use.  We allocate this once in the class initializer and then we don't need to worry
         //about it again.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe static bool InitTable() {
 
             // Go to native side and get pointer to the native table
@@ -245,7 +239,6 @@ namespace System.Globalization {
         //
         // Note that for ch in the range D800-DFFF we just treat it as any other non-numeric character
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static double InternalGetNumericValue(int ch) {
             Contract.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
@@ -278,7 +271,6 @@ namespace System.Globalization {
         //
         // Note that for ch in the range D800-DFFF we just treat it as any other non-numeric character
         //        
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static DigitValues* InternalGetDigitValues(int ch) {
             Contract.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
@@ -292,12 +284,10 @@ namespace System.Globalization {
             return &(s_pDigitValues[pBytePtr[(ch & 0x000f)]]);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static sbyte InternalGetDecimalDigitValue(int ch) {
             return (InternalGetDigitValues(ch)->decimalDigit);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static sbyte InternalGetDigitValue(int ch) {
             return (InternalGetDigitValues(ch)->digit);
         }
@@ -441,7 +431,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static byte InternalGetCategoryValue(int ch, int offset) {
             Contract.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.

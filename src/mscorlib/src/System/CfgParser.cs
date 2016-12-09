@@ -213,7 +213,6 @@ namespace System
                              int textLength,
                              int prefixLength);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void RunParser(String fileName);
     }
@@ -245,7 +244,6 @@ namespace System
             return Parse(fileName, configPath, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal ConfigNode Parse(String fileName, String configPath, bool skipSecurityStuff)
         {
             if (fileName == null)

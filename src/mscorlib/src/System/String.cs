@@ -67,7 +67,6 @@ namespace System {
         // than 0x80) before security is fully initialized.  Without security initialized, we can't grab resources (the nlp's)
         // from the assembly.  This provides a workaround for that problem and should NOT be used anywhere else.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static string SmallCharToUpper(string strIn) {
             Contract.Requires(strIn != null);
             Contract.EndContractBlock();
@@ -102,7 +101,6 @@ namespace System {
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public extern char this[int index] {
             [MethodImpl(MethodImplOptions.InternalCall)]
-            [System.Security.SecuritySafeCritical] // public member
             get;
         }
 
@@ -111,7 +109,6 @@ namespace System {
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             if (destination == null)
@@ -136,7 +133,6 @@ namespace System {
         }
         
         // Returns the entire string as an array of characters.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public char[] ToCharArray() {
             int length = Length;
             if (length > 0)
@@ -158,7 +154,6 @@ namespace System {
     
         // Returns a substring of this string as an array of characters.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public char[] ToCharArray(int startIndex, int length)
         {
             // Range check everything.
@@ -210,7 +205,6 @@ namespace System {
         //
         // Spec#: Add postcondition in a contract assembly.  Potential perf problem.
         public extern int Length {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
@@ -218,25 +212,19 @@ namespace System {
         // Creates a new string with the characters copied in from ptr. If
         // ptr is null, a 0-length string (like String.Empty) is returned.
         //
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false), MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(char *value);
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false), MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(char *value, int startIndex, int length);
     
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false), MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(sbyte *value);
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false), MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(sbyte *value, int startIndex, int length);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false), MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(sbyte *value, int startIndex, int length, Encoding enc);
         
-        [System.Security.SecurityCritical]  // auto-generated
         unsafe static private String CreateString(sbyte *value, int startIndex, int length, Encoding enc) {            
             if (enc == null)
                 return new String(value, startIndex, length); // default to ANSI
@@ -267,7 +255,6 @@ namespace System {
         
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect
-        [System.Security.SecurityCritical]  // auto-generated
         unsafe static internal String CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
@@ -297,7 +284,6 @@ namespace System {
         // This is only intended to be used by char.ToString.
         // It is necessary to put the code in this class instead of Char, since m_firstChar is a private member.
         // Making m_firstChar internal would be dangerous since it would make it much easier to break String's immutability.
-        [SecuritySafeCritical]
         internal static string CreateFromChar(char c)
         {
             string result = FastAllocateString(1);
@@ -305,7 +291,6 @@ namespace System {
             return result;
         }
                 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe internal int GetBytesFromEncoding(byte* pbNativeBuffer, int cbNativeBuffer,Encoding encoding)
         {
             // encoding == Encoding.UTF8
@@ -315,7 +300,6 @@ namespace System {
             }            
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe internal int ConvertToAnsi(byte *pbNativeBuffer, int cbNativeBuffer, bool fBestFit, bool fThrowOnUnmappableChar)
         {
             Contract.Assert(cbNativeBuffer >= (Length + 1) * Marshal.SystemMaxDBCSCharSize, "Insufficient buffer length passed to ConvertToAnsi");
@@ -363,7 +347,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
 #if !FEATURE_NORM_IDNA_ONLY
@@ -391,7 +374,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String Normalize(NormalizationForm normalizationForm)
         {
 #if !FEATURE_NORM_IDNA_ONLY        
@@ -408,7 +390,6 @@ namespace System {
             return Normalization.Normalize(this, normalizationForm);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static String FastAllocateString(int length);
 
@@ -416,7 +397,6 @@ namespace System {
         // be created from the characters in value between startIndex and
         // startIndex + length - 1.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char [] value, int startIndex, int length);
     
@@ -424,17 +404,14 @@ namespace System {
         // created from the characters in value.
         //
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char [] value);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static unsafe void wstrcpy(char *dmem, char *smem, int charCount)
         {
             Buffer.Memcpy((byte*)dmem, (byte*)smem, charCount * 2); // 2 used everywhere instead of sizeof(char)
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArray(char [] value)
         {
             if (value != null && value.Length != 0) {
@@ -451,7 +428,6 @@ namespace System {
                 return String.Empty;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArrayStartLength(char [] value, int startIndex, int length)
         {
             if (value == null)
@@ -481,7 +457,6 @@ namespace System {
                 return String.Empty;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharCount(char c, int count)
         {
             if (count > 0) {
@@ -522,7 +497,6 @@ namespace System {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(count)));
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static unsafe int wcslen(char *ptr)
         {
             char *end = ptr;
@@ -617,7 +591,6 @@ namespace System {
             return count;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe String CtorCharPtr(char *ptr)
         {
             if (ptr == null)
@@ -645,7 +618,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe String CtorCharPtrStartLength(char *ptr, int startIndex, int length)
         {
             if (length < 0) {
@@ -679,7 +651,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
 
@@ -705,7 +676,6 @@ namespace System {
             return this;
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public static String Copy (String str) {
             if (str==null) {
                 throw new ArgumentNullException(nameof(str));
@@ -724,7 +694,6 @@ namespace System {
              return result;
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Intern(String str) {
             if (str==null) {
                 throw new ArgumentNullException(nameof(str));
@@ -737,7 +706,6 @@ namespace System {
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String IsInterned(String str) {
             if (str==null) {
                 throw new ArgumentNullException(nameof(str));
@@ -834,20 +802,16 @@ namespace System {
 
         // Is this a string that can be compared quickly (that is it has only characters > 0x80 
         // and not a - or '
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsFastSort();
         // Is this a string that only contains characters < 0x80.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsAscii();
 
         // Set extra byte for odd-sized strings that came from interop as BSTR.
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void SetTrailByte(byte data);
         // Try to retrieve the extra byte - returns false if not present.
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool TryGetTrailByte(out byte data);
 
@@ -874,7 +838,6 @@ namespace System {
         }
 
          // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static void InternalCopy(String src, IntPtr dest,int len)
         {
             if (len == 0)

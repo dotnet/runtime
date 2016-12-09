@@ -64,7 +64,6 @@ namespace System {
         }
 
         // Create instance will create an array
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static Array CreateInstance(Type elementType, int length)
         {
             if ((object)elementType == null)
@@ -82,7 +81,6 @@ namespace System {
             return InternalCreate((void*)t.TypeHandle.Value,1,&length,null);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static Array CreateInstance(Type elementType, int length1, int length2)
         {
             if ((object)elementType == null)
@@ -105,7 +103,6 @@ namespace System {
             return InternalCreate((void*)t.TypeHandle.Value,2,pLengths,null);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static Array CreateInstance(Type elementType, int length1, int length2, int length3)
         {
             if ((object)elementType == null)
@@ -132,7 +129,6 @@ namespace System {
             return InternalCreate((void*)t.TypeHandle.Value,3,pLengths,null);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static Array CreateInstance(Type elementType, params int[] lengths)
         {
             if ((object)elementType == null)
@@ -186,7 +182,6 @@ namespace System {
         }
 
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static Array CreateInstance(Type elementType, int[] lengths,int[] lowerBounds)
         {
             if (elementType == null)
@@ -220,29 +215,24 @@ namespace System {
                     return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,pLowerBounds);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private unsafe static extern Array InternalCreate(void* elementType,int rank,int *pLengths,int *pLowerBounds);
 
-        [SecurityCritical]
         internal static Array UnsafeCreateInstance(Type elementType, int length)
         {
             return CreateInstance(elementType, length);
         }
 
-        [SecurityCritical]
         internal static Array UnsafeCreateInstance(Type elementType, int length1, int length2)
         {
             return CreateInstance(elementType, length1, length2);
         }
 
-        [SecurityCritical]
         internal static Array UnsafeCreateInstance(Type elementType, params int[] lengths)
         {
             return CreateInstance(elementType, lengths);
         }
 
-        [SecurityCritical]
         internal static Array UnsafeCreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             return CreateInstance(elementType, lengths, lowerBounds);
@@ -251,7 +241,6 @@ namespace System {
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public static void Copy(Array sourceArray, Array destinationArray, int length)
         {
@@ -273,7 +262,6 @@ namespace System {
         // Copies length elements from sourceArray, starting at sourceIndex, to
         // destinationArray, starting at destinationIndex.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length) 
         {
@@ -284,7 +272,6 @@ namespace System {
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable);
@@ -294,7 +281,6 @@ namespace System {
         // compatible array types based on the array element type - this 
         // method does not support casting, boxing, or primitive widening.
         // It will up-cast, assuming the array types are correct.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
@@ -327,13 +313,11 @@ namespace System {
         // Sets length elements in array to 0 (or null for Object arrays), starting
         // at index.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern void Clear(Array array, int index, int length);
         
         // The various Get values...
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe Object GetValue(params int[] indices)
         {
             if (indices == null)
@@ -348,7 +332,6 @@ namespace System {
             return TypedReference.InternalToObject(&elemref);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe Object GetValue(int index)
         {
             if (Rank != 1)
@@ -360,7 +343,6 @@ namespace System {
             return TypedReference.InternalToObject(&elemref);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe Object GetValue(int index1, int index2)
         {
             if (Rank != 2)
@@ -376,7 +358,6 @@ namespace System {
             return TypedReference.InternalToObject(&elemref);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe Object GetValue(int index1, int index2, int index3)
         {
             if (Rank != 3)
@@ -452,7 +433,6 @@ namespace System {
         }
 
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe void SetValue(Object value,int index)
         {
             if (Rank != 1)
@@ -464,7 +444,6 @@ namespace System {
             InternalSetValue(&elemref,value);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe void SetValue(Object value,int index1, int index2)
         {
             if (Rank != 2)
@@ -480,7 +459,6 @@ namespace System {
             InternalSetValue(&elemref,value);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe void SetValue(Object value,int index1, int index2, int index3)
         {
             if (Rank != 3)
@@ -497,7 +475,6 @@ namespace System {
             InternalSetValue(&elemref,value);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe void SetValue(Object value,params int[] indices)
         {
             if (indices == null)
@@ -570,20 +547,17 @@ namespace System {
             this.SetValue(value, intIndices);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
         private unsafe extern void InternalGetReference(void * elemRef, int rank, int * pIndices);
 
         // Ideally, we would like to use TypedReference.SetValue instead. Unfortunately, TypedReference.SetValue
         // always throws not-supported exception
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private unsafe extern static void InternalSetValue(void * target, Object value);
 
         public extern int Length {
             [Pure]
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
@@ -608,14 +582,12 @@ namespace System {
         [ComVisible(false)]
         public extern long LongLength {
             [Pure]
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int GetLength(int dimension);
 
@@ -628,25 +600,21 @@ namespace System {
 
         public extern int Rank {
             [Pure]
-            [System.Security.SecuritySafeCritical]  // auto-generated
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public extern int GetUpperBound(int dimension);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int GetLowerBound(int dimension);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern int GetDataPtrOffsetInternal();
@@ -883,7 +851,6 @@ namespace System {
         // is larger than the given search value.
         // 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int BinarySearch(Array array, int index, int length, Object value, IComparer comparer) {
             if (array==null) 
@@ -954,7 +921,6 @@ namespace System {
             return ~lo;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, Object value, out int retVal);
@@ -1318,7 +1284,6 @@ namespace System {
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int IndexOf(Array array, Object value, int startIndex, int count) {
             if (array==null)
@@ -1413,7 +1378,6 @@ namespace System {
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern bool TrySZIndexOf(Array sourceArray, int sourceIndex, int count, Object value, out int retVal);
@@ -1454,7 +1418,6 @@ namespace System {
         // the array are compared to the given value using the Object.Equals
         // method.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int LastIndexOf(Array array, Object value, int startIndex, int count) {
             if (array==null)
@@ -1566,7 +1529,6 @@ namespace System {
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);            
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern bool TrySZLastIndexOf(Array sourceArray, int sourceIndex, int count, Object value, out int retVal);
@@ -1591,7 +1553,6 @@ namespace System {
         // index index + (index + count - i - 1).
         // Reliability note: This may fail because it may have to box objects.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public static void Reverse(Array array, int index, int length) {
             if (array==null) 
@@ -1635,7 +1596,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         private static extern bool TrySZReverse(Array array, int index, int count);
@@ -1769,7 +1729,6 @@ namespace System {
         // the IComparable interface, which in that case must be implemented
         // by all elements of the given section of the keys array.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public static void Sort(Array keys, Array items, int index, int length, IComparer comparer) {
             if (keys==null)
@@ -1811,7 +1770,6 @@ namespace System {
             }
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         private static extern bool TrySZSort(Array keys, Array items, int left, int right);
@@ -1858,7 +1816,6 @@ namespace System {
             Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T> comparer) {
             if (array==null)
@@ -1882,7 +1839,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length, System.Collections.Generic.IComparer<TKey> comparer) {
             if (keys==null)
@@ -2486,7 +2442,6 @@ namespace System {
         // if this is an array of value classes and that value class has a default constructor 
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern void Initialize();
     }
@@ -2529,7 +2484,6 @@ namespace System {
         // -----------------------------------------------------------
         // ------- Implement IEnumerable<T> interface methods --------
         // -----------------------------------------------------------
-        [SecuritySafeCritical]
         internal IEnumerator<T> GetEnumerator<T>() {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
@@ -2541,7 +2495,6 @@ namespace System {
         // -----------------------------------------------------------
         // ------- Implement ICollection<T> interface methods --------
         // -----------------------------------------------------------
-        [SecuritySafeCritical]
         void CopyTo<T>(T[] array, int index) {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
@@ -2550,7 +2503,6 @@ namespace System {
             Array.Copy(_this, 0, array, index, _this.Length);
         }
 
-        [SecuritySafeCritical]
         internal int get_Count<T>() {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
@@ -2561,7 +2513,6 @@ namespace System {
         // -----------------------------------------------------------
         // ---------- Implement IList<T> interface methods -----------
         // -----------------------------------------------------------
-        [SecuritySafeCritical]
         internal T get_Item<T>(int index) {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
@@ -2573,7 +2524,6 @@ namespace System {
             return _this[index];
         }
 
-        [SecuritySafeCritical]
         internal void set_Item<T>(int index, T value) {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
@@ -2590,7 +2540,6 @@ namespace System {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        [SecuritySafeCritical]
         bool Contains<T>(T value) {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
@@ -2609,7 +2558,6 @@ namespace System {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);                     
         }
 
-        [SecuritySafeCritical]
         int IndexOf<T>(T value) {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!

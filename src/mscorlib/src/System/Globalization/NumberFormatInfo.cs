@@ -210,7 +210,6 @@ namespace System.Globalization {
 
         // We aren't persisting dataItem any more (since its useless & we weren't using it),
         // Ditto with m_useUserOverride.  Don't use them, we use a local copy of everything.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal NumberFormatInfo(CultureData cultureData)
         {
             if (cultureData != null)

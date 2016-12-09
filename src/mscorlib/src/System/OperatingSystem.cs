@@ -71,7 +71,6 @@ namespace System {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void GetObjectData(SerializationInfo info, StreamingContext context) {
             if( info == null ) {
                 throw new ArgumentNullException(nameof(info));

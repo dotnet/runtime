@@ -95,7 +95,6 @@ public class Object
     
     // Returns a Type object which represent this object instance.
     // 
-    [System.Security.SecuritySafeCritical]  // auto-generated
     [Pure]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern Type GetType();
@@ -113,14 +112,12 @@ public class Object
     // so that other object may only call this method on themselves.  It is entended to
     // support the ICloneable interface.
     // 
-    [System.Security.SecuritySafeCritical]  // auto-generated
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     protected extern Object MemberwiseClone();
     
    
     // Sets the value specified in the variant on the field
     // 
-    [System.Security.SecurityCritical]  // auto-generated
     private void FieldSetter(String typeName, String fieldName, Object val)
     {
         Contract.Requires(typeName != null);

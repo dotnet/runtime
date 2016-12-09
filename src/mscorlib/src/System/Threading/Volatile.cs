@@ -129,7 +129,6 @@ namespace System.Threading
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
-        [SecuritySafeCritical] // to match 32-bit version
         public static ulong Read(ref ulong location)
         {
             // 
@@ -154,7 +153,6 @@ namespace System.Threading
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [CLSCompliant(false)]
-        [SecuritySafeCritical] // contains unsafe code
         public static ulong Read(ref ulong location)
         {
             unsafe
@@ -222,7 +220,6 @@ namespace System.Threading
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SecuritySafeCritical] //the intrinsic implementation of this method contains unverifiable code
         [System.Runtime.Versioning.NonVersionable]
         public static T Read<T>(ref T location) where T : class
         {
@@ -332,7 +329,6 @@ namespace System.Threading
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
-        [SecuritySafeCritical] // to match 32-bit version
         public static void Write(ref ulong location, ulong value)
         {
             // 
@@ -356,7 +352,6 @@ namespace System.Threading
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [CLSCompliant(false)]
-        [SecuritySafeCritical] // contains unsafe code
         public static void Write(ref ulong location, ulong value)
         {
             //
@@ -427,7 +422,6 @@ namespace System.Threading
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SecuritySafeCritical] //the intrinsic implementation of this method contains unverifiable code
         [System.Runtime.Versioning.NonVersionable]
         public static void Write<T>(ref T location, T value) where T : class
         {

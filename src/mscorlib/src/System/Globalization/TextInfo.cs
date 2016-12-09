@@ -212,7 +212,6 @@ namespace System.Globalization {
             return (Invariant.GetCaseInsensitiveHashCode(s, forceRandomizedHashing, additionalEntropy));
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static unsafe bool TryFastFindStringOrdinalIgnoreCase(int searchFlags, String source, int startIndex, String value, int count, ref int foundIndex)
         {
             return InternalTryFindStringOrdinalIgnoreCase(searchFlags, source, count, startIndex, value, value.Length, ref foundIndex);
@@ -220,7 +219,6 @@ namespace System.Globalization {
 
         // This function doesn't check arguments. Please do check in the caller.
         // The underlying unmanaged code will assert the sanity of arguments.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static unsafe int CompareOrdinalIgnoreCase(String str1, String str2)
         {
             // Compare the whole string and ignore case.
@@ -229,7 +227,6 @@ namespace System.Globalization {
 
         // This function doesn't check arguments. Please do check in the caller.
         // The underlying unmanaged code will assert the sanity of arguments.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static unsafe int CompareOrdinalIgnoreCaseEx(String strA, int indexA, String strB, int indexB, int lengthA, int lengthB )
         {
             Contract.Assert(strA.Length >= indexA + lengthA,  "[TextInfo.CompareOrdinalIgnoreCaseEx] Caller should've validated strA.Length >= indexA + lengthA");
@@ -481,7 +478,6 @@ namespace System.Globalization {
 
         public virtual String ListSeparator 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get 
             {
                 if (m_listSeparator == null) {
@@ -512,7 +508,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual char ToLower(char c) 
         {
             if(IsAscii(c) && IsAsciiCasingSameAsInvariant)
@@ -522,7 +517,6 @@ namespace System.Globalization {
             return (InternalChangeCaseChar(this.m_dataHandle, this.m_handleOrigin, this.m_textInfoName, c, false));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual String ToLower(String str) 
         {
             if (str == null) { throw new ArgumentNullException(nameof(str)); }
@@ -550,7 +544,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual char ToUpper(char c) 
         {
             if (IsAscii(c) && IsAsciiCasingSameAsInvariant)
@@ -561,7 +554,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual String ToUpper(String str) 
         {
             if (str == null) { throw new ArgumentNullException(nameof(str)); }
@@ -930,13 +922,11 @@ namespace System.Globalization {
         // is not null before calling this.  Currenlty, CaseInsensitiveHashCodeProvider
         // does that.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe int GetCaseInsensitiveHashCode(String str)
         {
             return GetCaseInsensitiveHashCode(str, false, 0);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe int GetCaseInsensitiveHashCode(String str, bool forceRandomizedHashing, long additionalEntropy)
         {
             // Validate inputs
@@ -951,23 +941,19 @@ namespace System.Globalization {
         }
 
         // Change case (ToUpper/ToLower) -- COMNlsInfo::InternalChangeCaseChar
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static unsafe extern char InternalChangeCaseChar(IntPtr handle, IntPtr handleOrigin, String localeName, char ch, bool isToUpper);
         
         // Change case (ToUpper/ToLower) -- COMNlsInfo::InternalChangeCaseString
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static unsafe extern String InternalChangeCaseString(IntPtr handle, IntPtr handleOrigin, String localeName, String str, bool isToUpper);
 
         // Get case insensitive hash -- ComNlsInfo::InternalGetCaseInsHash
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static unsafe extern int InternalGetCaseInsHash(IntPtr handle, IntPtr handleOrigin, String localeName, String str, bool forceRandomizedHashing, long additionalEntropy);
 
         // Call ::CompareStringOrdinal -- ComNlsInfo::InternalCompareStringOrdinalIgnoreCase
         // Start at indexes and compare for length characters (or remainder of string if length == -1)
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static unsafe extern int InternalCompareStringOrdinalIgnoreCase(String string1, int index1, String string2, int index2, int length1, int length2);
@@ -975,7 +961,6 @@ namespace System.Globalization {
         // ComNlsInfo::InternalTryFindStringOrdinalIgnoreCase attempts a faster IndexOf/LastIndexOf OrdinalIgnoreCase using a kernel function.
         // Returns true if FindStringOrdinal was handled, with foundIndex set to the target's index into the source
         // Returns false when FindStringOrdinal wasn't handled
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]

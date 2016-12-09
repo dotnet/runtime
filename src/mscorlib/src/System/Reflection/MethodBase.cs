@@ -50,9 +50,6 @@ namespace System.Reflection
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_MethodBase))]
-#pragma warning disable 618
-    [PermissionSetAttribute(SecurityAction.InheritanceDemand, Name = "FullTrust")]
-#pragma warning restore 618
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MethodBase : MemberInfo, _MethodBase
     {
@@ -131,7 +128,6 @@ namespace System.Reflection
 
         #region Internal Members
         // used by EE
-        [System.Security.SecurityCritical]
         private IntPtr GetMethodDesc() { return MethodHandle.Value; }
 
 #if FEATURE_APPX
@@ -243,7 +239,6 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 #pragma warning disable 618
         [ReflectionPermissionAttribute(SecurityAction.Demand, Flags=ReflectionPermissionFlag.MemberAccess)]            
 #pragma warning restore 618
@@ -329,7 +324,6 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        [System.Security.SecuritySafeCritical]
         internal Object[] CheckArguments(Object[] parameters, Binder binder, 
             BindingFlags invokeAttr, CultureInfo culture, Signature sig)
         {

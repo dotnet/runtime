@@ -22,7 +22,6 @@ namespace System.Runtime.Serialization {
     // Interface does not need to be marked with the serializable attribute
 [System.Runtime.InteropServices.ComVisible(true)]
     public interface IObjectReference {
-        [System.Security.SecurityCritical]  // auto-generated_required
         Object GetRealObject(StreamingContext context);
     }
 }

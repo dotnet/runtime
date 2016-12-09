@@ -48,7 +48,6 @@ namespace System {
             SetErrorCode(__HResults.E_POINTER);   
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         protected ArgumentNullException(SerializationInfo info, StreamingContext context) : base(info, context) {
         }
     }

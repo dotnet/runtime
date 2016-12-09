@@ -436,17 +436,14 @@ namespace System.Globalization
 
         
         // Get native two digit year max
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int nativeGetTwoDigitYearMax(int calID);
 
         // Call native side to load our calendar data
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool nativeGetCalendarData(CalendarData data, String localeName, int calendar);
 
         // Call native side to figure out which calendars are allowed
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int nativeGetCalendars(String localeName, bool useUserOverride, [In, Out] int[] calendars);
 

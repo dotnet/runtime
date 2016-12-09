@@ -37,7 +37,6 @@ namespace System
         private volatile String _Remoting_Identity_IDGuid;
         public static String Remoting_Identity_IDGuid 
         { 
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get 
             {
                 if (_sharedStatics._Remoting_Identity_IDGuid == null)

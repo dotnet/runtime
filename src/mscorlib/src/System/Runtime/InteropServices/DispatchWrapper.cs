@@ -21,10 +21,6 @@ namespace System.Runtime.InteropServices {
 [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DispatchWrapper
     {
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand,Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public DispatchWrapper(Object obj)
         {
             if (obj != null)

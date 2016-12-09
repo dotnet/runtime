@@ -31,7 +31,6 @@ namespace System.Reflection.Emit
         {
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal ConstructorBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[] parameterTypes, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
         {
@@ -49,7 +48,6 @@ namespace System.Reflection.Emit
             token = m_methodBuilder.GetToken();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal ConstructorBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[] parameterTypes, ModuleBuilder mod, TypeBuilder type) : 
             this(name, attributes, callingConvention, parameterTypes, null, null, mod, type)
@@ -205,9 +203,6 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetILGenerator(streamSize);
         }
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         public void SetMethodBody(byte[] il, int maxStack, byte[] localSignature, IEnumerable<ExceptionHandler> exceptionHandlers, IEnumerable<int> tokenFixups)
         {
             if (m_isDefaultConstructor)
@@ -252,9 +247,6 @@ namespace System.Reflection.Emit
             get { return m_methodBuilder.Signature; }
         }
     
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

@@ -67,7 +67,6 @@ namespace System.Reflection.Emit {
         //************************************************
         // Set the default value of the Property
         //************************************************
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetConstant(Object defaultValue) 
         {
             m_containingType.ThrowIfCreated();
@@ -103,7 +102,6 @@ namespace System.Reflection.Emit {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetMethodSemantics(MethodBuilder mdBuilder, MethodSemanticsAttributes semantics)
         {
             if (mdBuilder == null)
@@ -119,21 +117,18 @@ namespace System.Reflection.Emit {
                 mdBuilder.GetToken().Token);
         }    
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetGetMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Getter);
             m_getMethod = mdBuilder;
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetSetMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Setter);
             m_setMethod = mdBuilder;                
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void AddOtherMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Other);
@@ -141,11 +136,6 @@ namespace System.Reflection.Emit {
     
         // Use this function if client decides to form the custom attribute blob themselves
 
-#if FEATURE_CORECLR
-[System.Security.SecurityCritical] // auto-generated
-#else
-[System.Security.SecuritySafeCritical]
-#endif
 [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
@@ -164,7 +154,6 @@ namespace System.Reflection.Emit {
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)

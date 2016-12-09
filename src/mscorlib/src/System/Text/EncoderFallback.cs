@@ -111,9 +111,7 @@ namespace System.Text
 
         // Internal items to help us figure out what we're doing as far as error messages, etc.
         // These help us with our performance and messages internally
-        [SecurityCritical]
         internal    unsafe char*   charStart;
-        [SecurityCritical]
         internal    unsafe char*   charEnd;
         internal    EncoderNLS     encoder;
         internal    bool           setEncoder;
@@ -124,7 +122,6 @@ namespace System.Text
 
         // Internal Reset
         // For example, what if someone fails a conversion and wants to reset one of our fallback buffers?
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void InternalReset()
         {
             charStart = null;
@@ -135,7 +132,6 @@ namespace System.Text
 
         // Set the above values
         // This can't be part of the constructor because EncoderFallbacks would have to know how to impliment these.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void InternalInitialize(char* charStart, char* charEnd, EncoderNLS encoder, bool setEncoder)
         {
             this.charStart = charStart;
@@ -163,7 +159,6 @@ namespace System.Text
         // Note that this could also change the contents of this.encoder, which is the same
         // object that the caller is using, so the caller could mess up the encoder for us
         // if they aren't careful.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe virtual bool InternalFallback(char ch, ref char* chars)
         {
             // Shouldn't have null charStart

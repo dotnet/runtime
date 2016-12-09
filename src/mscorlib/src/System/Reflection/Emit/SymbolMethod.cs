@@ -26,7 +26,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        [System.Security.SecurityCritical]  // auto-generated
         internal SymbolMethod(ModuleBuilder mod, MethodToken token, Type arrayClass, String methodName, 
             CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
         {

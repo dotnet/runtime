@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices {
     using ComTypes = System.Runtime.InteropServices.ComTypes;
 
     // see code:ComEventsHelper#ComEventsArchitecture
-    [System.Security.SecurityCritical]
     internal class ComEventsInfo {
 
 
@@ -35,7 +34,6 @@ namespace System.Runtime.InteropServices {
             _rcw = rcw;
         }
 
-        [System.Security.SecuritySafeCritical]
         ~ComEventsInfo() {
             // see code:ComEventsHelper#ComEventsFinalization
             _sinks = ComEventsSink.RemoveAll(_sinks);
@@ -46,13 +44,11 @@ namespace System.Runtime.InteropServices {
 
 #region static methods
 
-        [System.Security.SecurityCritical]
         internal static ComEventsInfo Find(object rcw) {
             return (ComEventsInfo)Marshal.GetComObjectData(rcw, typeof(ComEventsInfo));
         }
 
         // it is caller's responsibility to call this method under lock(rcw)
-        [System.Security.SecurityCritical]
         internal static ComEventsInfo FromObject(object rcw) {
             ComEventsInfo eventsInfo = Find(rcw);
             if (eventsInfo == null) {
@@ -80,7 +76,6 @@ namespace System.Runtime.InteropServices {
         }
 
         // it is caller's responsibility to call this method under lock(rcw)
-        [System.Security.SecurityCritical]
         internal ComEventsSink RemoveSink(ComEventsSink sink) {
             _sinks = ComEventsSink.Remove(_sinks, sink);
             return _sinks;

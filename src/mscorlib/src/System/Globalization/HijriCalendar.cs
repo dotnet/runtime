@@ -209,7 +209,6 @@ namespace System.Globalization {
 
 
         public int HijriAdjustment {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 if (m_HijriAdvance == Int32.MinValue) {
                     // Never been set before.  Use the system value from registry.
@@ -252,7 +251,6 @@ namespace System.Globalization {
         **      "AddHijriDate+1"  =>  Add +1 days to the current calculated Hijri date.
         **      "AddHijriDate+2"  =>  Add +2 days to the current calculated Hijri date.
         ============================================================================*/
-        [System.Security.SecurityCritical]  // auto-generated
         static int GetAdvanceHijriDate() {
 #if FEATURE_WIN32_REGISTRY
 
