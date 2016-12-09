@@ -718,7 +718,7 @@ public class CXmlCache
     protected CXmlNode _rDocumentRootNode;
     protected CXmlNode _rRootNode = null;
     internal static NodeFlags _eDefaultFlags = NodeFlags.None;
-    static internal BufferWriter _rBufferWriter = new BufferWriter();
+    internal static BufferWriter _rBufferWriter = new BufferWriter();
 
     private ITestOutputHelper _output;
     public CXmlCache(ITestOutputHelper output)

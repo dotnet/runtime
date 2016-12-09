@@ -40,7 +40,7 @@ namespace System.Data.SqlClient
         }
 
         // Reads off from the network buffer and caches bytes. Only reads one column value in the current row.
-        static internal bool TryCreate(SqlMetaDataPriv metadata, TdsParser parser, TdsParserStateObject stateObj, out SqlCachedBuffer buffer)
+        internal static bool TryCreate(SqlMetaDataPriv metadata, TdsParser parser, TdsParserStateObject stateObj, out SqlCachedBuffer buffer)
         {
             int cb = 0;
             ulong plplength;

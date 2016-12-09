@@ -1242,7 +1242,7 @@ namespace System.Xml
             return -1;
         }
 
-        static internal bool IsOnlyDigits(string str, int startPos, int len)
+        internal static bool IsOnlyDigits(string str, int startPos, int len)
         {
             Debug.Assert(str != null);
             Debug.Assert(startPos + len <= str.Length);
@@ -1258,7 +1258,7 @@ namespace System.Xml
             return true;
         }
 
-        static internal bool IsOnlyDigits(char[] chars, int startPos, int len)
+        internal static bool IsOnlyDigits(char[] chars, int startPos, int len)
         {
             Debug.Assert(chars != null);
             Debug.Assert(startPos + len <= chars.Length);

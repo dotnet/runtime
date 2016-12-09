@@ -43,7 +43,7 @@ namespace OLEDB.Test.ModuleCore
         }
 
         //Helpers
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             //Since this is a static class, (to make it simpler to access from anywhere in your code)

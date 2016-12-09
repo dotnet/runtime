@@ -104,7 +104,7 @@ namespace Microsoft.Test.ModuleCore
             return ret;
         }
 
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             //Since this is a static class, (to make it simplier to access from anywhere in your code)

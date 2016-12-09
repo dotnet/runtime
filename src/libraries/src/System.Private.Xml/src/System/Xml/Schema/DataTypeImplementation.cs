@@ -707,8 +707,8 @@ namespace System.Xml.Schema
         static private readonly DatatypeImplementation s_yearMonth = new Datatype_yearMonth();
 
         //V1 compat types
-        static internal readonly DatatypeImplementation c_normalizedStringV1Compat = new Datatype_normalizedStringV1Compat();
-        static internal readonly DatatypeImplementation c_tokenV1Compat = new Datatype_tokenV1Compat();
+        internal static readonly DatatypeImplementation c_normalizedStringV1Compat = new Datatype_normalizedStringV1Compat();
+        internal static readonly DatatypeImplementation c_tokenV1Compat = new Datatype_tokenV1Compat();
 
         // XQuery types
         static private readonly DatatypeImplementation s_anyAtomicType = new Datatype_anyAtomicType();

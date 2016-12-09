@@ -376,7 +376,7 @@ namespace System.Runtime.Serialization
         ///            is therefore marked SRR
         /// Safe - does not let caller influence isNonAttributedType calculation; no harm in leaking value
         /// </SecurityNote>
-        static internal bool IsNonAttributedTypeValidForSerialization(Type type)
+        internal static bool IsNonAttributedTypeValidForSerialization(Type type)
         {
             if (type.IsArray)
                 return false;

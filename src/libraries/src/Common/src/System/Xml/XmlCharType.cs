@@ -681,7 +681,7 @@ namespace System.Xml
             return -1;
         }
 
-        static internal bool IsOnlyDigits(string str, int startPos, int len)
+        internal static bool IsOnlyDigits(string str, int startPos, int len)
         {
             Debug.Assert(str != null);
             Debug.Assert(startPos + len <= str.Length);

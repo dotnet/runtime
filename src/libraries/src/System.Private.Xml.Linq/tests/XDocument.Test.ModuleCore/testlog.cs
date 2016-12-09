@@ -56,7 +56,7 @@ namespace Microsoft.Test.ModuleCore
             get { return s_passerthandler; }
         }
 
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             s_pinternal = null;
@@ -274,7 +274,7 @@ namespace Microsoft.Test.ModuleCore
             return false;
         }
 
-        static internal bool InternalEquals(object actual, object expected)
+        internal static bool InternalEquals(object actual, object expected)
         {
             //Handle null comparison
             if (actual == null && expected == null)

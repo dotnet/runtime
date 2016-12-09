@@ -1102,7 +1102,7 @@ namespace System.Data.SqlClient
         // Surround name in brackets and then escape any end bracket to protect against SQL Injection.
         // NOTE: if the user escapes it themselves it will not work, but this was the case in V1 as well
         // as native OleDb and Odbc.
-        static internal string FixupDatabaseTransactionName(string name)
+        internal static string FixupDatabaseTransactionName(string name)
         {
             if (!string.IsNullOrEmpty(name))
             {

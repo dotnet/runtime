@@ -1428,7 +1428,7 @@ namespace System.Xml
             }
         }
 
-        static internal bool IsTextualNode(XmlNodeType nodeType)
+        internal static bool IsTextualNode(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies IsTextualNodeBitmap mapping of XmlNodeType to a bool specifying
@@ -1455,7 +1455,7 @@ namespace System.Xml
             return 0 != (s_isTextualNodeBitmap & (1 << (int)nodeType));
         }
 
-        static internal bool CanReadContentAs(XmlNodeType nodeType)
+        internal static bool CanReadContentAs(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies IsTextualNodeBitmap mapping of XmlNodeType to a bool specifying
@@ -1482,7 +1482,7 @@ namespace System.Xml
             return 0 != (s_canReadContentAsBitmap & (1 << (int)nodeType));
         }
 
-        static internal bool HasValueInternal(XmlNodeType nodeType)
+        internal static bool HasValueInternal(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies HasValueBitmap mapping of XmlNodeType to a bool specifying
@@ -1572,12 +1572,12 @@ namespace System.Xml
             return CanReadContentAs(this.NodeType);
         }
 
-        static internal Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
+        internal static Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
             return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
 
-        static internal Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
+        internal static Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
             return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }

@@ -5456,7 +5456,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        static internal SqlDecimal AdjustSqlDecimalScale(SqlDecimal d, int newScale)
+        internal static SqlDecimal AdjustSqlDecimalScale(SqlDecimal d, int newScale)
         {
             if (d.Scale != newScale)
             {
@@ -5466,7 +5466,7 @@ namespace System.Data.SqlClient
             return d;
         }
 
-        static internal decimal AdjustDecimalScale(decimal value, int newScale)
+        internal static decimal AdjustDecimalScale(decimal value, int newScale)
         {
             int oldScale = (Decimal.GetBits(value)[3] & 0x00ff0000) >> 0x10;
 

@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         // On CentOS, secp224r1 (also called nistP224) appears to be disabled. To prevent test failures on that platform, 
         // probe for this capability before depending on it. 
-        static internal bool ECDsa224Available
+        internal static bool ECDsa224Available
         {
             get
             {
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        static internal bool ECExplicitCurvesSupported
+        internal static bool ECExplicitCurvesSupported
         {
             get
             {
