@@ -18,15 +18,10 @@ namespace System.Runtime.Serialization
     using System.Collections.Generic;
     using System.Reflection;
     using System.Runtime.Remoting;
-#if FEATURE_REMOTING
-    using System.Runtime.Remoting.Proxies;
-#endif
     using System.Globalization;
     using System.Diagnostics.Contracts;
     using System.Security;
-#if FEATURE_CORECLR
     using System.Runtime.CompilerServices;
-#endif 
 
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class SerializationInfo
@@ -526,19 +521,11 @@ namespace System.Runtime.Serialization
             Object value;
 
             value = GetElement(name, out foundType);
-#if FEATURE_REMOTING
-            if (RemotingServices.IsTransparentProxy(value))
+
+            if (Object.ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
-                RealProxy proxy = RemotingServices.GetRealProxy(value);
-                if (RemotingServices.ProxyCheckCast(proxy, rt))
-                    return value;
+                return value;
             }
-            else
-#endif
-                if (Object.ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
-                {
-                    return value;
-                }
 
             Contract.Assert(m_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
 
@@ -558,19 +545,11 @@ namespace System.Runtime.Serialization
             value = GetElementNoThrow(name, out foundType);
             if (value == null)
                 return null;
-#if FEATURE_REMOTING
-            if (RemotingServices.IsTransparentProxy(value))
+
+            if (Object.ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
-                RealProxy proxy = RemotingServices.GetRealProxy(value);
-                if (RemotingServices.ProxyCheckCast(proxy, (RuntimeType)type))
-                    return value;
+                return value;
             }
-            else
-#endif
-                if (Object.ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
-                {
-                    return value;
-                }
 
             Contract.Assert(m_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
 

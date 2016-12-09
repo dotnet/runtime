@@ -543,36 +543,7 @@ namespace System.Reflection
         {
             return ModuleHandle.EmptyHandle;
         }
-
-#if FEATURE_X509 && FEATURE_CAS_POLICY
-        public virtual System.Security.Cryptography.X509Certificates.X509Certificate GetSignerCertificate()
-        {
-            throw new NotImplementedException();
-        }
-#endif // FEATURE_X509 && FEATURE_CAS_POLICY
         #endregion
-
-#if !FEATURE_CORECLR
-        void _Module.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Module.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Module.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Module.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
     }
 
     [Serializable]
@@ -614,13 +585,6 @@ namespace System.Reflection
         [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern static bool IsResource(RuntimeModule module);
-
-#if FEATURE_X509 && FEATURE_CAS_POLICY
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void GetSignerCertificate(RuntimeModule module, ObjectHandleOnStack retData);
-#endif // FEATURE_X509 && FEATURE_CAS_POLICY
         #endregion
 
         #region Module overrides
@@ -1215,16 +1179,6 @@ namespace System.Reflection
         {
             return this;
         }
-
-#if FEATURE_X509 && FEATURE_CAS_POLICY
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override System.Security.Cryptography.X509Certificates.X509Certificate GetSignerCertificate()
-        {
-            byte[] data = null;
-            GetSignerCertificate(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref data));
-            return (data != null) ? new System.Security.Cryptography.X509Certificates.X509Certificate(data) : null;
-        }
-#endif // FEATURE_X509 && FEATURE_CAS_POLICY
         #endregion
     }
 }

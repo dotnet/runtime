@@ -36,9 +36,6 @@ namespace System.Security {
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-#if !FEATURE_CORECLR
-    [StrongNameIdentityPermissionAttribute(SecurityAction.InheritanceDemand, Name = "mscorlib", PublicKey = "0x" + AssemblyRef.EcmaPublicKeyFull)]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class PermissionSet : ISecurityEncodable, ICollection, IStackWalk
 #if FEATURE_SERIALIZATION
@@ -114,71 +111,13 @@ namespace System.Security {
 
         internal static readonly PermissionSet s_fullTrust = new PermissionSet( true );
 
-#if FEATURE_REMOTING
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-            Reset();
-        }   
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            if (m_serializedPermissionSet != null)
-            {
-                // Whidbey non X-AD case
-                FromXml(SecurityElement.FromString(m_serializedPermissionSet));
-            }
-            else if (m_normalPermSet != null)
-            {
-                // Everett non X-AD case
-                m_permSet = m_normalPermSet.SpecialUnion(m_unrestrictedPermSet);
-            }
-            else if (m_unrestrictedPermSet != null)
-            {
-                // Everett non X-AD case
-                m_permSet = m_unrestrictedPermSet.SpecialUnion(m_normalPermSet);
-            }
-
-            m_serializedPermissionSet = null;
-            m_normalPermSet = null;
-            m_unrestrictedPermSet = null;
-
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-
-            if ((ctx.State & ~(StreamingContextStates.Clone|StreamingContextStates.CrossAppDomain)) != 0)
-            {
-                m_serializedPermissionSet = ToString(); // For v2.x and beyond
-                if (m_permSet != null)
-                    m_permSet.SpecialSplit(ref m_unrestrictedPermSet, ref m_normalPermSet, m_ignoreTypeLoadFailures);
-                m_permSetSaved = m_permSet;
-                m_permSet = null;
-            }
-        }
-#endif // !FEATURE_REMOTING
-
-#if FEATURE_REMOTING || _DEBUG
+#if _DEBUG
         [OnSerialized]
         private void OnSerialized(StreamingContext context)
         {
-#if FEATURE_REMOTING
-            if ((context.State & ~(StreamingContextStates.Clone|StreamingContextStates.CrossAppDomain)) != 0)
-            {
-                m_serializedPermissionSet = null;
-                m_permSet = m_permSetSaved;
-                m_permSetSaved = null;
-                m_unrestrictedPermSet = null;
-                m_normalPermSet = null;
-            }
-#else // !FEATURE_REMOTING
             Contract.Assert(false, "PermissionSet does not support serialization on CoreCLR");
-#endif // !FEATURE_REMOTING
         }
-#endif // FEATURE_REMOTING || _DEBUG
+#endif // _DEBUG
 
         internal PermissionSet()
         {
@@ -233,19 +172,11 @@ namespace System.Security {
                 {
                     Object obj = m_permSet.GetItem(i);
                     IPermission perm = obj as IPermission;
-#if FEATURE_CAS_POLICY
-                    ISecurityElementFactory elem = obj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
+
                     if (perm != null)
                     {
                         m_permSet.SetItem(i, perm.Copy());
                     }
-#if FEATURE_CAS_POLICY
-                    else if (elem != null)
-                    {
-                        m_permSet.SetItem(i, elem.Copy());
-                    }
-#endif // FEATURE_CAS_POLICY
                 }
             }
         }
@@ -365,19 +296,7 @@ namespace System.Security {
             Object obj = m_permSet.GetItem( index );
             if (obj == null)
                 return null;
-            IPermission perm = obj as IPermission;
-            if (perm != null)
-                return perm;
-#if FEATURE_CAS_POLICY
-            perm = CreatePermission(obj, index);
-#endif // FEATURE_CAS_POLICY
-            if (perm == null)
-                return null;  
-            Contract.Assert( PermissionToken.IsTokenProperlyAssigned( perm, PermissionToken.GetToken( perm ) ),
-                             "PermissionToken was improperly assigned" );
-            Contract.Assert( PermissionToken.GetToken( perm ).m_index == index,
-                             "Assigning permission to incorrect index in tokenbasedset" );
-            return perm;
+            return obj as IPermission;
         }
 
         internal IPermission GetPermission(PermissionToken permToken)
@@ -395,21 +314,6 @@ namespace System.Security {
 
             return GetPermission(PermissionToken.GetToken( perm ));
         }
-
-#if FEATURE_CAS_POLICY
-        public IPermission GetPermission(Type permClass)
-        {
-            return GetPermissionImpl(permClass);
-        }
-
-        protected virtual IPermission GetPermissionImpl(Type permClass)
-        {
-            if (permClass == null)
-                return null;
-
-            return GetPermission(PermissionToken.FindToken(permClass));
-        }
-#endif // FEATURE_CAS_POLICY
 
         public IPermission SetPermission(IPermission perm)
         {
@@ -494,29 +398,6 @@ namespace System.Security {
             return (IPermission)m_permSet.RemoveItem( index ); // this cast is safe because the call to GetPermission will guarantee it is an IPermission
         }
 
-#if FEATURE_CAS_POLICY
-        public IPermission RemovePermission(Type permClass)
-        {
-            return RemovePermissionImpl(permClass);
-        }
-
-        protected virtual IPermission RemovePermissionImpl(Type permClass)
-        {
-            if (permClass == null)
-            {
-                return null;
-            }
-
-            PermissionToken permToken = PermissionToken.FindToken(permClass);
-            if (permToken == null)
-            {
-                return null;
-            }
-
-            return RemovePermission(permToken.m_index);
-        }
-#endif // FEATURE_CAS_POLICY
-
         // Make this internal soon.
         internal void SetUnrestricted(bool unrestricted)
         {
@@ -527,12 +408,12 @@ namespace System.Security {
                 m_permSet = null;
             }
         }
-    
+
         public bool IsUnrestricted()
         {
             return m_Unrestricted;
         }
-    
+
         internal enum IsSubsetOfType
         {
             Normal,
@@ -728,37 +609,6 @@ namespace System.Security {
             }
         }
 
-#if FEATURE_CAS_POLICY
-        static internal void SafeChildAdd( SecurityElement parent, ISecurityElementFactory child, bool copy )
-        {
-            if (child == parent)
-                return;
-            if (child.GetTag().Equals( "IPermission" ) || child.GetTag().Equals( "Permission" ))
-            {
-                parent.AddChild( child );
-            }
-            else if (parent.Tag.Equals( child.GetTag() ))
-            {
-                Contract.Assert( child is SecurityElement, "SecurityElement expected" );
-                SecurityElement elChild = (SecurityElement)child;
-                Contract.Assert( elChild.InternalChildren != null,
-                    "Non-permission elements should have children" );
-                    
-                for (int i = 0; i < elChild.InternalChildren.Count; ++i)
-                {
-                    ISecurityElementFactory current = (ISecurityElementFactory)elChild.InternalChildren[i];
-                    Contract.Assert( !current.GetTag().Equals( parent.Tag ),
-                        "Illegal to insert a like-typed element" );
-                    parent.AddChildNoDuplicates( current );
-                }
-            }
-            else
-            {
-                parent.AddChild( (ISecurityElementFactory)(copy ? child.Copy() : child) );
-            }
-        }
-#endif // FEATURE_CAS_POLICY
-
         internal void InplaceIntersect( PermissionSet other )
         {
             Exception savedException = null;
@@ -796,75 +646,18 @@ namespace System.Security {
             {
                 Object thisObj = this.m_permSet.GetItem( i );
                 IPermission thisPerm = thisObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory thisElem = thisObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 Object otherObj = other.m_permSet.GetItem( i );
                 IPermission otherPerm = otherObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory otherElem = otherObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 if (thisObj == null && otherObj == null)
                     continue;
 
-#if FEATURE_CAS_POLICY
-                if (thisElem != null && otherElem != null)
-                {
-                    // If we already have an intersection node, just add another child
-                    if (thisElem.GetTag().Equals( s_str_PermissionIntersection ) ||
-                        thisElem.GetTag().Equals( s_str_PermissionUnrestrictedIntersection ))
-                    {
-                        Contract.Assert( thisElem is SecurityElement, "SecurityElement expected" );
-                        SafeChildAdd( (SecurityElement)thisElem, otherElem, true );
-                    }
-                    // If either set is unrestricted, intersect the nodes unrestricted
-                    else
-                    {
-                        bool copyOther = true;
-                        if (this.IsUnrestricted())
-                        {
-                            SecurityElement newElemUU = new SecurityElement( s_str_PermissionUnrestrictedUnion );
-                            newElemUU.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                            SafeChildAdd( newElemUU, thisElem, false );
-                            thisElem = newElemUU;
-                        }
-                        if (other.IsUnrestricted())
-                        {
-                            SecurityElement newElemUU = new SecurityElement( s_str_PermissionUnrestrictedUnion );
-                            newElemUU.AddAttribute( "class", otherElem.Attribute( "class" ) );
-                            SafeChildAdd( newElemUU, otherElem, true );
-                            otherElem = newElemUU;
-                            copyOther = false;
-                        }
-                        
-                        SecurityElement newElem = new SecurityElement( s_str_PermissionIntersection );
-                        newElem.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                        
-                        SafeChildAdd( newElem, thisElem, false );
-                        SafeChildAdd( newElem, otherElem, copyOther );
-                        this.m_permSet.SetItem( i, newElem );
-                    }
-                }
-                else
-#endif // FEATURE_CAS_POLICY
                 if (thisObj == null)
                 {
                     // There is no object in <this>, so intersection is empty except for IUnrestrictedPermissions
                     if (this.IsUnrestricted())
                     {
-#if FEATURE_CAS_POLICY
-                        if (otherElem != null)
-                        {
-                            SecurityElement newElem = new SecurityElement( s_str_PermissionUnrestrictedIntersection );
-                            newElem.AddAttribute( "class", otherElem.Attribute( "class" ) );
-                            SafeChildAdd( newElem, otherElem, true );
-                            this.m_permSet.SetItem( i, newElem );
-                            Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                        }
-                        else
-#endif // FEATURE_CAS_POLICY
                         {
                             PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
                             if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
@@ -879,16 +672,6 @@ namespace System.Security {
                 {
                     if (other.IsUnrestricted())
                     {
-#if FEATURE_CAS_POLICY
-                        if (thisElem != null)
-                        {
-                            SecurityElement newElem = new SecurityElement( s_str_PermissionUnrestrictedIntersection );
-                            newElem.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                            SafeChildAdd( newElem, thisElem, false );
-                            this.m_permSet.SetItem( i, newElem );
-                        }
-                        else
-#endif // FEATURE_CAS_POLICY
                         {
                             PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
                             if ((token.m_type & PermissionTokenType.IUnrestricted) == 0)
@@ -902,13 +685,6 @@ namespace System.Security {
                 }
                 else
                 {
-#if FEATURE_CAS_POLICY
-                    if (thisElem != null)
-                        thisPerm = this.CreatePermission(thisElem, i);
-                    if (otherElem != null)
-                        otherPerm = other.CreatePermission(otherElem, i);
-#endif // FEATURE_CAS_POLICY
-
                     try
                     {
                         IPermission intersectPerm;
@@ -968,64 +744,16 @@ namespace System.Security {
             {
                 Object thisObj = this.m_permSet.GetItem( i );
                 IPermission thisPerm = thisObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory thisElem = thisObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
-
                 Object otherObj = other.m_permSet.GetItem( i );
                 IPermission otherPerm = otherObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory otherElem = otherObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 if (thisObj == null && otherObj == null)
                     continue;
 
-#if FEATURE_CAS_POLICY
-                if (thisElem != null && otherElem != null)
-                {
-                    bool copyOther = true;
-                    bool copyThis = true;
-                    SecurityElement newElem = new SecurityElement( s_str_PermissionIntersection );
-                    newElem.AddAttribute( "class", otherElem.Attribute( "class" ) );
-                    if (this.IsUnrestricted())
-                    {
-                        SecurityElement newElemUU = new SecurityElement( s_str_PermissionUnrestrictedUnion );
-                        newElemUU.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                        SafeChildAdd( newElemUU, thisElem, true );
-                        copyThis = false;
-                        thisElem = newElemUU;
-                    }
-                    if (other.IsUnrestricted())
-                    {
-                        SecurityElement newElemUU = new SecurityElement( s_str_PermissionUnrestrictedUnion );
-                        newElemUU.AddAttribute( "class", otherElem.Attribute( "class" ) );
-                        SafeChildAdd( newElemUU, otherElem, true );
-                        copyOther = false;
-                        otherElem = newElemUU;
-                    }
-
-                    SafeChildAdd( newElem, otherElem, copyOther );
-                    SafeChildAdd( newElem, thisElem, copyThis );
-                    pset.m_permSet.SetItem( i, newElem );
-                }
-                else
-#endif // FEATURE_CAS_POLICY
                 if (thisObj == null)
                 {
                     if (this.m_Unrestricted)
                     {
-#if FEATURE_CAS_POLICY
-                        if (otherElem != null)
-                        {
-                            SecurityElement newElem = new SecurityElement( s_str_PermissionUnrestrictedIntersection );
-                            newElem.AddAttribute( "class", otherElem.Attribute( "class" ) );
-                            SafeChildAdd( newElem, otherElem, true );
-                            pset.m_permSet.SetItem( i, newElem );
-                            Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                        }
-                        else
-#endif // FEATURE_CAS_POLICY
                         if (otherPerm != null)
                         {
                             PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
@@ -1041,17 +769,6 @@ namespace System.Security {
                 {
                     if (other.m_Unrestricted)
                     {
-#if FEATURE_CAS_POLICY
-                        if (thisElem != null)
-                        {
-                            SecurityElement newElem = new SecurityElement( s_str_PermissionUnrestrictedIntersection );
-                            newElem.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                            SafeChildAdd( newElem, thisElem, true );
-                            pset.m_permSet.SetItem( i, newElem );
-                            Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                        }
-                        else
-#endif // FEATURE_CAS_POLICY
                         if (thisPerm != null)
                         {
                             PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
@@ -1065,13 +782,6 @@ namespace System.Security {
                 }
                 else
                 {
-#if FEATURE_CAS_POLICY
-                    if (thisElem != null)
-                        thisPerm = this.CreatePermission(thisElem, i);
-                    if (otherElem != null)
-                        otherPerm = other.CreatePermission(otherElem, i);
-#endif // FEATURE_CAS_POLICY
-
                     IPermission intersectPerm;
                     if (thisPerm == null)
                         intersectPerm = otherPerm;
@@ -1102,13 +812,9 @@ namespace System.Security {
             // Quick out conditions, union doesn't change this PermissionSet
             if (other == null || other.FastIsEmpty())
                 return;
-    
-    
+
             m_CheckedForNonCas = false;
-            
 
-
-                
             this.m_Unrestricted = this.m_Unrestricted || other.m_Unrestricted;
 
             if (this.m_Unrestricted)
@@ -1124,7 +830,7 @@ namespace System.Security {
             int maxMax = -1;            
             if (other.m_permSet != null)
             {
-                maxMax = other.m_permSet.GetMaxUsedIndex();                        
+                maxMax = other.m_permSet.GetMaxUsedIndex();
                 this.CheckSet();
             }
             // Save exceptions until the end
@@ -1134,52 +840,15 @@ namespace System.Security {
             {
                 Object thisObj = this.m_permSet.GetItem( i );
                 IPermission thisPerm = thisObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory thisElem = thisObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 Object otherObj = other.m_permSet.GetItem( i );
                 IPermission otherPerm = otherObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory otherElem = otherObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 if (thisObj == null && otherObj == null)
                     continue;
 
-#if FEATURE_CAS_POLICY
-                if (thisElem != null && otherElem != null)
-                {
-                    if (thisElem.GetTag().Equals( s_str_PermissionUnion ) ||
-                        thisElem.GetTag().Equals( s_str_PermissionUnrestrictedUnion ))
-                    {
-                        Contract.Assert( thisElem is SecurityElement, "SecurityElement expected" );
-                        SafeChildAdd( (SecurityElement)thisElem, otherElem, true );
-                    }
-                    else
-                    {
-                        SecurityElement newElem;
-                        if (this.IsUnrestricted() || other.IsUnrestricted())
-                            newElem = new SecurityElement( s_str_PermissionUnrestrictedUnion );
-                        else
-                            newElem = new SecurityElement( s_str_PermissionUnion );
-                        newElem.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                        SafeChildAdd( newElem, thisElem, false );
-                        SafeChildAdd( newElem, otherElem, true );
-                        this.m_permSet.SetItem( i, newElem );
-                    }
-                }
-                else
-#endif // FEATURE_CAS_POLICY
                 if (thisObj == null)
                 {
-#if FEATURE_CAS_POLICY
-                    if (otherElem != null)
-                    {
-                        this.m_permSet.SetItem( i, otherElem.Copy() );
-                    }
-                    else
-#endif // FEATURE_CAS_POLICY
                     if (otherPerm != null)
                     {
                         PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
@@ -1195,13 +864,6 @@ namespace System.Security {
                 }
                 else
                 {
-#if FEATURE_CAS_POLICY
-                    if (thisElem != null)
-                        thisPerm = this.CreatePermission(thisElem, i);
-                    if (otherElem != null)
-                        otherPerm = other.CreatePermission(otherElem, i);
-#endif // FEATURE_CAS_POLICY
-
                     try
                     {
                         IPermission unionPerm;
@@ -1260,44 +922,15 @@ namespace System.Security {
             {
                 Object thisObj = this.m_permSet.GetItem( i );
                 IPermission thisPerm = thisObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory thisElem = thisObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 Object otherObj = other.m_permSet.GetItem( i );
                 IPermission otherPerm = otherObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory otherElem = otherObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 if (thisObj == null && otherObj == null)
                     continue;
 
-#if FEATURE_CAS_POLICY
-                if (thisElem != null && otherElem != null)
-                {
-                    SecurityElement newElem;
-                    if (this.IsUnrestricted() || other.IsUnrestricted())
-                        newElem = new SecurityElement( s_str_PermissionUnrestrictedUnion );
-                    else
-                        newElem = new SecurityElement( s_str_PermissionUnion );
-                    newElem.AddAttribute( "class", thisElem.Attribute( "class" ) );
-                    SafeChildAdd( newElem, thisElem, true );
-                    SafeChildAdd( newElem, otherElem, true );
-                    pset.m_permSet.SetItem( i, newElem );
-                }
-                else
-#endif // FEATURE_CAS_POLICY
                 if (thisObj == null)
                 {
-#if FEATURE_CAS_POLICY
-                    if (otherElem != null)
-                    {
-                        pset.m_permSet.SetItem( i, otherElem.Copy() );
-                        Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                    }
-                    else
-#endif // FEATURE_CAS_POLICY
                     if (otherPerm != null)
                     {
                         PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
@@ -1310,13 +943,6 @@ namespace System.Security {
                 }
                 else if (otherObj == null)
                 {
-#if FEATURE_CAS_POLICY
-                    if (thisElem != null)
-                    {
-                        pset.m_permSet.SetItem( i, thisElem.Copy() );
-                    }
-                    else
-#endif // FEATURE_CAS_POLICY
                     if (thisPerm != null)
                     {
                         PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
@@ -1329,13 +955,6 @@ namespace System.Security {
                 }
                 else
                 {
-#if FEATURE_CAS_POLICY
-                    if (thisElem != null)
-                        thisPerm = this.CreatePermission(thisElem, i);
-                    if (otherElem != null)
-                        otherPerm = other.CreatePermission(otherElem, i);
-#endif // FEATURE_CAS_POLICY
-
                     IPermission unionPerm;
                     if(thisPerm == null)
                         unionPerm = otherPerm;
@@ -1347,7 +966,7 @@ namespace System.Security {
                     Contract.Assert( unionPerm == null || PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                 }
             }
-            
+
             return pset;
         }
 
@@ -1588,21 +1207,7 @@ namespace System.Security {
         {
             // Explicitly make a new PermissionSet, rather than copying, since we may have a
             // ReadOnlyPermissionSet which cannot have identity permissions removed from it in a true copy.
-            PermissionSet copy = new PermissionSet(this);
-
-            // There's no easy way to distinguish an identity permission from any other CodeAccessPermission,
-            // so remove them directly.
-#if FEATURE_CAS_POLICY
-            copy.RemovePermission(typeof(GacIdentityPermission));
-#if FEATURE_X509
-            copy.RemovePermission(typeof(PublisherIdentityPermission));
-#endif
-            copy.RemovePermission(typeof(StrongNameIdentityPermission));
-            copy.RemovePermission(typeof(UrlIdentityPermission));
-            copy.RemovePermission(typeof(ZoneIdentityPermission));
-#endif // FEATURE_CAS_POLICY
-
-            return copy;
+            return new PermissionSet(this);
         }
 
         public IEnumerator GetEnumerator()
@@ -1619,13 +1224,6 @@ namespace System.Security {
         {
             return new PermissionSetEnumeratorInternal(this);
         }
-
-#if FEATURE_CAS_POLICY
-        public override String ToString()
-        {
-            return ToXml().ToString();
-        }
-#endif // FEATURE_CAS_POLICY
 
         private void NormalizePermissionSet()
         {
@@ -1645,12 +1243,6 @@ namespace System.Security {
                 {
                     Object obj = this.m_permSet.GetItem(i);
                     IPermission perm = obj as IPermission;
-#if FEATURE_CAS_POLICY
-                    ISecurityElementFactory elem = obj as ISecurityElementFactory;
-
-                    if (elem != null)
-                        perm = CreatePerm( elem );
-#endif // FEATURE_CAS_POLICY
                     if (perm != null)
                         permSetTemp.SetPermission( perm );
                 }
@@ -1658,29 +1250,6 @@ namespace System.Security {
     
             this.m_permSet = permSetTemp.m_permSet;
         }
-
-#if FEATURE_CAS_POLICY
-        private bool DecodeXml(byte[] data, HostProtectionResource fullTrustOnlyResources, HostProtectionResource inaccessibleResources )
-        {
-            if (data != null && data.Length > 0)
-            {
-                FromXml( new Parser( data, Tokenizer.ByteTokenEncoding.UnicodeTokens ).GetTopElement() );
-            }
-
-            FilterHostProtectionPermissions(fullTrustOnlyResources, inaccessibleResources);
-
-            // We call this method from unmanaged to code a set we are going to use declaratively.  In
-            // this case, all the lazy evaluation for partial policy resolution is wasted since we'll
-            // need to decode all of these shortly to make the demand for whatever.  Therefore, we
-            // pay that price now so that we can calculate whether all the permissions in the set
-            // implement the IUnrestrictedPermission interface (the common case) for use in some
-            // unmanaged optimizations.
-
-            DecodeAllPermissions();
-
-            return true;
-        }
-#endif // FEATURE_CAS_POLICY
 
         private void DecodeAllPermissions()
         {
@@ -1710,11 +1279,7 @@ namespace System.Security {
             HostProtectionPermission newHpp = (HostProtectionPermission)hpp.Intersect(new HostProtectionPermission(fullTrustOnly));
             if (newHpp == null)
             {
-#if FEATURE_CAS_POLICY
-                RemovePermission(typeof(HostProtectionPermission));
-#else // !FEATURE_CAS_POLICY
                 RemovePermission(HostProtectionPermission.GetTokenIndex());
-#endif // FEATURE_CAS_POLICY
             }
             else if (newHpp.Resources != hpp.Resources)
             {
@@ -1722,539 +1287,9 @@ namespace System.Security {
             }
         }
 
-#if FEATURE_CAS_POLICY
-        public virtual void FromXml( SecurityElement et )
-        {
-            FromXml( et, false, false );
-        }
-
-        internal static bool IsPermissionTag( String tag, bool allowInternalOnly )
-        {
-            if (tag.Equals( s_str_Permission ) ||
-                tag.Equals( s_str_IPermission ))
-            {
-                return true;
-            }
-
-            if (allowInternalOnly &&
-                (tag.Equals( s_str_PermissionUnion ) ||
-                 tag.Equals( s_str_PermissionIntersection ) ||
-                 tag.Equals( s_str_PermissionUnrestrictedIntersection ) ||
-                 tag.Equals( s_str_PermissionUnrestrictedUnion)))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        internal virtual void FromXml( SecurityElement et, bool allowInternalOnly, bool ignoreTypeLoadFailures )
-        {
-            if (et == null)
-                throw new ArgumentNullException(nameof(et));
-
-            if (!et.Tag.Equals(s_str_PermissionSet))
-                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), nameof(PermissionSet), this.GetType().FullName) );
-            Contract.EndContractBlock();
-
-            Reset();
-            m_ignoreTypeLoadFailures = ignoreTypeLoadFailures;
-            m_allPermissionsDecoded = false;
-            m_Unrestricted = XMLUtil.IsUnrestricted( et );
-
-            if (et.InternalChildren != null)
-            {
-                int childCount = et.InternalChildren.Count;
-                for (int i = 0; i < childCount; ++i)
-                {
-                    SecurityElement elem = (SecurityElement)et.Children[i];
-                
-                    if (IsPermissionTag( elem.Tag, allowInternalOnly ))
-                    {
-                        String className = elem.Attribute( "class" );
-
-                        PermissionToken token;
-                        Object objectToInsert;
-                        
-                        if (className != null)
-                        {
-                            token = PermissionToken.GetToken( className );
-                            if (token == null)
-                            {
-                                objectToInsert = CreatePerm( elem );
-#if _DEBUG
-                                PermissionToken tokenDebug = PermissionToken.GetToken( (IPermission)objectToInsert );
-                                Contract.Assert( tokenDebug != null && (tokenDebug.m_type & PermissionTokenType.BuiltIn) != 0, "This should only be called for built-ins" );
-#endif
-                                if (objectToInsert != null)
-                                {
-                                    Contract.Assert( objectToInsert.GetType().Module.Assembly == System.Reflection.Assembly.GetExecutingAssembly(),
-                                        "PermissionToken.GetToken returned null for non-mscorlib permission" );
-                                    token = PermissionToken.GetToken( (IPermission)objectToInsert );
-                                    Contract.Assert( (token.m_type & PermissionTokenType.DontKnow) == 0, "We should always know the permission type when getting a token from an instance" );
-                                }
-                            }
-                            else
-                            {
-                                objectToInsert = elem;
-                            }
-                        }
-                        else
-                        {
-                            IPermission ip = CreatePerm( elem );
-                            if (ip == null)
-                            {
-                                token = null;
-                                objectToInsert = null;
-                            }
-                            else
-                            {
-                                token = PermissionToken.GetToken( ip );
-                                Contract.Assert( PermissionToken.IsTokenProperlyAssigned( ip, token ),
-                                                 "PermissionToken was improperly assigned" );
-                                objectToInsert = ip;
-                            }
-                        }
-
-                        if (token != null && objectToInsert != null)
-                        {
-                            if (m_permSet == null)
-                                m_permSet = new TokenBasedSet();
-
-                            if (this.m_permSet.GetItem( token.m_index ) != null)
-                            {
-                                // If there is already something in that slot, let's union them
-                                // together.
-
-                                IPermission permInSlot;
-
-                                if (this.m_permSet.GetItem( token.m_index ) is IPermission)
-                                    permInSlot = (IPermission)this.m_permSet.GetItem( token.m_index );
-                                else
-                                    permInSlot = CreatePerm( (SecurityElement)this.m_permSet.GetItem( token.m_index ) );
-                                    
-                                if (objectToInsert is IPermission)
-                                    objectToInsert = ((IPermission)objectToInsert).Union( permInSlot );
-                                else
-                                    objectToInsert = CreatePerm( (SecurityElement)objectToInsert ).Union( permInSlot );
-                            }
-
-                            if(m_Unrestricted && objectToInsert is IPermission)
-                                objectToInsert = null;
-
-                            this.m_permSet.SetItem( token.m_index, objectToInsert );
-                        }
-                    }
-                }
-            }
-        }
-
-        internal virtual void FromXml( SecurityDocument doc, int position, bool allowInternalOnly )
-        {
-            if (doc == null)
-                throw new ArgumentNullException(nameof(doc));
-            Contract.EndContractBlock();
-            
-            if (!doc.GetTagForElement( position ).Equals(s_str_PermissionSet))
-                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), nameof(PermissionSet), this.GetType().FullName) );
-            
-            Reset();
-            m_allPermissionsDecoded = false;
-            Exception savedException = null;
-            String strUnrestricted = doc.GetAttributeForElement( position, "Unrestricted" );
-            if (strUnrestricted != null)
-                m_Unrestricted = strUnrestricted.Equals( "True" ) || strUnrestricted.Equals( "true" ) || strUnrestricted.Equals( "TRUE" );
-            else
-                m_Unrestricted = false;
-
-            ArrayList childrenIndices = doc.GetChildrenPositionForElement( position );
-            int childCount = childrenIndices.Count;
-            for (int i = 0; i < childCount; ++i)
-            {
-                int childIndex = (int)childrenIndices[i];
-                if (IsPermissionTag( doc.GetTagForElement( childIndex ), allowInternalOnly ))
-                {
-                    try
-                    {
-                        String className = doc.GetAttributeForElement( childIndex, "class" );
-
-                        PermissionToken token;
-                        Object objectToInsert;
-                        
-                        if (className != null)
-                        {
-                            token = PermissionToken.GetToken( className );
-                            if (token == null)
-                            {
-                                objectToInsert = CreatePerm( doc.GetElement( childIndex, true ) );
-
-                                if (objectToInsert != null)
-                                {
-#if _DEBUG
-                                    PermissionToken tokenDebug = PermissionToken.GetToken( (IPermission)objectToInsert );
-                                    Contract.Assert((tokenDebug != null), "PermissionToken.GetToken returned null ");
-                                    Contract.Assert( (tokenDebug.m_type & PermissionTokenType.BuiltIn) != 0, "This should only be called for built-ins" );
-#endif
-                                    Contract.Assert( objectToInsert.GetType().Module.Assembly == System.Reflection.Assembly.GetExecutingAssembly(),
-                                        "PermissionToken.GetToken returned null for non-mscorlib permission" );
-                                    token = PermissionToken.GetToken( (IPermission)objectToInsert );
-                                    Contract.Assert((token != null), "PermissionToken.GetToken returned null ");
-                                    Contract.Assert( (token.m_type & PermissionTokenType.DontKnow) == 0, "We should always know the permission type when getting a token from an instance" );
-                                }
-                            }
-                            else
-                            {
-                                objectToInsert = ((ISecurityElementFactory)new SecurityDocumentElement(doc, childIndex)).CreateSecurityElement();
-                            }
-                        }
-                        else
-                        {
-                            IPermission ip = CreatePerm( doc.GetElement( childIndex, true ) );
-                            if (ip == null)
-                            {
-                                token = null;
-                                objectToInsert = null;
-                            }
-                            else
-                            {
-                                token = PermissionToken.GetToken( ip );
-                                Contract.Assert( PermissionToken.IsTokenProperlyAssigned( ip, token ),
-                                                 "PermissionToken was improperly assigned" );
-                                objectToInsert = ip;
-                            }
-                        }
-
-                        if (token != null && objectToInsert != null)
-                        {
-                            if (m_permSet == null)
-                                m_permSet = new TokenBasedSet();
-
-                            IPermission permInSlot = null;
-                            if (this.m_permSet.GetItem( token.m_index ) != null)
-                            {
-                                // If there is already something in that slot, let's union them
-                                // together.
-                                
-                                if (this.m_permSet.GetItem( token.m_index ) is IPermission)
-                                    permInSlot = (IPermission)this.m_permSet.GetItem( token.m_index );
-                                else
-                                    permInSlot = CreatePerm( this.m_permSet.GetItem( token.m_index ) );
-                            }
-
-                            if (permInSlot != null)
-                            {
-                                if (objectToInsert is IPermission)
-                                    objectToInsert = permInSlot.Union((IPermission)objectToInsert);
-                                else
-                                    objectToInsert = permInSlot.Union(CreatePerm( objectToInsert ));
-                            }
-
-                            if(m_Unrestricted && objectToInsert is IPermission)
-                                objectToInsert = null;
-
-                            this.m_permSet.SetItem( token.m_index, objectToInsert );
-                        }
-                    }
-                    catch (Exception e)
-                    {
-#if _DEBUG
-                        if (debug)
-                            DEBUG_WRITE( "error while decoding permission set =\n" + e.ToString() );
-#endif
-                        if (savedException == null)
-                            savedException = e;
-
-                    }
-                }
-            }
-
-            if (savedException != null)
-                throw savedException;
-                
-        }
-
-        private  IPermission CreatePerm(Object obj)
-        {
-            return CreatePerm(obj, m_ignoreTypeLoadFailures);
-        }
-
-        internal static IPermission CreatePerm(Object obj, bool ignoreTypeLoadFailures)
-        {
-            SecurityElement el = obj as SecurityElement;
-            ISecurityElementFactory isf = obj as ISecurityElementFactory;
-            if (el == null && isf != null)
-            {
-                el = isf.CreateSecurityElement();
-            }
-
-            IEnumerator enumerator;
-            IPermission finalPerm = null;
-
-            switch (el.Tag)
-            {
-            case s_str_PermissionUnion:
-                enumerator = el.Children.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    IPermission tempPerm = CreatePerm( (SecurityElement)enumerator.Current, ignoreTypeLoadFailures);
-
-                    if (finalPerm != null)
-                        finalPerm = finalPerm.Union( tempPerm );
-                    else
-                        finalPerm = tempPerm;
-                }
-                break;
-
-            case s_str_PermissionIntersection:
-                enumerator = el.Children.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    IPermission tempPerm = CreatePerm( (SecurityElement)enumerator.Current, ignoreTypeLoadFailures);
-
-                    if (finalPerm != null)
-                        finalPerm = finalPerm.Intersect( tempPerm );
-                    else
-                        finalPerm = tempPerm;
-
-                    if (finalPerm == null)
-                        return null;
-                }
-                break;
-
-            case s_str_PermissionUnrestrictedUnion:
-                enumerator = el.Children.GetEnumerator();
-                bool first = true;
-                while (enumerator.MoveNext())
-                {
-                    IPermission tempPerm = CreatePerm( (SecurityElement)enumerator.Current, ignoreTypeLoadFailures );
-                    
-                    if (tempPerm == null)
-                        continue;
-
-                    PermissionToken token = PermissionToken.GetToken( tempPerm );
-
-                    Contract.Assert( (token.m_type & PermissionTokenType.DontKnow) == 0, "We should know the permission type already" );
-
-                    if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
-                    {
-                        finalPerm = XMLUtil.CreatePermission( GetPermissionElement((SecurityElement)enumerator.Current), PermissionState.Unrestricted, ignoreTypeLoadFailures );
-                        first = false;
-                        break;
-                    }
-                    else
-                    {
-                        Contract.Assert( tempPerm != null, "We should only come here if we have a real permission" );
-                        if (first)
-                            finalPerm = tempPerm;
-                        else
-                            finalPerm = tempPerm.Union( finalPerm );
-                        first = false;
-                    }
-                }
-                break;
-
-            case s_str_PermissionUnrestrictedIntersection:
-                enumerator = el.Children.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    IPermission tempPerm = CreatePerm( (SecurityElement)enumerator.Current, ignoreTypeLoadFailures );
-                    
-                    if (tempPerm == null)
-                        return null;
-
-                    PermissionToken token = PermissionToken.GetToken( tempPerm );
-
-                    Contract.Assert( (token.m_type & PermissionTokenType.DontKnow) == 0, "We should know the permission type already" );
-
-                    if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
-                    {
-                        if (finalPerm != null)
-                            finalPerm = tempPerm.Intersect( finalPerm );
-                        else
-                            finalPerm = tempPerm;
-                    }
-                    else
-                    {
-                        finalPerm = null;
-                    }
-
-                    if (finalPerm == null)
-                        return null;
-                }
-                break;
-
-            case "IPermission":
-            case "Permission":
-                finalPerm = el.ToPermission(ignoreTypeLoadFailures);
-                break;
-
-            default:
-                Contract.Assert( false, "Unrecognized case found during permission creation" );
-                break;
-            }
-
-            return finalPerm;
-        }
-
-        internal IPermission CreatePermission(Object obj, int index)
-        {
-            IPermission perm = CreatePerm(obj);
-            if(perm == null)
-                return null;
-
-            // See if the PermissionSet.m_Unrestricted flag covers this permission
-            if(m_Unrestricted)
-                perm = null;
-
-            // Store the decoded result
-            CheckSet();
-            m_permSet.SetItem(index, perm);
-
-            // Do some consistency checks
-            Contract.Assert(perm == null || PermissionToken.IsTokenProperlyAssigned( perm, PermissionToken.GetToken( perm ) ), "PermissionToken was improperly assigned");
-            if (perm != null)
-            {
-                PermissionToken permToken = PermissionToken.GetToken(perm);
-                if (permToken != null && permToken.m_index != index)
-                    throw new ArgumentException( Environment.GetResourceString( "Argument_UnableToGeneratePermissionSet"));
-            }
-            
-
-            return perm;
-        }
-
-        private static SecurityElement GetPermissionElement( SecurityElement el )
-        {
-            switch (el.Tag)
-            {
-            case "IPermission":
-            case "Permission":
-                return el;
-            }
-            IEnumerator enumerator = el.Children.GetEnumerator();
-            if (enumerator.MoveNext())
-                return GetPermissionElement((SecurityElement)enumerator.Current);
-            Contract.Assert( false, "No Permission or IPermission tag found" );
-            return null;
-        }
-
-        internal static SecurityElement CreateEmptyPermissionSetXml()
-        {
-            
-            SecurityElement elTrunk = new SecurityElement("PermissionSet");
-            elTrunk.AddAttribute( "class", "System.Security.PermissionSet" );
-
-            elTrunk.AddAttribute( "version", "1" );
-            return elTrunk;
-        
-        }
-        // internal helper which takes in the hardcoded permission name to avoid lookup at runtime
-        // can be called from classes that derive from PermissionSet
-        internal SecurityElement ToXml(String permName)
-        {
-            SecurityElement elTrunk = new SecurityElement("PermissionSet");
-            elTrunk.AddAttribute( "class", permName );
-
-            elTrunk.AddAttribute( "version", "1" );
-        
-            PermissionSetEnumeratorInternal enumerator = new PermissionSetEnumeratorInternal(this);
-    
-            if (m_Unrestricted)
-            {
-                elTrunk.AddAttribute(s_str_Unrestricted, "true" );
-            }
-   
-            while (enumerator.MoveNext())
-            {
-                IPermission perm = (IPermission)enumerator.Current;
-
-                if (!m_Unrestricted)
-                    elTrunk.AddChild( perm.ToXml() );
-            }
-            return elTrunk;
-        }
-
-        internal SecurityElement InternalToXml()
-        {
-            SecurityElement elTrunk = new SecurityElement("PermissionSet");
-            elTrunk.AddAttribute( "class", this.GetType().FullName);
-            elTrunk.AddAttribute( "version", "1" );
-        
-            if (m_Unrestricted)
-            {
-                elTrunk.AddAttribute(s_str_Unrestricted, "true" );
-            }
-    
-            if (this.m_permSet != null)
-            {
-                int maxIndex = this.m_permSet.GetMaxUsedIndex();
-
-                for (int i = m_permSet.GetStartingIndex(); i <= maxIndex; ++i)
-                {
-                    Object obj = this.m_permSet.GetItem( i );
-                    if (obj != null)
-                    {
-                        if (obj is IPermission)
-                        {
-                            if (!m_Unrestricted)
-                                elTrunk.AddChild( ((IPermission)obj).ToXml() );
-                        }
-                        else
-                        {
-                            elTrunk.AddChild( (SecurityElement)obj );
-                        }
-                    }
-
-                }
-            }
-            return elTrunk ;
-        }
-
-        public virtual SecurityElement ToXml()
-        {
-            // If you hit this assert then most likely you are trying to change the name of this class. 
-            // This is ok as long as you change the hard coded string above and change the assert below.
-            Contract.Assert( this.GetType().FullName.Equals( "System.Security.PermissionSet" ), "Class name changed! Was: System.Security.PermissionSet Should be:" +  this.GetType().FullName);
-                        
-            return ToXml("System.Security.PermissionSet");   
-        }
-#endif // FEATURE_CAS_POLICY
-
-#if FEATURE_CAS_POLICY && FEATURE_SERIALIZATION
-        internal
-        byte[] EncodeXml()
-        {
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter( ms, Encoding.Unicode );
-            writer.Write( this.ToXml().ToString() );
-            writer.Flush();
-
-            // The BinaryWriter is going to place
-            // two bytes indicating a Unicode stream.
-            // We want to chop those off before returning
-            // the bytes out.
-
-            ms.Position = 2;
-            int countBytes = (int)ms.Length - 2;
-            byte[] retval = new byte[countBytes];
-            ms.Read( retval, 0, retval.Length );
-            return retval;
-        }
-
-        /// <internalonly/>
-        [Obsolete("This method is obsolete and shoud no longer be used.")]
-        public static byte[] ConvertPermissionSet(String inFormat, byte[] inData, String outFormat)
-        {
-            // Since this method has shipped and is public, we cannot remove it without being a breaking change
-            throw new NotImplementedException();
-        }
-#endif
-
         // Determines whether the permission set contains any non-code access
         // security permissions.
-        #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
         public bool ContainsNonCodeAccessPermissions()
         {
             if (m_CheckedForNonCas)
@@ -2323,54 +1358,6 @@ namespace System.Security {
 
             return pset;
         }
-
-#if FEATURE_CAS_POLICY
-        private const String s_str_PermissionSet = "PermissionSet";
-        private const String s_str_Permission    = "Permission";
-        private const String s_str_IPermission    = "IPermission";
-        private const String s_str_Unrestricted  = "Unrestricted";
-        private const String s_str_PermissionUnion = "PermissionUnion";
-        private const String s_str_PermissionIntersection = "PermissionIntersection";
-        private const String s_str_PermissionUnrestrictedUnion = "PermissionUnrestrictedUnion";
-        private const String s_str_PermissionUnrestrictedIntersection = "PermissionUnrestrictedIntersection";
-
-        // This method supports v1.x security attrbutes only - we'll require legacy CAS policy mode
-        // to be enabled for that to work.
-#pragma warning disable 618
-        // Internal routine used to setup a special security context
-        // for creating and manipulated security custom attributes
-        // that we use when the Runtime is hosted.
-        [System.Security.SecurityCritical]  // auto-generated
-        private static void SetupSecurity()
-        {
-            PolicyLevel level = PolicyLevel.CreateAppDomainLevel();
-
-            CodeGroup rootGroup = new UnionCodeGroup( new AllMembershipCondition(), level.GetNamedPermissionSet( "Execution" ) );
-
-            StrongNamePublicKeyBlob microsoftBlob = new StrongNamePublicKeyBlob( AssemblyRef.MicrosoftPublicKeyFull );
-            CodeGroup microsoftGroup = new UnionCodeGroup( new StrongNameMembershipCondition( microsoftBlob, null, null ), level.GetNamedPermissionSet( "FullTrust" ) );
-
-            StrongNamePublicKeyBlob ecmaBlob = new StrongNamePublicKeyBlob( AssemblyRef.EcmaPublicKeyFull );
-            CodeGroup ecmaGroup = new UnionCodeGroup( new StrongNameMembershipCondition( ecmaBlob, null, null ), level.GetNamedPermissionSet( "FullTrust" ) );
-
-            CodeGroup gacGroup = new UnionCodeGroup( new GacMembershipCondition(), level.GetNamedPermissionSet( "FullTrust" ) );
-
-            rootGroup.AddChild( microsoftGroup );
-            rootGroup.AddChild( ecmaGroup );
-            rootGroup.AddChild( gacGroup );
-
-            level.RootCodeGroup = rootGroup;
-
-            try
-            {
-                AppDomain.CurrentDomain.SetAppDomainPolicy( level );
-            }
-            catch (PolicyException)
-            {
-            }
-        }
-#endif
-#pragma warning restore 618
 
         // Internal routine used by CreateSerialized to add a permission to the set
         private static void MergePermission(IPermission perm, bool separateCasFromNonCas, ref PermissionSet casPset, ref PermissionSet nonCasPset)
@@ -2475,22 +1462,8 @@ namespace System.Security {
                     nonCasPset = null;
             }
 
-            // Serialize the set(s).
-            byte[] casBlob = null;
-            nonCasBlob = null;
-#if FEATURE_CAS_POLICY
-            if(serialize)
-            {
-                if(casPset != null)
-                    casBlob = casPset.EncodeXml();
-                if(nonCasPset != null)
-                    nonCasBlob = nonCasPset.EncodeXml();
-            }
-#else // FEATURE_CAS_POLICY
             Contract.Assert(!serialize, "Cannot serialize permission sets on CoreCLR");
-#endif // FEATURE_CAS_POLICY
-
-            return casBlob;
+            return null;
         }
 
 #if FEATURE_SERIALIZATION

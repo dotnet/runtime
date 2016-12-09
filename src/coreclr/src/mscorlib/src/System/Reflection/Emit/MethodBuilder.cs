@@ -927,43 +927,6 @@ namespace System.Reflection.Emit
             m_symCustomAttrs.Add(new SymCustomAttr(name, data));
         }
 
-#if FEATURE_CAS_POLICY
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public void AddDeclarativeSecurity(SecurityAction action, PermissionSet pset)
-        {
-            if (pset == null)
-                throw new ArgumentNullException(nameof(pset));
-            Contract.EndContractBlock();
-
-            ThrowIfGeneric ();
-
-#pragma warning disable 618
-            if (!Enum.IsDefined(typeof(SecurityAction), action) ||
-                action == SecurityAction.RequestMinimum ||
-                action == SecurityAction.RequestOptional ||
-                action == SecurityAction.RequestRefuse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(action));
-            }
-#pragma warning restore 618
-
-            // cannot declarative security after type is created
-            m_containingType.ThrowIfCreated();
-
-            // Translate permission set into serialized format (uses standard binary serialization format).
-            byte[] blob = null;
-            int length = 0;
-            if (!pset.IsEmpty())
-            {
-                blob = pset.EncodeXml();
-                length = blob.Length;
-            }
-
-            // Write the blob into the metadata.
-            TypeBuilder.AddDeclarativeSecurity(m_module.GetNativeHandle(), MetadataTokenInternal, action, blob, length);
-        }
-#endif // FEATURE_CAS_POLICY
-
         #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
         #endif

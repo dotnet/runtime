@@ -14,23 +14,17 @@
 **
 ===========================================================*/
 
-using System;
 using System.Security.Permissions;
-using PermissionSet = System.Security.PermissionSet;
 using Win32Native = Microsoft.Win32.Win32Native;
 using System.Runtime.InteropServices;
 using System.Security;
-#if FEATURE_MACL
-using System.Security.AccessControl;
-#endif
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
-    
-namespace System.IO {    
+
+namespace System.IO
+{
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
     [ComVisible(true)]
@@ -133,7 +127,8 @@ namespace System.IO {
         ///    Note: This returns the fully qualified name of the destination file.
         /// </devdoc>
         [System.Security.SecuritySafeCritical]
-        internal static String InternalCopy(String sourceFileName, String destFileName, bool overwrite, bool checkHost) {
+        internal static String InternalCopy(String sourceFileName, String destFileName, bool overwrite, bool checkHost)
+        {
             Contract.Requires(sourceFileName != null);
             Contract.Requires(destFileName != null);
             Contract.Requires(sourceFileName.Length > 0);
@@ -141,19 +136,14 @@ namespace System.IO {
 
             String fullSourceFileName = Path.GetFullPath(sourceFileName);
             String fullDestFileName = Path.GetFullPath(destFileName);
-            
-#if FEATURE_CORECLR
+
             if (checkHost) {
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, sourceFileName, fullSourceFileName);
                 FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destFileName, fullDestFileName);
                 sourceState.EnsureState();
                 destState.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, fullSourceFileName, false, false);
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, fullDestFileName, false, false);
-#endif
-       
+
             bool r = Win32Native.CopyFile(fullSourceFileName, fullDestFileName, !overwrite);
             if (!r) {
                 // Save Win32 error because subsequent checks will overwrite this HRESULT.
@@ -161,16 +151,6 @@ namespace System.IO {
                 String fileName = destFileName;
 
                 if (errorCode != Win32Native.ERROR_FILE_EXISTS) {
-#if !FEATURE_CORECLR
-                    // For a number of error codes (sharing violation, path 
-                    // not found, etc) we don't know if the problem was with
-                    // the source or dest file.  Try reading the source file.
-                    using(SafeFileHandle handle = Win32Native.UnsafeCreateFile(fullSourceFileName, GENERIC_READ, FileShare.Read, null, FileMode.Open, 0, IntPtr.Zero)) {
-                        if (handle.IsInvalid)
-                            fileName = sourceFileName;
-                    }
-#endif // !FEATURE_CORECLR
-
                     if (errorCode == Win32Native.ERROR_ACCESS_DENIED) {
                         if (Directory.InternalExists(fullDestFileName))
                             throw new IOException(Environment.GetResourceString("Arg_FileIsDirectory_Name", destFileName), Win32Native.ERROR_ACCESS_DENIED, fullDestFileName);
@@ -213,13 +193,6 @@ namespace System.IO {
                                   FileShare.None, bufferSize, options);
         }
 
-#if FEATURE_MACL
-        public static FileStream Create(String path, int bufferSize, FileOptions options, FileSecurity fileSecurity) {
-            return new FileStream(path, FileMode.Create, FileSystemRights.Read | FileSystemRights.Write,
-                                  FileShare.None, bufferSize, options, fileSecurity);
-        }
-#endif
-
         // Deletes a file. The file specified by the designated path is deleted.
         // If the file does not exist, Delete succeeds without throwing
         // an exception.
@@ -253,17 +226,12 @@ namespace System.IO {
         {
             String fullPath = Path.GetFullPath(path);
 
-#if FEATURE_CORECLR
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, path, fullPath);
                 state.EnsureState();
             }
-#else
-            // For security check, path should be resolved to an absolute path.
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, fullPath, false, false);
 
-#endif
             bool r = Win32Native.DeleteFile(fullPath);
             if (!r) {
                 int hr = Marshal.GetLastWin32Error();
@@ -404,28 +372,6 @@ namespace System.IO {
             return new FileStream(path, mode, access, share);
         }
 
-#if !FEATURE_CORECLR
-        public static void SetCreationTime(String path, DateTime creationTime)
-        {
-            SetCreationTimeUtc(path, creationTime.ToUniversalTime());
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe static void SetCreationTimeUtc(String path, DateTime creationTimeUtc)
-        {
-            SafeFileHandle handle;
-            using(OpenFile(path, FileAccess.Write, out handle)) {
-                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(creationTimeUtc.ToFileTimeUtc());
-                bool r = Win32Native.SetFileTime(handle, &fileTime, null, null);
-                if (!r)
-                {
-                     int errorCode = Marshal.GetLastWin32Error();
-                    __Error.WinIOError(errorCode, path);
-                }
-            }
-        }
-#endif // !FEATURE_CORECLR
-
         [System.Security.SecuritySafeCritical]
         public static DateTime GetCreationTime(String path)
         {
@@ -442,15 +388,12 @@ namespace System.IO {
         private static DateTime InternalGetCreationTimeUtc(String path, bool checkHost)
         {
             String fullPath = Path.GetFullPath(path);
-#if FEATURE_CORECLR
+
             if (checkHost) 
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, fullPath);
                 state.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, fullPath, false, false);
-#endif
 
             Win32Native.WIN32_FILE_ATTRIBUTE_DATA data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
             int dataInitialised = FillAttributeInfo(fullPath, ref data, false, false);
@@ -460,28 +403,6 @@ namespace System.IO {
             long dt = ((long)(data.ftCreationTimeHigh) << 32) | ((long)data.ftCreationTimeLow);
             return DateTime.FromFileTimeUtc(dt);
         }
-
-#if !FEATURE_CORECLR
-        public static void SetLastAccessTime(String path, DateTime lastAccessTime)
-        {
-            SetLastAccessTimeUtc(path, lastAccessTime.ToUniversalTime());
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe static void SetLastAccessTimeUtc(String path, DateTime lastAccessTimeUtc)
-        {
-            SafeFileHandle handle;
-            using(OpenFile(path, FileAccess.Write, out handle)) {
-                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastAccessTimeUtc.ToFileTimeUtc());
-                bool r = Win32Native.SetFileTime(handle, null, &fileTime,  null);
-                if (!r)
-                {
-                     int errorCode = Marshal.GetLastWin32Error();
-                    __Error.WinIOError(errorCode, path);
-                }
-            }
-        }
-#endif // FEATURE_CORECLR
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetLastAccessTime(String path)
@@ -497,17 +418,14 @@ namespace System.IO {
 
         [System.Security.SecurityCritical]
         private static DateTime InternalGetLastAccessTimeUtc(String path, bool checkHost)
-        {       
+        {
             String fullPath = Path.GetFullPath(path);
-#if FEATURE_CORECLR
+
             if (checkHost) 
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, fullPath);
                 state.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, fullPath, false, false);
-#endif
 
             Win32Native.WIN32_FILE_ATTRIBUTE_DATA data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
             int dataInitialised = FillAttributeInfo(fullPath, ref data, false, false);
@@ -517,28 +435,6 @@ namespace System.IO {
             long dt = ((long)(data.ftLastAccessTimeHigh) << 32) | ((long)data.ftLastAccessTimeLow);
             return DateTime.FromFileTimeUtc(dt);
         }
-
-#if !FEATURE_CORECLR
-        public static void SetLastWriteTime(String path, DateTime lastWriteTime)
-        {
-            SetLastWriteTimeUtc(path, lastWriteTime.ToUniversalTime());
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe static void SetLastWriteTimeUtc(String path, DateTime lastWriteTimeUtc)
-        {
-            SafeFileHandle handle;
-            using(OpenFile(path, FileAccess.Write, out handle)) {
-                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastWriteTimeUtc.ToFileTimeUtc());
-                bool r = Win32Native.SetFileTime(handle, null, null, &fileTime);
-                if (!r)
-                {
-                     int errorCode = Marshal.GetLastWin32Error();
-                    __Error.WinIOError(errorCode, path);
-                }
-            }
-        }
-#endif // !FEATURE_CORECLR
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetLastWriteTime(String path)
@@ -556,15 +452,12 @@ namespace System.IO {
         private static DateTime InternalGetLastWriteTimeUtc(String path, bool checkHost)
         {
             String fullPath = Path.GetFullPath(path);
-#if FEATURE_CORECLR
+
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, fullPath);
                 state.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, fullPath, false, false);
-#endif
 
             Win32Native.WIN32_FILE_ATTRIBUTE_DATA data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
             int dataInitialised = FillAttributeInfo(fullPath, ref data, false, false);
@@ -579,12 +472,9 @@ namespace System.IO {
         public static FileAttributes GetAttributes(String path) 
         {
             String fullPath = Path.GetFullPath(path);
-#if FEATURE_CORECLR
+
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, fullPath);
             state.EnsureState();
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, fullPath, false, false);
-#endif
 
             Win32Native.WIN32_FILE_ATTRIBUTE_DATA data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
             int dataInitialised = FillAttributeInfo(fullPath, ref data, false, true);
@@ -594,17 +484,10 @@ namespace System.IO {
             return (FileAttributes) data.fileAttributes;
         }
 
-#if FEATURE_CORECLR
         [System.Security.SecurityCritical] 
-#else
-        [System.Security.SecuritySafeCritical]
-#endif
         public static void SetAttributes(String path, FileAttributes fileAttributes) 
         {
             String fullPath = Path.GetFullPath(path);
-#if !FEATURE_CORECLR
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, fullPath, false, false);
-#endif
             bool r = Win32Native.SetFileAttributes(fullPath, (int) fileAttributes);
             if (!r) {
                 int hr = Marshal.GetLastWin32Error();
@@ -613,31 +496,6 @@ namespace System.IO {
                  __Error.WinIOError(hr, fullPath);
             }
         }
-
-#if FEATURE_MACL
-        public static FileSecurity GetAccessControl(String path)
-        {
-            return GetAccessControl(path, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
-        }
-
-        public static FileSecurity GetAccessControl(String path, AccessControlSections includeSections)
-        {
-            // Appropriate security check should be done for us by FileSecurity.
-            return new FileSecurity(path, includeSections);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static void SetAccessControl(String path, FileSecurity fileSecurity)
-        {
-            if (fileSecurity == null)
-                throw new ArgumentNullException(nameof(fileSecurity));
-            Contract.EndContractBlock();
-
-            String fullPath = Path.GetFullPath(path);
-            // Appropriate security check should be done for us by FileSecurity.
-            fileSecurity.Persist(fullPath);
-        }
-#endif
 
         public static FileStream OpenRead(String path) {
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -1055,17 +913,12 @@ namespace System.IO {
             String fullSourceFileName = Path.GetFullPath(sourceFileName);
             String fullDestFileName = Path.GetFullPath(destFileName);
 
-#if FEATURE_CORECLR
             if (checkHost) {
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, sourceFileName, fullSourceFileName);
                 FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destFileName, fullDestFileName);
                 sourceState.EnsureState();
                 destState.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, fullSourceFileName, false, false);
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, fullDestFileName, false, false);
-#endif
 
             if (!InternalExists(fullSourceFileName))
                 __Error.WinIOError(Win32Native.ERROR_FILE_NOT_FOUND, fullSourceFileName);
@@ -1113,19 +966,12 @@ namespace System.IO {
             if (destinationBackupFileName != null)
                 fullBackupPath = Path.GetFullPath(destinationBackupFileName);
 
-#if FEATURE_CORECLR
             FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read | FileSecurityStateAccess.Write, sourceFileName, fullSrcPath);
             FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Read | FileSecurityStateAccess.Write, destinationFileName, fullDestPath);
             FileSecurityState backupState = new FileSecurityState(FileSecurityStateAccess.Read | FileSecurityStateAccess.Write, destinationBackupFileName, fullBackupPath);
             sourceState.EnsureState();
             destState.EnsureState();
             backupState.EnsureState();
-#else
-            FileIOPermission perm = new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, new String[] { fullSrcPath, fullDestPath});
-            if (destinationBackupFileName != null)
-                perm.AddPathList(FileIOPermissionAccess.Write, fullBackupPath);
-            perm.Demand();
-#endif
 
             int flags = Win32Native.REPLACEFILE_WRITE_THROUGH;
             if (ignoreMetadataErrors)
@@ -1236,35 +1082,8 @@ namespace System.IO {
             return dataInitialised;
         }
 
-#if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]  // auto-generated
-        private static FileStream OpenFile(String path, FileAccess access, out SafeFileHandle handle)
-        {
-            FileStream fs = new FileStream(path, FileMode.Open, access, FileShare.ReadWrite, 1);
-            handle = fs.SafeFileHandle;
-
-            if (handle.IsInvalid) {
-                // Return a meaningful error, using the RELATIVE path to
-                // the file to avoid returning extra information to the caller.
-            
-                // NT5 oddity - when trying to open "C:\" as a FileStream,
-                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
-                // probably be consistent w/ every other directory.
-                int hr = Marshal.GetLastWin32Error();
-                String FullPath = Path.GetFullPath(path);
-                if (hr==__Error.ERROR_PATH_NOT_FOUND && FullPath.Equals(Directory.GetDirectoryRoot(FullPath)))
-                    hr = __Error.ERROR_ACCESS_DENIED;
-
-
-                __Error.WinIOError(hr, path);
-            }
-            return fs;
-        }
-#endif // !FEATURE_CORECLR
-
-
-         // Defined in WinError.h
+        // Defined in WinError.h
         private const int ERROR_INVALID_PARAMETER = 87;
-        private const int ERROR_ACCESS_DENIED = 0x5;     
+        private const int ERROR_ACCESS_DENIED = 0x5;
     }
 }

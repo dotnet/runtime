@@ -70,25 +70,6 @@ InvariantFailed = Invariant failed.
 InvariantFailed_Cnd = Invariant failed: {0}
 MustUseCCRewrite = An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.
 
-; Access Control
-#if FEATURE_MACL
-AccessControl_MustSpecifyContainerAcl = The named parameter must be a container ACL.
-AccessControl_MustSpecifyLeafObjectAcl = The named parameter must be a non-container ACL.
-AccessControl_AclTooLong = Length of the access control list exceed the allowed maximum.
-AccessControl_MustSpecifyDirectoryObjectAcl = The named parameter must be a directory-object ACL.
-AccessControl_MustSpecifyNonDirectoryObjectAcl = The named parameter must be a non-directory-object ACL.
-AccessControl_InvalidSecurityDescriptorRevision = Security descriptor with revision other than '1' are not legal.
-AccessControl_InvalidSecurityDescriptorSelfRelativeForm = Security descriptor must be in the self-relative form.
-AccessControl_NoAssociatedSecurity = Unable to perform a security operation on an object that has no associated security. This can happen when trying to get an ACL of an anonymous kernel object.
-AccessControl_InvalidHandle = The supplied handle is invalid. This can happen when trying to set an ACL on an anonymous kernel object.
-AccessControl_UnexpectedError = Method failed with unexpected error code {0}.
-AccessControl_InvalidSidInSDDLString = The SDDL string contains an invalid sid or a sid that cannot be translated.
-AccessControl_InvalidOwner = The security identifier is not allowed to be the owner of this object.
-AccessControl_InvalidGroup = The security identifier is not allowed to be the primary group of this object.
-AccessControl_InvalidAccessRuleType = The access rule is not the correct type.
-AccessControl_InvalidAuditRuleType = The audit rule is not the correct type.
-#endif  // FEATURE_MACL
-
 ; Identity Reference Library
 #if FEATURE_IDENTITY_REFERENCE
 IdentityReference_IdentityNotMapped = Some or all identity references could not be translated.
@@ -1128,9 +1109,6 @@ InvalidOperation_EnumFailedVersion = Collection was modified; enumeration operat
 InvalidOperation_EnumNotStarted = Enumeration has not started. Call MoveNext.
 InvalidOperation_EnumOpCantHappen = Enumeration has either not started or has already finished.
 InvalidOperation_ModifyRONumFmtInfo = Unable to modify a read-only NumberFormatInfo object.
-#if FEATURE_CAS_POLICY
-InvalidOperation_ModifyROPermSet = ReadOnlyPermissionSet objects may not be modified.
-#endif // FEATURE_CAS_POLICY
 InvalidOperation_MustBeSameThread = This operation must take place on the same thread on which the object was created.
 InvalidOperation_MustRevertPrivilege = Must revert the privilege prior to attempting this operation.
 InvalidOperation_ReadOnly = Instance is read-only.
@@ -1441,12 +1419,6 @@ NotSupported_NonBlittableTypes = Non-blittable parameter types are not supported
 NotSupported_UserDllImport = DllImport cannot be used on user-defined methods.
 NotSupported_UserCOM = COM Interop is not supported for user-defined types.
 #endif //FEATURE_WINDOWSPHONE
-#if FEATURE_CAS_POLICY
-NotSupported_RequiresCasPolicyExplicit = This method explicitly uses CAS policy, which has been obsoleted by the .NET Framework. In order to enable CAS policy for compatibility reasons, please use the NetFx40_LegacySecurityPolicy configuration switch. Please see http://go.microsoft.com/fwlink/?LinkID=155570 for more information.
-NotSupported_RequiresCasPolicyImplicit = This method implicitly uses CAS policy, which has been obsoleted by the .NET Framework. In order to enable CAS policy for compatibility reasons, please use the NetFx40_LegacySecurityPolicy configuration switch. Please see http://go.microsoft.com/fwlink/?LinkID=155570 for more information.
-NotSupported_CasDeny = The Deny stack modifier has been obsoleted by the .NET Framework.  Please see http://go.microsoft.com/fwlink/?LinkId=155571 for more information.
-NotSupported_SecurityContextSourceAppDomainInHeterogenous = SecurityContextSource.CurrentAppDomain is not supported in heterogenous AppDomains.
-#endif // FEATURE_CAS_POLICY
 #if FEATURE_APPX
 NotSupported_AppX = {0} is not supported in AppX.
 LoadOfFxAssemblyNotSupported_AppX = {0} of .NET Framework assemblies is not supported in AppX.
@@ -1456,9 +1428,6 @@ NotSupported_WinRT_PartialTrust = Windows Runtime is not supported in partial tr
 #endif // FEATURE_COMINTEROP
 ; ReflectionTypeLoadException
 ReflectionTypeLoad_LoadFailed = Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
-#if !FEATURE_CORECLR
-NotSupported_NoTypeInfo = Cannot resolve {0} to a TypeInfo object.
-#endif
 #if FEATURE_COMINTEROP
 NotSupported_PIAInAppxProcess = A Primary Interop Assembly is not supported in AppX.
 #endif
@@ -1580,125 +1549,6 @@ Remoting_Message_BadRetValOrOutArg = Bad return value or out-argument inside the
 Remoting_NonPublicOrStaticCantBeCalledRemotely = Permission denied: cannot call non-public or static methods remotely.
 Remoting_Proxy_ProxyTypeIsNotMBR = classToProxy argument must derive from MarshalByRef type.
 Remoting_TP_NonNull = The transparent proxy field of a real proxy must be null.
-#if FEATURE_REMOTING
-Remoting_Activation_BadAttribute = Activation attribute does not implement the IContextAttribute interface.
-Remoting_Activation_BadObject = Proxy Attribute returned an incompatible object when constructing an instance of type {0}.
-Remoting_Activation_MBR_ProxyAttribute = Proxy Attributes are supported on ContextBound types only.
-Remoting_Activation_ConnectFailed = An attempt to connect to the remote activator failed with exception '{0}'.
-Remoting_Activation_Failed = Activation failed due to an unknown reason.
-Remoting_Activation_InconsistentState = Inconsistent state during activation; there may be two proxies for the same object.
-Remoting_Activation_MissingRemoteAppEntry = Cannot find an entry for remote application '{0}'.
-Remoting_Activation_NullReturnValue = Return value of construction call was null.
-Remoting_Activation_NullFromInternalUnmarshal = InternalUnmarshal of returned ObjRef from activation call returned null.
-Remoting_Activation_WellKnownCTOR = Cannot run a non-default constructor when connecting to well-known objects.
-Remoting_Activation_PermissionDenied = Type '{0}' is not registered for activation.
-Remoting_Activation_PropertyUnhappy = A context property did not approve the candidate context for activating the object.
-Remoting_Activation_AsyncUnsupported = Async Activation not supported.
-Remoting_AmbiguousCTOR = Cannot resolve the invocation to the correct constructor.
-Remoting_AmbiguousMethod = Cannot resolve the invocation to the correct method.
-Remoting_AppDomains_NYI = This feature is not yet supported for cross-application domain.
-Remoting_AppDomainsCantBeCalledRemotely = Permission denied: cannot call methods on the AppDomain class remotely.
-Remoting_AssemblyLoadFailed = Cannot load assembly '{0}'.
-Remoting_Attribute_UseAttributeNotsettable = UseAttribute not allowed in SoapTypeAttribute.
-Remoting_BadType = Cannot load type '{0}'.
-Remoting_BadField = Remoting cannot find field '{0}' on type '{1}'.
-Remoting_BadInternalState_ActivationFailure = Invalid internal state: Activation service failed to initialize.
-Remoting_BadInternalState_ProxySameAppDomain = Invalid internal state: A marshal by ref object should not have a proxy in its own AppDomain.
-Remoting_BadInternalState_FailEnvoySink = Invalid internal state: Failed to create an envoy sink for the object.
-Remoting_CantDisconnectClientProxy = Cannot call disconnect on a proxy.
-Remoting_CantInvokeIRemoteDispatch = Cannot invoke methods on IRemoteDispatch.
-Remoting_ChannelNameAlreadyRegistered = The channel '{0}' is already registered.
-Remoting_ChannelNotRegistered = The channel '{0}' is not registered with remoting services.
-Remoting_Channel_PopOnEmptySinkStack = Tried to pop data from an empty channel sink stack.
-Remoting_Channel_PopFromSinkStackWithoutPush = A channel sink tried to pop data from the stack without first pushing data onto the stack.
-Remoting_Channel_StoreOnEmptySinkStack = A channel sink called the Store method when the sink stack was empty.
-Remoting_Channel_StoreOnSinkStackWithoutPush = A channel sink called the Store method on the sink stack without first pushing data onto the stack.
-Remoting_Channel_CantCallAPRWhenStackEmpty = Cannot call the AsyncProcessResponse method on the previous channel sink because the stack is empty.
-Remoting_Channel_CantCallFRSWhenStackEmtpy = Called FlipRememberedStack() when stack was not null.
-Remoting_Channel_CantCallGetResponseStreamWhenStackEmpty = Cannot call the GetResponseStream method on the previous channel sink because the stack is empty.
-Remoting_Channel_DispatchSinkMessageMissing = No message was deserialized prior to calling the DispatchChannelSink.
-Remoting_Channel_DispatchSinkWantsNullRequestStream = The request stream should be null when the DispatchChannelSink is called. 
-Remoting_Channel_CannotBeSecured = Channel {0} cannot be secured. Please consider using a channel that implements ISecurableChannel
-Remoting_Config_ChannelMissingCtor = To be used from a .config file, the channel type '{0}' must have a constructor of the form '{1}'
-Remoting_Config_SinkProviderMissingCtor = To be used from a .config file, the sink provider type '{0}' must have a constructor of the form '{1}'
-Remoting_Config_SinkProviderNotFormatter = A sink provider of type '{0}' is incorrectly labeled as a 'formatter'.
-Remoting_Config_ConfigurationFailure = Remoting configuration failed with the exception '{0}'.
-Remoting_Config_InvalidTimeFormat = Invalid time format '{0}'. Examples of valid time formats include 7D, 10H, 5M, 30S, or 20MS.
-Remoting_Config_AppNameSet = The remoting application name, '{0}', had already been set.
-Remoting_Config_ErrorsModeSet = The remoting custom errors mode had already been set.
-Remoting_Config_CantRedirectActivationOfWellKnownService = Attempt to redirect activation for type '{0}, {1}'. This is not allowed since either a well-known service type has already been registered with that type or that type has been registered has a activated service type.
-Remoting_Config_CantUseRedirectedTypeForWellKnownService = Attempt to register a well-known or activated service type of type '{0}, {1}'. This is not allowed since the type has already been redirected to activate elsewhere.
-Remoting_Config_InvalidChannelType = '{0}' does not implement IChannelReceiver or IChannelSender. All channels must implement one of these interfaces.
-Remoting_Config_InvalidSinkProviderType = Unable to use '{0}' as a channel sink provider. It does not implement '{1}'.
-Remoting_Config_MissingWellKnownModeAttribute = Well-known service entries must contain a 'mode' attribute with a value of 'Singleton' or 'SingleCall'.
-Remoting_Config_MissingTypeAttribute = '{0}' entries must contain a '{1}' attribute of the form 'typeName, assemblyName'.
-Remoting_Config_MissingXmlTypeAttribute = '{0}' entries must contain a '{1}' attribute of the form 'xmlTypeName, xmlTypeNamespace'.
-Remoting_Config_NoAppName = Improper remoting configuration: missing ApplicationName property.
-Remoting_Config_NonTemplateIdAttribute = Only '{0}' templates can have an 'id' attribute.
-Remoting_Config_PreloadRequiresTypeOrAssembly = Preload entries require a type or assembly attribute.
-Remoting_Config_ProviderNeedsElementName = Sink providers must have an element name of 'formatter' or 'provider'.
-Remoting_Config_RequiredXmlAttribute = '{0}' entries require a '{1}' attribute.
-Remoting_Config_ReadFailure = .Config file '{0}' cannot be read successfully due to exception '{1}'.
-Remoting_Config_NodeMustBeUnique = There can be only one '{0}' node in the '{1}' section of a config file.
-Remoting_Config_TemplateCannotReferenceTemplate = A '{0}' template cannot reference another '{0}' template.
-Remoting_Config_TypeAlreadyRedirected = Attempt to redirect activation of type '{0}, {1}' which is already redirected.
-Remoting_Config_UnknownValue = Unknown value {1} was found on the {0} node.
-Remoting_Config_UnableToResolveTemplate = Cannot resolve '{0}' template reference: '{1}'.
-Remoting_Config_VersionPresent = Version information is present in the assembly name '{0}' which is not allowed for '{1}' entries.
-Remoting_Contexts_BadProperty = A property that contributed a bad sink to the chain was found.
-Remoting_Contexts_NoProperty = A property with the name '{0}' was not found.
-Remoting_Contexts_ContextNotFrozenForCallBack = Context should be frozen before calling the DoCallBack method.
-Remoting_Default = Unknown remoting error.
-Remoting_HandlerNotRegistered = The tracking handler of type '{0}' is not registered with Remoting Services.
-Remoting_InvalidMsg = Invalid Message Object.
-Remoting_InvalidCallingType = Attempted to call a method declared on type '{0}' on an object which exposes '{1}'.
-Remoting_InvalidRequestedType = The server object type cannot be cast to the requested type '{0}'.
-Remoting_InternalError = Server encountered an internal error. For more information, turn off customErrors in the server's .config file.
-Remoting_Lifetime_ILeaseReturn = Expected a return object of type ILease, but received '{0}'.
-Remoting_Lifetime_InitialStateInitialLeaseTime = InitialLeaseTime property can only be set when the lease is in initial state. The state is '{0}'.
-Remoting_Lifetime_InitialStateRenewOnCall = RenewOnCallTime property can only be set when the lease is in initial state. The state is '{0}'.
-Remoting_Lifetime_InitialStateSponsorshipTimeout = SponsorshipTimeout property can only be set when the lease is in initial state. State is '{0}'.
-Remoting_Lifetime_SetOnce = '{0}' can only be set once within an AppDomain.
-Remoting_Message_ArgMismatch = {2} arguments were passed to '{0}::{1}'. {3} arguments were expected by this method.
-Remoting_Message_BadAsyncResult = The async result object is null or of an unexpected type.
-Remoting_Message_BadType = The method was called with a Message of an unexpected type.
-Remoting_Message_CoercionFailed = The argument type '{0}' cannot be converted into parameter type '{1}'.
-Remoting_Message_MissingArgValue = Expecting an instance of type '{0}' at pos {1} in the args array.
-Remoting_Message_BadSerialization = Invalid or malformed serialization information for the message object.
-Remoting_NoIdentityEntry = No remoting information was found for this object.
-Remoting_NotRemotableByReference = Trying to create a proxy to an unbound type.
-Remoting_NullMessage = The method was called with a null message.
-Remoting_Proxy_BadType = The proxy is of an unsupported type.
-Remoting_ResetURI = Attempt to reset the URI for an object from '{0}' to '{1}'.
-Remoting_ServerObjectNotFound = The server object for URI '{0}' is not registered with the remoting infrastructure (it may have been disconnected).
-Remoting_SetObjectUriForMarshal__ObjectNeedsToBeLocal = SetObjectUriForMarshal method should only be called for MarshalByRefObjects that exist in the current AppDomain.
-Remoting_SetObjectUriForMarshal__UriExists = SetObjectUriForMarshal method has already been called on this object or the object has already been marshaled.
-Remoting_Proxy_BadReturnType = Return argument has an invalid type.
-Remoting_Proxy_ReturnValueTypeCannotBeNull = ByRef value type parameter cannot be null.
-Remoting_Proxy_BadReturnTypeForActivation = Bad return type for activation call via Invoke: must be of type IConstructionReturnMessage.
-Remoting_Proxy_BadTypeForActivation = Type mismatch between proxy type '{0}' and activation type '{1}'.
-Remoting_Proxy_ExpectedOriginalMessage = The message passed to Invoke should be passed to PropagateOutParameters.
-Remoting_Proxy_InvalidCall = Trying to call proxy while constructor call is in progress.
-Remoting_Proxy_InvalidState = Channel sink does not exist. Failed to dispatch async call.
-Remoting_Proxy_NoChannelSink = This remoting proxy has no channel sink which means either the server has no registered server channels that are listening, or this application has no suitable client channel to talk to the server.
-Remoting_Proxy_InvalidCallType = Only the synchronous call type is supported for messages that are not of type Message.
-Remoting_Proxy_WrongContext =  ExecuteMessage can be called only from the native context of the object.
-Remoting_SOAPInteropxsdInvalid = Soap Parse error, xsd:type '{0}' invalid {1}
-Remoting_SOAPQNameNamespace = SoapQName missing a Namespace value '{0}'.
-Remoting_ThreadAffinity_InvalidFlag = The specified flag '{0}' does not have one of the valid values.
-Remoting_TrackingHandlerAlreadyRegistered = The handler has already been registered with TrackingServices.
-Remoting_URIClash = Found two different objects associated with the same URI, '{0}'.
-Remoting_URIExists = The remoted object already has an associated URI.
-Remoting_URIToProxy = Trying to associate the URI with a proxy.
-Remoting_WellKnown_MustBeMBR = Attempted to create well-known object of type '{0}'. Well-known objects must derive from the MarshalByRefObject class.
-Remoting_WellKnown_CtorCantMarshal = '{0}': A well-known object cannot marshal itself in its constructor, or perform any action that would cause it to be marshaled (such as passing the 'this' pointer as a parameter to a remote method).
-Remoting_WellKnown_CantDirectlyConnect = Attempt to connect to a server using its object URI: '{0}'. A valid, complete URL must be used.
-Remoting_Connect_CantCreateChannelSink = Cannot create channel sink to connect to URL '{0}'. An appropriate channel has probably not been registered.
-Remoting_UnexpectedNullTP = Failed to create a transparent proxy. If a custom RealProxy is being used ensure it sets the proxy type.
-; The following remoting exception messages appear in native resources too (mscorrc.rc)
-Remoting_Disconnected = Object '{0}' has been disconnected or does not exist at the server.
-Remoting_Message_MethodMissing = The method '{0}' was not found on the interface/type '{1}'.
-#endif  // FEATURE_REMOTING
 
 ; Resources exceptions
 ;
@@ -1727,24 +1577,6 @@ Security_GenericNoType = Request failed.
 Security_NoAPTCA = That assembly does not allow partially trusted callers.
 Security_RegistryPermission = Requested registry access is not allowed.
 Security_MustRevertOverride = Stack walk modifier must be reverted before another modification of the same type can be performed.
-#if FEATURE_CAS_POLICY
-Security_CannotGenerateHash = Hash for the assembly cannot be generated.
-Security_CannotGetRawData = Assembly bytes could not be retrieved.
-Security_PrincipalPermission = Request for principal permission failed.
-Security_Action = The action that failed was:
-Security_TypeFirstPermThatFailed = The type of the first permission that failed was:
-Security_FirstPermThatFailed = The first permission that failed was:
-Security_Demanded = The demand was for:
-Security_GrantedSet = The granted set of the failing assembly was:
-Security_RefusedSet = The refused set of the failing assembly was:
-Security_Denied = The denied permissions were:
-Security_PermitOnly = The only permitted permissions were:
-Security_Assembly = The assembly or AppDomain that failed was:
-Security_Method = The method that caused the failure was:
-Security_Zone = The Zone of the assembly that failed was:
-Security_Url = The Url of the assembly that failed was:
-Security_AnonymouslyHostedDynamicMethodCheckFailed = The demand failed due to the code access security information captured during the creation of an anonymously hosted dynamic method. In order for this operation to succeed, ensure that the demand would have succeeded at the time the method was created. See http://go.microsoft.com/fwlink/?LinkId=288746 for more information.
-#endif  // FEATURE_CAS_POLICY
 
 ;
 ; HostProtection exceptions
@@ -2197,14 +2029,6 @@ XMLSyntax_InvalidSyntaxSatAssemTag = Invalid XML in file "{0}" near element "{1}
 XMLSyntax_InvalidSyntaxSatAssemTagBadAttr = Invalid XML in file "{0}" near "{1}" and "{2}". In the <satelliteassemblies> section, the <assembly> tag must have exactly 1 attribute called 'name', whose value is a fully-qualified assembly name.
 XMLSyntax_InvalidSyntaxSatAssemTagNoAttr = Invalid XML in file "{0}". In the <satelliteassemblies> section, the <assembly> tag must have exactly 1 attribute called 'name', whose value is a fully-qualified assembly name.
 
-; CodeGroup
-#if FEATURE_CAS_POLICY
-NetCodeGroup_PermissionSet = Same site Web
-MergeLogic_Union = Union
-MergeLogic_FirstMatch = First Match
-FileCodeGroup_PermissionSet = Same directory FileIO - '{0}'
-#endif // FEATURE_CAS_POLICY
-
 ; MembershipConditions
 StrongName_ToString = StrongName - {0}{1}{2}
 StrongName_Name = name = {0}
@@ -2217,12 +2041,6 @@ Zone_ToString = Zone - {0}
 All_ToString = All code
 Url_ToString = Url
 GAC_ToString = GAC
-#if FEATURE_CAS_POLICY
-Site_ToStringArg = Site - {0}
-Publisher_ToStringArg = Publisher - {0}
-Url_ToStringArg = Url - {0}
-#endif // FEATURE_CAS_POLICY
-
 
 ; Interop non exception strings.
 TypeLibConverter_ImportedTypeLibProductName = Assembly imported from type library '{0}'.

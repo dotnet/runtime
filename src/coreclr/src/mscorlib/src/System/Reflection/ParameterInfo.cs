@@ -12,9 +12,6 @@ namespace System.Reflection
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
-#if FEATURE_REMOTING
-    using System.Runtime.Remoting.Metadata;
-#endif //FEATURE_REMOTING
     using System.Security.Permissions;
     using System.Threading;
     using MdToken = System.Reflection.MetadataToken;
@@ -765,31 +762,5 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
-
-#if FEATURE_REMOTING
-        #region Remoting Cache
-        private RemotingParameterCachedData m_cachedData;
-
-        internal RemotingParameterCachedData RemotingCache
-        {
-            get
-            {
-                // This grabs an internal copy of m_cachedData and uses
-                // that instead of looking at m_cachedData directly because
-                // the cache may get cleared asynchronously.  This prevents
-                // us from having to take a lock.
-                RemotingParameterCachedData cache = m_cachedData;
-                if (cache == null)
-                {
-                    cache = new RemotingParameterCachedData(this);
-                    RemotingParameterCachedData ret = Interlocked.CompareExchange(ref m_cachedData, cache, null);
-                    if (ret != null)
-                        cache = ret;
-                }
-                return cache;
-            }
-        }
-        #endregion
-#endif //FEATURE_REMOTING
     }
 }

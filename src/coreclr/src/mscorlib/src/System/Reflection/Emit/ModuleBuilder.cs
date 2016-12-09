@@ -1085,12 +1085,6 @@ namespace System.Reflection.Emit
             }
         }
 
-#if FEATURE_X509 && FEATURE_CAS_POLICY
-        public override System.Security.Cryptography.X509Certificates.X509Certificate GetSignerCertificate()
-        {
-            return InternalModule.GetSignerCertificate();
-        }
-#endif // FEATURE_X509 && FEATURE_CAS_POLICY
         #endregion
 
         #region Public Members
@@ -2384,27 +2378,5 @@ namespace System.Reflection.Emit
         #endregion
 
         #endregion    
-
-#if !FEATURE_CORECLR
-        void _ModuleBuilder.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _ModuleBuilder.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _ModuleBuilder.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _ModuleBuilder.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
     }
 }

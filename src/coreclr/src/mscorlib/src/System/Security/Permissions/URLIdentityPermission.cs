@@ -5,9 +5,6 @@
 namespace System.Security.Permissions
 {
     using System;
-#if FEATURE_CAS_POLICY
-    using SecurityElement = System.Security.SecurityElement;
-#endif // FEATURE_CAS_POLICY
     using System.Security.Util;
     using System.IO;
     using System.Text;
@@ -31,58 +28,8 @@ namespace System.Security.Permissions
 
         [OptionalField(VersionAdded = 2)]
         private bool m_unrestricted;
-        [OptionalField(VersionAdded = 2)]        
-        private URLString[] m_urls;
-
-#if FEATURE_REMOTING
-        // This field will be populated only for non X-AD scenarios where we create a XML-ised string of the Permission
         [OptionalField(VersionAdded = 2)]
-        private String m_serializedPermission; 
-
-        //  This field is legacy info from v1.x and is never used in v2.0 and beyond: purely for serialization purposes
-        private URLString m_url;
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            // v2.0 and beyond XML case
-            if (m_serializedPermission != null)
-            {
-                FromXml(SecurityElement.FromString(m_serializedPermission));
-                m_serializedPermission = null;
-            }
-            else if (m_url != null) //v1.x case where we read the m_site value
-            {
-                m_unrestricted = false;
-                m_urls = new URLString[1];
-                m_urls[0] = m_url;
-                m_url = null;
-            }
-
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-
-            if ((ctx.State & ~(StreamingContextStates.Clone|StreamingContextStates.CrossAppDomain)) != 0)
-            {
-                m_serializedPermission = ToXml().ToString(); //for the v2 and beyond case
-                if (m_urls != null && m_urls.Length == 1) // for the v1.x case
-                    m_url = m_urls[0];
-                
-            }
-        }   
-        [OnSerialized]
-        private void OnSerialized(StreamingContext ctx)
-        {
-            if ((ctx.State & ~(StreamingContextStates.Clone|StreamingContextStates.CrossAppDomain)) != 0)
-            {
-                m_serializedPermission = null;
-                m_url = null;
-            }
-        }
-#endif // FEATURE_REMOTING
+        private URLString[] m_urls;
 
         //------------------------------------------------------
         //
@@ -322,60 +269,6 @@ namespace System.Security.Permissions
             result.m_urls = alUrls.ToArray();
             return result;
         }
-
-#if FEATURE_CAS_POLICY
-        public override void FromXml(SecurityElement esd)
-        {
-            m_unrestricted = false;
-            m_urls = null;
-            CodeAccessPermission.ValidateElement( esd, this );
-            String unr = esd.Attribute( "Unrestricted" );
-            if(unr != null && String.Compare(unr, "true", StringComparison.OrdinalIgnoreCase) == 0)
-            {
-                m_unrestricted = true;
-                return;
-            }
-            String elem = esd.Attribute( "Url" );
-            List<URLString> al = new List<URLString>();
-            if(elem != null)
-                al.Add(new URLString( elem, true ));
-            ArrayList alChildren = esd.Children;
-            if(alChildren != null)
-            {
-                foreach(SecurityElement child in alChildren)
-                {
-                    elem = child.Attribute( "Url" );
-                    if(elem != null)
-                        al.Add(new URLString( elem, true ));
-                }
-            }
-            if(al.Count != 0)
-                m_urls = al.ToArray();
-        }
-
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.UrlIdentityPermission" );
-            if (m_unrestricted)
-                esd.AddAttribute( "Unrestricted", "true" );
-            else if (m_urls != null)
-            {
-                if (m_urls.Length == 1)
-                    esd.AddAttribute( "Url", m_urls[0].ToString() );
-                else
-                {
-                    int n;
-                    for(n = 0; n < m_urls.Length; n++)
-                    {
-                        SecurityElement child = new SecurityElement("Url");
-                        child.AddAttribute( "Url", m_urls[n].ToString() );
-                        esd.AddChild(child);
-                    }
-                }
-            }
-            return esd;
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

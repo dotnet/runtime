@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -12,16 +10,7 @@ namespace System
     internal static class CompatibilitySwitches
     {
         private static bool s_AreSwitchesSet;
-
-#if FEATURE_CORECLR
         private static bool s_useLatestBehaviorWhenTFMNotSpecified; // Which behavior to use when the TFM is not specified.
-#endif //FEATURE_CORECLR
-
-#if !FEATURE_CORECLR
-        private static bool s_isNetFx40TimeSpanLegacyFormatMode;
-        private static bool s_isNetFx40LegacySecurityPolicy;
-        private static bool s_isNetFx45LegacyManagedDeflateStream;
-#endif //!FEATURE_CORECLR
 
         public static bool IsCompatibilityBehaviorDefined
         {
@@ -39,51 +28,14 @@ namespace System
 
         internal static void InitializeSwitches()
         {
-#if !FEATURE_CORECLR
-            s_isNetFx40TimeSpanLegacyFormatMode = IsCompatibilitySwitchSet("NetFx40_TimeSpanLegacyFormatMode");
-            s_isNetFx40LegacySecurityPolicy = IsCompatibilitySwitchSet("NetFx40_LegacySecurityPolicy");
-            s_isNetFx45LegacyManagedDeflateStream = IsCompatibilitySwitchSet("NetFx45_LegacyManagedDeflateStream");
-#endif //FEATURE_CORECLR
-
             s_AreSwitchesSet = true;
         }
-
-#if !FEATURE_CORECLR
-        public static bool IsAppEarlierThanSilverlight4
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public static bool IsAppEarlierThanWindowsPhone8
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public static bool IsAppEarlierThanWindowsPhoneMango
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-#endif //!FEATURE_CORECLR
 
         public static bool IsNetFx40TimeSpanLegacyFormatMode
         {
             get
             {
-#if !FEATURE_CORECLR
-                return s_isNetFx40TimeSpanLegacyFormatMode;
-#else
                 return false;
-#endif //!FEATURE_CORECLR
             }
         }
 
@@ -91,11 +43,7 @@ namespace System
         {
             get
             {
-#if !FEATURE_CORECLR
-                return s_isNetFx40LegacySecurityPolicy;
-#else
                 return false;
-#endif //!FEATURE_CORECLR
             }
         }
 
@@ -103,11 +51,7 @@ namespace System
         {
             get
             {
-#if !FEATURE_CORECLR
-                return s_isNetFx45LegacyManagedDeflateStream;
-#else
                 return false;
-#endif //!FEATURE_CORECLR
             }
         }
     }

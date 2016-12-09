@@ -25,12 +25,6 @@ using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Runtime.Remoting;
-#if FEATURE_REMOTING
-using System.Runtime.Remoting.Proxies;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.Remoting.Activation;
-using System.Runtime.Remoting.Metadata;
-#endif
 using MdSigCallingConvention = System.Signature.MdSigCallingConvention;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 using System.Runtime.InteropServices;
@@ -1832,36 +1826,6 @@ namespace System
         }
         #endregion
 
-#if FEATURE_REMOTING
-        #region Legacy Remoting Cache
-        // The size of CachedData is accounted for by BaseObjectWithCachedData in object.h.
-        // This member is currently being used by Remoting for caching remoting data. If you
-        // need to cache data here, talk to the Remoting team to work out a mechanism, so that
-        // both caching systems can happily work together.
-        private RemotingTypeCachedData m_cachedData;
-
-        internal RemotingTypeCachedData RemotingCache
-        {
-            get
-            {
-                // This grabs an internal copy of m_cachedData and uses
-                // that instead of looking at m_cachedData directly because
-                // the cache may get cleared asynchronously.  This prevents
-                // us from having to take a lock.
-                RemotingTypeCachedData cache = m_cachedData;
-                if (cache == null)
-                {
-                    cache = new RemotingTypeCachedData(this);
-                    RemotingTypeCachedData ret = Interlocked.CompareExchange(ref m_cachedData, cache, null);
-                    if (ret != null)
-                        cache = ret;
-                }
-                return cache;
-            }
-        }
-        #endregion
-#endif //FEATURE_REMOTING
-
         #region Static Members
 
         #region Internal
@@ -3660,19 +3624,8 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         protected override bool IsContextfulImpl() 
         {
-#if FEATURE_REMOTING
-            return RuntimeTypeHandle.IsContextful(this);
-#else
             return false;
-#endif
         }
-
-        /*
-        protected override bool IsMarshalByRefImpl() 
-        {
-            return GetTypeHandleInternal().IsMarshalByRef();
-        }
-        */
 
         protected override bool IsByRefImpl() 
         {
@@ -4113,24 +4066,7 @@ namespace System
                 // because it is faster than RuntimeType.IsValueType
                 Contract.Assert(!IsGenericParameter);
 
-                Type type = null;
-
-#if FEATURE_REMOTING
-                // For the remoting objects Object.GetType goes through proxy. Avoid the proxy call and just get
-                // the type directly. It is necessary to support proxies that do not handle GetType.
-                RealProxy realProxy = System.Runtime.Remoting.RemotingServices.GetRealProxy(value);
-
-                if (realProxy != null)
-                {
-                    type = realProxy.GetProxiedType();
-                }
-                else
-                {
-                    type = value.GetType();
-                }
-#else
-                type = value.GetType();
-#endif
+                Type type = value.GetType();
 
                 if (!Object.ReferenceEquals(type, this) && RuntimeTypeHandle.IsValueType(this))
                 {
@@ -4317,9 +4253,6 @@ namespace System
                     throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), nameof(bindingFlags));
                 #endregion
 
-#if FEATURE_REMOTING
-                if(!RemotingServices.IsTransparentProxy(target))
-#endif
                 {
                     #region Non-TransparentProxy case
                     if (name == null)
@@ -4333,14 +4266,6 @@ namespace System
                     return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
                     #endregion
                 }
-#if FEATURE_REMOTING
-                else
-                {
-                    #region TransparentProxy case
-                    return ((MarshalByRefObject)target).InvokeMember(name, bindingFlags, binder, providedArgs, modifiers, culture, namedParams);
-                    #endregion
-                }
-#endif // FEATURE_REMOTING
             }
 #endif // FEATURE_COMINTEROP && FEATURE_USE_LCID
             #endregion
@@ -4927,170 +4852,117 @@ namespace System
             
             Object server = null;
 
-            try
+            if (args == null)
+                args = EmptyArray<Object>.Value;
+
+            int argCnt = args.Length;
+
+            // Without a binder we need to do use the default binder...
+            if (binder == null)
+                binder = DefaultBinder;
+
+            // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
+            // so a call to GetMemberCons would fail
+            if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
+                && (IsGenericCOMObjectImpl() || IsValueType)) 
             {
+                server = CreateInstanceDefaultCtor((bindingAttr & BindingFlags.NonPublic) == 0 , false, true, ref stackMark);
+            }
+            else
+            {
+                ConstructorInfo[] candidates = GetConstructors(bindingAttr);
+                List<MethodBase> matches = new List<MethodBase>(candidates.Length);
+
+                // We cannot use Type.GetTypeArray here because some of the args might be null
+                Type[] argsType = new Type[argCnt];
+                for (int i = 0; i < argCnt; i++)
+                {
+                    if (args[i] != null)
+                    {
+                        argsType[i] = args[i].GetType();
+                    }
+                }
+
+                for(int i = 0; i < candidates.Length; i ++)
+                {
+                    if (FilterApplyConstructorInfo((RuntimeConstructorInfo)candidates[i], bindingAttr, CallingConventions.Any, argsType))
+                        matches.Add(candidates[i]);
+                }
+
+                MethodBase[] cons = new MethodBase[matches.Count];
+                matches.CopyTo(cons);
+                if (cons != null && cons.Length == 0)
+                    cons = null;
+
+                if (cons == null)
+                {
+                    throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
+                }
+
+                MethodBase invokeMethod;
+                Object state = null;
+
                 try
                 {
-                    // Store the activation attributes in thread local storage.
-                    // These attributes are later picked up by specialized 
-                    // activation services like remote activation services to
-                    // influence the activation.
-#if FEATURE_REMOTING                                    
-                    if(null != activationAttributes)
-                    {
-                        ActivationServices.PushActivationAttributes(this, activationAttributes);
-                    }
-#endif                    
-                    
-                    if (args == null)
-                        args = EmptyArray<Object>.Value;
+                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
+                }
+                catch (MissingMethodException) { invokeMethod = null; }
 
-                    int argCnt = args.Length;
-
-                    // Without a binder we need to do use the default binder...
-                    if (binder == null)
-                        binder = DefaultBinder;
-
-                    // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
-                    // so a call to GetMemberCons would fail
-                    if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
-                        && (IsGenericCOMObjectImpl() || IsValueType)) 
-                    {
-                        server = CreateInstanceDefaultCtor((bindingAttr & BindingFlags.NonPublic) == 0 , false, true, ref stackMark);
-                    }
-                    else 
-                    {
-                        ConstructorInfo[] candidates = GetConstructors(bindingAttr);
-                        List<MethodBase> matches = new List<MethodBase>(candidates.Length);
-
-                        // We cannot use Type.GetTypeArray here because some of the args might be null
-                        Type[] argsType = new Type[argCnt];
-                        for (int i = 0; i < argCnt; i++)
-                        {
-                            if (args[i] != null)
-                            {
-                                argsType[i] = args[i].GetType();
-                            }
-                        }
-
-                        for(int i = 0; i < candidates.Length; i ++)
-                        {
-                            if (FilterApplyConstructorInfo((RuntimeConstructorInfo)candidates[i], bindingAttr, CallingConventions.Any, argsType))
-                                matches.Add(candidates[i]);
-                        }
-
-                        MethodBase[] cons = new MethodBase[matches.Count];
-                        matches.CopyTo(cons);
-                        if (cons != null && cons.Length == 0)
-                            cons = null;
-
-                        if (cons == null) 
-                        {
-                            // Null out activation attributes before throwing exception
-#if FEATURE_REMOTING                                            
-                            if(null != activationAttributes)
-                            {
-                                ActivationServices.PopActivationAttributes(this);
-                                activationAttributes = null;
-                            }
-#endif                            
-                            throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
-                        }
-
-                        MethodBase invokeMethod;
-                        Object state = null;
-
-                        try
-                        {
-                            invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
-                        }
-                        catch (MissingMethodException) { invokeMethod = null; }
-
-                        if (invokeMethod == null)
-                        {
-#if FEATURE_REMOTING                                            
-                            // Null out activation attributes before throwing exception
-                            if(null != activationAttributes)
-                            {
-                                ActivationServices.PopActivationAttributes(this);
-                                activationAttributes = null;
-                            }                  
-#endif                                
-                            throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
-                        }
-
-                        // If we're creating a delegate, we're about to call a
-                        // constructor taking an integer to represent a target
-                        // method. Since this is very difficult (and expensive)
-                        // to verify, we're just going to demand UnmanagedCode
-                        // permission before allowing this. Partially trusted
-                        // clients can instead use Delegate.CreateDelegate,
-                        // which allows specification of the target method via
-                        // name or MethodInfo.
-                        //if (isDelegate)
-                        if (RuntimeType.DelegateType.IsAssignableFrom(invokeMethod.DeclaringType))
-                        {
-#if FEATURE_CORECLR
-                            // In CoreCLR, CAS is not exposed externally. So what we really are looking
-                            // for is to see if the external caller of this API is transparent or not.
-                            // We get that information from the fact that a Demand will succeed only if
-                            // the external caller is not transparent. 
-                            try
-                            {
-#pragma warning disable 618
-                                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-                            }
-                            catch
-                            {
-                                throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, Environment.GetResourceString("NotSupported_DelegateCreationFromPT")));
-                            }
-#else // FEATURE_CORECLR
-                            new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#endif // FEATURE_CORECLR
-                        }
-
-                        if (invokeMethod.GetParametersNoCopy().Length == 0)
-                        {
-                            if (args.Length != 0)
-                            {
-
-                                Contract.Assert((invokeMethod.CallingConvention & CallingConventions.VarArgs) == 
-                                                 CallingConventions.VarArgs); 
-                                throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, 
-                                    Environment.GetResourceString("NotSupported_CallToVarArg")));
-                            }
-
-                            // fast path??
-                            server = Activator.CreateInstance(this, true);
-                        }
-                        else
-                        {
-                            server = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
-                            if (state != null)
-                                binder.ReorderArgumentArray(ref args, state);
-                        }
-                    }
-                }                    
-                finally
+                if (invokeMethod == null)
                 {
-#if FEATURE_REMOTING                
-                    // Reset the TLS to null
-                    if(null != activationAttributes)
+                    throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
+                }
+
+                // If we're creating a delegate, we're about to call a
+                // constructor taking an integer to represent a target
+                // method. Since this is very difficult (and expensive)
+                // to verify, we're just going to demand UnmanagedCode
+                // permission before allowing this. Partially trusted
+                // clients can instead use Delegate.CreateDelegate,
+                // which allows specification of the target method via
+                // name or MethodInfo.
+                //if (isDelegate)
+                if (RuntimeType.DelegateType.IsAssignableFrom(invokeMethod.DeclaringType))
+                {
+                    // In CoreCLR, CAS is not exposed externally. So what we really are looking
+                    // for is to see if the external caller of this API is transparent or not.
+                    // We get that information from the fact that a Demand will succeed only if
+                    // the external caller is not transparent. 
+                    try
                     {
-                          ActivationServices.PopActivationAttributes(this);
-                          activationAttributes = null;
+#pragma warning disable 618
+                        new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
+#pragma warning restore 618
                     }
-#endif                    
+                    catch
+                    {
+                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, Environment.GetResourceString("NotSupported_DelegateCreationFromPT")));
+                    }
+                }
+
+                if (invokeMethod.GetParametersNoCopy().Length == 0)
+                {
+                    if (args.Length != 0)
+                    {
+
+                        Contract.Assert((invokeMethod.CallingConvention & CallingConventions.VarArgs) == 
+                                            CallingConventions.VarArgs); 
+                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, 
+                            Environment.GetResourceString("NotSupported_CallToVarArg")));
+                    }
+
+                    // fast path??
+                    server = Activator.CreateInstance(this, true);
+                }
+                else
+                {
+                    server = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
+                    if (state != null)
+                        binder.ReorderArgumentArray(ref args, state);
                 }
             }
-            catch (Exception)
-            {
-                throw;
-            }
-            
-            //Console.WriteLine(server);
-            return server;                                
+
+            return server;
         }
 
         // the cache entry
@@ -5346,213 +5218,6 @@ namespace System
         #endregion
 
         #region COM
-#if FEATURE_COMINTEROP && FEATURE_REMOTING
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private Object ForwardCallToInvokeMember(String memberName, BindingFlags flags, Object target, int[] aWrapperTypes, ref MessageData msgData)
-        {
-            ParameterModifier[] aParamMod = null;
-            Object ret = null;
-
-            // Allocate a new message
-            Message reqMsg = new Message();
-            reqMsg.InitFields(msgData);
-
-            // Retrieve the required information from the message object.
-            MethodInfo meth = (MethodInfo)reqMsg.GetMethodBase();
-            Object[] aArgs = reqMsg.Args;
-            int cArgs = aArgs.Length;
-
-            // Retrieve information from the method we are invoking on.
-            ParameterInfo[] aParams = meth.GetParametersNoCopy();
-
-            // If we have arguments, then set the byref flags to true for byref arguments. 
-            // We also wrap the arguments that require wrapping.
-            if (cArgs > 0)
-            {
-                ParameterModifier paramMod = new ParameterModifier(cArgs);
-                for (int i = 0; i < cArgs; i++)
-                {
-                    if (aParams[i].ParameterType.IsByRef)
-                        paramMod[i] = true;
-                }
-
-                aParamMod = new ParameterModifier[1];
-                aParamMod[0] = paramMod;
-
-                if (aWrapperTypes != null)
-                    WrapArgsForInvokeCall(aArgs, aWrapperTypes);
-            }
-            
-            // If the method has a void return type, then set the IgnoreReturn binding flag.
-            if (Object.ReferenceEquals(meth.ReturnType, typeof(void)))
-                flags |= BindingFlags.IgnoreReturn;
-
-            try
-            {
-                // Invoke the method using InvokeMember().
-                ret = InvokeMember(memberName, flags, null, target, aArgs, aParamMod, null, null);
-            }
-            catch (TargetInvocationException e)
-            {
-                // For target invocation exceptions, we need to unwrap the inner exception and
-                // re-throw it.
-                throw e.InnerException;
-            }
-
-            // Convert each byref argument that is not of the proper type to
-            // the parameter type using the OleAutBinder.
-            for (int i = 0; i < cArgs; i++)
-            {
-                if (aParamMod[0][i] && aArgs[i] != null)
-                {
-                    // The parameter is byref.
-                    Type paramType = aParams[i].ParameterType.GetElementType();
-                    if (!Object.ReferenceEquals(paramType, aArgs[i].GetType()))
-                        aArgs[i] = ForwardCallBinder.ChangeType(aArgs[i], paramType, null);
-                }
-            }
-
-            // If the return type is not of the proper type, then convert it
-            // to the proper type using the OleAutBinder.
-            if (ret != null)
-            {
-                Type retType = meth.ReturnType;
-                if (!Object.ReferenceEquals(retType, ret.GetType()))
-                    ret = ForwardCallBinder.ChangeType(ret, retType, null);
-            }
-
-            // Propagate the out parameters
-            RealProxy.PropagateOutParameters(reqMsg, aArgs, ret);
-
-            // Return the value returned by the InvokeMember call.
-            return ret;
-        }
-
-        [SecuritySafeCritical]
-        private void WrapArgsForInvokeCall(Object[] aArgs, int[] aWrapperTypes)
-        {
-            int cArgs = aArgs.Length;
-            for (int i = 0; i < cArgs; i++)
-            {
-                if (aWrapperTypes[i] == 0)
-                    continue;
-
-                if (((DispatchWrapperType)aWrapperTypes[i] & DispatchWrapperType.SafeArray) != 0)
-                {
-                    Type wrapperType = null;
-                    bool isString = false;
-
-                    // Determine the type of wrapper to use.
-                    switch ((DispatchWrapperType)aWrapperTypes[i] & ~DispatchWrapperType.SafeArray)
-                    {
-                        case DispatchWrapperType.Unknown:
-                            wrapperType = typeof(UnknownWrapper);
-                            break;
-                        case DispatchWrapperType.Dispatch:
-                            wrapperType = typeof(DispatchWrapper);
-                            break;
-                        case DispatchWrapperType.Error:   
-                            wrapperType = typeof(ErrorWrapper);
-                            break;
-                        case DispatchWrapperType.Currency:
-                            wrapperType = typeof(CurrencyWrapper);
-                            break;
-                        case DispatchWrapperType.BStr:
-                            wrapperType = typeof(BStrWrapper);
-                            isString = true;
-                            break;
-                        default:
-                            Contract.Assert(false, "[RuntimeType.WrapArgsForInvokeCall]Invalid safe array wrapper type specified.");
-                            break;
-                    }
-
-                    // Allocate the new array of wrappers.
-                    Array oldArray = (Array)aArgs[i];
-                    int numElems = oldArray.Length;
-                    Object[] newArray = (Object[])Array.UnsafeCreateInstance(wrapperType, numElems);
-
-                    // Retrieve the ConstructorInfo for the wrapper type.
-                    ConstructorInfo wrapperCons;
-                    if(isString)
-                    {
-                         wrapperCons = wrapperType.GetConstructor(new Type[] {typeof(String)});
-                    }
-                    else
-                    {
-                         wrapperCons = wrapperType.GetConstructor(new Type[] {typeof(Object)});
-                    }
-                
-                    // Wrap each of the elements of the array.
-                    for (int currElem = 0; currElem < numElems; currElem++)
-                    {
-                        if(isString)
-                        {
-                            newArray[currElem] = wrapperCons.Invoke(new Object[] {(String)oldArray.GetValue(currElem)});
-                        }
-                        else
-                        {
-                            newArray[currElem] = wrapperCons.Invoke(new Object[] {oldArray.GetValue(currElem)});
-                        }
-                    }
-
-                    // Update the argument.
-                    aArgs[i] = newArray;
-                }
-                else
-                {                           
-                    // Determine the wrapper to use and then wrap the argument.
-                    switch ((DispatchWrapperType)aWrapperTypes[i])
-                    {
-                        case DispatchWrapperType.Unknown:
-                            aArgs[i] = new UnknownWrapper(aArgs[i]);
-                            break;
-                        case DispatchWrapperType.Dispatch:
-                            aArgs[i] = new DispatchWrapper(aArgs[i]);
-                            break;
-                        case DispatchWrapperType.Error:   
-                            aArgs[i] = new ErrorWrapper(aArgs[i]);
-                            break;
-                        case DispatchWrapperType.Currency:
-                            aArgs[i] = new CurrencyWrapper(aArgs[i]);
-                            break;
-                        case DispatchWrapperType.BStr:
-                            aArgs[i] = new BStrWrapper((String)aArgs[i]);
-                            break;
-                        default:
-                            Contract.Assert(false, "[RuntimeType.WrapArgsForInvokeCall]Invalid wrapper type specified.");
-                            break;
-                    }
-                }
-            }
-        }
-
-        private OleAutBinder ForwardCallBinder 
-        {
-            get 
-            {
-                // Synchronization is not required.
-                if (s_ForwardCallBinder == null)
-                    s_ForwardCallBinder = new OleAutBinder();
-
-                return s_ForwardCallBinder;
-            }
-        }
-
-        [Flags]
-        private enum DispatchWrapperType : int
-        {
-            // This enum must stay in sync with the DispatchWrapperType enum defined in MLInfo.h
-            Unknown         = 0x00000001,
-            Dispatch        = 0x00000002,
-            Record          = 0x00000004,
-            Error           = 0x00000008,
-            Currency        = 0x00000010,
-            BStr            = 0x00000020,
-            SafeArray       = 0x00010000
-        }
-
-        private static volatile OleAutBinder s_ForwardCallBinder;
-#endif // FEATURE_COMINTEROP && FEATURE_REMOTING
         #endregion
     }
 

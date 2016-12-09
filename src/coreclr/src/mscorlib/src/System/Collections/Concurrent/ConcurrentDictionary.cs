@@ -28,7 +28,6 @@ using System.Security.Permissions;
 
 namespace System.Collections.Concurrent
 {
-
     /// <summary>
     /// Represents a thread-safe collection of keys and values.
     /// </summary>
@@ -38,9 +37,6 @@ namespace System.Collections.Concurrent
     /// All public and protected members of <see cref="ConcurrentDictionary{TKey,TValue}"/> are thread-safe and may be used
     /// concurrently from multiple threads.
     /// </remarks>
-#if !FEATURE_CORECLR
-    [Serializable]
-#endif
     [ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
@@ -68,41 +64,20 @@ namespace System.Collections.Concurrent
                 m_comparer = comparer;
             }
         }
-#if !FEATURE_CORECLR
-        [NonSerialized]
-#endif
+
         private volatile Tables m_tables; // Internal tables of the dictionary       
         // NOTE: this is only used for compat reasons to serialize the comparer.
         // This should not be accessed from anywhere else outside of the serialization methods.
         internal IEqualityComparer<TKey> m_comparer; 
-#if !FEATURE_CORECLR
-        [NonSerialized]
-#endif
         private readonly bool m_growLockArray; // Whether to dynamically increase the size of the striped lock
 
         // How many times we resized becaused of collisions. 
         // This is used to make sure we don't resize the dictionary because of multi-threaded Add() calls
         // that generate collisions. Whenever a GrowTable() should be the only place that changes this
-#if !FEATURE_CORECLR
-        // The field should be have been marked as NonSerialized but because we shipped it without that attribute in 4.5.1.
-        // we can't add it back without breaking compat. To maximize compat we are going to keep the OptionalField attribute 
-        // This will prevent cases where the field was not serialized.
-        [OptionalField]
-#endif
         private int m_keyRehashCount;
 
-#if !FEATURE_CORECLR
-        [NonSerialized]
-#endif
         private int m_budget; // The maximum number of elements per lock before a resize operation is triggered
 
-#if !FEATURE_CORECLR // These fields are not used in CoreCLR
-        private KeyValuePair<TKey, TValue>[] m_serializationArray; // Used for custom serialization
-
-        private int m_serializationConcurrencyLevel; // used to save the concurrency level in serialization
-
-        private int m_serializationCapacity; // used to save the capacity in serialization
-#endif
         // The default concurrency level is DEFAULT_CONCURRENCY_MULTIPLIER * #CPUs. The higher the
         // DEFAULT_CONCURRENCY_MULTIPLIER, the more concurrent writes can take place without interference
         // and blocking, but also the more expensive operations that require all locks become (e.g. table
@@ -803,11 +778,6 @@ namespace System.Collections.Concurrent
 
                 bool resizeDesired = false;
                 bool lockTaken = false;
-#if FEATURE_RANDOMIZED_STRING_HASHING
-#if !FEATURE_CORECLR                
-                bool resizeDueToCollisions = false;
-#endif // !FEATURE_CORECLR
-#endif
 
                 try
                 {
@@ -820,12 +790,6 @@ namespace System.Collections.Concurrent
                     {
                         continue;
                     }
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-#if !FEATURE_CORECLR
-                    int collisionCount = 0;
-#endif // !FEATURE_CORECLR
-#endif
 
                     // Try to find this key in the bucket
                     Node prev = null;
@@ -864,23 +828,7 @@ namespace System.Collections.Concurrent
                             return false;
                         }
                         prev = node;
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-#if !FEATURE_CORECLR
-                        collisionCount++;
-#endif // !FEATURE_CORECLR
-#endif
                     }
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-#if !FEATURE_CORECLR
-                    if(collisionCount > HashHelpers.HashCollisionThreshold && HashHelpers.IsWellKnownEqualityComparer(comparer)) 
-                    {
-                        resizeDesired = true;
-                        resizeDueToCollisions = true;
-                    }
-#endif // !FEATURE_CORECLR
-#endif
 
                     // The key was not found in the bucket. Insert the key-value pair.
                     Volatile.Write<Node>(ref tables.m_buckets[bucketNo], new Node(key, value, hashcode, tables.m_buckets[bucketNo]));
@@ -916,16 +864,7 @@ namespace System.Collections.Concurrent
                 if (resizeDesired)
                 {
 #if FEATURE_RANDOMIZED_STRING_HASHING
-#if !FEATURE_CORECLR
-                    if (resizeDueToCollisions)
-                    {
-                        GrowTable(tables, (IEqualityComparer<TKey>)HashHelpers.GetRandomizedEqualityComparer(comparer), true, m_keyRehashCount);
-                    }
-                    else
-#endif // !FEATURE_CORECLR
-                    {
-                        GrowTable(tables, tables.m_comparer, false, m_keyRehashCount);
-                    }
+                    GrowTable(tables, tables.m_comparer, false, m_keyRehashCount);
 #else
                     GrowTable(tables, tables.m_comparer, false, m_keyRehashCount);
 #endif
@@ -1850,13 +1789,6 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void AcquireAllLocks(ref int locksAcquired)
         {
-#if !FEATURE_CORECLR
-            if (CDSCollectionETWBCLProvider.Log.IsEnabled())
-            {
-                CDSCollectionETWBCLProvider.Log.ConcurrentDictionary_AcquiringAllLocks(m_tables.m_buckets.Length);
-            }
-#endif //!FEATURE_CORECLR
-
             // First, acquire lock 0
             AcquireLocks(0, 1, ref locksAcquired);
 
@@ -2038,46 +1970,5 @@ namespace System.Collections.Concurrent
                 m_enumerator.Reset();
             }
         }
-
-#if !FEATURE_CORECLR
-        /// <summary>
-        /// Get the data array to be serialized
-        /// </summary>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            Tables tables = m_tables;
-
-            // save the data into the serialization array to be saved
-            m_serializationArray = ToArray();
-            m_serializationConcurrencyLevel = tables.m_locks.Length;
-            m_serializationCapacity = tables.m_buckets.Length;
-            m_comparer = (IEqualityComparer<TKey>)HashHelpers.GetEqualityComparerForSerialization(tables.m_comparer);
-        }
-
-        /// <summary>
-        /// Construct the dictionary from a previously serialized one
-        /// </summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            KeyValuePair<TKey, TValue>[] array = m_serializationArray;
-
-            var buckets = new Node[m_serializationCapacity];
-            var countPerLock = new int[m_serializationConcurrencyLevel];
-
-            var locks = new object[m_serializationConcurrencyLevel];
-            for (int i = 0; i < locks.Length; i++)
-            {
-                locks[i] = new object();
-            }
-
-            m_tables = new Tables(buckets, locks, countPerLock, m_comparer);
-
-            InitializeFromCollection(array);
-            m_serializationArray = null;
-
-        }
-#endif
     }
 }

@@ -2,17 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: 
-**
-**
-===========================================================*/
-
 using System;
 using System.Collections;
 using System.Security;
@@ -24,12 +13,10 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
-namespace System.IO {
+namespace System.IO
+{
 #if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-#if !FEATURE_CORECLR
-    [FileIOPermissionAttribute(SecurityAction.InheritanceDemand,Unrestricted=true)]
 #endif
     [ComVisible(true)]
     public abstract class FileSystemInfo : MarshalByRefObject, ISerializable {
@@ -47,13 +34,11 @@ namespace System.IO {
         protected String OriginalPath;      // path passed in by the user
         private String _displayPath = "";   // path that can be displayed to the user
 
-#if FEATURE_CORECLR
 #if FEATURE_CORESYSTEM
         [System.Security.SecurityCritical]
 #else
         [System.Security.SecuritySafeCritical]
 #endif //FEATURE_CORESYSTEM
-#endif
         protected FileSystemInfo()
         {
         }
@@ -91,12 +76,9 @@ namespace System.IO {
                     demandDir = Directory.GetDemandDir(FullPath, true);
                 else
                     demandDir = FullPath;
-#if FEATURE_CORECLR
+
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandDir);
                 sourceState.EnsureState();
-#else
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandDir).Demand();
-#endif
                 return FullPath;
             }
         }
@@ -111,9 +93,6 @@ namespace System.IO {
                     demandDir = Directory.GetDemandDir(FullPath, true);
                 else
                     demandDir = FullPath;
-#if !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandDir).Demand();
-#endif
                 return FullPath;
             }
         }
@@ -156,23 +135,16 @@ namespace System.IO {
                     // depends on the security check in get_CreationTimeUtc
                     return CreationTimeUtc.ToLocalTime();
             }
-#if !FEATURE_CORECLR
-            set
-            {
-                CreationTimeUtc = value.ToUniversalTime();
-            }
-#endif // !FEATURE_CORECLR
         }
 
         [ComVisible(false)]
        public DateTime CreationTimeUtc {
            [System.Security.SecuritySafeCritical]
             get {
-#if FEATURE_CORECLR
                 // get_CreationTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif
+
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
@@ -185,17 +157,7 @@ namespace System.IO {
                 return DateTime.FromFileTimeUtc(fileTime);
                 
             }
-#if !FEATURE_CORECLR
-            set {
-                if (this is DirectoryInfo)
-                    Directory.SetCreationTimeUtc(FullPath,value);
-                else
-                    File.SetCreationTimeUtc(FullPath,value);
-                _dataInitialised = -1;
-            }
-#endif // !FEATURE_CORECLR
         }
-
 
         public DateTime LastAccessTime
         {
@@ -212,11 +174,10 @@ namespace System.IO {
         public DateTime LastAccessTimeUtc {
             [System.Security.SecuritySafeCritical]
             get {
-#if FEATURE_CORECLR
                 // get_LastAccessTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif
+
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
@@ -231,13 +192,6 @@ namespace System.IO {
             }
 
             set {
-#if !FEATURE_CORECLR
-                if (this is DirectoryInfo)
-                    Directory.SetLastAccessTimeUtc(FullPath,value);
-                else
-                    File.SetLastAccessTimeUtc(FullPath,value);
-                _dataInitialised = -1;
-#endif // !FEATURE_CORECLR
             }
         }
 
@@ -257,11 +211,9 @@ namespace System.IO {
         public DateTime LastWriteTimeUtc {
             [System.Security.SecuritySafeCritical]
             get {
-#if FEATURE_CORECLR
                 // get_LastWriteTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
@@ -276,13 +228,6 @@ namespace System.IO {
             }
 
             set {
-#if !FEATURE_CORECLR
-                if (this is DirectoryInfo)
-                    Directory.SetLastWriteTimeUtc(FullPath,value);
-                else
-                    File.SetLastWriteTimeUtc(FullPath,value);
-                _dataInitialised = -1;
-#endif // !FEATURE_CORECLR
             }
         }
 
@@ -296,10 +241,9 @@ namespace System.IO {
             [System.Security.SecuritySafeCritical]
             get
             {
-#if FEATURE_CORECLR
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif
+
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh(); // Call refresh to intialise the data
@@ -310,15 +254,9 @@ namespace System.IO {
 
                 return (FileAttributes) _data.fileAttributes;
             }
-#if FEATURE_CORECLR
+
             [System.Security.SecurityCritical] // auto-generated
-#else
-            [System.Security.SecuritySafeCritical]
-#endif
             set {
-#if !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.Write, FullPath).Demand();
-#endif
                 bool r = Win32Native.SetFileAttributes(FullPath, (int) value);
                 if (!r) {
                     int hr = Marshal.GetLastWin32Error();
@@ -341,10 +279,6 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-#if !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, FullPath).Demand();
-#endif
-
             info.AddValue("OriginalPath", OriginalPath, typeof(String));
             info.AddValue("FullPath", FullPath, typeof(String));
         }

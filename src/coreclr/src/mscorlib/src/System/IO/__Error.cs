@@ -97,9 +97,6 @@ namespace System.IO {
             bool safeToReturn = false;
             try {
                 if (!isInvalidPath) {
-#if !FEATURE_CORECLR
-                    new FileIOPermission(FileIOPermissionAccess.PathDiscovery, new String[] { path }, false, false).Demand();
-#endif
                     safeToReturn = true;
                 }
             }

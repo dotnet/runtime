@@ -10,10 +10,6 @@ namespace System.Globalization
     using System.Collections.Generic;
     using System.Text;
     using System.Threading;
-#if !FEATURE_CORECLR
-    using System.Reflection;
-    using System.Resources;
-#endif
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
@@ -466,23 +462,6 @@ namespace System.Globalization
         }
         private volatile static CultureData s_Invariant;
 
-
-#if !FEATURE_CORECLR
-        internal static volatile ResourceSet MscorlibResourceSet;
-#endif
-
-#if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]  // auto-generated
-        private static bool IsResourcePresent(String resourceKey)
-        {
-            if (MscorlibResourceSet == null)
-            {
-                MscorlibResourceSet = new ResourceSet(typeof(Environment).Assembly.GetManifestResourceStream("mscorlib.resources"));
-            }
-            return MscorlibResourceSet.GetString(resourceKey) != null;
-        }
-#endif
-
         ///////////////
         // Constructors //
         ///////////////
@@ -549,13 +528,7 @@ namespace System.Globalization
             // Ask native code if that one's real
             if (culture.InitCultureData() == false)
             {
-#if !FEATURE_CORECLR
-                if (culture.InitCompatibilityCultureData() == false
-                 && culture.InitLegacyAlternateSortData() == false)
-#endif
-                {
-                    return null;
-                }
+                return null;
             }
 
             return culture;
@@ -567,138 +540,9 @@ namespace System.Globalization
             {
                 return false;
             }
-
-#if !FEATURE_CORECLR
-            if (CultureInfo.IsTaiwanSku)
-            {
-                TreatTaiwanParentChainAsHavingTaiwanAsSpecific();
-            }
-#endif
             return true;
         }
 
-#if !FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical]
-        private void TreatTaiwanParentChainAsHavingTaiwanAsSpecific()
-        {
-            if (IsNeutralInParentChainOfTaiwan() && IsOsPriorToWin7() && !IsReplacementCulture)
-            {
-                // force population of fields that should have information that is
-                // different than zh-TW:
-                string s = SNATIVELANGUAGE;
-                s = SENGLISHLANGUAGE;
-                s = SLOCALIZEDLANGUAGE;
-                s = STEXTINFO;
-                s = SCOMPAREINFO;
-                s = FONTSIGNATURE;
-                int i = IDEFAULTANSICODEPAGE;
-                i = IDEFAULTOEMCODEPAGE;
-                i = IDEFAULTMACCODEPAGE;
-
-                this.sSpecificCulture = "zh-TW";
-                this.sWindowsName = "zh-TW";
-            }
-        }
-
-        private bool IsNeutralInParentChainOfTaiwan()
-        {
-            return this.sRealName == "zh" || this.sRealName == "zh-Hant";
-  }
-
-        static readonly Version s_win7Version = new Version(6, 1);
-        static private bool IsOsPriorToWin7()
-        {
-            return Environment.OSVersion.Platform == PlatformID.Win32NT &&
-                   Environment.OSVersion.Version < s_win7Version;
-        }
-        static private bool IsOsWin7OrPrior()
-        {
-            return Environment.OSVersion.Platform == PlatformID.Win32NT &&
-                Environment.OSVersion.Version < new Version(6, 2); // Win7 is 6.1.Build.Revision so we have to check for anything less than 6.2
-        }
-
-        private bool InitCompatibilityCultureData()
-        {
-            // for compatibility handle the deprecated ids: zh-chs, zh-cht
-            string cultureName = this.sRealName;
-
-            string fallbackCultureName;
-            string realCultureName;
-            switch (AnsiToLower(cultureName))
-            {
-                case "zh-chs":
-                    fallbackCultureName = "zh-Hans";
-                    realCultureName = "zh-CHS";
-                    break;
-                case "zh-cht":
-                    fallbackCultureName = "zh-Hant";
-                    realCultureName = "zh-CHT";
-                    break;
-                default:
-                    return false;
-            }
-
-            this.sRealName = fallbackCultureName;
-            if (InitCultureData() == false)
-            {
-                return false;
-            }
-            // fixup our data
-            this.sName = realCultureName; // the name that goes back to the user
-            this.sParent = fallbackCultureName;
-            this.bFramework = true;
-
-            return true;
-        }
-
-        private bool InitLegacyAlternateSortData()
-        {
-            if (!CompareInfo.IsLegacy20SortingBehaviorRequested)
-            {
-                return false;
-            }
-
-            // For V2 compatibility, handle deprecated alternate sorts
-            string cultureName = this.sRealName;
-
-            switch (AnsiToLower(cultureName))
-            {
-                case "ko-kr_unicod":
-                    cultureName = "ko-KR_unicod";
-                    this.sRealName = "ko-KR";
-                    this.iLanguage = 0x00010412;
-                    break;
-                case "ja-jp_unicod":
-                    cultureName = "ja-JP_unicod";
-                    this.sRealName = "ja-JP";
-                    this.iLanguage = 0x00010411;
-                    break;
-                case "zh-hk_stroke":
-                    cultureName = "zh-HK_stroke";
-                    this.sRealName = "zh-HK";
-                    this.iLanguage = 0x00020c04;
-                    break;
-                default:
-                    return false;
-            }
-
-            if (nativeInitCultureData(this) == false)
-            {
-                return false;
-            }
-
-            this.sRealName = cultureName;
-            this.sCompareInfo = cultureName;
-            this.bFramework = true;
-
-            return true;
-        }
-
-#if FEATURE_WIN32_REGISTRY
-        private static String s_RegionKey = @"System\CurrentControlSet\Control\Nls\RegionMapping";
-#endif // FEATURE_WIN32_REGISTRY
-
-#endif // !FEATURE_CORECLR
         // Cache of regions we've already looked up
         private static volatile Dictionary<String, CultureData> s_cachedRegions;
 
@@ -749,41 +593,6 @@ namespace System.Globalization
             //
             // Not found in the hash table, look it up the hard way
             //
-#if !FEATURE_CORECLR
-#if FEATURE_WIN32_REGISTRY
-            // First try the registry in case there are overrides of our table
-            try
-            {
-                // Open in read-only mode.
-                // Use InternalOpenSubKey so that we avoid the security check.
-                Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.LocalMachine.InternalOpenSubKey(s_RegionKey, false);
-
-                if (key != null)
-                {
-                    try
-                    {
-                        Object value = key.InternalGetValue(cultureName, null, false, false);
-
-                        if (value != null)
-                        {
-                            // Get the name of the locale to try.
-                            String specificForRegion = value.ToString();
-
-                            // See if it's real
-                            retVal = GetCultureData(specificForRegion, useUserOverride);
-                        }
-                    }
-                    finally
-                    {
-                        key.Close();
-                    }
-                }
-            }
-            // If this fails for any reason, we'll just ignore it, likely it just isn't there.
-            catch (ObjectDisposedException) { }
-            catch (ArgumentException) { }
-#endif // FEATURE_WIN32_REGISTRY
-#endif // !FEATURE_CORECLR
 
             // If not a valid mapping from the registry we'll have to try the hard coded table
             if (retVal == null || (retVal.IsNeutralCulture == true))
@@ -851,25 +660,6 @@ namespace System.Globalization
             String localeName = null;
             CultureData retVal = null;
 
-#if !FEATURE_CORECLR
-            // If V2 legacy sort is requested, then provide deprecated alternate sorts
-            if (CompareInfo.IsLegacy20SortingBehaviorRequested)
-            {
-                switch (culture)
-                {
-                    case 0x00010412:
-                        localeName = "ko-KR_unicod";
-                        break;
-                    case 0x00010411:
-                        localeName = "ja-JP_unicod";
-                        break;
-                    case 0x00020c04:
-                        localeName = "zh-HK_stroke";
-                        break;
-                }
-            }
-#endif
-
             if (localeName == null)
             {
                 // Convert the lcid to a name, then use that
@@ -886,19 +676,6 @@ namespace System.Globalization
             }
             else
             {
-#if !FEATURE_CORECLR
-                switch (localeName)
-                {
-                    // for compatibility with Whidbey, when requesting
-                    // a locale from LCID, return the old localeName
-                    case "zh-Hans":
-                        localeName = "zh-CHS";
-                        break;
-                    case "zh-Hant":
-                        localeName = "zh-CHT";
-                        break;
-                }
-#endif
                 // Valid name, use it
                 retVal = GetCultureData(localeName, bUseUserOverride);
             }
@@ -972,29 +749,12 @@ namespace System.Globalization
 
             int arrayLength = cultureNames.Length;
 
-#if !FEATURE_CORECLR
-            if ((types & (CultureTypes.NeutralCultures | CultureTypes.FrameworkCultures)) != 0) // add zh-CHT and zh-CHS
-            {
-                arrayLength += 2;
-            }
-#endif // FEATURE_CORECLR
-
             CultureInfo[] cultures = new CultureInfo[arrayLength];
 
             for (int i = 0; i < cultureNames.Length; i++)
             {
                 cultures[i] = new CultureInfo(cultureNames[i]);
             }
-
-#if !FEATURE_CORECLR
-            if ((types & (CultureTypes.NeutralCultures | CultureTypes.FrameworkCultures)) != 0) // add zh-CHT and zh-CHS
-            {
-                Contract.Assert(arrayLength == cultureNames.Length + 2, "CultureData.nativeEnumCultureNames() Incorrect array size");
-                cultures[cultureNames.Length] = new CultureInfo("zh-CHS");
-                cultures[cultureNames.Length + 1] = new CultureInfo("zh-CHT");
-            }
-#endif // FEATURE_CORECLR
-
 #pragma warning restore 618
 
             return cultures;
@@ -1117,24 +877,6 @@ namespace System.Globalization
                 {
                     // Ask using the real name, so that we get parents of neutrals
                     this.sParent = DoGetLocaleInfo(this.sRealName, LOCALE_SPARENT);
-
-#if !FEATURE_CORECLR
-                    // for compatibility, the chain should be:
-                    // zh-CN -> zh-CHS -> zh-Hans -> zh
-                    // zh-TW -> zh-CHT -> zh-Hant -> zh
-                    Contract.Assert(this.sName != "zh-CHS" && this.sName != "zh-CHT",
-                                    "sParent should have been initialized for zh-CHS and zh-CHT when they were constructed, otherwise we get recursion");
-                    switch (this.sParent)
-                    {
-                        case "zh-Hans":
-                            this.sParent = "zh-CHS";
-                            break;
-                        case "zh-Hant":
-                            this.sParent = "zh-CHT";
-                            break;
-                    }
-#endif
-
                 }
                 return this.sParent;
             }
@@ -1148,13 +890,6 @@ namespace System.Globalization
             {
                 if (this.sLocalizedDisplayName == null)
                 {
-#if !FEATURE_CORECLR
-                    String resourceKey = "Globalization.ci_" + this.sName;
-                    if (IsResourcePresent(resourceKey))
-                    {
-                        this.sLocalizedDisplayName = Environment.GetResourceString(resourceKey);
-                    }
-#endif
                     // If it hasn't been found (Windows 8 and up), fallback to the system
                     if (String.IsNullOrEmpty(this.sLocalizedDisplayName))
                     {
@@ -1193,17 +928,6 @@ namespace System.Globalization
                     if (this.IsNeutralCulture)
                     {
                         this.sEnglishDisplayName = this.SENGLISHLANGUAGE;
-#if !FEATURE_CORECLR
-                        // differentiate the legacy display names
-                        switch (this.sName)
-                        {
-                            case "zh-CHS":
-                            case "zh-CHT":
-                                this.sEnglishDisplayName += " Legacy";
-                                break;
-                        }
-#endif
-
                     }
                     else
                     {
@@ -1246,32 +970,10 @@ namespace System.Globalization
                     if (this.IsNeutralCulture)
                     {
                         this.sNativeDisplayName = this.SNATIVELANGUAGE;
-#if !FEATURE_CORECLR
-                        // differentiate the legacy display names
-                        switch (this.sName)
-                        {
-                            case "zh-CHS":
-                                this.sNativeDisplayName += " \u65E7\u7248";
-                                break;
-                            case "zh-CHT":
-                                this.sNativeDisplayName += " \u820A\u7248";
-                                break;
-                        }
-#endif
                     }
                     else
                     {
-#if !FEATURE_CORECLR
-                        if (IsIncorrectNativeLanguageForSinhala())
-                        {
-                            // work around bug in Windows 7 for native name of Sinhala
-                            this.sNativeDisplayName ="\x0dc3\x0dd2\x0d82\x0dc4\x0dbd (\x0DC1\x0DCA\x200D\x0DBB\x0DD3\x0020\x0DBD\x0D82\x0D9A\x0DCF)";
-                        }
-                        else
-#endif
-                        {
-                            this.sNativeDisplayName = DoGetLocaleInfo(LOCALE_SNATIVEDISPLAYNAME);
-                        }
+                        this.sNativeDisplayName = DoGetLocaleInfo(LOCALE_SNATIVEDISPLAYNAME);
 
                         // if it isn't found build one:
                         if (String.IsNullOrEmpty(this.sNativeDisplayName))
@@ -1388,13 +1090,6 @@ namespace System.Globalization
             {
                 if (this.sNativeLanguage == null)
                 {
-#if !FEATURE_CORECLR
-                    if (IsIncorrectNativeLanguageForSinhala())
-                    {
-                        this.sNativeLanguage = "\x0dc3\x0dd2\x0d82\x0dc4\x0dbd";
-                    }
-                    else
-#endif
                     {
                         this.sNativeLanguage = DoGetLocaleInfo(LOCALE_SNATIVELANGUAGENAME);
                     }
@@ -1402,15 +1097,6 @@ namespace System.Globalization
                 return this.sNativeLanguage;
             }
         }
-
-#if !FEATURE_CORECLR
-        private bool IsIncorrectNativeLanguageForSinhala()
-        {
-            return IsOsWin7OrPrior() 
-                && (sName == "si-LK" || sName == "si")
-                && !IsReplacementCulture;
-        }
-#endif
 
         ///////////
         // Region //
@@ -1460,13 +1146,6 @@ namespace System.Globalization
             {
                 if (this.sLocalizedCountry == null)
                 {
-#if !FEATURE_CORECLR
-                    String resourceKey = "Globalization.ri_" + this.SREGIONNAME;
-                    if (IsResourcePresent(resourceKey))
-                    {
-                        this.sLocalizedCountry = Environment.GetResourceString(resourceKey);
-                    }
-#endif
                     // If it hasn't been found (Windows 8 and up), fallback to the system
                     if (String.IsNullOrEmpty(this.sLocalizedCountry))
                     {
@@ -2297,14 +1976,6 @@ namespace System.Globalization
             {
                 Contract.Assert(this.sWindowsName != null, "[CultureData.GetCalendar] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
                 calendarData = new CalendarData(this.sWindowsName, calendarId, this.UseUserOverride);
-#if !FEATURE_CORECLR
-                //Work around issue where Win7 data for MonthDay contains invalid two sets of data separated by semicolon
-                //even though MonthDay is not enumerated
-                if (IsOsWin7OrPrior() && !IsSupplementalCustomCulture && !IsReplacementCulture)
-                {
-                    calendarData.FixupWin7MonthDaySemicolonBug();
-                }
-#endif
                 calendars[calendarIndex] = calendarData;
             }
 
@@ -3060,17 +2731,6 @@ namespace System.Globalization
             {
                 nfi.currencyDecimalSeparator = nfi.numberDecimalSeparator;
             }
-
-#if !FEATURE_CORECLR
-            if ((932 == this.IDEFAULTANSICODEPAGE) ||
-               (949 == this.IDEFAULTANSICODEPAGE))
-            {
-                // Legacy behavior for cultures that use Japanese/Korean default ANSI code pages
-                // Note that this is a code point, not a character.  On Japanese/Korean machines this
-                // will be rendered as their currency symbol, not rendered as a "\"
-                nfi.ansiCurrencySymbol = "\x5c";
-            }
-#endif // !FEATURE_CORECLR
         }
 
         static private int ConvertFirstDayOfWeekMonToSun(int iTemp)

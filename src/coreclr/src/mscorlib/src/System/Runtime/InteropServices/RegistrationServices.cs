@@ -937,20 +937,12 @@ namespace System.Runtime.InteropServices {
         private static bool ManagedCategoryExists()
         {
             using (RegistryKey componentCategoryKey = Registry.ClassesRoot.OpenSubKey(strComponentCategorySubKey, 
-#if FEATURE_MACL
-                                                                                      RegistryKeyPermissionCheck.ReadSubTree))
-#else
                                                                                       false))
-#endif
             {
                 if (componentCategoryKey == null)
                     return false;
                 using (RegistryKey managedCategoryKey = componentCategoryKey.OpenSubKey(strManagedCategoryGuid,
-#if FEATURE_MACL
-                                                                                        RegistryKeyPermissionCheck.ReadSubTree))
-#else
                                                                                         false))
-#endif
                 {
                     if (managedCategoryKey == null)
                         return false;

@@ -338,31 +338,6 @@ namespace System {
             System.Diagnostics.Log.LogMessage(LoggingLevels.TraceLevel0, logSwitch, trace.ToString());
         }
 
-#if !FEATURE_CORECLR
-        // For logging errors related to the console - we often can't expect to
-        // write to stdout if it doesn't exist.
-        [SecuritySafeCritical]
-        [Conditional("_DEBUG")]
-        internal static void ConsoleError(String msg)
-        {
-            if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
-                return;
-
-            if (m_MakeConsoleErrorLoggingWork == null) {
-                PermissionSet perms = new PermissionSet();
-                perms.AddPermission(new EnvironmentPermission(PermissionState.Unrestricted));
-                perms.AddPermission(new FileIOPermission(FileIOPermissionAccess.AllAccess, Path.GetFullPath(".")));
-                m_MakeConsoleErrorLoggingWork = perms;
-            }
-            m_MakeConsoleErrorLoggingWork.Assert();
-                   
-            using (TextWriter err = File.AppendText("ConsoleErrors.log"))
-            {
-                err.WriteLine(msg);
-            }
-        }
-#endif // !FEATURE_CORECLR
-
         // For perf-related asserts.  On a debug build, set the registry key
         // BCLPerfWarnings to non-zero.
         [Conditional("_DEBUG")]

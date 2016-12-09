@@ -13,7 +13,6 @@
 =============================================================================*/
 
 
-#if !FEATURE_MACL
 namespace System.Security.AccessControl
 {
     public class EventWaitHandleSecurity
@@ -23,7 +22,6 @@ namespace System.Security.AccessControl
     {
     }
 }
-#endif
 
 namespace System.Threading
 {
@@ -111,18 +109,6 @@ namespace System.Threading
             }
             Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
-#if FEATURE_MACL
-            // For ACL's, get the security descriptor from the EventWaitHandleSecurity.
-            if (eventSecurity != null) {
-                secAttrs = new Win32Native.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (int)Marshal.SizeOf(secAttrs);
-
-                byte[] sd = eventSecurity.GetSecurityDescriptorBinaryForm();
-                byte* pSecDescriptor = stackalloc byte[sd.Length];
-                Buffer.Memcpy(pSecDescriptor, 0, sd, 0, sd.Length);
-                secAttrs.pSecurityDescriptor = pSecDescriptor;
-            }
-#endif
 
             SafeWaitHandle _handle = null;
             Boolean isManualReset;
@@ -164,11 +150,7 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         public static EventWaitHandle OpenExisting(string name)
         {
-#if !FEATURE_MACL
             return OpenExisting(name, (EventWaitHandleRights)0);
-#else
-            return OpenExisting(name, EventWaitHandleRights.Modify | EventWaitHandleRights.Synchronize);
-#endif
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
@@ -195,11 +177,7 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, out EventWaitHandle result)
         {
-#if !FEATURE_MACL
             return OpenExistingWorker(name, (EventWaitHandleRights)0, out result) == OpenExistingResult.Success;
-#else
-            return OpenExistingWorker(name, EventWaitHandleRights.Modify | EventWaitHandleRights.Synchronize, out result) == OpenExistingResult.Success;
-#endif
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
@@ -233,12 +211,8 @@ namespace System.Threading
 
             result = null;
 
-#if FEATURE_MACL
-            SafeWaitHandle myHandle = Win32Native.OpenEvent((int) rights, false, name);
-#else
             SafeWaitHandle myHandle = Win32Native.OpenEvent(Win32Native.EVENT_MODIFY_STATE | Win32Native.SYNCHRONIZE, false, name);
-#endif
-            
+
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastWin32Error();
@@ -274,24 +248,6 @@ namespace System.Threading
 
             return res;
         }
-
-#if FEATURE_MACL
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public EventWaitHandleSecurity GetAccessControl()
-        {
-            return new EventWaitHandleSecurity(safeWaitHandle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public void SetAccessControl(EventWaitHandleSecurity eventSecurity)
-        {
-            if (eventSecurity == null)
-                throw new ArgumentNullException(nameof(eventSecurity));
-            Contract.EndContractBlock();
-
-            eventSecurity.Persist(safeWaitHandle);
-        }
-#endif
     }
 }
 

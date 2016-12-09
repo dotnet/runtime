@@ -4,9 +4,6 @@
 #define ENABLE
 #define MINBUFFERS
 using System;
-#if !FEATURE_CORECLR
-using System.Diagnostics.Tracing;
-#endif
 using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
 using System.Collections.Generic;

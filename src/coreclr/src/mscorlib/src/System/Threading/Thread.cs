@@ -18,10 +18,6 @@ namespace System.Threading {
     using System.Threading;
     using System.Runtime;
     using System.Runtime.InteropServices;
-#if FEATURE_REMOTING    
-    using System.Runtime.Remoting.Contexts;
-    using System.Runtime.Remoting.Messaging;
-#endif
     using System;
     using System.Diagnostics;
     using System.Security.Permissions;
@@ -131,17 +127,12 @@ namespace System.Threading {
         ** ThreadBaseObject to maintain alignment between the two classes.
         ** DON'T CHANGE THESE UNLESS YOU MODIFY ThreadBaseObject in vm\object.h
         =========================================================================*/
-#if FEATURE_REMOTING        
-        private Context         m_Context;
-#endif 
         private ExecutionContext m_ExecutionContext;    // this call context follows the logical thread
-#if FEATURE_CORECLR
         private SynchronizationContext m_SynchronizationContext;    // On CoreCLR, this is maintained separately from ExecutionContext
-#endif
 
         private String          m_Name;
         private Delegate        m_Delegate;             // Delegate
-        
+
 #if FEATURE_LEAK_CULTURE_INFO 
         private CultureInfo     m_CurrentCulture;
         private CultureInfo     m_CurrentUICulture;

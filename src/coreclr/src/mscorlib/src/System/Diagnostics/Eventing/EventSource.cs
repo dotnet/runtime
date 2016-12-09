@@ -6645,13 +6645,7 @@ namespace System.Diagnostics.Tracing
         private static List<CultureInfo> GetSupportedCultures(ResourceManager resources)
         {
             var cultures = new List<CultureInfo>();
-#if !ES_BUILD_PCL && !FEATURE_CORECLR && !PROJECTN
-            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.SpecificCultures /*| CultureTypes.NeutralCultures*/))
-            {
-                if (resources.GetResourceSet(ci, true, false) != null)
-                    cultures.Add(ci);
-            }
-#endif // !ES_BUILD_PCL && !FEATURE_CORECLR
+
             if (!cultures.Contains(CultureInfo.CurrentUICulture))
                 cultures.Insert(0, CultureInfo.CurrentUICulture);
             return cultures;

@@ -35,16 +35,6 @@ namespace System {
 
         internal static MatchNumberDelegate m_hebrewNumberParser = new MatchNumberDelegate(DateTimeParse.MatchHebrewDigits);
 
-#if !FEATURE_CORECLR
-        [SecuritySafeCritical]
-        internal static bool GetAmPmParseFlag()
-        {
-            return DateTime.EnableAmPmParseAdjustment();
-        }
-
-        internal static bool enableAmPmParseAdjustment = GetAmPmParseFlag();
-#endif
-
         internal static DateTime ParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style) {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             result.Init();
@@ -761,11 +751,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                 raw.timeMark = (sep == TokenType.SEP_Am ? TM.AM : TM.PM);
                                 dtok.dtt = DTT.NumAmpm;
                                 // Fix AM/PM parsing case, e.g. "1/10 5 AM"
-                                if (dps == DS.D_NN 
-#if !FEATURE_CORECLR
-                                    && enableAmPmParseAdjustment
-#endif
-                                )
+                                if (dps == DS.D_NN)
                                 {
                                     if (!ProcessTerminaltState(DS.DX_NN, ref result, ref styles, ref raw, dtfi))
                                     {
@@ -1076,16 +1062,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         return (false);
                     }
 
-#if !FEATURE_CORECLR                    
-                    // If DateTimeParseIgnorePunctuation is defined, we want to have the V1.1 behavior of just
-                    // ignoring any unrecognized punctuation and moving on to the next character
-                    if (Environment.GetCompatibilityFlag(CompatibilityFlag.DateTimeParseIgnorePunctuation) && ((result.flags & ParseFlags.CaptureOffset) == 0)) {
-                        str.GetNext();
-                        LexTraceExit("0210 (success)", dps);
-                        return true;
-                    }
-#endif // FEATURE_CORECLR
-                    
                     if ((str.m_current == '-' || str.m_current == '+') && ((result.flags & ParseFlags.TimeZoneUsed) == 0)) {
                         Int32 originalIndex = str.Index;
                         if (ParseTimeZone(ref str, ref result.timeZoneOffset)) {
@@ -1096,7 +1072,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         else {
                             // Time zone parse attempt failed. Fall through to punctuation handling.
                             str.Index = originalIndex;
-                        }                                                
+                        }
                     }
                     
                     // Visual Basic implements string to date conversions on top of DateTime.Parse:
@@ -1104,7 +1080,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     //
                     if (VerifyValidPunctuation(ref str)) {
                         LexTraceExit("0230 (success)", dps);
-                        return true;                                
+                        return true;
                     }
 
                     result.SetFailure(ParseFailureKind.Format, "Format_BadDateTime", null);

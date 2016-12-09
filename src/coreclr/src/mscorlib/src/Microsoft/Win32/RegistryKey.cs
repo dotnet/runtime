@@ -49,15 +49,12 @@
 */
 
 
-namespace Microsoft.Win32 {
-
+namespace Microsoft.Win32
+{
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Security;
-#if FEATURE_MACL
-    using System.Security.AccessControl;
-#endif
     using System.Security.Permissions;
     using System.Text;
     using System.Threading;
@@ -74,7 +71,7 @@ namespace Microsoft.Win32 {
      * Registry hive values.  Useful only for GetRemoteBaseKey
      */
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public enum RegistryHive
     {
         ClassesRoot = unchecked((int)0x80000000),
@@ -83,9 +80,6 @@ namespace Microsoft.Win32 {
         Users = unchecked((int)0x80000003),
         PerformanceData = unchecked((int)0x80000004),
         CurrentConfig = unchecked((int)0x80000005),
-#if !FEATURE_CORECLR
-        DynData = unchecked((int)0x80000006),
-#endif
     }
 
     /**
@@ -107,9 +101,6 @@ namespace Microsoft.Win32 {
         internal static readonly IntPtr HKEY_USERS                = new IntPtr(unchecked((int)0x80000003));
         internal static readonly IntPtr HKEY_PERFORMANCE_DATA     = new IntPtr(unchecked((int)0x80000004));
         internal static readonly IntPtr HKEY_CURRENT_CONFIG       = new IntPtr(unchecked((int)0x80000005));
-#if !FEATURE_CORECLR
-        internal static readonly IntPtr HKEY_DYN_DATA             = new IntPtr(unchecked((int)0x80000006));
-#endif
 
         // Dirty indicates that we have munged data that should be potentially
         // written to disk.
@@ -137,9 +128,6 @@ namespace Microsoft.Win32 {
                 "HKEY_USERS",
                 "HKEY_PERFORMANCE_DATA",
                 "HKEY_CURRENT_CONFIG",
-#if !FEATURE_CORECLR
-                "HKEY_DYN_DATA"
-#endif
                 };
 
         // MSDN defines the following limits for registry key names & values:
@@ -264,11 +252,7 @@ namespace Microsoft.Win32 {
             }
         }
 
-#if FEATURE_CORECLR
         void IDisposable.Dispose()
-#else
-        public void Dispose()
-#endif
         {
             Dispose(true);
         }
@@ -309,21 +293,6 @@ namespace Microsoft.Win32 {
             return CreateSubKeyInternal(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, null, options);
         }
 
-
-#if FEATURE_MACL
-        [ComVisible(false)]
-        public unsafe RegistryKey CreateSubKey(String subkey, RegistryKeyPermissionCheck permissionCheck,  RegistrySecurity registrySecurity) 
-        {
-            return CreateSubKeyInternal(subkey, permissionCheck, registrySecurity, RegistryOptions.None);
-        }
-        
-        [ComVisible(false)]
-        public unsafe RegistryKey CreateSubKey(String subkey, RegistryKeyPermissionCheck permissionCheck,  RegistryOptions registryOptions, RegistrySecurity registrySecurity) 
-        {
-            return CreateSubKeyInternal(subkey, permissionCheck, registrySecurity, registryOptions);
-        }        
-#endif
-
         [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         private unsafe RegistryKey CreateSubKeyInternal(String subkey, RegistryKeyPermissionCheck permissionCheck, object registrySecurityObj, RegistryOptions registryOptions)
@@ -346,23 +315,9 @@ namespace Microsoft.Win32 {
             }
 
             CheckPermission(RegistryInternalCheck.CheckSubKeyCreatePermission, subkey, false, RegistryKeyPermissionCheck.Default);      
-            
-            Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
-#if FEATURE_MACL
-            RegistrySecurity registrySecurity = (RegistrySecurity)registrySecurityObj;
-            // For ACL's, get the security descriptor from the RegistrySecurity.
-            if (registrySecurity != null) {
-                secAttrs = new Win32Native.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (int)Marshal.SizeOf(secAttrs);
 
-                byte[] sd = registrySecurity.GetSecurityDescriptorBinaryForm();
-                // We allocate memory on the stack to improve the speed.
-                // So this part of code can't be refactored into a method.
-                byte* pSecDescriptor = stackalloc byte[sd.Length];
-                Buffer.Memcpy(pSecDescriptor, 0, sd, 0, sd.Length);
-                secAttrs.pSecurityDescriptor = pSecDescriptor;
-            }
-#endif
+            Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
+
             int disposition = 0;
 
             // By default, the new key will be writable.
@@ -536,7 +491,7 @@ namespace Microsoft.Win32 {
                 if (ret!=0) Win32Error(ret, null);
             }
             else {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyAbsent);                
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyAbsent);
             }
         }
         
@@ -717,60 +672,6 @@ namespace Microsoft.Win32 {
             return null;
         }
 
-#if FEATURE_MACL
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [ComVisible(false)]
-        public RegistryKey OpenSubKey(String name, RegistryKeyPermissionCheck permissionCheck) { 
-            ValidateKeyMode(permissionCheck);            
-            return InternalOpenSubKey(name, permissionCheck, GetRegistryKeyAccess(permissionCheck));
-        }
-
-        [System.Security.SecuritySafeCritical]
-        [ComVisible(false)]
-        public RegistryKey OpenSubKey(String name, RegistryRights rights)
-        {
-            return InternalOpenSubKey(name, this.checkMode, (int)rights);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [ComVisible(false)]
-        public RegistryKey OpenSubKey(String name, RegistryKeyPermissionCheck permissionCheck, RegistryRights rights) {
-            return InternalOpenSubKey(name, permissionCheck, (int)rights);
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        private RegistryKey InternalOpenSubKey(String name, RegistryKeyPermissionCheck permissionCheck, int rights) {
-            ValidateKeyName(name);
-            ValidateKeyMode(permissionCheck);            
-
-            ValidateKeyRights(rights);
-
-            EnsureNotDisposed();
-            name = FixupName(name); // Fixup multiple slashes to a single slash
-
-            CheckPermission(RegistryInternalCheck.CheckOpenSubKeyPermission, name, false, permissionCheck);                        
-            CheckPermission(RegistryInternalCheck.CheckSubTreePermission, name, false, permissionCheck);
-            SafeRegistryHandle result = null;
-            int ret = Win32Native.RegOpenKeyEx(hkey, name, 0, (rights | (int)regView), out result);
-            if (ret == 0 && !result.IsInvalid) {
-                RegistryKey key = new RegistryKey(result, (permissionCheck == RegistryKeyPermissionCheck.ReadWriteSubTree), false, remoteKey, false, regView);
-                key.keyName = keyName + "\\" + name;
-                key.checkMode = permissionCheck;
-                return key;
-            }
-
-            // Return null if we didn't find the key.
-            if (ret == Win32Native.ERROR_ACCESS_DENIED || ret == Win32Native.ERROR_BAD_IMPERSONATION_LEVEL) {
-                // We need to throw SecurityException here for compatiblity reason,
-                // although UnauthorizedAccessException will make more sense.
-                ThrowHelper.ThrowSecurityException(ExceptionResource.Security_RegistryPermission);                
-            }
-            
-            return null;                        
-        }    
-#endif
-
         // This required no security checks. This is to get around the Deleting SubKeys which only require
         // write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
         [System.Security.SecurityCritical]  // auto-generated
@@ -828,82 +729,6 @@ namespace Microsoft.Win32 {
                 return regView;
             }
         }
-
-#if !FEATURE_CORECLR
-        [ComVisible(false)]
-        public SafeRegistryHandle Handle {
-            [System.Security.SecurityCritical]
-            [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
-            get {
-                EnsureNotDisposed();
-                int ret = Win32Native.ERROR_INVALID_HANDLE;
-                if (IsSystemKey()) {
-                    IntPtr baseKey = (IntPtr)0;
-                    switch (keyName) {
-                        case "HKEY_CLASSES_ROOT":
-                            baseKey = HKEY_CLASSES_ROOT;
-                            break;
-                        case "HKEY_CURRENT_USER":
-                            baseKey = HKEY_CURRENT_USER;
-                            break;
-                        case "HKEY_LOCAL_MACHINE":
-                            baseKey = HKEY_LOCAL_MACHINE;
-                            break;
-                        case "HKEY_USERS":
-                            baseKey = HKEY_USERS;
-                            break;
-                        case "HKEY_PERFORMANCE_DATA":
-                            baseKey = HKEY_PERFORMANCE_DATA;
-                            break;
-                        case "HKEY_CURRENT_CONFIG":
-                            baseKey = HKEY_CURRENT_CONFIG;
-                            break;
-                        case "HKEY_DYN_DATA":
-                            baseKey = HKEY_DYN_DATA;
-                            break;
-                        default:
-                            Win32Error(ret, null);
-                            break;
-                    }
-                    // open the base key so that RegistryKey.Handle will return a valid handle
-                    SafeRegistryHandle result;
-                    ret = Win32Native.RegOpenKeyEx(baseKey,
-                        null,
-                        0,
-                        GetRegistryKeyAccess(IsWritable()) | (int)regView,
-                        out result);
-
-                    if (ret == 0 && !result.IsInvalid) {
-                        return result;
-                    }
-                    else {
-                        Win32Error(ret, null);
-                    }
-                }
-                else {
-                    return hkey;
-                }
-                throw new IOException(Win32Native.GetMessage(ret), ret);
-            }
-        }
-
-        [System.Security.SecurityCritical]
-        [ComVisible(false)]
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
-        public static RegistryKey FromHandle(SafeRegistryHandle handle) {
-            return FromHandle(handle, RegistryView.Default);
-        }
-
-        [System.Security.SecurityCritical]
-        [ComVisible(false)]
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
-        public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view) {
-            if (handle == null) throw new ArgumentNullException(nameof(handle));
-            ValidateKeyView(view);
-
-            return new RegistryKey(handle, true /* isWritable */, view);
-        }
-#endif
 
         [System.Security.SecurityCritical]  // auto-generated
         internal int InternalSubKeyCount() {
@@ -1576,27 +1401,6 @@ namespace Microsoft.Win32 {
             return keyName;
         }
 
-#if FEATURE_MACL
-        public RegistrySecurity GetAccessControl() {
-            return GetAccessControl(AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public RegistrySecurity GetAccessControl(AccessControlSections includeSections) {
-            EnsureNotDisposed();
-            return new RegistrySecurity(hkey, keyName, includeSections);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public void SetAccessControl(RegistrySecurity registrySecurity) {
-            EnsureWriteable();
-            if (registrySecurity == null)
-                throw new ArgumentNullException(nameof(registrySecurity));
-
-            registrySecurity.Persist(hkey, keyName);
-        }
-#endif
-
         /**
          * After calling GetLastWin32Error(), it clears the last error field,
          * so you must save the HResult and pass it to this method.  This method
@@ -1774,17 +1578,12 @@ namespace Microsoft.Win32 {
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        private void CheckPermission(RegistryInternalCheck check, string item, bool subKeyWritable, RegistryKeyPermissionCheck subKeyCheck) {
+        private void CheckPermission(RegistryInternalCheck check, string item, bool subKeyWritable, RegistryKeyPermissionCheck subKeyCheck)
+        {
             bool demand = false;
             RegistryPermissionAccess access = RegistryPermissionAccess.NoAccess;
             string path = null;
 
-#if !FEATURE_CORECLR
-            if (CodeAccessSecurityEngine.QuickCheckForAllDemands()) {
-                return; // full trust fast path
-            }
-#endif // !FEATURE_CORECLR
-    
             switch (check) {
                 //
                 // Read/Write/Create SubKey Permission
@@ -2129,16 +1928,6 @@ namespace Microsoft.Win32 {
             }
         }
 
-
-#if FEATURE_MACL
-        static private void ValidateKeyRights(int rights) {
-            if(0 != (rights & ~((int)RegistryRights.FullControl))) {
-                // We need to throw SecurityException here for compatiblity reason,
-                // although UnauthorizedAccessException will make more sense.
-                ThrowHelper.ThrowSecurityException(ExceptionResource.Security_RegistryPermission);           
-            }            
-        }
-#endif
         // Win32 constants for error handling
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         private const int FORMAT_MESSAGE_FROM_SYSTEM    = 0x00001000;
