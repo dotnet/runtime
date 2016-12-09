@@ -1604,7 +1604,7 @@ FCIMPL0(Object*, ThreadNative::GetDomain)
 }
 FCIMPLEND
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && defined(_MSC_VER)
 __declspec(naked) LPVOID __fastcall ThreadNative::FastGetDomain()
 {
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -1624,7 +1624,7 @@ done:
         ret
     }
 }
-#else // _TARGET_X86_
+#else // _TARGET_X86_ && _MSC_VER
 LPVOID F_CALL_CONV ThreadNative::FastGetDomain()
 {
     CONTRACTL
@@ -1650,7 +1650,7 @@ LPVOID F_CALL_CONV ThreadNative::FastGetDomain()
     }
     return NULL;
 }
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && _MSC_VER
 
 #ifdef FEATURE_REMOTING
 // This is just a helper method that lets BCL get to the managed context
