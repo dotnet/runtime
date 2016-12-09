@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <ProjectGuid>{2BFEAC8A-DE97-4E50-B992-802C2AD66524}</ProjectGuid>
+    <PackageTargetFramework>netstandard1.7;uap10.1</PackageTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Configuration.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

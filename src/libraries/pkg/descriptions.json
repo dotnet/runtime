@@ -400,6 +400,14 @@
     ]
   },
   {
+    "Name": "System.Configuration",
+    "Description": "Provides types that support using configuration files.",
+    "CommonTypes": [
+      "System.Configuration.Configuration",
+      "System.Configuration.ConfigurationManager"
+    ]
+  },
+  {
     "Name": "System.Console",
     "Description": "Provides the System.Console class, which represents the standard input, output and error streams for console applications.",
     "CommonTypes": [
