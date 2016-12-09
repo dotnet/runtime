@@ -4898,11 +4898,11 @@ void LinearScan::setFrameType()
     compiler->rpFrameType = frameType;
 }
 
-// Is the copyReg given by this RefPosition still busy at the
+// Is the copyReg/moveReg given by this RefPosition still busy at the
 // given location?
-bool copyRegInUse(RefPosition* ref, LsraLocation loc)
+bool copyOrMoveRegInUse(RefPosition* ref, LsraLocation loc)
 {
-    assert(ref->copyReg);
+    assert(ref->copyReg || ref->moveReg);
     if (ref->getRefEndLocation() >= loc)
     {
         return true;
@@ -4962,14 +4962,15 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
             return false;
         }
 
-        // Is this a copyReg?  It is if the register assignment doesn't match.
-        // (the recentReference may not be a copyReg, because we could have seen another
-        // reference since the copyReg)
+        // Is this a copyReg/moveReg?  It is if the register assignment doesn't match.
+        // (the recentReference may not be a copyReg/moveReg, because we could have seen another
+        // reference since the copyReg/moveReg)
 
         if (!assignedInterval->isAssignedTo(physRegRecord->regNum))
         {
             // Don't reassign it if it's still in use
-            if (recentReference->copyReg && copyRegInUse(recentReference, currentLoc))
+            if ((recentReference->copyReg || recentReference->moveReg) &&
+                copyOrMoveRegInUse(recentReference, currentLoc))
             {
                 return false;
             }
