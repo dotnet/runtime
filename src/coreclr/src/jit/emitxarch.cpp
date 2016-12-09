@@ -2787,20 +2787,19 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(GenTreeDblCon* tree, emitAttr at
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
     // dst can only be a reg or modrm
-    assert(!dst->isContained() || dst->isContainedMemoryOp() ||
-           instrIs3opImul(ins)); // dst on these isn't really the dst
+    assert(!dst->isContained() || dst->isUsedFromMemory() || instrIs3opImul(ins)); // dst on these isn't really the dst
 
 #ifdef DEBUG
     // src can be anything but both src and dst cannot be addr modes
     // or at least cannot be contained addr modes
-    if (dst->isContainedMemoryOp())
+    if (dst->isUsedFromMemory())
     {
-        assert(!src->isContainedMemoryOp());
+        assert(!src->isUsedFromMemory());
     }
 
-    if (src->isContainedMemoryOp())
+    if (src->isUsedFromMemory())
     {
-        assert(!dst->isContainedMemoryOp());
+        assert(!dst->isUsedFromMemory());
     }
 #endif
 
@@ -2838,7 +2837,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     // find local field if any
     GenTreeLclFld* lclField = nullptr;
-    if (src->isContainedLclField())
+    if (src->isLclFldUsedFromMemory())
     {
         lclField = src->AsLclFld();
     }
@@ -2849,12 +2848,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     // find contained lcl var if any
     GenTreeLclVar* lclVar = nullptr;
-    if (src->isContainedLclVar())
+    if (src->isLclVarUsedFromMemory())
     {
         assert(src->IsRegOptional());
         lclVar = src->AsLclVar();
     }
-    else if (dst->isContainedLclVar())
+    if (dst->isLclVarUsedFromMemory())
     {
         assert(dst->IsRegOptional());
         lclVar = dst->AsLclVar();
@@ -2862,12 +2861,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     // find contained spill tmp if any
     TempDsc* tmpDsc = nullptr;
-    if (src->isContainedSpillTemp())
+    if (src->isUsedFromSpillTemp())
     {
         assert(src->IsRegOptional());
         tmpDsc = codeGen->getSpillTempDsc(src);
     }
-    else if (dst->isContainedSpillTemp())
+    else if (dst->isUsedFromSpillTemp())
     {
         assert(dst->IsRegOptional());
         tmpDsc = codeGen->getSpillTempDsc(dst);
@@ -2953,7 +2952,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (varNum != BAD_VAR_NUM || tmpDsc != nullptr)
     {
         // Is the memory op in the source position?
-        if (src->isContainedMemoryOp())
+        if (src->isUsedFromMemory())
         {
             if (instrHasImplicitRegPairDest(ins))
             {
