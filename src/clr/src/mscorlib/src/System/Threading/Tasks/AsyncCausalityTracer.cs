@@ -131,7 +131,6 @@ namespace System.Threading.Tasks
         private static Loggers f_LoggingOn; //assumes false by default
 
         // The precise static constructor will run first time somebody attempts to access this class
-        [SecuritySafeCritical]
         static AsyncCausalityTracer()
         {
             if (!Environment.IsWinRTSupported) return;
@@ -165,7 +164,6 @@ namespace System.Threading.Tasks
            
         }
 
-        [SecuritySafeCritical]
         private static void TracingStatusChangedHandler(Object sender, WFD.TracingStatusChangedEventArgs args)
         {
             if (args.Enabled)

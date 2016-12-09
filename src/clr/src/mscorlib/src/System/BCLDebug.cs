@@ -119,7 +119,6 @@ namespace System {
         
         [Pure]
         [Conditional("_LOGGING")]
-        [SecuritySafeCritical]
         static public void Log(String message) {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
                 return;
@@ -132,7 +131,6 @@ namespace System {
 
         [Pure]
         [Conditional("_LOGGING")]
-        [SecuritySafeCritical]
         static public void Log(String switchName, String message) {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
                 return;
@@ -160,7 +158,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern static int GetRegistryLoggingValues(out bool loggingEnabled, out bool logToConsole, out int logLevel, out bool perfWarnings, out bool correctnessWarnings, out bool safeHandleStackTraces);
 
-        [SecuritySafeCritical]
         private static void CheckRegistry() {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
                 return;
@@ -207,7 +204,6 @@ namespace System {
             }
         }
 
-        [SecuritySafeCritical]
         internal static bool CheckEnabled(String switchName) {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
                 return false;
@@ -220,7 +216,6 @@ namespace System {
             return ((int)logSwitch.MinimumLevel<=(int)LogLevel.Trace);
         }
 
-        [SecuritySafeCritical]
         private static bool CheckEnabled(String switchName, LogLevel level, out LogSwitch logSwitch) {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
             {
@@ -236,7 +231,6 @@ namespace System {
 
         [Pure]
         [Conditional("_LOGGING")]
-        [SecuritySafeCritical]
         public static void Log(String switchName, LogLevel level, params Object[]messages) {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
                 return;
@@ -341,7 +335,6 @@ namespace System {
         // For perf-related asserts.  On a debug build, set the registry key
         // BCLPerfWarnings to non-zero.
         [Conditional("_DEBUG")]
-        [SecuritySafeCritical]
         internal static void Perf(bool expr, String msg)
         {
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
@@ -361,7 +354,6 @@ namespace System {
         // BCLCorrectnessWarnings to non-zero.
         [Conditional("_DEBUG")]
 #if _DEBUG
-        [SecuritySafeCritical]
 #endif
         internal static void Correctness(bool expr, String msg)
         {
@@ -386,7 +378,6 @@ namespace System {
         }
 
 #if !BIT64 // 32
-        [SecuritySafeCritical]
 #endif
         internal static bool CorrectnessEnabled()
         {

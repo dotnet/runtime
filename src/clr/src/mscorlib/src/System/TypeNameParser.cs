@@ -15,11 +15,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
-    [SecurityCritical]
     internal class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _ReleaseTypeNameParser(IntPtr pTypeNameParser);
@@ -30,7 +28,6 @@ namespace System
         {
         }
 
-        [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             _ReleaseTypeNameParser(handle);
@@ -42,34 +39,28 @@ namespace System
     internal sealed class TypeNameParser : IDisposable
     {
         #region QCalls
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
         #endregion
 
         #region Static Members
-        [SecuritySafeCritical]
         internal static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -103,19 +94,16 @@ namespace System
         #endregion
 
         #region Private Data Members
-        [SecurityCritical]
         private SafeTypeNameParserHandle m_NativeParser;
         private static readonly char[] SPECIAL_CHARS = {',', '[', ']', '&', '*', '+', '\\'}; /* see typeparse.h */
         #endregion
 
         #region Constructor and Disposer
-        [SecuritySafeCritical]
         private TypeNameParser(SafeTypeNameParserHandle handle)
         {
             m_NativeParser = handle;
         }
 
-        [SecuritySafeCritical]
         public void Dispose()
         {
             m_NativeParser.Dispose();
@@ -123,7 +111,6 @@ namespace System
         #endregion
 
         #region private Members
-        [SecuritySafeCritical]
         private unsafe Type ConstructType(
             Func<AssemblyName, Assembly> assemblyResolver,
             Func<Assembly, string, bool, Type> typeResolver,
@@ -201,7 +188,6 @@ namespace System
             }
         }
 
-        [SecuritySafeCritical]
         private static Assembly ResolveAssembly(string asmName, Func<AssemblyName, Assembly> assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
         {
             Contract.Requires(asmName != null && asmName.Length > 0);
@@ -316,7 +302,6 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        [SecuritySafeCritical]
         private static SafeTypeNameParserHandle CreateTypeNameParser(string typeName, bool throwOnError)
         {
             SafeTypeNameParserHandle retHandle = null;
@@ -325,7 +310,6 @@ namespace System
             return retHandle;
         }
 
-        [SecuritySafeCritical]
         private string[] GetNames()
         {
             string[] names = null;
@@ -334,7 +318,6 @@ namespace System
             return names;
         }
 
-        [SecuritySafeCritical]
         private SafeTypeNameParserHandle[] GetTypeArguments()
         {
             SafeTypeNameParserHandle[] arguments = null;
@@ -343,7 +326,6 @@ namespace System
             return arguments;
         }
 
-        [SecuritySafeCritical]
         private int[] GetModifiers()
         {
             int[] modifiers = null;
@@ -352,7 +334,6 @@ namespace System
             return modifiers;
         }
 
-        [SecuritySafeCritical]
         private string GetAssemblyName()
         {
             string assemblyName = null;

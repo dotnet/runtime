@@ -17,7 +17,6 @@ using System.Threading;
 
 namespace System.Runtime.Loader
 {
-    [System.Security.SecuritySafeCritical]
     public abstract class AssemblyLoadContext
     {
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -62,7 +61,6 @@ namespace System.Runtime.Loader
             InitializeLoadContext(fRepresentsTPALoadContext);
         }
         
-        [System.Security.SecuritySafeCritical]
         void InitializeLoadContext(bool fRepresentsTPALoadContext)
         {
             // Initialize the VM side of AssemblyLoadContext if not already done.
@@ -501,14 +499,12 @@ namespace System.Runtime.Loader
         }
     }
 
-    [System.Security.SecuritySafeCritical]
     class AppPathAssemblyLoadContext : AssemblyLoadContext
     {
         internal AppPathAssemblyLoadContext() : base(true)
         {
         }
 
-        [System.Security.SecuritySafeCritical]  
         protected override Assembly Load(AssemblyName assemblyName)
         {
             // We were loading an assembly into TPA ALC that was not found on TPA list. As a result we are here.
@@ -517,14 +513,12 @@ namespace System.Runtime.Loader
         }
     }
 
-    [System.Security.SecuritySafeCritical]
     internal class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
         internal IndividualAssemblyLoadContext() : base(false)
         {
         }
 
-        [System.Security.SecuritySafeCritical]  
         protected override Assembly Load(AssemblyName assemblyName)
         {
             return null;

@@ -40,10 +40,6 @@ namespace System.Reflection
         private byte[]  _publicKey;
 
         // Build key pair from file.
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public StrongNameKeyPair(FileStream keyPairFile)
         {
             if (keyPairFile == null)
@@ -58,10 +54,6 @@ namespace System.Reflection
         }
 
         // Build key pair from byte array in memory.
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public StrongNameKeyPair(byte[] keyPairArray)
         {
             if (keyPairArray == null)
@@ -74,10 +66,6 @@ namespace System.Reflection
             _keyPairExported = true;
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         protected StrongNameKeyPair (SerializationInfo info, StreamingContext context) {
             _keyPairExported = (bool) info.GetValue("_keyPairExported", typeof(bool));
             _keyPairArray = (byte[]) info.GetValue("_keyPairArray", typeof(byte[]));
@@ -87,10 +75,6 @@ namespace System.Reflection
 
 #if! FEATURE_CORECLR
         // Reference key pair in named key container.
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public StrongNameKeyPair(String keyPairContainer)
         {
             if (keyPairContainer == null)
@@ -105,7 +89,6 @@ namespace System.Reflection
         // Get the public portion of the key pair.
         public byte[] PublicKey
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (_publicKey == null)
@@ -120,7 +103,6 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe byte[] ComputePublicKey()
         {
             byte[] publicKey = null;
@@ -184,7 +166,6 @@ namespace System.Reflection
 #endif// FEATURE_CORECLR
 
         /// <internalonly/>
-        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData (SerializationInfo info, StreamingContext context) {
             info.AddValue("_keyPairExported", _keyPairExported);
             info.AddValue("_keyPairArray", _keyPairArray);

@@ -40,7 +40,6 @@ namespace System.Threading
     //
     public sealed class AsyncLocal<T> : IAsyncLocal
     {
-        [SecurityCritical] // critical because this action will terminate the process if it throws.
         private readonly Action<AsyncLocalValueChangedArgs<T>> m_valueChangedHandler;
 
         //
@@ -54,7 +53,6 @@ namespace System.Threading
         // Constructs an AsyncLocal<T> with a delegate that is called whenever the current value changes
         // on any thread.
         //
-        [SecurityCritical]
         public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) 
         {
             m_valueChangedHandler = valueChangedHandler;
@@ -62,20 +60,17 @@ namespace System.Threading
 
         public T Value
         {
-            [SecuritySafeCritical]
             get 
             { 
                 object obj = ExecutionContext.GetLocalValue(this);
                 return (obj == null) ? default(T) : (T)obj;
             }
-            [SecuritySafeCritical]
             set 
             {
                 ExecutionContext.SetLocalValue(this, value, m_valueChangedHandler != null); 
             }
         }
 
-        [SecurityCritical]
         void IAsyncLocal.OnValueChanged(object previousValueObj, object currentValueObj, bool contextChanged)
         {
             Contract.Assert(m_valueChangedHandler != null);
@@ -90,7 +85,6 @@ namespace System.Threading
     //
     internal interface IAsyncLocal
     {
-        [SecurityCritical]
         void OnValueChanged(object previousValue, object currentValue, bool contextChanged);
     }
 

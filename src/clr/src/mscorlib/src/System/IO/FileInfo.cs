@@ -37,13 +37,10 @@ namespace System.IO
 
         // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
 #if FEATURE_CORESYSTEM
-        [System.Security.SecurityCritical]
 #else
-        [System.Security.SecuritySafeCritical]
 #endif //FEATURE_CORESYSTEM
         private FileInfo(){}
 
-        [System.Security.SecurityCritical]
         public static FileInfo UnsafeCreateFileInfo(String fileName)
         {
             if (fileName == null)
@@ -55,7 +52,6 @@ namespace System.IO
             return fi;
         }
 
-        [System.Security.SecuritySafeCritical]
         public FileInfo(String fileName)
         {
             if (fileName == null)
@@ -65,7 +61,6 @@ namespace System.IO
             Init(fileName, true);
         }
 
-        [System.Security.SecurityCritical]
         private void Init(String fileName, bool checkHost)
         {
             OriginalPath = fileName;
@@ -88,7 +83,6 @@ namespace System.IO
             return Path.GetFileName(originalPath);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private FileInfo(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _name = Path.GetFileName(OriginalPath);
@@ -96,7 +90,6 @@ namespace System.IO
         }
 
 #if FEATURE_CORESYSTEM
-        [System.Security.SecuritySafeCritical]
 #endif //FEATURE_CORESYSTEM
         internal FileInfo(String fullPath, bool ignoreThis)
         {
@@ -112,7 +105,6 @@ namespace System.IO
         }
 
         public long Length {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 if (_dataInitialised == -1)
                     Refresh();
@@ -130,7 +122,6 @@ namespace System.IO
         /* Returns the name of the directory that the file is in */
         public String DirectoryName
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 String directoryName = Path.GetDirectoryName(FullPath);
@@ -167,7 +158,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StreamReader OpenText()
         {
             return new StreamReader(FullPath, Encoding.UTF8, true, StreamReader.DefaultBufferSize, false);
@@ -239,7 +229,6 @@ namespace System.IO
         // 
         // Your application must have Delete permission to the target file.
         // 
-        [System.Security.SecuritySafeCritical]
         public override void Delete()
         {
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, DisplayPath, FullPath);
@@ -273,7 +262,6 @@ namespace System.IO
         //
         // Your application must have Read permission for the target directory.
         public override bool Exists {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 try {
                     if (_dataInitialised == -1)
@@ -306,7 +294,6 @@ namespace System.IO
             return new FileStream(FullPath, mode, access, share);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileStream OpenRead()
         {
             return new FileStream(FullPath, FileMode.Open, FileAccess.Read,
@@ -326,7 +313,6 @@ namespace System.IO
         // sourceFileName and Write 
         // permissions to destFileName.
         // 
-        [System.Security.SecuritySafeCritical]
         public void MoveTo(String destFileName) {
             if (destFileName==null)
                 throw new ArgumentNullException(nameof(destFileName));

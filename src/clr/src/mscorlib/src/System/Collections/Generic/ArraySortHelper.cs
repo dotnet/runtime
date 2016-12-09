@@ -72,7 +72,6 @@ namespace System.Collections.Generic
             }
         }                
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static IArraySortHelper<T> CreateArraySortHelper()
         {
             if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
@@ -689,7 +688,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
         {
             if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))

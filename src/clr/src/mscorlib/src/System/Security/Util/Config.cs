@@ -37,7 +37,6 @@ namespace System.Security.Util {
         private static volatile string m_machineConfig;
         private static volatile string m_userConfig;
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static void GetFileLocales()
         {
             if (m_machineConfig == null)
@@ -56,7 +55,6 @@ namespace System.Security.Util {
 
         internal static string MachineDirectory
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 GetFileLocales();
@@ -66,7 +64,6 @@ namespace System.Security.Util {
 
         internal static string UserDirectory
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 GetFileLocales();
@@ -74,15 +71,12 @@ namespace System.Security.Util {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern void GetMachineDirectory(StringHandleOnStack retDirectory);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern void GetUserDirectory(StringHandleOnStack retDirectory);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         internal static extern bool WriteToEventLog(string message);
     }

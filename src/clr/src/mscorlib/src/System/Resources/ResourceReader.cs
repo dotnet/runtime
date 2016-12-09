@@ -94,10 +94,8 @@ namespace System.Resources {
         // of the assembly.  The pointers here are pointers into that block of
         // memory controlled by the OS's loader.
         private int[] _nameHashes;    // hash values for all names.
-        [SecurityCritical]
         private unsafe int* _nameHashesPtr;  // In case we're using UnmanagedMemoryStream
         private int[] _namePositions; // relative locations of names
-        [SecurityCritical]
         private unsafe int* _namePositionsPtr;  // If we're using UnmanagedMemoryStream
         private RuntimeType[] _typeTable;    // Lazy array of Types for resource values.
         private int[] _typeNamePositions;  // To delay initialize type table
@@ -152,11 +150,6 @@ namespace System.Resources {
         };
 #endif // FEATURE_SERIALIZATION
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #else
-        [System.Security.SecuritySafeCritical]
-        #endif
         public ResourceReader(String fileName)
         {
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
@@ -172,7 +165,6 @@ namespace System.Resources {
             }
         }
     
-        [System.Security.SecurityCritical]  // auto-generated_required
         public ResourceReader(Stream stream)
         {
             if (stream==null)
@@ -194,7 +186,6 @@ namespace System.Resources {
         // passing in the stream to read from and the RuntimeResourceSet's 
         // internal hash table (hash table of names with file offsets
         // and values, coupled to this ResourceReader).
-        [System.Security.SecurityCritical]  // auto-generated
         internal ResourceReader(Stream stream, Dictionary<String, ResourceLocator> resCache)
         {
             Contract.Requires(stream != null, "Need a stream!");
@@ -221,7 +212,6 @@ namespace System.Resources {
             Close();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe void Dispose(bool disposing)
         {
             if (_store != null) {
@@ -243,7 +233,6 @@ namespace System.Resources {
             }
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal static unsafe int ReadUnalignedI4(int* p)
         {
             byte* buffer = (byte*)p;
@@ -264,7 +253,6 @@ namespace System.Resources {
             _store.BaseStream.Seek(stringLength, SeekOrigin.Current);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe int GetNameHash(int index)
         {
             Contract.Assert(index >=0 && index < _numResources, "Bad index into hash array.  index: "+index);
@@ -276,7 +264,6 @@ namespace System.Resources {
                 return ReadUnalignedI4(&_nameHashesPtr[index]);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe int GetNamePosition(int index)
         {
             Contract.Assert(index >=0 && index < _numResources, "Bad index into name position array.  index: "+index);
@@ -395,7 +382,6 @@ namespace System.Resources {
         // with the string you pass in. 
         // Whoever calls this method should make sure that they take a lock
         // so no one else can cause us to seek in the stream.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe bool CompareStringEqualsName(String name)
         {
             Contract.Assert(_store != null, "ResourceReader is closed!");
@@ -433,7 +419,6 @@ namespace System.Resources {
         // This is used in the enumerator.  The enumerator iterates from 0 to n
         // of our resources and this returns the resource name for a particular
         // index.  The parameter is NOT a virtual offset.
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe String AllocateStringForNameIndex(int index, out int dataOffset)
         {
             Contract.Assert(_store != null, "ResourceReader is closed!");
@@ -595,7 +580,6 @@ namespace System.Resources {
         }
 
 #if FEATURE_SERIALIZATION
-        [SecuritySafeCritical]
 #endif
         private Object _LoadObjectV1(int pos) {
             _store.BaseStream.Seek(_dataSectionOffset+pos, SeekOrigin.Begin);
@@ -670,7 +654,6 @@ namespace System.Resources {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private Object _LoadObjectV2(int pos, out ResourceTypeCode typeCode) {
             _store.BaseStream.Seek(_dataSectionOffset+pos, SeekOrigin.Begin);
             typeCode = (ResourceTypeCode) _store.Read7BitEncodedInt();
@@ -801,7 +784,6 @@ namespace System.Resources {
         // deserialization binder to simulate a type-limiting deserializer.
         // This method handles types that are safe to deserialize, as well as
         // ensuring we only get back what we expect.
-        [System.Security.SecurityCritical]  // auto-generated
         private Object DeserializeObject(int typeIndex)
         {
             RuntimeType type = FindType(typeIndex);
@@ -843,7 +825,6 @@ namespace System.Resources {
         // Reads in the header information for a .resources file.  Verifies some
         // of the assumptions about this resource set, and builds the class table
         // for the default resource file format.
-        [System.Security.SecurityCritical]  // auto-generated
         private void ReadResources()
         {
             Contract.Assert(_store != null, "ResourceReader is closed!");
@@ -867,7 +848,6 @@ namespace System.Resources {
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void _ReadResources()
         {
             // Read ResourceManager header
@@ -1093,7 +1073,6 @@ namespace System.Resources {
         }
 
 #if FEATURE_SERIALIZATION
-        [System.Security.SecurityCritical]  // auto-generated
         private void InitSafeToDeserializeArray()
         {
             _safeToDeserialize = new bool[_typeTable.Length];
@@ -1277,7 +1256,6 @@ namespace System.Resources {
                 _typeToDeserialize = type;
             }
             
-            [System.Security.SecuritySafeCritical] // overrides transparent public member
             public override Type BindToType(string assemblyName, string typeName)
             {
                 // BinaryObjectReader::Bind tries us first, then its own code.
@@ -1343,7 +1321,6 @@ namespace System.Resources {
             }
         
             public Object Key {
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 get {
                     if (_currentName == ENUM_DONE) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
                     if (!_currentIsValid) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
@@ -1367,7 +1344,6 @@ namespace System.Resources {
             }
 
             public DictionaryEntry Entry {
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 get {
                     if (_currentName == ENUM_DONE) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
                     if (!_currentIsValid) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));

@@ -25,7 +25,6 @@ namespace System.Reflection.Emit {
     public class ParameterBuilder : _ParameterBuilder
     {
         // set ParamMarshal
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual void SetMarshal(UnmanagedMarshal unmanagedMarshal)
         {
@@ -44,7 +43,6 @@ namespace System.Reflection.Emit {
         }
     
         // Set the default value of the parameter
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public virtual void SetConstant(Object defaultValue) 
         {
             TypeBuilder.SetConstantValue(
@@ -56,7 +54,6 @@ namespace System.Reflection.Emit {
         
         // Use this function if client decides to form the custom attribute blob themselves
 
-        [System.Security.SecuritySafeCritical]
         [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
@@ -75,7 +72,6 @@ namespace System.Reflection.Emit {
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
@@ -92,7 +88,6 @@ namespace System.Reflection.Emit {
         private ParameterBuilder() {}
 
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal ParameterBuilder(
             MethodBuilder   methodBuilder, 
             int             sequence, 

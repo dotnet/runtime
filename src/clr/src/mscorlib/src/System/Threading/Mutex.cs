@@ -36,14 +36,12 @@ namespace System.Threading
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public Mutex(bool initiallyOwned, String name, out bool createdNew)
             : this(initiallyOwned, name, out createdNew, (MutexSecurity)null)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public unsafe Mutex(bool initiallyOwned, String name, out bool createdNew, MutexSecurity mutexSecurity)
         {
@@ -64,7 +62,6 @@ namespace System.Threading
             CreateMutexWithGuaranteedCleanup(initiallyOwned, name, out createdNew, secAttrs);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal Mutex(bool initiallyOwned, String name, out bool createdNew, Win32Native.SECURITY_ATTRIBUTES secAttrs) 
         {
@@ -84,7 +81,6 @@ namespace System.Threading
             CreateMutexWithGuaranteedCleanup(initiallyOwned, name, out createdNew, secAttrs);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal void CreateMutexWithGuaranteedCleanup(bool initiallyOwned, String name, out bool createdNew, Win32Native.SECURITY_ATTRIBUTES secAttrs)
         {
@@ -105,11 +101,9 @@ namespace System.Threading
             MutexCleanupInfo m_cleanupInfo;
             internal bool m_newMutex;
             String m_name;
-            [System.Security.SecurityCritical] // auto-generated
             Win32Native.SECURITY_ATTRIBUTES m_secAttrs;
             Mutex m_mutex;
 
-            [System.Security.SecurityCritical]  // auto-generated
             [PrePrepareMethod]
             internal MutexTryCodeHelper(bool initiallyOwned,MutexCleanupInfo cleanupInfo, String name, Win32Native.SECURITY_ATTRIBUTES secAttrs, Mutex mutex)
             {
@@ -122,7 +116,6 @@ namespace System.Threading
                 m_mutex = mutex;
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             [PrePrepareMethod]
             internal void MutexTryCode(object userData)
             {  
@@ -177,7 +170,6 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [PrePrepareMethod]
         private void MutexCleanupCode(Object userData, bool exceptionThrown)
         {
@@ -205,10 +197,8 @@ namespace System.Threading
 
         internal class MutexCleanupInfo
         {
-            [System.Security.SecurityCritical] // auto-generated
             internal SafeWaitHandle mutexHandle;
             internal bool inCriticalRegion;
-            [System.Security.SecurityCritical]  // auto-generated
             internal MutexCleanupInfo(SafeWaitHandle mutexHandle, bool inCriticalRegion)
             {
                 this.mutexHandle = mutexHandle;
@@ -216,24 +206,20 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public Mutex(bool initiallyOwned, String name) : this(initiallyOwned, name, out dummyBool) {
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public Mutex(bool initiallyOwned) : this(initiallyOwned, null, out dummyBool)
         {
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public Mutex() : this(false, null, out dummyBool)
         {
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private Mutex(SafeWaitHandle handle)
         {
@@ -241,7 +227,6 @@ namespace System.Threading
             hasThreadAffinity = true;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Mutex OpenExisting(string name)
         {
             return OpenExisting(name, (MutexRights) 0);
@@ -251,7 +236,6 @@ namespace System.Threading
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Mutex OpenExisting(string name, MutexRights rights)
         {
             Mutex result;
@@ -272,19 +256,16 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, out Mutex result)
         {
             return OpenExistingWorker(name, (MutexRights)0, out result) == OpenExistingResult.Success;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, MutexRights rights, out Mutex result)
         {
             return OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
         }
 
-        [System.Security.SecurityCritical]
         private static OpenExistingResult OpenExistingWorker(string name, MutexRights rights, out Mutex result)
         {
             if (name == null)
@@ -343,7 +324,6 @@ namespace System.Threading
         // Note: To call ReleaseMutex, you must have an ACL granting you
         // MUTEX_MODIFY_STATE rights (0x0001).  The other interesting value
         // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public void ReleaseMutex()
         {
@@ -356,7 +336,6 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         static int CreateMutexHandle(bool initiallyOwned, String name, Win32Native.SECURITY_ATTRIBUTES securityAttribute, out SafeWaitHandle mutexHandle)
         {

@@ -33,41 +33,33 @@ namespace System {
         // NATIVE METHODS
         // For comments on these methods please see $\src\vm\COMUtilNative.cpp
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static long StringToLong(System.String s, int radix, int flags) {
             return StringToLong(s,radix,flags, null);
         }
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public unsafe extern static long StringToLong(System.String s, int radix, int flags, int* currPos);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static long StringToLong(System.String s, int radix, int flags, ref int currPos) {
             fixed(int * ppos = &currPos) {
                 return StringToLong( s, radix, flags, ppos);
             }
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static int StringToInt(System.String s, int radix, int flags) {            
             return StringToInt(s,radix,flags, null);
         }
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]        
         public unsafe extern static int StringToInt(System.String s, int radix, int flags, int* currPos);        
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static int StringToInt(System.String s, int radix, int flags, ref int currPos) {            
             fixed(int * ppos = &currPos) {
                 return StringToInt( s, radix, flags, ppos);
             }
         }        
     
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern static String IntToString(int l, int radix, int width, char paddingChar, int flags);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern static String LongToString(long l, int radix, int width, char paddingChar, int flags);
     }

@@ -59,7 +59,6 @@ namespace System.Security.Permissions
             }
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileIOPermission( FileIOPermissionAccess access, String path )
         {
             VerifyAccess( access );
@@ -68,7 +67,6 @@ namespace System.Security.Permissions
             AddPathList( access, pathList, false, true, false );
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileIOPermission( FileIOPermissionAccess access, String[] pathList )
         {
             VerifyAccess( access );
@@ -76,7 +74,6 @@ namespace System.Security.Permissions
             AddPathList( access, pathList, false, true, false );
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal FileIOPermission( FileIOPermissionAccess access, String[] pathList, bool checkForDuplicates, bool needFullPath )
         {
             VerifyAccess( access );
@@ -105,7 +102,6 @@ namespace System.Security.Permissions
             SetPathList( access, AccessControlActions.None, pathList, checkForDuplicates );
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal void SetPathList( FileIOPermissionAccess access, AccessControlActions control, String[] pathList, bool checkForDuplicates )
         {
             VerifyAccess( access );
@@ -129,7 +125,6 @@ namespace System.Security.Permissions
             AddPathList( access, pathList, checkForDuplicates, true, true );
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void AddPathList( FileIOPermissionAccess access, String path )
         {
             String[] pathList;
@@ -140,19 +135,16 @@ namespace System.Security.Permissions
             AddPathList( access, pathList, false, true, false );
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void AddPathList( FileIOPermissionAccess access, String[] pathList )
         {
             AddPathList( access, pathList, true, true, true );
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void AddPathList( FileIOPermissionAccess access, String[] pathListOrig, bool checkForDuplicates, bool needFullPath, bool copyPathList )
         {
             AddPathList( access, AccessControlActions.None, pathListOrig, checkForDuplicates, needFullPath, copyPathList );
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void AddPathList(FileIOPermissionAccess access, AccessControlActions control, String[] pathListOrig, bool checkForDuplicates, bool needFullPath, bool copyPathList)
         {
             if (pathListOrig == null)
@@ -227,7 +219,6 @@ namespace System.Security.Permissions
             }
         }
 
-        [SecuritySafeCritical]
         public String[] GetPathList( FileIOPermissionAccess access )
         {
             VerifyAccess( access );
@@ -813,7 +804,6 @@ namespace System.Security.Permissions
         /// 
         /// IMPORTANT: This method should only be used after calling GetFullPath on the path to verify
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal static void QuickDemand(FileIOPermissionAccess access, string fullPath, bool checkForDuplicates = false, bool needFullPath = false)
         {
             EmulateFileIOPermissionChecks(fullPath);
@@ -829,7 +819,6 @@ namespace System.Security.Permissions
         /// IMPORTANT: This method should only be used after calling GetFullPath on the path to verify
         /// 
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal static void QuickDemand(FileIOPermissionAccess access, string[] fullPathList, bool checkForDuplicates = false, bool needFullPath = true)
         {
             foreach (string fullPath in fullPathList)
@@ -838,7 +827,6 @@ namespace System.Security.Permissions
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static void QuickDemand(PermissionState state)
         {
             // Should be a no-op without CAS
@@ -907,7 +895,6 @@ namespace System.Security.Permissions
             m_pathDiscovery = pathDiscovery;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public FileIOAccess( String value )
         {
             if (value == null)
@@ -962,7 +949,6 @@ namespace System.Security.Permissions
             m_pathDiscovery = operand.m_pathDiscovery;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public void AddExpressions(ArrayList values, bool checkForDuplicates)
         {
             m_allFiles = false;
@@ -1013,7 +999,6 @@ namespace System.Security.Permissions
             return new FileIOAccess( this );
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileIOAccess Union( FileIOAccess operand )
         {
             if (operand == null)
@@ -1031,7 +1016,6 @@ namespace System.Security.Permissions
             return new FileIOAccess( this.m_set.Union( operand.m_set ), false, this.m_allLocalFiles || operand.m_allLocalFiles, this.m_pathDiscovery );
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileIOAccess Intersect( FileIOAccess operand )
         {
             if (operand == null)
@@ -1101,7 +1085,6 @@ namespace System.Security.Permissions
             return new FileIOAccess( intersectionSet, false, this.m_allLocalFiles && operand.m_allLocalFiles, this.m_pathDiscovery );
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool IsSubsetOf( FileIOAccess operand )
         {
             if (operand == null)
@@ -1158,7 +1141,6 @@ namespace System.Security.Permissions
             }
         }
         
-        [SecuritySafeCritical]
         public override String ToString()
         {
             // SafeCritical: all string expression sets are constructed with the throwOnRelative bit set, so
@@ -1187,7 +1169,6 @@ namespace System.Security.Permissions
             }
         }
 
-        [SecuritySafeCritical]
         public String[] ToStringArray()
         {
             // SafeCritical: all string expression sets are constructed with the throwOnRelative bit set, so
@@ -1195,12 +1176,10 @@ namespace System.Security.Permissions
             return m_set.UnsafeToStringArray();
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern bool IsLocalDrive(String path);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool Equals(Object obj)
         {
             FileIOAccess operand = obj as FileIOAccess;

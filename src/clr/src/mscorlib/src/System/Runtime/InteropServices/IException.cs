@@ -51,16 +51,9 @@ namespace System.Runtime.InteropServices {
         }
 
         String Source {
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #endif
             get;
-            #if FEATURE_CORECLR
-            [System.Security.SecurityCritical] // auto-generated
-            #endif
             set;
         }
-        [System.Security.SecurityCritical]  // auto-generated_required
         void GetObjectData(SerializationInfo info, StreamingContext context);
 #endif
 

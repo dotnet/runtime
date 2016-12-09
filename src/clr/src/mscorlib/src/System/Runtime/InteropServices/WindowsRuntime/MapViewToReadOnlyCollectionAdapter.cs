@@ -34,7 +34,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // int Count { get }
         [Pure]
-        [SecurityCritical]
         internal int Count<K, V>()
         {
             object _this = JitHelpers.UnsafeCast<object>(this);

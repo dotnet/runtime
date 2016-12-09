@@ -66,7 +66,6 @@ namespace System.Globalization {
             m_invalidCultureName    = (string) info.GetValue("InvalidCultureName", typeof(string));
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
                 throw new ArgumentNullException(nameof(info));

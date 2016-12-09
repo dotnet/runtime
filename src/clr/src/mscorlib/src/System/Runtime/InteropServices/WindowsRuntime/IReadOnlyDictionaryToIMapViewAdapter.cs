@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V Lookup(K key)
-        [SecurityCritical]
         internal V Lookup<K, V>(K key)
         {
             IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
@@ -50,7 +49,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint Size { get }
-        [SecurityCritical]
         internal uint Size<K, V>()
         {
             IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
@@ -58,7 +56,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
         
         // bool HasKey(K key)
-        [SecurityCritical]
         internal bool HasKey<K, V>(K key)
         {
             IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
@@ -66,7 +63,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Split(out IMapView<K, V> first, out IMapView<K, V> second)
-        [SecurityCritical]
         internal void Split<K, V>(out IMapView<K, V> first, out IMapView<K, V> second)
         {
             IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);

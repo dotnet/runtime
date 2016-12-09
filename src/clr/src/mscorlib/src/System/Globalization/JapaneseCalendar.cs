@@ -159,7 +159,6 @@ namespace System.Globalization {
         // . is a delimiter, but the value of . doesn't matter.
         // '_' marks the space between the japanese era name, japanese abbreviated era name
         //     english name, and abbreviated english names.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static EraInfo[] GetErasFromRegistry()
         {
             // Look in the registry key and see if we can find any ranges

@@ -24,10 +24,8 @@ namespace System.IO {
         private GCHandle _pinningHandle;
 
         // The new inheritance model requires a Critical default ctor since base (UnmanagedMemoryStream) has one
-        [System.Security.SecurityCritical]
         private PinnedBufferMemoryStream():base(){}
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal PinnedBufferMemoryStream(byte[] array)
         {
             Contract.Assert(array != null, "Array can't be null");
@@ -52,7 +50,6 @@ namespace System.IO {
             Dispose(false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override void Dispose(bool disposing)
         {
             if (_isOpen) {

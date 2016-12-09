@@ -11,7 +11,6 @@ namespace System.Reflection.Metadata
     public static class AssemblyExtensions
     {
         [DllImport(JitHelpers.QCall)]
-        [SecurityCritical] // unsafe method
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private unsafe static extern bool InternalTryGetRawMetadata(RuntimeAssembly assembly, ref byte* blob, ref int length);
@@ -24,7 +23,6 @@ namespace System.Reflection.Metadata
         //     associated, is alive. The caller is responsible for keeping the assembly object alive while accessing the
         //     metadata blob.
         [CLSCompliant(false)] // out byte* blob
-        [SecurityCritical] // unsafe method
         public unsafe static bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
             if (assembly == null)

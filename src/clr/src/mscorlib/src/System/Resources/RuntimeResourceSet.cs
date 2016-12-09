@@ -184,7 +184,6 @@ namespace System.Resources {
         // the resources once, adding them into the table.
         private bool _haveReadFromReader;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal RuntimeResourceSet(String fileName) : base(false)
         {
             BCLDebug.Log("RESMGRFILEFORMAT", "RuntimeResourceSet .ctor(String)");
@@ -204,7 +203,6 @@ namespace System.Resources {
             Assembly = assembly;
         }
 #else
-        [System.Security.SecurityCritical]  // auto-generated
         internal RuntimeResourceSet(Stream stream) : base(false)
         {
             BCLDebug.Log("RESMGRFILEFORMAT", "RuntimeResourceSet .ctor(Stream)");

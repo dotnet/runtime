@@ -50,7 +50,6 @@ namespace System.Text
             return EncodingForwarder.GetByteCount(this, s);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetByteCount(char* chars, int count)
         {
             return EncodingForwarder.GetByteCount(this, chars, count);
@@ -77,7 +76,6 @@ namespace System.Text
             return EncodingForwarder.GetBytes(this, chars, charIndex, charCount, bytes, byteIndex);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
@@ -91,7 +89,6 @@ namespace System.Text
             return EncodingForwarder.GetCharCount(this, bytes, index, count);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             return EncodingForwarder.GetCharCount(this, bytes, count);
@@ -103,7 +100,6 @@ namespace System.Text
             return EncodingForwarder.GetChars(this, bytes, byteIndex, byteCount, chars, charIndex);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             return EncodingForwarder.GetChars(this, bytes, byteCount, chars, charCount);

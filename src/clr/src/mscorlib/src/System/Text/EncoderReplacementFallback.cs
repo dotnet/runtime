@@ -220,7 +220,6 @@ namespace System.Text
         }
 
         // Clear the buffer
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe void Reset()
         {
             fallbackCount = -1;

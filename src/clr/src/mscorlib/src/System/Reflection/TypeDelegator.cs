@@ -24,9 +24,6 @@ namespace System.Reflection {
 
         protected Type typeImpl;
         
-        #if FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical] // auto-generated
-        #endif
         protected TypeDelegator() {}
         
         public TypeDelegator(Type delegatingType) {

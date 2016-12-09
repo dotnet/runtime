@@ -20,13 +20,10 @@ namespace System.Text
     {
         // Pointers to our memory section parts
         [NonSerialized]
-        [SecurityCritical]
         protected unsafe char*   mapBytesToUnicode = null;      // char 65536
         [NonSerialized]
-        [SecurityCritical]
         protected unsafe ushort* mapUnicodeToBytes = null;      // byte 65536
         [NonSerialized]
-        [SecurityCritical]
         protected unsafe int*    mapCodePageCached = null;      // to remember which CP is cached
 
         [NonSerialized]
@@ -45,19 +42,16 @@ namespace System.Text
         [NonSerialized]
         protected char    charUnknown = (char)0;
 
-        [System.Security.SecurityCritical]  // auto-generated
         public DBCSCodePageEncoding(int codePage) : this(codePage, codePage)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal DBCSCodePageEncoding(int codePage, int dataCodePage) : base(codePage, dataCodePage)
         {
         }
 
         // Constructor called by serialization.
         // Note:  We use the base GetObjectData however
-        [System.Security.SecurityCritical]  // auto-generated
         internal DBCSCodePageEncoding(SerializationInfo info, StreamingContext context) : base(0)
         {
             // Actually this can't ever get called, CodePageEncoding is our proxy
@@ -93,7 +87,6 @@ namespace System.Text
         //               corrospond to those unicode code points.
         // We have a managed code page entry, so load our tables
         //
-        [System.Security.SecurityCritical]  // auto-generated
         protected override unsafe void LoadManagedCodePage()
         {
             // Should be loading OUR code page
@@ -235,7 +228,6 @@ namespace System.Text
         }
 
         // Any special processing for this code page
-        [System.Security.SecurityCritical]  // auto-generated
         protected virtual unsafe void CleanUpEndBytes(char* chars)
         {
         }
@@ -256,7 +248,6 @@ namespace System.Text
         }
 
         // Read in our best fit table
-        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe override void ReadBestFitTable()
         {
             // Lock so we don't confuse ourselves.
@@ -534,7 +525,6 @@ namespace System.Text
         // GetByteCount
         // Note: We start by assuming that the output will be the same as count.  Having
         // an encoder or fallback may change that assumption
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
@@ -625,7 +615,6 @@ namespace System.Text
             return (int)byteCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
@@ -779,7 +768,6 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
@@ -925,7 +913,6 @@ namespace System.Text
             return charCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {

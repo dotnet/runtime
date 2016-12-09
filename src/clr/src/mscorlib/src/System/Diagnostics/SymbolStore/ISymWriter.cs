@@ -31,9 +31,6 @@ namespace System.Diagnostics.SymbolStore {
         // Define a source document. Guid's will be provided for the
         // languages, vendors, and document types that we currently know
         // about.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         ISymbolDocumentWriter DefineDocument(String url,
                                           Guid language,
                                           Guid languageVendor,
@@ -42,9 +39,6 @@ namespace System.Diagnostics.SymbolStore {
         // Define the method that the user has defined as their entrypoint
         // for this module. This would be, perhaps, the user's main method
         // rather than compiler generated stubs before main.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void SetUserEntryPoint(SymbolToken entryMethod);
     
         // Open a method to emit symbol information into. The given method
@@ -55,25 +49,16 @@ namespace System.Diagnostics.SymbolStore {
         // defined symbols for that method.
         //
         // There can be only one open method at a time.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void OpenMethod(SymbolToken method);
     
         // Close the current method. Once a method is closed, no more
         // symbols can be defined within it.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void CloseMethod();
     
         // Define a group of sequence points within the current method.
         // Each line/column defines the start of a statement within a
         // method. The arrays should be sorted by offset. The offset is
         // always the offset from the start of the method, in bytes.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void DefineSequencePoints(ISymbolDocumentWriter document,
                                   int[] offsets,
                                   int[] lines,
@@ -96,17 +81,11 @@ namespace System.Diagnostics.SymbolStore {
         // Note: scope id's are only valid in the current method.
         //
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         int OpenScope(int startOffset);
     
         // Close the current lexical scope. Once a scope is closed no more
         // variables can be defined within it. endOffset points past the
         // last instruction in the scope.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void CloseScope(int endOffset);
     
         // Define the offset range for a given lexical scope.
@@ -120,9 +99,6 @@ namespace System.Diagnostics.SymbolStore {
         // variable of the same name that has multiple homes throughout a
         // scope. (Note: start/end offsets must not overlap in such a
         // case.)
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void DefineLocalVariable(String name,
                                         FieldAttributes attributes,
                                         byte[] signature,
@@ -178,9 +154,6 @@ namespace System.Diagnostics.SymbolStore {
         // Defines a custom attribute based upon its name. Not to be
         // confused with Metadata custom attributes, these attributes are
         // held in the symbol store.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void SetSymAttribute(SymbolToken parent, String name, byte[] data);
     
         // Opens a new namespace. Call this before defining methods or
@@ -195,9 +168,6 @@ namespace System.Diagnostics.SymbolStore {
         // current scope will also stop using the namespace, and the
         // namespace will be in use in all scopes that inherit from the
         // currently open scope.
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         void UsingNamespace(String fullName);
         
         // Specifies the true start and end of a method within a source

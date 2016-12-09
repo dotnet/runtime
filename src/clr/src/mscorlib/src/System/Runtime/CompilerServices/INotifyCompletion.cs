@@ -34,7 +34,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation">The action to invoke when the operation completes.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
         /// <remarks>Unlike OnCompleted, UnsafeOnCompleted need not propagate ExecutionContext information.</remarks>
-        [SecurityCritical]
         void UnsafeOnCompleted(Action continuation);
     }
 }

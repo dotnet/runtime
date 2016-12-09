@@ -81,10 +81,8 @@ namespace System
         private extern T Target
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            [SecuritySafeCritical]
             get;
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            [SecuritySafeCritical]
             set;
         }
 
@@ -95,10 +93,8 @@ namespace System
         // This is needed for subclasses deriving from WeakReference<T>, however.
         // Additionally, there may be some cases during shutdown when we run this finalizer.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecuritySafeCritical]
         extern ~WeakReference();
 
-        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null) {
@@ -111,11 +107,9 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecuritySafeCritical]
         private extern void Create(T target, bool trackResurrection);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecuritySafeCritical]
         private extern bool IsTrackResurrection();
     }
 }

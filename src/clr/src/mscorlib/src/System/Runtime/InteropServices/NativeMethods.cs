@@ -31,13 +31,10 @@ namespace System.Runtime.InteropServices {
         ]
         internal interface IDispatch {
 
-            [System.Security.SecurityCritical]
             void GetTypeInfoCount(out uint pctinfo);
 
-            [System.Security.SecurityCritical]
             void GetTypeInfo(uint iTInfo, int lcid, out IntPtr info);
 
-            [System.Security.SecurityCritical]
             void GetIDsOfNames(
                 ref Guid iid,
                 [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 2)]
@@ -48,7 +45,6 @@ namespace System.Runtime.InteropServices {
                 [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I4, SizeParamIndex = 2)]
                 int[] rgDispId);
 
-            [System.Security.SecurityCritical]
             void Invoke(
                 int dispIdMember,
                 ref Guid riid,

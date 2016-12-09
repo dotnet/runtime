@@ -23,14 +23,10 @@ using System.Runtime.InteropServices;
 namespace System.Runtime.ConstrainedExecution
 {
 #if !FEATURE_CORECLR
-    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
 #endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CriticalFinalizerObject
     {
-        #if FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical] // auto-generated
-        #endif
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected CriticalFinalizerObject()
         {

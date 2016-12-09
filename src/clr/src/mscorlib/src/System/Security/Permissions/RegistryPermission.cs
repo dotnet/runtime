@@ -82,7 +82,6 @@ namespace System.Security.Permissions
             AddPathList( access, AccessControlActions.None, pathList );
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void AddPathList( RegistryPermissionAccess access, AccessControlActions control, String pathList )
         {
             VerifyAccess( access );
@@ -109,7 +108,6 @@ namespace System.Security.Permissions
             }
         }
     
-        [SecuritySafeCritical]
         public String GetPathList( RegistryPermissionAccess access )
         {
             // SafeCritical: these are registry paths, which means we're not leaking file system information here
@@ -194,7 +192,6 @@ namespace System.Security.Permissions
         //
         //------------------------------------------------------
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsSubsetOf(IPermission target)
         {
             if (target == null)
@@ -218,7 +215,6 @@ namespace System.Security.Permissions
                         (this.m_changeAcl == null || this.m_changeAcl.IsSubsetOf( operand.m_changeAcl )));
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override IPermission Intersect(IPermission target)
         {
             if (target == null)
@@ -270,7 +266,6 @@ namespace System.Security.Permissions
             return intersectPermission;
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override IPermission Union(IPermission other)
         {
             if (other == null)

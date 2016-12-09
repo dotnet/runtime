@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
 internal static class WindowsRuntimeBufferHelper {
 
 
-    [SecurityCritical]
     [DllImport(JitHelpers.QCall)]
     [SuppressUnmanagedCodeSecurity]
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
@@ -27,7 +26,6 @@ internal static class WindowsRuntimeBufferHelper {
 
 
     [FriendAccessAllowed]
-    [SecurityCritical]
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     internal unsafe static void StoreOverlappedInCCW(Object windowsRuntimeBuffer, NativeOverlapped* overlapped) {
 

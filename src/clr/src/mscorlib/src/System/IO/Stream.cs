@@ -448,7 +448,6 @@ namespace System.IO {
                         : BeginEndReadAsync(buffer, offset, count);
         }
 
-        [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();
 
@@ -654,7 +653,6 @@ namespace System.IO {
                 _buffer = null;
             }
 
-            [SecuritySafeCritical] // necessary for EC.Capture
             [MethodImpl(MethodImplOptions.NoInlining)]
             public ReadWriteTask(
                 bool isRead,
@@ -692,7 +690,6 @@ namespace System.IO {
                 }
             }
 
-            [SecurityCritical] // necessary for CoreCLR
             private static void InvokeAsyncCallback(object completedTask)
             {
                 var rwc = (ReadWriteTask)completedTask;
@@ -701,10 +698,8 @@ namespace System.IO {
                 callback(rwc);
             }
 
-            [SecurityCritical] // necessary for CoreCLR
             private static ContextCallback s_invokeAsyncCallback;
             
-            [SecuritySafeCritical] // necessary for ExecutionContext.Run
             void ITaskCompletionAction.Invoke(Task completingTask)
             {
                 // Get the ExecutionContext.  If there is none, just run the callback
@@ -751,7 +746,6 @@ namespace System.IO {
                         : BeginEndWriteAsync(buffer, offset, count);
         }
 
-        [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndWrite();
 

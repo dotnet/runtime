@@ -118,10 +118,6 @@ namespace System.Security.Policy
             }
         }
 
-#pragma warning disable 618
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
-#pragma warning restore 618
-        [SecuritySafeCritical]
         public override EvidenceBase Clone()
         {
             return base.Clone();

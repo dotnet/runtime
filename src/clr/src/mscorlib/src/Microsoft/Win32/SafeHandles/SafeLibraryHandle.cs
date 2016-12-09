@@ -15,12 +15,10 @@ namespace Microsoft.Win32 {
     using System.Security.Permissions;
     using System.Text;
 
-    [System.Security.SecurityCritical]  // auto-generated
     [HostProtectionAttribute(MayLeakOnAbort = true)]
     sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid {
         internal SafeLibraryHandle() : base(true) {}
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return UnsafeNativeMethods.FreeLibrary(handle);

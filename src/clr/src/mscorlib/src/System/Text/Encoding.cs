@@ -510,7 +510,6 @@ namespace System.Text
             return fallbackEncoding;
         }
 #if FEATURE_CODEPAGES_FILE
-        [System.Security.SecurityCritical]  // auto-generated
         private static Encoding GetEncodingRare(int codepage)
         {
             Contract.Assert(codepage != 0 && codepage != 1200 && codepage != 1201 && codepage != 65001,
@@ -579,7 +578,6 @@ namespace System.Text
             return result;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static Encoding GetEncodingCodePage(int CodePage)
         {
             // Single Byte or Double Byte Code Page? (0 if not found)
@@ -890,7 +888,6 @@ namespace System.Text
         // which is really slow, so this method should be avoided if you're calling
         // a 3rd party encoding.
         [Pure]
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetByteCount(char* chars, int count)
@@ -916,7 +913,6 @@ namespace System.Text
 
         // For NLS Encodings, workhorse takes an encoder (may be null)
         // Always validate parameters before calling internal version, which will only assert.
-        [System.Security.SecurityCritical]  // auto-generated
         internal virtual unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
             Contract.Requires(chars != null);
@@ -992,7 +988,6 @@ namespace System.Text
 
         // This is our internal workhorse
         // Always validate parameters before calling internal version, which will only assert.
-        [System.Security.SecurityCritical]  // auto-generated
         internal virtual unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
@@ -1016,7 +1011,6 @@ namespace System.Text
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow byteCount either.
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetBytes(char* chars, int charCount,
@@ -1086,7 +1080,6 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implimentation)
         [Pure]
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetCharCount(byte* bytes, int count)
@@ -1112,7 +1105,6 @@ namespace System.Text
 
         // This is our internal workhorse
         // Always validate parameters before calling internal version, which will only assert.
-        [System.Security.SecurityCritical]  // auto-generated
         internal virtual unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
         {
             return GetCharCount(bytes, count);
@@ -1175,7 +1167,6 @@ namespace System.Text
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow charCount either.
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetChars(byte* bytes, int byteCount,
@@ -1224,7 +1215,6 @@ namespace System.Text
 
         // This is our internal workhorse
         // Always validate parameters before calling internal version, which will only assert.
-        [System.Security.SecurityCritical]  // auto-generated
         internal virtual unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS decoder)
         {
@@ -1232,7 +1222,6 @@ namespace System.Text
         }
 
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe string GetString(byte* bytes, int byteCount)
@@ -1300,7 +1289,6 @@ namespace System.Text
             return new DefaultDecoder(this);
         }
 
-        [System.Security.SecuritySafeCritical]
         private static Encoding CreateDefaultEncoding()
         {
             // defaultEncoding should be null if we get here, but we can't
@@ -1476,7 +1464,6 @@ namespace System.Text
                 EncodingName, EncoderFallback.GetType()), "bytes");
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void ThrowBytesOverflow(EncoderNLS encoder, bool nothingEncoded)
         {
             if (encoder == null || encoder.m_throwOnOverflow || nothingEncoded)
@@ -1501,7 +1488,6 @@ namespace System.Text
                 EncodingName, DecoderFallback.GetType()), "chars");
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void ThrowCharsOverflow(DecoderNLS decoder, bool nothingDecoded)
         {
             if (decoder == null || decoder.m_throwOnOverflow || nothingDecoded)
@@ -1552,7 +1538,6 @@ namespace System.Text
             }
 
             // Just get it from GetEncoding
-            [System.Security.SecurityCritical]  // auto-generated
             public Object GetRealObject(StreamingContext context)
             {
                 // upon deserialization since the DefaultEncoder implement IObjectReference the 
@@ -1578,7 +1563,6 @@ namespace System.Text
             }
 
             // ISerializable implementation, get data for this object
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
@@ -1602,7 +1586,6 @@ namespace System.Text
                 return m_encoding.GetByteCount(chars, index, count);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetByteCount(char* chars, int count, bool flush)
             {
@@ -1635,7 +1618,6 @@ namespace System.Text
                 return m_encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, bool flush)
@@ -1678,7 +1660,6 @@ namespace System.Text
             }
 
             // Just get it from GetEncoding
-            [System.Security.SecurityCritical]  // auto-generated
             public Object GetRealObject(StreamingContext context)
             {
                 // upon deserialization since the DefaultEncoder implement IObjectReference the 
@@ -1699,7 +1680,6 @@ namespace System.Text
             }
 
             // ISerializable implementation, get data for this object
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
@@ -1727,7 +1707,6 @@ namespace System.Text
                 return m_encoding.GetCharCount(bytes, index, count);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
             {
@@ -1764,7 +1743,6 @@ namespace System.Text
                 return m_encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetChars(byte* bytes, int byteCount,
                                                   char* chars, int charCount, bool flush)
@@ -1776,24 +1754,17 @@ namespace System.Text
 
         internal class EncodingCharBuffer
         {
-            [SecurityCritical]
             unsafe char* chars;
-            [SecurityCritical]
             unsafe char* charStart;
-            [SecurityCritical]
             unsafe char* charEnd;
             int          charCountResult = 0;
             Encoding     enc;
             DecoderNLS   decoder;
-            [SecurityCritical]
             unsafe byte* byteStart;
-            [SecurityCritical]
             unsafe byte* byteEnd;
-            [SecurityCritical]
             unsafe byte* bytes;
             DecoderFallbackBuffer fallbackBuffer;
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe EncodingCharBuffer(Encoding enc, DecoderNLS decoder, char* charStart, int charCount,
                                                     byte* byteStart, int byteCount)
             {
@@ -1820,7 +1791,6 @@ namespace System.Text
                 fallbackBuffer.InternalInitialize(bytes, charEnd);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddChar(char ch, int numBytes)
             {
                 if (chars != null)
@@ -1839,14 +1809,12 @@ namespace System.Text
                 return true;
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddChar(char ch)
             {
                 return AddChar(ch,1);
             }
 
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
             {
                 // Need room for 2 chars
@@ -1860,7 +1828,6 @@ namespace System.Text
                 return AddChar(ch1, numBytes) && AddChar(ch2, numBytes);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe void AdjustBytes(int count)
             {
                 bytes += count;
@@ -1868,7 +1835,6 @@ namespace System.Text
 
             internal unsafe bool MoreData
             {
-                [System.Security.SecurityCritical]  // auto-generated
                 get
                 {
                     return bytes < byteEnd;
@@ -1876,7 +1842,6 @@ namespace System.Text
             }
 
             // Do we have count more bytes?
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool EvenMoreData(int count)
             {
                 return (bytes <= byteEnd - count);
@@ -1884,7 +1849,6 @@ namespace System.Text
 
             // GetNextByte shouldn't be called unless the caller's already checked more data or even more data,
             // but we'll double check just to make sure.
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe byte GetNextByte()
             {
                 Contract.Assert(bytes < byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
@@ -1895,14 +1859,12 @@ namespace System.Text
 
             internal unsafe int BytesUsed
             {
-                [System.Security.SecurityCritical]  // auto-generated
                 get
                 {
                     return (int)(bytes - byteStart);
                 }
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool Fallback(byte fallbackByte)
             {
                 // Build our buffer
@@ -1912,7 +1874,6 @@ namespace System.Text
                 return Fallback(byteBuffer);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool Fallback(byte byte1, byte byte2)
             {
                 // Build our buffer
@@ -1922,7 +1883,6 @@ namespace System.Text
                 return Fallback(byteBuffer);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
             {
                 // Build our buffer
@@ -1932,7 +1892,6 @@ namespace System.Text
                 return Fallback(byteBuffer);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool Fallback(byte[] byteBuffer)
             {
                 // Do the fallback and add the data.
@@ -1968,24 +1927,17 @@ namespace System.Text
 
         internal class EncodingByteBuffer
         {
-            [SecurityCritical]
             unsafe byte* bytes;
-            [SecurityCritical]
             unsafe byte* byteStart;
-            [SecurityCritical]
             unsafe byte* byteEnd;
-            [SecurityCritical]
             unsafe char* chars;
-            [SecurityCritical]
             unsafe char* charStart;
-            [SecurityCritical]
             unsafe char* charEnd;
             int          byteCountResult = 0;
             Encoding     enc;
             EncoderNLS   encoder;
             internal EncoderFallbackBuffer fallbackBuffer;
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe EncodingByteBuffer(Encoding inEncoding, EncoderNLS inEncoder,
                         byte* inByteStart, int inByteCount, char* inCharStart, int inCharCount)
             {
@@ -2014,7 +1966,6 @@ namespace System.Text
                 fallbackBuffer.InternalInitialize(chars, charEnd, encoder, bytes != null);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b, int moreBytesExpected)
             {
                 Contract.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
@@ -2033,31 +1984,26 @@ namespace System.Text
                 return true;
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b1)
             {
                 return (AddByte(b1, 0));
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b1, byte b2)
             {
                 return (AddByte(b1, b2, 0));
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b1, byte b2, int moreBytesExpected)
             {
                 return (AddByte(b1, 1 + moreBytesExpected) && AddByte(b2, moreBytesExpected));
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b1, byte b2, byte b3)
             {
                 return AddByte(b1, b2, b3, (int)0);
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b1, byte b2, byte b3, int moreBytesExpected)
             {
                 return (AddByte(b1, 2 + moreBytesExpected) &&
@@ -2065,7 +2011,6 @@ namespace System.Text
                         AddByte(b3, moreBytesExpected));
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool AddByte(byte b1, byte b2, byte b3, byte b4)
             {
                 return (AddByte(b1, 3) &&
@@ -2074,7 +2019,6 @@ namespace System.Text
                         AddByte(b4, 0));
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe void MovePrevious(bool bThrow)
             {
                 if (fallbackBuffer.bFallingBack)
@@ -2092,7 +2036,6 @@ namespace System.Text
                     enc.ThrowBytesOverflow(encoder, bytes == byteStart);    // Throw? (and reset fallback if not converting)
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe bool Fallback(char charFallback)
             {
                 // Do the fallback
@@ -2101,7 +2044,6 @@ namespace System.Text
 
             internal unsafe bool MoreData
             {
-                [System.Security.SecurityCritical]  // auto-generated
                 get
                 {
                     // See if fallbackBuffer is not empty or if there's data left in chars buffer.
@@ -2109,7 +2051,6 @@ namespace System.Text
                 }
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             internal unsafe char GetNextChar()
             {
                  // See if there's something in our fallback buffer
@@ -2127,7 +2068,6 @@ namespace System.Text
 
             internal unsafe int CharsUsed
             {
-                [System.Security.SecurityCritical]  // auto-generated
                 get
                 {
                     return (int)(chars - charStart);

@@ -190,7 +190,6 @@ namespace System.Resources
 
 
         // Note: May return null.
-        [System.Security.SecuritySafeCritical] // auto-generated
         private static String[] GetResourceFallbackArray()
         {
             // AppCompat note:  We've added this feature for desktop V4 but we ripped it out

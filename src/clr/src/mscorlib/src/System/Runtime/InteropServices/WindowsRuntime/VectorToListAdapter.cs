@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // T this[int index] { get }
-        [SecurityCritical]
         internal T Indexer_Get<T>(int index)
         {
             if (index < 0)
@@ -41,7 +40,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // T this[int index] { set }
-        [SecurityCritical]
         internal void Indexer_Set<T>(int index, T value)
         {
             if (index < 0)
@@ -52,7 +50,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // int IndexOf(T item)
-        [SecurityCritical]
         internal int IndexOf<T>(T item)
         {
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
@@ -72,7 +69,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Insert(int index, T item)
-        [SecurityCritical]
         internal void Insert<T>(int index, T item)
         {
             if (index < 0)
@@ -83,7 +79,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void RemoveAt(int index)
-        [SecurityCritical]
         internal void RemoveAt<T>(int index)
         {
             if (index < 0)

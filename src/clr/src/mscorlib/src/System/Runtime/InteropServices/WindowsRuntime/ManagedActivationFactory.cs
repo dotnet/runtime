@@ -33,7 +33,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private Type m_type;
 
-        [SecurityCritical]
         internal ManagedActivationFactory(Type type)
         {
             if (type == null)

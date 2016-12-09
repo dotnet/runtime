@@ -48,9 +48,6 @@ namespace System.Reflection
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Assembly))]
     [System.Runtime.InteropServices.ComVisible(true)]
-#pragma warning disable 618
-    [PermissionSetAttribute(SecurityAction.InheritanceDemand, Unrestricted = true)]
-#pragma warning restore 618
     public abstract class Assembly : _Assembly, IEvidenceFactory, ICustomAttributeProvider, ISerializable
     {
         protected Assembly() {}
@@ -103,7 +100,6 @@ namespace System.Reflection
             return base.GetHashCode();
         }
 
-        [System.Security.SecurityCritical]
         public static Assembly LoadFrom(String assemblyFile)
         {
             if(assemblyFile == null) 
@@ -113,7 +109,6 @@ namespace System.Reflection
         }
 
         // Locate an assembly for reflection by the name of the file containing the manifest.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly ReflectionOnlyLoadFrom(String assemblyFile)
         {
@@ -132,7 +127,6 @@ namespace System.Reflection
         }
 
         // Evidence is protected in Assembly.Load()
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of LoadFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly LoadFrom(String assemblyFile,
@@ -153,7 +147,6 @@ namespace System.Reflection
         }
 
         // Evidence is protected in Assembly.Load()
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of LoadFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly LoadFrom(String assemblyFile,
@@ -175,7 +168,6 @@ namespace System.Reflection
                 ref stackMark);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly LoadFrom(String assemblyFile,
                                         byte[] hashValue,
@@ -184,7 +176,6 @@ namespace System.Reflection
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadFromHash"));
         }
 
-        [SecurityCritical]
         public static Assembly UnsafeLoadFrom(string assemblyFile)
         {
             return LoadFrom(assemblyFile);
@@ -192,7 +183,6 @@ namespace System.Reflection
 
         // Locate an assembly by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly Load(String assemblyString)
         {
@@ -207,7 +197,6 @@ namespace System.Reflection
         // Calls Type.GetType for WinRT types.
         // Note: Type.GetType fails for assembly names that start with weird characters like '['. By calling it for managed types we would 
         // break AppCompat.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         internal static Type GetType_Compat(String assemblyString, String typeName)
         {
@@ -237,7 +226,6 @@ namespace System.Reflection
         // Locate an assembly for reflection by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly ReflectionOnlyLoad(String assemblyString)
         {
@@ -247,7 +235,6 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyString, null,  ref stackMark, true /*forIntrospection*/);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static Assembly Load(String assemblyString, Evidence assemblySecurity)
@@ -261,7 +248,6 @@ namespace System.Reflection
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly Load(AssemblyName assemblyRef)
         {
@@ -281,7 +267,6 @@ namespace System.Reflection
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         internal static Assembly Load(AssemblyName assemblyRef, IntPtr ptrLoadContextBinder)
         {
@@ -299,7 +284,6 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/, ptrLoadContextBinder);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static Assembly Load(AssemblyName assemblyRef, Evidence assemblySecurity)
@@ -311,7 +295,6 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, assemblySecurity, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public static Assembly LoadWithPartialName(String partialName)
         {
@@ -323,7 +306,6 @@ namespace System.Reflection
         // Loads the assembly with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller.
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly Load(byte[] rawAssembly)
         {
@@ -338,7 +320,6 @@ namespace System.Reflection
         // Loads the assembly for reflection with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly)
         {
@@ -360,7 +341,6 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller. The second parameter is the raw bytes
         // representing the symbol store that matches the assembly.
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly Load(byte[] rawAssembly,
                                     byte[] rawSymbolStore)
@@ -380,7 +360,6 @@ namespace System.Reflection
 
         // Load an assembly from a byte array, controlling where the grant set of this assembly is
         // propigated from.
-        [SecuritySafeCritical]
         [MethodImpl(MethodImplOptions.NoInlining)]  // Due to the stack crawl mark
         public static Assembly Load(byte[] rawAssembly,
                                     byte[] rawSymbolStore,
@@ -408,7 +387,6 @@ namespace System.Reflection
 
         private static Dictionary<string, Assembly> s_loadfile = new Dictionary<string, Assembly>();
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Assembly LoadFile(String path)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -438,7 +416,6 @@ namespace System.Reflection
             return result;
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly Load(Stream assemblyStream, Stream pdbStream)
         {
@@ -448,7 +425,6 @@ namespace System.Reflection
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoadFromStream(assemblyStream, pdbStream, ref stackMark);
         }
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly Load(Stream assemblyStream)
         {
@@ -462,7 +438,6 @@ namespace System.Reflection
         /*
          * Get the assembly that the current code is running from.
          */
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable 
         public static Assembly GetExecutingAssembly()
         {
@@ -470,7 +445,6 @@ namespace System.Reflection
             return RuntimeAssembly.GetExecutingAssembly(ref stackMark);
         }
        
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly GetCallingAssembly()
         {
@@ -481,7 +455,6 @@ namespace System.Reflection
             return RuntimeAssembly.GetExecutingAssembly(ref stackMark);
         }
        
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Assembly GetEntryAssembly() {
             AppDomainManager domainManager = AppDomain.CurrentDomain.DomainManager;
             if (domainManager == null)
@@ -494,12 +467,10 @@ namespace System.Reflection
 #region public methods
         public virtual event ModuleResolveEventHandler ModuleResolve
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
             add
             {
                 throw new NotImplementedException();
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             remove
             {
                 throw new NotImplementedException();
@@ -508,7 +479,6 @@ namespace System.Reflection
 
         public virtual String CodeBase
         {
-            [System.Security.SecurityCritical] // auto-generated
             get
             {
                 throw new NotImplementedException();
@@ -517,20 +487,17 @@ namespace System.Reflection
 
         public virtual String EscapedCodeBase
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return AssemblyName.EscapeCodeBase(CodeBase);
             }
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public virtual AssemblyName GetName()
         {
             return GetName(false);
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public virtual AssemblyName GetName(bool copiedName)
         {
             throw new NotImplementedException();
@@ -652,7 +619,6 @@ namespace System.Reflection
 
         public bool IsFullyTrusted
         {
-            [SecuritySafeCritical]
             get
             {
                 return true;
@@ -668,7 +634,6 @@ namespace System.Reflection
         }
 
         // ISerializable implementation
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new NotImplementedException();
@@ -823,7 +788,6 @@ namespace System.Reflection
 
         // Returns the file in the File table of the manifest that matches the
         // given name.  (Name should not include path.)
-        [System.Security.SecurityCritical] // auto-generated
         public virtual FileStream GetFile(String name)
         {
             throw new NotImplementedException();
@@ -834,7 +798,6 @@ namespace System.Reflection
             return GetFiles(false);
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public virtual FileStream[] GetFiles(bool getResourceModules)
         {
             throw new NotImplementedException();
@@ -867,7 +830,6 @@ namespace System.Reflection
 
         public virtual String Location
         {
-            [System.Security.SecurityCritical] // auto-generated
             get
             {
                 throw new NotImplementedException();
@@ -977,7 +939,6 @@ namespace System.Reflection
 
         private ASSEMBLY_FLAGS Flags
         {
-            [SecuritySafeCritical]
             get
             {
                 if ((m_flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED) == 0)
@@ -1007,12 +968,10 @@ namespace System.Reflection
         
         public override event ModuleResolveEventHandler ModuleResolve
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
             add
             {
                 _ModuleResolve += value;
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             remove
             {
                 _ModuleResolve -= value;
@@ -1021,14 +980,12 @@ namespace System.Reflection
 
         private const String s_localFilePrefix = "file:";
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetCodeBase(RuntimeAssembly assembly, 
                                                bool copiedName, 
                                                StringHandleOnStack retString);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal String GetCodeBase(bool copiedName)
         {
             String codeBase = null;
@@ -1038,7 +995,6 @@ namespace System.Reflection
 
         public override String CodeBase
         {
-            [System.Security.SecurityCritical] // auto-generated
             get {
                 String codeBase = GetCodeBase(false);
                 VerifyCodeBaseDiscovery(codeBase);
@@ -1054,7 +1010,6 @@ namespace System.Reflection
         // If the assembly is copied before it is loaded, the codebase will be set to the
         // actual file loaded if copiedName is true. If it is false, then the original code base
         // is returned.
-        [System.Security.SecurityCritical] // auto-generated
         public override AssemblyName GetName(bool copiedName)
         {
             AssemblyName an = new AssemblyName();
@@ -1088,14 +1043,12 @@ namespace System.Reflection
             return an;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetFullName(RuntimeAssembly assembly, StringHandleOnStack retString);
 
         public override String FullName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 // If called by Object.ToString(), return val may be NULL.
                 if (m_fullname == null)
@@ -1109,14 +1062,12 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetEntryPoint(RuntimeAssembly assembly, ObjectHandleOnStack retMethod);
            
         public override MethodInfo EntryPoint
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 IRuntimeMethodInfo methodHandle = null;
                 GetEntryPoint(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref methodHandle));
@@ -1128,7 +1079,6 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetType(RuntimeAssembly assembly, 
@@ -1138,7 +1088,6 @@ namespace System.Reflection
                                                         ObjectHandleOnStack type,
                                                         ObjectHandleOnStack keepAlive);
         
-        [System.Security.SecuritySafeCritical]
         public override Type GetType(String name, bool throwOnError, bool ignoreCase) 
         {
             // throw on null strings regardless of the value of "throwOnError"
@@ -1153,17 +1102,14 @@ namespace System.Reflection
             return type;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal extern static void GetForwardedTypes(RuntimeAssembly assembly, ObjectHandleOnStack retTypes);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetExportedTypes(RuntimeAssembly assembly, ObjectHandleOnStack retTypes); 
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type[] GetExportedTypes()
         {
             Type[] types = null;
@@ -1173,7 +1119,6 @@ namespace System.Reflection
 
         public override IEnumerable<TypeInfo> DefinedTypes
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 List<RuntimeType> rtTypes = new List<RuntimeType>();
@@ -1190,7 +1135,6 @@ namespace System.Reflection
         }
 
         // Load a resource based on the NameSpace of the type.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public override Stream GetManifestResourceStream(Type type, String name)
         {
@@ -1198,7 +1142,6 @@ namespace System.Reflection
             return GetManifestResourceStream(type, name, false, ref stackMark);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public override Stream GetManifestResourceStream(String name)
         {
@@ -1207,7 +1150,6 @@ namespace System.Reflection
         }
 
         // ISerializable implementation
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null)
@@ -1269,7 +1211,6 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         internal static RuntimeAssembly InternalLoadFrom(String assemblyFile, 
                                                          Evidence securityEvidence,
@@ -1292,7 +1233,6 @@ namespace System.Reflection
         }
 
         // Wrapper function to wrap the typical use of InternalLoad.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
                                                      ref StackCrawlMark stackMark,
@@ -1301,7 +1241,6 @@ namespace System.Reflection
             return InternalLoad(assemblyString, assemblySecurity,  ref stackMark, IntPtr.Zero, forIntrospection);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
@@ -1323,7 +1262,6 @@ namespace System.Reflection
         }
         
         // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static AssemblyName CreateAssemblyName(
             String assemblyString, 
             bool forIntrospection, 
@@ -1349,7 +1287,6 @@ namespace System.Reflection
         }
         
         // Wrapper function to wrap the typical use of InternalLoadAssemblyName.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly InternalLoadAssemblyName(
             AssemblyName assemblyRef,
             Evidence assemblySecurity,
@@ -1363,7 +1300,6 @@ namespace System.Reflection
             return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly InternalLoadAssemblyName(
             AssemblyName assemblyRef, 
             Evidence assemblySecurity,
@@ -1434,7 +1370,6 @@ namespace System.Reflection
         };
 
 #if FEATURE_APPX
-        [System.Security.SecuritySafeCritical]
         internal bool IsFrameworkAssembly()
         {
             ASSEMBLY_FLAGS flags = Flags;
@@ -1449,19 +1384,16 @@ namespace System.Reflection
             return (flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION) != 0;
         }
 
-        [System.Security.SecuritySafeCritical]
         private bool IsDesignerBindingContext()
         {
             return RuntimeAssembly.nIsDesignerBindingContext(this);
         }
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static bool nIsDesignerBindingContext(RuntimeAssembly assembly);
 #endif
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeAssembly _nLoad(AssemblyName fileName,
                                                      String codeBase,
@@ -1474,7 +1406,6 @@ namespace System.Reflection
                                                      bool suppressSecurityChecks,
                                                      IntPtr ptrLoadContextBinder);
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static RuntimeAssembly nLoad(AssemblyName fileName,
                                              String codeBase,
                                              Evidence assemblySecurity,
@@ -1490,7 +1421,6 @@ namespace System.Reflection
                 throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsReflectionOnly(RuntimeAssembly assembly);
 
@@ -1499,7 +1429,6 @@ namespace System.Reflection
         [ComVisible(false)]
         public override bool ReflectionOnly
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return IsReflectionOnly(GetNativeHandle());
@@ -1510,7 +1439,6 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller. Currently is implemented only for  UnmanagedMemoryStream
         // (no derived classes since we are not calling Read())
-        [System.Security.SecurityCritical] // auto-generated
         internal static RuntimeAssembly InternalLoadFromStream(Stream assemblyStream, Stream pdbStream, ref StackCrawlMark stackMark)
         {
             if (assemblyStream  == null)
@@ -1560,12 +1488,10 @@ namespace System.Reflection
 
         // Returns the module in this assembly with name 'name'
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetModule(RuntimeAssembly assembly, String name, ObjectHandleOnStack retModule);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Module GetModule(String name)
         {
             Module retModule = null;
@@ -1575,7 +1501,6 @@ namespace System.Reflection
 
         // Returns the file in the File table of the manifest that matches the
         // given name.  (Name should not include path.)
-        [System.Security.SecurityCritical] // auto-generated
         public override FileStream GetFile(String name)
         {
             RuntimeModule m = (RuntimeModule)GetModule(name);
@@ -1587,7 +1512,6 @@ namespace System.Reflection
                                   FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, false);
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             Module[] m = GetModules(getResourceModules);
@@ -1603,23 +1527,19 @@ namespace System.Reflection
         }
 
         // Returns the names of all the resources
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern String[] GetManifestResourceNames(RuntimeAssembly assembly);
 
         // Returns the names of all the resources
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String[] GetManifestResourceNames()
         {
             return GetManifestResourceNames(GetNativeHandle());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetExecutingAssembly(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
             RuntimeAssembly retAssembly = null;
@@ -1628,17 +1548,14 @@ namespace System.Reflection
         }
         
         // Returns the names of all the resources
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override AssemblyName[] GetReferencedAssemblies()
         {
             return GetReferencedAssemblies(GetNativeHandle());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern int GetManifestResourceInfo(RuntimeAssembly assembly,
@@ -1647,7 +1564,6 @@ namespace System.Reflection
                                                           StringHandleOnStack retFileName,
                                                           StackCrawlMarkHandle stackMark);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
@@ -1666,14 +1582,12 @@ namespace System.Reflection
                                                 (ResourceLocation) location);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetLocation(RuntimeAssembly assembly, StringHandleOnStack retString);
 
         public override String Location
         {
-            [System.Security.SecurityCritical] // auto-generated
             get {
                 String location = null;
 
@@ -1686,7 +1600,6 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetImageRuntimeVersion(RuntimeAssembly assembly, StringHandleOnStack retString);
@@ -1696,7 +1609,6 @@ namespace System.Reflection
         [ComVisible(false)]
         public override String ImageRuntimeVersion
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get{
                 String s = null;
                 GetImageRuntimeVersion(GetNativeHandle(), JitHelpers.GetStringHandleOnStack(ref s));
@@ -1705,27 +1617,23 @@ namespace System.Reflection
         }
 
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern static bool IsGlobalAssemblyCache(RuntimeAssembly assembly);
 
         public override bool GlobalAssemblyCache
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return false;
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static Int64 GetHostContext(RuntimeAssembly assembly);
 
         public override Int64 HostContext
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return 0;
@@ -1760,7 +1668,6 @@ namespace System.Reflection
 #endif // !PLATFORM_UNIX
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal Stream GetManifestResourceStream(
             Type type,
             String name,
@@ -1788,7 +1695,6 @@ namespace System.Reflection
         }
 
         // GetResource will return a pointer to the resources in memory.
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static unsafe extern byte* GetResource(RuntimeAssembly assembly,
@@ -1797,7 +1703,6 @@ namespace System.Reflection
                                                        StackCrawlMarkHandle stackMark,
                                                        bool skipSecurityCheck);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe Stream GetManifestResourceStream(String name, ref StackCrawlMark stackMark, bool skipSecurityCheck)
         {
             ulong length = 0;
@@ -1815,7 +1720,6 @@ namespace System.Reflection
             return null;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetVersion(RuntimeAssembly assembly, 
@@ -1824,7 +1728,6 @@ namespace System.Reflection
                                               out int buildNum,
                                               out int revNum);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal Version GetVersion()
         {
             int majorVer, minorVer, build, revision;
@@ -1832,12 +1735,10 @@ namespace System.Reflection
             return new Version (majorVer, minorVer, build, revision);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetLocale(RuntimeAssembly assembly, StringHandleOnStack retString);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal CultureInfo GetLocale()
         {
             String locale = null;
@@ -1850,19 +1751,16 @@ namespace System.Reflection
             return new CultureInfo(locale);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool FCallIsDynamic(RuntimeAssembly assembly);
 
         public override bool IsDynamic
         {
-            [SecuritySafeCritical]
             get {
                 return FCallIsDynamic(GetNativeHandle());
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void VerifyCodeBaseDiscovery(String codeBase)
         {
             if ((codeBase != null) &&
@@ -1872,12 +1770,10 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetSimpleName(RuntimeAssembly assembly, StringHandleOnStack retSimpleName);
 
-        [SecuritySafeCritical]
         internal String GetSimpleName()
         {
             string name = null;
@@ -1885,35 +1781,29 @@ namespace System.Reflection
             return name;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static AssemblyHashAlgorithm GetHashAlgorithm(RuntimeAssembly assembly);
 
-        [System.Security.SecurityCritical]  // auto-generated
         private AssemblyHashAlgorithm GetHashAlgorithm()
         {
             return GetHashAlgorithm(GetNativeHandle());
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static AssemblyNameFlags GetFlags(RuntimeAssembly assembly);
 
-        [System.Security.SecurityCritical]  // auto-generated
         private AssemblyNameFlags GetFlags()
         {
             return GetFlags(GetNativeHandle());
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetRawBytes(RuntimeAssembly assembly, ObjectHandleOnStack retRawBytes);
 
         // Get the raw bytes of the assembly
-        [SecuritySafeCritical]
         internal byte[] GetRawBytes()
         {
             byte[] rawBytes = null;
@@ -1922,12 +1812,10 @@ namespace System.Reflection
             return rawBytes;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetPublicKey(RuntimeAssembly assembly, ObjectHandleOnStack retPublicKey);
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal byte[] GetPublicKey()
         {
             byte[] publicKey = null;
@@ -1935,12 +1823,10 @@ namespace System.Reflection
             return publicKey;
         }
 
-        [SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetGrantSet(RuntimeAssembly assembly, ObjectHandleOnStack granted, ObjectHandleOnStack denied);
 
-        [SecurityCritical]
         internal void GetGrantSet(out PermissionSet newGrant, out PermissionSet newDenied)
         {
             PermissionSet granted = null, denied = null;
@@ -1948,60 +1834,51 @@ namespace System.Reflection
             newGrant = granted; newDenied = denied;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private extern static bool IsAllSecurityCritical(RuntimeAssembly assembly);
 
         // Is everything introduced by this assembly critical
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal bool IsAllSecurityCritical()
         {
             return IsAllSecurityCritical(GetNativeHandle());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private extern static bool IsAllSecuritySafeCritical(RuntimeAssembly assembly);
 
         // Is everything introduced by this assembly safe critical
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal bool IsAllSecuritySafeCritical()
         {
             return IsAllSecuritySafeCritical(GetNativeHandle());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private extern static bool IsAllPublicAreaSecuritySafeCritical(RuntimeAssembly assembly);
 
         // Is everything introduced by this assembly safe critical
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal bool IsAllPublicAreaSecuritySafeCritical()
         {
             return IsAllPublicAreaSecuritySafeCritical(GetNativeHandle());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private extern static bool IsAllSecurityTransparent(RuntimeAssembly assembly);
 
         // Is everything introduced by this assembly transparent
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal bool IsAllSecurityTransparent()
         {
             return IsAllSecurityTransparent(GetNativeHandle());
         }
 
         // This method is called by the VM.
-        [System.Security.SecurityCritical]
         private RuntimeModule OnModuleResolveEvent(String moduleName)
         {
             ModuleResolveEventHandler moduleResolve = _ModuleResolve;
@@ -2034,7 +1911,6 @@ namespace System.Reflection
             return InternalGetSatelliteAssembly(culture, version, ref stackMark);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
         internal Assembly InternalGetSatelliteAssembly(CultureInfo culture,
                                                        Version version,
@@ -2049,7 +1925,6 @@ namespace System.Reflection
             return InternalGetSatelliteAssembly(name, culture, version, true, ref stackMark);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
         internal RuntimeAssembly InternalGetSatelliteAssembly(String name,
                                                               CultureInfo culture,
@@ -2084,7 +1959,6 @@ namespace System.Reflection
         }
 
         // Helper method used by InternalGetSatelliteAssembly only. Not abstracted for use elsewhere.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
         private RuntimeAssembly InternalProbeForSatelliteAssemblyNextToParentAssembly(AssemblyName an,
                                                                                       String name,
@@ -2192,11 +2066,9 @@ namespace System.Reflection
             return retAssembly;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern RuntimeAssembly nLoadFile(String path, Evidence evidence);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern RuntimeAssembly nLoadImage(byte[] rawAssembly,
                                                           byte[] rawSymbolStore,
@@ -2205,7 +2077,6 @@ namespace System.Reflection
                                                           bool fIntrospection,
                                                           SecurityContextSource securityContextSource);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         static internal extern unsafe void nLoadFromUnmanagedArray(bool fIntrospection, 
@@ -2216,7 +2087,6 @@ namespace System.Reflection
                                                                             StackCrawlMarkHandle stackMark,
                                                                             ObjectHandleOnStack retAssembly);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetModules(RuntimeAssembly assembly, 
@@ -2224,7 +2094,6 @@ namespace System.Reflection
                                               bool getResourceModules, 
                                               ObjectHandleOnStack retModuleHandles);
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private RuntimeModule[] GetModulesInternal(bool loadIfNotFound,
                                      bool getResourceModules)
         {
@@ -2243,11 +2112,9 @@ namespace System.Reflection
             return GetModulesInternal(false, getResourceModules);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern RuntimeModule GetManifestModule(RuntimeAssembly assembly);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
     }

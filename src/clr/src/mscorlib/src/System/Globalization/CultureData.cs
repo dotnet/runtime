@@ -546,7 +546,6 @@ namespace System.Globalization
         // Cache of regions we've already looked up
         private static volatile Dictionary<String, CultureData> s_cachedRegions;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static CultureData GetCultureDataForRegion(String cultureName, bool useUserOverride)
         {
             // First do a shortcut for Invariant
@@ -650,7 +649,6 @@ namespace System.Globalization
 #if FEATURE_USE_LCID
         // Obtain locale name from LCID
         // NOTE: This will get neutral names, unlike the OS API
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String LCIDToLocaleName(int lcid);
 
@@ -698,7 +696,6 @@ namespace System.Globalization
             s_replacementCultureNames = null;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static CultureInfo[] GetCultures(CultureTypes types)
         {
             // Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
@@ -792,7 +789,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static bool IsReplacementCultureName(String name)
         {
             Contract.Assert(name != null, "IsReplacementCultureName(): name should not be null");
@@ -870,7 +866,6 @@ namespace System.Globalization
         // Parent name (which may be a custom locale/culture)
         internal String SPARENT
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sParent == null)
@@ -885,7 +880,6 @@ namespace System.Globalization
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal String SLOCALIZEDDISPLAYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sLocalizedDisplayName == null)
@@ -919,7 +913,6 @@ namespace System.Globalization
         // English pretty name for this locale (ie: English (United States))
         internal String SENGDISPLAYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sEnglishDisplayName == null)
@@ -961,7 +954,6 @@ namespace System.Globalization
         // Native pretty name for this locale (ie: Deutsch (Deutschland))
         internal String SNATIVEDISPLAYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sNativeDisplayName == null)
@@ -1005,7 +997,6 @@ namespace System.Globalization
         // iso 639 language name, ie: en
         internal String SISO639LANGNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sISO639Language == null)
@@ -1019,7 +1010,6 @@ namespace System.Globalization
         // iso 639 language name, ie: eng
         internal String SISO639LANGNAME2
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sISO639Language2 == null)
@@ -1033,7 +1023,6 @@ namespace System.Globalization
         // abbreviated windows language name (ie: enu) (non-standard, avoid this)
         internal String SABBREVLANGNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sAbbrevLang == null)
@@ -1048,7 +1037,6 @@ namespace System.Globalization
         // This is only valid for Windows 8 and higher neutrals:
         internal String SLOCALIZEDLANGUAGE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sLocalizedLanguage == null)
@@ -1071,7 +1059,6 @@ namespace System.Globalization
         // English name for this language (Windows Only) ie: German
         internal String SENGLISHLANGUAGE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sEnglishLanguage == null)
@@ -1085,7 +1072,6 @@ namespace System.Globalization
         // Native name of this language (Windows Only) ie: Deutsch
         internal String SNATIVELANGUAGE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sNativeLanguage == null)
@@ -1105,7 +1091,6 @@ namespace System.Globalization
         // region name (eg US)
         internal String SREGIONNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sRegionName == null)
@@ -1141,7 +1126,6 @@ namespace System.Globalization
         // localized name for the country
         internal string SLOCALIZEDCOUNTRY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sLocalizedCountry == null)
@@ -1167,7 +1151,6 @@ namespace System.Globalization
         // english country name (RegionInfo) ie: Germany
         internal String SENGCOUNTRY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sEnglishCountry == null)
@@ -1181,7 +1164,6 @@ namespace System.Globalization
         // native country name (RegionInfo) ie: Deutschland
         internal String SNATIVECOUNTRY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sNativeCountry == null)
@@ -1195,7 +1177,6 @@ namespace System.Globalization
         // ISO 3166 Country Name
         internal String SISO3166CTRYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sISO3166CountryName == null)
@@ -1209,7 +1190,6 @@ namespace System.Globalization
         // ISO 3166 Country Name
         internal String SISO3166CTRYNAME2
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sISO3166CountryName2 == null)
@@ -1223,7 +1203,6 @@ namespace System.Globalization
         // abbreviated Country Name (windows version, non-standard, avoid)
         internal String SABBREVCTRYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sAbbrevCountry == null)
@@ -1267,7 +1246,6 @@ namespace System.Globalization
         // Console fallback name (ie: locale to use for console apps for unicode-only locales)
         internal String SCONSOLEFALLBACKNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sConsoleFallbackName == null)
@@ -1307,7 +1285,6 @@ namespace System.Globalization
         // (user can override) grouping of digits
         internal int[] WAGROUPING
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.waGrouping == null || UseUserOverride)
@@ -1325,7 +1302,6 @@ namespace System.Globalization
         // Not a Number
         internal String SNAN
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sNaN == null)
@@ -1339,7 +1315,6 @@ namespace System.Globalization
         // + Infinity
         internal String SPOSINFINITY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sPositiveInfinity == null)
@@ -1353,7 +1328,6 @@ namespace System.Globalization
         // - Infinity
         internal String SNEGINFINITY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sNegativeInfinity == null)
@@ -1400,7 +1374,6 @@ namespace System.Globalization
         // Percent (%) symbol
         internal String SPERCENT
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sPercent == null)
@@ -1415,7 +1388,6 @@ namespace System.Globalization
         // PerMille (‰) symbol
         internal String SPERMILLE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sPerMille == null)
@@ -1434,7 +1406,6 @@ namespace System.Globalization
         // (user can override) local monetary symbol, eg: $
         internal String SCURRENCY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sCurrency == null || UseUserOverride)
@@ -1448,7 +1419,6 @@ namespace System.Globalization
         // international monetary symbol (RegionInfo), eg: USD
         internal String SINTLSYMBOL
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sIntlMonetarySymbol == null)
@@ -1462,7 +1432,6 @@ namespace System.Globalization
         // English name for this currency (RegionInfo), eg: US Dollar
         internal String SENGLISHCURRENCY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sEnglishCurrency == null)
@@ -1476,7 +1445,6 @@ namespace System.Globalization
         // Native name for this currency (RegionInfo), eg: Schweiz Frank
         internal String SNATIVECURRENCY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sNativeCurrency == null)
@@ -1494,7 +1462,6 @@ namespace System.Globalization
         // (user can override) monetary grouping of digits
         internal int[] WAMONGROUPING
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.waMonetaryGrouping == null || UseUserOverride)
@@ -1528,7 +1495,6 @@ namespace System.Globalization
         // (user can override) list Separator
         internal String SLIST
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sListSeparator == null || UseUserOverride)
@@ -1555,7 +1521,6 @@ namespace System.Globalization
         // (user can override) AM designator
         internal String SAM1159
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sAM1159 == null || UseUserOverride)
@@ -1569,7 +1534,6 @@ namespace System.Globalization
         // (user can override) PM designator
         internal String SPM2359
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.sPM2359 == null || UseUserOverride)
@@ -1750,7 +1714,6 @@ namespace System.Globalization
         // time duration format
         internal String[] SADURATION
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (this.saDurationFormats == null)
@@ -2036,7 +1999,6 @@ namespace System.Globalization
         // es-ES_tradnl -> es-ES
         internal String STEXTINFO               // Text info name to use for text information
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 if (this.sTextInfo == null)
@@ -2062,7 +2024,6 @@ namespace System.Globalization
         // Compare info name (including sorting key) to use if custom
         internal String SCOMPAREINFO
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 if (this.sCompareInfo == null)
@@ -2098,7 +2059,6 @@ namespace System.Globalization
 
         private String SSCRIPTS
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (this.sScripts == null)
@@ -2111,7 +2071,6 @@ namespace System.Globalization
 
         private String SOPENTYPELANGUAGETAG
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return DoGetLocaleInfo(LOCALE_SOPENTYPELANGUAGETAG);
@@ -2120,7 +2079,6 @@ namespace System.Globalization
 
         private String FONTSIGNATURE
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (this.fontSignature == null)
@@ -2133,7 +2091,6 @@ namespace System.Globalization
 
         private String SKEYBOARDSTOINSTALL
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return DoGetLocaleInfo(LOCALE_SKEYBOARDSTOINSTALL);
@@ -2191,7 +2148,6 @@ namespace System.Globalization
 
         // Obtain locale name from LCID
         // NOTE: This will get neutral names, unlike the OS API
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int LocaleNameToLCID(String localeName);
 
@@ -2285,7 +2241,6 @@ namespace System.Globalization
         // Time separator (derived from time format)
         internal String TimeSeparator
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (sTimeSeparator == null || UseUserOverride)
@@ -2567,7 +2522,6 @@ namespace System.Globalization
             return -1;
         }
 
-        [System.Security.SecurityCritical]
         string DoGetLocaleInfo(uint lctype)
         {
             Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
@@ -2576,7 +2530,6 @@ namespace System.Globalization
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        [System.Security.SecurityCritical]  // auto-generated
         string DoGetLocaleInfo(string localeName, uint lctype)
         {
             // Fix lctype if we don't want overrides
@@ -2650,7 +2603,6 @@ namespace System.Globalization
         //                          not affected by the Calendar property in DTFI.
         //
         ////////////////////////////////////////////////////////////////////////////
-        [System.Security.SecurityCritical]  // auto-generated
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
             if (this.IsInvariantCulture)
@@ -2997,20 +2949,16 @@ namespace System.Globalization
         internal const uint TIME_NOSECONDS = 0x00000002;   // Don't use seconds (get short time format for enumtimeformats on win7+)
 
         // Get our initial minimal culture data (name, parent, etc.)
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool nativeInitCultureData(CultureData cultureData);
 
         // Grab the NumberFormatInfo data
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool nativeGetNumberFormatInfoValues(String localeName, NumberFormatInfo nfi, bool useUserOverride);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern String[] nativeEnumTimeFormats(String localeName, uint dwFlags, bool useUserOverride);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [SuppressUnmanagedCodeSecurityAttribute()]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int nativeEnumCultureNames(int cultureTypes, ObjectHandleOnStack retStringArray);

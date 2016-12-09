@@ -89,7 +89,6 @@ namespace System {
         ** list. The initial size of the new store matches the number of slots
         ** allocated in this manager.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public LocalDataStoreHolder CreateLocalDataStore()
         {
             // Create a new local data store.
@@ -115,7 +114,6 @@ namespace System {
         /*=========================================================================
          * Remove the specified store from the list of managed stores..
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void DeleteLocalDataStore(LocalDataStore store)
         {
             bool tookLock = false;
@@ -138,7 +136,6 @@ namespace System {
         ** an object to prevent clients from manipulating it directly, allowing us
         ** to make assumptions its integrity.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public LocalDataStoreSlot AllocateDataSlot()
         {
             bool tookLock = false;
@@ -208,7 +205,6 @@ namespace System {
         /*=========================================================================
         ** Allocate a slot and associate a name with it.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public LocalDataStoreSlot AllocateNamedDataSlot(String name)
         {
             bool tookLock = false;
@@ -235,7 +231,6 @@ namespace System {
         ** Retrieve the slot associated with a name, allocating it if no such
         ** association has been defined.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public LocalDataStoreSlot GetNamedDataSlot(String name)
         {
             bool tookLock = false;
@@ -264,7 +259,6 @@ namespace System {
         ** Eliminate the association of a name with a slot.  The actual slot will
         ** be reclaimed when the finalizer for the slot object runs.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void FreeNamedDataSlot(String name)
         {
             bool tookLock = false;
@@ -285,7 +279,6 @@ namespace System {
         /*=========================================================================
         ** Free's a previously allocated data slot on ALL the managed data stores.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal void FreeDataSlot(int slot, long cookie)
         {
             bool tookLock = false;

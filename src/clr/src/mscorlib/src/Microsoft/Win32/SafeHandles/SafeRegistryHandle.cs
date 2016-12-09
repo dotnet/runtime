@@ -17,17 +17,13 @@ namespace Microsoft.Win32.SafeHandles {
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
 
-    [System.Security.SecurityCritical]
     public sealed class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid {
-        [System.Security.SecurityCritical]
         internal SafeRegistryHandle() : base(true) {}
 
-        [System.Security.SecurityCritical]
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle) {
             SetHandle(preexistingHandle);
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle() {
             return (RegCloseKey(handle) == Win32Native.ERROR_SUCCESS);
         }

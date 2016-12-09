@@ -21,7 +21,6 @@ namespace System.IO
     [ComVisible(true)]
     public abstract class FileSystemInfo : MarshalByRefObject, ISerializable {
         
-        [System.Security.SecurityCritical] // auto-generated
         internal Win32Native.WIN32_FILE_ATTRIBUTE_DATA _data; // Cache the file information
         internal int _dataInitialised = -1; // We use this field in conjunction with the Refresh methods, if we succeed
                                             // we store a zero, on failure we store the HResult in it so that we can
@@ -35,9 +34,7 @@ namespace System.IO
         private String _displayPath = "";   // path that can be displayed to the user
 
 #if FEATURE_CORESYSTEM
-        [System.Security.SecurityCritical]
 #else
-        [System.Security.SecuritySafeCritical]
 #endif //FEATURE_CORESYSTEM
         protected FileSystemInfo()
         {
@@ -58,7 +55,6 @@ namespace System.IO
             _dataInitialised = -1;
         }
 
-        [System.Security.SecurityCritical]
         internal void InitializeFrom(Win32Native.WIN32_FIND_DATA findData)
         {
             _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
@@ -68,7 +64,6 @@ namespace System.IO
 
         // Full path of the direcory/file
         public virtual String FullName {
-            [System.Security.SecuritySafeCritical]
             get 
             {
                 String demandDir;
@@ -85,7 +80,6 @@ namespace System.IO
 
         internal virtual String UnsafeGetFullName
         {
-            [System.Security.SecurityCritical]
             get
             {
                 String demandDir;
@@ -139,7 +133,6 @@ namespace System.IO
 
         [ComVisible(false)]
        public DateTime CreationTimeUtc {
-           [System.Security.SecuritySafeCritical]
             get {
                 // get_CreationTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
@@ -172,7 +165,6 @@ namespace System.IO
 
         [ComVisible(false)]
         public DateTime LastAccessTimeUtc {
-            [System.Security.SecuritySafeCritical]
             get {
                 // get_LastAccessTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
@@ -209,7 +201,6 @@ namespace System.IO
 
         [ComVisible(false)]
         public DateTime LastWriteTimeUtc {
-            [System.Security.SecuritySafeCritical]
             get {
                 // get_LastWriteTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
@@ -231,14 +222,12 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Refresh()
         {
             _dataInitialised = File.FillAttributeInfo(FullPath, ref _data, false, false);
         }
 
         public FileAttributes Attributes {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
@@ -255,7 +244,6 @@ namespace System.IO
                 return (FileAttributes) _data.fileAttributes;
             }
 
-            [System.Security.SecurityCritical] // auto-generated
             set {
                 bool r = Win32Native.SetFileAttributes(FullPath, (int) value);
                 if (!r) {
@@ -275,7 +263,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [ComVisible(false)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {

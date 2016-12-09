@@ -38,14 +38,11 @@ namespace System.IO
 
         // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
 #if FEATURE_CORESYSTEM
-        [System.Security.SecurityCritical]
 #else
-        [System.Security.SecuritySafeCritical]
 #endif //FEATURE_CORESYSTEM
         private DirectoryInfo(){}
 
 
-        [System.Security.SecurityCritical]
         public static DirectoryInfo UnsafeCreateDirectoryInfo(String path)
         {
             if (path == null)
@@ -57,7 +54,6 @@ namespace System.IO
             return di;
         }
 
-        [System.Security.SecuritySafeCritical]
         public DirectoryInfo(String path)
         {
             if (path==null)
@@ -67,7 +63,6 @@ namespace System.IO
             Init(path, true);
         }
 
-        [System.Security.SecurityCritical]
         private void Init(String path, bool checkHost)
         {
             // Special case "<DriveLetter>:" to point to "<CurrentDirectory>" instead
@@ -96,7 +91,6 @@ namespace System.IO
         }
 
 #if FEATURE_CORESYSTEM
-        [System.Security.SecuritySafeCritical]
 #endif //FEATURE_CORESYSTEM
         internal DirectoryInfo(String fullPath, bool junk)
         {
@@ -109,7 +103,6 @@ namespace System.IO
             demandDir = new String[] {Directory.GetDemandDir(fullPath, true)};
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private DirectoryInfo(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
@@ -125,7 +118,6 @@ namespace System.IO
         }
 
         public DirectoryInfo Parent {
-            [System.Security.SecuritySafeCritical]
             get {
                 String parentName;
                 // FullPath might be either "c:\bar" or "c:\bar\".  Handle 
@@ -147,7 +139,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public DirectoryInfo CreateSubdirectory(String path) {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -156,7 +147,6 @@ namespace System.IO
             return CreateSubdirectory(path, null);
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public DirectoryInfo CreateSubdirectory(String path, Object directorySecurity)
         {
             if (path == null)
@@ -166,7 +156,6 @@ namespace System.IO
             return CreateSubdirectoryHelper(path, directorySecurity);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private DirectoryInfo CreateSubdirectoryHelper(String path, Object directorySecurity)
         {
             Contract.Requires(path != null);
@@ -201,7 +190,6 @@ namespace System.IO
         // contents.
         //
         public override bool Exists {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 try
@@ -460,7 +448,6 @@ namespace System.IO
         //
 
         public DirectoryInfo Root {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 String demandPath;
@@ -478,7 +465,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public void MoveTo(String destDirName) {
             if (destDirName==null)
                 throw new ArgumentNullException(nameof(destDirName));
@@ -550,13 +536,11 @@ namespace System.IO
             _dataInitialised = -1;
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void Delete()
         {
             Directory.Delete(FullPath, OriginalPath, false, true);
         }
 
-        [System.Security.SecuritySafeCritical]
         public void Delete(bool recursive)
         {
             Directory.Delete(FullPath, OriginalPath, recursive, true);

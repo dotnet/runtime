@@ -845,7 +845,6 @@ namespace System.Globalization {
             throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("ArgumentOutOfRange_BadHourMinuteSecond"));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static int GetSystemTwoDigitYearSetting(int CalID, int defaultYearValue)
         {
             // Call nativeGetTwoDigitYearMax

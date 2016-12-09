@@ -55,7 +55,6 @@ namespace System.Resources {
             _mediator = mediator;
         }
 
-        [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
         {
@@ -217,7 +216,6 @@ namespace System.Resources {
 
         }
 
-        [System.Security.SecurityCritical]
         internal static CultureInfo GetNeutralResourcesLanguage(Assembly a, ref UltimateResourceFallbackLocation fallbackLocation)
         {
             Contract.Assert(a != null, "assembly != null");
@@ -267,7 +265,6 @@ namespace System.Resources {
         // Use the assembly to resolve assembly manifest resource references.
         // Note that is can be null, but probably shouldn't be.
         // This method could use some refactoring. One thing at a time.
-        [System.Security.SecurityCritical]
         internal ResourceSet CreateResourceSet(Stream store, Assembly assembly)
         {
             Contract.Assert(store != null, "I need a Stream!");
@@ -413,7 +410,6 @@ namespace System.Resources {
             }
         }
 
-        [System.Security.SecurityCritical]
         private Stream GetManifestResourceStream(RuntimeAssembly satellite, String fileName, ref StackCrawlMark stackMark)
         {
             Contract.Requires(satellite != null, "satellite shouldn't be null; check caller");
@@ -437,7 +433,6 @@ namespace System.Resources {
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
         // even optionally case-insensitive.        
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         private Stream CaseInsensitiveManifestResourceStreamLookup(RuntimeAssembly satellite, String name)
         {
@@ -516,7 +511,6 @@ namespace System.Resources {
             return s;
         }
 
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         private RuntimeAssembly GetSatelliteAssembly(CultureInfo lookForCulture, ref StackCrawlMark stackMark)
         {
@@ -609,7 +603,6 @@ namespace System.Resources {
             return true;
         }
 
-        [System.Security.SecurityCritical]
         private String GetSatelliteAssemblyName()
         {
             String satAssemblyName = _mediator.MainAssembly.GetSimpleName();
@@ -617,7 +610,6 @@ namespace System.Resources {
             return satAssemblyName;
         }
 
-        [System.Security.SecurityCritical]
         private void HandleSatelliteMissing()
         {
             String satAssemName = _mediator.MainAssembly.GetSimpleName() + ".resources.dll";
@@ -646,7 +638,6 @@ namespace System.Resources {
             throw new MissingSatelliteAssemblyException(Environment.GetResourceString("MissingSatelliteAssembly_Culture_Name", _mediator.NeutralResourcesCulture, satAssemName), missingCultureName);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void HandleResourceStreamMissing(String fileName)
         {
             // Keep people from bothering me about resources problems
@@ -669,7 +660,6 @@ namespace System.Resources {
         }
 
             [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-            [System.Security.SecurityCritical]  // Our security team doesn't yet allow safe-critical P/Invoke methods.
             [System.Security.SuppressUnmanagedCodeSecurity]
             [return: MarshalAs(UnmanagedType.Bool)]
             internal static extern bool GetNeutralResourcesLanguageAttribute(RuntimeAssembly assemblyHandle, StringHandleOnStack cultureName, out short fallbackLocation);

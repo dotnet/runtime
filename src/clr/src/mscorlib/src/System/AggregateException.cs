@@ -258,7 +258,6 @@ namespace System
         /// contains contextual information about the source or destination. </param>
         /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
         /// <exception cref="T:System.Runtime.Serialization.SerializationException">The exception could not be deserialized correctly.</exception>
-        [SecurityCritical]
         protected AggregateException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
@@ -285,7 +284,6 @@ namespace System
         /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that
         /// contains contextual information about the source or destination. </param>
         /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
-        [SecurityCritical]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)

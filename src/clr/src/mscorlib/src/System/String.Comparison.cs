@@ -17,7 +17,6 @@ namespace System
         //Native Static Methods
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static int CompareOrdinalIgnoreCaseHelper(String strA, String strB)
         {
             Contract.Requires(strA != null);
@@ -55,13 +54,11 @@ namespace System
         }
 
         // native call to COMString::CompareOrdinalEx
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int CompareOrdinalHelper(String strA, int indexA, int countA, String strB, int indexB, int countB);
 
         //This will not work in case-insensitive mode for any character greater than 0x80.  
         //We'll throw an ArgumentException.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe internal static extern int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte *strBBytes);
 
@@ -75,7 +72,6 @@ namespace System
         // Search/Query methods
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private unsafe static bool EqualsHelper(String strA, String strB)
         {
@@ -137,7 +133,6 @@ namespace System
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
         {
@@ -194,7 +189,6 @@ namespace System
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static int CompareOrdinalHelper(String strA, String strB)
         {
             Contract.Requires(strA != null);
@@ -342,7 +336,6 @@ namespace System
         // Provides a more flexible function for string comparision. See StringComparison 
         // for meaning of different comparisonType.
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int Compare(String strA, String strB, StringComparison comparisonType) 
         {
             // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
@@ -532,7 +525,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType) {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase) {
                 throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
@@ -638,7 +630,6 @@ namespace System
         // Compares strA and strB using an ordinal (code-point) comparison.
         //
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int CompareOrdinal(String strA, int indexA, String strB, int indexB, int length)
         {
             if (strA == null || strB == null)
@@ -724,7 +715,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         public Boolean EndsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
@@ -846,7 +836,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Equals(String value, StringComparison comparisonType) {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
                 throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
@@ -915,7 +904,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool Equals(String a, String b, StringComparison comparisonType) {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
                 throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
@@ -981,16 +969,13 @@ namespace System
 #if FEATURE_RANDOMIZED_STRING_HASHING
         // Do not remove!
         // This method is called by reflection in System.Xml
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int InternalMarvin32HashString(string s, int strLen, long additionalEntropy);
 
-        [System.Security.SecuritySafeCritical]
         internal static bool UseRandomizedHashing() {
             return InternalUseRandomizedHashing();
         }
 
-        [System.Security.SecurityCritical]
         [System.Security.SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool InternalUseRandomizedHashing();
@@ -998,7 +983,6 @@ namespace System
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public override int GetHashCode()
         {
@@ -1014,7 +998,6 @@ namespace System
 
         // Use this if and only if you need the hashcode to not change across app domains (e.g. you have an app domain agile
         // hash table).
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
@@ -1080,7 +1063,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         public Boolean StartsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {

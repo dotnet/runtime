@@ -118,7 +118,6 @@ namespace System.Text {
         // Creates a new string builder from the specifed substring with the specified
         // capacity.  The maximum number of characters is set by capacity.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder(String value, int startIndex, int length, int capacity) {
             if (capacity<0) {
                 throw new ArgumentOutOfRangeException(nameof(capacity),
@@ -178,7 +177,6 @@ namespace System.Text {
             m_ChunkChars = new char[capacity];
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private StringBuilder(SerializationInfo info, StreamingContext context) {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
@@ -241,7 +239,6 @@ namespace System.Text {
             VerifyClassInvariant();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null) {
@@ -327,7 +324,6 @@ namespace System.Text {
             return Capacity;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
 
@@ -371,7 +367,6 @@ namespace System.Text {
 
 
         // Converts a substring of this string builder to a String.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(int startIndex, int length) {
             Contract.Ensures(Contract.Result<String>() != null);
 
@@ -592,7 +587,6 @@ namespace System.Text {
         }
 
         // Appends an array of characters at the end of this string builder. The capacity is adjusted as needed. 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(char[] value, int startIndex, int charCount) {
             if (startIndex < 0) {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
@@ -629,7 +623,6 @@ namespace System.Text {
 
 
         // Appends a copy of this string at the end of this string builder.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(String value) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
@@ -668,7 +661,6 @@ namespace System.Text {
 
         // We put this fixed in its own helper to avoid the cost zero initing valueChars in the
         // case we don't actually use it.  
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private void AppendHelper(string value) {
             unsafe {
                 fixed (char* valueChars = value)
@@ -677,16 +669,13 @@ namespace System.Text {
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical]
         internal unsafe extern void ReplaceBufferInternal(char* newBuffer, int newLength);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical]
         internal unsafe extern void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength);
 
         // Appends a copy of the characters in value from startIndex to startIndex +
         // count at the end of this string builder.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(String value, int startIndex, int count) {
             if (startIndex < 0) {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -739,7 +728,6 @@ namespace System.Text {
         }
 
         [System.Runtime.InteropServices.ComVisible(false)]
-        [SecuritySafeCritical]
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) {
             if (destination == null) {
                 throw new ArgumentNullException(nameof(destination));
@@ -803,7 +791,6 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, this
         // string builder is not changed. 
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Insert(int index, String value, int count) {
             if (count < 0) {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -998,7 +985,6 @@ namespace System.Text {
         }
 
         // Appends all of the characters in value to the current instance.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(char[] value) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
@@ -1103,7 +1089,6 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Insert(int index, String value) {
             if ((uint)index > (uint)Length) {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -1166,7 +1151,6 @@ namespace System.Text {
         // the buffer at index. Existing characters are shifted to make room for the new text.
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
-        [SecuritySafeCritical]
         public StringBuilder Insert(int index, char value) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
@@ -1197,7 +1181,6 @@ namespace System.Text {
         // value inserted into the buffer at index.  Existing characters are shifted
         // to make room for the new text and capacity is adjusted as required.  If value is null, the StringBuilder
         // is unchanged.  Characters are taken from value starting at position startIndex.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Insert(int index, char[] value, int startIndex, int charCount) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
@@ -1793,7 +1776,6 @@ namespace System.Text {
         /// <summary>
         /// Appends 'value' of length 'count' to the stringBuilder. 
         /// </summary>
-        [SecurityCritical]
         [System.CLSCompliantAttribute(false)]
         public unsafe StringBuilder Append(char* value, int valueCount)
         {
@@ -1843,7 +1825,6 @@ namespace System.Text {
         /// <summary>
         /// Inserts 'value' of length 'cou
         /// </summary>
-        [SecurityCritical]
         unsafe private void Insert(int index, char* value, int valueCount)
         {
             if ((uint)index > (uint)Length)
@@ -1866,7 +1847,6 @@ namespace System.Text {
         /// replacements in bulk (and therefore very efficiently. 
         /// with the string 'value'.  
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private void ReplaceAllInChunk(int[] replacements, int replacementsCount, StringBuilder sourceChunk, int removeCount, string value)
         {
             if (replacementsCount <= 0)
@@ -1953,7 +1933,6 @@ namespace System.Text {
         /// point at the end of the characters just copyied (thus you can splice in strings from multiple 
         /// places by calling this mulitple times.  
         /// </summary>
-        [SecurityCritical]
         unsafe private void ReplaceInPlaceAtChunk(ref StringBuilder chunk, ref int indexInChunk, char* value, int count)
         {
             if (count != 0)
@@ -1986,7 +1965,6 @@ namespace System.Text {
         /// The only way to do this is to copy all interesting variables out of the heap and then do the
         /// bounds check.  This is what we do here.   
         /// </summary>
-        [SecurityCritical]
         unsafe private static void ThreadSafeCopy(char* sourcePtr, char[] destination, int destinationIndex, int count)
         {
             if (count > 0)
@@ -2002,7 +1980,6 @@ namespace System.Text {
                 }
             }
         }
-        [SecurityCritical]
         private static void ThreadSafeCopy(char[] source, int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             if (count > 0)
@@ -2022,7 +1999,6 @@ namespace System.Text {
         }
 
          // Copies the source StringBuilder to the destination IntPtr memory allocated with len bytes.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void InternalCopy(IntPtr dest, int len) {
             if(len ==0)
                 return;
@@ -2161,7 +2137,6 @@ namespace System.Text {
         /// If dontMoveFollowingChars is true, then the room must be made by inserting a chunk BEFORE the
         /// current chunk (this is what it does most of the time anyway)
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private void MakeRoom(int index, int count, out StringBuilder chunk, out int indexInChunk, bool doneMoveFollowingChars)
         {
             VerifyClassInvariant();
@@ -2245,7 +2220,6 @@ namespace System.Text {
         /// Removes 'count' characters from the logical index 'startIndex' and returns the chunk and 
         /// index in the chunk of that logical index in the out parameters.  
         /// </summary>
-        [SecuritySafeCritical]
         private void Remove(int startIndex, int count, out StringBuilder chunk, out int indexInChunk)
         {
             VerifyClassInvariant();

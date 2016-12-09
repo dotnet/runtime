@@ -109,7 +109,6 @@ namespace System.Text
             return EncodingForwarder.GetByteCount(this, s);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
@@ -137,7 +136,6 @@ namespace System.Text
             return EncodingForwarder.GetBytes(this, chars, charIndex, charCount, bytes, byteIndex);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
@@ -152,7 +150,6 @@ namespace System.Text
             return EncodingForwarder.GetCharCount(this, bytes, index, count);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
@@ -165,7 +162,6 @@ namespace System.Text
             return EncodingForwarder.GetChars(this, bytes, byteIndex, byteCount, chars, charIndex);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
@@ -182,7 +178,6 @@ namespace System.Text
         
         // End of overridden methods which use EncodingForwarder
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetByteCount(char *chars, int count, EncoderNLS encoder)
         {
             Contract.Assert(chars!=null, "[UTF32Encoding.GetByteCount]chars!=null");
@@ -308,7 +303,6 @@ namespace System.Text
             return byteCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetBytes(char *chars, int charCount,
                                                  byte* bytes, int byteCount, EncoderNLS encoder)
         {
@@ -503,7 +497,6 @@ namespace System.Text
             return (int)(bytes - byteStart);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             Contract.Assert(bytes!=null, "[UTF32Encoding.GetCharCount]bytes!=null");
@@ -646,7 +639,6 @@ namespace System.Text
             return charCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {

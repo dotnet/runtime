@@ -24,13 +24,11 @@ namespace System.Runtime.Serialization {
         // Returns a SerializationInfo completely populated with all of the data needed to reinstantiate the
         // the object at the other end of serialization.  
         //
-        [System.Security.SecurityCritical]  // auto-generated_required
         void GetObjectData(Object obj, SerializationInfo info, StreamingContext context);
     
         // Reinflate the object using all of the information in data.  The information in
         // members is used to find the particular field or property which needs to be set.
         // 
-        [System.Security.SecurityCritical]  // auto-generated_required
         Object SetObjectData(Object obj, SerializationInfo info, StreamingContext context, ISurrogateSelector selector);
     }
 }

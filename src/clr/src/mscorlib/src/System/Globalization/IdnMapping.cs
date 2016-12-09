@@ -191,7 +191,6 @@ namespace System.Globalization
         }
 
 
-        [System.Security.SecuritySafeCritical]
         private String GetAsciiUsingOS(String unicode)
         {
             if (unicode.Length == 0)
@@ -294,7 +293,6 @@ namespace System.Globalization
         }
 
         
-        [System.Security.SecuritySafeCritical]
         private string GetUnicodeUsingOS(string ascii)
         {
             uint flags =  (uint)((AllowUnassigned ? IDN_ALLOW_UNASSIGNED : 0) | (UseStd3AsciiRules ? IDN_USE_STD3_ASCII_RULES : 0));
@@ -1158,7 +1156,6 @@ namespace System.Globalization
         private const int ERROR_INVALID_NAME = 123;
 
 
-        [System.Security.SecurityCritical]
         [SuppressUnmanagedCodeSecurityAttribute()]
         [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
         private static extern int IdnToAscii(
@@ -1172,7 +1169,6 @@ namespace System.Globalization
                                         char    [] lpASCIICharStr, 
                                         int     cchASCIIChar);
 
-        [System.Security.SecurityCritical]
         [SuppressUnmanagedCodeSecurityAttribute()]
         [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
         private static extern int IdnToUnicode(

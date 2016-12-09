@@ -85,9 +85,7 @@ namespace System.IO {
     {
         private const long UnmanagedMemStreamMaxLength = Int64.MaxValue;
 
-        [System.Security.SecurityCritical] // auto-generated
         private SafeBuffer _buffer;
-        [SecurityCritical]
         private unsafe byte* _mem;
         private long _length;
         private long _capacity;
@@ -100,7 +98,6 @@ namespace System.IO {
 
 
         // Needed for subclasses that need to map a file, etc.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected UnmanagedMemoryStream()
         {
             unsafe {
@@ -109,12 +106,10 @@ namespace System.IO {
             _isOpen = false;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length) {
             Initialize(buffer, offset, length, FileAccess.Read, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access) {
             Initialize(buffer, offset, length, access, false);
         }
@@ -122,17 +117,14 @@ namespace System.IO {
         // We must create one of these without doing a security check.  This
         // class is created while security is trying to start up.  Plus, doing
         // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        [System.Security.SecurityCritical]  // auto-generated
         internal UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck) {
             Initialize(buffer, offset, length, access, skipSecurityCheck);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access) {
             Initialize(buffer, offset, length, access, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck) {
             if (buffer == null) {
                 throw new ArgumentNullException(nameof(buffer));
@@ -185,14 +177,12 @@ namespace System.IO {
             _isOpen = true;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
             Initialize(pointer, length, length, FileAccess.Read, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access) 
         {
@@ -202,20 +192,17 @@ namespace System.IO {
         // We must create one of these without doing a security check.  This
         // class is created while security is trying to start up.  Plus, doing
         // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck) 
         {
             Initialize(pointer, length, capacity, access, skipSecurityCheck);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access) 
         {
             Initialize(pointer, length, capacity, access, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck) 
         {
             if (pointer == null)
@@ -262,7 +249,6 @@ namespace System.IO {
             get { return _isOpen && (_access & FileAccess.Write) != 0; }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override void Dispose(bool disposing)
         {
             _isOpen = false;
@@ -317,7 +303,6 @@ namespace System.IO {
                 Contract.EndContractBlock();
                 return Interlocked.Read(ref _position);
             }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -337,7 +322,6 @@ namespace System.IO {
 
         [CLSCompliant(false)]
         public unsafe byte* PositionPointer {
-            [System.Security.SecurityCritical]  // auto-generated_required
             get {
                 if (_buffer != null) {
                     throw new NotSupportedException(Environment.GetResourceString("NotSupported_UmsSafeBuffer"));
@@ -351,7 +335,6 @@ namespace System.IO {
                 if (!_isOpen) __Error.StreamIsClosed();
                 return ptr;
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             set {
                 if (_buffer != null)
                     throw new NotSupportedException(Environment.GetResourceString("NotSupported_UmsSafeBuffer"));
@@ -369,7 +352,6 @@ namespace System.IO {
         }
 
         internal unsafe byte* Pointer {
-            [System.Security.SecurityCritical]  // auto-generated
             get {
                 if (_buffer != null)
                     throw new NotSupportedException(Environment.GetResourceString("NotSupported_UmsSafeBuffer"));
@@ -378,7 +360,6 @@ namespace System.IO {
             }
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int Read([In, Out] byte[] buffer, int offset, int count) {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
@@ -469,7 +450,6 @@ namespace System.IO {
             } 
         } 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int ReadByte() {
             if (!_isOpen) __Error.StreamIsClosed();
             if (!CanRead) __Error.ReadNotSupported();
@@ -537,7 +517,6 @@ namespace System.IO {
             return finalPos;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void SetLength(long value) {
             if (value < 0)
                 throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -563,7 +542,6 @@ namespace System.IO {
             } 
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void Write(byte[] buffer, int offset, int count) {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
@@ -671,7 +649,6 @@ namespace System.IO {
         } 
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void WriteByte(byte value) {
             if (!_isOpen) __Error.StreamIsClosed();
             if (!CanWrite) __Error.WriteNotSupported();

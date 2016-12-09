@@ -75,25 +75,21 @@ namespace System {
             return ((int)m_value) ^ (int)(m_value >> 32);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt64(m_value, null, NumberFormatInfo.CurrentInfo);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt64(m_value, null, NumberFormatInfo.GetInstance(provider));
         }        
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt64(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt64(m_value, format, NumberFormatInfo.GetInstance(provider));

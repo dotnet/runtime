@@ -108,7 +108,6 @@ namespace System.IO
             InternalCopy(sourceFileName, destFileName, overwrite, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static void UnsafeCopy(String sourceFileName, String destFileName, bool overwrite) {
             if (sourceFileName == null)
                 throw new ArgumentNullException(nameof(sourceFileName), Environment.GetResourceString("ArgumentNull_FileName"));
@@ -126,7 +125,6 @@ namespace System.IO
         /// <devdoc>
         ///    Note: This returns the fully qualified name of the destination file.
         /// </devdoc>
-        [System.Security.SecuritySafeCritical]
         internal static String InternalCopy(String sourceFileName, String destFileName, bool overwrite, bool checkHost)
         {
             Contract.Requires(sourceFileName != null);
@@ -202,7 +200,6 @@ namespace System.IO
         // 
         // Your application must have Delete permission to the target file.
         // 
-        [System.Security.SecuritySafeCritical]
         public static void Delete(String path) {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -211,7 +208,6 @@ namespace System.IO
             InternalDelete(path, true);
         }
 
-        [System.Security.SecurityCritical] 
         internal static void UnsafeDelete(String path)
         {
             if (path == null)
@@ -221,7 +217,6 @@ namespace System.IO
             InternalDelete(path, false);
         }
 
-        [System.Security.SecurityCritical] 
         internal static void InternalDelete(String path, bool checkHost)
         {
             String fullPath = Path.GetFullPath(path);
@@ -243,7 +238,6 @@ namespace System.IO
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Decrypt(String path)
         {
             if (path == null)
@@ -267,7 +261,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Encrypt(String path)
         {
             if (path == null)
@@ -298,19 +291,16 @@ namespace System.IO
         //
         // Your application must have Read permission for the target directory.
         // 
-        [System.Security.SecuritySafeCritical]
         public static bool Exists(String path)
         {
             return InternalExistsHelper(path, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static bool UnsafeExists(String path)
         {
             return InternalExistsHelper(path, false);
         }
 
-        [System.Security.SecurityCritical]
         private static bool InternalExistsHelper(String path, bool checkHost) 
         {
             try
@@ -351,7 +341,6 @@ namespace System.IO
             return false;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool InternalExists(String path) {
             Win32Native.WIN32_FILE_ATTRIBUTE_DATA data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
             int dataInitialised = FillAttributeInfo(path, ref data, false, true);
@@ -372,19 +361,16 @@ namespace System.IO
             return new FileStream(path, mode, access, share);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DateTime GetCreationTime(String path)
         {
             return InternalGetCreationTimeUtc(path, true).ToLocalTime();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetCreationTimeUtc(String path)
         {
             return InternalGetCreationTimeUtc(path, false); // this API isn't exposed in Silverlight
         }
 
-        [System.Security.SecurityCritical]
         private static DateTime InternalGetCreationTimeUtc(String path, bool checkHost)
         {
             String fullPath = Path.GetFullPath(path);
@@ -404,19 +390,16 @@ namespace System.IO
             return DateTime.FromFileTimeUtc(dt);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DateTime GetLastAccessTime(String path)
         {
             return InternalGetLastAccessTimeUtc(path, true).ToLocalTime();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetLastAccessTimeUtc(String path)
         {
             return InternalGetLastAccessTimeUtc(path, false); // this API isn't exposed in Silverlight
         }
 
-        [System.Security.SecurityCritical]
         private static DateTime InternalGetLastAccessTimeUtc(String path, bool checkHost)
         {
             String fullPath = Path.GetFullPath(path);
@@ -436,19 +419,16 @@ namespace System.IO
             return DateTime.FromFileTimeUtc(dt);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DateTime GetLastWriteTime(String path)
         {
             return InternalGetLastWriteTimeUtc(path, true).ToLocalTime();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetLastWriteTimeUtc(String path)
         {
             return InternalGetLastWriteTimeUtc(path, false); // this API isn't exposed in Silverlight
         }
 
-        [System.Security.SecurityCritical]
         private static DateTime InternalGetLastWriteTimeUtc(String path, bool checkHost)
         {
             String fullPath = Path.GetFullPath(path);
@@ -468,7 +448,6 @@ namespace System.IO
             return DateTime.FromFileTimeUtc(dt);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static FileAttributes GetAttributes(String path) 
         {
             String fullPath = Path.GetFullPath(path);
@@ -484,7 +463,6 @@ namespace System.IO
             return (FileAttributes) data.fileAttributes;
         }
 
-        [System.Security.SecurityCritical] 
         public static void SetAttributes(String path, FileAttributes fileAttributes) 
         {
             String fullPath = Path.GetFullPath(path);
@@ -507,7 +485,6 @@ namespace System.IO
                                   FileAccess.Write, FileShare.None);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String ReadAllText(String path)
         {
             if (path == null)
@@ -519,7 +496,6 @@ namespace System.IO
             return InternalReadAllText(path, Encoding.UTF8, true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String ReadAllText(String path, Encoding encoding)
         {
             if (path == null)
@@ -533,7 +509,6 @@ namespace System.IO
             return InternalReadAllText(path, encoding, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static String UnsafeReadAllText(String path)
         {
             if (path == null)
@@ -545,7 +520,6 @@ namespace System.IO
             return InternalReadAllText(path, Encoding.UTF8, false);
         }
 
-        [System.Security.SecurityCritical]
         private static String InternalReadAllText(String path, Encoding encoding, bool checkHost)
         {
             Contract.Requires(path != null);
@@ -556,7 +530,6 @@ namespace System.IO
                 return sr.ReadToEnd();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WriteAllText(String path, String contents)
         {
             if (path == null)
@@ -568,7 +541,6 @@ namespace System.IO
             InternalWriteAllText(path, contents, StreamWriter.UTF8NoBOM, true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WriteAllText(String path, String contents, Encoding encoding)
         {
             if (path == null)
@@ -582,7 +554,6 @@ namespace System.IO
             InternalWriteAllText(path, contents, encoding, true);
         }
         
-        [System.Security.SecurityCritical]
         internal static void UnsafeWriteAllText(String path, String contents)
         {
             if (path == null)
@@ -594,7 +565,6 @@ namespace System.IO
             InternalWriteAllText(path, contents, StreamWriter.UTF8NoBOM, false);
         }
 
-        [System.Security.SecurityCritical]
         private static void InternalWriteAllText(String path, String contents, Encoding encoding, bool checkHost)
         {
             Contract.Requires(path != null);
@@ -605,20 +575,17 @@ namespace System.IO
                 sw.Write(contents);
         } 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static byte[] ReadAllBytes(String path)
         {
             return InternalReadAllBytes(path, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static byte[] UnsafeReadAllBytes(String path)
         {
             return InternalReadAllBytes(path, false);
         }
 
         
-        [System.Security.SecurityCritical]
         private static byte[] InternalReadAllBytes(String path, bool checkHost)
         {
             byte[] bytes;
@@ -642,7 +609,6 @@ namespace System.IO
             return bytes;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WriteAllBytes(String path, byte[] bytes)
         {
             if (path == null)
@@ -656,7 +622,6 @@ namespace System.IO
             InternalWriteAllBytes(path, bytes, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static void UnsafeWriteAllBytes(String path, byte[] bytes)
         {
             if (path == null)
@@ -670,7 +635,6 @@ namespace System.IO
             InternalWriteAllBytes(path, bytes, false);
         }
 
-        [System.Security.SecurityCritical]
         private static void InternalWriteAllBytes(String path, byte[] bytes, bool checkHost)
         {
             Contract.Requires(path != null);
@@ -888,17 +852,14 @@ namespace System.IO
         // sourceFileName and Write 
         // permissions to destFileName.
         // 
-        [System.Security.SecuritySafeCritical]
         public static void Move(String sourceFileName, String destFileName) {
             InternalMove(sourceFileName, destFileName, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static void UnsafeMove(String sourceFileName, String destFileName) {
             InternalMove(sourceFileName, destFileName, false);
         }
 
-        [System.Security.SecurityCritical]
         private static void InternalMove(String sourceFileName, String destFileName, bool checkHost) {
             if (sourceFileName == null)
                 throw new ArgumentNullException(nameof(sourceFileName), Environment.GetResourceString("ArgumentNull_FileName"));
@@ -952,7 +913,6 @@ namespace System.IO
             InternalReplace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
         }
 
-        [System.Security.SecuritySafeCritical]
         private static void InternalReplace(String sourceFileName, String destinationFileName, String destinationBackupFileName, bool ignoreMetadataErrors)
         {
             Contract.Requires(sourceFileName != null);
@@ -985,7 +945,6 @@ namespace System.IO
 
         // Returns 0 on success, otherwise a Win32 error code.  Note that
         // classes should use -1 as the uninitialized state for dataInitialized.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static int FillAttributeInfo(String path, ref Win32Native.WIN32_FILE_ATTRIBUTE_DATA data, bool tryagain, bool returnErrorOnNotFound)
         {
             int dataInitialised = 0;

@@ -764,7 +764,6 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="stackMark">A stack crawl mark pointing to the frame of the caller.</param>
 
-        [SecuritySafeCritical]
         internal void PossiblyCaptureContext(ref StackCrawlMark stackMark)
         {
             Contract.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
@@ -1161,7 +1160,6 @@ namespace System.Threading.Tasks
         //
         // Internal version of RunSynchronously that allows not waiting for completion.
         // 
-        [SecuritySafeCritical] // Needed for QueueTask
         internal void InternalRunSynchronously(TaskScheduler scheduler, bool waitForCompletion)
         {
             Contract.Requires(scheduler != null, "Task.InternalRunSynchronously(): null TaskScheduler");
@@ -1884,7 +1882,6 @@ namespace System.Threading.Tasks
         /// underneath us.  If false, TASK_STATE_STARTED bit is OR-ed right in.  This
         /// allows us to streamline things a bit for StartNew(), where competing cancellations
         /// are not a problem.</param>
-        [SecuritySafeCritical] // Needed for QueueTask
         internal void ScheduleAndStart(bool needsProtection)
         {
             Contract.Assert(m_taskScheduler != null, "expected a task scheduler to have been selected");
@@ -2671,7 +2668,6 @@ namespace System.Threading.Tasks
         /// IThreadPoolWorkItem override, which is the entry function for this task when the TP scheduler decides to run it.
         /// 
         /// </summary>
-        [SecurityCritical]
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
             ExecuteEntry(false);
@@ -2681,7 +2677,6 @@ namespace System.Threading.Tasks
         /// The ThreadPool calls this if a ThreadAbortException is thrown while trying to execute this workitem.  This may occur
         /// before Task would otherwise be able to observe it.  
         /// </summary>
-        [SecurityCritical]
         void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
         {
             // If the task has marked itself as Completed, then it either a) already observed this exception (so we shouldn't handle it here)
@@ -2700,7 +2695,6 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="bPreventDoubleExecution"> Performs atomic updates to prevent double execution. Should only be set to true
         /// in codepaths servicing user provided TaskSchedulers. The ConcRT or ThreadPool schedulers don't need this. </param>
-        [SecuritySafeCritical]
         internal bool ExecuteEntry(bool bPreventDoubleExecution)
         {
             if (bPreventDoubleExecution || ((Options & (TaskCreationOptions)InternalTaskOptions.SelfReplicating) != 0))
@@ -2742,7 +2736,6 @@ namespace System.Threading.Tasks
         }
 
         // A trick so we can refer to the TLS slot with a byref.
-        [SecurityCritical]
         private void ExecuteWithThreadLocal(ref Task currentTaskSlot)
         {
             // Remember the current task so we can restore it after running, and then
@@ -2819,10 +2812,8 @@ namespace System.Threading.Tasks
         }
 
         // Cached callback delegate that's lazily initialized due to ContextCallback being SecurityCritical
-        [SecurityCritical]
         private static ContextCallback s_ecCallback;
 
-        [SecurityCritical]
         private static void ExecutionContextCallback(object obj)
         {
             Task task = obj as Task;
@@ -2929,7 +2920,6 @@ namespace System.Threading.Tasks
         /// <param name="flowExecutionContext">Whether to flow ExecutionContext across the await.</param>
         /// <param name="stackMark">A stack crawl mark tied to execution context.</param>
         /// <exception cref="System.InvalidOperationException">The awaiter was not properly initialized.</exception>
-        [SecurityCritical]
         internal void SetContinuationForAwait(
             Action continuationAction, bool continueOnCapturedContext, bool flowExecutionContext, ref StackCrawlMark stackMark)
         {
@@ -3358,7 +3348,6 @@ namespace System.Threading.Tasks
         /// For custom schedulers we also attempt an atomic state transition.
         /// </param>
         /// <returns>true if the task was successfully canceled; otherwise, false.</returns>
-        [SecuritySafeCritical]
         internal bool InternalCancel(bool bCancelNonExecutingOnly)
         {
             Contract.Requires((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) == 0, "Task.InternalCancel() did not expect promise-style task");
@@ -3558,7 +3547,6 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Runs all of the continuations, as appropriate.
         /// </summary>
-        [SecuritySafeCritical] // for AwaitTaskContinuation.RunOrScheduleAction
         internal void FinishContinuations()
         {
             // Atomically store the fact that this task is completing.  From this point on, the adding of continuations will
@@ -6677,13 +6665,11 @@ namespace System.Threading.Tasks
             m_completingTask = completingTask;
         }
 
-        [SecurityCritical]
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
             m_action.Invoke(m_completingTask);
         }
 
-        [SecurityCritical]
         void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
         {
             /* NOP */
@@ -7017,7 +7003,6 @@ namespace System.Threading.Tasks
         /// Each call to TryBeginInliningScope() that returns true must be matched with a 
         /// call to EndInliningScope() regardless of whether inlining actually took place.
         /// </summary>
-        [SecuritySafeCritical]
         internal bool TryBeginInliningScope()
         {
             // If we're still under the 'safe' limit we'll just skip the stack probe to save p/invoke calls
@@ -7043,7 +7028,6 @@ namespace System.Threading.Tasks
             if (m_inliningDepth < 0) m_inliningDepth = 0;
         }
 
-        [SecurityCritical]
         private unsafe bool CheckForSufficientStack()
         {
 #if FEATURE_CORECLR
@@ -7213,7 +7197,6 @@ namespace System.Threading.Tasks
         }
 
         // Calls InvokeCore asynchronously.
-        [SecuritySafeCritical]
         private void InvokeCoreAsync(Task completingTask)
         {
             // Queue a call to Invoke.  If we're so deep on the stack that we're at risk of overflowing,

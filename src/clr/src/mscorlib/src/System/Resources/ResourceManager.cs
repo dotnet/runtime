@@ -45,21 +45,16 @@ namespace System.Resources {
     // Also using interface or abstract class will not play nice with FriendAccessAllowed.
     //
     [FriendAccessAllowed]
-    [SecurityCritical]
     internal class WindowsRuntimeResourceManagerBase
     {
-        [SecurityCritical]
         public virtual bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo){exceptionInfo = null; return false;}
 
-        [SecurityCritical]
         public virtual String GetString(String stringName, String startingCulture, String neutralResourcesCulture){return null;}
 
         public virtual CultureInfo GlobalResourceContextBestFitCultureInfo { 
-            [SecurityCritical]
             get { return null; } 
         }
         
-        [SecurityCritical]
         public virtual bool SetGlobalResourceContextDefaultCulture(CultureInfo ci) { return false; }
     }
 
@@ -434,7 +429,6 @@ namespace System.Resources {
             this._lastUsedResourceCache = null;
         }
 
-        [System.Security.SecuritySafeCritical]
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
@@ -479,7 +473,6 @@ namespace System.Resources {
 
         // Trying to unify code as much as possible, even though having to do a
         // security check in each constructor prevents it.
-        [System.Security.SecuritySafeCritical]
         private void CommonAssemblyInit()
         {
             if (_bUsingModernResourceManagement == false)
@@ -677,7 +670,6 @@ namespace System.Resources {
         // if it hasn't yet been loaded and if parent CultureInfos should be 
         // loaded as well for resource inheritance.
         //         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) {
             if (null==culture)
@@ -721,7 +713,6 @@ namespace System.Resources {
         // for getting a resource set lives.  Access to it is controlled by
         // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
         // This will take a minimal number of locks.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) 
         {
@@ -735,7 +726,6 @@ namespace System.Resources {
         // for getting a resource set lives.  Access to it is controlled by
         // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
         // This will take a minimal number of locks.
-        [System.Security.SecurityCritical]
         private ResourceSet InternalGetResourceSet(CultureInfo requestedCulture, bool createIfNotExists, bool tryParents, ref StackCrawlMark stackMark)
         {
             Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
@@ -894,7 +884,6 @@ namespace System.Resources {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected static CultureInfo GetNeutralResourcesLanguage(Assembly a)
         {
             // This method should be obsolete - replace it with the one below.
@@ -961,8 +950,6 @@ namespace System.Resources {
         }
 
 #if FEATURE_APPX
-        [SecuritySafeCritical]
-        // Throws WinRT hresults
         private string GetStringFromPRI(String stringName, String startingCulture, String neutralResourcesCulture) {
             Contract.Assert(_bUsingModernResourceManagement);
             Contract.Assert(_WinRTResourceManager != null);
@@ -987,7 +974,6 @@ namespace System.Resources {
         // Since we can't directly reference System.Runtime.WindowsRuntime from mscorlib, we have to get the type via reflection.
         // It would be better if we could just implement WindowsRuntimeResourceManager in mscorlib, but we can't, because
         // we can do very little with WinRT in mscorlib.
-        [SecurityCritical]
         internal static WindowsRuntimeResourceManagerBase GetWinRTResourceManager()
         {
             Type WinRTResourceManagerType = Type.GetType("System.Resources.WindowsRuntimeResourceManager, " + AssemblyRef.SystemRuntimeWindowsRuntime, true);
@@ -1000,7 +986,6 @@ namespace System.Resources {
 
 #if FEATURE_APPX
         [NonSerialized]
-        [SecurityCritical]
         private WindowsRuntimeResourceManagerBase _WinRTResourceManager; // Written only by SetAppXConfiguration
 
         [NonSerialized]
@@ -1029,7 +1014,6 @@ namespace System.Resources {
         //   
         //    b) For any other non-FX assembly, we will use the modern resource manager with the premise that app package
         //       contains the PRI resources.
-        [SecuritySafeCritical]
         private bool ShouldUseSatelliteAssemblyResourceLookupUnderAppX(RuntimeAssembly resourcesAssembly)
         {
             bool fUseSatelliteAssemblyResourceLookupUnderAppX = resourcesAssembly.IsFrameworkAssembly();
@@ -1060,7 +1044,6 @@ namespace System.Resources {
             
         }
         
-        [SecuritySafeCritical]
 #endif // FEATURE_APPX
         // Only call SetAppXConfiguration from ResourceManager constructors, and nowhere else.
         // Throws MissingManifestResourceException and WinRT HResults
@@ -1442,7 +1425,6 @@ namespace System.Resources {
 #if RESOURCE_SATELLITE_CONFIG
         // Internal helper method - gives an end user the ability to prevent
         // satellite assembly probes for certain cultures via a config file.
-        [System.Security.SecurityCritical]  // auto-generated
         private bool TryLookingForSatellite(CultureInfo lookForCulture)
         {
             if (!_checkedConfigFile) {
@@ -1470,7 +1452,6 @@ namespace System.Resources {
 
         // Note: There is one config file per appdomain.  This is not 
         // per-process nor per-assembly.
-        [System.Security.SecurityCritical]  // auto-generated
         private Hashtable GetSatelliteAssembliesFromConfig()
         {
             return null;
@@ -1566,7 +1547,6 @@ namespace System.Resources {
 
 
 #if RESOURCE_SATELLITE_CONFIG
-            [System.Security.SecurityCritical]  // auto-generated
             internal bool TryLookingForSatellite(CultureInfo lookForCulture)
             {
                 return _rm.TryLookingForSatellite(lookForCulture);
