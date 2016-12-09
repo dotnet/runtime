@@ -475,7 +475,7 @@ ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern, MonoStr
 		return hnd;
 	}
 
-	*file_name = mono_string_from_utf16_checked (data.cFileName, &error);
+	mono_gc_wbarrier_generic_store (file_name, (MonoObject*) mono_string_from_utf16_checked (data.cFileName, &error));
 	mono_error_set_pending_exception (&error);
 
 	*file_attr = data.dwFileAttributes;
@@ -500,7 +500,7 @@ ves_icall_System_IO_MonoIO_FindNextFile (HANDLE hnd, MonoString **file_name, gin
 		return res;
 	}
 
-	*file_name = mono_string_from_utf16_checked (data.cFileName, &error);
+	mono_gc_wbarrier_generic_store (file_name, (MonoObject*) mono_string_from_utf16_checked (data.cFileName, &error));
 	mono_error_set_pending_exception (&error);
 
 	*file_attr = data.dwFileAttributes;
