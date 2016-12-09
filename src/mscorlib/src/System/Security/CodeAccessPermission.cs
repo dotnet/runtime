@@ -160,48 +160,6 @@ namespace System.Security
             // otherwise we don't support it.
             throw new NotSupportedException(Environment.GetResourceString( "NotSupported_SecurityPermissionUnion" ));
         }
-        
-#if FEATURE_CAS_POLICY
-        static internal SecurityElement CreatePermissionElement( IPermission perm, String permname )
-        {
-            SecurityElement root = new SecurityElement( "IPermission" );
-            XMLUtil.AddClassAttribute( root, perm.GetType(), permname );
-            // If you hit this assert then most likely you are trying to change the name of this class. 
-            // This is ok as long as you change the hard coded string above and change the assert below.
-            Contract.Assert( perm.GetType().FullName.Equals( permname ), "Incorrect class name passed in! Was: " + permname + " Should be " + perm.GetType().FullName);
-
-            root.AddAttribute( "version", "1" );
-            return root;
-        }
-        
-        static internal void ValidateElement( SecurityElement elem, IPermission perm )
-        {
-            if (elem == null)
-                throw new ArgumentNullException( nameof(elem) );
-            Contract.EndContractBlock();
-                
-            if (!XMLUtil.IsPermissionElement( perm, elem ))
-                throw new ArgumentException( Environment.GetResourceString( "Argument_NotAPermissionElement"));
-                
-            String version = elem.Attribute( "version" );
-            
-            if (version != null && !version.Equals( "1" ))
-                throw new ArgumentException( Environment.GetResourceString( "Argument_InvalidXMLBadVersion") );
-        }
-
-        abstract public SecurityElement ToXml();
-        abstract public void FromXml( SecurityElement elem );
-
-        //
-        // Unimplemented interface methods 
-        // (as a reminder only)
-        //
-
-        public override String ToString()
-        {
-            return ToXml().ToString();
-        }
-#endif // FEATURE_CAS_POLICY
 
         //
         // HELPERS FOR IMPLEMENTING ABSTRACT METHODS

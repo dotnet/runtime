@@ -389,9 +389,6 @@ namespace System.Text
         private static volatile Hashtable encodings;
 #endif
 
-#if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]
-#endif
         public static void RegisterProvider(EncodingProvider provider) 
         {
             // Parameters validated inside EncodingProvider
@@ -399,9 +396,6 @@ namespace System.Text
         }
 
         [Pure]
-#if !FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
         public static Encoding GetEncoding(int codepage)
         {
             Encoding result = EncodingProvider.GetEncodingFromProvider(codepage);

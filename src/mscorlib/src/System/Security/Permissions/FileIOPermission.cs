@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Permissions {
+namespace System.Security.Permissions
+{
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-#if FEATURE_CAS_POLICY
-    using SecurityElement = System.Security.SecurityElement;
-#endif // FEATURE_CAS_POLICY
     using System.Security.AccessControl;
     using System.Security.Util;
     using System.IO;
@@ -18,9 +16,9 @@ namespace System.Security.Permissions {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-[Serializable]
+    [Serializable]
     [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileIOPermissionAccess
     {
         NoAccess = 0x00,
@@ -30,9 +28,8 @@ namespace System.Security.Permissions {
         PathDiscovery = 0x08,
         AllAccess = 0x0F,
     }
-    
-    
-[System.Runtime.InteropServices.ComVisible(true)]
+
+    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     sealed public class FileIOPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
@@ -79,23 +76,6 @@ namespace System.Security.Permissions {
             AddPathList( access, pathList, false, true, false );
         }
 
-#if FEATURE_MACL
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public FileIOPermission( FileIOPermissionAccess access, AccessControlActions control, String path )
-        {
-            VerifyAccess( access );
-        
-            String[] pathList = new String[] { path };
-            AddPathList( access, control, pathList, false, true, false );
-        }
-        
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public FileIOPermission( FileIOPermissionAccess access, AccessControlActions control, String[] pathList )
-            : this( access, control, pathList, true, true )
-        {
-        }
-#endif
-
         [System.Security.SecurityCritical]  // auto-generated
         internal FileIOPermission( FileIOPermissionAccess access, String[] pathList, bool checkForDuplicates, bool needFullPath )
         {
@@ -103,16 +83,6 @@ namespace System.Security.Permissions {
         
             AddPathList( access, pathList, checkForDuplicates, needFullPath, true );
         }
-
-#if FEATURE_MACL
-        [System.Security.SecurityCritical]  // auto-generated
-        internal FileIOPermission( FileIOPermissionAccess access, AccessControlActions control, String[] pathList, bool checkForDuplicates, bool needFullPath )
-        {
-            VerifyAccess( access );
-        
-            AddPathList( access, control, pathList, checkForDuplicates, needFullPath, true );
-        }
-#endif
 
         public void SetPathList( FileIOPermissionAccess access, String path )
         {
@@ -152,23 +122,11 @@ namespace System.Security.Permissions {
             if ((access & FileIOPermissionAccess.PathDiscovery) != 0)
                 m_pathDiscovery = null;
 
-#if FEATURE_MACL
-            if ((control & AccessControlActions.View) != 0)
-                m_viewAcl = null;
-
-            if ((control & AccessControlActions.Change) != 0)
-                m_changeAcl = null;
-#else
             m_viewAcl = null;
             m_changeAcl = null;
-#endif
-            
             m_unrestricted = false;
-#if FEATURE_MACL
-            AddPathList( access, control, pathList, checkForDuplicates, true, true );
-#else
+
             AddPathList( access, pathList, checkForDuplicates, true, true );
-#endif
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -267,28 +225,8 @@ namespace System.Security.Permissions {
                 }
                 m_pathDiscovery.AddExpressions( pathArrayList, checkForDuplicates);
             }
-
-#if FEATURE_MACL
-            if ((control & AccessControlActions.View) != 0)
-            {
-                if (m_viewAcl == null)
-                {
-                    m_viewAcl = new FileIOAccess();
-                }
-                m_viewAcl.AddExpressions( pathArrayList, checkForDuplicates);
-            }
-
-            if ((control & AccessControlActions.Change) != 0)
-            {
-                if (m_changeAcl == null)
-                {
-                    m_changeAcl = new FileIOAccess();
-                }
-                m_changeAcl.AddExpressions( pathArrayList, checkForDuplicates);
-            }
-#endif
         }
-        
+
         [SecuritySafeCritical]
         public String[] GetPathList( FileIOPermissionAccess access )
         {
@@ -335,7 +273,6 @@ namespace System.Security.Permissions {
             
             return null;
         }
-        
 
         public FileIOPermissionAccess AllLocalFiles
         {
@@ -785,123 +722,6 @@ namespace System.Security.Permissions {
             }
             return copy;   
         }
-   
-#if FEATURE_CAS_POLICY
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.FileIOPermission" );
-            if (!IsUnrestricted())
-            {
-                if (this.m_read != null && !this.m_read.IsEmpty())
-                {
-                    esd.AddAttribute( "Read", SecurityElement.Escape( m_read.ToString() ) );
-                }
-                if (this.m_write != null && !this.m_write.IsEmpty())
-                {
-                    esd.AddAttribute( "Write", SecurityElement.Escape( m_write.ToString() ) );
-                }
-                if (this.m_append != null && !this.m_append.IsEmpty())
-                {
-                    esd.AddAttribute( "Append", SecurityElement.Escape( m_append.ToString() ) );
-                }
-                if (this.m_pathDiscovery != null && !this.m_pathDiscovery.IsEmpty())
-                {
-                    esd.AddAttribute( "PathDiscovery", SecurityElement.Escape( m_pathDiscovery.ToString() ) );
-                }
-                if (this.m_viewAcl != null && !this.m_viewAcl.IsEmpty())
-                {
-                    esd.AddAttribute( "ViewAcl", SecurityElement.Escape( m_viewAcl.ToString() ) );
-                }
-                if (this.m_changeAcl != null && !this.m_changeAcl.IsEmpty())
-                {
-                    esd.AddAttribute( "ChangeAcl", SecurityElement.Escape( m_changeAcl.ToString() ) );
-                }
-
-            }
-            else
-            {
-                esd.AddAttribute( "Unrestricted", "true" );
-            }
-            return esd;
-        }
-        
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-            String et;
-            
-            if (XMLUtil.IsUnrestricted(esd))
-            {
-                m_unrestricted = true;
-                return;
-            }
-    
-            
-            m_unrestricted = false;
-            
-            et = esd.Attribute( "Read" );
-            if (et != null)
-            {
-                m_read = new FileIOAccess( et );
-            }
-            else
-            {
-                m_read = null;
-            }
-            
-            et = esd.Attribute( "Write" );
-            if (et != null)
-            {
-                m_write = new FileIOAccess( et );
-            }
-            else
-            {
-                m_write = null;
-            }
-    
-            et = esd.Attribute( "Append" );
-            if (et != null)
-            {
-                m_append = new FileIOAccess( et );
-            }
-            else
-            {
-                m_append = null;
-            }
-
-            et = esd.Attribute( "PathDiscovery" );
-            if (et != null)
-            {
-                m_pathDiscovery = new FileIOAccess( et );
-                m_pathDiscovery.PathDiscovery = true;
-            }
-            else
-            {
-                m_pathDiscovery = null;
-            }
-
-            et = esd.Attribute( "ViewAcl" );
-            if (et != null)
-            {
-                m_viewAcl = new FileIOAccess( et );
-            }
-            else
-            {
-                m_viewAcl = null;
-            }
-
-            et = esd.Attribute( "ChangeAcl" );
-            if (et != null)
-            {
-                m_changeAcl = new FileIOAccess( et );
-            }
-            else
-            {
-                m_changeAcl = null;
-            }
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()
@@ -996,16 +816,7 @@ namespace System.Security.Permissions {
         [System.Security.SecuritySafeCritical]
         internal static void QuickDemand(FileIOPermissionAccess access, string fullPath, bool checkForDuplicates = false, bool needFullPath = false)
         {
-#if FEATURE_CAS_POLICY
-            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
-            {
-                new FileIOPermission(access, new string[] { fullPath }, checkForDuplicates, needFullPath).Demand();
-            }
-            else
-#endif
-            {
-                EmulateFileIOPermissionChecks(fullPath);
-            }
+            EmulateFileIOPermissionChecks(fullPath);
         }
 
         /// <summary>
@@ -1021,18 +832,9 @@ namespace System.Security.Permissions {
         [System.Security.SecuritySafeCritical]
         internal static void QuickDemand(FileIOPermissionAccess access, string[] fullPathList, bool checkForDuplicates = false, bool needFullPath = true)
         {
-#if FEATURE_CAS_POLICY
-            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
+            foreach (string fullPath in fullPathList)
             {
-                new FileIOPermission(access, fullPathList, checkForDuplicates, needFullPath).Demand();
-            }
-            else
-#endif
-            {
-                foreach (string fullPath in fullPathList)
-                {
-                    EmulateFileIOPermissionChecks(fullPath);
-                }
+                EmulateFileIOPermissionChecks(fullPath);
             }
         }
 
@@ -1040,44 +842,7 @@ namespace System.Security.Permissions {
         internal static void QuickDemand(PermissionState state)
         {
             // Should be a no-op without CAS
-#if FEATURE_CAS_POLICY
-            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
-            {
-                new FileIOPermission(state).Demand();
-            }
-#endif
         }
-
-#if FEATURE_MACL
-        [System.Security.SecuritySafeCritical]
-        internal static void QuickDemand(FileIOPermissionAccess access, AccessControlActions control, string fullPath, bool checkForDuplicates = false, bool needFullPath = true)
-        {
-            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
-            {
-                new FileIOPermission(access, control, new string[] { fullPath }, checkForDuplicates, needFullPath).Demand();
-            }
-            else
-            {
-                EmulateFileIOPermissionChecks(fullPath);
-            }
-        }
-
-        [System.Security.SecuritySafeCritical]
-        internal static void QuickDemand(FileIOPermissionAccess access, AccessControlActions control, string[] fullPathList, bool checkForDuplicates = true, bool needFullPath = true)
-        {
-            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
-            {
-                new FileIOPermission(access, control, fullPathList, checkForDuplicates, needFullPath).Demand();
-            }
-            else
-            {
-                foreach (string fullPath in fullPathList)
-                {
-                    EmulateFileIOPermissionChecks(fullPath);
-                }
-            }
-        }
-#endif
 
         /// <summary>
         /// Perform the additional path checks that would normally happen when creating a FileIOPermission object.

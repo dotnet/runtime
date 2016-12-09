@@ -26,9 +26,6 @@ namespace System.Collections.Concurrent
     /// non-blocking.  These behaviors can be overridden via this enumeration.
     /// </summary>
     [Flags]
-#if !FEATURE_CORECLR
-    [Serializable]
-#endif
     public enum EnumerablePartitionerOptions
     {
         /// <summary>
@@ -1704,21 +1701,7 @@ namespace System.Collections.Concurrent
 
             if (typeof(TSource).IsValueType)
             {
-#if !FEATURE_CORECLR // Marshal.SizeOf is not supported in CoreCLR
-
-                if (typeof(TSource).StructLayoutAttribute.Value == LayoutKind.Explicit)
-                {
-                    chunkSize = Math.Max(1, DEFAULT_BYTES_PER_CHUNK / Marshal.SizeOf(typeof(TSource)));
-                }
-                else
-                {
-                    // We choose '128' because this ensures, no matter the actual size of the value type,
-                    // the total bytes used will be a multiple of 128. This ensures it's cache aligned.
-                    chunkSize = 128;
-                }
-#else
                 chunkSize = 128;
-#endif
             }
             else
             {
@@ -1728,6 +1711,5 @@ namespace System.Collections.Concurrent
             return chunkSize;
         }
         #endregion
-
     }
 }

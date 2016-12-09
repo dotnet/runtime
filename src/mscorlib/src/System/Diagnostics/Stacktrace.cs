@@ -712,15 +712,6 @@ namespace System.Diagnostics {
                         {
                             fileName = sf.GetFileName();
                         }
-#if FEATURE_CAS_POLICY
-                        catch (NotSupportedException)
-                        {
-                            // Having a deprecated stack modifier on the callstack (such as Deny) will cause
-                            // a NotSupportedException to be thrown.  Since we don't know if the app can
-                            // access the file names, we'll conservatively hide them.
-                            displayFilenames = false;
-                        }
-#endif // FEATURE_CAS_POLICY
                         catch (SecurityException)
                         {
                             // If the demand for displaying filenames fails, then it won't

@@ -4,7 +4,8 @@
 
 // 
 
-namespace System.Security {
+namespace System.Security
+{
     using System;
     using System.Globalization;
     using System.Threading;
@@ -122,176 +123,49 @@ namespace System.Security {
         //
         // API for PermissionSets
         //
-        
+
         [System.Security.SecurityCritical]  // auto-generated
         internal static void Assert(PermissionSet permSet, ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            // Note: if the "AssertPermission" is not a permission that implements IUnrestrictedPermission
-            // you need to change the fourth parameter to a zero.
-            FrameSecurityDescriptor secObj = CodeAccessSecurityEngine.CheckNReturnSO(
-                                                CodeAccessSecurityEngine.AssertPermissionToken,
-                                                CodeAccessSecurityEngine.AssertPermission,
-                                                ref stackMark,
-                                                1 );
-            
-            Contract.Assert(secObj != null,"Failure in SecurityRuntime.Assert() - secObj != null");
-            if (secObj == null)
-            {
-                // Security: REQ_SQ flag is missing. Bad compiler ?
-                System.Environment.FailFast(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-            else
-            {
-                if (secObj.HasImperativeAsserts())
-                    throw new SecurityException( Environment.GetResourceString( "Security_MustRevertOverride" ) );
-
-                secObj.SetAssert(permSet);
-            }
-#endif // FEATURE_CAS_POLICY
         }
-    
+
         [System.Security.SecurityCritical]  // auto-generated
         internal static void AssertAllPossible(ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            FrameSecurityDescriptor secObj =
-                SecurityRuntime.GetSecurityObjectForFrame(ref stackMark, true);
-    
-            Contract.Assert(secObj != null, "Failure in SecurityRuntime.AssertAllPossible() - secObj != null");
-            if (secObj == null)
-            {
-                // Security: REQ_SQ flag is missing. Bad compiler ?
-                System.Environment.FailFast(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-            else
-            {
-                if (secObj.GetAssertAllPossible())
-                    throw new SecurityException( Environment.GetResourceString( "Security_MustRevertOverride" ) );
-
-                secObj.SetAssertAllPossible();
-            }
-#endif // FEATURE_CAS_POLICY
         }
-    
+
         [System.Security.SecurityCritical]  // auto-generated
         internal static void Deny(PermissionSet permSet, ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            // Deny is only valid in legacy mode
-            if (!AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-            {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_CasDeny"));
-            }
-
-            FrameSecurityDescriptor secObj =
-                SecurityRuntime.GetSecurityObjectForFrame(ref stackMark, true);
-    
-            Contract.Assert(secObj != null, "Failure in SecurityRuntime.Deny() - secObj != null");
-            if (secObj == null)
-            {
-                // Security: REQ_SQ flag is missing. Bad compiler ?
-                System.Environment.FailFast(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-            else
-            {
-                if (secObj.HasImperativeDenials())
-                    throw new SecurityException( Environment.GetResourceString( "Security_MustRevertOverride" ) );
-
-                secObj.SetDeny(permSet);
-            }
-#endif // FEATURE_CAS_POLICY
         }
-    
+
         [System.Security.SecurityCritical]  // auto-generated
         internal static void PermitOnly(PermissionSet permSet, ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            FrameSecurityDescriptor secObj =
-                SecurityRuntime.GetSecurityObjectForFrame(ref stackMark, true);
-    
-            Contract.Assert(secObj != null, "Failure in SecurityRuntime.PermitOnly() - secObj != null");
-            if (secObj == null)
-            {
-                // Security: REQ_SQ flag is missing. Bad compiler ?
-                System.Environment.FailFast(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-            else
-            {
-                if (secObj.HasImperativeRestrictions())
-                    throw new SecurityException( Environment.GetResourceString( "Security_MustRevertOverride" ) );
-
-                secObj.SetPermitOnly(permSet);
-            }
-#endif // FEATURE_CAS_POLICY
         }
-    
+
         //
         // Revert API
         //
-        
+
         [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertAssert(ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            FrameSecurityDescriptor secObj = GetSecurityObjectForFrame(ref stackMark, false);
-            if (secObj != null)
-            {
-                secObj.RevertAssert();
-            }
-            else
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-#endif // FEATURE_CAS_POLICY
         }
 
         [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertDeny(ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            FrameSecurityDescriptor secObj = GetSecurityObjectForFrame(ref stackMark, false);
-            if (secObj != null)
-            {
-                secObj.RevertDeny();
-            }
-            else
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-#endif // FEATURE_CAS_POLICY
         }
         
         [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertPermitOnly(ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            FrameSecurityDescriptor secObj = GetSecurityObjectForFrame(ref stackMark, false);
-            if (secObj != null)
-            {
-                secObj.RevertPermitOnly();
-            }
-            else
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-#endif // FEATURE_CAS_POLICY
         }
         
         [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertAll(ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            FrameSecurityDescriptor secObj = GetSecurityObjectForFrame(ref stackMark, false);
-            if (secObj != null)
-            {
-                secObj.RevertAll();
-            }
-            else
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("ExecutionEngine_MissingSecurityDescriptor"));
-            }
-#endif // FEATURE_CAS_POLICY
         }
     }
 }

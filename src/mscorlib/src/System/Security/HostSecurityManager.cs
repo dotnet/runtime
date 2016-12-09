@@ -52,20 +52,6 @@ namespace System.Security
             }
         }
 
-#if FEATURE_CAS_POLICY
-        // provide policy for the AppDomain.
-        [Obsolete("AppDomain policy levels are obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public virtual PolicyLevel DomainPolicy {
-            get {
-                if (!AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-                {
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_RequiresCasPolicyExplicit"));
-                }
-
-                return null;
-            }
-        }
-#endif
         public virtual Evidence ProvideAppDomainEvidence (Evidence inputEvidence) {
             // The default implementation does not modify the input evidence.
             return inputEvidence;

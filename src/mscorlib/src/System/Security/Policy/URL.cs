@@ -87,28 +87,6 @@ namespace System.Security.Policy {
             return Clone();
         }
 
-#if FEATURE_CAS_POLICY
-        internal SecurityElement ToXml()
-        {
-            SecurityElement root = new SecurityElement( "System.Security.Policy.Url" );
-            // If you hit this assert then most likely you are trying to change the name of this class. 
-            // This is ok as long as you change the hard coded string above and change the assert below.
-            Contract.Assert( this.GetType().FullName.Equals( "System.Security.Policy.Url" ), "Class name changed!" );
-
-            root.AddAttribute( "version", "1" );
-
-            if (m_url != null)
-                root.AddChild( new SecurityElement( "Url", m_url.ToString() ) );
-
-            return root;
-        }
-
-        public override String ToString()
-        {
-            return ToXml().ToString();
-        }
-#endif // FEATURE_CAS_POLICY
-
         // INormalizeForIsolatedStorage is not implemented for startup perf
         // equivalent to INormalizeForIsolatedStorage.Normalize()
         internal Object Normalize()

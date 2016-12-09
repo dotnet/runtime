@@ -11,13 +11,13 @@
 ===========================================================*/
 using System;
 
-namespace System.IO {
+namespace System.IO
+{
     // File attributes for use with the FileEnumerator class.
     // These constants correspond to the constants in WinNT.h.
-    // 
-[Serializable]
+    [Serializable]
     [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileAttributes
     {
         // From WinNT.h (FILE_ATTRIBUTE_XXX)
@@ -35,17 +35,5 @@ namespace System.IO {
         Offline = 0x1000,
         NotContentIndexed = 0x2000,
         Encrypted = 0x4000,
-
-#if !FEATURE_CORECLR
-#if FEATURE_COMINTEROP
-        [System.Runtime.InteropServices.ComVisible(false)]        
-#endif // FEATURE_COMINTEROP
-        IntegrityStream = 0x8000,
-        
-#if FEATURE_COMINTEROP
-        [System.Runtime.InteropServices.ComVisible(false)]        
-#endif // FEATURE_COMINTEROP
-        NoScrubData = 0x20000,
-#endif
     }
 }

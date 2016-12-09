@@ -23,9 +23,6 @@ namespace Microsoft.Win32.SafeHandles
 
     // Class of safe handle which uses 0 or -1 as an invalid handle.
     [System.Security.SecurityCritical]  // auto-generated_required
-#if !FEATURE_CORECLR
-    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
-#endif
     public abstract class SafeHandleZeroOrMinusOneIsInvalid : SafeHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -33,13 +30,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-#if FEATURE_CORECLR
         // A default constructor is needed to satisfy CoreCLR inheritence rules. It should not be called at runtime
         protected SafeHandleZeroOrMinusOneIsInvalid()
         {
             throw new NotImplementedException();
         }
-#endif // FEATURE_CORECLR
 
         public override bool IsInvalid {
             [System.Security.SecurityCritical]
@@ -49,9 +44,6 @@ namespace Microsoft.Win32.SafeHandles
 
     // Class of safe handle which uses only -1 as an invalid handle.
     [System.Security.SecurityCritical]  // auto-generated_required
-#if !FEATURE_CORECLR
-    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
-#endif
     public abstract class SafeHandleMinusOneIsInvalid : SafeHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -59,13 +51,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-#if FEATURE_CORECLR
         // A default constructor is needed to satisfy CoreCLR inheritence rules. It should not be called at runtime
         protected SafeHandleMinusOneIsInvalid()
         {
             throw new NotImplementedException();
         }
-#endif // FEATURE_CORECLR
 
         public override bool IsInvalid {
             [System.Security.SecurityCritical]
@@ -75,9 +65,6 @@ namespace Microsoft.Win32.SafeHandles
 
     // Class of critical handle which uses 0 or -1 as an invalid handle.
     [System.Security.SecurityCritical]  // auto-generated_required
-#if !FEATURE_CORECLR
-    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
-#endif
     public abstract class CriticalHandleZeroOrMinusOneIsInvalid : CriticalHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -93,9 +80,6 @@ namespace Microsoft.Win32.SafeHandles
 
     // Class of critical handle which uses only -1 as an invalid handle.
     [System.Security.SecurityCritical]  // auto-generated_required
-#if !FEATURE_CORECLR
-    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
-#endif
     public abstract class CriticalHandleMinusOneIsInvalid : CriticalHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]

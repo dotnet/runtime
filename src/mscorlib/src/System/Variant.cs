@@ -423,11 +423,8 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal static void MarshalHelperConvertObjectToVariant(Object o, ref Variant v)
         {
-#if FEATURE_REMOTING
-            IConvertible ic = System.Runtime.Remoting.RemotingServices.IsTransparentProxy(o) ? null : o as IConvertible;
-#else
             IConvertible ic = o as IConvertible;
-#endif
+
             if (o == null)
             {
                 v = Empty;

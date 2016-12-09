@@ -180,30 +180,6 @@ namespace System.Security
                                Flags = ""SkipVerification"" />
                </PermissionSet>";
 
-#if FEATURE_CAS_POLICY
-        private const string s_wpfExtensionXml =
-            @"<PermissionSet class = ""System.Security.PermissionSet""
-                             version = ""1"">
-                  <IPermission class = ""System.Security.Permissions.MediaPermission, " + AssemblyRef.WindowsBase + @"""
-                               version = ""1""
-                               Audio=""SafeAudio"" Video=""SafeVideo"" Image=""SafeImage"" />
-                  <IPermission class = ""System.Security.Permissions.WebBrowserPermission, " + AssemblyRef.WindowsBase + @"""
-                               version = ""1""
-                               Level=""Safe"" />
-              </PermissionSet>";
-
-        private const string s_wpfExtensionUnrestrictedXml =
-            @"<PermissionSet class = ""System.Security.PermissionSet""
-                             version = ""1"">
-                  <IPermission class = ""System.Security.Permissions.MediaPermission, " + AssemblyRef.WindowsBase + @"""
-                               version = ""1""
-                               Unrestricted = ""true"" />
-                  <IPermission class = ""System.Security.Permissions.WebBrowserPermission, " + AssemblyRef.WindowsBase + @"""
-                               version = ""1""
-                               Unrestricted = ""true"" />
-              </PermissionSet>";
-#endif //FEATURE_CAS_POLICY
-
         //
         // Built in permission set objects
         // 
@@ -222,11 +198,7 @@ namespace System.Security
 
         internal static NamedPermissionSet Everything
         {
-            get { return GetOrDeserializeExtendablePermissionSet(ref s_everything, s_everythingXml
-#if FEATURE_CAS_POLICY
-                     , s_wpfExtensionUnrestrictedXml
-#endif // FEATURE_CAS_POLICY
-                     ); }
+            get { return GetOrDeserializeExtendablePermissionSet(ref s_everything, s_everythingXml); }
         }
 
         internal static NamedPermissionSet Execution
@@ -241,20 +213,12 @@ namespace System.Security
 
         internal static NamedPermissionSet Internet
         {
-            get { return GetOrDeserializeExtendablePermissionSet(ref s_internet, s_internetXml
-#if FEATURE_CAS_POLICY
-                     , s_wpfExtensionXml
-#endif // FEATURE_CAS_POLICY
-                     ); }
+            get { return GetOrDeserializeExtendablePermissionSet(ref s_internet, s_internetXml); }
         }
 
         internal static NamedPermissionSet LocalIntranet
         {
-            get { return GetOrDeserializeExtendablePermissionSet(ref s_localIntranet, s_localIntranetXml
-#if FEATURE_CAS_POLICY
-                     , s_wpfExtensionXml
-#endif // FEATURE_CAS_POLICY
-                     ); }
+            get { return GetOrDeserializeExtendablePermissionSet(ref s_localIntranet, s_localIntranetXml); }
         }
 
         internal static NamedPermissionSet Nothing
@@ -272,31 +236,11 @@ namespace System.Security
         // set extensions if necessary
         //
 
-        private static NamedPermissionSet GetOrDeserializeExtendablePermissionSet(ref NamedPermissionSet permissionSet,
-                                                                                  string permissionSetXml
-#if FEATURE_CAS_POLICY
-                                                                                  ,string extensionXml
-#endif // FEATURE_CAS_POLICY
-                                                                                  )
+        private static NamedPermissionSet GetOrDeserializeExtendablePermissionSet(
+            ref NamedPermissionSet permissionSet,
+            string permissionSetXml)
         {
             Contract.Requires(!String.IsNullOrEmpty(permissionSetXml));
-#if FEATURE_CAS_POLICY
-            Contract.Requires(!String.IsNullOrEmpty(extensionXml));
-#endif // FEATURE_CAS_POLICY
-
-            if (permissionSet == null)
-            {
-#if FEATURE_CAS_POLICY
-                SecurityElement securityElement = SecurityElement.FromString(permissionSetXml);
-                NamedPermissionSet deserializedPermissionSet = new NamedPermissionSet(securityElement);
-
-                PermissionSet extensions = GetPermissionSetExtensions(extensionXml);
-                deserializedPermissionSet.InplaceUnion(extensions);
-
-                permissionSet = deserializedPermissionSet;
-#endif // FEATURE_CAS_POLICY
-            }
-
             return permissionSet.Copy() as NamedPermissionSet;
         }
 
@@ -304,39 +248,7 @@ namespace System.Security
                                                                         string permissionSetXml)
         {
             Contract.Assert(!String.IsNullOrEmpty(permissionSetXml));
-
-#if FEATURE_CAS_POLICY
-            if (permissionSet == null)
-            {
-                SecurityElement securityElement = SecurityElement.FromString(permissionSetXml);
-                NamedPermissionSet deserializedPermissionSet = new NamedPermissionSet(securityElement);
-                
-                permissionSet = deserializedPermissionSet;
-            }
-#endif // FEATURE_CAS_POLICY
-
             return permissionSet.Copy() as NamedPermissionSet;
         }
-
-#if FEATURE_CAS_POLICY
-        private static PermissionSet GetPermissionSetExtensions(string extensionXml)
-        {
-            Contract.Requires(!String.IsNullOrEmpty(extensionXml));
-
-            SecurityElement se = SecurityElement.FromString(extensionXml);
-
-            // Return the permission set extension only if WPF is in the present framework profile.
-            // XMLUtil.GetClassFromElement() helps do the quickest check, with no exception thrown and 
-            // minimal parsing.
-            SecurityElement firstPermission = (SecurityElement)se.Children[0];
-            if (System.Security.Util.XMLUtil.GetClassFromElement(firstPermission, /*ignoreTypeLoadFailures*/true) != null)
-            {
-                PermissionSet extensions = new NamedPermissionSet(se);
-                return extensions;
-            }
-
-            return null;
-        }
-#endif // FEATURE_CAS_POLICY
     }
 }

@@ -29,9 +29,6 @@
 namespace System.Threading
 {
     using System.Security;
-#if FEATURE_REMOTING
-    using System.Runtime.Remoting;
-#endif
     using System.Security.Permissions;
     using System;
     using Microsoft.Win32;
@@ -1479,12 +1476,6 @@ namespace System.Threading
              bool               compressStack
              )
         {
-#if FEATURE_REMOTING
-            if (RemotingServices.IsTransparentProxy(waitObject))
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WaitOnTransparentProxy"));
-            Contract.EndContractBlock();
-#endif            
-
             RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle();
 
             if (callBack != null)

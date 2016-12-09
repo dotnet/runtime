@@ -16,13 +16,11 @@ namespace System.Security.Permissions
     using System.Globalization;
     using System.Diagnostics.Contracts;
 
-[Serializable]
+    [Serializable]
     [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
-#if !FEATURE_CAS_POLICY
+    [System.Runtime.InteropServices.ComVisible(true)]
     // The csharp compiler requires these types to be public, but they are not used elsewhere.
     [Obsolete("SecurityPermissionFlag is no longer accessible to application code.")]
-#endif
     public enum SecurityPermissionFlag
     {
         NoFlags = 0x00,
@@ -254,99 +252,9 @@ namespace System.Security.Permissions
             Contract.EndContractBlock();
         }
 
-#if FEATURE_CAS_POLICY
-        //------------------------------------------------------
-        //
-        // PUBLIC ENCODING METHODS
-        //
-        //------------------------------------------------------
-        
-        private const String _strHeaderAssertion  = "Assertion";
-        private const String _strHeaderUnmanagedCode = "UnmanagedCode";
-        private const String _strHeaderExecution = "Execution";
-        private const String _strHeaderSkipVerification = "SkipVerification";
-        private const String _strHeaderControlThread = "ControlThread";
-        private const String _strHeaderControlEvidence = "ControlEvidence";
-        private const String _strHeaderControlPolicy = "ControlPolicy";
-        private const String _strHeaderSerializationFormatter = "SerializationFormatter";
-        private const String _strHeaderControlDomainPolicy = "ControlDomainPolicy";
-        private const String _strHeaderControlPrincipal = "ControlPrincipal";
-        private const String _strHeaderControlAppDomain = "ControlAppDomain";
-    
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.SecurityPermission" );
-            if (!IsUnrestricted())
-            {
-                esd.AddAttribute( "Flags", XMLUtil.BitFieldEnumToString( typeof( SecurityPermissionFlag ), m_flags ) );
-            }
-            else
-            {
-                esd.AddAttribute( "Unrestricted", "true" );
-            }
-            return esd;
-        }
-    
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-            if (XMLUtil.IsUnrestricted( esd ))
-            {
-                m_flags = SecurityPermissionFlag.AllFlags;
-                return;
-            }
-           
-            Reset () ;
-            SetUnrestricted (false) ;
-    
-            String flags = esd.Attribute( "Flags" );
-    
-            if (flags != null)
-                m_flags = (SecurityPermissionFlag)Enum.Parse( typeof( SecurityPermissionFlag ), flags );
-        }
-#endif // FEATURE_CAS_POLICY
-
         //
         // Object Overrides
         //
-        
-    #if ZERO   // Do not remove this code, usefull for debugging
-        public override String ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("SecurityPermission(");
-            if (IsUnrestricted())
-            {
-                sb.Append("Unrestricted");
-            }
-            else
-            {
-                if (GetFlag(SecurityPermissionFlag.Assertion))
-                    sb.Append("Assertion; ");
-                if (GetFlag(SecurityPermissionFlag.UnmanagedCode))
-                    sb.Append("UnmangedCode; ");
-                if (GetFlag(SecurityPermissionFlag.SkipVerification))
-                    sb.Append("SkipVerification; ");
-                if (GetFlag(SecurityPermissionFlag.Execution))
-                    sb.Append("Execution; ");
-                if (GetFlag(SecurityPermissionFlag.ControlThread))
-                    sb.Append("ControlThread; ");
-                if (GetFlag(SecurityPermissionFlag.ControlEvidence))
-                    sb.Append("ControlEvidence; ");
-                if (GetFlag(SecurityPermissionFlag.ControlPolicy))
-                    sb.Append("ControlPolicy; ");
-                if (GetFlag(SecurityPermissionFlag.SerializationFormatter))
-                    sb.Append("SerializationFormatter; ");
-                if (GetFlag(SecurityPermissionFlag.ControlDomainPolicy))
-                    sb.Append("ControlDomainPolicy; ");
-                if (GetFlag(SecurityPermissionFlag.ControlPrincipal))
-                    sb.Append("ControlPrincipal; ");
-            }
-            
-            sb.Append(")");
-            return sb.ToString();
-        }
-    #endif
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

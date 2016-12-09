@@ -219,41 +219,30 @@ namespace System {
                 fixed(int* pLowerBounds = lowerBounds)
                     return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,pLowerBounds);
         }
+
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private unsafe static extern Array InternalCreate(void* elementType,int rank,int *pLengths,int *pLowerBounds);
 
         [SecurityCritical]
-#if !FEATURE_CORECLR
-        [PermissionSet(SecurityAction.Assert, Unrestricted = true)]
-#endif
         internal static Array UnsafeCreateInstance(Type elementType, int length)
         {
             return CreateInstance(elementType, length);
         }
 
         [SecurityCritical]
-#if !FEATURE_CORECLR
-        [PermissionSet(SecurityAction.Assert, Unrestricted = true)]
-#endif
         internal static Array UnsafeCreateInstance(Type elementType, int length1, int length2)
         {
             return CreateInstance(elementType, length1, length2);
         }
 
         [SecurityCritical]
-#if !FEATURE_CORECLR
-        [PermissionSet(SecurityAction.Assert, Unrestricted = true)]
-#endif
         internal static Array UnsafeCreateInstance(Type elementType, params int[] lengths)
         {
             return CreateInstance(elementType, lengths);
         }
 
         [SecurityCritical]
-#if !FEATURE_CORECLR
-        [PermissionSet(SecurityAction.Assert, Unrestricted = true)]
-#endif
         internal static Array UnsafeCreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             return CreateInstance(elementType, lengths, lowerBounds);

@@ -895,10 +895,8 @@ namespace System
         object m_e;
         object m_f;
         object m_g;
-#if FEATURE_REMOTING
-        object m_h;
-#endif
 #pragma warning restore 169
+
         public RuntimeMethodHandleInternal m_value;
 
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value
@@ -1451,9 +1449,6 @@ namespace System
         object m_d;
         int m_b;
         object m_e;
-#if FEATURE_REMOTING
-        object m_f;
-#endif
         RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 169
 

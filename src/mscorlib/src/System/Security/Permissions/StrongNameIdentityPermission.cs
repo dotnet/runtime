@@ -5,9 +5,6 @@
 namespace System.Security.Permissions
 {
     using System;
-#if FEATURE_CAS_POLICY
-    using SecurityElement = System.Security.SecurityElement;
-#endif // FEATURE_CAS_POLICY
     using System.Security.Util;
     using System.IO;
     using String = System.String;
@@ -388,89 +385,6 @@ namespace System.Security.Permissions
             result.m_strongNames = alStrongNames.ToArray();
             return result;
         }
-
-#if FEATURE_CAS_POLICY
-        public override void FromXml(SecurityElement e)
-        {
-            m_unrestricted = false;
-            m_strongNames = null;
-            CodeAccessPermission.ValidateElement( e, this );
-            String unr = e.Attribute( "Unrestricted" );
-            if(unr != null && String.Compare(unr, "true", StringComparison.OrdinalIgnoreCase) == 0)
-            {
-                m_unrestricted = true;
-                return;
-            }
-            String elBlob = e.Attribute("PublicKeyBlob");
-            String elName = e.Attribute("Name");
-            String elVersion = e.Attribute("AssemblyVersion");
-            StrongName2 sn;
-            List<StrongName2> al = new List<StrongName2>();
-            if(elBlob != null || elName != null || elVersion != null)
-            {
-                sn = new StrongName2(
-                                    (elBlob == null ? null : new StrongNamePublicKeyBlob(elBlob)), 
-                                    elName, 
-                                    (elVersion == null ? null : new Version(elVersion)));
-                al.Add(sn);
-            }
-            ArrayList alChildren = e.Children;
-            if(alChildren != null)
-            {
-                foreach(SecurityElement child in alChildren)
-                {
-                    elBlob = child.Attribute("PublicKeyBlob");
-                    elName = child.Attribute("Name");
-                    elVersion = child.Attribute("AssemblyVersion");
-                    if(elBlob != null || elName != null || elVersion != null)
-                    {
-                        sn = new StrongName2(
-                                            (elBlob == null ? null : new StrongNamePublicKeyBlob(elBlob)), 
-                                            elName, 
-                                            (elVersion == null ? null : new Version(elVersion)));
-                        al.Add(sn);
-                    }
-                }
-            }
-            if(al.Count != 0)
-                m_strongNames = al.ToArray();
-        }
-
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.StrongNameIdentityPermission" );
-            if (m_unrestricted)
-                esd.AddAttribute( "Unrestricted", "true" );
-            else if (m_strongNames != null)
-            {
-                if (m_strongNames.Length == 1)
-                {
-                    if (m_strongNames[0].m_publicKeyBlob != null)
-                        esd.AddAttribute("PublicKeyBlob", Hex.EncodeHexString(m_strongNames[0].m_publicKeyBlob.PublicKey));
-                    if (m_strongNames[0].m_name != null)
-                        esd.AddAttribute("Name", m_strongNames[0].m_name);
-                    if ((Object)m_strongNames[0].m_version != null)
-                        esd.AddAttribute("AssemblyVersion", m_strongNames[0].m_version.ToString());
-                }
-                else
-                {
-                    int n;
-                    for(n = 0; n < m_strongNames.Length; n++)
-                    {
-                        SecurityElement child = new SecurityElement("StrongName");
-                        if (m_strongNames[n].m_publicKeyBlob != null)
-                            child.AddAttribute("PublicKeyBlob", Hex.EncodeHexString(m_strongNames[n].m_publicKeyBlob.PublicKey));
-                        if (m_strongNames[n].m_name != null)
-                            child.AddAttribute("Name", m_strongNames[n].m_name);
-                        if ((Object)m_strongNames[n].m_version != null)
-                            child.AddAttribute("AssemblyVersion", m_strongNames[n].m_version.ToString());
-                        esd.AddChild(child);
-                    }
-                }
-            }
-            return esd;
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

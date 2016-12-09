@@ -14,9 +14,6 @@ namespace System.Reflection
     using System.Runtime;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
-#if FEATURE_REMOTING
-    using System.Runtime.Remoting.Metadata;
-#endif //FEATURE_REMOTING
     using System.Runtime.Serialization;
     using System.Security;
     using System.Security.Permissions;
@@ -275,36 +272,6 @@ namespace System.Reflection
             m_methodAttributes = methodAttributes;
         }
         #endregion
-
-#if FEATURE_REMOTING
-        #region Legacy Remoting Cache
-        // The size of CachedData is accounted for by BaseObjectWithCachedData in object.h.
-        // This member is currently being used by Remoting for caching remoting data. If you
-        // need to cache data here, talk to the Remoting team to work out a mechanism, so that
-        // both caching systems can happily work together.
-        private RemotingMethodCachedData m_cachedData;
-
-        internal RemotingMethodCachedData RemotingCache
-        {
-            get
-            {
-                // This grabs an internal copy of m_cachedData and uses
-                // that instead of looking at m_cachedData directly because
-                // the cache may get cleared asynchronously.  This prevents
-                // us from having to take a lock.
-                RemotingMethodCachedData cache = m_cachedData;
-                if (cache == null)
-                {
-                    cache = new RemotingMethodCachedData(this);
-                    RemotingMethodCachedData ret = Interlocked.CompareExchange(ref m_cachedData, cache, null);
-                    if (ret != null)
-                        cache = ret;
-                }
-                return cache;
-            }
-        }
-        #endregion
-#endif //FEATURE_REMOTING
 
         #region NonPublic Methods
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value
