@@ -33,9 +33,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
-// in context2.S
-extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
-
 #define CONTEXT_AREA_MASK 0xffff
 #ifdef _X86_
 #define CONTEXT_ALL_FLOATING (CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS)
