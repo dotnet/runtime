@@ -14,6 +14,11 @@ namespace System.Linq.Expressions.Tests
         public static IEnumerable<object[]> SizesAndSuffixes =>
             Enumerable.Range(0, 6).Select(i => new object[] { i, i > 0 & i < 5 ? i.ToString() : "N" });
 
+        private static Type[] Types = { typeof(int), typeof(object), typeof(DateTime), typeof(DynamicExpressionTests) };
+
+        public static IEnumerable<object[]> SizesAndTypes
+            => Enumerable.Range(1, 6).SelectMany(i => Types, (i, t) => new object[] { i, t });
+
         [Theory, MemberData(nameof(SizesAndSuffixes))]
         public void AritySpecialisedUsedWhenPossible(int size, string nameSuffix)
         {
@@ -56,6 +61,60 @@ namespace System.Linq.Expressions.Tests
                     binder, typeof(string), Enumerable.Range(0, size).Select(_ => Expression.Constant(null)));
                 Assert.Equal("TypedDynamicExpression" + nameSuffix, exp.GetType().Name);
             }
+        }
+
+        [Theory, MemberData(nameof(SizesAndTypes))]
+        public void TypeProperty(int size, Type type)
+        {
+            CallSiteBinder binder = Binder.GetMember(
+                CSharpBinderFlags.None, "Member", GetType(),
+                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
+            DynamicExpression exp = Expression.Dynamic(
+                binder, type, Enumerable.Range(0, size).Select(_ => Expression.Constant(0)));
+            Assert.Equal(type, exp.Type);
+            Assert.Equal(ExpressionType.Dynamic, exp.NodeType);
+        }
+
+        [Theory, MemberData(nameof(SizesAndTypes))]
+        public void Reduce(int size, Type type)
+        {
+            CallSiteBinder binder = Binder.GetMember(
+                CSharpBinderFlags.None, "Member", GetType(),
+                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
+            DynamicExpression exp = Expression.Dynamic(
+                binder, type, Enumerable.Range(0, size).Select(_ => Expression.Constant(0)));
+            Assert.True(exp.CanReduce);
+            InvocationExpression reduced = (InvocationExpression)exp.ReduceAndCheck();
+            Assert.Equal(exp.Arguments, reduced.Arguments.Skip(1));
+        }
+
+        [Theory, MemberData(nameof(SizesAndTypes))]
+        public void GetArguments(int size, Type type)
+        {
+            CallSiteBinder binder = Binder.GetMember(
+                CSharpBinderFlags.None, "Member", GetType(),
+                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
+            ConstantExpression[] arguments = Enumerable.Range(0, size).Select(_ => Expression.Constant(0)).ToArray();
+            DynamicExpression exp = Expression.Dynamic(binder, type, arguments);
+            Assert.Equal(arguments, exp.Arguments);
+        }
+
+        [Theory, MemberData(nameof(SizesAndTypes))]
+        public void ArgumentProvider(int size, Type type)
+        {
+            CallSiteBinder binder = Binder.GetMember(
+                CSharpBinderFlags.None, "Member", GetType(),
+                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
+            ConstantExpression[] arguments = Enumerable.Range(0, size).Select(_ => Expression.Constant(0)).ToArray();
+            IArgumentProvider ap = Expression.Dynamic(binder, type, arguments);
+            Assert.Equal(size, ap.ArgumentCount);
+            for (int i = 0; i != size; ++i)
+            {
+                Assert.Same(arguments[i], ap.GetArgument(i));
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ap.GetArgument(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ap.GetArgument(size));
         }
 
         [Fact]
