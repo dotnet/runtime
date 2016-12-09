@@ -290,7 +290,7 @@ namespace System.Data.Common
             NullTermination,
         };
 
-        static internal int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, out string keyname, out string keyvalue)
+        internal static int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, out string keyname, out string keyvalue)
         {
             int startposition = currentPosition;
 

@@ -3290,7 +3290,7 @@ nameof(flags));
         /// <returns>The single ACE DACL</returns>
         /// Note: This method is created to get the best behavior for using "allow everyone full access"
         /// single ACE DACL to replace null DACL from CommonSecurityObject. 
-        static internal DiscretionaryAcl CreateAllowEveryoneFullAccess(bool isDS, bool isContainer)
+        internal static DiscretionaryAcl CreateAllowEveryoneFullAccess(bool isDS, bool isContainer)
         {
             DiscretionaryAcl dcl = new DiscretionaryAcl( isContainer, isDS, 1 );
             dcl.AddAccess(

@@ -1001,7 +1001,7 @@ namespace System.Xml
             }
         }
 
-        static internal Exception UnexpectedNodeType(XmlNodeType nodetype)
+        internal static Exception UnexpectedNodeType(XmlNodeType nodetype)
         {
             return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Xml_UnexpectedNodeType, nodetype.ToString()));
         }

@@ -571,7 +571,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 return v1 + (int)v2 + v3 + (int)v4 + v5 + (int)v6 + v7 + (int)v8 + (int)v9;
             }
 
-            static internal long M12(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, object v9)
+            internal static long M12(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, object v9)
             {
                 return v1 + v3 + v5 + v7 + (int)v9;
             }
@@ -796,7 +796,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // internal delegate void D002(dynamic v1, object v2 = null, dynamic v3 = null)
-            static internal void M11(dynamic v1, object v2, dynamic v3 = null)
+            internal static void M11(dynamic v1, object v2, dynamic v3 = null)
             {
                 str = v3;
             }
@@ -808,13 +808,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // internal delegate int D021(params dynamic[] d);
-            static internal int M31(params dynamic[] d)
+            internal static int M31(params dynamic[] d)
             {
                 return 31;
             }
 
             // public delegate void D022(DynStruct01 v1, dynamic v2 = 0.123f, int v3 = -1);
-            static internal void M41(DynStruct01 v1, dynamic v2 = null, int v3 = 41)
+            internal static void M41(DynStruct01 v1, dynamic v2 = null, int v3 = 41)
             {
                 val = v3;
             }
@@ -984,7 +984,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 v2 = null;
             }
 
-            static internal void M04(dynamic v1, out dynamic v2)
+            internal static void M04(dynamic v1, out dynamic v2)
             {
                 v2 = null;
             }

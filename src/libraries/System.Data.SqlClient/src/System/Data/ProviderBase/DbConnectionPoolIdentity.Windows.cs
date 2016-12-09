@@ -14,7 +14,7 @@ namespace System.Data.ProviderBase
     {
         static private DbConnectionPoolIdentity s_lastIdentity = null;
 
-        static internal DbConnectionPoolIdentity GetCurrent()
+        internal static DbConnectionPoolIdentity GetCurrent()
         {
             DbConnectionPoolIdentity current;
             using (WindowsIdentity identity = WindowsIdentity.GetCurrent())

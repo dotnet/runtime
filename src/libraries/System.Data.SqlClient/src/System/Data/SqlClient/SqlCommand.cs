@@ -67,7 +67,7 @@ namespace System.Data.SqlClient
         private TaskCompletionSource<object> _reconnectionCompletionSource = null;
 
 #if DEBUG
-        static internal int DebugForceAsyncWriteDelay { get; set; }
+        internal static int DebugForceAsyncWriteDelay { get; set; }
 #endif
         internal bool InPrepare
         {

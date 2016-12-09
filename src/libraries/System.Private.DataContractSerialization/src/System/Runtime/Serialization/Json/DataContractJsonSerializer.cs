@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization.Json
             return knownTypesList;
         }
 
-        static internal void InvokeOnSerializing(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
+        internal static void InvokeOnSerializing(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -285,7 +285,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        static internal void InvokeOnSerialized(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
+        internal static void InvokeOnSerialized(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -323,7 +323,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        static internal void InvokeOnDeserializing(Object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
+        internal static void InvokeOnDeserializing(Object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -361,7 +361,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        static internal void InvokeOnDeserialized(object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
+        internal static void InvokeOnDeserialized(object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {

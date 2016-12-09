@@ -12,12 +12,12 @@ namespace CoreXml.Test.XLinq
 
         public DNException(string s) : base(s) { }
 
-        static internal Exception DocumentNavigatorNotOnLastNode()
+        internal static Exception DocumentNavigatorNotOnLastNode()
         {
             return new DNException("DocumentNavigatorNotOnLastNode");
         }
 
-        static internal Exception DocumentNavigatorNotOnFirstNode()
+        internal static Exception DocumentNavigatorNotOnFirstNode()
         {
             return new DNException("DocumentNavigatorNotOnFirstNode");
         }

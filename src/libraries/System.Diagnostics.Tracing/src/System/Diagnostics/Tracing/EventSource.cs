@@ -4125,7 +4125,7 @@ namespace System.Diagnostics.Tracing
         private List<EtwSession> m_legacySessions;      // the legacy ETW sessions listening to this source
         internal long m_keywordTriggers;                // a bit is set if it corresponds to a keyword that's part of an enabled triggering event
         internal SessionMask m_activityFilteringForETWEnabled; // does THIS EventSource have activity filtering turned on for each ETW session
-        static internal Action<Guid> s_activityDying;   // Fires when something calls SetCurrentThreadToActivity()
+        internal static Action<Guid> s_activityDying;   // Fires when something calls SetCurrentThreadToActivity()
         // Also used to mark that activity tracing is on for some case
 #endif // FEATURE_ACTIVITYSAMPLING
 

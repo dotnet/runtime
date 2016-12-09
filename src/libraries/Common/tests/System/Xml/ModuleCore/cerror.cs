@@ -59,7 +59,7 @@ namespace OLEDB.Test.ModuleCore
             get { return s_rITestConsole; }
         }
 
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             s_rIError = null;
@@ -69,7 +69,7 @@ namespace OLEDB.Test.ModuleCore
             s_rLTMConsole = null;
         }
 
-        static internal void DisableAsserts()
+        internal static void DisableAsserts()
         {
         }
 
@@ -314,7 +314,7 @@ namespace OLEDB.Test.ModuleCore
             return false;
         }
 
-        static internal bool InternalEquals(object actual, object expected)
+        internal static bool InternalEquals(object actual, object expected)
         {
             //Handle null comparison
             if (actual == null && expected == null)

@@ -26,12 +26,12 @@ namespace System.Runtime.Serialization
             _helper = base.Helper as PrimitiveDataContractCriticalHelper;
         }
 
-        static internal PrimitiveDataContract GetPrimitiveDataContract(Type type)
+        internal static PrimitiveDataContract GetPrimitiveDataContract(Type type)
         {
             return DataContract.GetBuiltInDataContract(type) as PrimitiveDataContract;
         }
 
-        static internal PrimitiveDataContract GetPrimitiveDataContract(string name, string ns)
+        internal static PrimitiveDataContract GetPrimitiveDataContract(string name, string ns)
         {
             return DataContract.GetBuiltInDataContract(name, ns) as PrimitiveDataContract;
         }
