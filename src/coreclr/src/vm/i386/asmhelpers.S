@@ -11,32 +11,39 @@
 //
 .macro STUB_PROLOG
     // push ebp-frame
-    push        ebp
-    mov         ebp, esp
+    PROLOG_BEG
 
     // save CalleeSavedRegisters
-    push        ebx
-    push        esi
-    push        edi
+    PROLOG_PUSH ebx
+    PROLOG_PUSH esi
+    PROLOG_PUSH edi
 
     // push ArgumentRegisters
-    push        ecx
-    push        edx
+    PROLOG_PUSH ecx
+    PROLOG_PUSH edx
+
+    // set frame pointer
+    PROLOG_END
 .endm
 
 //
 // FramedMethodFrame epilog
 //
 .macro STUB_EPILOG
+    // restore stack pointer
+    EPILOG_BEG
+
     // pop ArgumentRegisters
-    pop     edx
-    pop     ecx
+    EPILOG_POP edx
+    EPILOG_POP ecx
 
     // pop CalleeSavedRegisters
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
+    EPILOG_POP edi
+    EPILOG_POP esi
+    EPILOG_POP ebx
+
+    // pop ebp-frame
+    EPILOG_END
 .endm
 
 //
@@ -392,8 +399,11 @@ LEAF_END ArrayOpStubTypeMismatchException, _TEXT
 // ------------------------------------------------------------------------------
 //  void STDCALL CallDescrWorkerInternal(CallDescrWorkerParams *  pParams)
 NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
+    PROLOG_BEG
+    PROLOG_PUSH ebx
+    PROLOG_END
 
-    mov     ebx, [esp + 4] // pParams = esp + 4
+    mov     ebx, [esp + ((2 + 1) * 4)]
 
     // copy the stack
     mov     ecx, [ebx +CallDescrData__numStackSlots]
@@ -445,6 +455,9 @@ LOCAL_LABEL(ReturnsInt):
     mov     [ebx + CallDescrData__returnValue + 4], edx
 
 LOCAL_LABEL(Epilog):
+    EPILOG_BEG
+    EPILOG_POP ebx
+    EPILOG_END
     ret     4
 
 LOCAL_LABEL(ReturnsFloat):
@@ -944,23 +957,28 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     sub     eax, 5
 
     // Push ebp frame to get good callstack under debugger
-    push    ebp
-    mov     ebp, esp
+    PROLOG_BEG
 
     // Preserve argument registers
-    push    ecx
-    push    edx
+    PROLOG_PUSH ecx
+    PROLOG_PUSH edx
+
+    // Set frame pointer
+    PROLOG_END
 
     push    eax         // address of the thunk
     push    ecx         // this ptr
     call    C_FUNC(VirtualMethodFixupWorker)
 
+    // Restore stack pointer
+    EPILOG_BEG
+
     // Restore argument registers
-    pop     edx
-    pop     ecx
+    EPILOG_POP edx
+    EPILOG_POP ecx
 
     // Pop ebp frame
-    pop     ebp
+    EPILOG_END
 
 PATCH_LABEL VirtualMethodFixupPatchLabel
     // Proceed to execute the actual method.
