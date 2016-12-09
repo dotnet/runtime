@@ -256,26 +256,11 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                // Peek at each segment, in turn, looking for one where we successfully peek,
-                // which means the queue isn't empty.  If we fail to peek at all of them,
-                // the queue is empty. We use a "resultUsed:false" peek in order to avoid
-                // freezing the current segments, making IsEmpty a much cheaper way than
-                // Count == 0 to check whether any elements are in the queue.  It is rare
-                // that we'll need to look at more than one segment; that would only happen
-                // in cases where the last element has been dequeued from one segment and
-                // we haven't yet updated our head to reference the next segment.
-                for (Segment s = _head; s != null; s = s._nextSegment)
-                {
-                    T ignoredResult;
-                    if (s.TryPeek(out ignoredResult, resultUsed: false))
-                    {
-                        // At least one item was in the queue at the moment we checked.
-                        return false;
-                    }
-                }
-
-                // Queue was empty.
-                return true;
+                // IsEmpty == !TryPeek. We use a "resultUsed:false" peek in order to avoid marking
+                // segments as preserved for observation, making IsEmpty a cheaper way than either
+                // TryPeek(out T) or Count == 0 to check whether any elements are in the queue.
+                T ignoredResult;
+                return !TryPeek(out ignoredResult, resultUsed: false);
             }
         }
 
@@ -779,15 +764,57 @@ namespace System.Collections.Concurrent
         /// For determining whether the collection contains any items, use of the <see cref="IsEmpty"/>
         /// property is recommended rather than peeking.
         /// </remarks>
-        public bool TryPeek(out T result)
+        public bool TryPeek(out T result) => TryPeek(out result, resultUsed: true);
+
+        /// <summary>Attempts to retrieve the value for the first element in the queue.</summary>
+        /// <param name="result">The value of the first element, if found.</param>
+        /// <param name="resultUsed">true if the result is neede; otherwise false if only the true/false outcome is needed.</param>
+        /// <returns>true if an element was found; otherwise, false.</returns>
+        private bool TryPeek(out T result, bool resultUsed)
         {
-            // Look at each segment, in order, for an item
-            for (Segment s = _head; s != null; s = s._nextSegment)
+            // Starting with the head segment, look through all of the segments
+            // for the first one we can find that's not empty.
+            Segment s = _head;
+            while (true)
             {
-                if (s.TryPeek(out result, resultUsed: true))
+                // Grab the next segment from this one, before we peek.
+                // This is to be able to see whether the value has changed
+                // during the peek operation.
+                Segment next = Volatile.Read(ref s._nextSegment);
+
+                // Peek at the segment.  If we find an element, we're done.
+                if (s.TryPeek(out result, resultUsed))
                 {
                     return true;
                 }
+
+                // The current segment was empty at the moment we checked.
+
+                if (next != null)
+                {
+                    // If prior to the peek there was already a next segment, then
+                    // during the peek no additional items could have been enqueued
+                    // to it and we can just move on to check the next segment.
+                    Debug.Assert(next == s._nextSegment);
+                    s = next;
+                }
+                else if (Volatile.Read(ref s._nextSegment) == null)
+                {
+                    // The next segment is null.  Nothing more to peek at.
+                    break;
+                }
+
+                // The next segment was null before we peeked but non-null after.
+                // That means either when we peeked the first segment had
+                // already been frozen but the new segment not yet added,
+                // or that the first segment was empty and between the time
+                // that we peeked and then checked _nextSegment, so many items
+                // were enqueued that we filled the first segment and went
+                // into the next.  Since we need to peek in order, we simply
+                // loop around again to peek on the same segment.  The next
+                // time around on this segment we'll then either successfully
+                // peek or we'll find that next was non-null before peeking,
+                // and we'll traverse to that segment.
             }
 
             result = default(T);
@@ -966,7 +993,7 @@ namespace System.Collections.Concurrent
             }
 
             /// <summary>Tries to peek at an element from the queue, without removing it.</summary>
-            public bool TryPeek(out T result, bool resultUsed = false)
+            public bool TryPeek(out T result, bool resultUsed)
             {
                 if (resultUsed)
                 {
