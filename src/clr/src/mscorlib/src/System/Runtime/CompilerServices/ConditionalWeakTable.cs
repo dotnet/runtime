@@ -568,9 +568,7 @@ namespace System.Runtime.CompilerServices
                     DependentHandle depHnd = _entries[entriesIndex].depHnd;
                     if (hashCode != -1 && depHnd.IsAllocated)
                     {
-                        object primary, secondary;
-                        depHnd.GetPrimaryAndSecondary(out primary, out secondary);
-                        if (primary != null)
+                        if (depHnd.GetPrimary() != null)
                         {
                             // Entry is used and has not expired. Link it into the appropriate bucket list.
                             newEntries[newEntriesIndex].HashCode = hashCode;
