@@ -113,16 +113,16 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
-        private enum SerializationMode
+        public enum SerializationMode
         {
             CodeGenOnly,
             ReflectionOnly,
             ReflectionAsBackup
         }
 
-        private SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
+        public static SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
 
-        private bool ReflectionMethodEnabled
+        private static bool ReflectionMethodEnabled
         {
             get
             {

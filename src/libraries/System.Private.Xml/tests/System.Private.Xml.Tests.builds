@@ -80,6 +80,7 @@
     <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj" />
     <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
     <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
+    <Project Include="XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
