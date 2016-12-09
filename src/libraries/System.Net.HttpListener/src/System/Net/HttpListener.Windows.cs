@@ -1394,7 +1394,7 @@ namespace System.Net
                                             else
                                             {
                                                 SSPIWrapper.QuerySecurityContextToken(GlobalSSPI.SSPIAuth, securityContext, out userContext);
-                                                
+
                                                 if (NetEventSource.IsEnabled)
                                                 {
                                                     NetEventSource.Info(this,
@@ -1410,7 +1410,7 @@ namespace System.Net
                                                 {
                                                     if (NetEventSource.IsEnabled)
                                                     {
-                                                        NetEventSource.Info(this, 
+                                                        NetEventSource.Info(this,
                                                             $"HandleAuthentication inserting principal: {principal} for connectionId: {connectionId}");
                                                     }
 
@@ -1613,16 +1613,7 @@ namespace System.Net
 
                     if (toClose != null)
                     {
-                        // Save digest context in digest cache, we may need it later because of
-                        // subsequest responses to the same req on the same/diff connection
-                        if ((authenticationScheme & AuthenticationSchemes.Digest) != 0)
-                        {
-                            SaveDigestContext(toClose);
-                        }
-                        else
-                        {
-                            toClose.CloseContext();
-                        }
+                        toClose.CloseContext();
                     }
                 }
 
