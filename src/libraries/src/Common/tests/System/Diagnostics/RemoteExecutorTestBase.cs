@@ -15,8 +15,10 @@ namespace System.Diagnostics
     {
         /// <summary>The name of the test console app.</summary>
         protected const string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
-        /// <summary>The CoreCLR host used to host the test console app.</summary>
-        protected static readonly string HostRunner = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "CoreRun.exe" : "corerun";
+        /// <summary>The name of the CoreCLR host used to host the test console app.</summary>
+        protected static readonly string HostRunnerName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "CoreRun.exe" : "corerun";
+        /// <summary>The absolute path to the host runner executable.</summary>
+        protected static string HostRunner => Path.Combine(AppContext.BaseDirectory, HostRunnerName);
 
         /// <summary>A timeout (milliseconds) after which a wait on a remote operation should be considered a failure.</summary>
         public const int FailWaitTimeoutMilliseconds = 30 * 1000;
