@@ -4085,7 +4085,7 @@ AC_SUBST(mono_build_root)
 mono_runtime=mono/mini/mono
 AC_SUBST(mono_runtime)
 
-CSC=$mono_build_root/external/roslyn-binaries/Microsoft.Net.Compilers/Microsoft.Net.Compilers.1.3.2/tools/csc.exe
+CSC=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/Microsoft.Net.Compilers.1.3.2/tools/csc.exe
 
 mono_cfg_root=$mono_build_root/runtime
 if test x$host_win32 = xyes; then
