@@ -752,17 +752,14 @@ namespace System {
         //
         // StringToShort, StringToInt, and StringToLong are wrappers around COMUtilNative integer parsing routines;
 
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToShort(String str, int requiredLength, int flags, out short result, ref GuidResult parseResult) {
             return StringToShort(str, null, requiredLength, flags, out result, ref parseResult);
         }
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToShort(String str, ref int parsePos, int requiredLength, int flags, out short result, ref GuidResult parseResult) {
             fixed(int * ppos = &parsePos) {
                 return StringToShort(str, ppos, requiredLength, flags, out result, ref parseResult);
             }
         }
-        [System.Security.SecurityCritical]
         private static unsafe bool StringToShort(String str, int* parsePos, int requiredLength, int flags, out short result, ref GuidResult parseResult) {
             result = 0;
             int x;
@@ -771,17 +768,14 @@ namespace System {
             return retValue;
         }
 
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToInt(String str, int requiredLength, int flags, out int result, ref GuidResult parseResult) {
             return StringToInt(str, null, requiredLength, flags, out result, ref parseResult);
         }
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToInt(String str, ref int parsePos, int requiredLength, int flags, out int result, ref GuidResult parseResult) {
             fixed(int * ppos = &parsePos) {
                 return StringToInt(str, ppos, requiredLength, flags, out result, ref parseResult);
             }
         }
-        [System.Security.SecurityCritical]
         private static unsafe bool StringToInt(String str, int* parsePos, int requiredLength, int flags, out int result, ref GuidResult parseResult) {
             result = 0;
 
@@ -818,17 +812,14 @@ namespace System {
             }
             return true;
         }
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToLong(String str, int flags, out long result, ref GuidResult parseResult) {
             return StringToLong(str, null, flags, out result, ref parseResult);
         }
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToLong(String str, ref int parsePos, int flags, out long result, ref GuidResult parseResult) {
             fixed(int * ppos = &parsePos) {
                 return StringToLong(str, ppos, flags, out result, ref parseResult);
             }
         }
-        [System.Security.SecuritySafeCritical]
         private static unsafe bool StringToLong(String str, int* parsePos, int flags, out long result, ref GuidResult parseResult) {
             result = 0;
 
@@ -921,7 +912,6 @@ namespace System {
             return ToString("D",null);
         }
 
-        [System.Security.SecuritySafeCritical]
         public unsafe override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
@@ -1143,7 +1133,6 @@ namespace System {
 
         // This will create a new guid.  Since we've now decided that constructors should 0-init,
         // we need a method that allows users to create a guid.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Guid NewGuid() {
             // CoCreateGuid should never return Guid.Empty, since it attempts to maintain some
             // uniqueness guarantees.  It should also never return a known GUID, but it's unclear
@@ -1165,13 +1154,11 @@ namespace System {
             return (char) ((a > 9) ? a - 10 + 0x61 : a + 0x30);
         }
 
-        [System.Security.SecurityCritical]
         unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b)
         {
             return HexsToChars(guidChars, offset, a, b, false);
         }
 
-        [System.Security.SecurityCritical]
         unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b, bool hex)
         {
             if (hex) {
@@ -1192,7 +1179,6 @@ namespace System {
 
         // IFormattable interface
         // We currently ignore provider
-        [System.Security.SecuritySafeCritical]
         public String ToString(String format, IFormatProvider provider)
         {
             if (format == null || format.Length == 0)

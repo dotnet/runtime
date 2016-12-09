@@ -89,14 +89,12 @@ namespace System.Threading
             internal TaskNode Prev, Next;
             internal TaskNode() : base() {}
 
-            [SecurityCritical]
             void IThreadPoolWorkItem.ExecuteWorkItem()
             {
                 bool setSuccessfully = TrySetResult(true);
                 Contract.Assert(setSuccessfully, "Should have been able to complete task");
             }
 
-            [SecurityCritical]
             void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
         }
         #endregion
@@ -842,7 +840,6 @@ namespace System.Threading
         /// Queues a waiter task to the ThreadPool. We use this small helper method so that
         /// the larger Release(count) method does not need to be SecuritySafeCritical.
         /// </summary>
-        [SecuritySafeCritical] // for ThreadPool.UnsafeQueueCustomWorkItem
         private static void QueueWaiterTask(TaskNode waiterTask)
         {
             ThreadPool.UnsafeQueueCustomWorkItem(waiterTask, forceGlobal: false);

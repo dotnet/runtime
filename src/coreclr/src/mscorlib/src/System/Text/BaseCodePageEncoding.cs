@@ -72,7 +72,6 @@ namespace System.Text
         [NonSerialized]
         protected bool m_bUseMlangTypeForSerialization = false;
 
-        [System.Security.SecuritySafeCritical] // static constructors should be safe to call
         static BaseCodePageEncoding()
         {
         }
@@ -136,32 +135,26 @@ namespace System.Text
         }
 
         // Initialize our global stuff
-        [SecurityCritical]
         unsafe static CodePageDataFileHeader* m_pCodePageFileHeader = 
             (CodePageDataFileHeader*)GlobalizationAssembly.GetGlobalizationResourceBytePtr(
                 typeof(CharUnicodeInfo).Assembly, CODE_PAGE_DATA_FILE_NAME);
 
         // Real variables
         [NonSerialized]
-        [SecurityCritical]
         unsafe protected CodePageHeader* pCodePage = null;
 
         // Safe handle wrapper around section map view
-        [System.Security.SecurityCritical] // auto-generated
         [NonSerialized]
         protected SafeViewOfFileHandle safeMemorySectionHandle = null;
 
         // Safe handle wrapper around mapped file handle
-        [System.Security.SecurityCritical] // auto-generated
         [NonSerialized]
         protected SafeFileMappingHandle safeFileMappingHandle = null;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal BaseCodePageEncoding(int codepage) : this(codepage, codepage)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal BaseCodePageEncoding(int codepage, int dataCodePage) :
             base(codepage == 0? Microsoft.Win32.Win32Native.GetACP(): codepage)
         {
@@ -171,7 +164,6 @@ namespace System.Text
         }
 
         // Constructor called by serialization.
-        [System.Security.SecurityCritical]  // auto-generated
         internal BaseCodePageEncoding(SerializationInfo info, StreamingContext context) : base(0)
         {
             // We cannot ever call this, we've proxied ourselved to CodePageEncoding
@@ -179,7 +171,6 @@ namespace System.Text
         }
 
         // ISerializable implementation
-        [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // Make sure to get the base stuff too This throws if info is null
@@ -196,7 +187,6 @@ namespace System.Text
         }
 
         // We need to load tables for our code page
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe void LoadCodePageTables()
         {
             CodePageHeader* pCodePage = FindCodePage(dataTableCodePage);
@@ -217,7 +207,6 @@ namespace System.Text
         }
 
         // Look up the code page pointer
-        [System.Security.SecurityCritical]  // auto-generated
         private static unsafe CodePageHeader* FindCodePage(int codePage)
         {
             // We'll have to loop through all of the m_pCodePageIndex[] items to find our code page, this isn't
@@ -240,7 +229,6 @@ namespace System.Text
         }
 
         // Get our code page byte count
-        [System.Security.SecurityCritical]  // auto-generated
         internal static unsafe int GetCodePageByteSize(int codePage)
         {
             // Get our code page info
@@ -257,11 +245,9 @@ namespace System.Text
         }
 
         // We have a managed code page entry, so load our tables
-        [System.Security.SecurityCritical]
         protected abstract unsafe void LoadManagedCodePage();
 
         // Allocate memory to load our code page
-        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe byte* GetSharedMemory(int iSize)
         {
             // Build our name
@@ -291,7 +277,6 @@ namespace System.Text
             return pMemorySection;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe virtual String GetMemorySectionName()
         {
             int iUseCodePage = this.bFlagDataTable ? dataTableCodePage : CodePage;
@@ -303,10 +288,8 @@ namespace System.Text
             return strName;
         }
 
-        [System.Security.SecurityCritical]
         protected abstract unsafe void ReadBestFitTable();
 
-        [System.Security.SecuritySafeCritical]  
         internal override char[] GetBestFitUnicodeToBytesData()
         {
             // Read in our best fit table if necessary
@@ -319,7 +302,6 @@ namespace System.Text
             return arrayUnicodeBestFit;
         }
 
-        [System.Security.SecuritySafeCritical] 
         internal override char[] GetBestFitBytesToUnicodeData()
         {
             // Read in our best fit table if necessary
@@ -336,7 +318,6 @@ namespace System.Text
         // is invalid. so we detect that by validating the memory section handle then re-initialize the memory 
         // section by calling LoadManagedCodePage() method and eventually the mapped file handle and
         // the memory section pointer will get finalized one more time.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void CheckMemorySection()
         {
             if (safeMemorySectionHandle != null && safeMemorySectionHandle.DangerousGetHandle() == IntPtr.Zero)

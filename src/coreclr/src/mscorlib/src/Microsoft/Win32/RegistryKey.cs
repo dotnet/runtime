@@ -137,7 +137,6 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        [System.Security.SecurityCritical] // auto-generated
         private volatile SafeRegistryHandle hkey = null;
         private volatile int state = 0;
         private volatile String keyName;
@@ -171,7 +170,6 @@ namespace Microsoft.Win32
          * This key is bound to hkey, if writable is <b>false</b> then no write operations
          * will be allowed.
          */
-        [System.Security.SecurityCritical]  // auto-generated
         private RegistryKey(SafeRegistryHandle  hkey, bool writable, RegistryView view)
             : this(hkey, writable, false, false, false, view) {
         }
@@ -186,7 +184,6 @@ namespace Microsoft.Win32
          * The remoteKey flag when set to true indicates that we are dealing with registry entries
          * on a remote machine and requires the program making these calls to have full trust.
          */
-        [System.Security.SecurityCritical]  // auto-generated
         private RegistryKey(SafeRegistryHandle hkey, bool writable, bool systemkey, bool remoteKey, bool isPerfData, RegistryView view) {
             this.hkey = hkey;
             this.keyName = "";
@@ -210,7 +207,6 @@ namespace Microsoft.Win32
             Dispose(true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private void Dispose(bool disposing) {
             if (hkey != null) {
 
@@ -243,7 +239,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Flush() {
             if (hkey != null) {
                  if (IsDirty()) {
@@ -293,7 +288,6 @@ namespace Microsoft.Win32
             return CreateSubKeyInternal(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, null, options);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         private unsafe RegistryKey CreateSubKeyInternal(String subkey, RegistryKeyPermissionCheck permissionCheck, object registrySecurityObj, RegistryOptions registryOptions)
         {
@@ -362,7 +356,6 @@ namespace Microsoft.Win32
             DeleteSubKey(subkey, true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void DeleteSubKey(String subkey, bool throwOnMissingSubKey) {
             ValidateKeyName(subkey);        
             EnsureWriteable();
@@ -416,7 +409,6 @@ namespace Microsoft.Win32
             DeleteSubKeyTree(subkey, true /*throwOnMissingSubKey*/);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         public void DeleteSubKeyTree(String subkey, Boolean throwOnMissingSubKey) {
             ValidateKeyName(subkey);
@@ -464,7 +456,6 @@ namespace Microsoft.Win32
 
         // An internal version which does no security checks or argument checking.  Skipping the 
         // security checks should give us a slight perf gain on large trees. 
-        [System.Security.SecurityCritical]  // auto-generated
         private void DeleteSubKeyTreeInternal(string subkey) {
             RegistryKey key = InternalOpenSubKey(subkey, true);
             if (key != null) {
@@ -504,7 +495,6 @@ namespace Microsoft.Win32
             DeleteValue(name, true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void DeleteValue(String name, bool throwOnMissingValue) {
             EnsureWriteable();
             CheckPermission(RegistryInternalCheck.CheckValueWritePermission, name, false, RegistryKeyPermissionCheck.Default);            
@@ -542,12 +532,10 @@ namespace Microsoft.Win32
          *
          * @return the RegistryKey requested.
          */
-        [System.Security.SecurityCritical]  // auto-generated
         internal static RegistryKey GetBaseKey(IntPtr hKey) {
             return GetBaseKey(hKey, RegistryView.Default);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static RegistryKey GetBaseKey(IntPtr hKey, RegistryView view) {
 
             int index = ((int)hKey) & 0x0FFFFFFF;
@@ -565,7 +553,6 @@ namespace Microsoft.Win32
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view) {
             ValidateKeyView(view);
@@ -595,7 +582,6 @@ namespace Microsoft.Win32
             return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName, RegistryView view) {
             if (machineName==null)
@@ -638,9 +624,7 @@ namespace Microsoft.Win32
          * @return the Subkey requested, or <b>null</b> if the operation failed.
          */
         #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
         #else
-        [System.Security.SecuritySafeCritical]
         #endif
         public RegistryKey OpenSubKey(string name, bool writable ) {
             ValidateKeyName(name);
@@ -674,7 +658,6 @@ namespace Microsoft.Win32
 
         // This required no security checks. This is to get around the Deleting SubKeys which only require
         // write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
-        [System.Security.SecurityCritical]  // auto-generated
         internal RegistryKey InternalOpenSubKey(String name, bool writable) {
             ValidateKeyName(name);
             EnsureNotDisposed();
@@ -702,7 +685,6 @@ namespace Microsoft.Win32
          * @return the Subkey requested, or <b>null</b> if the operation failed.
          */
 #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] 
 #endif
         public RegistryKey OpenSubKey(String name) {
             return OpenSubKey(name, false);
@@ -714,7 +696,6 @@ namespace Microsoft.Win32
          * @return a count of subkeys.
          */
         public int SubKeyCount {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
                 return InternalSubKeyCount();
@@ -723,14 +704,12 @@ namespace Microsoft.Win32
 
         [ComVisible(false)]
         public RegistryView View {
-            [System.Security.SecuritySafeCritical]
             get {
                 EnsureNotDisposed();
                 return regView;
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal int InternalSubKeyCount() {
                 EnsureNotDisposed();
 
@@ -760,16 +739,13 @@ namespace Microsoft.Win32
          * @return all subkey names.
          */
         #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
         #else
-        [System.Security.SecuritySafeCritical]
         #endif
         public String[] GetSubKeyNames() {
             CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
             return InternalGetSubKeyNames();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe String[] InternalGetSubKeyNames() {
             EnsureNotDisposed();
             int subkeys = InternalSubKeyCount();
@@ -808,14 +784,12 @@ namespace Microsoft.Win32
          * @return a count of values.
          */
         public int ValueCount {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
                 return InternalValueCount();
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal int InternalValueCount() {
             EnsureNotDisposed();
             int values = 0;
@@ -842,7 +816,6 @@ namespace Microsoft.Win32
          *
          * @return all value names.
          */
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe String[] GetValueNames() {
             CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
             EnsureNotDisposed();
@@ -893,7 +866,6 @@ namespace Microsoft.Win32
          *
          * @return the data associated with the value.
          */
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Object GetValue(String name) {
             CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);        
             return InternalGetValue(name, null, false, true);
@@ -915,9 +887,7 @@ namespace Microsoft.Win32
          * @return the data associated with the value.
          */
         #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
         #else
-        [System.Security.SecuritySafeCritical]
         #endif
         public Object GetValue(String name, Object defaultValue) {
             CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);        
@@ -925,9 +895,7 @@ namespace Microsoft.Win32
         }
 
         #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
         #else
-        [System.Security.SecuritySafeCritical]
         #endif
         [ComVisible(false)]
         public Object GetValue(String name, Object defaultValue, RegistryValueOptions options) {
@@ -939,7 +907,6 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand, true);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal Object InternalGetValue(String name, Object defaultValue, bool doNotExpand, bool checkSecurity) {            
             if (checkSecurity) {       
                 // Name can be null!  It's the most common use of RegQueryValueEx
@@ -1158,7 +1125,6 @@ namespace Microsoft.Win32
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ComVisible(false)]
         public RegistryValueKind GetValueKind(string name) {
             CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);
@@ -1202,7 +1168,6 @@ namespace Microsoft.Win32
         }
 
         public String Name {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { 
                 EnsureNotDisposed();
                 return keyName; 
@@ -1223,7 +1188,6 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        [System.Security.SecuritySafeCritical] //auto-generated
         [ComVisible(false)]
         public unsafe void SetValue(String name, Object value, RegistryValueKind valueKind) {
             if (value==null)
@@ -1395,7 +1359,6 @@ namespace Microsoft.Win32
          *
          * @return a string representing the key.
          */
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString() {
             EnsureNotDisposed();
             return keyName;
@@ -1408,7 +1371,6 @@ namespace Microsoft.Win32
          * error, and depending on the error, insert a string into the message
          * gotten from the ResourceManager.
          */
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal void Win32Error(int errorCode, String str) {
             switch (errorCode) {
                 case Win32Native.ERROR_ACCESS_DENIED:
@@ -1444,7 +1406,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecuritySafeCritical]
         internal static void Win32ErrorStatic(int errorCode, String str) {
             switch (errorCode) {
                 case Win32Native.ERROR_ACCESS_DENIED:
@@ -1577,7 +1538,6 @@ namespace Microsoft.Win32
            path   = keyName + "\\.";
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void CheckPermission(RegistryInternalCheck check, string item, bool subKeyWritable, RegistryKeyPermissionCheck subKeyCheck)
         {
             bool demand = false;
@@ -1814,14 +1774,12 @@ namespace Microsoft.Win32
             }
         }
      
-        [System.Security.SecurityCritical]  // auto-generated
         static private void  CheckUnmanagedCodePermission() {               
 #pragma warning disable 618
             new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();        
 #pragma warning restore 618
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private bool ContainsRegistryValue(string name) {
                 int type = 0;
                 int datasize = 0;
@@ -1829,14 +1787,12 @@ namespace Microsoft.Win32
                 return retval == 0;            
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void EnsureNotDisposed(){
             if (hkey == null) {
                 ThrowHelper.ThrowObjectDisposedException(keyName, ExceptionResource.ObjectDisposed_RegKeyClosed);
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void EnsureWriteable() {
             EnsureNotDisposed();
             if (!IsWritable()) {

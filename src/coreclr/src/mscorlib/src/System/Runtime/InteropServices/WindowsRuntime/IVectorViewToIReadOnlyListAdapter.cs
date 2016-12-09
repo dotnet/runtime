@@ -34,7 +34,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // T this[int index] { get }
-        [SecurityCritical]
         internal T Indexer_Get<T>(int index)
         {
             if (index < 0)
@@ -59,7 +58,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // T this[int index] { get }
-        [SecurityCritical]
         internal T Indexer_Get_Variance<T>(int index) where T : class
         {
             bool fUseString;

@@ -86,7 +86,6 @@ namespace System.Reflection
         #endregion
 
         #region ISerializable
-        [System.Security.SecurityCritical]  // auto-generated
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             throw new NotSupportedException(Environment.GetResourceString(ResId.NotSupported_Method));
@@ -94,7 +93,6 @@ namespace System.Reflection
         #endregion
     
         #region IObjectReference
-        [System.Security.SecurityCritical]  // auto-generated
         public virtual Object GetRealObject(StreamingContext context) 
         {
             if (m_memberName == null || m_reflectedType == null || m_memberType == 0)

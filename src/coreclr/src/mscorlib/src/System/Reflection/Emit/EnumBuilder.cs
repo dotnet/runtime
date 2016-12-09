@@ -313,9 +313,6 @@ namespace System.Reflection.Emit {
 
        // Use this function if client decides to form the custom attribute blob themselves
 
-#if FEATURE_CORECLR
-[System.Security.SecurityCritical] // auto-generated
-#endif
 [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
@@ -398,7 +395,6 @@ namespace System.Reflection.Emit {
             
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.
-        [System.Security.SecurityCritical]  // auto-generated
         internal EnumBuilder(
             String      name,                       // name of type
             Type        underlyingType,             // underlying type for an Enum

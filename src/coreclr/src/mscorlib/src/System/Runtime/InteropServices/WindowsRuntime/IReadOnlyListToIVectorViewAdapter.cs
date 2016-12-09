@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // T GetAt(uint index)
-        [SecurityCritical]
         internal T GetAt<T>(uint index)
         {
             IReadOnlyList<T> _this = JitHelpers.UnsafeCast<IReadOnlyList<T>>(this);
@@ -50,7 +49,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint Size { get }
-        [SecurityCritical]
         internal uint Size<T>()
         {
             IReadOnlyList<T> _this = JitHelpers.UnsafeCast<IReadOnlyList<T>>(this);
@@ -58,7 +56,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IndexOf(T value, out uint index)
-        [SecurityCritical]
         internal bool IndexOf<T>(T value, out uint index)
         {
             IReadOnlyList<T> _this = JitHelpers.UnsafeCast<IReadOnlyList<T>>(this);
@@ -85,7 +82,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint GetMany(uint startIndex, T[] items)
-        [SecurityCritical]
         internal uint GetMany<T>(uint startIndex, T[] items)
         {
             IReadOnlyList<T> _this = JitHelpers.UnsafeCast<IReadOnlyList<T>>(this);

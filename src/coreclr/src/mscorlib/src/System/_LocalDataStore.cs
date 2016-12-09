@@ -197,7 +197,6 @@ namespace System {
         /*=========================================================================
         ** Method used to expand the capacity of the local data store.
         =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private LocalDataStoreElement PopulateElement(LocalDataStoreSlot slot)
         {
             bool tookLock = false;

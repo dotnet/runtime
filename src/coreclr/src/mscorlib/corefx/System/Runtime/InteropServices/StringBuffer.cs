@@ -117,7 +117,6 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// True if the buffer contains the given character.
         /// </summary>
-        [System.Security.SecurityCritical]
         public unsafe bool Contains(char value)
         {
             char* start = CharPointer;

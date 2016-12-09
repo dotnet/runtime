@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
         
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable<T>.
-        [SecurityCritical]
         internal IEnumerator<T> GetEnumerator_Stub<T>()
         {
             IIterable<T> _this = JitHelpers.UnsafeCast<IIterable<T>>(this);
@@ -43,7 +42,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // and it is possible that the implementation supports IEnumerable<Type>/IEnumerable<string>/IEnumerable<Exception>/
         // IEnumerable<array>/IEnumerable<delegate> rather than IEnumerable<T> because T is assignable from Type/string/
         // Exception/array/delegate via co-variance.
-        [SecurityCritical]
         internal IEnumerator<T> GetEnumerator_Variance_Stub<T>() where T : class
         {
             bool fUseString;
@@ -87,7 +85,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable.
-        [SecurityCritical]
         internal IEnumerator GetEnumerator_Stub()
         {
             IBindableIterable _this = JitHelpers.UnsafeCast<IBindableIterable>(this);
@@ -145,7 +142,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        [SecuritySafeCritical]
         public bool MoveNext()
         {
             // If we've passed the end of the iteration, IEnumerable<T> should return false, while

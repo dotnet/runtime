@@ -76,7 +76,6 @@ namespace System.Threading
         //
         private static int TickCount
         {
-            [SecuritySafeCritical]
             get
             {
 #if !FEATURE_PAL
@@ -102,7 +101,6 @@ namespace System.Threading
         //
         // We use a SafeHandle to ensure that the native timer is destroyed when the AppDomain is unloaded.
         //
-        [SecurityCritical]
         class AppDomainTimerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             public AppDomainTimerSafeHandle()
@@ -110,7 +108,6 @@ namespace System.Threading
             {
             }
 
-            [SecurityCritical]
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             protected override bool ReleaseHandle()
             {
@@ -118,14 +115,12 @@ namespace System.Threading
             }
         }
 
-        [SecurityCritical]
         AppDomainTimerSafeHandle m_appDomainTimer;
 
         bool m_isAppDomainTimerScheduled;
         int m_currentAppDomainTimerStartTicks;
         uint m_currentAppDomainTimerDuration;
 
-        [SecuritySafeCritical]
         private bool EnsureAppDomainTimerFiresBy(uint requestedDuration)
         {
             //
@@ -195,23 +190,19 @@ namespace System.Threading
         //
         // The VM calls this when the native timer fires.
         //
-        [SecuritySafeCritical]
         internal static void AppDomainTimerCallback()
         {
             Instance.FireNextTimers();
         }
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         static extern AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime);
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         static extern bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
@@ -229,7 +220,6 @@ namespace System.Threading
 
         volatile int m_pauseTicks = 0; // Time when Pause was called
 
-        [SecurityCritical]
         internal void Pause()
         {
             lock(this)
@@ -245,7 +235,6 @@ namespace System.Threading
             }
         }
 
-        [SecurityCritical]
         internal void Resume()
         {
             //
@@ -413,7 +402,6 @@ namespace System.Threading
                 timerToFireOnThisThread.Fire();
         }
 
-        [SecuritySafeCritical]
         private static void QueueTimerCompletion(TimerQueueTimer timer)
         {
             WaitCallback callback = s_fireQueuedTimerCompletion;
@@ -523,7 +511,6 @@ namespace System.Threading
         volatile WaitHandle m_notifyWhenNoCallbacksRunning;
 
 
-        [SecurityCritical]
         internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period, ref StackCrawlMark stackMark)
         {
             m_timerCallback = timerCallback;
@@ -673,13 +660,11 @@ namespace System.Threading
                 SignalNoCallbacksRunning();
         }
 
-        [SecuritySafeCritical]
         internal void SignalNoCallbacksRunning()
         {
             Win32Native.SetEvent(m_notifyWhenNoCallbacksRunning.SafeWaitHandle);
         }
 
-        [SecuritySafeCritical]
         internal void CallCallback()
         {
             if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
@@ -708,10 +693,8 @@ namespace System.Threading
             }
         }
 
-        [SecurityCritical]
         private static ContextCallback s_callCallbackInContext;
 
-        [SecurityCritical]
         private static void CallCallbackInContext(object state)
         {
             TimerQueueTimer t = (TimerQueueTimer)state;
@@ -780,7 +763,6 @@ namespace System.Threading
 
         private TimerHolder m_timer;
 
-        [SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback, 
                      Object        state,  
@@ -797,7 +779,6 @@ namespace System.Threading
             TimerSetup(callback,state,(UInt32)dueTime,(UInt32)period,ref stackMark);
         }
 
-        [SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback, 
                      Object        state,  
@@ -821,7 +802,6 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        [SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback, 
                      Object        state,  
@@ -832,7 +812,6 @@ namespace System.Threading
             TimerSetup(callback,state,dueTime,period,ref stackMark);
         }
 
-        [SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable                                        
         public Timer(TimerCallback callback, 
                      Object        state,  
@@ -852,7 +831,6 @@ namespace System.Threading
             TimerSetup(callback,state,(UInt32) dueTime, (UInt32) period,ref stackMark);
         }
 
-        [SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback)
         {
@@ -865,7 +843,6 @@ namespace System.Threading
             TimerSetup(callback, this, (UInt32)dueTime, (UInt32)period, ref stackMark);
         }
 
-        [SecurityCritical]
         private void TimerSetup(TimerCallback callback,
                                 Object state, 
                                 UInt32 dueTime,
@@ -879,13 +856,11 @@ namespace System.Threading
             m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, ref stackMark));
         }
 
-        [SecurityCritical]
         internal static void Pause()
         {
             TimerQueue.Instance.Pause();
         }
 
-        [SecurityCritical]
         internal static void Resume()
         {
             TimerQueue.Instance.Resume();

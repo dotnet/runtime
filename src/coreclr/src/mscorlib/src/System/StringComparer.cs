@@ -385,7 +385,6 @@ namespace System {
             return x.Equals(y);
         }               
 
-        [System.Security.SecuritySafeCritical]            
         public override int GetHashCode(string obj) {
             if( obj == null) {
                 throw new ArgumentNullException(nameof(obj));

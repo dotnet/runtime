@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V Lookup(K key)
-        [SecurityCritical]
         internal V Lookup<K, V>(K key)
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
@@ -50,7 +49,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint Size { get }
-        [SecurityCritical]
         internal uint Size<K, V>()
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
@@ -58,7 +56,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
         
         // bool HasKey(K key)
-        [SecurityCritical]
         internal bool HasKey<K, V>(K key)
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
@@ -66,7 +63,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // IMapView<K, V> GetView()
-        [SecurityCritical]
         internal IReadOnlyDictionary<K, V> GetView<K, V>()
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
@@ -83,7 +79,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Insert(K key, V value)
-        [SecurityCritical]
         internal bool Insert<K, V>(K key, V value)
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
@@ -93,7 +88,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Remove(K key)
-        [SecurityCritical]
         internal void Remove<K, V>(K key)
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
@@ -108,7 +102,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Clear()
-        [SecurityCritical]
         internal void Clear<K, V>()
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);

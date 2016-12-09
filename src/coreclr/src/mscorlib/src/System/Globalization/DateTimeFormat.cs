@@ -175,7 +175,6 @@ namespace System {
             FormatDigits(outputBuffer, value, len, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static void FormatDigits(StringBuilder outputBuffer, int value, int len, bool overrideLengthLimit) {
             Contract.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
 
@@ -1138,7 +1137,6 @@ namespace System {
 
         // This is an MDA for cases when the user is using a local format with
         // a Utc DateTime.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static void InvalidFormatForUtc(String format, DateTime dateTime) {
 #if MDA_SUPPORTED
             Mda.DateTimeInvalidLocalFormat();

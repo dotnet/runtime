@@ -21,19 +21,11 @@ namespace System.Runtime.InteropServices {
 [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class BStrWrapper
     {
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand,Flags=SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public BStrWrapper(String value)
         {
             m_WrappedObject = value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
-#pragma warning restore 618
         public BStrWrapper(Object value)
         {
             m_WrappedObject = (String)value;

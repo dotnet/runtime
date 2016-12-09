@@ -16,7 +16,6 @@ namespace System.Runtime.InteropServices {
     using System.Diagnostics;
 
     // see code:ComEventsHelper#ComEventsArchitecture
-    [System.Security.SecurityCritical]
     internal class ComEventsSink : NativeMethods.IDispatch, ICustomQueryInterface
     {
 #region private fields
@@ -57,7 +56,6 @@ namespace System.Runtime.InteropServices {
             return sink;
         }
 
-        [System.Security.SecurityCritical]
         internal static ComEventsSink RemoveAll(ComEventsSink sinks) {
             while (sinks != null) {
                 sinks.Unadvise();
@@ -67,7 +65,6 @@ namespace System.Runtime.InteropServices {
             return null;
         }
 
-        [System.Security.SecurityCritical]
         internal static ComEventsSink Remove(ComEventsSink sinks, ComEventsSink sink) {
             BCLDebug.Assert(sinks != null, "removing event sink from empty sinks collection");
             BCLDebug.Assert(sink != null, "specify event sink is null");
@@ -114,17 +111,14 @@ namespace System.Runtime.InteropServices {
 
 #region IDispatch Members
 
-        [System.Security.SecurityCritical]
         void NativeMethods.IDispatch.GetTypeInfoCount(out uint pctinfo) {
             pctinfo = 0;
         }
 
-        [System.Security.SecurityCritical]
         void NativeMethods.IDispatch.GetTypeInfo(uint iTInfo, int lcid, out IntPtr info) {
             throw new NotImplementedException();
         }
 
-        [System.Security.SecurityCritical]
         void NativeMethods.IDispatch.GetIDsOfNames(ref Guid iid, string[] names, uint cNames, int lcid, int[] rgDispId) {
             throw new NotImplementedException();
         }
@@ -149,7 +143,6 @@ namespace System.Runtime.InteropServices {
             return pSrc;
         }
 
-        [System.Security.SecurityCritical]
         unsafe void NativeMethods.IDispatch.Invoke(
             int dispid, 
             ref Guid riid, 
@@ -233,7 +226,6 @@ namespace System.Runtime.InteropServices {
 
         static Guid IID_IManagedObject = new Guid("{C3FCC19E-A970-11D2-8B5A-00A0C9B7C9C4}");
 
-        [System.Security.SecurityCritical]
         CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv) {
             ppv = IntPtr.Zero;
             if (iid == this._iidSourceItf || iid == typeof(NativeMethods.IDispatch).GUID) {
@@ -265,7 +257,6 @@ namespace System.Runtime.InteropServices {
             _connectionPoint = cp;
         }
 
-        [System.Security.SecurityCritical]
         private void Unadvise() {
             BCLDebug.Assert(_connectionPoint != null, "can not unadvise from empty connection point");
 

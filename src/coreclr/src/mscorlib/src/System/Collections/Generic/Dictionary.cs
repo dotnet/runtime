@@ -302,7 +302,6 @@ namespace System.Collections.Generic {
             return new Enumerator(this, Enumerator.KeyValuePair);
         }        
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);

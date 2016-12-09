@@ -23,9 +23,6 @@ namespace System.Reflection
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_FieldInfo))]
-#pragma warning disable 618
-    [PermissionSetAttribute(SecurityAction.InheritanceDemand, Name = "FullTrust")]
-#pragma warning restore 618
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class FieldInfo : MemberInfo, _FieldInfo
     {
@@ -303,7 +300,6 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
@@ -329,7 +325,6 @@ namespace System.Reflection
         #endregion
 
         #region ISerializable Implementation
-        [System.Security.SecurityCritical]  // auto-generated
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -349,7 +344,6 @@ namespace System.Reflection
     internal unsafe sealed class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
     {
         #region FCalls
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static private extern void PerformVisibilityCheckOnField(IntPtr field, Object target, RuntimeType declaringType, FieldAttributes attr, uint invocationFlags);
         #endregion
@@ -447,7 +441,6 @@ namespace System.Reflection
         private RuntimeAssembly GetRuntimeAssembly() { return m_declaringType.GetRuntimeAssembly(); }
 
         #region Constructor
-        [System.Security.SecurityCritical]  // auto-generated
         internal RtFieldInfo(
             RuntimeFieldHandleInternal handle, RuntimeType declaringType, RuntimeTypeCache reflectedTypeCache, BindingFlags bindingFlags) 
             : base(reflectedTypeCache, declaringType, bindingFlags)
@@ -460,7 +453,6 @@ namespace System.Reflection
         #region Private Members
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return new RuntimeFieldHandleInternal(m_fieldHandle);
@@ -502,7 +494,6 @@ namespace System.Reflection
             return m.m_fieldHandle == m_fieldHandle;
         }
 
-        [System.Security.SecurityCritical]
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal void InternalSetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture, ref StackCrawlMark stackMark)
@@ -559,7 +550,6 @@ namespace System.Reflection
         // InternalSetValue() instead. When the caller needs to perform 
         // consistency checks they should call CheckConsistency() before 
         // calling this method.
-        [System.Security.SecurityCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal void UnsafeSetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
@@ -581,7 +571,6 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal Object InternalGetValue(Object obj, ref StackCrawlMark stackMark)
@@ -624,7 +613,6 @@ namespace System.Reflection
         // InternalGetValue() instead. When the caller needs to perform 
         // consistency checks they should call CheckConsistency() before 
         // calling this method.
-        [System.Security.SecurityCritical]
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal Object UnsafeGetValue(Object obj)
@@ -652,7 +640,6 @@ namespace System.Reflection
         #region MemberInfo Overrides
         public override String Name 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (m_name == null)
@@ -672,11 +659,9 @@ namespace System.Reflection
 
         public override int MetadataToken
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return RuntimeFieldHandle.GetToken(this); }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal override RuntimeModule GetRuntimeModule()
         {
             return RuntimeTypeHandle.GetModule(RuntimeFieldHandle.GetApproxDeclaringType(this));
@@ -693,7 +678,6 @@ namespace System.Reflection
         
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override Object GetValueDirect(TypedReference obj)
@@ -709,7 +693,6 @@ namespace System.Reflection
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override void SetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
@@ -718,7 +701,6 @@ namespace System.Reflection
             InternalSetValue(obj, value, invokeAttr, binder, culture, ref stackMark);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, Object value)
@@ -760,7 +742,6 @@ namespace System.Reflection
 
         public override Type FieldType 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (m_fieldType == null)
@@ -770,13 +751,11 @@ namespace System.Reflection
             }
         }       
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type[] GetRequiredCustomModifiers()
         {
             return new Signature(this, m_declaringType).GetCustomModifiers(1, true);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type[] GetOptionalCustomModifiers()
         {
             return new Signature(this, m_declaringType).GetCustomModifiers(1, false);
@@ -824,7 +803,6 @@ namespace System.Reflection
         #region MemberInfo Overrides
         public override String Name 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (m_name == null)
@@ -869,7 +847,6 @@ namespace System.Reflection
 
         public unsafe override Object GetRawConstantValue() { return GetValue(true); }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe Object GetValue(bool raw)
         {
             // Cannot cache these because they could be user defined non-agile enumerations
@@ -891,7 +868,6 @@ namespace System.Reflection
 
         public override Type FieldType 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (m_fieldType == null)

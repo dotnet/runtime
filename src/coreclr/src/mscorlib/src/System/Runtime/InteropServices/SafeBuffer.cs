@@ -78,7 +78,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics.Contracts;
 
 
-    [System.Security.SecurityCritical]
     public abstract unsafe class SafeBuffer : SafeHandleZeroOrMinusOneIsInvalid
     {
         // Steal UIntPtr.MaxValue as our uninitialized value.

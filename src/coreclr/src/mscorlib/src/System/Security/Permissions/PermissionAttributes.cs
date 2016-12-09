@@ -88,7 +88,6 @@ namespace System.Security.Permissions
 
         abstract public IPermission CreatePermission();
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static unsafe IntPtr FindSecurityAttributeTypeHandle(String typeName)
         {
             PermissionSet.s_fullTrust.Assert();

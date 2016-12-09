@@ -7,7 +7,6 @@ namespace Microsoft.Win32.SafeHandles {
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeLocalAllocHandle : SafeBuffer {
         private SafeLocalAllocHandle () : base(true) {}
 
@@ -20,7 +19,6 @@ namespace Microsoft.Win32.SafeHandles {
             get { return new SafeLocalAllocHandle(IntPtr.Zero); }
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Win32Native.LocalFree(handle) == IntPtr.Zero;

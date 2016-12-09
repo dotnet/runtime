@@ -289,38 +289,28 @@ namespace System {
         private Number() {
         }
     
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatDecimal(Decimal value, String format, NumberFormatInfo info);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatDouble(double value, String format, NumberFormatInfo info);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatInt32(int value, String format, NumberFormatInfo info);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatUInt32(uint value, String format, NumberFormatInfo info);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatInt64(long value, String format, NumberFormatInfo info);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatUInt64(ulong value, String format, NumberFormatInfo info);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatSingle(float value, String format, NumberFormatInfo info);
     
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public unsafe static extern Boolean NumberBufferToDecimal(byte* number, ref Decimal value);
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe static extern Boolean NumberBufferToDouble(byte* number, ref Double value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [System.Runtime.CompilerServices.FriendAccessAllowed]
-        [System.Security.SecurityCritical]  // auto-generated
         internal static extern unsafe string FormatNumberBuffer(byte* number, string format, NumberFormatInfo info, char* allDigits);
 
         // Constants used by number parsing
@@ -350,15 +340,12 @@ namespace System {
             // Enough space for NumberMaxDigit characters plus null and 3 32 bit integers and a pointer
             public static readonly Int32 NumberBufferBytes = 12 + ((NumberMaxDigits + 1) * 2) + IntPtr.Size;
 
-            [SecurityCritical]
             private Byte * baseAddress;
-            [SecurityCritical]
             public Char * digits;
             public Int32 precision;
             public Int32 scale;
             public Boolean sign;
 
-            [System.Security.SecurityCritical]  // auto-generated
             public NumberBuffer(Byte* stackBuffer) {
                 this.baseAddress = stackBuffer;
                 this.digits = (((Char*) stackBuffer) + 6);
@@ -367,7 +354,6 @@ namespace System {
                 this.sign = false;
             }
 
-            [System.Security.SecurityCritical]  // auto-generated
             public Byte* PackForNative() {
                 Int32* baseInteger = (Int32*) baseAddress;
                 baseInteger[0] = precision;
@@ -391,7 +377,6 @@ namespace System {
             return returnValue;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static Boolean HexNumberToUInt32(ref NumberBuffer number, ref UInt32 value) {
 
             Int32 i = number.scale;
@@ -436,7 +421,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static Boolean HexNumberToUInt64(ref NumberBuffer number, ref UInt64 value) {
 
             Int32 i = number.scale;
@@ -485,7 +469,6 @@ namespace System {
             return (((ch) == 0x20) || ((ch) >= 0x09 && (ch) <= 0x0D));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static Boolean NumberToInt32(ref NumberBuffer number, ref Int32 value) {
 
             Int32 i = number.scale;
@@ -519,7 +502,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static Boolean NumberToInt64(ref NumberBuffer number, ref Int64 value) {
 
             Int32 i = number.scale;
@@ -553,7 +535,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static Boolean NumberToUInt32(ref NumberBuffer number, ref UInt32 value) {
 
             Int32 i = number.scale;
@@ -581,7 +562,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static Boolean NumberToUInt64(ref NumberBuffer number, ref UInt64 value) {
 
             Int32 i = number.scale;
@@ -609,13 +589,11 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe static char * MatchChars(char* p, string str) {
             fixed (char* stringPointer = str) {
                 return MatchChars(p, stringPointer);
             }
         }
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe static char * MatchChars(char* p, char* str) {
             Contract.Assert(p != null && str != null, "");
 
@@ -634,7 +612,6 @@ namespace System {
             return null;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Decimal ParseDecimal(String value, NumberStyles options, NumberFormatInfo numfmt) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -649,7 +626,6 @@ namespace System {
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Double ParseDouble(String value, NumberStyles options, NumberFormatInfo numfmt) {
             if (value == null) {
                 throw new ArgumentNullException(nameof(value));
@@ -683,7 +659,6 @@ namespace System {
             return d;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Int32 ParseInt32(String s, NumberStyles style, NumberFormatInfo info) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -705,7 +680,6 @@ namespace System {
             return i;           
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Int64 ParseInt64(String value, NumberStyles options, NumberFormatInfo numfmt) {
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -726,7 +700,6 @@ namespace System {
             return i;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe static Boolean ParseNumber(ref char * str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal) {
 
             const Int32 StateSign = 0x0001;
@@ -903,7 +876,6 @@ namespace System {
             return false;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Single ParseSingle(String value, NumberStyles options, NumberFormatInfo numfmt) {
             if (value == null) {
                 throw new ArgumentNullException(nameof(value));
@@ -940,7 +912,6 @@ namespace System {
             return castSingle;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static UInt32 ParseUInt32(String value, NumberStyles options, NumberFormatInfo numfmt) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -963,7 +934,6 @@ namespace System {
             return i;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static UInt64 ParseUInt64(String value, NumberStyles options, NumberFormatInfo numfmt) {
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -983,7 +953,6 @@ namespace System {
             return i;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static void StringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal) {
     
             if (str == null) {
@@ -1010,7 +979,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseDecimal(String value, NumberStyles options, NumberFormatInfo numfmt, out Decimal result) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -1027,7 +995,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseDouble(String value, NumberStyles options, NumberFormatInfo numfmt, out Double result) {
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1043,7 +1010,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseInt32(String s, NumberStyles style, NumberFormatInfo info, out Int32 result) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -1067,7 +1033,6 @@ namespace System {
             return true;           
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseInt64(String s, NumberStyles style, NumberFormatInfo info, out Int64 result) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -1091,7 +1056,6 @@ namespace System {
             return true;           
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseSingle(String value, NumberStyles options, NumberFormatInfo numfmt, out Single result) {
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1113,7 +1077,6 @@ namespace System {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseUInt32(String s, NumberStyles style, NumberFormatInfo info, out UInt32 result) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -1137,7 +1100,6 @@ namespace System {
             return true;           
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Boolean TryParseUInt64(String s, NumberStyles style, NumberFormatInfo info, out UInt64 result) {
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -1165,7 +1127,6 @@ namespace System {
             return TryStringToNumber(str, options, ref number, null, numfmt, parseDecimal);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.CompilerServices.FriendAccessAllowed]
         internal unsafe static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal) {   
 

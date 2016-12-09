@@ -17,7 +17,6 @@ namespace System
         private const int TrimTail = 1;
         private const int TrimBoth = 2;
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe private static void FillStringChecked(String dest, int destPos, String src)
         {
             Contract.Requires(dest != null);
@@ -109,7 +108,6 @@ namespace System
             return Concat(objArgs);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static string Concat(params object[] args)
         {
             if (args == null)
@@ -262,7 +260,6 @@ namespace System
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Concat(String str0, String str1) {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length ==
@@ -291,7 +288,6 @@ namespace System
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Concat(String str0, String str1, String str2) {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length ==
@@ -325,7 +321,6 @@ namespace System
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Concat(String str0, String str1, String str2, String str3) {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length == 
@@ -366,7 +361,6 @@ namespace System
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]
         public static String Concat(params String[] values) {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
@@ -502,7 +496,6 @@ namespace System
                     .AppendFormatHelper(provider, format, args));
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String Insert(int startIndex, String value)
         {
             if (value == null)
@@ -643,7 +636,6 @@ namespace System
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static string Join(string separator, string[] value, int startIndex, int count)
         {
             separator = separator ?? string.Empty;
@@ -858,7 +850,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String PadLeft(int totalWidth, char paddingChar) {
             if (totalWidth < 0)
                 throw new ArgumentOutOfRangeException(nameof(totalWidth), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -888,7 +879,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String PadRight(int totalWidth, char paddingChar) {
             if (totalWidth < 0)
                 throw new ArgumentOutOfRangeException(nameof(totalWidth), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -912,7 +902,6 @@ namespace System
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String Remove(int startIndex, int count)
         {
             if (startIndex < 0)
@@ -969,7 +958,6 @@ namespace System
 
         // Replaces all instances of oldChar with newChar.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String Replace(char oldChar, char newChar)
         {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -1040,7 +1028,6 @@ namespace System
 
         // This method contains the same functionality as StringBuilder Replace. The only difference is that
         // a new String has to be allocated since Strings are immutable
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern String ReplaceInternal(String oldValue, String newValue);
 
@@ -1110,13 +1097,11 @@ namespace System
             return SplitInternal(separator, count, options);
         }
 
-        [System.Security.SecuritySafeCritical]
         private unsafe String[] SplitInternal(char separator, int count, StringSplitOptions options)
         {
             return SplitInternal(&separator, 1, count, options);
         }
 
-        [System.Security.SecuritySafeCritical]
         private unsafe String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
         {
             fixed (char* pSeparators = separator)
@@ -1126,7 +1111,6 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]
         private unsafe String[] SplitInternal(char* separators, int separatorsLength, int count, StringSplitOptions options)
         {
             if (count < 0)
@@ -1355,7 +1339,6 @@ namespace System
         // Args: separator  -- A string containing all of the split characters.
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
-        [System.Security.SecurityCritical]
         private unsafe int MakeSeparatorList(char* separators, int separatorsLength, int[] sepList) {
             Contract.Assert(separatorsLength >= 0, "separatorsLength >= 0");
             int foundCount=0;
@@ -1394,7 +1377,6 @@ namespace System
         // Args: separator  -- the separator
         //       sepList    -- an array of ints for split string indicies.
         //--------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe int MakeSeparatorList(string separator, int[] sepList) {
             Contract.Assert(!string.IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
 
@@ -1424,7 +1406,6 @@ namespace System
         //       sepList    -- an array of ints for split string indicies.
         //       lengthList -- an array of ints for split string lengths.
         //--------------------------------------------------------------------    
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList) {
             Contract.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
             
@@ -1464,7 +1445,6 @@ namespace System
     
         // Returns a substring of this string.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String Substring(int startIndex, int length) {
                     
             //Bounds Checking.
@@ -1496,7 +1476,6 @@ namespace System
             return InternalSubString(startIndex, length);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         unsafe string InternalSubString(int startIndex, int length) {
             Contract.Assert( startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
             Contract.Assert( length >= 0 && startIndex <= this.Length - length, "length is out of range!");            
@@ -1607,7 +1586,6 @@ namespace System
         }
 
        
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private String TrimHelper(int trimType) {
             //end will point to the first non-trimmed character on the right
             //start will point to the first non-trimmed character on the Left
@@ -1631,7 +1609,6 @@ namespace System
         }
     
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private String TrimHelper(char[] trimChars, int trimType) {
             //end will point to the first non-trimmed character on the right
             //start will point to the first non-trimmed character on the Left
@@ -1669,7 +1646,6 @@ namespace System
         }
 
 
-        [System.Security.SecurityCritical]  // auto-generated
         private String CreateTrimmedString(int start, int end) {
             int len = end -start + 1;
             if (len == this.Length) {

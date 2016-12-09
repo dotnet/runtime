@@ -62,7 +62,6 @@ namespace System.Threading.Tasks
             EnsureADUnloadCallbackRegistered();
         }
 
-        [SecuritySafeCritical]
         private static bool ShouldFailFastOnUnobservedException()
         {
             bool shouldFailFast = false;

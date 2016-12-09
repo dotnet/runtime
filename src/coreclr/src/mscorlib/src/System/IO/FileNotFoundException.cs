@@ -136,11 +136,9 @@ namespace System.IO {
         }
 
         public String FusionLog {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return _fusionLog; }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             // Serialize data for our base classes.  base will verify info != null.
             base.GetObjectData(info, context);

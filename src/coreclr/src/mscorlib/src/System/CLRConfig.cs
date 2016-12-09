@@ -19,12 +19,10 @@ namespace System {
 internal class CLRConfig {
     
     [FriendAccessAllowed]
-    [System.Security.SecurityCritical]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     [SuppressUnmanagedCodeSecurity]
     internal static extern bool CheckLegacyManagedDeflateStream();
 
-    [System.Security.SecurityCritical]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     [SuppressUnmanagedCodeSecurity]
     internal static extern bool CheckThrowUnobservedTaskExceptions();

@@ -42,12 +42,6 @@ namespace System
         /// Create a PinnableBufferCache that works on any object (it is intended for OverlappedData)
         /// This is only used in mscorlib.
         /// </summary>
-#if (ENABLE || MINBUFFERS)
-#pragma warning disable 618
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
-#pragma warning restore 618
-        [System.Security.SecuritySafeCritical]
-#endif
         internal PinnableBufferCache(string cacheName, Func<object> factory)
         {
             m_NotGen2 = new List<object>(DefaultNumberOfBuffers);
@@ -100,7 +94,6 @@ namespace System
         /// <summary>
         /// Get a object from the buffer manager.  If no buffers exist, allocate a new one.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal object Allocate()
         {
 #if ENABLE
@@ -146,7 +139,6 @@ namespace System
         /// <summary>
         /// Return a buffer back to the buffer manager.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal void Free(object buffer)
         {
 #if ENABLE
@@ -185,7 +177,6 @@ namespace System
         /// Called when we don't have any buffers in our free list to give out.    
         /// </summary>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         private void Restock(out object returnBuffer)
         {
             lock (this)
@@ -238,7 +229,6 @@ namespace System
         /// <summary>
         /// See if we can promote the buffers to the free list.  Returns true if sucessful. 
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         private bool AgePendingBuffers()
         {
             if (m_gen1CountAtLastRestock < GC.CollectionCount(GC.MaxGeneration - 1))
@@ -314,7 +304,6 @@ namespace System
         /// otherwise, we root the cache to the Gen2GcCallback object, and leak the cache even when
         /// the application no longer needs it.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         private static bool Gen2GcCallbackFunc(object targetObj)
         {
             return ((PinnableBufferCache)(targetObj)).TrimFreeListIfNeeded();
@@ -325,7 +314,6 @@ namespace System
         /// NOTE: DO NOT CALL THIS DIRECTLY FROM THE GEN2GCCALLBACK.  INSTEAD CALL IT VIA A STATIC FUNCTION (SEE ABOVE).
         /// If you register a non-static function as a callback, then this object will be leaked.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         private bool TrimFreeListIfNeeded()
         {
             int curMSec = Environment.TickCount;
@@ -478,7 +466,6 @@ namespace System
     /// </summary>
     internal sealed class Gen2GcCallback : CriticalFinalizerObject
     {
-        [System.Security.SecuritySafeCritical]
         public Gen2GcCallback()
             : base()
         {
@@ -503,14 +490,12 @@ namespace System
         private Func<object, bool> m_callback;
         private GCHandle m_weakTargetObj;
 
-        [System.Security.SecuritySafeCritical]
         private void Setup(Func<object, bool> callback, object targetObj)
         {
             m_callback = callback;
             m_weakTargetObj = GCHandle.Alloc(targetObj, GCHandleType.Weak);
         }
 
-        [System.Security.SecuritySafeCritical]
         ~Gen2GcCallback()
         {
             // Check to see if the target object is still alive.
@@ -578,7 +563,6 @@ namespace System
             return 0;
         }
 
-        [System.Security.SecuritySafeCritical]
         static internal unsafe long AddressOfObject(byte[] array)
         {
             return 0;
@@ -650,7 +634,6 @@ namespace System
             return 0;
         }
 
-        [System.Security.SecuritySafeCritical]
         static internal unsafe long AddressOfByteArray(byte[] array)
         {
             if (array == null)

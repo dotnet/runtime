@@ -41,10 +41,8 @@ namespace System.Threading
     [ComVisibleAttribute(true)]
     public class EventWaitHandle : WaitHandle
     {
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public EventWaitHandle(bool initialState, EventResetMode mode) : this(initialState,mode,null) { }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
             if(name != null)
@@ -87,13 +85,11 @@ namespace System.Threading
             SetHandleInternal(_handle);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew)
             : this(initialState, mode, name, out createdNew, null)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public unsafe EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
         {
             if(name != null)
@@ -141,19 +137,16 @@ namespace System.Threading
             SetHandleInternal(_handle);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private EventWaitHandle(SafeWaitHandle handle)
         {
             SetHandleInternal(handle);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static EventWaitHandle OpenExisting(string name)
         {
             return OpenExisting(name, (EventWaitHandleRights)0);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
         {
             EventWaitHandle result;
@@ -174,19 +167,16 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, out EventWaitHandle result)
         {
             return OpenExistingWorker(name, (EventWaitHandleRights)0, out result) == OpenExistingResult.Success;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, EventWaitHandleRights rights, out EventWaitHandle result)
         {
             return OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle result)
         {
 #if PLATFORM_UNIX
@@ -230,7 +220,6 @@ namespace System.Threading
             return OpenExistingResult.Success;
 #endif
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Reset()
         {
             bool res = Win32Native.ResetEvent(safeWaitHandle);
@@ -238,7 +227,6 @@ namespace System.Threading
                 __Error.WinIOError();
             return res;
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Set()
         {
             bool res = Win32Native.SetEvent(safeWaitHandle);

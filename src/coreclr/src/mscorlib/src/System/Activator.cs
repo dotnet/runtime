@@ -56,7 +56,6 @@ namespace System {
             return CreateInstance(type, bindingAttr, binder, args, culture, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         static public Object CreateInstance(Type type,
                                             BindingFlags bindingAttr,
@@ -121,7 +120,6 @@ namespace System {
          * types to be created remotely without having to load the type locally.
          */
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         static public ObjectHandle CreateInstance(String assemblyName,
                                                   String typeName)
@@ -139,7 +137,6 @@ namespace System {
                                   ref stackMark);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable                                                  
         static public ObjectHandle CreateInstance(String assemblyName,
                                                   String typeName,
@@ -213,7 +210,6 @@ namespace System {
                                       activationAttributes);
         }
                                   
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstance which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         static public ObjectHandle CreateInstance(String assemblyName, 
@@ -239,7 +235,6 @@ namespace System {
                                   ref stackMark);
         }
 
-        [SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static ObjectHandle CreateInstance(string assemblyName,
                                                   string typeName,
@@ -263,7 +258,6 @@ namespace System {
                                   ref stackMark);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         static internal ObjectHandle CreateInstance(String assemblyString, 
                                                     String typeName, 
                                                     bool ignoreCase,
@@ -401,7 +395,6 @@ namespace System {
         // to pass the security checks when activating the type.
         //
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static ObjectHandle CreateInstance (AppDomain domain, string assemblyName, string typeName) {
             if (domain == null)
                 throw new ArgumentNullException(nameof(domain));
@@ -409,7 +402,6 @@ namespace System {
             return domain.InternalCreateInstanceWithNoSecurity(assemblyName, typeName);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstance which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static ObjectHandle CreateInstance (AppDomain domain,
                                                    string assemblyName,
@@ -428,7 +420,6 @@ namespace System {
             return domain.InternalCreateInstanceWithNoSecurity(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
         }
 
-        [SecurityCritical]
         public static ObjectHandle CreateInstance(AppDomain domain,
                                                   string assemblyName,
                                                   string typeName,
@@ -461,7 +452,6 @@ namespace System {
         // to pass the security checks when activating the type.
         //
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static ObjectHandle CreateInstanceFrom (AppDomain domain, string assemblyFile, string typeName) {
             if (domain == null)
                 throw new ArgumentNullException(nameof(domain));
@@ -469,7 +459,6 @@ namespace System {
             return domain.InternalCreateInstanceFromWithNoSecurity(assemblyFile, typeName);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         [Obsolete("Methods which use Evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstanceFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static ObjectHandle CreateInstanceFrom (AppDomain domain,
                                                        string assemblyFile,
@@ -488,7 +477,6 @@ namespace System {
             return domain.InternalCreateInstanceFromWithNoSecurity(assemblyFile, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
         }
 
-        [SecurityCritical]
         public static ObjectHandle CreateInstanceFrom(AppDomain domain,
                                                       string assemblyFile,
                                                       string typeName,

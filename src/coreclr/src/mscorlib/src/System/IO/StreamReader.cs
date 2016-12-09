@@ -187,12 +187,10 @@ namespace System.IO
             : this(path, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize) {
         }
 
-        [System.Security.SecuritySafeCritical]
         public StreamReader(String path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
             : this(path, encoding, detectEncodingFromByteOrderMarks, bufferSize, true) {
         }
 
-        [System.Security.SecurityCritical]
         internal StreamReader(String path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool checkHost)
         {
             // Don't open a Stream before checking for invalid arguments,

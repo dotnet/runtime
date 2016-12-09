@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // T GetAt(uint index)
-        [SecurityCritical]
         internal T GetAt<T>(uint index)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -49,7 +48,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint Size { get }
-        [SecurityCritical]
         internal uint Size<T>()
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -57,7 +55,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // IVectorView<T> GetView()
-        [SecurityCritical]
         internal IReadOnlyList<T> GetView<T>()
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -74,7 +71,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IndexOf(T value, out uint index)
-        [SecurityCritical]
         internal bool IndexOf<T>(T value, out uint index)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -91,7 +87,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void SetAt(uint index, T value)
-        [SecurityCritical]
         internal void SetAt<T>(uint index, T value)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -108,7 +103,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void InsertAt(uint index, T value)
-        [SecurityCritical]
         internal void InsertAt<T>(uint index, T value)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -130,7 +124,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void RemoveAt(uint index)
-        [SecurityCritical]
         internal void RemoveAt<T>(uint index)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -149,7 +142,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Append(T value)
-        [SecurityCritical]
         internal void Append<T>(T value)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -157,7 +149,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void RemoveAtEnd()
-        [SecurityCritical]
         internal void RemoveAtEnd<T>()
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -173,7 +164,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Clear()
-        [SecurityCritical]
         internal void Clear<T>()
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -181,7 +171,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint GetMany(uint startIndex, T[] items)
-        [SecurityCritical]
         internal uint GetMany<T>(uint startIndex, T[] items)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
@@ -189,7 +178,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void ReplaceAll(T[] items)
-        [SecurityCritical]
         internal void ReplaceAll<T>(T[] items)
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);

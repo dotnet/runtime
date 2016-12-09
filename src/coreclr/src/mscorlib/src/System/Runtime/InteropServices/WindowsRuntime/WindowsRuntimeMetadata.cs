@@ -19,14 +19,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public static class WindowsRuntimeMetadata
     {
         // Wrapper for Win8 API RoResolveNamespace with default Windows SDK path as installed .winmd files in %WINDIR%\system32\WinMetadata.
-        [System.Security.SecurityCritical]
         public static IEnumerable<string> ResolveNamespace(string namespaceName, IEnumerable<string> packageGraphFilePaths)
         {
             return ResolveNamespace(namespaceName, null, packageGraphFilePaths);
         }
 
         // Wrapper for Win8 API RoResolveNamespace.
-        [System.Security.SecurityCritical]
         public static IEnumerable<string> ResolveNamespace(string namespaceName, string windowsSdkFilePath, IEnumerable<string> packageGraphFilePaths)
         {
             if (namespaceName == null)
@@ -58,7 +56,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return retFileNames;
         }
         
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void nResolveNamespace(

@@ -16,16 +16,13 @@ namespace System
 
     public static class Console
     {
-        [SecurityCritical]
         static SafeFileHandle _outputHandle;
 
-        [SecuritySafeCritical]
         static Console()
         {
             _outputHandle = new SafeFileHandle(Win32Native.GetStdHandle(Win32Native.STD_OUTPUT_HANDLE), false);
         }
 
-        [SecuritySafeCritical]
         public static unsafe void Write(string s)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(s);

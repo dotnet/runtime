@@ -20,7 +20,6 @@ namespace System {
     {
         // ChangeType
         // This binder uses OLEAUT to change the type of the variant.
-        [System.Security.SecuritySafeCritical] // overrides transparent member
         public override Object ChangeType(Object value, Type type, CultureInfo cultureInfo)
         {
             Variant myValue = new Variant(value);

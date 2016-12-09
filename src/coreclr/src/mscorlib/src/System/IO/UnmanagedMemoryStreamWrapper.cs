@@ -106,7 +106,6 @@ namespace System.IO {
             return _unmanagedStream.Seek(offset, loc);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override byte[] ToArray() {
             if (!_unmanagedStream._isOpen) __Error.StreamIsClosed();
             if (!_unmanagedStream.CanRead) __Error.ReadNotSupported();

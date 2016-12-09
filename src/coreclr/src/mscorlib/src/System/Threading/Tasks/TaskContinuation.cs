@@ -235,7 +235,6 @@ namespace System.Threading.Tasks
         /// <param name="needsProtection">
         /// true if we need to protect against multiple threads racing to start/cancel the task; otherwise, false.
         /// </param>
-        [SecuritySafeCritical]
         protected static void InlineIfPossibleOrElseQueue(Task task, bool needsProtection)
         {
             Contract.Requires(task != null);
@@ -384,7 +383,6 @@ namespace System.Threading.Tasks
         /// <summary>SendOrPostCallback delegate to invoke the action.</summary>
         private readonly static SendOrPostCallback s_postCallback = state => ((Action)state)(); // can't use InvokeAction as it's SecurityCritical
         /// <summary>Cached delegate for PostAction</summary>
-        [SecurityCritical]
         private static ContextCallback s_postActionCallback;
         /// <summary>The context with which to run the action.</summary>
         private readonly SynchronizationContext m_syncContext;
@@ -394,7 +392,6 @@ namespace System.Threading.Tasks
         /// <param name="action">The action to invoke. Must not be null.</param>
         /// <param name="flowExecutionContext">Whether to capture and restore ExecutionContext.</param>
         /// <param name="stackMark">The captured stack mark.</param>
-        [SecurityCritical]
         internal SynchronizationContextAwaitTaskContinuation(
             SynchronizationContext context, Action action, bool flowExecutionContext, ref StackCrawlMark stackMark) :
             base(action, flowExecutionContext, ref stackMark)
@@ -406,7 +403,6 @@ namespace System.Threading.Tasks
         /// <summary>Inlines or schedules the continuation.</summary>
         /// <param name="ignored">The antecedent task, which is ignored.</param>
         /// <param name="canInlineContinuationTask">true if inlining is permitted; otherwise, false.</param>
-        [SecuritySafeCritical]
         internal sealed override void Run(Task task, bool canInlineContinuationTask)
         {
             // If we're allowed to inline, run the action on this thread.
@@ -431,7 +427,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Calls InvokeOrPostAction(false) on the supplied SynchronizationContextAwaitTaskContinuation.</summary>
         /// <param name="state">The SynchronizationContextAwaitTaskContinuation.</param>
-        [SecurityCritical]
         private static void PostAction(object state)
         {
             var c = (SynchronizationContextAwaitTaskContinuation)state;
@@ -465,7 +460,6 @@ namespace System.Threading.Tasks
         /// to be passed as state.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [SecurityCritical]
         private static ContextCallback GetPostActionCallback()
         {
             ContextCallback callback = s_postActionCallback;
@@ -485,7 +479,6 @@ namespace System.Threading.Tasks
         /// <param name="action">The action to invoke. Must not be null.</param>
         /// <param name="flowExecutionContext">Whether to capture and restore ExecutionContext.</param>
         /// <param name="stackMark">The captured stack mark.</param>
-        [SecurityCritical]
         internal TaskSchedulerAwaitTaskContinuation(
             TaskScheduler scheduler, Action action, bool flowExecutionContext, ref StackCrawlMark stackMark) :
             base(action, flowExecutionContext, ref stackMark)
@@ -550,7 +543,6 @@ namespace System.Threading.Tasks
         /// <param name="action">The action to invoke. Must not be null.</param>
         /// <param name="flowExecutionContext">Whether to capture and restore ExecutionContext.</param>
         /// <param name="stackMark">The captured stack mark with which to construct an ExecutionContext.</param>
-        [SecurityCritical]
         internal AwaitTaskContinuation(Action action, bool flowExecutionContext, ref StackCrawlMark stackMark)
         {
             Contract.Requires(action != null);
@@ -566,7 +558,6 @@ namespace System.Threading.Tasks
         /// <summary>Initializes the continuation.</summary>
         /// <param name="action">The action to invoke. Must not be null.</param>
         /// <param name="flowExecutionContext">Whether to capture and restore ExecutionContext.</param>
-        [SecurityCritical]
         internal AwaitTaskContinuation(Action action, bool flowExecutionContext)
         {
             Contract.Requires(action != null);
@@ -598,7 +589,6 @@ namespace System.Threading.Tasks
         /// <summary>Inlines or schedules the continuation onto the default scheduler.</summary>
         /// <param name="ignored">The antecedent task, which is ignored.</param>
         /// <param name="canInlineContinuationTask">true if inlining is permitted; otherwise, false.</param>
-        [SecuritySafeCritical]
         internal override void Run(Task task, bool canInlineContinuationTask)
         {
             // For the base AwaitTaskContinuation, we allow inlining if our caller allows it
@@ -657,7 +647,6 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>IThreadPoolWorkItem override, which is the entry function for this when the ThreadPool scheduler decides to run it.</summary>
-        [SecurityCritical]
         void ExecuteWorkItemHelper()
         {
             var etwLog = TplEtwProvider.Log;
@@ -696,7 +685,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        [SecurityCritical]
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
             // inline the fast path
@@ -714,20 +702,16 @@ namespace System.Threading.Tasks
         /// <summary>
         /// The ThreadPool calls this if a ThreadAbortException is thrown while trying to execute this workitem.
         /// </summary>
-        [SecurityCritical]
         void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
 
         /// <summary>Cached delegate that invokes an Action passed as an object parameter.</summary>
-        [SecurityCritical]
         private static ContextCallback s_invokeActionCallback;
 
         /// <summary>Runs an action provided as an object parameter.</summary>
         /// <param name="state">The Action to invoke.</param>
-        [SecurityCritical]
         private static void InvokeAction(object state) { ((Action)state)(); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [SecurityCritical]
         protected static ContextCallback GetInvokeActionCallback()
         {
             ContextCallback callback = s_invokeActionCallback;
@@ -739,7 +723,6 @@ namespace System.Threading.Tasks
         /// <param name="callback">The callback to run.</param>
         /// <param name="state">The state to pass to the callback.</param>
         /// <param name="currentTask">A reference to Task.t_currentTask.</param>
-        [SecurityCritical]
         protected void RunCallback(ContextCallback callback, object state, ref Task currentTask)
         {
             Contract.Requires(callback != null);
@@ -787,7 +770,6 @@ namespace System.Threading.Tasks
         /// only happens in Task.SetContinuationForAwait if execution context flow was disabled
         /// via using TaskAwaiter.UnsafeOnCompleted or a similar path.
         /// </remarks>
-        [SecurityCritical]
         internal static void RunOrScheduleAction(Action action, bool allowInlining, ref Task currentTask)
         {
             Contract.Assert(currentTask == Task.t_currentTask);
@@ -818,7 +800,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Schedules the action to be executed.  No ExecutionContext work is performed used.</summary>
         /// <param name="action">The action to invoke or queue.</param>
-        [SecurityCritical]
         internal static void UnsafeScheduleAction(Action action, Task task)
         {
             AwaitTaskContinuation atc = new AwaitTaskContinuation(action, flowExecutionContext: false);

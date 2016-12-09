@@ -56,7 +56,6 @@ namespace System.Security.Permissions {
             return str;
         }
 
-        [SecuritySafeCritical]
         public override string ToString()
         {
             // SafeCritical: we're not storing path information in the strings, so exposing them out is fine ...
@@ -103,7 +102,6 @@ namespace System.Security.Permissions {
             AddPathList( flag, pathList );
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void AddPathList( EnvironmentPermissionAccess flag, String pathList )
         {
             VerifyFlag( flag );
@@ -204,7 +202,6 @@ namespace System.Security.Permissions {
         //
         //------------------------------------------------------
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsSubsetOf(IPermission target)
         {
             if (target == null)
@@ -232,7 +229,6 @@ namespace System.Security.Permissions {
             }
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override IPermission Intersect(IPermission target)
         {
             if (target == null)
@@ -275,7 +271,6 @@ namespace System.Security.Permissions {
             return intersectPermission;
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override IPermission Union(IPermission other)
         {
             if (other == null)

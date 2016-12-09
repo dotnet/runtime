@@ -105,7 +105,6 @@ namespace System.Security.Util  {
             assemblyVersion = an.Version.ToString();
             return true;
         }
-        [System.Security.SecurityCritical]  // auto-generated
         private static bool
         ParseElementForObjectCreation( SecurityElement el,
                                        String requiredNamespace,
@@ -170,7 +169,6 @@ namespace System.Security.Util  {
             return false;
         }
 
-        [SecuritySafeCritical]
         public static IPermission
         CreatePermission (SecurityElement el, PermissionState permState, bool ignoreTypeLoadFailures)
         {

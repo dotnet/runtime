@@ -134,9 +134,7 @@ using System.Runtime.Versioning;
 // we'll do this to ensure we've cut off all attack vectors.  Similarly, all
 // methods have a link demand to ensure untrusted code cannot directly edit
 // or alter a handle.
-[System.Security.SecurityCritical]  // auto-generated_required
 #if !FEATURE_CORECLR
-[SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
 #endif
 public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
 {
@@ -191,7 +189,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     }
 #endif
 
-    [System.Security.SecuritySafeCritical]  // auto-generated
     ~SafeHandle()
     {
         Dispose(false);
@@ -236,19 +233,16 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
         get;
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Close() {
         Dispose(true);
     }
     
-    [System.Security.SecuritySafeCritical]  // auto-generated
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Dispose() {
         Dispose(true);
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected virtual void Dispose(bool disposing)
     {
@@ -266,7 +260,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // your handle is invalid and you want to record that information.
     // An example is calling a syscall and getting back ERROR_INVALID_HANDLE.
     // This method will normally leak handles!
-    [System.Security.SecurityCritical]  // auto-generated
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void SetHandleAsInvalid();
@@ -295,7 +288,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // when the method is interrupted prior to processing by a thread abort or
     // when the handle has already been (or is in the process of being)
     // released.
-    [System.Security.SecurityCritical]  // auto-generated
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousAddRef(ref bool success);
@@ -309,7 +301,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // constitutes a potential security hole (via handle recycling) as well as a
     // correctness problem -- so don't ever expose Dangerous* calls out to
     // untrusted code.
-    [System.Security.SecurityCritical]  // auto-generated
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousRelease();

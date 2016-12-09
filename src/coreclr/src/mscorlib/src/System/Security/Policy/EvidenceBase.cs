@@ -22,9 +22,6 @@ namespace System.Security.Policy
     /// </summary>
     [ComVisible(true)]
     [Serializable]
-#pragma warning disable 618
-    [PermissionSet(SecurityAction.InheritanceDemand, Unrestricted = true)]
-#pragma warning restore 618
     public abstract class EvidenceBase
     {
         protected EvidenceBase()
@@ -44,11 +41,6 @@ namespace System.Security.Policy
         ///     Since legacy evidence objects would be cloned by being serialized, the default implementation
         ///     of EvidenceBase will do the same.
         /// </remarks>
-#pragma warning disable 618
-        [SecurityPermission(SecurityAction.Assert, SerializationFormatter = true)]
-        [PermissionSet(SecurityAction.InheritanceDemand, Unrestricted = true)]
-#pragma warning restore 618
-        [SecuritySafeCritical]
         public virtual EvidenceBase Clone()
         {
 #if FEATURE_SERIALIZATION
@@ -113,10 +105,6 @@ namespace System.Security.Policy
             return m_legacyEvidence.GetHashCode();
         }
 
-#pragma warning disable 618
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
-#pragma warning restore 618
-        [SecuritySafeCritical]
         public override EvidenceBase Clone()
         {
             return base.Clone();
@@ -181,10 +169,6 @@ namespace System.Security.Policy
             return m_legacyEvidenceList.GetEnumerator();
         }
 
-#pragma warning disable 618
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
-#pragma warning restore 618
-        [SecuritySafeCritical]
         public override EvidenceBase Clone()
         {
             return base.Clone();

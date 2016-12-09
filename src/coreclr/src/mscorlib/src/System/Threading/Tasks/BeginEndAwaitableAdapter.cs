@@ -108,7 +108,6 @@ internal sealed class BeginEndAwaitableAdapter : ICriticalNotifyCompletion {
 
     /// <summary>Schedules the continuation to run when the operation completes.</summary>
     /// <param name="continuation">The continuation.</param>
-    [SecurityCritical]
     public void UnsafeOnCompleted(Action continuation) {
 
         Contract.Assert(continuation != null);

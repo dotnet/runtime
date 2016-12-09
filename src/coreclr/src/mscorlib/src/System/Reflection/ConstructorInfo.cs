@@ -25,9 +25,6 @@ namespace System.Reflection
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_ConstructorInfo))]
-#pragma warning disable 618
-    [PermissionSetAttribute(SecurityAction.InheritanceDemand, Name = "FullTrust")]
-#pragma warning restore 618
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class ConstructorInfo : MethodBase, _ConstructorInfo
     {
@@ -202,7 +199,6 @@ namespace System.Reflection
 
         internal INVOCATION_FLAGS InvocationFlags
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 if ((m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
@@ -258,7 +254,6 @@ namespace System.Reflection
         #endregion
 
         #region Constructor
-        [System.Security.SecurityCritical]  // auto-generated
         internal RuntimeConstructorInfo(
             RuntimeMethodHandleInternal handle, RuntimeType declaringType, RuntimeTypeCache reflectedTypeCache,
             MethodAttributes methodAttributes, BindingFlags bindingFlags)
@@ -276,7 +271,6 @@ namespace System.Reflection
         #region NonPublic Methods
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return new RuntimeMethodHandleInternal(m_handle);
@@ -375,7 +369,6 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
@@ -400,7 +393,6 @@ namespace System.Reflection
         #region MemberInfo Overrides
         public override String Name
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return RuntimeMethodHandle.GetName(this); }
         }
 [System.Runtime.InteropServices.ComVisible(true)]
@@ -424,7 +416,6 @@ namespace System.Reflection
 
         public override int MetadataToken
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return RuntimeMethodHandle.GetMethodDef(this); }
         }
         public override Module Module
@@ -442,7 +433,6 @@ namespace System.Reflection
         // This seems to always returns System.Void.
         internal override Type GetReturnType() { return Signature.ReturnType; } 
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal override ParameterInfo[] GetParametersNoCopy()
         {
             if (m_parameters == null)
@@ -547,7 +537,6 @@ namespace System.Reflection
             throw new TargetException();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
@@ -617,7 +606,6 @@ namespace System.Reflection
         }
         
 
-        [System.Security.SecuritySafeCritical] // overrides SC member
 #pragma warning disable 618
         [ReflectionPermissionAttribute(SecurityAction.Demand, Flags = ReflectionPermissionFlag.MemberAccess)]
 #pragma warning restore 618
@@ -666,7 +654,6 @@ namespace System.Reflection
         #endregion
 
         #region ConstructorInfo Overrides
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
@@ -728,7 +715,6 @@ namespace System.Reflection
         #endregion
     
         #region ISerializable Implementation
-        [System.Security.SecurityCritical]  // auto-generated
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)

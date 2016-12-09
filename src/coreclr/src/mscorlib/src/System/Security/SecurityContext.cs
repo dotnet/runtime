@@ -51,13 +51,11 @@ namespace System.Security
         internal ExecutionContext currEC; // current ExecutionContext on Thread
         internal CompressedStackSwitcher cssw;
 
-        [System.Security.SecuritySafeCritical] // overrides public transparent member
         public void Dispose()
         {
             Undo();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions] 
@@ -75,7 +73,6 @@ namespace System.Security
             return true;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions] 
@@ -167,7 +164,6 @@ namespace System.Security
             
         static internal SecurityContext FullTrustSecurityContext
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_fullTrustSC == null)
@@ -203,19 +199,16 @@ namespace System.Security
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static AsyncFlowControl SuppressFlow()
         {
             return SuppressFlow(SecurityContextDisableFlow.All);
         }
         
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static AsyncFlowControl SuppressFlowWindowsIdentity()
         {
             return SuppressFlow(SecurityContextDisableFlow.WI);
         }
 
-        [SecurityCritical]
         internal static AsyncFlowControl SuppressFlow(SecurityContextDisableFlow flags)
         {
             if (IsFlowSuppressed(flags))
@@ -231,7 +224,6 @@ namespace System.Security
             return afc;
         }
 
-        [SecuritySafeCritical]
         public static void RestoreFlow()
         {
             SecurityContext sc = Thread.CurrentThread.GetMutableExecutionContext().SecurityContext;
@@ -247,7 +239,6 @@ namespace System.Security
             return SecurityContext.IsFlowSuppressed(SecurityContextDisableFlow.All);
         }
 
-        [SecuritySafeCritical]
         internal static bool IsFlowSuppressed(SecurityContextDisableFlow flags)
         {           
             return Thread.CurrentThread.GetExecutionContextReader().SecurityContext.IsFlowSuppressed(flags);
@@ -257,7 +248,6 @@ namespace System.Security
         // continue past the call to SecurityContext.Run.  If you change the signature to this method, or
         // provide an alternate way to do a SecurityContext.Run make sure to update
         // SecurityStackWalk::IsSpecialRunFrame in the VM to search for the new method.
-        [System.Security.SecurityCritical]  // auto-generated_required
         [DynamicSecurityMethodAttribute()]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static void Run(SecurityContext securityContext, ContextCallback callback, Object state)
@@ -303,7 +293,6 @@ namespace System.Security
             }
 
         }
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void RunInternal(SecurityContext securityContext, ContextCallback callBack, Object state)
         {
             if (cleanupCode == null)
@@ -331,7 +320,6 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         static internal void runTryCode(Object userData)
         {
             SecurityContextRunData rData = (SecurityContextRunData) userData;
@@ -340,7 +328,6 @@ namespace System.Security
             
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [PrePrepareMethod]
         static internal void runFinallyCode(Object userData, bool exceptionThrown)
         {
@@ -355,7 +342,6 @@ namespace System.Security
 
         // Internal API that gets called from public SetSecurityContext and from SetExecutionContext
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        [System.Security.SecurityCritical]  // auto-generated
         [DynamicSecurityMethodAttribute()]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         internal static SecurityContextSwitcher SetSecurityContext(SecurityContext sc, SecurityContext.Reader prevSecurityContext, bool modifyCurrentExecutionContext)
@@ -364,7 +350,6 @@ namespace System.Security
             return SetSecurityContext(sc, prevSecurityContext, modifyCurrentExecutionContext, ref stackMark);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
 #if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions] 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
@@ -404,7 +389,6 @@ namespace System.Security
         }
 
         /// <internalonly/>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public SecurityContext CreateCopy()
         {
             if (!isNewCapture)
@@ -423,7 +407,6 @@ namespace System.Security
         }
 
         /// <internalonly/>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal SecurityContext CreateMutableCopy()
         {
             Contract.Assert(!this.isNewCapture);
@@ -437,7 +420,6 @@ namespace System.Security
             return sc;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static SecurityContext Capture( )
         {
@@ -453,7 +435,6 @@ namespace System.Security
          }
 
         // create a clone from a non-existing SecurityContext
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static internal SecurityContext Capture(ExecutionContext.Reader currThreadEC, ref StackCrawlMark stackMark)
         {
@@ -468,7 +449,6 @@ namespace System.Security
             return CaptureCore(currThreadEC, ref stackMark);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         static private SecurityContext CaptureCore(ExecutionContext.Reader currThreadEC, ref StackCrawlMark stackMark)
         {
             SecurityContext sc = new SecurityContext();
@@ -479,7 +459,6 @@ namespace System.Security
             return sc;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         static internal SecurityContext CreateFullTrustSecurityContext()
         {
             SecurityContext sc = new SecurityContext();
@@ -499,7 +478,6 @@ namespace System.Security
             return (IsDefaultThreadSecurityInfo());
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal extern static bool IsDefaultThreadSecurityInfo();
     }

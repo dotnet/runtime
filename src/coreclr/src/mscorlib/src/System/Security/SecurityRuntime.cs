@@ -27,7 +27,6 @@ namespace System.Security
         //
         // Internal only, do not doc.
         // 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern 
         FrameSecurityDescriptor GetSecurityObjectForFrame(ref StackCrawlMark stackMark,
@@ -38,7 +37,6 @@ namespace System.Security
         internal const bool StackHalt      = false;
 
         // this method is a big perf hit, so don't call unnecessarily
-        [System.Security.SecurityCritical]  // auto-generated
         internal static MethodInfo GetMethodInfo(RuntimeMethodHandleInternal rmh)
         {
             if (rmh.IsNullHandle())
@@ -61,7 +59,6 @@ namespace System.Security
 #endif
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static bool FrameDescSetHelper(FrameSecurityDescriptor secDesc,
                                                PermissionSet demandSet,
                                                out PermissionSet alteredDemandSet,
@@ -70,7 +67,6 @@ namespace System.Security
             return secDesc.CheckSetDemand(demandSet, out alteredDemandSet, rmh);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static bool FrameDescHelper(FrameSecurityDescriptor secDesc,
                                                IPermission demandIn, 
                                                PermissionToken permToken,
@@ -80,7 +76,6 @@ namespace System.Security
         }
 
 #if FEATURE_COMPRESSEDSTACK
-        [System.Security.SecurityCritical]
         private static bool CheckDynamicMethodSetHelper(System.Reflection.Emit.DynamicResolver dynamicResolver,
                                                      PermissionSet demandSet,
                                                      out PermissionSet alteredDemandSet,
@@ -100,7 +95,6 @@ namespace System.Security
             return result;
         }
 
-        [System.Security.SecurityCritical]
         private static bool CheckDynamicMethodHelper(System.Reflection.Emit.DynamicResolver dynamicResolver,
                                              IPermission demandIn, 
                                              PermissionToken permToken,
@@ -124,22 +118,18 @@ namespace System.Security
         // API for PermissionSets
         //
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void Assert(PermissionSet permSet, ref StackCrawlMark stackMark)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void AssertAllPossible(ref StackCrawlMark stackMark)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void Deny(PermissionSet permSet, ref StackCrawlMark stackMark)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void PermitOnly(PermissionSet permSet, ref StackCrawlMark stackMark)
         {
         }
@@ -148,22 +138,18 @@ namespace System.Security
         // Revert API
         //
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertAssert(ref StackCrawlMark stackMark)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertDeny(ref StackCrawlMark stackMark)
         {
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertPermitOnly(ref StackCrawlMark stackMark)
         {
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void RevertAll(ref StackCrawlMark stackMark)
         {
         }

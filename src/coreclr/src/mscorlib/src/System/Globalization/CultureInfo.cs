@@ -146,7 +146,6 @@ namespace System.Globalization {
 
 #if FEATURE_APPX
         // When running under AppX, we use this to get some information about the language list
-        [SecurityCritical]
         private static volatile WindowsRuntimeResourceManagerBase s_WindowsRuntimeResourceManager;
 
         [ThreadStatic]
@@ -191,7 +190,6 @@ namespace System.Globalization {
             return true;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static CultureInfo InitUserDefaultCulture()
         {
             String strDefault = GetDefaultLocaleName(LOCALE_USER_DEFAULT);
@@ -235,7 +233,6 @@ namespace System.Globalization {
         }
 
 #if FEATURE_APPX
-        [SecuritySafeCritical]
         internal static CultureInfo GetCultureInfoForUserPreferredLanguageInAppX()
         {
             // If a call to GetCultureInfoForUserPreferredLanguageInAppX() generated a recursive
@@ -281,7 +278,6 @@ namespace System.Globalization {
             return toReturn;
         }
 
-        [SecuritySafeCritical]
         internal static bool SetCultureInfoForUserPreferredLanguageInAppX(CultureInfo ci)
         {
             // If running within a compilation process (mscorsvw.exe, for example), it is illegal to
@@ -829,10 +825,6 @@ namespace System.Globalization {
                 return s_DefaultThreadCurrentCulture;
             }
 
-            [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-            [SecurityPermission(SecurityAction.Demand, ControlThread = true)]
-#pragma warning restore 618
             set {
 
                 // If you add pre-conditions to this method, check to see if you also need to 
@@ -847,10 +839,6 @@ namespace System.Globalization {
                 return s_DefaultThreadCurrentUICulture;
             }
 
-            [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-            [SecurityPermission(SecurityAction.Demand, ControlThread = true)]
-#pragma warning restore 618
             set {
 
                 //If they're trying to use a Culture with a name that we can't use in resource lookup,
@@ -901,7 +889,6 @@ namespace System.Globalization {
 
         public virtual CultureInfo Parent
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<CultureInfo>() != null);
@@ -1051,7 +1038,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String DisplayName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -1071,7 +1057,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
         public virtual String NativeName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
                 return (this.m_cultureData.SNATIVEDISPLAYNAME);
@@ -1088,7 +1073,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
         public virtual String EnglishName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
                 return (this.m_cultureData.SENGDISPLAYNAME);
@@ -1097,7 +1081,6 @@ namespace System.Globalization {
       
         // ie: en
         public virtual String TwoLetterISOLanguageName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
                 return (this.m_cultureData.SISO639LANGNAME);
@@ -1106,7 +1089,6 @@ namespace System.Globalization {
 
         // ie: eng
         public virtual String ThreeLetterISOLanguageName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
                 return (this.m_cultureData.SISO639LANGNAME2);
@@ -1122,7 +1104,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
         public virtual String ThreeLetterWindowsLanguageName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
                 return (this.m_cultureData.SABBREVLANGNAME);
@@ -1489,7 +1470,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.InteropServices.ComVisible(false)]
         public CultureInfo GetConsoleFallbackUICulture()
         {
@@ -1896,19 +1876,15 @@ namespace System.Globalization {
         //
         
         // Get Locale Info Ex calls.  So we don't have to muck with the different int/string return types we declared two of these:
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String nativeGetLocaleInfoEx(String localeName, uint field);
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int nativeGetLocaleInfoExInt(String localeName, uint field);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool nativeSetThreadLocale(String localeName);
 
-        [System.Security.SecurityCritical]
         private static String GetDefaultLocaleName(int localeType)
         {
             Contract.Assert(localeType == LOCALE_USER_DEFAULT || localeType == LOCALE_SYSTEM_DEFAULT, "[CultureInfo.GetDefaultLocaleName] localeType must be LOCALE_USER_DEFAULT or LOCALE_SYSTEM_DEFAULT");
@@ -1922,13 +1898,11 @@ namespace System.Globalization {
         }
 
         // Get the default locale name
-        [System.Security.SecurityCritical]  // auto-generated
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetDefaultLocaleName(int localetype, StringHandleOnStack localeString);
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         private static String GetUserDefaultUILanguage()
         {
             string userDefaultUiLanguage = null;
@@ -1940,13 +1914,11 @@ namespace System.Globalization {
         }
         
         // Get the user's default UI language, return locale name
-        [System.Security.SecurityCritical]  // auto-generated
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetUserDefaultUILanguage(StringHandleOnStack userDefaultUiLanguage);
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         private static String GetSystemDefaultUILanguage()
         {
             string systemDefaultUiLanguage = null;
@@ -1958,7 +1930,6 @@ namespace System.Globalization {
 
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -1967,7 +1938,6 @@ namespace System.Globalization {
 
 // Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
 #if FEATURE_CORECLR
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String[] nativeGetResourceFallbackArray();
 #endif

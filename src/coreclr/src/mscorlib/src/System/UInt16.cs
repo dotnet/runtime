@@ -68,26 +68,22 @@ namespace System {
         }
 
         // Converts the current value to a String in base-10 with no extra padding.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatUInt32(m_value, format, NumberFormatInfo.GetInstance(provider));

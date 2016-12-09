@@ -44,7 +44,6 @@ namespace System.IO
             return new DirectoryInfo(s);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DirectoryInfo CreateDirectory(String path) {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -55,7 +54,6 @@ namespace System.IO
             return InternalCreateDirectoryHelper(path, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static DirectoryInfo UnsafeCreateDirectory(String path)
         {
             if (path == null)
@@ -67,7 +65,6 @@ namespace System.IO
             return InternalCreateDirectoryHelper(path, false);
         }
 
-        [System.Security.SecurityCritical] 
         internal static DirectoryInfo InternalCreateDirectoryHelper(String path, bool checkHost)
         {
             Contract.Requires(path != null);
@@ -123,7 +120,6 @@ namespace System.IO
         }
 
 
-        [System.Security.SecuritySafeCritical]
         internal unsafe static void InternalCreateDirectory(String fullPath, String path, Object dirSecurityObj, bool checkHost)
         {
             int length = fullPath.Length;
@@ -261,19 +257,16 @@ namespace System.IO
         // Your application must have Read permission to the directory's
         // contents.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool Exists(String path)
         {
             return InternalExistsHelper(path, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static bool UnsafeExists(String path)
         {
             return InternalExistsHelper(path, false);
         }
 
-        [System.Security.SecurityCritical]
         internal static bool InternalExistsHelper(String path, bool checkHost) {
             try
             {
@@ -308,7 +301,6 @@ namespace System.IO
 
         // Determine whether path describes an existing directory
         // on disk, avoiding security checks.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool InternalExists(String path) {
             int lastError = Win32Native.ERROR_SUCCESS;
             return InternalExists(path, out lastError);
@@ -316,7 +308,6 @@ namespace System.IO
 
         // Determine whether path describes an existing directory
         // on disk, avoiding security checks.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool InternalExists(String path, out int lastError) {
             Win32Native.WIN32_FILE_ATTRIBUTE_DATA data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
             lastError = File.FillAttributeInfo(path, ref data, false, true);
@@ -407,7 +398,6 @@ namespace System.IO
             return InternalGetFileDirectoryNames(path, path, searchPattern, true, false, searchOption, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static String[] UnsafeGetFiles(String path, String searchPattern, SearchOption searchOption)
         {
             Contract.Requires(path != null);
@@ -470,7 +460,6 @@ namespace System.IO
             return InternalGetFileDirectoryNames(path, path, searchPattern, false, true, searchOption, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static String[] UnsafeGetDirectories(String path, String searchPattern, SearchOption searchOption)
         {
             Contract.Requires(path != null);
@@ -723,7 +712,6 @@ namespace System.IO
         // 
         // Your application must have System Info permission.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String[] GetLogicalDrives()
         {
             Contract.Ensures(Contract.Result<String[]>() != null);
@@ -755,7 +743,6 @@ namespace System.IO
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]
         public static String GetDirectoryRoot(String path) {
             if (path==null)
                 throw new ArgumentNullException(nameof(path));
@@ -783,19 +770,16 @@ namespace System.IO
         **Arguments: The current DirectoryInfo to which to switch to the setter.
         **Exceptions: 
         ==============================================================================*/
-        [System.Security.SecuritySafeCritical]
         public static String GetCurrentDirectory()
         {
             return InternalGetCurrentDirectory(true);
         }
 
-        [System.Security.SecurityCritical]
         internal static String UnsafeGetCurrentDirectory()
         {
             return InternalGetCurrentDirectory(false);
         }
 
-        [System.Security.SecuritySafeCritical]
         private static string InternalGetCurrentDirectory(bool checkHost)
         {
             string currentDirectory = NewGetCurrentDirectory();
@@ -809,7 +793,6 @@ namespace System.IO
             return currentDirectory;
         }
 
-        [System.Security.SecurityCritical]
         private static string NewGetCurrentDirectory()
         {
             // Start with a buffer the size of MAX_PATH
@@ -837,7 +820,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public static void SetCurrentDirectory(String path)
         {
             if (path==null)
@@ -867,17 +849,14 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public static void Move(String sourceDirName,String destDirName) {
             InternalMove(sourceDirName, destDirName, true);
         }
 
-        [System.Security.SecurityCritical]
         internal static void UnsafeMove(String sourceDirName,String destDirName) {
             InternalMove(sourceDirName, destDirName, false);
         }
 
-        [System.Security.SecurityCritical]
         private static void InternalMove(String sourceDirName,String destDirName,bool checkHost) {
             if (sourceDirName==null)
                 throw new ArgumentNullException(nameof(sourceDirName));
@@ -937,21 +916,18 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public static void Delete(String path)
         {
             String fullPath = Path.GetFullPath(path);
             Delete(fullPath, path, false, true);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static void Delete(String path, bool recursive)
         {
             String fullPath = Path.GetFullPath(path);
             Delete(fullPath, path, recursive, true);
         }
 
-        [System.Security.SecurityCritical] 
         internal static void UnsafeDelete(String path, bool recursive)
         {
             String fullPath = Path.GetFullPath(path);
@@ -960,7 +936,6 @@ namespace System.IO
 
         // Called from DirectoryInfo as well.  FullPath is fully qualified,
         // while the user path is used for feedback in exceptions.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void Delete(String fullPath, String userPath, bool recursive, bool checkHost)
         {
             String demandPath;
@@ -1002,7 +977,6 @@ namespace System.IO
         // Note that fullPath is fully qualified, while userPath may be 
         // relative.  Use userPath for all exception messages to avoid leaking
         // fully qualified path information.
-        [System.Security.SecurityCritical]  // auto-generated
         private static void DeleteHelper(String fullPath, String userPath, bool recursive, bool throwOnTopLevelDirectoryNotFound)
         {
             bool r;

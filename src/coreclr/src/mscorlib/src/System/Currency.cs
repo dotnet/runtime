@@ -46,7 +46,6 @@ namespace System {
     
         // Converts a Currency to a Decimal.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal ToDecimal(Currency c)
         {
             Decimal result = new Decimal ();
@@ -54,7 +53,6 @@ namespace System {
             return result;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallToDecimal(ref Decimal result,Currency c);
     }

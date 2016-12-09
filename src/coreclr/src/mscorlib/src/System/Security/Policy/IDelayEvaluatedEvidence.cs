@@ -18,7 +18,6 @@ namespace System.Security.Policy {
         /// </summary>
         bool IsVerified 
         { 
-            [System.Security.SecurityCritical]
             get; 
         }
 
