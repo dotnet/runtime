@@ -433,12 +433,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        static public void ClearAllPools()
+        public static void ClearAllPools()
         {
             SqlConnectionFactory.SingletonInstance.ClearAllPools();
         }
 
-        static public void ClearPool(SqlConnection connection)
+        public static void ClearPool(SqlConnection connection)
         {
             ADP.CheckArgumentNull(connection, nameof(connection));
 

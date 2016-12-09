@@ -777,7 +777,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer02.i
         }
     }
 
-    static public class D
+    public static class D
     {
         public static int field = 1;
     }
@@ -1105,7 +1105,7 @@ public class US
         public int* ptr;
     }
 
-    static public class Ext
+    public static class Ext
     {
         public static void Foo(this US u, dynamic d)
         {

@@ -42,7 +42,7 @@ namespace System.Data
             ExceptionBuilder.TraceExceptionAsReturnValue(e);
             return e;
         }
-        static public Exception InvalidOffsetLength()
+        public static Exception InvalidOffsetLength()
         {
             return _Argument(Res.GetString(Res.Data_InvalidOffsetLength));
         }

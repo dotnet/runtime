@@ -42,7 +42,7 @@ namespace System.Xml
             return s.Value;
         }
 
-        static public XmlDictionaryString Empty
+        public static XmlDictionaryString Empty
         {
             get
             {

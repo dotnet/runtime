@@ -598,7 +598,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static MyStruct TestSetMyStruct(this int i)
         {

@@ -53,7 +53,7 @@ namespace OLEDB.Test.ModuleCore
             s_strCommandLine = null;
             s_hashOptions = null;
         }
-        static public string CommandLine
+        public static string CommandLine
         {
             // This Assert allows callers without the EnvironementPermission to use this property
             get
@@ -67,7 +67,7 @@ namespace OLEDB.Test.ModuleCore
                 s_strCommandLine = value;
             }
         }
-        static public MyDict<string, string> Options
+        public static MyDict<string, string> Options
         {
             get
             {
@@ -83,19 +83,19 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public string Filter
+        public static string Filter
         {
             //Typed options
             get { return (string)CModInfo.Options["Filter"]; }
         }
 
-        static public string MaxPriority
+        public static string MaxPriority
         {
             //Typed options
             get { return (string)CModInfo.Options["MaxPriority"]; }
         }
 
-        static public bool IncludeNotImplemented
+        public static bool IncludeNotImplemented
         {
             //Typed options
             get

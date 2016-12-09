@@ -4918,7 +4918,7 @@ namespace System.Reflection
         public void SetPublicKey(byte[] publicKey) { }
         public void SetPublicKeyToken(byte[] publicKeyToken) { }
         public override string ToString() { throw null; }
-        static public bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { throw null; }
+        public static bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
         public void OnDeserialization(Object sender) { throw null; }
