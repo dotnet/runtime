@@ -74,6 +74,30 @@ echo Generating config file.
 call %__ThisScriptPath%\ConfigFilesGenerators\GenerateConfig.cmd rt %__CoreclrBinPath% nc %__NugetCacheDir% cli %__CliPath%
 move Debugger.Tests.Config.txt %__InstallDir%\\Debugger.Tests\dotnet\Debugger.Tests.Config.txt
 
+REM =========================================================================================
+REM ===
+REM === Scripts generation.
+REM ===
+REM =========================================================================================
+mkdir %__InstallDir%\ScriptGenerator
+copy %__ThisScriptPath%\ScriptGenerator\*  %__InstallDir%\ScriptGenerator\
+pushd %__InstallDir%\ScriptGenerator
+%__CliPath%\dotnet restore
+%__CliPath%\dotnet build
+popd 
+
+%__CliPath%\dotnet run --project %__InstallDir%\ScriptGenerator %__InstallDir% %__CoreclrBinPath% %__InstallDir%\Dotnet.Tests\dotnet
+
+REM Deleting runtests.cmd to avoid double test-running.
+del %__InstallDir%\runtests.cmd
+
+if errorlevel 1 (
+    echo Failed to build and run script generation.
+    goto Fail
+)
+
+
+
 exit /b 0
 
 :Fail
