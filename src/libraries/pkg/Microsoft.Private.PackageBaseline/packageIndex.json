@@ -3157,6 +3157,11 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
+    },
+    "System.Configuration": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
     }
   },
   "ModulesToPackages": {
