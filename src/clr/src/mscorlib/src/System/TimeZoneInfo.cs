@@ -1006,7 +1006,12 @@ namespace System {
                     }
 
                     // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                    list.Sort(new TimeZoneInfoComparer());
+                    list.Sort((x, y) =>
+                    {
+                        // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                        int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                        return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                    });
 
                     cachedData.m_readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(list);
                 }          
@@ -5683,14 +5688,6 @@ namespace System {
                     m_state = State.StartOfToken;
                 }
                 return transition;
-            }
-        }
-
-        private class TimeZoneInfoComparer : System.Collections.Generic.IComparer<TimeZoneInfo> {
-            int System.Collections.Generic.IComparer<TimeZoneInfo>.Compare(TimeZoneInfo x, TimeZoneInfo y)  {
-                // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                return comparison == 0 ? String.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal) : comparison;
             }
         }
 
