@@ -305,40 +305,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message, Exception exception);
 
-#if !FEATURE_CORECLR
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]  // Our security team doesn't yet allow safe-critical P/Invoke methods.
-        [SuppressUnmanagedCodeSecurity]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal static extern void TriggerCodeContractFailure(ContractFailureKind failureKind, String message, String condition, String exceptionAsString);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]  // Our security team doesn't yet allow safe-critical P/Invoke methods.
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetIsCLRHosted();
-
-        internal static bool IsCLRHosted {
-            [SecuritySafeCritical]
-            get { return GetIsCLRHosted(); }
-        }
-
-        public static String CommandLine {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get {
-                new EnvironmentPermission(EnvironmentPermissionAccess.Read, "Path").Demand();
-
-                String commandLine = null;
-                GetCommandLine(JitHelpers.GetStringHandleOnStack(ref commandLine));
-                return commandLine;
-            }
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern void GetCommandLine(StringHandleOnStack retString);
-#endif // !FEATURE_CORECLR
-
         /*===============================CurrentDirectory===============================
         **Action:  Provides a getter and setter for the current directory.  The original
         **         current directory is the one from which the process was started.  
@@ -373,11 +339,6 @@ namespace System {
                 Contract.Assert(r < Path.MaxPath, "r < Path.MaxPath");
                 if (r==0) __Error.WinIOError();
                 String path = sb.ToString();
-                
-#if !FEATURE_CORECLR
-                // Do security check
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, path).Demand();
-#endif
 
                 return path;
             }
@@ -441,63 +402,6 @@ namespace System {
 
             int size;
 
-#if !FEATURE_CORECLR
-            bool isFullTrust = CodeAccessSecurityEngine.QuickCheckForAllDemands();
-
-            // Do a security check to guarantee we can read each of the 
-            // individual environment variables requested here.
-            String[] varArray = name.Split(new char[] {'%'});
-            StringBuilder vars = isFullTrust ? null : new StringBuilder();
-
-            bool fJustExpanded = false; // to accommodate expansion alg.
-
-            for(int i=1; i<varArray.Length-1; i++) { // Skip first and last tokens
-                // ExpandEnvironmentStrings' greedy algorithm expands every
-                // non-boundary %-delimited substring, provided the previous
-                // has not been expanded.
-                // if "foo" is not expandable, and "PATH" is, then both
-                // %foo%PATH% and %foo%foo%PATH% will expand PATH, but
-                // %PATH%PATH% will expand only once.
-                // Therefore, if we've just expanded, skip this substring.
-                if (varArray[i].Length == 0 || fJustExpanded == true)
-                {
-                    fJustExpanded = false;
-                    continue; // Nothing to expand
-                }
-                // Guess a somewhat reasonable initial size, call the method, then if
-                // it fails (ie, the return value is larger than our buffer size),
-                // make a new buffer & try again.
-                blob.Length = 0;
-                String envVar = "%" + varArray[i] + "%";
-                size = Win32Native.ExpandEnvironmentStrings(envVar, blob, currentSize);
-                if (size == 0)
-                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-
-                // some environment variable might be changed while this function is called
-                while (size > currentSize) {
-                    currentSize = size;
-                    blob.Capacity = currentSize;
-                    blob.Length = 0;
-                    size = Win32Native.ExpandEnvironmentStrings(envVar, blob, currentSize);
-                    if (size == 0)
-                        Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-                }
-
-                if (!isFullTrust) {
-                    String temp = blob.ToString();
-                    fJustExpanded = (temp != envVar);
-                    if (fJustExpanded) { // We expanded successfully, we need to do String comparison here
-                        // since %FOO% can become %FOOD
-                        vars.Append(varArray[i]);
-                        vars.Append(';');
-                    }
-                }
-            }
-     
-            if (!isFullTrust)
-                new EnvironmentPermission(EnvironmentPermissionAccess.Read, vars.ToString()).Demand();
-#endif // !FEATURE_CORECLR
-
             blob.Length = 0;
             size = Win32Native.ExpandEnvironmentStrings(name, blob, currentSize);
             if (size == 0)
@@ -530,9 +434,6 @@ namespace System {
 
                 // In future release of operating systems, you might be able to rename a machine without
                 // rebooting.  Therefore, don't cache this machine name.
-#if !FEATURE_CORECLR
-                new EnvironmentPermission(EnvironmentPermissionAccess.Read, "COMPUTERNAME").Demand();
-#endif
                 StringBuilder buf = new StringBuilder(MaxMachineNameLength);
                 int len = MaxMachineNameLength;
                 if (Win32Native.GetComputerName(buf, ref len) == 0)
@@ -574,7 +475,6 @@ namespace System {
         public static String[] GetCommandLineArgs()
         {
             new EnvironmentPermission(EnvironmentPermissionAccess.Read, "Path").Demand();
-#if FEATURE_CORECLR
             /*
              * There are multiple entry points to a hosted app.
              * The host could use ::ExecuteAssembly() or ::CreateDelegate option
@@ -590,7 +490,7 @@ namespace System {
              */
             if(s_CommandLineArgs != null)
                 return (string[])s_CommandLineArgs.Clone();
-#endif
+
             return GetCommandLineArgsNative();
         }
 
@@ -598,23 +498,11 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern String[] GetCommandLineArgsNative();
 
-#if !FEATURE_CORECLR
-        // We need to keep this Fcall since it is used in AppDomain.cs.
-        // If we call GetEnvironmentVariable from AppDomain.cs, we will use StringBuilder class.
-        // That has side effect to change the ApartmentState of the calling Thread to MTA.
-        // So runtime can't change the ApartmentState of calling thread any more.
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern String nativeGetEnvironmentVariable(String variable);
-#endif //!FEATURE_CORECLR
-
-#if FEATURE_CORECLR
         private static string[] s_CommandLineArgs = null;
         private static void SetCommandLineArgs(string[] cmdLineArgs)
         {
             s_CommandLineArgs = cmdLineArgs;
         }
-#endif
 
         private unsafe static char[] GetEnvironmentCharArray()
         {
@@ -873,9 +761,7 @@ namespace System {
             }
         }
 
-#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-#endif
         internal static String GetStackTrace(Exception e, bool needFileInfo)
         {
             // Note: Setting needFileInfo to true will start up COM and set our
@@ -917,20 +803,12 @@ namespace System {
             }
         }
 
-#if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static String GetResourceFromDefault(String key);           
-#endif
-
         // Looks up the resource string value for key.
         // 
         // if you change this method's signature then you must change the code that calls it
         // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
         // as well as metasig.h to create the new signature type
-#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-#endif
         // NoInlining causes the caller and callee to not be inlined in mscorlib as it is an assumption of StackCrawlMark use
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static String GetResourceStringLocal(String key) {
@@ -942,11 +820,7 @@ namespace System {
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal static String GetResourceString(String key) {
-#if FEATURE_CORECLR
             return GetResourceStringLocal(key);
-#else
-            return GetResourceFromDefault(key);
-#endif //FEATURE_CORECLR
         }
 
         // The reason the following overloads exist are to reduce code bloat.
@@ -1046,13 +920,6 @@ namespace System {
             get;
         }
 
-#if !FEATURE_CORECLR
-        // This is the temporary Whidbey stub for compatibility flags
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [System.Security.SecurityCritical]
-        internal static extern bool GetCompatibilityFlag(CompatibilityFlag flag);
-#endif //!FEATURE_CORECLR
-
         public static string UserName {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
@@ -1068,36 +935,11 @@ namespace System {
             }
         }
 
-        // Note that this is a handle to a process window station, but it does
-        // not need to be closed.  CloseWindowStation would ignore this handle.
-        // We also do handle equality checking as well.  This isn't a great fit
-        // for SafeHandle.  We don't gain anything by using SafeHandle here.
-#if !FEATURE_CORECLR
-        private static volatile IntPtr processWinStation;        // Doesn't need to be initialized as they're zero-init.
-        private static volatile bool isUserNonInteractive;   
-#endif
-
-        public static bool UserInteractive {
+        public static bool UserInteractive
+        {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
-#if !FEATURE_CORECLR
-                IntPtr hwinsta = Win32Native.GetProcessWindowStation();
-                if (hwinsta != IntPtr.Zero && processWinStation != hwinsta) {
-                    int lengthNeeded = 0;
-                    Win32Native.USEROBJECTFLAGS flags = new Win32Native.USEROBJECTFLAGS();
-                    if (Win32Native.GetUserObjectInformation(hwinsta, Win32Native.UOI_FLAGS, flags, Marshal.SizeOf(flags),ref lengthNeeded)) {
-                        if ((flags.dwFlags & Win32Native.WSF_VISIBLE) == 0) {
-                            isUserNonInteractive = true;
-                        }
-                    }
-                    processWinStation = hwinsta;
-                }
-
-                // The logic is reversed to avoid static initialization to true
-                return !isUserNonInteractive;
-#else
                 return true;
-#endif
             }
         }
         
@@ -1148,13 +990,6 @@ namespace System {
                     throw new PlatformNotSupportedException();
             }
 #else // FEATURE_CORESYSTEM
-#if !FEATURE_CORECLR
-            if (option == SpecialFolderOption.Create && !suppressSecurityChecks) {
-                FileIOPermission createPermission = new FileIOPermission(PermissionState.None);
-                createPermission.AllFiles = FileIOPermissionAccess.Write;
-                createPermission.Demand();
-            }
-#endif
 
             StringBuilder sb = new StringBuilder(Path.MaxPath);
             int hresult = Win32Native.SHGetFolderPath(IntPtr.Zero,                    /* hwndOwner: [in] Reserved */
@@ -1192,14 +1027,12 @@ namespace System {
                 // On CoreCLR we can check with the host if we're not trying to use any special options.
                 // Otherwise, we need to do a full demand since hosts aren't expecting to handle requests to
                 // create special folders.
-#if FEATURE_CORECLR
                 if (option == SpecialFolderOption.None)
                 {
                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, s);
                     state.EnsureState();
                 }
                 else
-#endif // FEATURE_CORECLR
                 {
                     new FileIOPermission(FileIOPermissionAccess.PathDiscovery, s).Demand();
                 }
@@ -1343,7 +1176,7 @@ namespace System {
             //          
             // "MyDocuments" is a better name than "Personal"
             //
-            MyDocuments = Win32Native.CSIDL_PERSONAL,                         
+            MyDocuments = Win32Native.CSIDL_PERSONAL,
             //  
             //     Represents the program files folder. 
             //  
@@ -1351,101 +1184,7 @@ namespace System {
             //  
             //     Represents the folder for components that are shared across applications. 
             //  
-            CommonProgramFiles =  Win32Native.CSIDL_PROGRAM_FILES_COMMON,            
-#if !FEATURE_CORECLR
-            //
-            //      <user name>\Start Menu\Programs\Administrative Tools
-            //
-            AdminTools             = Win32Native.CSIDL_ADMINTOOLS,
-            //
-            //      USERPROFILE\Local Settings\Application Data\Microsoft\CD Burning
-            //
-            CDBurning              = Win32Native.CSIDL_CDBURN_AREA,
-            //
-            //      All Users\Start Menu\Programs\Administrative Tools
-            //
-            CommonAdminTools       = Win32Native.CSIDL_COMMON_ADMINTOOLS,
-            //
-            //      All Users\Documents
-            //
-            CommonDocuments        = Win32Native.CSIDL_COMMON_DOCUMENTS,
-            //
-            //      All Users\My Music
-            //
-            CommonMusic            = Win32Native.CSIDL_COMMON_MUSIC,
-            //
-            //      Links to All Users OEM specific apps
-            //
-            CommonOemLinks         = Win32Native.CSIDL_COMMON_OEM_LINKS,
-            //
-            //      All Users\My Pictures
-            //
-            CommonPictures         = Win32Native.CSIDL_COMMON_PICTURES,
-            //
-            //      All Users\Start Menu
-            //
-            CommonStartMenu        = Win32Native.CSIDL_COMMON_STARTMENU,
-            //
-            //      All Users\Start Menu\Programs
-            //
-            CommonPrograms         = Win32Native.CSIDL_COMMON_PROGRAMS,
-            //
-            //     All Users\Startup
-            //
-            CommonStartup          = Win32Native.CSIDL_COMMON_STARTUP,
-            //
-            //      All Users\Desktop
-            //
-            CommonDesktopDirectory = Win32Native.CSIDL_COMMON_DESKTOPDIRECTORY,
-            //
-            //      All Users\Templates
-            //
-            CommonTemplates        = Win32Native.CSIDL_COMMON_TEMPLATES,
-            //
-            //      All Users\My Video
-            //
-            CommonVideos           = Win32Native.CSIDL_COMMON_VIDEO,
-            //
-            //      windows\fonts
-            //
-            Fonts                  = Win32Native.CSIDL_FONTS,
-            //
-            //      %APPDATA%\Microsoft\Windows\Network Shortcuts
-            //
-            NetworkShortcuts       = Win32Native.CSIDL_NETHOOD,
-            //
-            //      %APPDATA%\Microsoft\Windows\Printer Shortcuts
-            //
-            PrinterShortcuts       = Win32Native.CSIDL_PRINTHOOD,
-            //
-            //      USERPROFILE
-            //
-            UserProfile            = Win32Native.CSIDL_PROFILE,
-            //
-            //      x86 Program Files\Common on RISC
-            //
-            CommonProgramFilesX86  = Win32Native.CSIDL_PROGRAM_FILES_COMMONX86,
-            //
-            //      x86 C:\Program Files on RISC
-            //
-            ProgramFilesX86        = Win32Native.CSIDL_PROGRAM_FILESX86,
-            //
-            //      Resource Directory
-            //
-            Resources              = Win32Native.CSIDL_RESOURCES,
-            //
-            //      Localized Resource Directory
-            //
-            LocalizedResources     = Win32Native.CSIDL_RESOURCES_LOCALIZED,
-            //
-            //      %windir%\System32 or %windir%\syswow64
-            //
-            SystemX86               = Win32Native.CSIDL_SYSTEMX86,
-            //
-            //      GetWindowsDirectory()
-            //
-            Windows                = Win32Native.CSIDL_WINDOWS,
-#endif // !FEATURE_CORECLR
+            CommonProgramFiles =  Win32Native.CSIDL_PROGRAM_FILES_COMMON,
         }
 
         public static int CurrentManagedThreadId

@@ -93,19 +93,6 @@ namespace System.Security
             return ((SecurityElement)this).Attribute( attributeName );
         }
 
-//////////////
-
-#if FEATURE_CAS_POLICY
-        public static SecurityElement FromString( String xml )
-        {
-            if (xml == null)
-                throw new ArgumentNullException( nameof(xml) );
-            Contract.EndContractBlock();
-
-            return new Parser( xml ).GetTopElement();
-        }
-#endif // FEATURE_CAS_POLICY
-    
         public SecurityElement( String tag )
         {
             if (tag == null)
@@ -830,38 +817,6 @@ namespace System.Security
             }
             return null;
         }
-
-#if FEATURE_CAS_POLICY
-        internal IPermission ToPermission(bool ignoreTypeLoadFailures)
-        {
-            IPermission ip = XMLUtil.CreatePermission( this, PermissionState.None, ignoreTypeLoadFailures );
-            if (ip == null)
-                return null;
-            ip.FromXml(this);
-
-            // Get the permission token here to ensure that the token
-            // type is updated appropriately now that we've loaded the type.
-            PermissionToken token = PermissionToken.GetToken( ip );
-            Contract.Assert((token.m_type & PermissionTokenType.DontKnow) == 0, "Token type not properly assigned");
-
-            return ip;            
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        internal Object ToSecurityObject()
-        {
-            switch (m_strTag)
-            {
-                case "PermissionSet":
-                    PermissionSet pset = new PermissionSet(PermissionState.None);
-                    pset.FromXml(this);
-                    return pset;
-
-                default:
-                    return ToPermission(false);
-            }
-        }
-#endif // FEATURE_CAS_POLICY
 
         internal String SearchForTextOfLocalName(String strLocalName) 
         {

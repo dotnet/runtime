@@ -144,13 +144,8 @@ namespace System.Security {
         [System.Security.SecurityCritical]  // auto-generated
         internal void SetDeny(IPermission perm)
         {
-#if FEATURE_CAS_POLICY
-            BCLDebug.Assert(AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled, "Deny is only valid in legacy CAS mode");
-#endif // FEATURE_CAS_POLICY
-
             m_denials = CreateSingletonSet(perm);
             IncrementOverridesCount();
-
         }
         
         [System.Security.SecurityCritical]  // auto-generated

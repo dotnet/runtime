@@ -12,8 +12,8 @@
 **
 ** 
 ===========================================================*/
-namespace System {
-    
+namespace System
+{
     using System;
     using System.Collections;
     using System.Threading;
@@ -180,9 +180,6 @@ namespace System {
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-#if !FEATURE_CORECLR
-        [ReflectionPermissionAttribute(SecurityAction.Assert, MemberAccess=true)]
-#endif
         private Object CreateEventProvider(RuntimeType t)
         {
             // Create the event provider for the specified type.

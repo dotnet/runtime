@@ -158,19 +158,6 @@ namespace System.Security.Permissions {
         {
             return BuiltInPermissionIndex.IsolatedStorageFilePermissionIndex;
         }
-
-        //------------------------------------------------------
-        //
-        // IsolatedStoragePermission OVERRIDES
-        //
-        //------------------------------------------------------
-#if FEATURE_CAS_POLICY
-        [System.Runtime.InteropServices.ComVisible(false)]
-        public override SecurityElement ToXml()
-        {
-            return base.ToXml( "System.Security.Permissions.IsolatedStorageFilePermission" );
-        }
-#endif // FEATURE_CAS_POLICY
     }
 }
 

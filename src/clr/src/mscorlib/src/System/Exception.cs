@@ -321,23 +321,11 @@ namespace System {
         // is true.  Note that this requires FileIOPermission(PathDiscovery), and so
         // will usually fail in CoreCLR.  To avoid the demand and resulting
         // SecurityException we can explicitly not even try to get fileinfo.
-#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-#endif
         private string GetStackTrace(bool needFileInfo)
         {
             string stackTraceString = _stackTraceString;
             string remoteStackTraceString = _remoteStackTraceString;
-
-#if !FEATURE_CORECLR
-            if (!needFileInfo)
-            {
-                // Filter out file names/paths and line numbers from _stackTraceString and _remoteStackTraceString.
-                // This is used only when generating stack trace for Watson where the strings must be PII-free.
-                stackTraceString = StripFileInfo(stackTraceString, false);
-                remoteStackTraceString = StripFileInfo(remoteStackTraceString, true);
-            }
-#endif // !FEATURE_CORECLR
 
             // if no stack trace, try to get one
             if (stackTraceString != null)
@@ -380,9 +368,7 @@ namespace System {
         }
     
         public virtual String Source {
-#if FEATURE_CORECLR
             [System.Security.SecurityCritical] // auto-generated
-#endif
             get { 
                 if (_source == null)
                 {
@@ -411,9 +397,7 @@ namespace System {
 
                 return _source;
             }
-#if FEATURE_CORECLR
             [System.Security.SecurityCritical] // auto-generated
-#endif
             set { _source = value; }
         }
 
@@ -756,12 +740,6 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CopyDynamicMethods(object currentDynamicMethods);
-
-#if !FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern string StripFileInfo(string stackTrace, bool isRemoteStackTrace);
-#endif // !FEATURE_CORECLR
 
         [SecuritySafeCritical]
         internal object DeepCopyStackTrace(object currentStackTrace)

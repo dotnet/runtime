@@ -106,11 +106,6 @@ namespace System.Globalization {
             this.m_cultureData = cultureData;
             this.m_cultureName = this.m_cultureData.CultureName;
             this.m_textInfoName = this.m_cultureData.STEXTINFO;
-#if !FEATURE_CORECLR
-            IntPtr handleOrigin;
-            this.m_dataHandle = CompareInfo.InternalInitSortHandle(m_textInfoName, out handleOrigin);
-            this.m_handleOrigin = handleOrigin;
-#endif
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -179,30 +174,18 @@ namespace System.Globalization {
                 // Get the text info name belonging to that culture
                 this.m_cultureData = CultureInfo.GetCultureInfo(m_cultureName).m_cultureData;
                 this.m_textInfoName = this.m_cultureData.STEXTINFO;
-#if !FEATURE_CORECLR
-                IntPtr handleOrigin;
-                this.m_dataHandle = CompareInfo.InternalInitSortHandle(m_textInfoName, out handleOrigin);
-                this.m_handleOrigin = handleOrigin;
-#endif
-            }            
+            }
         }
 
-        
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
             OnDeserialized();
-        }   
-        
+        }
+
         [OnSerializing]
         private void OnSerializing(StreamingContext ctx) 
-        { 
-#if !FEATURE_CORECLR
-            // Initialize the fields Whidbey expects:
-            // Whidbey expected this, so set it, but the value doesn't matter much
-            this.m_useUserOverride = false;
-#endif // FEATURE_CORECLR
-
+        {
             // Relabel our name since Whidbey expects it to be called customCultureName
             this.customCultureName = this.m_cultureName;
 

@@ -218,36 +218,6 @@ namespace System.Reflection.Emit
             m_methodBuilder.SetMethodBody(il, maxStack, localSignature, exceptionHandlers, tokenFixups);
         }
 
-#if FEATURE_CAS_POLICY
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public void AddDeclarativeSecurity(SecurityAction action, PermissionSet pset)
-        {
-            if (pset == null)
-                throw new ArgumentNullException(nameof(pset));
-
-#pragma warning disable 618
-            if (!Enum.IsDefined(typeof(SecurityAction), action) ||
-                action == SecurityAction.RequestMinimum ||
-                action == SecurityAction.RequestOptional ||
-                action == SecurityAction.RequestRefuse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(action));
-            }
-#pragma warning restore 618
-            Contract.EndContractBlock();
-
-            // Cannot add declarative security after type is created.
-            if (m_methodBuilder.IsTypeCreated())
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TypeHasBeenCreated"));
-    
-            // Translate permission set into serialized format (use standard binary serialization).
-            byte[] blob = pset.EncodeXml();
-    
-            // Write the blob into the metadata.
-            TypeBuilder.AddDeclarativeSecurity(GetModuleBuilder().GetNativeHandle(), GetToken().Token, action, blob, blob.Length);
-        }
-#endif // FEATURE_CAS_POLICY
-
         public override CallingConventions CallingConvention 
         { 
             get 

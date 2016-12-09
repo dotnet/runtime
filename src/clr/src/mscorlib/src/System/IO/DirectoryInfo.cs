@@ -19,9 +19,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security;
-#if FEATURE_MACL
-using System.Security.AccessControl;
-#endif
 using System.Security.Permissions;
 using Microsoft.Win32;
 using System.Text;
@@ -31,14 +28,15 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
-namespace System.IO {
+namespace System.IO
+{
     [Serializable]
     [ComVisible(true)]
-    public sealed class DirectoryInfo : FileSystemInfo {
+    public sealed class DirectoryInfo : FileSystemInfo
+    {
         private String[] demandDir;
 
-#if FEATURE_CORECLR
-         // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
+        // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
 #if FEATURE_CORESYSTEM
         [System.Security.SecurityCritical]
 #else
@@ -58,7 +56,6 @@ namespace System.IO {
             di.Init(path, false);
             return di;
         }
-#endif
 
         [System.Security.SecuritySafeCritical]
         public DirectoryInfo(String path)
@@ -87,15 +84,12 @@ namespace System.IO {
             String fullPath = Path.GetFullPath(path);
 
             demandDir = new String[] {Directory.GetDemandDir(fullPath, true)};
-#if FEATURE_CORECLR
+
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, OriginalPath, fullPath);
                 state.EnsureState();
             }
-#else
-            new FileIOPermission(FileIOPermissionAccess.Read, demandDir, false, false ).Demand();
-#endif
 
             FullPath = fullPath;
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
@@ -118,23 +112,15 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated
         private DirectoryInfo(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-#if !FEATURE_CORECLR
-            demandDir = new String[] {Directory.GetDemandDir(FullPath, true)};
-            new FileIOPermission(FileIOPermissionAccess.Read, demandDir, false, false ).Demand();
-#endif
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
         }
 
-        public override String Name {
+        public override String Name
+        {
             get 
             {
-#if FEATURE_CORECLR
                 // DisplayPath is dir name for coreclr
                 return DisplayPath;
-#else
-                // Return just dir name
-                return GetDirName(FullPath);
-#endif
             }
         }
 
@@ -161,10 +147,7 @@ namespace System.IO {
             }
         }
 
-      
-#if FEATURE_CORECLR
         [System.Security.SecuritySafeCritical]
-#endif
         public DirectoryInfo CreateSubdirectory(String path) {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -173,16 +156,7 @@ namespace System.IO {
             return CreateSubdirectory(path, null);
         }
 
-#if FEATURE_MACL
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public DirectoryInfo CreateSubdirectory(String path, DirectorySecurity directorySecurity)
-        {
-            return CreateSubdirectoryHelper(path, directorySecurity);
-        }
-#else  // FEATURE_MACL
-        #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
         public DirectoryInfo CreateSubdirectory(String path, Object directorySecurity)
         {
             if (path == null)
@@ -191,7 +165,6 @@ namespace System.IO {
 
             return CreateSubdirectoryHelper(path, directorySecurity);
         }
-#endif // FEATURE_MACL
 
         [System.Security.SecurityCritical]  // auto-generated
         private DirectoryInfo CreateSubdirectoryHelper(String path, Object directorySecurity)
@@ -208,12 +181,8 @@ namespace System.IO {
 
             // Ensure we have permission to create this subdirectory.
             String demandDirForCreation = Directory.GetDemandDir(fullPath, true);
-#if FEATURE_CORECLR
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, OriginalPath, demandDirForCreation);
             state.EnsureState();
-#else
-            new FileIOPermission(FileIOPermissionAccess.Write, new String[] { demandDirForCreation }, false, false).Demand();
-#endif
 
             Directory.InternalCreateDirectory(fullPath, path, directorySecurity);
 
@@ -225,13 +194,6 @@ namespace System.IO {
         {
             Directory.InternalCreateDirectory(FullPath, OriginalPath, null, true);
         }
-
-#if FEATURE_MACL
-        public void Create(DirectorySecurity directorySecurity)
-        {
-            Directory.InternalCreateDirectory(FullPath, OriginalPath, directorySecurity, true);
-        }
-#endif
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         // 
@@ -257,23 +219,6 @@ namespace System.IO {
                 }
             }
         }
-      
-#if FEATURE_MACL
-        public DirectorySecurity GetAccessControl()
-        {
-            return Directory.GetAccessControl(FullPath, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
-        }
-
-        public DirectorySecurity GetAccessControl(AccessControlSections includeSections)
-        {
-            return Directory.GetAccessControl(FullPath, includeSections);
-        }
-
-        public void SetAccessControl(DirectorySecurity directorySecurity)
-        {
-            Directory.SetAccessControl(FullPath, directorySecurity);
-        }
-#endif
 
         // Returns an array of Files in the current DirectoryInfo matching the 
         // given search criteria (ie, "*.txt").

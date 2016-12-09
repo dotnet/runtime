@@ -361,10 +361,6 @@ namespace System.Runtime.CompilerServices
                     }
                     if (eventArgs.Unwind)
                     {
-#if !FEATURE_CORECLR 
-                        if (Environment.IsCLRHosted)
-                            TriggerCodeContractEscalationPolicy(failureKind, displayMessage, conditionText, innerException);
-#endif
                         // unwind
                         if (innerException == null) { innerException = eventArgs.thrownDuringHandler; }
                         throw new ContractException(failureKind, displayMessage, userMessage, conditionText, innerException);
@@ -393,9 +389,6 @@ namespace System.Runtime.CompilerServices
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "innerException")]
         [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_UNTRUSTED_CALLERS && !FEATURE_CORECLR
-        [SecuritySafeCritical]
-#endif
         static partial void TriggerFailureImplementation(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
         {
             // If we're here, our intent is to pop up a dialog box (if we can).  For developers 
@@ -403,21 +396,12 @@ namespace System.Runtime.CompilerServices
             // hosted in Internet Explorer, the assert window is great.  If we cannot
             // pop up a dialog box, throw an exception (consider a library compiled with 
             // "Assert On Failure" but used in a process that can't pop up asserts, like an 
-            // NT Service).  For the CLR hosted by server apps like SQL or Exchange, we should 
-            // trigger escalation policy.  
-#if !FEATURE_CORECLR
-            if (Environment.IsCLRHosted)
-            {
-                TriggerCodeContractEscalationPolicy(kind, displayMessage, conditionText, innerException);
-                // Hosts like SQL may choose to abort the thread, so we will not get here in all cases.
-                // But if the host's chosen action was to throw an exception, we should throw an exception
-                // here (which is easier to do in managed code with the right parameters).  
-                throw new ContractException(kind, displayMessage, userMessage, conditionText, innerException);
-            }
-#endif // !FEATURE_CORECLR
+            // NT Service).
+
             if (!Environment.UserInteractive) {
                 throw new ContractException(kind, displayMessage, userMessage, conditionText, innerException);
             }
+
             // May need to rethink Assert.Fail w/ TaskDialogIndirect as a model.  Window title.  Main instruction.  Content.  Expanded info.
             // Optional info like string for collapsed text vs. expanded text.
             String windowTitle = Environment.GetResourceString(GetResourceNameForFailure(kind));
@@ -494,28 +478,6 @@ namespace System.Runtime.CompilerServices
                 return failureMessage;
             }
         }
-
-#if !FEATURE_CORECLR
-        // Will trigger escalation policy, if hosted and the host requested us to do something (such as 
-        // abort the thread or exit the process).  Starting in Dev11, for hosted apps the default behavior 
-        // is to throw an exception.  
-        // Implementation notes:
-        // We implement our default behavior of throwing an exception by simply returning from our native 
-        // method inside the runtime and falling through to throw an exception.
-        // We must call through this method before calling the method on the Environment class
-        // because our security team does not yet support SecuritySafeCritical on P/Invoke methods.
-        // Note this can be called in the context of throwing another exception (EnsuresOnThrow).
-        [SecuritySafeCritical]
-        [DebuggerNonUserCode]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        private static void TriggerCodeContractEscalationPolicy(ContractFailureKind failureKind, String message, String conditionText, Exception innerException)
-        {
-            String exceptionAsString = null;
-            if (innerException != null)
-                exceptionAsString = innerException.ToString();
-            Environment.TriggerCodeContractFailure(failureKind, message, conditionText, exceptionAsString);
-        }
-#endif // !FEATURE_CORECLR
     }
 }  // namespace System.Runtime.CompilerServices
 

@@ -66,10 +66,6 @@ namespace System.Globalization {
         internal bool m_isReadOnly;
         internal CompareInfo compareInfo;
         internal TextInfo textInfo;
-        // Not serialized for now since we only build it privately for use in the CARIB (so rebuilding is OK)
-#if !FEATURE_CORECLR
-        [NonSerialized]internal RegionInfo regionInfo;
-#endif
         internal NumberFormatInfo numInfo;
         internal DateTimeFormatInfo dateTimeInfo;
         internal Calendar calendar;
@@ -670,9 +666,6 @@ namespace System.Globalization {
             get {
                 Contract.Ensures(Contract.Result<CultureInfo>() != null);
 
-#if !FEATURE_CORECLR
-                return Thread.CurrentThread.CurrentCulture;
-#else
                 // In the case of CoreCLR, Thread.m_CurrentCulture and
                 // Thread.m_CurrentUICulture are thread static so as not to let
                 // CultureInfo objects leak across AppDomain boundaries. The
@@ -693,7 +686,6 @@ namespace System.Globalization {
                     s_DefaultThreadCurrentCulture ??
                     s_userDefaultCulture ??
                     UserDefaultCulture;
-#endif
             }
 
             set {
@@ -768,9 +760,6 @@ namespace System.Globalization {
             get {
                 Contract.Ensures(Contract.Result<CultureInfo>() != null);
 
-#if !FEATURE_CORECLR
-                return Thread.CurrentThread.CurrentUICulture;
-#else
                 // In the case of CoreCLR, Thread.m_CurrentCulture and
                 // Thread.m_CurrentUICulture are thread static so as not to let
                 // CultureInfo objects leak across AppDomain boundaries. The
@@ -791,7 +780,6 @@ namespace System.Globalization {
                     s_DefaultThreadCurrentUICulture ??
                     s_userDefaultUICulture ??
                     UserDefaultUICulture;
-#endif
             }
 
             set {
@@ -1174,31 +1162,6 @@ namespace System.Globalization {
             }
         }
 
-#if !FEATURE_CORECLR
-        ////////////////////////////////////////////////////////////////////////
-        //
-        //  RegionInfo
-        //
-        //  Gets the RegionInfo for this culture.
-        //
-        ////////////////////////////////////////////////////////////////////////
-        private RegionInfo Region
-        {
-            get
-            {
-                if (regionInfo==null)
-                {
-                    // Make a new regionInfo
-                    RegionInfo tempRegionInfo = new RegionInfo(this.m_cultureData);
-                    regionInfo = tempRegionInfo;
-                }
-                return (regionInfo);
-            }
-        }
-#endif // FEATURE_CORECLR
-
-
-
         ////////////////////////////////////////////////////////////////////////
         //
         //  TextInfo
@@ -1395,17 +1358,16 @@ namespace System.Globalization {
             }
         }
 
-
-
         public void ClearCachedData() {
             s_userDefaultUICulture = null;
             s_userDefaultCulture = null;
 
             RegionInfo.s_currentRegionInfo = null;
-#if !FEATURE_CORECLR // System.TimeZone does not exist in CoreCLR
+#pragma warning disable CS0618
             TimeZone.ResetTimeZone();
-#endif // FEATURE_CORECLR
+#pragma warning restore CS0618
             TimeZoneInfo.ClearCachedData();
+
             // Delete the cached cultures.
             s_LcidCachedCultures = null;
             s_NameCachedCultures = null;

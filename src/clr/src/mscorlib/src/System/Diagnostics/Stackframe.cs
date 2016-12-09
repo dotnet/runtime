@@ -11,13 +11,7 @@ namespace System.Diagnostics {
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
-    // There is no good reason for the methods of this class to be virtual.  
-    // In order to ensure trusted code can trust the data it gets from a 
-    // StackTrace, we use an InheritanceDemand to prevent partially-trusted
-    // subclasses.
-#if !FEATURE_CORECLR
-    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
-#endif
+    // There is no good reason for the methods of this class to be virtual.
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StackFrame

@@ -35,12 +35,7 @@ namespace System.Security.Util  {
         //
         
         private const String BuiltInPermission = "System.Security.Permissions.";
-#if FEATURE_CAS_POLICY        
-        private const String BuiltInMembershipCondition = "System.Security.Policy.";
-        private const String BuiltInCodeGroup = "System.Security.Policy.";
-        private const String BuiltInApplicationSecurityManager = "System.Security.Policy.";
-        private static readonly char[] sepChar =  {',', ' '};
-#endif        
+
         public static SecurityElement
         NewPermissionElement (IPermission ip)
         {
@@ -175,28 +170,6 @@ namespace System.Security.Util  {
             return false;
         }
 
-#if FEATURE_CAS_POLICY
-        public static String SecurityObjectToXmlString(Object ob)
-        {
-            if(ob == null)
-                return "";
-            PermissionSet pset = ob as PermissionSet;
-            if(pset != null)
-                return pset.ToXml().ToString();
-            return ((IPermission)ob).ToXml().ToString();
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        public static Object XmlStringToSecurityObject(String s)
-        {
-            if(s == null)
-                return null;
-            if(s.Length < 1)
-                return null;
-            return SecurityElement.FromString(s).ToSecurityObject();
-        }
-#endif // FEATURE_CAS_POLICY
-
         [SecuritySafeCritical]
         public static IPermission
         CreatePermission (SecurityElement el, PermissionState permState, bool ignoreTypeLoadFailures)
@@ -235,9 +208,6 @@ namespace System.Security.Util  {
             // UnsafeForHostPermission
             // HostProtectionPermission
             // StrongNameIdentityPermission
-#if !FEATURE_CORECLR                              
-            // IsolatedStorageFilePermission
-#endif
             // RegistryPermission
             // PublisherIdentityPermission
 
@@ -274,15 +244,6 @@ namespace System.Security.Util  {
                         else
                             goto USEREFLECTION;
                     }
-                  
-#if !FEATURE_CORECLR              
-                case 19:
-                    // PrincipalPermission
-                    if (String.Compare(className, classNameStart, "PrincipalPermission", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new PrincipalPermission( permState );
-                    else
-                        goto USEREFLECTION;
-#endif // !FEATURE_CORECLR
                 case 20:
                     // ReflectionPermission
                     // FileDialogPermission
@@ -326,8 +287,6 @@ namespace System.Security.Util  {
                         else
                             goto USEREFLECTION;
                     }
-
-                            
                 case 22:
                     // SiteIdentityPermission
                     // ZoneIdentityPermission
@@ -353,42 +312,22 @@ namespace System.Security.Util  {
                         else
                             goto USEREFLECTION;
                     }
-
-
                 case 24:
                     // HostProtectionPermission
                     if (String.Compare(className, classNameStart, "HostProtectionPermission", 0, classNameLength, StringComparison.Ordinal) == 0)
                         return new HostProtectionPermission( permState );
                     else
                         goto USEREFLECTION;
-
-#if FEATURE_X509 && FEATURE_CAS_POLICY
-                case 27:
-                    // PublisherIdentityPermission
-                    if (String.Compare(className, classNameStart, "PublisherIdentityPermission", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new PublisherIdentityPermission( permState );
-                    else
-                        goto USEREFLECTION;
-#endif // FEATURE_X509 && FEATURE_CAS_POLICY
-
                 case 28:
                     // StrongNameIdentityPermission
                     if (String.Compare(className, classNameStart, "StrongNameIdentityPermission", 0, classNameLength, StringComparison.Ordinal) == 0)
                         return new StrongNameIdentityPermission( permState );
                     else
                         goto USEREFLECTION;
-#if !FEATURE_CORECLR                                                          
-                case 29:
-                    // IsolatedStorageFilePermission
-                    if (String.Compare(className, classNameStart, "IsolatedStorageFilePermission", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new IsolatedStorageFilePermission( permState );
-                    else
-                        goto USEREFLECTION;
-#endif                            
                 default:
                     goto USEREFLECTION;
             }
-    
+
 USEREFLECTION:
 
             Object[] objs = new Object[1];
@@ -409,204 +348,6 @@ USEREFLECTION:
             return perm;
         }
 
-#if FEATURE_CAS_POLICY
-#pragma warning disable 618 // CodeGroups are obsolete
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static CodeGroup
-        CreateCodeGroup (SecurityElement el)
-        {
-            if (el == null || !el.Tag.Equals("CodeGroup"))
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_WrongElementType" ), "<CodeGroup>" ) ) ;
-            Contract.EndContractBlock();
-    
-            String className;
-            int classNameLength;
-            int classNameStart;
-
-            if (!ParseElementForObjectCreation( el,
-                                                BuiltInCodeGroup,
-                                                out className,
-                                                out classNameStart,
-                                                out classNameLength ))
-            {
-                goto USEREFLECTION;
-            }
-    
-            switch (classNameLength)
-            {
-                case 12:
-                    // NetCodeGroup
-                    if (String.Compare(className, classNameStart, "NetCodeGroup", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new NetCodeGroup();
-                    else
-                        goto USEREFLECTION;
-
-                case 13:
-                    // FileCodeGroup
-                    if (String.Compare(className, classNameStart, "FileCodeGroup", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new FileCodeGroup();
-                    else
-                        goto USEREFLECTION;
-                case 14:
-                    // UnionCodeGroup
-                    if (String.Compare(className, classNameStart, "UnionCodeGroup", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new UnionCodeGroup();
-                    else
-                        goto USEREFLECTION;
-                                
-                case 19:
-                    // FirstMatchCodeGroup
-                    if (String.Compare(className, classNameStart, "FirstMatchCodeGroup", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new FirstMatchCodeGroup();
-                    else
-                        goto USEREFLECTION;
-
-                default:
-                    goto USEREFLECTION;
-            }
-
-USEREFLECTION: 
-            Type groupClass = null;
-            CodeGroup group = null;
-
-            new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Assert();
-            groupClass = GetClassFromElement(el, true);
-            if (groupClass == null)
-                return null;
-            if (!(typeof(CodeGroup).IsAssignableFrom(groupClass)))
-                throw new ArgumentException( Environment.GetResourceString("Argument_NotACodeGroupType") );
-
-            group = (CodeGroup) Activator.CreateInstance(groupClass, true);
-
-            Contract.Assert( groupClass.Module.Assembly != Assembly.GetExecutingAssembly(),
-                "This path should not get called for mscorlib based classes" );
-
-            return group;
-        }
-#pragma warning restore 618
-        
-        [System.Security.SecurityCritical]  // auto-generated
-        internal static IMembershipCondition
-        CreateMembershipCondition( SecurityElement el )
-        {
-            if (el == null || !el.Tag.Equals("IMembershipCondition"))
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_WrongElementType" ), "<IMembershipCondition>" ) ) ;
-            Contract.EndContractBlock();
-    
-            String className;
-            int classNameStart;
-            int classNameLength;
-            
-            if (!ParseElementForObjectCreation( el,
-                                                BuiltInMembershipCondition,
-                                                out className,
-                                                out classNameStart,
-                                                out classNameLength ))
-            {
-                goto USEREFLECTION;
-            }
-
-            // We have a built in membership condition, figure out which it is.
-                    
-            // Here's the list of built in membership conditions as of 9/17/2002
-            // System.Security.Policy.AllMembershipCondition
-            // System.Security.Policy.URLMembershipCondition
-            // System.Security.Policy.SHA1MembershipCondition
-            // System.Security.Policy.SiteMembershipCondition
-            // System.Security.Policy.ZoneMembershipCondition                                                                                                                                                              
-            // System.Security.Policy.PublisherMembershipCondition
-            // System.Security.Policy.StrongNameMembershipCondition
-            // System.Security.Policy.ApplicationMembershipCondition
-            // System.Security.Policy.DomainApplicationMembershipCondition
-            // System.Security.Policy.ApplicationDirectoryMembershipCondition
-                    
-            switch (classNameLength)
-            {
-                case 22:
-                    // AllMembershipCondition
-                    // URLMembershipCondition
-                    if (className[classNameStart] == 'A')
-                    {
-                        if (String.Compare(className, classNameStart, "AllMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                            return new AllMembershipCondition();
-                        else
-                            goto USEREFLECTION;
-                    }
-                    else
-                    {
-                        if (String.Compare(className, classNameStart, "UrlMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                            return new UrlMembershipCondition();
-                        else
-                            goto USEREFLECTION;
-                    }
-                                
-                case 23:
-                    // HashMembershipCondition
-                    // SiteMembershipCondition
-                    // ZoneMembershipCondition                                                                                                                                                              
-                    if (className[classNameStart] == 'H')
-                    {
-                        if (String.Compare(className, classNameStart, "HashMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                            return new HashMembershipCondition();
-                        else
-                            goto USEREFLECTION;
-                    }
-                    else if (className[classNameStart] == 'S')
-                    {
-                        if (String.Compare(className, classNameStart, "SiteMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                            return new SiteMembershipCondition();
-                        else
-                            goto USEREFLECTION;
-                    }
-                    else
-                    {
-                        if (String.Compare(className, classNameStart, "ZoneMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                            return new ZoneMembershipCondition();
-                        else
-                            goto USEREFLECTION;
-                    }
-
-                case 28:
-                    // PublisherMembershipCondition
-                    if (String.Compare(className, classNameStart, "PublisherMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new PublisherMembershipCondition();
-                    else
-                        goto USEREFLECTION;
-
-                case 29:
-                    // StrongNameMembershipCondition
-                    if (String.Compare(className, classNameStart, "StrongNameMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new StrongNameMembershipCondition();
-                    else
-                        goto USEREFLECTION;
-
-                case 39:
-                    // ApplicationDirectoryMembershipCondition
-                    if (String.Compare(className, classNameStart, "ApplicationDirectoryMembershipCondition", 0, classNameLength, StringComparison.Ordinal) == 0)
-                        return new ApplicationDirectoryMembershipCondition();
-                    else
-                        goto USEREFLECTION;
-
-                default:
-                    goto USEREFLECTION;
-            }
-
-USEREFLECTION:
-            Type condClass = null;
-            IMembershipCondition cond = null;
-    
-            new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Assert();
-            condClass = GetClassFromElement(el, true);
-            if (condClass == null)
-                return null;
-            if (!(typeof(IMembershipCondition).IsAssignableFrom(condClass)))
-                throw new ArgumentException( Environment.GetResourceString("Argument_NotAMembershipCondition") );
-
-            cond = (IMembershipCondition) Activator.CreateInstance(condClass, true);
-
-            return cond;
-        }
-#endif //#if FEATURE_CAS_POLICY
         internal static Type
         GetClassFromElement (SecurityElement el, bool ignoreTypeLoadFailures)
         {
@@ -624,7 +365,7 @@ USEREFLECTION:
             {
                 try
                 {
-                    return Type.GetType(className, false, false);               
+                    return Type.GetType(className, false, false);
                 }
                 catch (SecurityException)
                 {
@@ -632,7 +373,7 @@ USEREFLECTION:
                 }
             }
             else
-                return Type.GetType(className, true, false);               
+                return Type.GetType(className, true, false);
         }
 
         public static bool

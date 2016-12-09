@@ -259,45 +259,6 @@ namespace System.Security.Permissions
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)type));
             Contract.EndContractBlock();
         }
-        
-#if FEATURE_CAS_POLICY
-        //------------------------------------------------------
-        //
-        // PUBLIC ENCODING METHODS
-        //
-        //------------------------------------------------------
-        
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.ReflectionPermission" );
-            if (!IsUnrestricted())
-            {
-                esd.AddAttribute( "Flags", XMLUtil.BitFieldEnumToString( typeof( ReflectionPermissionFlag ), m_flags ) );
-                }
-            else
-            {
-                esd.AddAttribute( "Unrestricted", "true" );
-            }
-            return esd;
-        }
-    
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-            if (XMLUtil.IsUnrestricted( esd ))
-            {
-                m_flags = ReflectionPermission.AllFlagsAndMore;
-                return;
-            }
-           
-            Reset () ;
-            SetUnrestricted (false) ;
-    
-            String flags = esd.Attribute( "Flags" );
-            if (flags != null)
-                m_flags = (ReflectionPermissionFlag)Enum.Parse( typeof( ReflectionPermissionFlag ), flags );
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

@@ -8,9 +8,6 @@ namespace System.Security.Permissions
     using System.Security.Util;
     using System.IO;
     using System.Security.Policy;
-#if FEATURE_MACL
-    using System.Security.AccessControl;
-#endif
     using System.Text;
     using System.Threading;
     using System.Runtime.InteropServices;
@@ -23,11 +20,9 @@ namespace System.Security.Permissions
     using System.Diagnostics.Contracts;
     
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-#if !FEATURE_CAS_POLICY
+    [System.Runtime.InteropServices.ComVisible(true)]
     // The csharp compiler requires these types to be public, but they are not used elsewhere.
     [Obsolete("SecurityAction is no longer accessible to application code.")]
-#endif
     public enum SecurityAction
     {
         // Demand permission of all caller
@@ -62,14 +57,11 @@ namespace System.Security.Permissions
         RequestRefuse = 10,
     }
 
-
-[Serializable]
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
-#if !FEATURE_CAS_POLICY
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
+    [System.Runtime.InteropServices.ComVisible(true)]
     // The csharp compiler requires these types to be public, but they are not used elsewhere.
     [Obsolete("SecurityAttribute is no longer accessible to application code.")]
-#endif
     public abstract class SecurityAttribute : System.Attribute
     {
         /// <internalonly/>
@@ -108,13 +100,11 @@ namespace System.Security.Permissions
         }
     }
 
-[Serializable]
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
-#if !FEATURE_CAS_POLICY
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
+    [System.Runtime.InteropServices.ComVisible(true)]
     // The csharp compiler requires these types to be public, but they are not used elsewhere.
     [Obsolete("CodeAccessSecurityAttribute is no longer accessible to application code.")]
-#endif
     public abstract class CodeAccessSecurityAttribute : SecurityAttribute
     {
         protected CodeAccessSecurityAttribute( SecurityAction action )
@@ -307,12 +297,6 @@ namespace System.Security.Permissions
                     perm.SetPathList( FileIOPermissionAccess.Append, m_append );
                 if (m_pathDiscovery != null)
                     perm.SetPathList( FileIOPermissionAccess.PathDiscovery, m_pathDiscovery );
-#if FEATURE_MACL
-                if (m_viewAccess != null)
-                    perm.SetPathList( FileIOPermissionAccess.NoAccess, AccessControlActions.View, new String[] { m_viewAccess }, false );
-                if (m_changeAccess != null)
-                    perm.SetPathList( FileIOPermissionAccess.NoAccess, AccessControlActions.Change, new String[] { m_changeAccess }, false );
-#endif
 
                 perm.AllFiles = m_allFiles;
                 perm.AllLocalFiles = m_allLocalFiles;
@@ -383,59 +367,6 @@ namespace System.Security.Permissions
             }
         }
     }
-
-#if !FEATURE_CORECLR
-    // PrincipalPermissionAttribute currently derives from
-    // CodeAccessSecurityAttribute, even though it's not related to code access
-    // security. This is because compilers are currently looking for
-    // CodeAccessSecurityAttribute as a direct parent class rather than
-    // SecurityAttribute as the root class.
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable]
-    sealed public class PrincipalPermissionAttribute : CodeAccessSecurityAttribute
-    {
-        private String m_name = null;
-        private String m_role = null;
-        private bool m_authenticated = true;
-    
-        public PrincipalPermissionAttribute( SecurityAction action )
-            : base( action )
-        {
-        }
-        
-        public String Name
-        {
-            get { return m_name; }
-            set { m_name = value; }
-        }
-        
-        public String Role
-        {
-            get { return m_role; }
-            set { m_role = value; }
-        }
-        
-        public bool Authenticated
-        {
-            get { return m_authenticated; }
-            set { m_authenticated = value; }
-        }
-        
-        
-        public override IPermission CreatePermission()
-        {
-            if (m_unrestricted)
-            {
-                return new PrincipalPermission( PermissionState.Unrestricted );
-            }
-            else
-            {
-                return new PrincipalPermission( m_name, m_role, m_authenticated );
-            }
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
 [System.Runtime.InteropServices.ComVisible(true)]
@@ -570,24 +501,16 @@ namespace System.Security.Permissions
                     perm.SetPathList( RegistryPermissionAccess.Write, m_write );
                 if (m_create != null)
                     perm.SetPathList( RegistryPermissionAccess.Create, m_create );
-#if FEATURE_MACL
-                if (m_viewAcl != null)
-                    perm.SetPathList( AccessControlActions.View, m_viewAcl );
-                if (m_changeAcl != null)
-                    perm.SetPathList( AccessControlActions.Change, m_changeAcl );
-#endif
                 return perm;
             }
         }
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-#if !FEATURE_CAS_POLICY
     // The csharp compiler requires these types to be public, but they are not used elsewhere.
     [Obsolete("SecurityPermissionAttribute is no longer accessible to application code.")]
-#endif
     sealed public class SecurityPermissionAttribute : CodeAccessSecurityAttribute
     {
         private SecurityPermissionFlag m_flag = SecurityPermissionFlag.NoFlags;
@@ -662,7 +585,7 @@ namespace System.Security.Permissions
             set { m_flag = value ? m_flag | SecurityPermissionFlag.RemotingConfiguration : m_flag & ~SecurityPermissionFlag.RemotingConfiguration; }
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
+        [System.Runtime.InteropServices.ComVisible(true)]
         public bool Infrastructure {
             get { return (m_flag & SecurityPermissionFlag.Infrastructure) != 0; }
             set { m_flag = value ? m_flag | SecurityPermissionFlag.Infrastructure : m_flag & ~SecurityPermissionFlag.Infrastructure; }
@@ -893,170 +816,6 @@ namespace System.Security.Permissions
             }
         }
     }
-    
-#if FEATURE_X509 && FEATURE_CAS_POLICY
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable]
-    sealed public class PublisherIdentityPermissionAttribute : CodeAccessSecurityAttribute
-    {
-        private String m_x509cert = null;
-        private String m_certFile = null;
-        private String m_signedFile = null;
-    
-        public PublisherIdentityPermissionAttribute( SecurityAction action )
-            : base( action )
-        {
-            m_x509cert = null;
-            m_certFile = null;
-            m_signedFile = null;
-        }
-
-        public String X509Certificate {
-            get { return m_x509cert; }
-            set { m_x509cert = value; }
-        }
-        
-        public String CertFile {
-            get { return m_certFile; }
-            set { m_certFile = value; }
-        }
-        
-        public String SignedFile {
-            get { return m_signedFile; }
-            set { m_signedFile = value; }
-        }
-
-        public override IPermission CreatePermission()
-        {
-            if (m_unrestricted)
-            {
-                return new PublisherIdentityPermission( PermissionState.Unrestricted );
-            }
-            else
-            {
-                if (m_x509cert != null)
-                {
-                    return new PublisherIdentityPermission( new X509Certificate( System.Security.Util.Hex.DecodeHexString( m_x509cert ) ) );
-                }
-                else if (m_certFile != null)
-                {
-                    return new PublisherIdentityPermission( System.Security.Cryptography.X509Certificates.X509Certificate.CreateFromCertFile( m_certFile ) );
-                }
-                else if (m_signedFile != null)
-                {
-                    return new PublisherIdentityPermission( System.Security.Cryptography.X509Certificates.X509Certificate.CreateFromSignedFile( m_signedFile ) );
-                }
-                else
-                {
-                    return new PublisherIdentityPermission( PermissionState.None );
-                }
-            }
-        }
-    }
-#endif // #if FEATURE_X509 && FEATURE_CAS_POLICY
-
-#if !FEATURE_CORECLR                              
-[Serializable]
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor
-     | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly,
-    AllowMultiple=true, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class IsolatedStoragePermissionAttribute : CodeAccessSecurityAttribute
-    {
-        /// <internalonly/>
-        internal long m_userQuota;
-#if false
-        /// <internalonly/>
-        internal long m_machineQuota;
-        /// <internalonly/>
-        internal long m_expirationDays;
-        /// <internalonly/>
-        internal bool m_permanentData;
-#endif
-        /// <internalonly/>
-        internal IsolatedStorageContainment m_allowed;
-        protected IsolatedStoragePermissionAttribute(SecurityAction action) : base(action)
-        {
-        }
-
-        // properties
-        public long UserQuota {
-            set{
-                m_userQuota = value;
-            }
-            get{
-                return m_userQuota;
-            }
-        }
-#if false
-        internal long MachineQuota {
-            set{
-                m_machineQuota = value;
-            }
-            get{
-                return m_machineQuota;
-            }
-        }
-        internal long ExpirationDays {
-            set{
-                m_expirationDays = value;
-            }
-            get{
-                return m_expirationDays;
-            }
-        }
-        internal bool PermanentData {
-            set{
-                m_permanentData = value;
-            }
-            get{
-                return m_permanentData;
-            }
-        }
-#endif
-        public IsolatedStorageContainment UsageAllowed {
-            set{
-                m_allowed = value;
-            }
-            get{
-                return m_allowed;
-            }
-        }
-
-    }
-
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor
-     | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly,
-    AllowMultiple=true, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable]
-    sealed public class IsolatedStorageFilePermissionAttribute : IsolatedStoragePermissionAttribute
-    {
-        public IsolatedStorageFilePermissionAttribute(SecurityAction action) : base(action)
-        {
-
-        }
-        public override IPermission CreatePermission()
-        {
-            IsolatedStorageFilePermission p;
-            if (m_unrestricted) {
-                p = new IsolatedStorageFilePermission
-                        (PermissionState.Unrestricted);
-            } else {
-                p = new IsolatedStorageFilePermission(PermissionState.None);
-                p.UserQuota      = m_userQuota;
-                p.UsageAllowed   = m_allowed;
-#if false
-                p.PermanentData  = m_permanentData;
-                p.MachineQuota   = m_machineQuota;
-                p.ExpirationDays = m_expirationDays;
-#endif
-            }
-            return p;
-        }
-    }
-#endif // FEATURE_CORECLR
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )] 
 [System.Runtime.InteropServices.ComVisible(true)]
@@ -1109,66 +868,12 @@ namespace System.Security.Permissions
             return null;
         }
 
-#if FEATURE_CAS_POLICY
-        private PermissionSet BruteForceParseStream(Stream stream)
-        {
-            Encoding[] encodings = new Encoding[] { Encoding.UTF8, 
-                                                    Encoding.ASCII, 
-                                                    Encoding.Unicode };
-
-            StreamReader reader = null;
-            Exception exception = null;
-
-            for (int i = 0; reader == null && i < encodings.Length; ++i)
-            {
-                try
-                {
-                    stream.Position = 0;
-                    reader = new StreamReader( stream, encodings[i] );
-
-                    return ParsePermissionSet( new Parser(reader) );
-                }
-                catch (Exception e1)
-                {
-                    if (exception == null)
-                        exception = e1;
-                }
-            }
-
-            throw exception;
-        }
-
-        private PermissionSet ParsePermissionSet(Parser parser)
-        {
-            SecurityElement e = parser.GetTopElement();
-            PermissionSet permSet = new PermissionSet( PermissionState.None );
-            permSet.FromXml( e );
-
-            return permSet;
-        }
-#endif // FEATURE_CAS_POLICY
-
-#if FEATURE_CAS_POLICY
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
         public PermissionSet CreatePermissionSet()
         {
             if (m_unrestricted)
                 return new PermissionSet( PermissionState.Unrestricted );
             else if (m_name != null)
-#if FEATURE_CAS_POLICY
-                return PolicyLevel.GetBuiltInSet( m_name );
-#else
                 return NamedPermissionSet.GetBuiltInSet( m_name );
-#endif // FEATURE_CAS_POLICY
-#if FEATURE_CAS_POLICY
-            else if (m_xml != null)
-                return ParsePermissionSet( new Parser(m_xml.ToCharArray()) );
-            else if (m_hex != null)
-                return BruteForceParseStream( new MemoryStream(Util.Hex.DecodeHexString(m_hex)) );
-            else if (m_file != null)
-                return BruteForceParseStream( new FileStream( m_file, FileMode.Open, FileAccess.Read) );
-#endif // FEATURE_CAS_POLICY
             else
                 return new PermissionSet( PermissionState.None );
         }

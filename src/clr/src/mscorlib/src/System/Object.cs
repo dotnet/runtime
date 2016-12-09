@@ -12,7 +12,8 @@
 ** 
 ===========================================================*/
 
-namespace System {
+namespace System
+{
     using System;
     using System.Runtime;
     using System.Runtime.InteropServices;
@@ -23,9 +24,7 @@ namespace System {
     using CultureInfo = System.Globalization.CultureInfo;
     using FieldInfo = System.Reflection.FieldInfo;
     using BindingFlags = System.Reflection.BindingFlags;
-#if FEATURE_REMOTING        
-    using RemotingException = System.Runtime.Remoting.RemotingException;    
-#endif
+
 // The Object is the root class for all object in the CLR System. Object 
 // is the super class for all other CLR objects and provide a set of methods and low level
 // services to subclasses.  These services include object synchronization and support for clone
@@ -135,26 +134,21 @@ public class Object
 
         // Make sure that the value is compatible with the type
         // of field
-#if FEATURE_REMOTING        
-        System.Runtime.Remoting.Messaging.Message.CoerceArg(val, fldInfo.FieldType);    
-#else
         Type pt=fldInfo.FieldType;
         if (pt.IsByRef) 
         {
             pt = pt.GetElementType();
         }
-    
+
         if (!pt.IsInstanceOfType(val))
         {
             val = Convert.ChangeType(val, pt, CultureInfo.InvariantCulture);
         }
 
-#endif
-
-        // Set the value            
+        // Set the value
         fldInfo.SetValue(this, val);
     }
-    
+
     // Gets the value specified in the variant on the field
     // 
     private void FieldGetter(String typeName, String fieldName, ref Object val)
@@ -166,7 +160,7 @@ public class Object
         FieldInfo fldInfo = GetFieldInfo(typeName, fieldName);
 
         // Get the value
-        val = fldInfo.GetValue(this);            
+        val = fldInfo.GetValue(this);
     }
 
     // Gets the field info object given the type name and field name.
@@ -190,13 +184,7 @@ public class Object
         
         if (null == t)
         {
-#if FEATURE_REMOTING         
-            throw new RemotingException(String.Format(
-                CultureInfo.CurrentCulture, Environment.GetResourceString("Remoting_BadType"),
-                                              typeName));
-#else
             throw new ArgumentException();
-#endif
         }
 
         FieldInfo fldInfo = t.GetField(fieldName, BindingFlags.Public | 
@@ -204,16 +192,9 @@ public class Object
                                                   BindingFlags.IgnoreCase);
         if(null == fldInfo)
         {
-#if FEATURE_REMOTING 
-            throw new RemotingException(String.Format(
-                CultureInfo.CurrentCulture, Environment.GetResourceString("Remoting_BadField"),
-                                              fieldName, typeName));            
-#else
             throw new ArgumentException();
-#endif
-
         }
-        
+
         return fldInfo;
     }
 }

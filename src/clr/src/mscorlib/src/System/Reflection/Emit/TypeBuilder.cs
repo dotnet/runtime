@@ -297,13 +297,6 @@ namespace System.Reflection.Emit {
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
 		[SuppressUnmanagedCodeSecurity]
         private static extern unsafe void SetConstantValue(RuntimeModule module, int tk, int corType, void* pValue);
-
-#if FEATURE_CAS_POLICY
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-		[SuppressUnmanagedCodeSecurity]
-        internal static extern void AddDeclarativeSecurity(RuntimeModule module, int parent, SecurityAction action, byte[] blob, int cb);
-#endif
         #endregion
 
         #region Internal\Private Static Members
@@ -2517,50 +2510,6 @@ namespace System.Reflection.Emit {
 
             m_typeInterfaces.Add(interfaceType);
         }
-
-#if FEATURE_CAS_POLICY
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public void AddDeclarativeSecurity(SecurityAction action, PermissionSet pset)
-        {
-            lock(SyncRoot)
-            {
-                AddDeclarativeSecurityNoLock(action, pset);
-            }
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        private void AddDeclarativeSecurityNoLock(SecurityAction action, PermissionSet pset)
-        {
-            if (pset == null)
-                throw new ArgumentNullException(nameof(pset));
-
-#pragma warning disable 618
-            if (!Enum.IsDefined(typeof(SecurityAction), action) ||
-                action == SecurityAction.RequestMinimum ||
-                action == SecurityAction.RequestOptional ||
-                action == SecurityAction.RequestRefuse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(action));
-            }
-#pragma warning restore 618
-
-            Contract.EndContractBlock();
-
-            ThrowIfCreated();
-
-            // Translate permission set into serialized format(uses standard binary serialization format).
-            byte[] blob = null;
-            int length = 0;
-            if (!pset.IsEmpty())
-            {
-                blob = pset.EncodeXml();
-                length = blob.Length;
-            }
-
-            // Write the blob into the metadata.
-            AddDeclarativeSecurity(m_module.GetNativeHandle(), m_tdType.Token, action, blob, length);
-        }
-#endif // FEATURE_CAS_POLICY
 
 public TypeToken TypeToken 
         {

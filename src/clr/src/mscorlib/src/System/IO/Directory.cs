@@ -15,25 +15,16 @@
 **
 ===========================================================*/
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Security;
 using System.Security.Permissions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Globalization;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
-using System.Threading;
 
-#if FEATURE_MACL
-using System.Security.AccessControl;
-#endif
-
-namespace System.IO {
+namespace System.IO
+{
     [ComVisible(true)]
     public static class Directory {
         public static DirectoryInfo GetParent(String path)
@@ -90,44 +81,16 @@ namespace System.IO {
             // a demand at every level.
             String demandDir = GetDemandDir(fullPath, true);
 
-#if FEATURE_CORECLR
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, demandDir);
                 state.EnsureState(); // do the check on the AppDomainManager to make sure this is allowed  
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, demandDir, false, false);
-#endif
 
             InternalCreateDirectory(fullPath, path, null, checkHost);
 
             return new DirectoryInfo(fullPath, false);
         }
-
-#if FEATURE_MACL
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static DirectoryInfo CreateDirectory(String path, DirectorySecurity directorySecurity) {
-            if (path==null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
-            Contract.EndContractBlock();
-            
-            String fullPath = Path.GetFullPathInternal(path);
-
-            // You need read access to the directory to be returned back and write access to all the directories 
-            // that you need to create. If we fail any security checks we will not create any directories at all.
-            // We attempt to create directories only after all the security checks have passed. This is avoid doing
-            // a demand at every level.
-            String demandDir = GetDemandDir(fullPath, true); 
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, demandDir, false, false );
-
-            InternalCreateDirectory(fullPath, path, directorySecurity);
-            
-            return new DirectoryInfo(fullPath, false);
-        }
-#endif // FEATURE_MACL
 
         // Input to this method should already be fullpath. This method will ensure that we append 
         // the trailing slash only when appropriate and when thisDirOnly is specified append a "." 
@@ -163,10 +126,6 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         internal unsafe static void InternalCreateDirectory(String fullPath, String path, Object dirSecurityObj, bool checkHost)
         {
-#if FEATURE_MACL
-            DirectorySecurity dirSecurity = (DirectorySecurity)dirSecurityObj;
-#endif // FEATURE_MACL
-
             int length = fullPath.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
@@ -215,15 +174,7 @@ namespace System.IO {
 
             int count = stackDir.Count;
 
-            if (stackDir.Count != 0
-#if FEATURE_CAS_POLICY
-                // All demands in full trust domains are no-ops, so skip
-                //
-                // The full path went through validity checks by being passed through FileIOPermissions already.
-                // As a sub string of the full path can't fail the checks if the full path passes.
-                && !CodeAccessSecurityEngine.QuickCheckForAllDemands()
-#endif
-            )
+            if (stackDir.Count != 0)
             {
                 String[] securityList = new String[stackDir.Count];
                 stackDir.CopyTo(securityList, 0);
@@ -231,11 +182,6 @@ namespace System.IO {
                     securityList[j] += "\\."; // leaf will never have a slash at the end
 
                 // Security check for all directories not present only.
-#if FEATURE_MACL
-                AccessControlActions control = (dirSecurity == null) ? AccessControlActions.None : AccessControlActions.Change;
-                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, control, securityList, false, false);
-#else
-#if FEATURE_CORECLR
                 if (checkHost)
                 {
                     foreach (String demandPath in securityList) 
@@ -244,27 +190,11 @@ namespace System.IO {
                         state.EnsureState();
                     }
                 }
-#else
-                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, securityList, false, false);
-#endif
-#endif //FEATURE_MACL
             }
 
             // If we were passed a DirectorySecurity, convert it to a security
             // descriptor and set it in he call to CreateDirectory.
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
-#if FEATURE_MACL
-            if (dirSecurity != null) {
-                secAttrs = new Win32Native.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (int)Marshal.SizeOf(secAttrs);
-
-                // For ACL's, get the security descriptor from the FileSecurity.
-                byte[] sd = dirSecurity.GetSecurityDescriptorBinaryForm();
-                byte * bytesOnStack = stackalloc byte[sd.Length];
-                Buffer.Memcpy(bytesOnStack, 0, sd, 0, sd.Length);
-                secAttrs.pSecurityDescriptor = bytesOnStack;
-            }
-#endif
 
             bool r = true;
             int firstError = 0;
@@ -294,15 +224,11 @@ namespace System.IO {
                             firstError = currentError;
                             // Give the user a nice error message, but don't leak path information.
                             try {
-#if FEATURE_CORECLR
                                 if (checkHost)
                                 {
                                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, GetDemandDir(name, true));
                                     state.EnsureState();
                                 }
-#else
-                                FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, GetDemandDir(name, true));
-#endif // FEATURE_CORECLR
                                 errorString = name;
                             }
                             catch(SecurityException) {}
@@ -361,16 +287,11 @@ namespace System.IO {
                 String fullPath = Path.GetFullPath(path);
                 String demandPath = GetDemandDir(fullPath, true);
 
-#if FEATURE_CORECLR
                 if (checkHost)
                 {
                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, demandPath);
                     state.EnsureState();
                 }
-#else
-                FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, demandPath, false, false);
-#endif
-
 
                 return InternalExists(fullPath);
             }
@@ -404,27 +325,6 @@ namespace System.IO {
                     && ((data.fileAttributes & Win32Native.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
-#if !FEATURE_CORECLR
-        public static void SetCreationTime(String path,DateTime creationTime)
-        {
-            SetCreationTimeUtc(path, creationTime.ToUniversalTime());
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe static void SetCreationTimeUtc(String path,DateTime creationTimeUtc)
-        {
-            using (SafeFileHandle handle = Directory.OpenHandle(path)) {
-                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(creationTimeUtc.ToFileTimeUtc());
-                bool r = Win32Native.SetFileTime(handle, &fileTime, null, null);
-                if (!r)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    __Error.WinIOError(errorCode, path);
-                }
-            }
-        }
-#endif // !FEATURE_CORECLR
-
         public static DateTime GetCreationTime(String path)
         {
             return File.GetCreationTime(path);
@@ -434,27 +334,6 @@ namespace System.IO {
         {
             return File.GetCreationTimeUtc(path);
         }
-
-#if !FEATURE_CORECLR
-        public static void SetLastWriteTime(String path,DateTime lastWriteTime)
-        {
-            SetLastWriteTimeUtc(path, lastWriteTime.ToUniversalTime());
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe static void SetLastWriteTimeUtc(String path,DateTime lastWriteTimeUtc)
-        {
-            using (SafeFileHandle handle = Directory.OpenHandle(path)) {
-                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastWriteTimeUtc.ToFileTimeUtc());
-                bool r = Win32Native.SetFileTime(handle,  null, null, &fileTime);
-                if (!r)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    __Error.WinIOError(errorCode, path);
-                }
-            }
-        }
-#endif // !FEATURE_CORECLR
 
         public static DateTime GetLastWriteTime(String path)
         {
@@ -466,27 +345,6 @@ namespace System.IO {
             return File.GetLastWriteTimeUtc(path);
         }
 
-#if !FEATURE_CORECLR
-        public static void SetLastAccessTime(String path,DateTime lastAccessTime)
-        {
-            SetLastAccessTimeUtc(path, lastAccessTime.ToUniversalTime());
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe static void SetLastAccessTimeUtc(String path,DateTime lastAccessTimeUtc)
-        {
-            using (SafeFileHandle handle = Directory.OpenHandle(path)) {
-                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastAccessTimeUtc.ToFileTimeUtc());
-                bool r = Win32Native.SetFileTime(handle,  null, &fileTime, null);
-                if (!r)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    __Error.WinIOError(errorCode, path);
-                }
-            }
-        }
-#endif // !FEATURE_CORECLR
-
         public static DateTime GetLastAccessTime(String path)
         {
             return File.GetLastAccessTime(path);
@@ -495,30 +353,7 @@ namespace System.IO {
         public static DateTime GetLastAccessTimeUtc(String path)
         {
             return File.GetLastAccessTimeUtc(path);
-        }       
- 
-#if FEATURE_MACL
-        public static DirectorySecurity GetAccessControl(String path)
-        {
-            return new DirectorySecurity(path, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
-
-        public static DirectorySecurity GetAccessControl(String path, AccessControlSections includeSections)
-        {
-            return new DirectorySecurity(path, includeSections);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public static void SetAccessControl(String path, DirectorySecurity directorySecurity)
-        {
-            if (directorySecurity == null)
-                throw new ArgumentNullException(nameof(directorySecurity));
-            Contract.EndContractBlock();
-
-            String fullPath = Path.GetFullPathInternal(path);
-            directorySecurity.Persist(fullPath);
-        }
-#endif
 
         // Returns an array of filenames in the DirectoryInfo specified by path
         public static String[] GetFiles(String path)
@@ -930,13 +765,9 @@ namespace System.IO {
             string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
             string demandPath = GetDemandDir(root, true);
 
-#if FEATURE_CORECLR
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, path, demandPath);
             state.EnsureState();
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandPath, false, false);
-#endif
-                     
+
             return root;
         }
 
@@ -1309,39 +1140,7 @@ namespace System.IO {
             }
         }
 
-#if !FEATURE_CORECLR
-        // WinNT only. Win9x this code will not work.
-        [System.Security.SecurityCritical]  // auto-generated
-        private static SafeFileHandle OpenHandle(String path)
-        {
-            String fullPath = Path.GetFullPathInternal(path);
-            String root = Path.GetPathRoot(fullPath);
-            if (root == fullPath && root[1] == Path.VolumeSeparatorChar)
-                throw new ArgumentException(Environment.GetResourceString("Arg_PathIsVolume"));
-
-#if !FEATURE_CORECLR
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, GetDemandDir(fullPath, true), false, false);
-#endif
-
-            SafeFileHandle handle = Win32Native.SafeCreateFile (
-                fullPath,
-                GENERIC_WRITE,
-                (FileShare) (FILE_SHARE_WRITE|FILE_SHARE_DELETE),
-                null,
-                FileMode.Open,
-                FILE_FLAG_BACKUP_SEMANTICS,
-                IntPtr.Zero
-            );
-
-            if (handle.IsInvalid) {
-                int hr = Marshal.GetLastWin32Error();
-                __Error.WinIOError(hr, fullPath);
-            }
-            return handle;
-        }
-#endif // !FEATURE_CORECLR
-
-        private const int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;    
+        private const int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
         private const int GENERIC_WRITE = unchecked((int)0x40000000);
         private const int FILE_SHARE_WRITE = 0x00000002;
         private const int FILE_SHARE_DELETE = 0x00000004;

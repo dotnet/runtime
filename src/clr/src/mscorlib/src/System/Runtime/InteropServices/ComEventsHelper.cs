@@ -184,17 +184,8 @@ namespace System.Runtime.InteropServices {
         }
 
         [System.Security.SecurityCritical]
-        internal static object UnwrapIfTransparentProxy(object rcw) {
-#if FEATURE_REMOTING
-            if (RemotingServices.IsTransparentProxy(rcw)) {
-                IntPtr punk = Marshal.GetIUnknownForObject(rcw);
-                try {
-                    rcw = Marshal.GetObjectForIUnknown(punk);
-                } finally {
-                    Marshal.Release(punk);
-                }
-            }
-#endif
+        internal static object UnwrapIfTransparentProxy(object rcw)
+        {
             return rcw;
         }
     }

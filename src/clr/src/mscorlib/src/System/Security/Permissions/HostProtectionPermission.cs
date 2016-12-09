@@ -247,38 +247,6 @@ namespace System.Security.Permissions
             return new HostProtectionPermission(m_resources);
         }
 
-#if FEATURE_CAS_POLICY
-        //------------------------------------------------------
-        //
-        // XML
-        //
-        //------------------------------------------------------
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, this.GetType().FullName );
-            if(IsUnrestricted())
-                esd.AddAttribute( "Unrestricted", "true" );
-            else
-                esd.AddAttribute( "Resources", XMLUtil.BitFieldEnumToString( typeof( HostProtectionResource ), Resources ) );
-            return esd;
-        }
-
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-            if (XMLUtil.IsUnrestricted( esd ))
-                Resources = HostProtectionResource.All;
-            else
-            {
-                String resources = esd.Attribute( "Resources" );
-                if (resources == null)
-                    Resources = HostProtectionResource.None;
-                else
-                    Resources = (HostProtectionResource)Enum.Parse( typeof( HostProtectionResource ), resources );
-            }
-        }
-#endif // FEATURE_CAS_POLICY
-
         //------------------------------------------------------
         //
         // OBJECT OVERRIDES

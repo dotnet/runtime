@@ -1002,19 +1002,13 @@ namespace System {
             PermissionSet permSet = new PermissionSet(PermissionState.None);
             permSet.AddPermission(new RegistryPermission(RegistryPermissionAccess.Read, c_timeZonesRegistryHivePermissionList));
             permSet.Assert();
-            
-            using (RegistryKey reg = Registry.LocalMachine.OpenSubKey(
-                c_timeZonesRegistryHive,
-#if FEATURE_MACL
-                RegistryKeyPermissionCheck.Default,
-                System.Security.AccessControl.RegistryRights.ReadKey
-#else
-                false
-#endif
-                )) {
 
-                if (reg != null) {
-                    foreach (string keyName in reg.GetSubKeyNames()) {
+            using (RegistryKey reg = Registry.LocalMachine.OpenSubKey(c_timeZonesRegistryHive, false))
+            {
+                if (reg != null)
+                {
+                    foreach (string keyName in reg.GetSubKeyNames())
+                    {
                         TimeZoneInfo value;
                         Exception ex;
                         TryGetTimeZone(keyName, false, out value, out ex, cachedData);  // populate the cache
@@ -1693,21 +1687,16 @@ namespace System {
                 permSet.AddPermission(new RegistryPermission(RegistryPermissionAccess.Read, c_timeZonesRegistryHivePermissionList));
                 permSet.Assert();
 
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(
-                                  c_timeZonesRegistryHive,
-#if FEATURE_MACL
-                                  RegistryKeyPermissionCheck.Default,
-                                  System.Security.AccessControl.RegistryRights.ReadKey
-#else
-                                  false
-#endif
-                                  )) {
-
-                    if (key == null) {
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(c_timeZonesRegistryHive, false))
+                {
+                    if (key == null)
+                    {
                         return null;
                     }
-                    foreach (string keyName in key.GetSubKeyNames()) {
-                        if (TryCompareTimeZoneInformationToRegistry(timeZone, keyName, out dstDisabled)) {
+                    foreach (string keyName in key.GetSubKeyNames())
+                    {
+                        if (TryCompareTimeZoneInformationToRegistry(timeZone, keyName, out dstDisabled))
+                        {
                             return keyName;
                         }
                     }
@@ -2971,26 +2960,22 @@ namespace System {
 
             try {
                 using (RegistryKey dynamicKey = Registry.LocalMachine.OpenSubKey(
-                                   c_timeZonesRegistryHive + "\\" + id + "\\Dynamic DST",
-#if FEATURE_MACL
-                                   RegistryKeyPermissionCheck.Default,
-                                   System.Security.AccessControl.RegistryRights.ReadKey
-#else
-                                   false
-#endif
-                                   )) {
+                    c_timeZonesRegistryHive + "\\" + id + "\\Dynamic DST",
+                    false)) {
                     if (dynamicKey == null) {
                         AdjustmentRule rule = CreateAdjustmentRuleFromTimeZoneInformation(
                                               defaultTimeZoneInformation, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
 
-                        if (rule == null) {
+                        if (rule == null)
+                        {
                             rules = null;
                         }
-                        else {
+                        else
+                        {
                             rules = new AdjustmentRule[1];
                             rules[0] = rule;
                         }
-                        
+
                         return true;
                     }
 
@@ -3005,7 +2990,8 @@ namespace System {
                     Int32 first = (Int32)dynamicKey.GetValue(c_firstEntryValue, -1, RegistryValueOptions.None);
                     Int32 last = (Int32)dynamicKey.GetValue(c_lastEntryValue, -1, RegistryValueOptions.None);
 
-                    if (first == -1 || last == -1 || first > last) {
+                    if (first == -1 || last == -1 || first > last)
+                    {
                         rules = null;
                         return false;
                     }
@@ -3013,20 +2999,24 @@ namespace System {
                     // read the first year entry
                     Win32Native.RegistryTimeZoneInformation dtzi;
                     Byte[] regValue = dynamicKey.GetValue(first.ToString(CultureInfo.InvariantCulture), null, RegistryValueOptions.None) as Byte[];
-                    if (regValue == null || regValue.Length != c_regByteLength) {
+                    if (regValue == null || regValue.Length != c_regByteLength)
+                    {
                         rules = null;
                         return false;
                     }
                     dtzi = new Win32Native.RegistryTimeZoneInformation(regValue);
 
-                    if (first == last) {
+                    if (first == last)
+                    {
                         // there is just 1 dynamic rule for this time zone.
-                        AdjustmentRule rule =  CreateAdjustmentRuleFromTimeZoneInformation(dtzi, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
+                        AdjustmentRule rule = CreateAdjustmentRuleFromTimeZoneInformation(dtzi, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
 
-                        if (rule == null) {
+                        if (rule == null)
+                        {
                             rules = null;
                         }
-                        else {
+                        else
+                        {
                             rules = new AdjustmentRule[1];
                             rules[0] = rule;
                         }
@@ -3036,20 +3026,23 @@ namespace System {
 
                     List<AdjustmentRule> rulesList = new List<AdjustmentRule>(1);
 
-                     // there are more than 1 dynamic rules for this time zone.
+                    // there are more than 1 dynamic rules for this time zone.
                     AdjustmentRule firstRule = CreateAdjustmentRuleFromTimeZoneInformation(
                                               dtzi,
                                               DateTime.MinValue.Date,        // MinValue
                                               new DateTime(first, 12, 31),   // December 31, <FirstYear>
-                                              defaultBaseUtcOffset); 
-                    if (firstRule != null) {
+                                              defaultBaseUtcOffset);
+                    if (firstRule != null)
+                    {
                         rulesList.Add(firstRule);
                     }
 
                     // read the middle year entries
-                    for (Int32 i = first + 1; i < last; i++) {
+                    for (Int32 i = first + 1; i < last; i++)
+                    {
                         regValue = dynamicKey.GetValue(i.ToString(CultureInfo.InvariantCulture), null, RegistryValueOptions.None) as Byte[];
-                        if (regValue == null || regValue.Length != c_regByteLength) {
+                        if (regValue == null || regValue.Length != c_regByteLength)
+                        {
                             rules = null;
                             return false;
                         }
@@ -3059,14 +3052,16 @@ namespace System {
                                                   new DateTime(i, 1, 1),    // January  01, <Year>
                                                   new DateTime(i, 12, 31),  // December 31, <Year>
                                                   defaultBaseUtcOffset);
-                        if (middleRule != null) {
+                        if (middleRule != null)
+                        {
                             rulesList.Add(middleRule);
                         }
                     }
                     // read the last year entry
                     regValue = dynamicKey.GetValue(last.ToString(CultureInfo.InvariantCulture), null, RegistryValueOptions.None) as Byte[];
                     dtzi = new Win32Native.RegistryTimeZoneInformation(regValue);
-                    if (regValue == null || regValue.Length != c_regByteLength) {
+                    if (regValue == null || regValue.Length != c_regByteLength)
+                    {
                         rules = null;
                         return false;
                     }
@@ -3075,13 +3070,15 @@ namespace System {
                                               new DateTime(last, 1, 1),    // January  01, <LastYear>
                                               DateTime.MaxValue.Date,      // MaxValue
                                               defaultBaseUtcOffset);
-                    if (lastRule != null) {
+                    if (lastRule != null)
+                    {
                         rulesList.Add(lastRule);
                     }
 
                     // convert the ArrayList to an AdjustmentRule array
                     rules = rulesList.ToArray();
-                    if (rules != null && rules.Length == 0) {
+                    if (rules != null && rules.Length == 0)
+                    {
                         rules = null;
                     }
                 } // end of: using (RegistryKey dynamicKey...
@@ -3131,8 +3128,8 @@ namespace System {
         // Helper function that compares a TimeZoneInformation struct to a time zone registry entry
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
-        static private Boolean TryCompareTimeZoneInformationToRegistry(Win32Native.TimeZoneInformation timeZone, string id, out Boolean dstDisabled) {
-
+        static private Boolean TryCompareTimeZoneInformationToRegistry(Win32Native.TimeZoneInformation timeZone, string id, out Boolean dstDisabled)
+        {
             dstDisabled = false;
             try {
                 PermissionSet permSet = new PermissionSet(PermissionState.None);
@@ -3140,14 +3137,9 @@ namespace System {
                 permSet.Assert();
 
                 using (RegistryKey key = Registry.LocalMachine.OpenSubKey(
-                                  c_timeZonesRegistryHive + "\\" + id,
-#if FEATURE_MACL
-                                  RegistryKeyPermissionCheck.Default,
-                                  System.Security.AccessControl.RegistryRights.ReadKey
-#else
-                                  false
-#endif
-                                  )) {
+                    c_timeZonesRegistryHive + "\\" + id,
+                    false))
+                {
 
                     if (key == null) {
                         return false;
@@ -3164,7 +3156,8 @@ namespace System {
                     //
                     Boolean result = TryCompareStandardDate(timeZone, registryTimeZoneInfo);
 
-                    if (!result) {
+                    if (!result)
+                    {
                         return false;
                     }
 
@@ -3173,14 +3166,14 @@ namespace System {
                              // since Daylight Saving Time is not "disabled", do a straight comparision between
                              // the Win32 API data and the registry data ...
                              //
-                             ||(   timeZone.DaylightBias              == registryTimeZoneInfo.DaylightBias
-                                && timeZone.DaylightDate.Year         == registryTimeZoneInfo.DaylightDate.Year
-                                && timeZone.DaylightDate.Month        == registryTimeZoneInfo.DaylightDate.Month
-                                && timeZone.DaylightDate.DayOfWeek    == registryTimeZoneInfo.DaylightDate.DayOfWeek
-                                && timeZone.DaylightDate.Day          == registryTimeZoneInfo.DaylightDate.Day
-                                && timeZone.DaylightDate.Hour         == registryTimeZoneInfo.DaylightDate.Hour
-                                && timeZone.DaylightDate.Minute       == registryTimeZoneInfo.DaylightDate.Minute
-                                && timeZone.DaylightDate.Second       == registryTimeZoneInfo.DaylightDate.Second
+                             || (timeZone.DaylightBias == registryTimeZoneInfo.DaylightBias
+                                && timeZone.DaylightDate.Year == registryTimeZoneInfo.DaylightDate.Year
+                                && timeZone.DaylightDate.Month == registryTimeZoneInfo.DaylightDate.Month
+                                && timeZone.DaylightDate.DayOfWeek == registryTimeZoneInfo.DaylightDate.DayOfWeek
+                                && timeZone.DaylightDate.Day == registryTimeZoneInfo.DaylightDate.Day
+                                && timeZone.DaylightDate.Hour == registryTimeZoneInfo.DaylightDate.Hour
+                                && timeZone.DaylightDate.Minute == registryTimeZoneInfo.DaylightDate.Minute
+                                && timeZone.DaylightDate.Second == registryTimeZoneInfo.DaylightDate.Second
                                 && timeZone.DaylightDate.Milliseconds == registryTimeZoneInfo.DaylightDate.Milliseconds);
 
                     // Finally compare the "StandardName" string value...
@@ -3188,11 +3181,12 @@ namespace System {
                     // we do not compare "DaylightName" as this TimeZoneInformation field may contain
                     // either "StandardName" or "DaylightName" depending on the time of year and current machine settings
                     //
-                    if (result) {
+                    if (result)
+                    {
                         String registryStandardName = key.GetValue(c_standardValue, String.Empty, RegistryValueOptions.None) as String;
                         result = String.Compare(registryStandardName, timeZone.StandardName, StringComparison.Ordinal) == 0;
                     }
-                    return result;  
+                    return result;
                 }  
             }
             finally {
@@ -3409,14 +3403,8 @@ namespace System {
                 permSet.Assert();
 
                 using (RegistryKey key = Registry.LocalMachine.OpenSubKey(
-                                  c_timeZonesRegistryHive + "\\" + id,
-#if FEATURE_MACL
-                                  RegistryKeyPermissionCheck.Default,
-                                  System.Security.AccessControl.RegistryRights.ReadKey
-#else
-                                  false
-#endif
-                                  )) {
+                    c_timeZonesRegistryHive + "\\" + id,
+                    false)) {
 
                     if (key == null) {
                         value = null;

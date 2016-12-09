@@ -335,10 +335,6 @@ namespace System.Globalization {
             // m_isDefaultCalendar is set in the setter of Calendar below.
             this.Calendar = cal;
         }
-
-#if !FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical]
-#endif
         private void InitializeOverridableProperties(CultureData cultureData, int calendarID)
         {
             // Silverlight 2.0 never took a snapshot of the user's overridable properties
@@ -445,11 +441,6 @@ namespace System.Globalization {
 
             // make sure the m_name is initialized.
             m_name = this.CultureName;
-
-#if !FEATURE_CORECLR
-            if (s_calendarNativeNames == null)
-                s_calendarNativeNames = new Hashtable();
-#endif // FEATURE_CORECLR
 
             // Important to initialize these fields otherwise we may run into exception when deserializing on Whidbey
             // because Whidbey try to initialize some of these fields using calendar data which could be null values 

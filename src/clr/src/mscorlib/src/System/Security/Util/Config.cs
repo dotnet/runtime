@@ -74,48 +74,6 @@ namespace System.Security.Util {
             }
         }
 
-#if FEATURE_CAS_POLICY
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        internal static extern int SaveDataByte(string path, [In] byte[] data, int length);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        internal static extern bool RecoverData(ConfigId id);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        internal static extern void SetQuickCache(ConfigId id, QuickCacheEntryType quickCacheFlags);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern bool GetCacheEntry(ConfigId id, int numKey, [In] byte[] key, int keyLength, ObjectHandleOnStack retData);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        internal static bool GetCacheEntry(ConfigId id, int numKey, byte[] key, out byte[] data)
-        {
-            byte[] retData = null;
-            bool ret = GetCacheEntry(id, numKey, key, key.Length, JitHelpers.GetObjectHandleOnStack(ref retData));
-
-            data = retData;
-            return ret;
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern void AddCacheEntry(ConfigId id, int numKey, [In] byte[] key, int keyLength, byte[] data, int dataLength);
-
-        [System.Security.SecurityCritical]  // auto-generated
-        internal static void AddCacheEntry(ConfigId id, int numKey, byte[] key, byte[] data)
-        {
-            AddCacheEntry(id, numKey, key, key.Length, data, data.Length);
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        internal static extern void ResetCacheData(ConfigId id);
-#endif
-
         [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern void GetMachineDirectory(StringHandleOnStack retDirectory);
