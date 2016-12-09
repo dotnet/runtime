@@ -35,7 +35,7 @@ namespace Windows.Foundation
         private float _width;
         private float _height;
 
-        private readonly static Size s_empty = CreateEmptySize();
+        private static readonly Size s_empty = CreateEmptySize();
 
         public Size(double width, double height)
         {

@@ -2455,7 +2455,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        readonly static private PredefinedName[] s_EK2NAME =
+        private static readonly PredefinedName[] s_EK2NAME =
         {
             PredefinedName.PN_OPEQUALS,
             PredefinedName.PN_OPCOMPARE,

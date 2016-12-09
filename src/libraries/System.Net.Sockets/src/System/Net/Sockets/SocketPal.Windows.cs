@@ -20,7 +20,7 @@ namespace System.Net.Sockets
     {
         public const bool SupportsMultipleConnectAttempts = true;
 
-        private readonly static int s_protocolInformationSize = Marshal.SizeOf<Interop.Winsock.WSAPROTOCOL_INFO>();
+        private static readonly int s_protocolInformationSize = Marshal.SizeOf<Interop.Winsock.WSAPROTOCOL_INFO>();
 
         public static int ProtocolInformationSize { get { return s_protocolInformationSize; } }
 

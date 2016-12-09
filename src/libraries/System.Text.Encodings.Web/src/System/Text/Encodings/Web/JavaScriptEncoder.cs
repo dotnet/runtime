@@ -49,7 +49,7 @@ namespace System.Text.Encodings.Web
     {
         private AllowedCharactersBitmap _allowedCharacters;
 
-        internal readonly static DefaultJavaScriptEncoder Singleton = new DefaultJavaScriptEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
+        internal static readonly DefaultJavaScriptEncoder Singleton = new DefaultJavaScriptEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 
         public DefaultJavaScriptEncoder(TextEncoderSettings filter)
         {

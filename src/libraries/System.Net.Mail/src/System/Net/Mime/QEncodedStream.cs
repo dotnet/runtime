@@ -322,7 +322,7 @@ namespace System.Net.Mime
 
         private class WriteAsyncResult : LazyAsyncResult
         {
-            private readonly static AsyncCallback s_onWrite = OnWrite;
+            private static readonly AsyncCallback s_onWrite = OnWrite;
 
             private readonly QEncodedStream _parent;
             private readonly byte[] _buffer;

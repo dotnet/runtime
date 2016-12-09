@@ -722,7 +722,7 @@ internal static partial class Interop
                 "WWW-Authenticate",
             };
 
-            private readonly static Dictionary<string, int> s_hashtable = CreateTable();
+            private static readonly Dictionary<string, int> s_hashtable = CreateTable();
 
             private static Dictionary<string, int> CreateTable()
             {

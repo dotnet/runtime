@@ -639,8 +639,8 @@ nameof(binaryForm));
             Invalid   = GO,      // not a valid combination of flags
         }
 
-        private readonly static PM[] s_AFtoPM = CreateAFtoPMConversionMatrix();    // AceFlags-to-Propagation conversion matrix
-        private readonly static AF[] s_PMtoAF = CreatePMtoAFConversionMatrix();    // Propagation-to-AceFlags conversion matrix
+        private static readonly PM[] s_AFtoPM = CreateAFtoPMConversionMatrix();    // AceFlags-to-Propagation conversion matrix
+        private static readonly AF[] s_PMtoAF = CreatePMtoAFConversionMatrix();    // Propagation-to-AceFlags conversion matrix
 
         private static PM[] CreateAFtoPMConversionMatrix()
         {

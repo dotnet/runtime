@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object[][] CertificateValidationServers = 
+        public static readonly object[][] CertificateValidationServers = 
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer },
             new object[] { Configuration.Http.SelfSignedCertRemoteServer },
@@ -193,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object[][] CertificateValidationServersAndExpectedPolicies =
+        public static readonly object[][] CertificateValidationServersAndExpectedPolicies =
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
             new object[] { Configuration.Http.SelfSignedCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },

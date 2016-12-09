@@ -9,6 +9,6 @@ namespace System.Dynamic.Utils
 {
     internal static class EmptyReadOnlyCollection<T>
     {
-        public readonly static ReadOnlyCollection<T> Instance = new TrueReadOnlyCollection<T>(Array.Empty<T>());
+        public static readonly ReadOnlyCollection<T> Instance = new TrueReadOnlyCollection<T>(Array.Empty<T>());
     }
 }
