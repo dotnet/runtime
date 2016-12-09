@@ -115,6 +115,8 @@ namespace System {
         private const long c_ticksPerDay         = c_ticksPerHour * 24;
         private const long c_ticksPerDayRange    = c_ticksPerDay - c_ticksPerMillisecond;
 
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateCustomTimeZone(c_utcId, TimeSpan.Zero, c_utcId, c_utcId);
+
         //
         // All cached data are encapsulated in a helper class to allow consistent view even when the data are refreshed using ClearCachedData()
         //
@@ -125,7 +127,6 @@ namespace System {
         class CachedData
         {
             private volatile TimeZoneInfo m_localTimeZone;
-            private volatile TimeZoneInfo m_utcTimeZone;
 
             private TimeZoneInfo CreateLocal()
             {
@@ -163,31 +164,6 @@ namespace System {
                 }
             }
 
-            private TimeZoneInfo CreateUtc()
-            {
-                lock (this)
-                {
-                    TimeZoneInfo timeZone = m_utcTimeZone;
-                    if (timeZone == null) {
-                        timeZone = CreateCustomTimeZone(c_utcId, TimeSpan.Zero, c_utcId, c_utcId);
-                        m_utcTimeZone = timeZone;
-                    }
-                    return timeZone;
-                }
-            }
-
-            public TimeZoneInfo Utc {
-                get {
-                    Contract.Ensures(Contract.Result<TimeZoneInfo>() != null);
-
-                    TimeZoneInfo timeZone = m_utcTimeZone;
-                    if (timeZone == null) {
-                        timeZone = CreateUtc();
-                    }
-                    return timeZone;
-                }
-            }     
-
             //
             // GetCorrespondingKind-
             //
@@ -215,7 +191,7 @@ namespace System {
                 // in this example.  Only when the user passes in TimeZoneInfo.Local or
                 // TimeZoneInfo.Utc to the ConvertTime(...) methods will this check succeed.
                 //
-                if ((object)timeZone == (object)m_utcTimeZone) {
+                if ((object)timeZone == (object)s_utcTimeZone) {
                     kind = DateTimeKind.Utc;
                 }
                 else if ((object)timeZone == (object)m_localTimeZone) {
@@ -427,7 +403,7 @@ namespace System {
             }
             else if (dateTime.Kind == DateTimeKind.Utc) {
                 CachedData cachedData = s_cachedData;
-                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Utc, this, TimeZoneInfoOptions.None, cachedData);
+                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, s_utcTimeZone, this, TimeZoneInfoOptions.None, cachedData);
             }
             else {
                 adjustedTime = dateTime;
@@ -525,7 +501,7 @@ namespace System {
                     //
                     // normal case of converting from Local to Utc and then getting the offset from the UTC DateTime
                     //
-                    DateTime adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Local, cachedData.Utc, flags);
+                    DateTime adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags);
                     return GetUtcOffsetFromUtc(adjustedTime, this);
                 }
 
@@ -592,7 +568,7 @@ namespace System {
             }
             else if (dateTime.Kind == DateTimeKind.Utc) {
                 CachedData cachedData = s_cachedData;
-                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Utc, this, flags, cachedData);
+                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, s_utcTimeZone, this, flags, cachedData);
             }
             else {
                 adjustedTime = dateTime;
@@ -759,7 +735,7 @@ namespace System {
                 // be reference equal to the new TimeZoneInfo.Utc
                 //
                 CachedData cachedData = s_cachedData;
-                return ConvertTime(dateTime, cachedData.Utc, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
+                return ConvertTime(dateTime, s_utcTimeZone, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
             }
             else
             {
@@ -809,7 +785,7 @@ namespace System {
             }
             CachedData cachedData = s_cachedData;
             if (dateTime.Kind == DateTimeKind.Utc) {
-                return ConvertTime(dateTime, cachedData.Utc, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
+                return ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
             }
             else {
                 return ConvertTime(dateTime, cachedData.Local, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
@@ -903,7 +879,7 @@ namespace System {
         //
         static public DateTime ConvertTimeFromUtc(DateTime dateTime, TimeZoneInfo destinationTimeZone) {
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Utc, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
+            return ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
         }
 
 
@@ -917,7 +893,7 @@ namespace System {
                 return dateTime;
             }
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Local, cachedData.Utc, TimeZoneInfoOptions.None, cachedData);
+            return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, TimeZoneInfoOptions.None, cachedData);
         }
 
 
@@ -926,12 +902,12 @@ namespace System {
                 return dateTime;
             }
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Local, cachedData.Utc, flags, cachedData);
+            return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags, cachedData);
         }
 
         static public DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfo sourceTimeZone) {
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, sourceTimeZone, cachedData.Utc, TimeZoneInfoOptions.None, cachedData);
+            return ConvertTime(dateTime, sourceTimeZone, s_utcTimeZone, TimeZoneInfoOptions.None, cachedData);
         }
 
 
@@ -1156,7 +1132,7 @@ namespace System {
         static public TimeZoneInfo Utc {
             get {
                 Contract.Ensures(Contract.Result<TimeZoneInfo>() != null);
-                return s_cachedData.Utc;
+                return s_utcTimeZone;
             }
         }
 
