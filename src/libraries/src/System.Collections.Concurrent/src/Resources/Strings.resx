@@ -237,4 +237,7 @@
   <data name="PartitionerStatic_CurrentCalledBeforeMoveNext" xml:space="preserve">
     <value>MoveNext must be called at least once before calling Current.</value>
   </data>
+  <data name="ConcurrentBag_Enumerator_EnumerationNotStartedOrAlreadyFinished" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
+  </data>
 </root>
