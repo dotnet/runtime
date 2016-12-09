@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50' OR '$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <TestSourceFolder>$(MSBuildThisFileDirectory)\</TestSourceFolder>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'">
+    <ProjectJson>Performance/project.json</ProjectJson>
+    <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceFolder)..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
+    <ProjectReference Include="$(TestSourceFolder)..\..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
