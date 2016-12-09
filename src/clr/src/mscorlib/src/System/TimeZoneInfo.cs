@@ -4475,13 +4475,13 @@ namespace System {
             {
 
             // ---- SECTION:  members supporting exposed properties -------------*
-            private DateTime m_dateStart;
-            private DateTime m_dateEnd;
-            private TimeSpan m_daylightDelta;
-            private TransitionTime m_daylightTransitionStart;
-            private TransitionTime m_daylightTransitionEnd;
-            private TimeSpan m_baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + m_baseUtcOffsetDelta)
-            private bool m_noDaylightTransitions;
+            private readonly DateTime m_dateStart;
+            private readonly DateTime m_dateEnd;
+            private readonly TimeSpan m_daylightDelta;
+            private readonly TransitionTime m_daylightTransitionStart;
+            private readonly TransitionTime m_daylightTransitionEnd;
+            private readonly TimeSpan m_baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + m_baseUtcOffsetDelta)
+            private readonly bool m_noDaylightTransitions;
 
             // ---- SECTION: public properties --------------*
             public DateTime  DateStart {
@@ -4566,33 +4566,29 @@ namespace System {
 
             // -------- SECTION: constructors -----------------*
 
-            private AdjustmentRule() { }
-
-
-            // -------- SECTION: factory methods -----------------*
-
-            static internal AdjustmentRule CreateAdjustmentRule(
-                             DateTime dateStart,
-                             DateTime dateEnd,
-                             TimeSpan daylightDelta,
-                             TransitionTime daylightTransitionStart,
-                             TransitionTime daylightTransitionEnd,
-                             bool noDaylightTransitions) {
+            private AdjustmentRule(
+                DateTime dateStart,
+                DateTime dateEnd,
+                TimeSpan daylightDelta,
+                TransitionTime daylightTransitionStart,
+                TransitionTime daylightTransitionEnd,
+                TimeSpan baseUtcOffsetDelta,
+                bool noDaylightTransitions)
+            {
                 ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
                        daylightTransitionStart, daylightTransitionEnd, noDaylightTransitions);
 
-                AdjustmentRule rule = new AdjustmentRule();
-
-                rule.m_dateStart = dateStart;
-                rule.m_dateEnd   = dateEnd;
-                rule.m_daylightDelta = daylightDelta;
-                rule.m_daylightTransitionStart = daylightTransitionStart;
-                rule.m_daylightTransitionEnd = daylightTransitionEnd;
-                rule.m_baseUtcOffsetDelta = TimeSpan.Zero;
-                rule.m_noDaylightTransitions = noDaylightTransitions;
-
-                return rule;
+                m_dateStart = dateStart;
+                m_dateEnd = dateEnd;
+                m_daylightDelta = daylightDelta;
+                m_daylightTransitionStart = daylightTransitionStart;
+                m_daylightTransitionEnd = daylightTransitionEnd;
+                m_baseUtcOffsetDelta = baseUtcOffsetDelta;
+                m_noDaylightTransitions = noDaylightTransitions;
             }
+
+
+            // -------- SECTION: factory methods -----------------*
 
             static public AdjustmentRule CreateAdjustmentRule(
                              DateTime dateStart,
@@ -4601,8 +4597,14 @@ namespace System {
                              TransitionTime daylightTransitionStart,
                              TransitionTime daylightTransitionEnd)
             {
-                return CreateAdjustmentRule(dateStart, dateEnd, daylightDelta,
-                    daylightTransitionStart, daylightTransitionEnd, noDaylightTransitions: false);
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta: TimeSpan.Zero,
+                    noDaylightTransitions: false);
             }
 
             static internal AdjustmentRule CreateAdjustmentRule(
@@ -4612,12 +4614,16 @@ namespace System {
                              TransitionTime daylightTransitionStart,
                              TransitionTime daylightTransitionEnd,
                              TimeSpan baseUtcOffsetDelta,
-                             bool noDaylightTransitions) {
-                AdjustmentRule rule = CreateAdjustmentRule(dateStart, dateEnd, daylightDelta,
-                    daylightTransitionStart, daylightTransitionEnd, noDaylightTransitions);
-
-                rule.m_baseUtcOffsetDelta = baseUtcOffsetDelta;
-                return rule;
+                             bool noDaylightTransitions)
+            {
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta,
+                    noDaylightTransitions);
             }
 
             // ----- SECTION: internal utility methods ----------------*
