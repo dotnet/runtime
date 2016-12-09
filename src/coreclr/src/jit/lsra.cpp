@@ -3684,7 +3684,51 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // (i.e. the target is read-modify-write), preference the dst to op1.
 
     bool hasDelayFreeSrc = tree->gtLsraInfo.hasDelayFreeSrc;
-    if (tree->OperGet() == GT_PUTARG_REG && isCandidateLocalRef(tree->gtGetOp1()) &&
+
+#if defined(DEBUG) && defined(_TARGET_X86_)
+    // On x86, `LSRA_LIMIT_CALLER` is too restrictive to allow the use of special put args: this stress mode
+    // leaves only three registers allocatable--eax, ecx, and edx--of which the latter two are also used for the
+    // first two integral arguments to a call. This can leave us with too few registers to succesfully allocate in
+    // situations like the following:
+    //
+    //     t1026 =    lclVar    ref    V52 tmp35        u:3 REG NA <l:$3a1, c:$98d>
+    //
+    //             /--*  t1026  ref
+    //     t1352 = *  putarg_reg ref    REG NA
+    //
+    //      t342 =    lclVar    int    V14 loc6         u:4 REG NA $50c
+    //
+    //      t343 =    const     int    1 REG NA $41
+    //
+    //             /--*  t342   int
+    //             +--*  t343   int
+    //      t344 = *  +         int    REG NA $495
+    //
+    //      t345 =    lclVar    int    V04 arg4         u:2 REG NA $100
+    //
+    //             /--*  t344   int
+    //             +--*  t345   int
+    //      t346 = *  %         int    REG NA $496
+    //
+    //             /--*  t346   int
+    //     t1353 = *  putarg_reg int    REG NA
+    //
+    //     t1354 =    lclVar    ref    V52 tmp35         (last use) REG NA
+    //
+    //             /--*  t1354  ref
+    //     t1355 = *  lea(b+0)  byref  REG NA
+    //
+    // Here, the first `putarg_reg` would normally be considered a special put arg, which would remove `ecx` from the
+    // set of allocatable registers, leaving only `eax` and `edx`. The allocator will then fail to allocate a register
+    // for the def of `t345` if arg4 is not a register candidate: the corresponding ref position will be constrained to
+    // { `ecx`, `ebx`, `esi`, `edi` }, which `LSRA_LIMIT_CALLER` will further constrain to `ecx`, which will not be
+    // available due to the special put arg.
+    const bool supportsSpecialPutArg = getStressLimitRegs() != LSRA_LIMIT_CALLER;
+#else
+    const bool supportsSpecialPutArg = true;
+#endif
+
+    if (supportsSpecialPutArg && tree->OperGet() == GT_PUTARG_REG && isCandidateLocalRef(tree->gtGetOp1()) &&
         (tree->gtGetOp1()->gtFlags & GTF_VAR_DEATH) == 0)
     {
         // This is the case for a "pass-through" copy of a lclVar.  In the case where it is a non-last-use,
