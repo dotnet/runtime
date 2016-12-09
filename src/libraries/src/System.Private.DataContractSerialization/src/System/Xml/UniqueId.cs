@@ -317,7 +317,7 @@ namespace System.Xml
             return _s;
         }
 
-        static public bool operator ==(UniqueId id1, UniqueId id2)
+        public static bool operator ==(UniqueId id1, UniqueId id2)
         {
             if (object.ReferenceEquals(id1, id2))
                 return true;
@@ -334,7 +334,7 @@ namespace System.Xml
             return id1.ToString() == id2.ToString();
         }
 
-        static public bool operator !=(UniqueId id1, UniqueId id2)
+        public static bool operator !=(UniqueId id1, UniqueId id2)
         {
             return !(id1 == id2);
         }

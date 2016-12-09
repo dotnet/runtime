@@ -437,7 +437,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static Test ExReturnTest(this int t)
         {

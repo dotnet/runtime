@@ -20,7 +20,7 @@ namespace Microsoft.Test.ModuleCore
         private static String s_pcommandline;
 
         //Constructor
-        static public TestProps Properties
+        public static TestProps Properties
         {
             get
             {
@@ -116,7 +116,7 @@ namespace Microsoft.Test.ModuleCore
             s_pcommandline = null;
         }
 
-        static public string InitString
+        public static string InitString
         {
             get
             {
@@ -127,7 +127,7 @@ namespace Microsoft.Test.ModuleCore
             }
         }
 
-        static public string CommandLine
+        public static string CommandLine
         {
             get
             {
@@ -142,7 +142,7 @@ namespace Microsoft.Test.ModuleCore
             }
         }
 
-        static public String Filter
+        public static String Filter
         {
             get
             {
@@ -152,7 +152,7 @@ namespace Microsoft.Test.ModuleCore
             }
         }
 
-        static public String MaxPriority
+        public static String MaxPriority
         {
             get
             {

@@ -23,12 +23,12 @@ namespace System.Security.Cryptography
 
         protected HMAC() { }
 
-        static public new HMAC Create()
+        public static new HMAC Create()
         {
             return Create("System.Security.Cryptography.HMAC");
         }
 
-        static public new HMAC Create(string algorithmName)
+        public static new HMAC Create(string algorithmName)
         {
             throw new PlatformNotSupportedException();
         }

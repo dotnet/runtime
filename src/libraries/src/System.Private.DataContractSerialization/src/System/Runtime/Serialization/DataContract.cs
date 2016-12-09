@@ -775,7 +775,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            static public bool TryCreateBuiltInDataContract(Type type, out DataContract dataContract)
+            public static bool TryCreateBuiltInDataContract(Type type, out DataContract dataContract)
             {
                 if (type.GetTypeInfo().IsEnum) // Type.GetTypeCode will report Enums as TypeCode.IntXX
                 {
@@ -856,7 +856,7 @@ namespace System.Runtime.Serialization
                 return dataContract != null;
             }
 
-            static public bool TryCreateBuiltInDataContract(string name, string ns, out DataContract dataContract)
+            public static bool TryCreateBuiltInDataContract(string name, string ns, out DataContract dataContract)
             {
                 dataContract = null;
                 if (ns == DictionaryGlobals.SchemaNamespace.Value)

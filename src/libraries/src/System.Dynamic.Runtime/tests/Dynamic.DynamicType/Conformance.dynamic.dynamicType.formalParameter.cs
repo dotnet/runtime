@@ -273,7 +273,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             return ret ? 0 : 1;
         }
 
-        static public bool Varifier(int expected, string output)
+        public static bool Varifier(int expected, string output)
         {
             if (expected == MyType.Result)
                 return true;
@@ -551,7 +551,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             return ret ? 0 : 1;
         }
 
-        static public bool Varifier(int expected, int actual, string output)
+        public static bool Varifier(int expected, int actual, string output)
         {
             if (expected == actual)
                 return true;
@@ -702,7 +702,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             return ret ? 0 : 1;
         }
 
-        static public bool Varifier(int expected, string output)
+        public static bool Varifier(int expected, string output)
         {
             if (expected == MyType.Result)
                 return true;
@@ -883,7 +883,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             return ret ? 0 : 1;
         }
 
-        static public bool Varifier(int expected, string output)
+        public static bool Varifier(int expected, string output)
         {
             if (expected == MyType.Result)
                 return true;

@@ -1211,7 +1211,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static Test ExReturnTest(this MyEnum me)
         {
@@ -2435,7 +2435,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static char Method(this char? c)
         {

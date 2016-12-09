@@ -1427,7 +1427,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static bool IsNull(this int? value)
         {

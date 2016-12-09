@@ -827,7 +827,7 @@ namespace System.Data.Common
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
         internal const float FailoverTimeoutStep = 0.08F;    // fraction of timeout to use for fast failover connections
 
-        // security issue, don't rely upon static public readonly values - AS/URT 109635
+        // security issue, don't rely upon public static readonly values - AS/URT 109635
         internal static readonly String StrEmpty = ""; // String.Empty
 
         internal const int CharSize = sizeof(char);

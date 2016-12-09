@@ -46,7 +46,7 @@ namespace System.Xml
             _buffer = buffer;
         }
 
-        static public XmlBufferReader Empty
+        public static XmlBufferReader Empty
         {
             get
             {
