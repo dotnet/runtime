@@ -4572,16 +4572,13 @@ namespace System {
 
             // IEquatable<AdjustmentRule>
             public bool Equals(AdjustmentRule other) {
-                bool equals = (other != null
-                     && this.m_dateStart == other.m_dateStart
-                     && this.m_dateEnd  == other.m_dateEnd
-                     && this.m_daylightDelta == other.m_daylightDelta
-                     && this.m_baseUtcOffsetDelta == other.m_baseUtcOffsetDelta);
-
-                equals = equals && this.m_daylightTransitionEnd.Equals(other.m_daylightTransitionEnd)
-                         && this.m_daylightTransitionStart.Equals(other.m_daylightTransitionStart);
-
-                return equals;
+                return other != null
+                    && m_dateStart == other.m_dateStart
+                    && m_dateEnd == other.m_dateEnd
+                    && m_daylightDelta == other.m_daylightDelta
+                    && m_baseUtcOffsetDelta == other.m_baseUtcOffsetDelta
+                    && m_daylightTransitionEnd.Equals(other.m_daylightTransitionEnd)
+                    && m_daylightTransitionStart.Equals(other.m_daylightTransitionStart);
             }
 
 
