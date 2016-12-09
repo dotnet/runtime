@@ -11,7 +11,6 @@ namespace System.Globalization {
 
     internal static class TimeSpanFormat {
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static String IntToString(int n, int digits) {
             return ParseNumbers.IntToString(n, 10, digits, '0', 0);
         }

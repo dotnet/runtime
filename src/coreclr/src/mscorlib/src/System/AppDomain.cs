@@ -89,7 +89,6 @@ namespace System
         }
     }
 
-    [System.Security.SecurityCritical] // auto-generated
     [Serializable]
     [ComVisible(true)]
     public delegate Assembly ResolveEventHandler(Object sender, ResolveEventArgs args);
@@ -156,7 +155,6 @@ namespace System
             Info = itemInfo.ToArray();            
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal AppDomainInitializer Unwrap()
         {
             if (Info==null)
@@ -190,7 +188,6 @@ namespace System
         // of these fields cannot be changed without changing the layout in 
         // the EE- AppDomainBaseObject in this case)
 
-        [System.Security.SecurityCritical] // auto-generated
         private AppDomainManager _domainManager;
         private Dictionary<String, Object[]> _LocalStore;
         private AppDomainSetup   _FusionStore;
@@ -201,12 +198,10 @@ namespace System
         [method: System.Security.SecurityCritical]
         public event AssemblyLoadEventHandler AssemblyLoad;
 
-        [System.Security.SecurityCritical]
         private ResolveEventHandler _TypeResolve;
 
         public event ResolveEventHandler TypeResolve
         {
-            [System.Security.SecurityCritical]
             add
             {
                 lock (this)
@@ -215,7 +210,6 @@ namespace System
                 }
             }
 
-            [System.Security.SecurityCritical]
             remove
             {
                 lock (this)
@@ -225,12 +219,10 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]
         private ResolveEventHandler _ResourceResolve;
 
         public event ResolveEventHandler ResourceResolve
         {
-            [System.Security.SecurityCritical]
             add
             {
                 lock (this)
@@ -239,7 +231,6 @@ namespace System
                 }
             }
 
-            [System.Security.SecurityCritical]
             remove
             {
                 lock (this)
@@ -249,12 +240,10 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]
         private ResolveEventHandler _AssemblyResolve;
 
         public event ResolveEventHandler AssemblyResolve
         {
-            [System.Security.SecurityCritical]
             add
             {
                 lock (this)
@@ -263,7 +252,6 @@ namespace System
                 }
             }
 
-            [System.Security.SecurityCritical]
             remove
             {
                 lock (this)
@@ -281,10 +269,8 @@ namespace System
         private ApplicationTrust _applicationTrust;
         private EventHandler     _processExit;
 
-        [System.Security.SecurityCritical] 
         private EventHandler     _domainUnload;
 
-        [System.Security.SecurityCritical] // auto-generated
         private UnhandledExceptionEventHandler _unhandledException;
 
         // The compat flags are set at domain creation time to indicate that the given breaking
@@ -328,7 +314,6 @@ namespace System
 
         private static APPX_FLAGS Flags
         {
-            [SecuritySafeCritical]
             get
             {
                 if (s_flags == 0)
@@ -341,7 +326,6 @@ namespace System
 
         internal static bool ProfileAPICheck
         {
-            [SecuritySafeCritical]
             get
             {
                 return (Flags & APPX_FLAGS.APPX_FLAGS_API_CHECK) != 0;
@@ -350,7 +334,6 @@ namespace System
 
         internal static bool IsAppXNGen
         {
-            [SecuritySafeCritical]
             get
             {
                 return (Flags & APPX_FLAGS.APPX_FLAGS_APPX_NGEN) != 0;
@@ -359,38 +342,32 @@ namespace System
 #endif // FEATURE_APPX
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DisableFusionUpdatesFromADManager(AppDomainHandle domain);
 
 #if FEATURE_APPX
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.I4)]
         private static extern APPX_FLAGS nGetAppXFlags();
 #endif
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetAppDomainManagerType(AppDomainHandle domain,
                                                            StringHandleOnStack retAssembly,
                                                            StringHandleOnStack retType);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         private static extern void SetAppDomainManagerType(AppDomainHandle domain,
                                                            string assembly,
                                                            string type);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void nSetHostSecurityManagerFlags (HostSecurityManagerOptions flags);
 
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void SetSecurityHomogeneousFlag(AppDomainHandle domain,
@@ -415,7 +392,6 @@ namespace System
         ///     If this AppDomain is configured to have an AppDomain manager then create the instance of it.
         ///     This method is also called from the VM to create the domain manager in the default domain.
         /// </summary>
-        [SecuritySafeCritical]
         private void CreateAppDomainManager()
         {
             Contract.Assert(_domainManager == null, "_domainManager == null");
@@ -532,7 +508,6 @@ namespace System
         // either by a host in native, a host in managed using an AppDomainSetup, or by the 
         // TargetFrameworkAttribute on the executable (VS emits its target framework moniker using this
         // attribute starting in version 4).
-        [SecuritySafeCritical]
         internal String GetTargetFrameworkName()
         {
             String targetFrameworkName = _FusionStore.TargetFrameworkName;
@@ -561,7 +536,6 @@ namespace System
         /// <summary>
         ///     Returns the setting of the corresponding compatibility config switch (see CreateAppDomainManager for the impact).
         /// </summary>
-        [SecuritySafeCritical]
         internal bool DisableFusionUpdatesFromADManager()
         {
             return DisableFusionUpdatesFromADManager(GetNativeHandle());
@@ -570,7 +544,6 @@ namespace System
         /// <summary>
         ///     Returns whether the current AppDomain follows the AppX rules.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static bool IsAppXModel()
         {
@@ -584,7 +557,6 @@ namespace System
         /// <summary>
         ///     Returns the setting of the AppXDevMode config switch.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static bool IsAppXDesignMode()
         {
@@ -598,7 +570,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports Assembly.LoadFrom.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckLoadFromSupported()
         {
@@ -611,7 +582,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports Assembly.LoadFile.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckLoadFileSupported()
         {
@@ -624,7 +594,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports Assembly.ReflectionOnlyLoad.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckReflectionOnlyLoadSupported()
         {
@@ -637,7 +606,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports Assembly.LoadWithPartialName.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckLoadWithPartialNameSupported(StackCrawlMark stackMark)
         {
@@ -657,7 +625,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports DefinePInvokeMethod.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckDefinePInvokeSupported()
         {
@@ -671,7 +638,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports Assembly.Load(byte[] ...).
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckLoadByteArraySupported()
         {
@@ -684,7 +650,6 @@ namespace System
         /// <summary>
         ///     Checks (and throws on failure) if the domain supports AppDomain.CreateDomain.
         /// </summary>
-        [SecuritySafeCritical]
         [Pure]
         internal static void CheckCreateDomainSupported()
         {
@@ -705,7 +670,6 @@ namespace System
         /// <summary>
         ///     Get the name of the assembly and type that act as the AppDomainManager for this domain
         /// </summary>
-        [SecuritySafeCritical]
         internal void GetAppDomainManagerType(out string assembly, out string type)
         {
             // We can't just use our parameters because we need to ensure that the strings used for hte QCall
@@ -724,7 +688,6 @@ namespace System
         /// <summary>
         ///     Set the assembly and type which act as the AppDomainManager for this domain
         /// </summary>
-        [SecuritySafeCritical]
         private void SetAppDomainManagerType(string assembly, string type)
         {
             Contract.Assert(assembly != null, "assembly != null");
@@ -735,7 +698,6 @@ namespace System
         /// <summary>
         ///     Called for every AppDomain (including the default domain) to initialize the security of the AppDomain)
         /// </summary>
-        [SecurityCritical]
         private void InitializeDomainSecurity(Evidence providedSecurityInfo,
                                               Evidence creatorsSecurityInfo,
                                               bool generateDefaultEvidence,
@@ -772,7 +734,6 @@ namespace System
                                 publishAppDomain);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetupDomainSecurityForHomogeneousDomain(ApplicationTrust appTrust,
                                                              bool runtimeSuppliedHomogenousGrantSet)
         {
@@ -796,7 +757,6 @@ namespace System
         }
 
         public AppDomainManager DomainManager {
-            [System.Security.SecurityCritical]  // auto-generated_required
             get {
                 return _domainManager;
             }
@@ -818,7 +778,6 @@ namespace System
                 _packageGraphFilePaths = packageGraphFilePaths;
             }
             
-            [System.Security.SecurityCritical]
             public void ResolveNamespace(
                 object sender, 
                 System.Runtime.InteropServices.WindowsRuntime.NamespaceResolveEventArgs args)
@@ -837,7 +796,6 @@ namespace System
         }
         
         // Called only by native function code:ValidateWorker
-        [System.Security.SecuritySafeCritical]
         private void EnableResolveAssembliesForIntrospection(string verifiedFileDirectory)
         {
             CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(ResolveAssemblyForIntrospection);
@@ -858,7 +816,6 @@ namespace System
         * to have a strong name and a hash will be computed when the assembly
         * is saved.
         **********************************************/
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public AssemblyBuilder DefineDynamicAssembly(
             AssemblyName            name,
@@ -871,7 +828,6 @@ namespace System
                                                  null, null, null, null, ref stackMark, null, SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public AssemblyBuilder DefineDynamicAssembly(
             AssemblyName            name,
@@ -889,7 +845,6 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Due to the stack crawl mark
-        [SecuritySafeCritical]
         public AssemblyBuilder DefineDynamicAssembly(AssemblyName name,
                                                      AssemblyBuilderAccess access,
                                                      IEnumerable<CustomAttributeBuilder> assemblyAttributes,
@@ -906,7 +861,6 @@ namespace System
                                                  securityContextSource);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public AssemblyBuilder DefineDynamicAssembly(
             AssemblyName            name,
@@ -923,7 +877,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default.  See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -941,7 +894,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default.  See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -963,7 +915,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of DefineDynamicAssembly which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkId=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -979,7 +930,6 @@ namespace System
                                                  null, null, null, ref stackMark, null, SecurityContextSource.CurrentAssembly);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -1002,7 +952,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -1026,7 +975,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default.  Please see http://go.microsoft.com/fwlink/?LinkId=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -1051,7 +999,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -1079,7 +1026,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public AssemblyBuilder DefineDynamicAssembly(
@@ -1108,7 +1054,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public AssemblyBuilder DefineDynamicAssembly(
                     AssemblyName name,
@@ -1132,7 +1077,6 @@ namespace System
                                                  SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         private AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
@@ -1158,7 +1102,6 @@ namespace System
                                                                  securityContextSource);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern String nApplyPolicy(AssemblyName an);
        
@@ -1196,7 +1139,6 @@ namespace System
                                             typeName);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal ObjectHandle InternalCreateInstanceWithNoSecurity (string assemblyName, string typeName) {
             PermissionSet.s_fullTrust.Assert();
             return CreateInstance(assemblyName, typeName);
@@ -1215,7 +1157,6 @@ namespace System
                                                 typeName);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal ObjectHandle InternalCreateInstanceFromWithNoSecurity (string assemblyName, string typeName) {
             PermissionSet.s_fullTrust.Assert();
             return CreateInstanceFrom(assemblyName, typeName);
@@ -1346,7 +1287,6 @@ namespace System
                                             activationAttributes);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal ObjectHandle InternalCreateInstanceWithNoSecurity (string assemblyName, 
                                                                     string typeName,
                                                                     bool ignoreCase,
@@ -1415,7 +1355,6 @@ namespace System
                                                 activationAttributes);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal ObjectHandle InternalCreateInstanceFromWithNoSecurity (string assemblyName, 
                                                                         string typeName,
                                                                         bool ignoreCase,
@@ -1432,7 +1371,6 @@ namespace System
 #pragma warning restore 618
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Assembly Load(AssemblyName assemblyRef)
         {
@@ -1440,7 +1378,6 @@ namespace System
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false, false);
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Assembly Load(String assemblyString)
         {
@@ -1448,7 +1385,6 @@ namespace System
             return RuntimeAssembly.InternalLoad(assemblyString, null, ref stackMark, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Assembly Load(byte[] rawAssembly)
         {
@@ -1462,7 +1398,6 @@ namespace System
 
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Assembly Load(byte[] rawAssembly,
                              byte[] rawSymbolStore)
@@ -1476,10 +1411,6 @@ namespace System
                                        SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, ControlEvidence = true)]
-#pragma warning restore 618
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkId=155570 for more information.")]
         public Assembly Load(byte[] rawAssembly,
@@ -1495,7 +1426,6 @@ namespace System
                                        SecurityContextSource.CurrentAssembly);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public Assembly Load(AssemblyName assemblyRef,
@@ -1505,7 +1435,6 @@ namespace System
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, assemblySecurity, null, ref stackMark, true /*thrownOnFileNotFound*/, false, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public Assembly Load(String assemblyString,
@@ -1581,7 +1510,6 @@ namespace System
             return nExecuteAssembly(assembly, args);
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         public int ExecuteAssemblyByName(String assemblyName)
         {
             return ExecuteAssemblyByName(assemblyName, (string[])null);
@@ -1652,19 +1580,16 @@ namespace System
 
         public String FriendlyName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return nGetFriendlyName(); }
         } 
 
         public String BaseDirectory
         {
-            [System.Security.SecurityCritical]
             get {
                 return FusionStore.ApplicationBase;
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString()
         {
             StringBuilder sb = StringBuilderCache.Acquire();
@@ -1700,31 +1625,25 @@ namespace System
             return nGetAssemblies(true /* forIntrospection */);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Assembly[] nGetAssemblies(bool forIntrospection);
 
         // this is true when we've removed the handles etc so really can't do anything
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsUnloadingForcedFinalize();
 
         // this is true when we've just started going through the finalizers and are forcing objects to finalize
         // so must be aware that certain infrastructure may have gone away
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern bool IsFinalizingForUnload();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void SetData (string name, object data) {
             SetDataHelper(name, data, null);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void SetData (string name, object data, IPermission permission)
         {
             if (!name.Equals("LOCATION_URI"))
@@ -1736,7 +1655,6 @@ namespace System
             SetDataHelper(name, data, permission);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetDataHelper (string name, object data, IPermission permission)
         {
             if (name == null)
@@ -1759,7 +1677,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecurityCritical] // auto-generated
         public Object GetData(string name)
         {
             if(name == null)
@@ -1842,7 +1759,6 @@ namespace System
 
         public String DynamicDirectory
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 String dyndir = GetDynamicDir();
                 if (dyndir != null)
@@ -1852,7 +1768,6 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         extern private String GetDynamicDir();
 
@@ -1860,7 +1775,6 @@ namespace System
             throw new NotSupportedException(Environment.GetResourceString(ResId.NotSupported_Constructor));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern int _nExecuteAssembly(RuntimeAssembly assembly, String[] args);
         internal int nExecuteAssembly(RuntimeAssembly assembly, String[] args)
@@ -1872,24 +1786,18 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void nCreateContext();
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void nSetupBindingPaths(String trustedPlatformAssemblies, String platformResourceRoots, String appPath, String appNiPaths, String appLocalWinMD);
 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         internal void SetupBindingPaths(String trustedPlatformAssemblies, String platformResourceRoots, String appPath, String appNiPaths, String appLocalWinMD)
         {
             nSetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPath, appNiPaths, appLocalWinMD);
         }
 #endif // FEATURE_VERSIONING
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern String nGetFriendlyName();
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool nIsDefaultAppDomainForEvidence();
 
@@ -1901,7 +1809,6 @@ namespace System
 
         public event EventHandler ProcessExit
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated_required
             add
             {
                 if (value != null)
@@ -1921,7 +1828,6 @@ namespace System
 
         public event EventHandler DomainUnload
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated_required
             add
             {
                 if (value != null)
@@ -1931,7 +1837,6 @@ namespace System
                         _domainUnload += value;
                 }
             }
-            [System.Security.SecuritySafeCritical] 
             remove
             {
                 lock(this)
@@ -1942,7 +1847,6 @@ namespace System
 
         public event UnhandledExceptionEventHandler UnhandledException
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
             add
             {
                 if (value != null)
@@ -1952,7 +1856,6 @@ namespace System
                         _unhandledException += value;
                 }
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             remove
             {
                 lock(this)
@@ -1967,7 +1870,6 @@ namespace System
         // To register/unregister the callback, the code must be SecurityCritical.
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
             add
             {
                 if (value != null)
@@ -1977,7 +1879,6 @@ namespace System
                         _firstChanceException += value;
                 }
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             remove
             {
                 lock(this)
@@ -1996,7 +1897,6 @@ namespace System
         }
     
         // This method is called by the VM.
-        [System.Security.SecurityCritical]
         private RuntimeAssembly OnResourceResolveEvent(RuntimeAssembly assembly, String resourceName)
         {
             ResolveEventHandler eventHandler = _ResourceResolve;
@@ -2016,7 +1916,6 @@ namespace System
         }
         
         // This method is called by the VM
-        [System.Security.SecurityCritical]
         private RuntimeAssembly OnTypeResolveEvent(RuntimeAssembly assembly, String typeName)
         {
             ResolveEventHandler eventHandler = _TypeResolve;
@@ -2036,7 +1935,6 @@ namespace System
         }
 
         // This method is called by the VM.
-        [System.Security.SecurityCritical]
         private RuntimeAssembly OnAssemblyResolveEvent(RuntimeAssembly assembly, String assemblyFullName)
         {
             ResolveEventHandler eventHandler = _AssemblyResolve;
@@ -2105,17 +2003,14 @@ namespace System
 
         // Used to determine if server object context is valid in
         // x-domain remoting scenarios.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool IsDomainIdValid(Int32 id);
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void nSetNativeDllSearchDirectories(string paths);
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetupFusionStore(AppDomainSetup info, AppDomainSetup oldInfo)
         {
             Contract.Requires(info != null);
@@ -2162,7 +2057,6 @@ namespace System
         //   are any remoting sinks registered, they can add non-mscorlib
         //   objects to the message (causing an assembly load exception when
         //   we try to deserialize it on the other side)
-        [System.Security.SecurityCritical]  // auto-generated
         private static object PrepareDataForSetup(String friendlyName,
                                                         AppDomainSetup setup,
                                                         Evidence providedSecurityInfo,
@@ -2223,7 +2117,6 @@ namespace System
             };  
         } // PrepareDataForSetup
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static Object Setup(Object arg)
         {
@@ -2393,7 +2286,6 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        [SecuritySafeCritical]
         internal static string NormalizePath(string path, bool fullCheck)
         {
             return Path.GetFullPath(path);
@@ -2401,7 +2293,6 @@ namespace System
 
         // This routine is called from unmanaged code to
         // set the default fusion context.
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetupDomain(bool allowRedirects, String path, String configFile, String[] propertyNames, String[] propertyValues)
         {
             // It is possible that we could have multiple threads initializing
@@ -2421,7 +2312,6 @@ namespace System
         }
 
 #if FEATURE_LOADER_OPTIMIZATION
-       [System.Security.SecurityCritical]  // auto-generated
        private void SetupLoaderOptimization(LoaderOptimization policy)
         {
             if(policy != LoaderOptimization.NotSpecified) {
@@ -2434,11 +2324,9 @@ namespace System
         }
 #endif
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern IntPtr GetSecurityDescriptor();
 
-        [SecurityCritical]
         private void SetupDomainSecurity(Evidence appDomainEvidence,
                                          IntPtr creatorsSecurityDescriptor,
                                          bool publishAppDomain)
@@ -2451,7 +2339,6 @@ namespace System
 
         }
 
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void SetupDomainSecurity(AppDomainHandle appDomain,
@@ -2459,7 +2346,6 @@ namespace System
                                                        IntPtr creatorsSecurityDescriptor,
                                                        [MarshalAs(UnmanagedType.Bool)] bool publishAppDomain);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void nSetupFriendlyName(string friendlyName);
 
@@ -2469,7 +2355,6 @@ namespace System
 #endif // FEATURE_COMINTEROP
 
 #if FEATURE_LOADER_OPTIMIZATION
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void UpdateLoaderOptimization(LoaderOptimization optimization);
 #endif
@@ -2481,15 +2366,12 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern String IsStringInterned(String str);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern String GetOrInternString(String str);
         
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetGrantSet(AppDomainHandle domain, ObjectHandleOnStack retGrantSet);
@@ -2497,7 +2379,6 @@ namespace System
         public PermissionSet PermissionSet
         {
             // SecurityCritical because permissions can contain sensitive information such as paths
-            [SecurityCritical]
             get
             {
                 PermissionSet grantSet = null;
@@ -2516,7 +2397,6 @@ namespace System
 
         public bool IsFullyTrusted
         {
-            [SecuritySafeCritical]
             get
             {
                 PermissionSet grantSet = null;
@@ -2535,11 +2415,9 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void nChangeSecurityPolicy();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.MayCorruptAppDomain, Cer.MayFail)]
         internal static extern void nUnload(Int32 domainInternal);
@@ -2698,7 +2576,6 @@ namespace System
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]              
         internal extern Int32 GetId();
@@ -2713,42 +2590,34 @@ namespace System
         }
 
 #if FEATURE_APPDOMAIN_RESOURCE_MONITORING
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void nEnableMonitoring();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool nMonitoringIsEnabled();
 
         // return -1 if ARM is not supported.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Int64 nGetTotalProcessorTime();
 
         // return -1 if ARM is not supported.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Int64 nGetTotalAllocatedMemorySize();
 
         // return -1 if ARM is not supported.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Int64 nGetLastSurvivedMemorySize();
 
         // return -1 if ARM is not supported.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int64 nGetLastSurvivedProcessMemorySize();
 
         public static bool MonitoringIsEnabled
         {
-            [System.Security.SecurityCritical]
             get {
                 return nMonitoringIsEnabled();
             }
             
-            [System.Security.SecurityCritical]
             set {
                 if (value == false)
                 {
@@ -2765,7 +2634,6 @@ namespace System
         // Throws NotSupportedException if ARM is not enabled.
         public TimeSpan MonitoringTotalProcessorTime 
         {
-            [System.Security.SecurityCritical]
             get {
                 Int64 i64ProcessorTime = nGetTotalProcessorTime();
                 if (i64ProcessorTime == -1)
@@ -2781,7 +2649,6 @@ namespace System
         // Throws NotSupportedException if ARM is not enabled.
         public Int64 MonitoringTotalAllocatedMemorySize 
         {
-            [System.Security.SecurityCritical]
             get {
                 Int64 i64AllocatedMemory = nGetTotalAllocatedMemorySize();
                 if (i64AllocatedMemory == -1)
@@ -2799,7 +2666,6 @@ namespace System
         // Throws NotSupportedException if ARM is not enabled.
         public Int64 MonitoringSurvivedMemorySize
         {
-            [System.Security.SecurityCritical]
             get {
                 Int64 i64LastSurvivedMemory = nGetLastSurvivedMemorySize();
                 if (i64LastSurvivedMemory == -1)
@@ -2819,7 +2685,6 @@ namespace System
         // Throws NotSupportedException if ARM is not enabled.
         public static Int64 MonitoringSurvivedProcessMemorySize
         {
-            [System.Security.SecurityCritical]
             get {
                 Int64 i64LastSurvivedProcessMemory = nGetLastSurvivedProcessMemorySize();
                 if (i64LastSurvivedProcessMemory == -1)

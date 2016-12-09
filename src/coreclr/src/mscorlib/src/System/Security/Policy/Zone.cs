@@ -50,7 +50,6 @@ namespace System.Security.Policy
 
         public SecurityZone SecurityZone
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return m_zone;

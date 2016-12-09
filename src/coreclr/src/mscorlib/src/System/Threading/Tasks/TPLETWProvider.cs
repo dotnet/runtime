@@ -216,7 +216,6 @@ namespace System.Threading.Tasks
         /// <param name="OperationType">The kind of fork/join operation.</param>
         /// <param name="InclusiveFrom">The lower bound of the loop.</param>
         /// <param name="ExclusiveTo">The upper bound of the loop.</param>
-        [SecuritySafeCritical]
         [Event(PARALLELLOOPBEGIN_ID, Level = EventLevel.Informational, ActivityOptions=EventActivityOptions.Recursive, 
          Task = TplEtwProvider.Tasks.Loop, Opcode = EventOpcode.Start)]        
         public void ParallelLoopBegin(
@@ -261,7 +260,6 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="ForkJoinContextID">The loop ID.</param>
         /// <param name="TotalIterations">the total number of iterations processed.</param>
-        [SecuritySafeCritical]
         [Event(PARALLELLOOPEND_ID, Level = EventLevel.Informational, Task = TplEtwProvider.Tasks.Loop, Opcode = EventOpcode.Stop)]
         public void ParallelLoopEnd(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
@@ -298,7 +296,6 @@ namespace System.Threading.Tasks
         /// <param name="ForkJoinContextID">The invoke ID.</param>
         /// <param name="OperationType">The kind of fork/join operation.</param>
         /// <param name="ActionCount">The number of actions being invoked.</param>
-        [SecuritySafeCritical]
         [Event(PARALLELINVOKEBEGIN_ID, Level = EventLevel.Informational, ActivityOptions=EventActivityOptions.Recursive, 
          Task = TplEtwProvider.Tasks.Invoke, Opcode = EventOpcode.Start)]
         public void ParallelInvokeBegin(
@@ -412,7 +409,6 @@ namespace System.Threading.Tasks
         /// <param name="TaskID">The task ID.</param>
         /// <param name="CreatingTaskID">The task ID</param>
         /// <param name="TaskCreationOptions">The options used to create the task.</param>
-        [SecuritySafeCritical]
         [Event(TASKSCHEDULED_ID, Task = Tasks.TaskScheduled, Version=1, Opcode = EventOpcode.Send, 
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer|Keywords.Tasks)]
         public void TaskScheduled(
@@ -475,7 +471,6 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         /// <param name="IsExceptional">Whether the task completed due to an error.</param>
-        [SecuritySafeCritical]
         [Event(TASKCOMPLETED_ID, Version=1, 
          Level = EventLevel.Informational, Keywords = Keywords.TaskStops)]
         public void TaskCompleted(
@@ -513,7 +508,6 @@ namespace System.Threading.Tasks
         /// <param name="ContinueWithTaskID">If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.  
         ///      0 means unknown.   This allows better visualization of the common sequential chaining case.</param>
         /// </summary>
-        [SecuritySafeCritical]
         [Event(TASKWAITBEGIN_ID, Version=3, Task = TplEtwProvider.Tasks.TaskWait, Opcode = EventOpcode.Send, 
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer|Keywords.Tasks)]
         public void TaskWaitBegin(
@@ -600,7 +594,6 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The activityId for the continuation.</param>
-        [SecuritySafeCritical]
         [Event(AWAITTASKCONTINUATIONSCHEDULED_ID, Task = Tasks.AwaitTaskContinuationScheduled, Opcode = EventOpcode.Send, 
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer|Keywords.Tasks)]
         public void AwaitTaskContinuationScheduled(
@@ -629,7 +622,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        [SecuritySafeCritical]
         [Event(TRACEOPERATIONSTART_ID, Version=1, 
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityOperation)]
         public void TraceOperationBegin(int TaskID, string OperationName, long RelatedContext)
@@ -655,7 +647,6 @@ namespace System.Threading.Tasks
             }                
         }
 
-        [SecuritySafeCritical]
         [Event(TRACEOPERATIONRELATION_ID, Version=1,
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityRelation)]
         public void TraceOperationRelation(int TaskID, CausalityRelation Relation)
@@ -664,7 +655,6 @@ namespace System.Threading.Tasks
                 WriteEvent(TRACEOPERATIONRELATION_ID, TaskID,(int) Relation);                // optmized overload for this exists
         }
 
-        [SecuritySafeCritical]
         [Event(TRACEOPERATIONSTOP_ID, Version=1, 
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityOperation)]
         public void TraceOperationEnd(int TaskID, AsyncCausalityStatus Status)
@@ -673,7 +663,6 @@ namespace System.Threading.Tasks
                 WriteEvent(TRACEOPERATIONSTOP_ID, TaskID,(int) Status);                     // optmized overload for this exists
         }
 
-        [SecuritySafeCritical]
         [Event(TRACESYNCHRONOUSWORKSTART_ID, Version=1, 
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalitySynchronousWork)]
         public void TraceSynchronousWorkBegin(int TaskID, CausalitySynchronousWork Work)
@@ -682,7 +671,6 @@ namespace System.Threading.Tasks
                 WriteEvent(TRACESYNCHRONOUSWORKSTART_ID, TaskID,(int) Work);               // optmized overload for this exists
         }
 
-        [SecuritySafeCritical]
         [Event(TRACESYNCHRONOUSWORKSTOP_ID, Version=1, 
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalitySynchronousWork)]
         public void TraceSynchronousWorkEnd(CausalitySynchronousWork Work)

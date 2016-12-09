@@ -911,7 +911,6 @@ namespace System {
         ** Convert an UTF32 value into a surrogate pair.
         ==============================================================================*/
         
-        [System.Security.SecuritySafeCritical]
         public static String ConvertFromUtf32(int utf32)
         {
             // For UTF32 values from U+00D800 ~ U+00DFFF, we should throw.  They

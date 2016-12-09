@@ -221,7 +221,6 @@ namespace System.Globalization {
             return(IsSortable(ch.ToString()));
         }
 
-        [System.Security.SecuritySafeCritical]
         [System.Runtime.InteropServices.ComVisible(false)]
         public static bool IsSortable(String text) {
             if (text == null) {
@@ -393,7 +392,6 @@ namespace System.Globalization {
             return (Compare(string1, string2, CompareOptions.None));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual int Compare(String string1, String string2, CompareOptions options){
 
             if (options == CompareOptions.OrdinalIgnoreCase)
@@ -464,7 +462,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual int Compare(String string1, int offset1, int length1, String string2, int offset2, int length2, CompareOptions options)
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
@@ -541,7 +538,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual bool IsPrefix(String source, String prefix, CompareOptions options)
         {
             if (source == null || prefix == null) {
@@ -596,7 +592,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual bool IsSuffix(String source, String suffix, CompareOptions options)
         {
             if (source == null || suffix == null) {
@@ -742,7 +737,6 @@ namespace System.Globalization {
             return IndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual int IndexOf(String source, char value, int startIndex, int count, CompareOptions options)
         {
             // Validate inputs
@@ -775,7 +769,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual int IndexOf(String source, String value, int startIndex, int count, CompareOptions options)
         {
             // Validate inputs
@@ -924,7 +917,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual int LastIndexOf(String source, char value, int startIndex, int count, CompareOptions options)
         {
             // Verify Arguments
@@ -973,7 +965,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual int LastIndexOf(String source, String value, int startIndex, int count, CompareOptions options)
         {
             // Verify Arguments
@@ -1046,7 +1037,6 @@ namespace System.Globalization {
             return CreateSortKey(source, CompareOptions.None);
         }
 
-        [System.Security.SecuritySafeCritical]
         private SortKey CreateSortKey(String source, CompareOptions options)
         {
             if (source==null) { throw new ArgumentNullException(nameof(source)); }
@@ -1202,7 +1192,6 @@ namespace System.Globalization {
             return GetHashCodeOfString(source, options, false, 0);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal int GetHashCodeOfString(string source, CompareOptions options, bool forceRandomizedHashing, long additionalEntropy)
         {
             //
@@ -1254,7 +1243,6 @@ namespace System.Globalization {
         }
 #endif
 
-        [System.Security.SecuritySafeCritical]
         internal static IntPtr InternalInitSortHandle(String localeName, out IntPtr handleOrigin)
         {
             return NativeInternalInitSortHandle(localeName, out handleOrigin);
@@ -1265,7 +1253,6 @@ namespace System.Globalization {
 
         public SortVersion Version
         {
-            [SecuritySafeCritical]
             get
             {
                 if(m_SortVersion == null) 
@@ -1280,32 +1267,27 @@ namespace System.Globalization {
             }
         }
         
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetNlsVersionEx(IntPtr handle, IntPtr handleOrigin, String localeName, ref Win32Native.NlsVersionInfoEx lpNlsVersionInformation);
 
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr NativeInternalInitSortHandle(String localeName, out IntPtr handleOrigin);
 
         // Get a locale sensitive sort hash code from native code -- COMNlsInfo::InternalGetGlobalizedHashCode
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern int InternalGetGlobalizedHashCode(IntPtr handle, IntPtr handleOrigin, string localeName, string source, int length, int dwFlags, bool forceRandomizedHashing, long additionalEntropy);
 
         // Use native API calls to see if this string is entirely defined -- COMNlsInfo::InternalIsSortable
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalIsSortable(IntPtr handle, IntPtr handleOrigin, String localeName, String source, int length);
 
         // Compare a string using the native API calls -- COMNlsInfo::InternalCompareString
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern int InternalCompareString(IntPtr handle, IntPtr handleOrigin, String localeName, String string1, int offset1, int length1,
@@ -1313,13 +1295,11 @@ namespace System.Globalization {
 
         // InternalFindNLSStringEx parameters is not exactly matching kernel32::FindNLSStringEx parameters.
         // Call through to NewApis::FindNLSStringEx so we can get the right behavior
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern int InternalFindNLSStringEx(IntPtr handle, IntPtr handleOrigin, String localeName, int flags, String source, int sourceCount, int startIndex, string target, int targetCount);
 
         // Call through to NewAPis::LCMapStringEx so we can get appropriate behavior for all platforms
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern int InternalGetSortKey(IntPtr handle, IntPtr handleOrigin, String localeName, int flags, String source, int sourceCount, byte[] target, int targetCount);

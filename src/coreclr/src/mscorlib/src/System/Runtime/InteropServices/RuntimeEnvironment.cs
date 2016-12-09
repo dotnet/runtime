@@ -42,20 +42,16 @@ namespace System.Runtime.InteropServices {
         }
 #endif
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetModuleFileName();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetDeveloperPath();
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetHostBindingFile();
 
 #if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void _GetSystemVersion(StringHandleOnStack retVer);
@@ -67,7 +63,6 @@ namespace System.Runtime.InteropServices {
         }
         
 #if !FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical] // public member
 #endif
         [MethodImpl (MethodImplOptions.NoInlining)]
         public static String GetSystemVersion()
@@ -86,7 +81,6 @@ namespace System.Runtime.InteropServices {
 
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static String GetRuntimeDirectory()
         {
             String dir = GetRuntimeDirectoryImpl();
@@ -94,13 +88,11 @@ namespace System.Runtime.InteropServices {
             return dir;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetRuntimeDirectoryImpl();
         
         // Returns the system ConfigurationFile
         public static String SystemConfigurationFile {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 sb.Append(GetRuntimeDirectory());
@@ -115,7 +107,6 @@ namespace System.Runtime.InteropServices {
         }
 
 #if FEATURE_COMINTEROP
-        [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr GetRuntimeInterfaceImpl(
@@ -130,7 +121,6 @@ namespace System.Runtime.InteropServices {
         // Returns unmanaged pointer to requested interface on success. Throws
         // COMException with failed HR if there is a QI failure.
         //
-        [System.Security.SecurityCritical]  // do not allow partial trust callers
         [ComVisible(false)]
         public static IntPtr GetRuntimeInterfaceAsIntPtr(Guid clsid, Guid riid)
         {
@@ -145,7 +135,6 @@ namespace System.Runtime.InteropServices {
         // Returns an RCW to requested interface on success. Throws
         // COMException with failed HR if there is a QI failure.
         //
-        [System.Security.SecurityCritical]  // do not allow partial trust callers
         [ComVisible(false)]
         public static object GetRuntimeInterfaceAsObject(Guid clsid, Guid riid)
         {

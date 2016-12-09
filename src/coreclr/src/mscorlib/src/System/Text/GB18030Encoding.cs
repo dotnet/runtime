@@ -107,10 +107,8 @@ namespace System.Text
         // This is the table of 4 byte conversions.
         private const int GBLast4ByteCode = 0x99FB;
         [NonSerialized]
-        [SecurityCritical]
         unsafe internal char* map4BytesToUnicode = null;       // new char[GBLast4ByteCode + 1]; // Need to map all 4 byte sequences to Unicode
         [NonSerialized]
-        [SecurityCritical]
         unsafe internal byte* mapUnicodeTo4BytesFlags = null;  // new byte[0x10000 / 8];         // Need 1 bit for each code point to say if its 4 byte or not
 
         private const int GB18030       = 54936;
@@ -120,13 +118,11 @@ namespace System.Text
         private const int GBLastSurrogateOffset = 0x12E247; // GBE3329A35
 
         // We have to load the 936 code page tables, so impersonate 936 as our base
-        [System.Security.SecurityCritical]  // auto-generated
         internal GB18030Encoding() : base(GB18030, 936)
         {
         }
 
         // Constructor called by serialization.
-        [System.Security.SecurityCritical]  // auto-generated
         internal GB18030Encoding(SerializationInfo info, StreamingContext context) :
                                           base(GB18030, 936)
         {
@@ -138,7 +134,6 @@ namespace System.Text
         }
 
         // ISerializable implementation
-        [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // Make sure to get the base stuff too This throws if info is null
@@ -150,7 +145,6 @@ namespace System.Text
 
         // This loads our base 936 code page and then applys the changes from the tableUnicodeToGBDiffs table.
         // See table comments for table format.
-        [System.Security.SecurityCritical]  // auto-generated
         protected override unsafe void LoadManagedCodePage()
         {
             // Use base code page loading algorithm.
@@ -238,7 +232,6 @@ namespace System.Text
         // Is4Byte
         // Checks the 4 byte table and returns true if this is a 4 byte code.
         // Its a 4 byte code if the flag is set in mapUnicodeTo4BytesFlags
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool Is4Byte(char charTest)
         {
             // See what kind it is
@@ -247,14 +240,12 @@ namespace System.Text
         }
 
         // GetByteCount
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
             // Just call GetBytes() with null bytes
             return GetBytes(chars, count, null, 0, encoder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
@@ -436,14 +427,12 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             // Just call GetChars() with null chars to count
             return GetChars(bytes, count, null, 0, baseDecoder);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {
@@ -852,7 +841,6 @@ namespace System.Text
             }
 
             // Constructor called by serialization, have to handle deserializing from Everett
-            [System.Security.SecurityCritical]  // auto-generated
             internal GB18030Decoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
@@ -879,7 +867,6 @@ namespace System.Text
             }
 
             // ISerializable implementation, get data for this object
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?

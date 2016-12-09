@@ -208,7 +208,6 @@ namespace System.Globalization {
 
         private String LanguageName
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (m_langName == null)
@@ -540,9 +539,6 @@ namespace System.Globalization {
 
         public  String AMDesignator
          {
-#if FEATURE_CORECLR
-            [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
             get
             {
 #if FEATURE_CORECLR
@@ -1044,9 +1040,6 @@ namespace System.Globalization {
 
         public  String PMDesignator
         {
-#if FEATURE_CORECLR
-            [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
             get
             {
 #if FEATURE_CORECLR
@@ -2375,7 +2368,6 @@ namespace System.Globalization {
             formatFlags = DateTimeFormatFlags.NotInitialized;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal TokenHashValue[] CreateTokenHashTable() {
             TokenHashValue[] temp = m_dtfiTokenHash;
             if (temp == null) {
@@ -2689,7 +2681,6 @@ namespace System.Globalization {
             return (ch >= '\x0590' && ch <= '\x05ff');
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal bool Tokenize(TokenType TokenMask, out TokenType tokenType, out int tokenValue, ref __DTString str) {
             tokenType = TokenType.UnknownToken;
             tokenValue = 0;

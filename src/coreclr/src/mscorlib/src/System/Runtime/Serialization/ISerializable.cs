@@ -22,7 +22,6 @@ namespace System.Runtime.Serialization {
 
     [System.Runtime.InteropServices.ComVisible(true)]
     public interface ISerializable {
-        [System.Security.SecurityCritical]  // auto-generated_required
         void GetObjectData(SerializationInfo info, StreamingContext context);
     }
 

@@ -26,11 +26,9 @@ namespace System.Threading
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
-    [System.Security.SecurityCritical] // auto-generated
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void ContextCallback(Object state);
 
-    [SecurityCritical]
     internal struct ExecutionContextSwitcher
     {
         internal ExecutionContext m_ec;
@@ -91,7 +89,6 @@ namespace System.Threading
         {
         }
 
-        [SecuritySafeCritical]
         public static ExecutionContext Capture()
         {
             ExecutionContext executionContext = Thread.CurrentThread.ExecutionContext;
@@ -156,7 +153,6 @@ namespace System.Threading
             return executionContext != null && executionContext.m_isFlowSuppressed;
         }
 
-        [SecurityCritical]
         [HandleProcessCorruptedStateExceptions]
         public static void Run(ExecutionContext executionContext, ContextCallback callback, Object state)
         {
@@ -183,7 +179,6 @@ namespace System.Threading
             ecsw.Undo(currentThread);
         }
 
-        [SecurityCritical]
         internal static void Restore(Thread currentThread, ExecutionContext executionContext)
         {
             Contract.Assert(currentThread == Thread.CurrentThread);
@@ -201,7 +196,6 @@ namespace System.Threading
             }
         }
 
-        [SecurityCritical]
         static internal void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
         {
             Contract.Assert(currentThread == Thread.CurrentThread);
@@ -210,7 +204,6 @@ namespace System.Threading
             ecsw.m_sc = currentThread.SynchronizationContext;
         }
 
-        [SecurityCritical]
         [HandleProcessCorruptedStateExceptions]
         private static void OnContextChanged(ExecutionContext previous, ExecutionContext current)
         {
@@ -257,7 +250,6 @@ namespace System.Threading
             }        
         }
 
-        [SecurityCritical]
         internal static object GetLocalValue(IAsyncLocal local)
         {
             ExecutionContext current = Thread.CurrentThread.ExecutionContext;
@@ -269,7 +261,6 @@ namespace System.Threading
             return value;
         }
 
-        [SecurityCritical]
         internal static void SetLocalValue(IAsyncLocal local, object newValue, bool needChangeNotifications)
         {
             ExecutionContext current = Thread.CurrentThread.ExecutionContext ?? ExecutionContext.Default;
@@ -319,33 +310,28 @@ namespace System.Threading
             OptimizeDefaultCase = 0x02,
         }
 
-        [SecurityCritical]
         internal static ExecutionContext Capture(ref StackCrawlMark stackMark, CaptureOptions captureOptions)
         {
             return Capture();
         }
 
-        [SecuritySafeCritical]
         [FriendAccessAllowed]
         internal static ExecutionContext FastCapture()
         {
             return Capture();
         }
 
-        [SecurityCritical]
         [FriendAccessAllowed]
         internal static void Run(ExecutionContext executionContext, ContextCallback callback, Object state, bool preserveSyncCtx)
         {
             Run(executionContext, callback, state);
         }
 
-        [SecurityCritical]
         internal bool IsDefaultFTContext(bool ignoreSyncCtx)
         {
             return this == Default;
         }
 
-        [SecuritySafeCritical]
         public ExecutionContext CreateCopy()
         {
             return this; // since CoreCLR's ExecutionContext is immutable, we don't need to create copies.
@@ -358,7 +344,6 @@ namespace System.Threading
 
         internal static ExecutionContext PreAllocatedDefault
         {
-            [SecuritySafeCritical]
             get { return ExecutionContext.Default; }
         }
 

@@ -212,9 +212,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {   
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);

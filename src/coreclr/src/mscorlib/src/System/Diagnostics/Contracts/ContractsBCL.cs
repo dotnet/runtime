@@ -51,7 +51,6 @@ namespace System.Diagnostics.Contracts {
         /// This method is used internally to trigger a failure indicating to the "programmer" that he is using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
-        [SecuritySafeCritical]
         static partial void AssertMustUseRewriter(ContractFailureKind kind, String contractKind)
         {
             if (_assertingMustUseRewriter)
@@ -121,18 +120,14 @@ namespace System.Diagnostics.Contracts {
         /// </summary>
         public static event EventHandler<ContractFailedEventArgs> ContractFailed {
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #if FEATURE_LINK_DEMAND
-            [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
 #endif
             add {
                 System.Runtime.CompilerServices.ContractHelper.InternalContractFailed += value;
             }
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #if FEATURE_LINK_DEMAND
-            [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
 #endif
             remove {
@@ -176,9 +171,7 @@ namespace System.Diagnostics.Contracts {
         }
 
 #if FEATURE_UNTRUSTED_CALLERS
-        [SecurityCritical]
 #if FEATURE_LINK_DEMAND
-        [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
 #endif
         public void SetHandled()
@@ -191,9 +184,7 @@ namespace System.Diagnostics.Contracts {
         }
 
 #if FEATURE_UNTRUSTED_CALLERS
-        [SecurityCritical]
 #if FEATURE_LINK_DEMAND
-        [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
 #endif
         public void SetUnwind()
@@ -243,9 +234,7 @@ namespace System.Diagnostics.Contracts {
         }
 
 #if FEATURE_UNTRUSTED_CALLERS && FEATURE_SERIALIZATION
-        [SecurityCritical]
 #if FEATURE_LINK_DEMAND && FEATURE_SERIALIZATION
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
 #endif // FEATURE_LINK_DEMAND
 #endif // FEATURE_UNTRUSTED_CALLERS
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -284,7 +273,6 @@ namespace System.Runtime.CompilerServices
         internal static event EventHandler<ContractFailedEventArgs> InternalContractFailed
         {
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #endif
             add {
                 // Eagerly prepare each event handler _marked with a reliability contract_, to 
@@ -301,7 +289,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #endif
             remove {
                 lock (lockObject)
@@ -326,7 +313,6 @@ namespace System.Runtime.CompilerServices
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [SecuritySafeCritical]
 #endif
         static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException, ref string resultFailureMessage)
         {

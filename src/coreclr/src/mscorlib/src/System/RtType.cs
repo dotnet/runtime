@@ -197,7 +197,6 @@ namespace System
                 private MemberListType m_listType;
                 private uint m_nameHash;
 
-                [System.Security.SecurityCritical]  // auto-generated
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     this.m_name = new Utf8String((void*) pUtf8Name, cUtf8Name);
@@ -266,7 +265,6 @@ namespace System
 
                 #region Constructor
 #if MDA_SUPPORTED
-                [System.Security.SecuritySafeCritical]  // auto-generated
 #endif
                 internal MemberInfoCache(RuntimeTypeCache runtimeTypeCache)
                 {
@@ -276,7 +274,6 @@ namespace System
                     m_runtimeTypeCache = runtimeTypeCache;
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 internal MethodBase AddMethod(RuntimeType declaringType, RuntimeMethodHandleInternal method, CacheType cacheType)
                 {
                     T[] list = null;
@@ -304,7 +301,6 @@ namespace System
                     return (MethodBase)(object)list[0];
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 internal FieldInfo AddField(RuntimeFieldHandleInternal field)
                 {
                     // create the runtime field info
@@ -327,7 +323,6 @@ namespace System
                     return (FieldInfo)(object)list[0];
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe T[] Populate(string name, MemberListType listType, CacheType cacheType)
                 {
                     T[] list = null;
@@ -366,7 +361,6 @@ namespace System
                     return list;
                 }
 
-                [System.Security.SecurityCritical]  // auto-generated
                 private unsafe T[] GetListByName(char* pName, int cNameLen, byte* pUtf8Name, int cUtf8Name, MemberListType listType, CacheType cacheType)
                 {
                     if (cNameLen != 0)
@@ -409,7 +403,6 @@ namespace System
                 // May replace the list with a new one if certain cache
                 // lookups succeed.  Also, may modify the contents of the list
                 // after merging these new data structures with cached ones.
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
                 internal void Insert(ref T[] list, string name, MemberListType listType)
                 {
@@ -566,7 +559,6 @@ namespace System
 
                 #region Population Logic
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe RuntimeMethodInfo[] PopulateMethods(Filter filter)
                 {
                     ListBuilder<RuntimeMethodInfo> list = new ListBuilder<RuntimeMethodInfo>();
@@ -736,7 +728,6 @@ namespace System
                     return list.ToArray();
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private RuntimeConstructorInfo[] PopulateConstructors(Filter filter)
                 {
                     if (ReflectedType.IsGenericParameter)
@@ -793,7 +784,6 @@ namespace System
                     return list.ToArray();
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe RuntimeFieldInfo[] PopulateFields(Filter filter)
                 {
                     ListBuilder<RuntimeFieldInfo> list = new ListBuilder<RuntimeFieldInfo>();
@@ -845,7 +835,6 @@ namespace System
                     return list.ToArray();
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     IntPtr* pResult = stackalloc IntPtr[64];
@@ -865,7 +854,6 @@ namespace System
                     }
                 }
                     
-                [System.Security.SecurityCritical]  // auto-generated
                 private unsafe void PopulateRtFields(Filter filter,
                     IntPtr* ppFieldHandles, int count, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
@@ -919,7 +907,6 @@ namespace System
                     }
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe void PopulateLiteralFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Contract.Requires(declaringType != null);
@@ -1024,7 +1011,6 @@ namespace System
 
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private RuntimeType[] PopulateInterfaces(Filter filter)
                 {
                     ListBuilder<RuntimeType> list = new ListBuilder<RuntimeType>();
@@ -1114,7 +1100,6 @@ namespace System
                     return list.ToArray();
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe RuntimeType[] PopulateNestedClasses(Filter filter)
                 {
                     RuntimeType declaringType = ReflectedType;
@@ -1165,7 +1150,6 @@ namespace System
                     return list.ToArray();
                 }
                 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe RuntimeEventInfo[] PopulateEvents(Filter filter)
                 {
                     Contract.Requires(ReflectedType != null);
@@ -1198,7 +1182,6 @@ namespace System
                     return list.ToArray();
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe void PopulateEvents(
                     Filter filter, RuntimeType declaringType, Dictionary<String, RuntimeEventInfo> csEventInfos, ref ListBuilder<RuntimeEventInfo> list)
                 {
@@ -1259,7 +1242,6 @@ namespace System
                     }
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe RuntimePropertyInfo[] PopulateProperties(Filter filter)
                 {
                     Contract.Requires(ReflectedType != null);
@@ -1300,7 +1282,6 @@ namespace System
                     return list.ToArray();
                 }
 
-                [System.Security.SecuritySafeCritical]  // auto-generated
                 private unsafe void PopulateProperties(
                     Filter filter, 
                     RuntimeType declaringType, 
@@ -1608,7 +1589,6 @@ namespace System
                 }
             }
 
-            [System.Security.SecuritySafeCritical]
             internal unsafe string GetNameSpace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
@@ -1632,7 +1612,6 @@ namespace System
                 set { m_typeCode = value; } 
             }
 
-            [System.Security.SecuritySafeCritical]  // auto-generated
             internal unsafe RuntimeType GetEnclosingType()
             { 
                 if (m_enclosingType == null)
@@ -1713,7 +1692,6 @@ namespace System
             #endregion
 
             #region Caches Accessors
-            [System.Security.SecurityCritical]  // auto-generated
             internal MethodInfo GetGenericMethodInfo(RuntimeMethodHandleInternal genericMethod)
             {
                 LoaderAllocator la = RuntimeMethodHandle.GetLoaderAllocator(genericMethod);
@@ -1850,7 +1828,6 @@ namespace System
             return GetMethodBase(null, methodHandle);
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static MethodBase GetMethodBase(RuntimeType reflectedType, IRuntimeMethodInfo methodHandle)
         {
             MethodBase retval = RuntimeType.GetMethodBase(reflectedType, methodHandle.Value);
@@ -1858,7 +1835,6 @@ namespace System
             return retval;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static MethodBase GetMethodBase(RuntimeType reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Contract.Assert(!methodHandle.IsNullHandle());
@@ -2001,13 +1977,11 @@ namespace System
             set { Cache.DomainInitialized = value; }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {
             return GetFieldInfo(RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle), fieldHandle);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static FieldInfo GetFieldInfo(RuntimeType reflectedType, IRuntimeFieldInfo field)
         {
             RuntimeFieldHandleInternal fieldHandle = field.Value;
@@ -2083,7 +2057,6 @@ namespace System
                     Environment.GetResourceString("Argument_NotEnoughGenArguments", genericArguments.Length, genericParamters.Length));
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static void ValidateGenericArguments(MemberInfo definition, RuntimeType[] genericArguments, Exception e)
         {
             RuntimeType[] typeContext = null;
@@ -2596,7 +2569,6 @@ namespace System
 
         private RuntimeTypeCache Cache
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (m_cache.IsNull())
@@ -2832,7 +2804,6 @@ namespace System
             return GetFieldCandidates(null, bindingAttr, false).ToArray();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type[] GetInterfaces()
         {
               RuntimeType[] candidates = this.Cache.GetInterfaceList(MemberListType.All, null);
@@ -2878,7 +2849,6 @@ namespace System
             return members;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override InterfaceMapping GetInterfaceMap(Type ifaceType)
         {
             if (IsGenericParameter)
@@ -3312,13 +3282,11 @@ namespace System
             return new RuntimeTypeHandle(this);
         }
 
-        [System.Security.SecuritySafeCritical]
         internal bool IsCollectible()
         {
             return RuntimeTypeHandle.IsCollectible(GetTypeHandleInternal());
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override TypeCode GetTypeCodeImpl() 
         {
             TypeCode typeCode = Cache.TypeCode;
@@ -3399,7 +3367,6 @@ namespace System
         #endregion
 
         #region Hierarchy
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsInstanceOfType(Object o)
         {
             return RuntimeTypeHandle.IsInstanceOfType(this, o);
@@ -3600,7 +3567,6 @@ namespace System
         #endregion
 
         #region Attributes
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override TypeAttributes GetAttributeFlagsImpl() 
         {
             return RuntimeTypeHandle.GetAttributes(this);
@@ -3608,7 +3574,6 @@ namespace System
 
         public override Guid GUID 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get 
             {
                 Guid result = new Guid ();
@@ -3617,11 +3582,9 @@ namespace System
             }
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void GetGUID(ref Guid result);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override bool IsContextfulImpl() 
         {
             return false;
@@ -3642,36 +3605,30 @@ namespace System
             return RuntimeTypeHandle.IsPointer(this);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override bool IsCOMObjectImpl() 
         {
             return RuntimeTypeHandle.IsComObject(this, false);
         }
 
 #if FEATURE_COMINTEROP
-        [SecuritySafeCritical]
         internal override bool IsWindowsRuntimeObjectImpl()
         {
             return IsWindowsRuntimeObjectType(this);
         }
 
-        [SecuritySafeCritical]
         internal override bool IsExportedToWindowsRuntimeImpl()
         {
             return IsTypeExportedToWindowsRuntime(this);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical]
         private static extern bool IsWindowsRuntimeObjectType(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical]
         private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
 
 #endif // FEATURE_COMINTEROP
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal override bool HasProxyAttributeImpl() 
         {
             return RuntimeTypeHandle.HasProxyAttribute(this);
@@ -3710,7 +3667,6 @@ namespace System
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (!IsGenericParameter)
@@ -3753,7 +3709,6 @@ namespace System
             return RuntimeTypeHandle.IsArray(this);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int GetArrayRank() 
         {
             if (!IsArrayImpl())
@@ -3785,7 +3740,6 @@ namespace System
             return retVal;
         }
 
-        [SecuritySafeCritical]
         public override Array GetEnumValues()
         {
             if (!IsEnum)
@@ -3896,7 +3850,6 @@ namespace System
             return types;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type MakeGenericType(Type[] instantiation)
         {
             if (instantiation == null)
@@ -4012,7 +3965,6 @@ namespace System
         #endregion
 
         #region Misc
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type MakePointerType() { return new RuntimeTypeHandle(this).MakePointer(); }
         public override Type MakeByRefType() { return new RuntimeTypeHandle(this).MakeByRef(); }
         public override Type MakeArrayType() { return new RuntimeTypeHandle(this).MakeSZArray(); }
@@ -4026,7 +3978,6 @@ namespace System
         }
         public override StructLayoutAttribute StructLayoutAttribute
         {
-            [System.Security.SecuritySafeCritical] // overrides transparent public member             
             get 
             { 
                 return (StructLayoutAttribute)StructLayoutAttribute.GetCustomAttribute(this); 
@@ -4048,15 +3999,12 @@ namespace System
             BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty;
         private static RuntimeType s_typedRef = (RuntimeType)typeof(TypedReference);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static private extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
         
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static private extern Object AllocateValueType(RuntimeType type, object value, bool fForceTypeChange); 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe Object CheckValue(Object value, Binder binder, CultureInfo culture, BindingFlags invokeAttr) 
         {
             // this method is used by invocation in reflection to check whether a value can be assigned to type.
@@ -4126,7 +4074,6 @@ namespace System
         }
 
         // Factored out of CheckValue to reduce code complexity.
-        [System.Security.SecurityCritical]
         private Object TryChangeType(Object value, Binder binder, CultureInfo culture, bool needsSpecialCast)
         {
             if (binder != null && binder != Type.DefaultBinder) 
@@ -4185,7 +4132,6 @@ namespace System
         }
 
 #if FEATURE_COMINTEROP
-        [System.Security.SecuritySafeCritical]  // auto-generated
 #endif
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
@@ -4681,7 +4627,6 @@ namespace System
         #endregion
 
         #region ISerializable
-        [System.Security.SecurityCritical]  // auto-generated
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info==null) 
@@ -4693,13 +4638,11 @@ namespace System
         #endregion
 
         #region ICustomAttributeProvider
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, RuntimeType.ObjectType, inherit);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
@@ -4714,7 +4657,6 @@ namespace System
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
@@ -4816,7 +4758,6 @@ namespace System
 
         public override int MetadataToken
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get 
             {
                 return RuntimeTypeHandle.GetToken(this);
@@ -4844,7 +4785,6 @@ namespace System
                 throw new NotSupportedException(Environment.GetResourceString("Acc_CreateVoid"));
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal Object CreateInstanceImpl(
             BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes, ref StackCrawlMark stackMark)
         {            
@@ -4979,7 +4919,6 @@ namespace System
             // Lazy initialization was performed
             internal volatile bool m_bFullyInitialized;
 
-            [System.Security.SecurityCritical]
             internal ActivatorCacheEntry(RuntimeType t, RuntimeMethodHandleInternal rmh, bool bNeedSecurityCheck)
             {
                 m_type = t;
@@ -5013,7 +4952,6 @@ namespace System
                 delegateCtorInfo = ctorInfo; // this assignment should be last
             }
 
-            [System.Security.SecuritySafeCritical]  // auto-generated
             private void InitializeCacheEntry(ActivatorCacheEntry ace)
             {
                 if (!ace.m_type.IsValueType)
@@ -5060,7 +4998,6 @@ namespace System
         private static volatile ActivatorCache s_ActivatorCache;
 
         // the slow path of CreateInstanceDefaultCtor
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal Object CreateInstanceSlow(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
         {
             RuntimeMethodHandleInternal runtime_ctor = default(RuntimeMethodHandleInternal);
@@ -5114,7 +5051,6 @@ namespace System
 
         // Helper to invoke the default (parameterless) ctor.
         // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
@@ -5172,7 +5108,6 @@ namespace System
             Cache.InvalidateCachedNestedType();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal bool IsGenericCOMObjectImpl()
         {
             return RuntimeTypeHandle.IsComObject(this, true);
@@ -5180,27 +5115,22 @@ namespace System
         #endregion
 
         #region Legacy Static Internal
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Object _CreateEnum(RuntimeType enumType, long value);
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static Object CreateEnum(RuntimeType enumType, long value)
         {
             return _CreateEnum(enumType, value);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Object InvokeDispMethod(
             String name, BindingFlags invokeAttr, Object target, Object[] args,
             bool[] byrefModifiers, int culture, String[] namedParameters);
 
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Type GetTypeFromProgIDImpl(String progID, String server, bool throwOnError);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Type GetTypeFromCLSIDImpl(Guid clsid, String server, bool throwOnError);
 #else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -5249,21 +5179,17 @@ namespace System
     #region Library
     internal unsafe struct Utf8String
     {
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe bool EqualsCaseSensitive(void* szLhs, void* szRhs, int cSz);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern unsafe bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern unsafe uint HashCaseInsensitive(void* sz, int cSz);
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static int GetUtf8StringByteLength(void* pUtf8String)
         {
             int len = 0;
@@ -5282,11 +5208,9 @@ namespace System
             return len;
         }
 
-        [SecurityCritical]
         private void* m_pStringHeap;        // This is the raw UTF8 string.
         private int m_StringHeapByteLength;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal Utf8String(void* pStringHeap)
         {
             m_pStringHeap = pStringHeap;
@@ -5300,14 +5224,12 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe Utf8String(void* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;
             m_StringHeapByteLength = cUtf8String;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe bool Equals(Utf8String s)
         {
             if (m_pStringHeap == null)
@@ -5321,7 +5243,6 @@ namespace System
             return false;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe bool EqualsCaseInsensitive(Utf8String s)
         {
             if (m_pStringHeap == null)
@@ -5335,13 +5256,11 @@ namespace System
             return false;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe uint HashCaseInsensitive()
         {
             return Utf8String.HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override string ToString()
         {
             unsafe

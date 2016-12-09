@@ -83,7 +83,6 @@ namespace System.Collections {
             throw new ArgumentException(Environment.GetResourceString("Argument_ImplementIComparable"));
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
                 throw new ArgumentNullException(nameof(info));

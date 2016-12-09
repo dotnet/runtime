@@ -33,7 +33,6 @@ namespace System {
         // 
         // The most specific match will be selected.  
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override MethodBase BindToMethod(
             BindingFlags bindingAttr, MethodBase[] match, ref Object[] args, 
             ParameterModifier[] modifiers, CultureInfo cultureInfo, String[] names, out Object state)
@@ -437,7 +436,6 @@ namespace System {
         
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override FieldInfo BindToField(BindingFlags bindingAttr,FieldInfo[] match, Object value,CultureInfo cultureInfo)
         {
             if (match == null) {
@@ -514,7 +512,6 @@ namespace System {
         // Given a set of methods that match the base criteria, select a method based
         // upon an array of types.  This method should return null if no method matchs
         // the criteria.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override MethodBase SelectMethod(BindingFlags bindingAttr,MethodBase[] match,Type[] types,ParameterModifier[] modifiers)
         {
             int i;
@@ -589,7 +586,6 @@ namespace System {
         }
         
         // Given a set of properties that match the base criteria, select one.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override PropertyInfo SelectProperty(BindingFlags bindingAttr,PropertyInfo[] match,Type returnType,
                     Type[] indexes,ParameterModifier[] modifiers)
         {
@@ -876,7 +872,6 @@ namespace System {
             }
         }
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static int FindMostSpecificType(Type c1, Type c2, Type t)
         {
             // If the two types are exact move on...
@@ -1084,14 +1079,12 @@ namespace System {
 
         // CanConvertPrimitive
         // This will determine if the source can be converted to the target type
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool CanConvertPrimitive(RuntimeType source,RuntimeType target);
 
         // CanConvertPrimitiveObjectToType
         // This method will determine if the primitive object can be converted
         //  to a type.
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern bool CanConvertPrimitiveObjectToType(Object source,RuntimeType type);
         

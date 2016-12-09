@@ -78,7 +78,6 @@ namespace System.Resources {
 
         // Input is one string to compare with, and a byte[] containing chars in 
         // little endian unicode.  Pass in the number of valid chars.
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe static int CompareOrdinal(String a, byte[] bytes, int bCharLength)
         {
             Contract.Assert(a != null && bytes != null, "FastResourceComparer::CompareOrdinal must have non-null params");
@@ -107,7 +106,6 @@ namespace System.Resources {
             return a.Length - bCharLength;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public static int CompareOrdinal(byte[] bytes, int aCharLength, String b)
         {
             return -CompareOrdinal(b, bytes, aCharLength);
@@ -115,7 +113,6 @@ namespace System.Resources {
 
         // This method is to handle potentially misaligned data accesses.
         // The byte* must point to little endian Unicode characters.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static int CompareOrdinal(byte* a, int byteLen, String b)
         {
             Contract.Assert((byteLen & 1) == 0, "CompareOrdinal is expecting a UTF-16 string length, which must be even!");

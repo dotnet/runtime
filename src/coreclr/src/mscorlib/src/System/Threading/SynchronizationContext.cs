@@ -43,16 +43,13 @@ namespace System.Threading
     // I'd like this to be an interface, or at least an abstract class - but neither seems to play nice with FriendAccessAllowed.
     //
     [FriendAccessAllowed]
-    [SecurityCritical]
     internal class WinRTSynchronizationContextFactoryBase
     {
-        [SecurityCritical]
         public virtual SynchronizationContext Create(object coreDispatcher) {return null;}
     }
 #endif //FEATURE_COMINTEROP
 
 #if !FEATURE_CORECLR
-    [SecurityPermissionAttribute(SecurityAction.InheritanceDemand, Flags =SecurityPermissionFlag.ControlPolicy|SecurityPermissionFlag.ControlEvidence)]
 #endif
     public class SynchronizationContext
     {
@@ -76,7 +73,6 @@ namespace System.Threading
         static Type s_cachedPreparedType5;
 
         // protected so that only the derived sync context class can enable these flags
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "We never dereference s_cachedPreparedType*, so ordering is unimportant")]
         protected void SetWaitNotificationRequired()
         {
@@ -144,7 +140,6 @@ namespace System.Threading
 
 #if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         // Method called when the CLR does a wait operation
-        [System.Security.SecurityCritical]  // auto-generated_required
         [CLSCompliant(false)]
         [PrePrepareMethod]
         public virtual int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
@@ -153,7 +148,6 @@ namespace System.Threading
         }
 
         // Method that can be called by Wait overrides
-        [System.Security.SecurityCritical]  // auto-generated_required
         [CLSCompliant(false)]
         [PrePrepareMethod]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -170,7 +164,6 @@ namespace System.Threading
 
         // Static helper to which the above method can delegate to in order to get the default
         // COM behavior.
-        [System.Security.SecurityCritical]  // auto-generated_required
         [CLSCompliant(false)]
         [PrePrepareMethod]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -180,13 +173,11 @@ namespace System.Threading
 
 #if FEATURE_CORECLR
 
-        [System.Security.SecurityCritical]
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
             Thread.CurrentThread.SynchronizationContext = syncContext;
         }
 
-        [System.Security.SecurityCritical]
         public static void SetThreadStaticContext(SynchronizationContext syncContext)
         {
             Thread.CurrentThread.SynchronizationContext = syncContext;
@@ -220,7 +211,6 @@ namespace System.Threading
 #else //FEATURE_CORECLR
 
         // set SynchronizationContext on the current thread
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
             ExecutionContext ec = Thread.CurrentThread.GetMutableExecutionContext();
@@ -262,7 +252,6 @@ namespace System.Threading
 #endif //FEATURE_CORECLR
 
 #if FEATURE_APPX
-        [SecuritySafeCritical]
         private static SynchronizationContext GetWinRTContext()
         {
             Contract.Assert(Environment.IsWinRTSupported);
@@ -285,10 +274,8 @@ namespace System.Threading
             return null;
         }
 
-        [SecurityCritical]
         static WinRTSynchronizationContextFactoryBase s_winRTContextFactory;
 
-        [SecurityCritical]
         private static WinRTSynchronizationContextFactoryBase GetWinRTSynchronizationContextFactory()
         {
             //
@@ -306,7 +293,6 @@ namespace System.Threading
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Interface)]
         private static extern object GetWinRTDispatcherForCurrentThread();
@@ -321,7 +307,6 @@ namespace System.Threading
         }
 
 #if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
-        [System.Security.SecurityCritical]  // auto-generated
         private static int InvokeWaitMethodHelper(SynchronizationContext syncContext, IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             return syncContext.Wait(waitHandles, waitAll, millisecondsTimeout);

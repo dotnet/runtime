@@ -37,12 +37,10 @@ namespace System.Threading
         private IntPtr waitHandle;  // !!! DO NOT MOVE THIS FIELD. (See defn of WAITHANDLEREF in object.h - has hardcoded access to this field.)
 #pragma warning restore 414
 
-        [System.Security.SecurityCritical] // auto-generated
         internal volatile SafeWaitHandle safeWaitHandle;
 
         internal bool hasThreadAffinity;
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static IntPtr GetInvalidHandle()
         {
             return Win32Native.INVALID_HANDLE_VALUE;
@@ -66,7 +64,6 @@ namespace System.Threading
             Init();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private void Init()
         {
             safeWaitHandle = null;
@@ -78,12 +75,9 @@ namespace System.Threading
         [Obsolete("Use the SafeWaitHandle property instead.")]
         public virtual IntPtr Handle 
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { return safeWaitHandle == null ? InvalidHandle : safeWaitHandle.DangerousGetHandle();}
         
-            [System.Security.SecurityCritical]  // auto-generated_required
 #if !FEATURE_CORECLR
-            [SecurityPermissionAttribute(SecurityAction.InheritanceDemand, Flags=SecurityPermissionFlag.UnmanagedCode)]
 #endif
             set
             {
@@ -112,9 +106,7 @@ namespace System.Threading
 
         public SafeWaitHandle SafeWaitHandle 
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
 #if !FEATURE_CORECLR
-            [SecurityPermissionAttribute(SecurityAction.InheritanceDemand, Flags=SecurityPermissionFlag.UnmanagedCode)]
 #endif
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             get
@@ -126,9 +118,7 @@ namespace System.Threading
                 return safeWaitHandle;
             }
         
-            [System.Security.SecurityCritical]  // auto-generated_required
 #if !FEATURE_CORECLR
-            [SecurityPermissionAttribute(SecurityAction.InheritanceDemand, Flags=SecurityPermissionFlag.UnmanagedCode)]
 #endif
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set
@@ -164,7 +154,6 @@ namespace System.Threading
         // FileStream, which will then call Sethandle, which requires a link time
         // security check.).  While security has fixed that problem, we still
         // don't need to do a linktime check here.
-        [System.Security.SecurityCritical]  // auto-generated
         internal void SetHandleInternal(SafeWaitHandle handle)
         {
             safeWaitHandle = handle;
@@ -207,14 +196,12 @@ namespace System.Threading
             return WaitOne(timeout, false); 
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety.")]
         private bool WaitOne(long timeout, bool exitContext)
         {
             return InternalWaitOne(safeWaitHandle, timeout, hasThreadAffinity, exitContext);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool InternalWaitOne(SafeHandle waitableSafeHandle, long millisecondsTimeout, bool hasThreadAffinity, bool exitContext)
         {
             if (waitableSafeHandle == null)
@@ -234,7 +221,6 @@ namespace System.Threading
             return (ret != WaitTimeout);
         }
         
-        [System.Security.SecurityCritical]
         internal bool WaitOneWithoutFAS()
         {
             // version of waitone without fast application switch (FAS) support
@@ -254,7 +240,6 @@ namespace System.Threading
             return (ret != WaitTimeout);
          }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int WaitOneNative(SafeHandle waitableSafeHandle, uint millisecondsTimeout, bool hasThreadAffinity, bool exitContext);
     
@@ -267,12 +252,10 @@ namespace System.Threading
         ** (if in a synchronized context) is exited before the wait and reacquired 
         ========================================================================*/
         
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)] 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern int WaitMultiple(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext, bool WaitAll);
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool WaitAll(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext)
         {
             if (waitHandles == null)
@@ -379,7 +362,6 @@ namespace System.Threading
         ** (if in a synchronized context) is exited before the wait and reacquired 
         ========================================================================*/
         
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext)
         {
@@ -477,7 +459,6 @@ namespace System.Threading
         ==
         ==================================================*/
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)] 
         private static extern int SignalAndWaitOne(SafeWaitHandle waitHandleToSignal,SafeWaitHandle waitHandleToWaitOn, int millisecondsTimeout,
                                             bool hasThreadAffinity,  bool exitContext);
@@ -511,7 +492,6 @@ namespace System.Threading
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety.")]
         public static bool SignalAndWait(
                                         WaitHandle toSignal,
@@ -585,7 +565,6 @@ namespace System.Threading
             GC.SuppressFinalize(this);
         }
             
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected virtual void Dispose(bool explicitDisposing)
         {
             if (safeWaitHandle != null)

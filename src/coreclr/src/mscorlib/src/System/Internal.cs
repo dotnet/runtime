@@ -214,7 +214,6 @@ namespace System
         // typed as matching instantiations of mscorlib copies of WinRT interfaces (IIterable<T>, IVector<T>,
         // IMap<K, V>, ...) which is necessary to generate all required IL stubs.
 
-        [SecurityCritical]
         static void CommonlyUsedWinRTRedirectedInterfaceStubs()
         {
             WinRT_IEnumerable<byte>(null, null, null);
@@ -261,7 +260,6 @@ namespace System
             WinRT_Nullable<double>();
         }
 
-        [SecurityCritical]
         static void WinRT_IEnumerable<T>(IterableToEnumerableAdapter iterableToEnumerableAdapter, EnumerableToIterableAdapter enumerableToIterableAdapter, IIterable<T> iterable)
         {
             // instantiate stubs for the one method on IEnumerable<T> and the one method on IIterable<T>
@@ -269,7 +267,6 @@ namespace System
             enumerableToIterableAdapter.First_Stub<T>();
         }
 
-        [SecurityCritical]
         static void WinRT_IList<T>(VectorToListAdapter vectorToListAdapter, VectorToCollectionAdapter vectorToCollectionAdapter, ListToVectorAdapter listToVectorAdapter, IVector<T> vector)
         {
             WinRT_IEnumerable<T>(null, null, null);
@@ -294,7 +291,6 @@ namespace System
             listToVectorAdapter.Clear<T>();
         }
 
-        [SecurityCritical]
         static void WinRT_IReadOnlyCollection<T>(VectorViewToReadOnlyCollectionAdapter vectorViewToReadOnlyCollectionAdapter)
         {
             WinRT_IEnumerable<T>(null, null, null);
@@ -303,7 +299,6 @@ namespace System
             vectorViewToReadOnlyCollectionAdapter.Count<T>();
         }
 
-        [SecurityCritical]
         static void WinRT_IReadOnlyList<T>(IVectorViewToIReadOnlyListAdapter vectorToListAdapter, IReadOnlyListToIVectorViewAdapter listToVectorAdapter, IVectorView<T> vectorView)
         {
             WinRT_IEnumerable<T>(null, null, null);
@@ -317,7 +312,6 @@ namespace System
             listToVectorAdapter.Size<T>();
         }
 
-        [SecurityCritical]
         static void WinRT_IDictionary<K, V>(MapToDictionaryAdapter mapToDictionaryAdapter, MapToCollectionAdapter mapToCollectionAdapter, DictionaryToMapAdapter dictionaryToMapAdapter, IMap<K, V> map)
         {
             WinRT_IEnumerable<KeyValuePair<K, V>>(null, null, null);
@@ -343,7 +337,6 @@ namespace System
             dictionaryToMapAdapter.Clear<K, V>();
         }
 
-        [SecurityCritical]
         static void WinRT_IReadOnlyDictionary<K, V>(IMapViewToIReadOnlyDictionaryAdapter mapToDictionaryAdapter, IReadOnlyDictionaryToIMapViewAdapter dictionaryToMapAdapter, IMapView<K, V> mapView, MapViewToReadOnlyCollectionAdapter mapViewToReadOnlyCollectionAdapter)
         {
             WinRT_IEnumerable<KeyValuePair<K, V>>(null, null, null);
@@ -364,7 +357,6 @@ namespace System
             dictionaryToMapAdapter.HasKey<K, V>(default(K));
         }
 
-        [SecurityCritical]
         static void WinRT_Nullable<T>() where T : struct
         {
             Nullable<T> nullable = new Nullable<T>();

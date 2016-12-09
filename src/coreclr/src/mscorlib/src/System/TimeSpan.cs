@@ -407,7 +407,6 @@ namespace System {
         //        "TimeSpan_LegacyFormatMode"=dword:00000001
         //
 #if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool LegacyFormatMode();
 #endif // !FEATURE_CORECLR
@@ -416,7 +415,6 @@ namespace System {
         // run in v2 - v3 legacy behavior.
         //
 #if !FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical]
 #endif
         private static bool GetLegacyFormatMode() {
 #if !FEATURE_CORECLR

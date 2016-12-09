@@ -74,7 +74,6 @@ namespace System.IO {
         // discovery permission to that path.  If we do not, return just the 
         // file name.  If we know it is a directory, then don't return the 
         // directory name.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static String GetDisplayablePath(String path, bool isInvalidPath)
         {
             
@@ -122,7 +121,6 @@ namespace System.IO {
             return path;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static void WinIOError() {
             int errorCode = Marshal.GetLastWin32Error();
             WinIOError(errorCode, String.Empty);
@@ -133,7 +131,6 @@ namespace System.IO {
         // will determine the appropriate exception to throw dependent on your 
         // error, and depending on the error, insert a string into the message 
         // gotten from the ResourceManager.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void WinIOError(int errorCode, String maybeFullPath) {
             // This doesn't have to be perfect, but is a perf optimization.
             bool isInvalidPath = errorCode == Win32Native.ERROR_INVALID_NAME || errorCode == Win32Native.ERROR_BAD_PATHNAME;
@@ -192,13 +189,11 @@ namespace System.IO {
         }
 
         // An alternative to WinIOError with friendlier messages for drives
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static void WinIODriveError(String driveName) {
             int errorCode = Marshal.GetLastWin32Error();
             WinIODriveError(driveName, errorCode);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static void WinIODriveError(String driveName, int errorCode)
         {
             switch (errorCode) {

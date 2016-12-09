@@ -1128,7 +1128,6 @@ namespace System.Security.Util {
         }
         
 #if !PLATFORM_UNIX
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal URLString SpecialNormalizeUrl()
         {
             // Under WinXP, file protocol urls can be mapped to
@@ -1178,7 +1177,6 @@ namespace System.Security.Util {
             }
         }
                 
-        [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetDeviceName( String driveLetter, StringHandleOnStack retDeviceName );

@@ -120,7 +120,6 @@ namespace System.Security
 
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null)

@@ -74,7 +74,6 @@ namespace System.Runtime.CompilerServices {
 
         // Wraps object variable into a handle. Used to return managed strings from QCalls.
         // s has to be a local variable on the stack.
-        [SecurityCritical]
         static internal StringHandleOnStack GetStringHandleOnStack(ref string s)
         {
             return new StringHandleOnStack(UnsafeCastToStackPointer(ref s));
@@ -82,7 +81,6 @@ namespace System.Runtime.CompilerServices {
 
         // Wraps object variable into a handle. Used to pass managed object references in and out of QCalls.
         // o has to be a local variable on the stack.
-        [SecurityCritical]
         static internal ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class
         {
             return new ObjectHandleOnStack(UnsafeCastToStackPointer(ref o));
@@ -90,14 +88,12 @@ namespace System.Runtime.CompilerServices {
 
         // Wraps StackCrawlMark into a handle. Used to pass StackCrawlMark to QCalls.
         // stackMark has to be a local variable on the stack.
-        [SecurityCritical]
         static internal StackCrawlMarkHandle GetStackCrawlMarkHandle(ref StackCrawlMark stackMark)
         {
             return new StackCrawlMarkHandle(UnsafeCastToStackPointer(ref stackMark));
         }
 
 #if _DEBUG
-        [SecurityCritical]
         [FriendAccessAllowed]
         static internal T UnsafeCast<T>(Object o) where T : class
         {
@@ -108,7 +104,6 @@ namespace System.Runtime.CompilerServices {
 
         // The IL body of this method is not critical, but its body will be replaced with unsafe code, so
         // this method is effectively critical
-        [SecurityCritical]
         static private T UnsafeCastInternal<T>(Object o) where T : class
         {
             // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
@@ -154,7 +149,6 @@ namespace System.Runtime.CompilerServices {
 
         // Internal method for getting a raw pointer for handles in JitHelpers.
         // The reference has to point into a local stack variable in order so it can not be moved by the GC.
-        [SecurityCritical]
         static internal IntPtr UnsafeCastToStackPointer<T>(ref T val)
         {
             IntPtr p = UnsafeCastToStackPointerInternal<T>(ref val);
@@ -162,7 +156,6 @@ namespace System.Runtime.CompilerServices {
             return p;
         }
 
-        [SecurityCritical]
         static private IntPtr UnsafeCastToStackPointerInternal<T>(ref T val)
         {
             // The body of this function will be replaced by the EE with unsafe code that just returns val!!!
@@ -172,7 +165,6 @@ namespace System.Runtime.CompilerServices {
 #else // _DEBUG
         // The IL body of this method is not critical, but its body will be replaced with unsafe code, so
         // this method is effectively critical
-        [SecurityCritical]
         [FriendAccessAllowed]
         static internal T UnsafeCast<T>(Object o) where T : class
         {
@@ -195,7 +187,6 @@ namespace System.Runtime.CompilerServices {
             throw new InvalidOperationException();
         }
 
-        [SecurityCritical]
         static internal IntPtr UnsafeCastToStackPointer<T>(ref T val)
         {
             // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
@@ -205,12 +196,10 @@ namespace System.Runtime.CompilerServices {
 #endif // _DEBUG
 
         // Set the given element in the array without any type or range checks
-        [SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         extern static internal void UnsafeSetArrayElement(Object[] target, int index, Object element);
 
         // Used for unsafe pinning of arbitrary objects.
-        [System.Security.SecurityCritical]  // auto-generated
         static internal PinningHelper GetPinningHelper(Object o)
         {
             // This cast is really unsafe - call the private version that does not assert in debug
@@ -222,7 +211,6 @@ namespace System.Runtime.CompilerServices {
         }
 
 #if _DEBUG
-        [SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         extern static bool IsAddressInStack(IntPtr ptr);
 #endif

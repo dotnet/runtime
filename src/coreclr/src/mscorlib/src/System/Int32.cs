@@ -77,21 +77,18 @@ namespace System {
             return m_value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         public override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         public String ToString(String format) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         public String ToString(IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -99,7 +96,6 @@ namespace System {
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider) {
             Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));

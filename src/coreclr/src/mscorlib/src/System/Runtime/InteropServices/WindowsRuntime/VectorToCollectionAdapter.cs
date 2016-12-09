@@ -31,7 +31,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // int Count { get }
         [Pure]
-        [SecurityCritical]
         internal int Count<T>()
         {
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
@@ -45,14 +44,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IsReadOnly { get }
-        [SecurityCritical]
         internal bool IsReadOnly<T>()
         {
             return false;
         }
 
         // void Add(T item)
-        [SecurityCritical]
         internal void Add<T>(T item)
         {
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
@@ -60,7 +57,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Clear()
-        [SecurityCritical]
         internal void Clear<T>()
         {
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
@@ -68,7 +64,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Contains(T item)
-        [SecurityCritical]
         internal bool Contains<T>(T item)
         {
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
@@ -78,7 +73,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void CopyTo(T[] array, int arrayIndex)
-        [SecurityCritical]
         internal void CopyTo<T>(T[] array, int arrayIndex)
         {
             if (array == null)
@@ -104,7 +98,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Remove(T item)
-        [SecurityCritical]
         internal bool Remove<T>(T item)
         {
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);

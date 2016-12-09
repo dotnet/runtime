@@ -74,7 +74,6 @@ namespace System.Text
         }
 
         // Just get it from GetEncoding
-        [System.Security.SecurityCritical]  // auto-generated
         public Object GetRealObject(StreamingContext context)
         {
             // Get our encoding (Note: This has default fallbacks for readonly and everett cases)
@@ -93,7 +92,6 @@ namespace System.Text
         }
 
         // ISerializable implementation
-        [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // We cannot ever call this.
@@ -120,14 +118,12 @@ namespace System.Text
             }
 
             // Just get it from GetDecider
-            [System.Security.SecurityCritical]  // auto-generated
             public Object GetRealObject(StreamingContext context)
             {
                 return this.realEncoding.GetDecoder();
             }
 
             // ISerializable implementation, get data for this object
-            [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // We cannot ever call this.

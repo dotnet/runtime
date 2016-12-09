@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices {
         //    throw new Exception();
         //}
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public ArrayWithOffset(Object array, int offset)
         {
             m_array  = array;
@@ -64,7 +63,6 @@ namespace System.Runtime.InteropServices {
             return !(a == b);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern int CalculateCount();
     

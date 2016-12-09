@@ -29,7 +29,6 @@ namespace System.Reflection.Emit {
     // this class cannot be accessed from the EE.
     internal class AssemblyBuilderData
     {
-        [SecurityCritical]
         internal AssemblyBuilderData(
             InternalAssemblyBuilder assembly, 
             String                  strAssemblyName, 
@@ -120,7 +119,6 @@ namespace System.Reflection.Emit {
         // If DefineUnmanagedVersionInfo is called, the parameter provided will override
         // the CA's value.
         //                      
-        [System.Security.SecurityCritical]  // auto-generated
         internal void FillUnmanagedVersionInfo()
         {
             // Get the lcid set on the assembly name as default if available

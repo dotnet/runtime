@@ -229,7 +229,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static readonly Type s_rectType = Type.GetType("Windows.Foundation.Rect, " + AssemblyRef.SystemRuntimeWindowsRuntime);
         internal static readonly Type s_sizeType = Type.GetType("Windows.Foundation.Size, " + AssemblyRef.SystemRuntimeWindowsRuntime);
 
-        [SecuritySafeCritical]
         internal static Object CreateIReference(Object obj)
         {
             Contract.Requires(obj != null, "Null should not be boxed.");
@@ -306,7 +305,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return null;
         }
 
-        [SecuritySafeCritical]
         internal static Object CreateIReferenceArray(Array obj)
         {
             Contract.Requires(obj != null);

@@ -11,7 +11,6 @@ namespace Microsoft.Win32.SafeHandles {
 
     // Introduce this handle to replace internal SafeTokenHandle,
     // which is mainly used to hold Windows thread or process access token
-    [SecurityCritical]
     public sealed class SafeAccessTokenHandle : SafeHandle
     {
         private SafeAccessTokenHandle()
@@ -27,24 +26,20 @@ namespace Microsoft.Win32.SafeHandles {
 
         public static SafeAccessTokenHandle InvalidHandle
         {
-            [SecurityCritical]
             get { return new SafeAccessTokenHandle(IntPtr.Zero); }
         }
 
         public override bool IsInvalid
         {
-            [SecurityCritical]
             get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
         }
 
-        [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             return Win32Native.CloseHandle(handle);
         }
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeLsaLogonProcessHandle : SafeHandleZeroOrMinusOneIsInvalid {
         private SafeLsaLogonProcessHandle() : base (true) {}
 
@@ -57,7 +52,6 @@ namespace Microsoft.Win32.SafeHandles {
             get { return new SafeLsaLogonProcessHandle(IntPtr.Zero); }
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             // LsaDeregisterLogonProcess returns an NTSTATUS
@@ -65,7 +59,6 @@ namespace Microsoft.Win32.SafeHandles {
         }
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeLsaMemoryHandle : SafeBuffer {
         private SafeLsaMemoryHandle() : base(true) {}
 
@@ -78,14 +71,12 @@ namespace Microsoft.Win32.SafeHandles {
             get { return new SafeLsaMemoryHandle( IntPtr.Zero ); }
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Win32Native.LsaFreeMemory(handle) == 0;
         }
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeLsaPolicyHandle : SafeHandleZeroOrMinusOneIsInvalid {
         private SafeLsaPolicyHandle() : base(true) {}
 
@@ -98,14 +89,12 @@ namespace Microsoft.Win32.SafeHandles {
             get { return new SafeLsaPolicyHandle( IntPtr.Zero ); }
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Win32Native.LsaClose(handle) == 0;
         }
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeLsaReturnBufferHandle : SafeBuffer {
         private SafeLsaReturnBufferHandle() : base (true) {}
 
@@ -118,7 +107,6 @@ namespace Microsoft.Win32.SafeHandles {
             get { return new SafeLsaReturnBufferHandle(IntPtr.Zero); }
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             // LsaFreeReturnBuffer returns an NTSTATUS
@@ -126,7 +114,6 @@ namespace Microsoft.Win32.SafeHandles {
         }
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid {
         private SafeProcessHandle() : base (true) {}
 
@@ -139,14 +126,12 @@ namespace Microsoft.Win32.SafeHandles {
             get { return new SafeProcessHandle(IntPtr.Zero); }
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Win32Native.CloseHandle(handle);
         }
     }
 
-    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeThreadHandle : SafeHandleZeroOrMinusOneIsInvalid {
         private SafeThreadHandle() : base (true) {}
 
@@ -155,7 +140,6 @@ namespace Microsoft.Win32.SafeHandles {
             SetHandle(handle);
         }
 
-        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Win32Native.CloseHandle(handle);

@@ -57,15 +57,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
         //
         // Support for ToString/GetHashCode/Equals override
         //        
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]            
         internal extern IntPtr GetRedirectedGetHashCodeMD();        
         
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]            
         internal extern int RedirectGetHashCode(IntPtr pMD);        
 
-        [System.Security.SecuritySafeCritical]
         public override int GetHashCode()
         {
             IntPtr pMD = GetRedirectedGetHashCodeMD();
@@ -74,15 +71,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
             return RedirectGetHashCode(pMD);
         }
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]            
         internal extern IntPtr GetRedirectedToStringMD();        
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]            
         internal extern string RedirectToString(IntPtr pMD);
 
-        [System.Security.SecuritySafeCritical]
         public override string ToString()
         {
             // Check whether the type implements IStringable.
@@ -102,15 +96,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
             }
         }
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]            
         internal extern IntPtr GetRedirectedEqualsMD();        
 
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]            
         internal extern bool RedirectEquals(object obj, IntPtr pMD);        
 
-        [System.Security.SecuritySafeCritical]
         public override bool Equals(object obj)
         {
             IntPtr pMD = GetRedirectedEqualsMD();

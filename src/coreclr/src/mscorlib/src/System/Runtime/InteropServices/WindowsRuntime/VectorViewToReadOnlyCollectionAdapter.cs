@@ -31,7 +31,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // int Count { get }
         [Pure]
-        [SecurityCritical]
         internal int Count<T>()
         {
             IVectorView<T> _this = JitHelpers.UnsafeCast<IVectorView<T>>(this);

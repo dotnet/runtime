@@ -88,7 +88,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             InvokeInternal(target, new object[] { indexValue, value }, false);
         }
 
-        [SecuritySafeCritical]
         private object InvokeInternal(object target, object[] args, bool getValue)
         {
             // Forward to the right object if we are dealing with a proxy

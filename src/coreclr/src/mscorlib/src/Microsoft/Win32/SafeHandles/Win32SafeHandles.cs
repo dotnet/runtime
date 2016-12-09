@@ -22,7 +22,6 @@ namespace Microsoft.Win32.SafeHandles
     using System.Runtime.ConstrainedExecution;
 
     // Class of safe handle which uses 0 or -1 as an invalid handle.
-    [System.Security.SecurityCritical]  // auto-generated_required
     public abstract class SafeHandleZeroOrMinusOneIsInvalid : SafeHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -37,13 +36,11 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         public override bool IsInvalid {
-            [System.Security.SecurityCritical]
             get { return handle.IsNull() || handle == new IntPtr(-1); }
         }
     }
 
     // Class of safe handle which uses only -1 as an invalid handle.
-    [System.Security.SecurityCritical]  // auto-generated_required
     public abstract class SafeHandleMinusOneIsInvalid : SafeHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -58,13 +55,11 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         public override bool IsInvalid {
-            [System.Security.SecurityCritical]
             get { return handle == new IntPtr(-1); }
         }
     }
 
     // Class of critical handle which uses 0 or -1 as an invalid handle.
-    [System.Security.SecurityCritical]  // auto-generated_required
     public abstract class CriticalHandleZeroOrMinusOneIsInvalid : CriticalHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -73,13 +68,11 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         public override bool IsInvalid {
-            [System.Security.SecurityCritical]
             get { return handle.IsNull() || handle == new IntPtr(-1); }
         }
     }
 
     // Class of critical handle which uses only -1 as an invalid handle.
-    [System.Security.SecurityCritical]  // auto-generated_required
     public abstract class CriticalHandleMinusOneIsInvalid : CriticalHandle
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -88,7 +81,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         public override bool IsInvalid {
-            [System.Security.SecurityCritical]
             get { return handle == new IntPtr(-1); }
         }
     }

@@ -42,7 +42,6 @@ namespace System.Text
         }
 
         // ISerializable implementation. called during serialization.
-        [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializeDecoder(info);
@@ -77,7 +76,6 @@ namespace System.Text
             return GetCharCount(bytes, index, count, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
             // Validate Parameters
@@ -104,7 +102,6 @@ namespace System.Text
                 return GetCharCount(pBytes + index, count, flush);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate parameters
@@ -131,7 +128,6 @@ namespace System.Text
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                              char[] chars, int charIndex, bool flush)
         {
@@ -170,7 +166,6 @@ namespace System.Text
                                     pChars + charIndex, charCount, flush);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe override int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush)
         {
@@ -194,7 +189,6 @@ namespace System.Text
 
         // This method is used when the output buffer might not be big enough.
         // Just call the pointer version.  (This gets chars)
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe void Convert(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
@@ -241,7 +235,6 @@ namespace System.Text
 
         // This is the version that used pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting chars
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe override void Convert(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)

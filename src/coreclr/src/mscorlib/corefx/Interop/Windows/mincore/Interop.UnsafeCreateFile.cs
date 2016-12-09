@@ -10,7 +10,6 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [System.Security.SecurityCritical]  // auto-generated
         internal static SafeFileHandle UnsafeCreateFile(
             string lpFileName,
             int dwDesiredAccess,

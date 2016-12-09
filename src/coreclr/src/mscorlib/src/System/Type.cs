@@ -154,7 +154,6 @@ namespace System
         //   param progID:     the progID of the class to retrieve
         //   returns:          the class object associated to the progID
         ////
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Type GetTypeFromProgID(String progID)
         {
                 return RuntimeType.GetTypeFromProgIDImpl(progID, null, false);
@@ -169,19 +168,16 @@ namespace System
         //   param progID:     the progID of the class to retrieve
         //   returns:          the class object associated to the progID
         ////
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Type GetTypeFromProgID(String progID, bool throwOnError)
         {
                 return RuntimeType.GetTypeFromProgIDImpl(progID, null, throwOnError);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Type GetTypeFromProgID(String progID, String server)
         {
                 return RuntimeType.GetTypeFromProgIDImpl(progID, server, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Type GetTypeFromProgID(String progID, String server, bool throwOnError)
         {
                 return RuntimeType.GetTypeFromProgIDImpl(progID, server, throwOnError);
@@ -194,25 +190,21 @@ namespace System
         //   param CLSID:      the CLSID of the class to retrieve
         //   returns:          the class object associated to the CLSID
         ////
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Type GetTypeFromCLSID(Guid clsid)
         {
                 return RuntimeType.GetTypeFromCLSIDImpl(clsid, null, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Type GetTypeFromCLSID(Guid clsid, bool throwOnError)
         {
                 return RuntimeType.GetTypeFromCLSIDImpl(clsid, null, throwOnError);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Type GetTypeFromCLSID(Guid clsid, String server)
         {
                 return RuntimeType.GetTypeFromCLSIDImpl(clsid, server, false);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Type GetTypeFromCLSID(Guid clsid, String server, bool throwOnError)
         {
                 return RuntimeType.GetTypeFromCLSIDImpl(clsid, server, throwOnError);
@@ -338,12 +330,10 @@ namespace System
         }
 
         // Given a class handle, this will return the class for that handle.
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType GetTypeFromHandleUnsafe(IntPtr handle);
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Type GetTypeFromHandle(RuntimeTypeHandle handle);
 
@@ -1050,7 +1040,6 @@ namespace System
 
         public bool IsInterface {
             [Pure]
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 RuntimeType rt = this as RuntimeType;
@@ -1771,12 +1760,10 @@ namespace System
             return (Object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType));
         }
 
-        [System.Security.SecuritySafeCritical]
         [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool operator ==(Type left, Type right);
 
-        [System.Security.SecuritySafeCritical]
         [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool operator !=(Type left, Type right);

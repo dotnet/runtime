@@ -65,9 +65,6 @@ namespace System.Resources {
         // implementation.  Use this constructor to open & read from a file 
         // on disk.
         // 
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         public ResourceSet(String fileName)
         {
             Reader = new ResourceReader(fileName);
@@ -89,7 +86,6 @@ namespace System.Resources {
         // implementation.  Use this constructor to read from an open stream 
         // of data.
         // 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public ResourceSet(Stream stream)
         {
             Reader = new ResourceReader(stream);
@@ -98,7 +94,6 @@ namespace System.Resources {
         }
 
 #if LOOSELY_LINKED_RESOURCE_REFERENCE
-        [System.Security.SecurityCritical]  // auto_generated_required
         public ResourceSet(Stream stream, Assembly assembly)
         {
             Reader = new ResourceReader(stream);

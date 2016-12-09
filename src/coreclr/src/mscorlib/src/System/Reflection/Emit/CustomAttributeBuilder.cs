@@ -550,7 +550,6 @@ namespace System.Reflection.Emit {
          
 
         // return the byte interpretation of the custom attribute
-        [System.Security.SecurityCritical]  // auto-generated
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
         {
             CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con).Token, false);
@@ -563,7 +562,6 @@ namespace System.Reflection.Emit {
         // This function has to be called before we snap the in-memory module for on disk (i.e. Presave on
         // ModuleBuilder.
         //*************************************************
-        [System.Security.SecurityCritical]  // auto-generated
         internal int PrepareCreateCustomAttributeToDisk(ModuleBuilder mod)
         {
             return mod.InternalGetConstructorToken(m_con, true).Token;
@@ -572,7 +570,6 @@ namespace System.Reflection.Emit {
         //*************************************************
         // Call this function with toDisk=1, after on disk module has been snapped.
         //*************************************************
-        [System.Security.SecurityCritical]  // auto-generated
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner, int tkAttrib, bool toDisk)
         {
             TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk, 

@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V this[K key] { get }
-        [SecurityCritical]
         internal V Indexer_Get<K, V>(K key)
         {
             if (key == null)
@@ -43,7 +42,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V this[K key] { set }
-        [SecurityCritical]
         internal void Indexer_Set<K, V>(K key, V value)
         {
             if (key == null)
@@ -56,7 +54,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // ICollection<K> Keys { get }
-        [SecurityCritical]
         internal ICollection<K> Keys<K, V>()
         {
             IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
@@ -65,7 +62,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // ICollection<V> Values { get }
-        [SecurityCritical]
         internal ICollection<V> Values<K, V>()
         {
             IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
@@ -75,7 +71,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // bool ContainsKey(K key)
         [Pure]
-        [SecurityCritical]
         internal bool ContainsKey<K, V>(K key)
         {
             if (key == null)
@@ -86,7 +81,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Add(K key, V value)
-        [SecurityCritical]
         internal void Add<K, V>(K key, V value)
         {
             if (key == null)
@@ -102,7 +96,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Remove(TKey key)
-        [SecurityCritical]
         internal bool Remove<K, V>(K key)
         {
             if (key == null)
@@ -128,7 +121,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool TryGetValue(TKey key, out TValue value)
-        [SecurityCritical]
         internal bool TryGetValue<K, V>(K key, out V value)
         {
             if (key == null)

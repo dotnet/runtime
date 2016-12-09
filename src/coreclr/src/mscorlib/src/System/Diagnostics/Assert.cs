@@ -59,7 +59,6 @@ namespace System.Diagnostics {
             Fail(conditionString, message, null, exitCode, stackTraceFormat, 0);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static void Fail(String conditionString, String message, String windowTitle, int exitCode, StackTrace.TraceFormat stackTraceFormat, int numStackFramesToSkip)
         {
             // get the stacktrace
@@ -107,7 +106,6 @@ namespace System.Diagnostics {
     
       // Called when an assert happens.
       // windowTitle can be null.
-      [System.Security.SecurityCritical]  // auto-generated
       [MethodImplAttribute(MethodImplOptions.InternalCall)]
       internal extern static int ShowDefaultAssertDialog(String conditionString, String message, String stackTrace, String windowTitle);
     }

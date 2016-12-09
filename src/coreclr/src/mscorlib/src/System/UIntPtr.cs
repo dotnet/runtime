@@ -24,20 +24,17 @@ namespace System {
     [System.Runtime.InteropServices.ComVisible(true)]
     public struct UIntPtr : IEquatable<UIntPtr>, ISerializable
     {
-        [SecurityCritical]
         unsafe private void* m_value;
 
         public static readonly UIntPtr Zero;
 
                 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe UIntPtr(uint value)
         {
             m_value = (void *)value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe UIntPtr(ulong value)
         {
@@ -48,7 +45,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecurityCritical]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe UIntPtr(void* value)
@@ -56,7 +52,6 @@ namespace System {
             m_value = value;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe UIntPtr(SerializationInfo info, StreamingContext context) {
             ulong l = info.GetUInt64("value");
 
@@ -67,7 +62,6 @@ namespace System {
             m_value = (void *)l;
         }
 
-        [System.Security.SecurityCritical]
         unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null) {
@@ -77,7 +71,6 @@ namespace System {
             info.AddValue("value", (ulong)m_value);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override bool Equals(Object obj) {
             if (obj is UIntPtr) {
                 return (m_value == ((UIntPtr)obj).m_value);
@@ -85,13 +78,11 @@ namespace System {
             return false;
         }
 
-        [SecuritySafeCritical]
         unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr other)
         {
             return m_value == other.m_value;
         }
     
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override int GetHashCode() {
 #if FEATURE_CORECLR
 #if BIT64
@@ -105,7 +96,6 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe uint ToUInt32() {
 #if BIT64
@@ -115,13 +105,11 @@ namespace System {
 #endif
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe ulong ToUInt64() {
             return (ulong)m_value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
 
@@ -144,7 +132,6 @@ namespace System {
             return new UIntPtr(value);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static explicit operator uint(UIntPtr value)
         {
@@ -155,14 +142,12 @@ namespace System {
 #endif
         }   
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static explicit operator ulong (UIntPtr  value) 
         {
             return (ulong)value.m_value;
         }
 
-        [System.Security.SecurityCritical]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
         public static unsafe explicit operator UIntPtr (void* value)
@@ -170,7 +155,6 @@ namespace System {
             return new UIntPtr(value);
         }
 
-        [System.Security.SecurityCritical]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
         public static unsafe explicit operator void* (UIntPtr value)
@@ -179,7 +163,6 @@ namespace System {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator == (UIntPtr value1, UIntPtr value2) 
         {
@@ -187,7 +170,6 @@ namespace System {
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator != (UIntPtr value1, UIntPtr value2) 
         {
@@ -235,7 +217,6 @@ namespace System {
             }
         }
        
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe void* ToPointer()

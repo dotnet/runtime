@@ -31,24 +31,18 @@ namespace System.Runtime.InteropServices {
 [System.Runtime.InteropServices.ComVisible(true)]
     public interface IRegistrationServices
     {
-        [System.Security.SecurityCritical]  // auto-generated_required
         bool RegisterAssembly(Assembly assembly, AssemblyRegistrationFlags flags);
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         bool UnregisterAssembly(Assembly assembly);
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         Type[] GetRegistrableTypesInAssembly(Assembly assembly);
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         String GetProgIdForType(Type type);
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         void RegisterTypeForComClients(Type type, ref Guid g);
 
         Guid GetManagedCategoryGuid();
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         bool TypeRequiresRegistration(Type type);
 
         bool TypeRepresentsComType(Type type);

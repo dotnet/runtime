@@ -1029,14 +1029,12 @@ namespace System.Threading
         }
 
         // Cached callback delegate that's lazily initialized due to ContextCallback being SecurityCritical
-        [SecurityCritical]
         private static ContextCallback s_executionContextCallback;
 
         /// <summary>
         /// InternalExecuteCallbackSynchronously_GeneralPath
         /// This will be called on the target synchronization context, however, we still need to restore the required execution context
         /// </summary>
-        [SecuritySafeCritical]
         internal void ExecuteCallback()
         {
             if (TargetExecutionContext != null)
@@ -1059,7 +1057,6 @@ namespace System.Threading
 
         // the worker method to actually run the callback
         // The signature is such that it can be used as a 'ContextCallback'
-        [SecurityCritical]
         private static void ExecutionContextCallback(object obj)
         {
             CancellationCallbackInfo callbackInfo = obj as CancellationCallbackInfo;

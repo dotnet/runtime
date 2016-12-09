@@ -11,7 +11,6 @@ namespace System.Runtime.InteropServices {
     /// to and from COM calls.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-    [System.Security.SecurityCritical]
     internal struct Variant {
 
 #if DEBUG

@@ -16,9 +16,6 @@ namespace System.Reflection
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_MemberInfo))]
-#pragma warning disable 618
-    [PermissionSetAttribute(SecurityAction.InheritanceDemand, Name = "FullTrust")]
-#pragma warning restore 618
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MemberInfo : ICustomAttributeProvider, _MemberInfo
     {

@@ -38,7 +38,6 @@ namespace System.Resources {
         // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
         // serialization compat story for moving ResourceManager members to either file-based or 
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark) 
         {
             Contract.Assert(culture != null, "culture shouldn't be null; check caller");
@@ -145,7 +144,6 @@ namespace System.Resources {
         // Constructs a new ResourceSet for a given file name.  The logic in
         // here avoids a ReflectionPermission check for our RuntimeResourceSet
         // for perf and working set reasons.
-        [System.Security.SecurityCritical]
         private ResourceSet CreateResourceSet(String file)
         {
             Contract.Assert(file != null, "file shouldn't be null; check caller");

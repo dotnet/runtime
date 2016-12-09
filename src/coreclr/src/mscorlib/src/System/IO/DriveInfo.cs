@@ -53,7 +53,6 @@ namespace System.IO
 
         private const String NameField = "_name";  // For serialization
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public DriveInfo(String driveName) 
         {
             if (driveName == null)
@@ -88,7 +87,6 @@ namespace System.IO
             new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandPath).Demand();
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private DriveInfo(SerializationInfo info, StreamingContext context)
         {
             // Need to add in a security check here once it has been spec'ed.
@@ -104,7 +102,6 @@ namespace System.IO
         }
 
         public DriveType DriveType {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { 
                 // GetDriveType can't fail
                 return (DriveType) Win32Native.GetDriveType(Name);
@@ -112,7 +109,6 @@ namespace System.IO
         }
 
         public String DriveFormat {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 const int volNameLen = 50;
                 StringBuilder volumeName = new StringBuilder(volNameLen);
@@ -136,14 +132,12 @@ namespace System.IO
         }
 
         public bool IsReady {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 return Directory.InternalExists(Name);
             }
         }
 
         public long AvailableFreeSpace {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { 
                 long userBytes, totalBytes, freeBytes;
                 int oldMode = Win32Native.SetErrorMode(Win32Native.SEM_FAILCRITICALERRORS);
@@ -160,7 +154,6 @@ namespace System.IO
         }
 
         public long TotalFreeSpace {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { 
                 long userBytes, totalBytes, freeBytes;
                 int oldMode = Win32Native.SetErrorMode(Win32Native.SEM_FAILCRITICALERRORS);
@@ -177,7 +170,6 @@ namespace System.IO
         }
 
         public long TotalSize {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get { 
                 // Don't cache this, to handle variable sized floppy drives
                 // or other various removable media drives.
@@ -213,7 +205,6 @@ namespace System.IO
 
         // Null is a valid volume label.
         public String VolumeLabel {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 // NTFS uses a limit of 32 characters for the volume label,
                 // as of Windows Server 2003.
@@ -240,7 +231,6 @@ namespace System.IO
                 }
                 return volumeName.ToString();
             }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set {
                 String demandPath = _name + '.';
                 new FileIOPermission(FileIOPermissionAccess.Write, demandPath).Demand();
@@ -269,7 +259,6 @@ namespace System.IO
 
 #if FEATURE_SERIALIZATION
         /// <internalonly/>
-        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // No need for an additional security check - everything is public.

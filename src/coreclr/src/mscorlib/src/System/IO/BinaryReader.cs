@@ -209,14 +209,12 @@ namespace System.IO {
             return ((ulong)hi) << 32 | lo;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public virtual unsafe float ReadSingle() {
             FillBuffer(4);
             uint tmpBuffer = (uint)(m_buffer[0] | m_buffer[1] << 8 | m_buffer[2] << 16 | m_buffer[3] << 24);
             return *((float*)&tmpBuffer);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public virtual unsafe double ReadDouble() {
             FillBuffer(8);
             uint lo = (uint)(m_buffer[0] | m_buffer[1] << 8 |
@@ -294,7 +292,6 @@ namespace System.IO {
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        [SecuritySafeCritical]
         public virtual int Read(char[] buffer, int index, int count) {
             if (buffer==null) {
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
@@ -319,7 +316,6 @@ namespace System.IO {
             return InternalReadChars(buffer, index, count);
         }
 
-        [SecurityCritical]
         private int InternalReadChars(char[] buffer, int index, int count) {
             Contract.Requires(buffer != null);
             Contract.Requires(index >= 0 && count >= 0);
@@ -472,7 +468,6 @@ namespace System.IO {
             return m_singleChar[0];
         }
 
-        [SecuritySafeCritical]
         public virtual char[] ReadChars(int count) {
             if (count<0) {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
