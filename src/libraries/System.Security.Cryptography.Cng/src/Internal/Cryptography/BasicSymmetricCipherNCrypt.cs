@@ -140,7 +140,7 @@ namespace Internal.Cryptography
         private CngKey _cngKey;
         private readonly bool _encrypting;
 
-        private readonly static CngProperty s_ECBMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB);
-        private readonly static CngProperty s_CBCMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC);
+        private static readonly CngProperty s_ECBMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB);
+        private static readonly CngProperty s_CBCMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC);
     }
 }

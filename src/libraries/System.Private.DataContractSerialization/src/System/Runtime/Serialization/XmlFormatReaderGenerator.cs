@@ -927,7 +927,7 @@ namespace System.Runtime.Serialization
 #endif
         }
 
-        static internal object UnsafeGetUninitializedObject(Type type)
+        internal static object UnsafeGetUninitializedObject(Type type)
         {
 #if !NET_NATIVE
             return FormatterServices.GetUninitializedObject(type);
@@ -944,7 +944,7 @@ namespace System.Runtime.Serialization
 #if USE_REFEMIT
         public static object UnsafeGetUninitializedObject(int id)
 #else
-        static internal object UnsafeGetUninitializedObject(int id)
+        internal static object UnsafeGetUninitializedObject(int id)
 #endif
         {
             var type = DataContract.GetDataContractForInitialization(id).TypeForInitialization;

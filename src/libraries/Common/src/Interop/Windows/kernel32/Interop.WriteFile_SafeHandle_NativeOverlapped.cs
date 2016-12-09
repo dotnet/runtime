@@ -17,6 +17,6 @@ internal partial class Interop
         // struct in a callback (or an EndWrite method called by that callback),
         // and pass in an address for the numBytesRead parameter.
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe extern int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
+        internal static extern unsafe int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
     }
 }

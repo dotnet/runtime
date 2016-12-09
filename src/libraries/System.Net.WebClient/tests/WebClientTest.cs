@@ -448,7 +448,7 @@ namespace System.Net.Tests
 
     public abstract class WebClientTestBase
     {
-        public readonly static object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
         const string ExpectedText =
             "To be, or not to be, that is the question:" +
             "Whether 'tis Nobler in the mind to suffer" +

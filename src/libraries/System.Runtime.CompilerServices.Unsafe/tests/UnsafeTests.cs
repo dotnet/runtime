@@ -419,7 +419,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public unsafe static void AsRef()
+        public static unsafe void AsRef()
         {
             byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
             fixed (byte * p = b)

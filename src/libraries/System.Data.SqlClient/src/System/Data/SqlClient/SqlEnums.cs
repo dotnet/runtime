@@ -290,7 +290,7 @@ namespace System.Data.SqlClient
         //
         // map COM+ Type to MetaType class
         //
-        static internal MetaType GetMetaTypeFromType(Type dataType, bool streamAllowed = true)
+        internal static MetaType GetMetaTypeFromType(Type dataType, bool streamAllowed = true)
         {
             if (dataType == typeof(System.Byte[]))
                 return MetaVarBinary;
@@ -372,7 +372,7 @@ namespace System.Data.SqlClient
                 throw ADP.UnknownDataType(dataType);
         }
 
-        static internal MetaType GetMetaTypeFromValue(object value, bool inferLen = true, bool streamAllowed = true)
+        internal static MetaType GetMetaTypeFromValue(object value, bool inferLen = true, bool streamAllowed = true)
         {
             if (value == null)
             {

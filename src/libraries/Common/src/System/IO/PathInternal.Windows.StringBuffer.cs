@@ -27,7 +27,7 @@ namespace System.IO
         /// <summary>
         /// Gets the length of the root of the path (drive, share, etc.).
         /// </summary>
-        internal unsafe static uint GetRootLength(StringBuffer path)
+        internal static unsafe uint GetRootLength(StringBuffer path)
         {
             if (path.Length == 0) return 0;
             return GetRootLength(path.CharPointer, path.Length);

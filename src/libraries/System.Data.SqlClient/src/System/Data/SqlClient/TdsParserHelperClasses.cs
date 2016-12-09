@@ -195,7 +195,7 @@ namespace System.Data.SqlClient
         }
 
 
-        static internal bool AreSame(SqlCollation a, SqlCollation b)
+        internal static bool AreSame(SqlCollation a, SqlCollation b)
         {
             if (a == null || b == null)
             {

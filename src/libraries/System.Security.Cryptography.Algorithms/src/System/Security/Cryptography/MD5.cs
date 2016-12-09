@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
             return new Implementation();
         }
 
-        static public new MD5 Create(String algName)
+        public static new MD5 Create(String algName)
         {
             return (MD5)CryptoConfig.CreateFromName(algName);
         }

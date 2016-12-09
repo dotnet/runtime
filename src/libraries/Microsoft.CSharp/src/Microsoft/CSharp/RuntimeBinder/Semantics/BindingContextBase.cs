@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal class BindingContext
     {
-        static public BindingContext CreateInstance(
+        public static BindingContext CreateInstance(
                 CSemanticChecker pSemanticChecker,
                 ExprFactory exprFactory,
                 OutputContext outputContext,

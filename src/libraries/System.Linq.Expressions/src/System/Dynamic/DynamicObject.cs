@@ -443,7 +443,7 @@ namespace System.Dynamic
 
             private delegate DynamicMetaObject Fallback<TBinder>(MetaDynamic @this, TBinder binder, DynamicMetaObject errorSuggestion);
 
-            private readonly static Expression[] s_noArgs = new Expression[0]; // used in reference comparison, requires unique object identity
+            private static readonly Expression[] s_noArgs = new Expression[0]; // used in reference comparison, requires unique object identity
 
             private static ReadOnlyCollection<Expression> GetConvertedArgs(params Expression[] args)
             {

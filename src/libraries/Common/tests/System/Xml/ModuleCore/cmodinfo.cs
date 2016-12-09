@@ -33,9 +33,9 @@ namespace OLEDB.Test.ModuleCore
     public class CModInfo
     {
         //Data
-        static private String s_strCommandLine;
-        static private MyDict<string, string> s_hashOptions;
-        static private object _includenotimplemented;
+        private static String s_strCommandLine;
+        private static MyDict<string, string> s_hashOptions;
+        private static object _includenotimplemented;
 
         //Constructor
         public CModInfo()
@@ -43,7 +43,7 @@ namespace OLEDB.Test.ModuleCore
         }
 
         //Helpers
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             //Since this is a static class, (to make it simpler to access from anywhere in your code)
@@ -53,7 +53,7 @@ namespace OLEDB.Test.ModuleCore
             s_strCommandLine = null;
             s_hashOptions = null;
         }
-        static public string CommandLine
+        public static string CommandLine
         {
             // This Assert allows callers without the EnvironementPermission to use this property
             get
@@ -67,7 +67,7 @@ namespace OLEDB.Test.ModuleCore
                 s_strCommandLine = value;
             }
         }
-        static public MyDict<string, string> Options
+        public static MyDict<string, string> Options
         {
             get
             {
@@ -83,19 +83,19 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public string Filter
+        public static string Filter
         {
             //Typed options
             get { return (string)CModInfo.Options["Filter"]; }
         }
 
-        static public string MaxPriority
+        public static string MaxPriority
         {
             //Typed options
             get { return (string)CModInfo.Options["MaxPriority"]; }
         }
 
-        static public bool IncludeNotImplemented
+        public static bool IncludeNotImplemented
         {
             //Typed options
             get

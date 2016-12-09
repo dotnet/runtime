@@ -70,7 +70,7 @@ namespace System.Data.SqlClient
         private CommandBehavior _commandBehavior;
 
         private static int s_objectTypeCount; // Bid counter
-        private readonly static ReadOnlyCollection<DbColumn> s_emptySchema = new ReadOnlyCollection<DbColumn>(Array.Empty<DbColumn>());
+        private static readonly ReadOnlyCollection<DbColumn> s_emptySchema = new ReadOnlyCollection<DbColumn>(Array.Empty<DbColumn>());
         internal readonly int ObjectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
         // metadata (no explicit table, use 'Table')

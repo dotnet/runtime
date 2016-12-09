@@ -142,7 +142,7 @@ internal partial class Interop
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v1 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        unsafe internal struct BCRYPT_DSA_KEY_BLOB
+        internal unsafe struct BCRYPT_DSA_KEY_BLOB
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;
@@ -155,7 +155,7 @@ internal partial class Interop
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v2 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        unsafe internal struct BCRYPT_DSA_KEY_BLOB_V2
+        internal unsafe struct BCRYPT_DSA_KEY_BLOB_V2
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;

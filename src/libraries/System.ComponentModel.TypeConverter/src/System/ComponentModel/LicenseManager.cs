@@ -26,7 +26,7 @@ namespace System.ComponentModel
         private static object s_contextLockHolder;
         private static volatile Hashtable s_providers;
         private static volatile Hashtable s_providerInstances;
-        private static  readonly object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
 
         // not creatable...
         //

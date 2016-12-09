@@ -1282,7 +1282,7 @@ namespace System.Xml.Serialization
             return ifState;
         }
 
-        static internal AssemblyBuilder CreateAssemblyBuilder(string name)
+        internal static AssemblyBuilder CreateAssemblyBuilder(string name)
         {
             AssemblyName assemblyName = new AssemblyName();
             assemblyName.Name = name;
@@ -1290,11 +1290,11 @@ namespace System.Xml.Serialization
             return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
         }
 
-        static internal ModuleBuilder CreateModuleBuilder(AssemblyBuilder assemblyBuilder, string name)
+        internal static ModuleBuilder CreateModuleBuilder(AssemblyBuilder assemblyBuilder, string name)
         {
             return assemblyBuilder.DefineDynamicModule(name);
         }
-        static internal TypeBuilder CreateTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type parent, Type[] interfaces)
+        internal static TypeBuilder CreateTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type parent, Type[] interfaces)
         {
             // parent is nullable if no base class
             return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,

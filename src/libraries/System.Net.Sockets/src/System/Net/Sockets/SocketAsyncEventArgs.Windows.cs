@@ -882,7 +882,7 @@ namespace System.Net.Sockets
         }
 
         // Sets up an Overlapped object with either _buffer or _acceptBuffer pinned.
-        unsafe private void SetupOverlappedSingle(bool pinSingleBuffer)
+        private unsafe void SetupOverlappedSingle(bool pinSingleBuffer)
         {
             // Pin buffer, get native pointers, and fill in WSABuffer descriptor.
             if (pinSingleBuffer)
@@ -929,7 +929,7 @@ namespace System.Net.Sockets
         }
 
         // Sets up an Overlapped object with multiple buffers pinned.
-        unsafe private void SetupOverlappedMultiple()
+        private unsafe void SetupOverlappedMultiple()
         {
             ArraySegment<byte>[] tempList = new ArraySegment<byte>[_bufferList.Count];
             _bufferList.CopyTo(tempList, 0);
@@ -967,7 +967,7 @@ namespace System.Net.Sockets
         }
 
         // Sets up an Overlapped object for SendPacketsAsync.
-        unsafe private void SetupOverlappedSendPackets()
+        private unsafe void SetupOverlappedSendPackets()
         {
             int index;
 

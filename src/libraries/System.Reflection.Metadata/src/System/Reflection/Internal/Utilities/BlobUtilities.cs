@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    internal unsafe static class BlobUtilities
+    internal static unsafe class BlobUtilities
     {
         public static byte[] ReadBytes(byte* buffer, int byteCount)
         {
@@ -226,7 +226,7 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe static int GetUTF8ByteCount(string str)
+        internal static unsafe int GetUTF8ByteCount(string str)
         {
             fixed (char* ptr = str)
             {
@@ -234,7 +234,7 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe static int GetUTF8ByteCount(char* str, int charCount)
+        internal static unsafe int GetUTF8ByteCount(char* str, int charCount)
         {
             char* remainder;
             return GetUTF8ByteCount(str, charCount, int.MaxValue, out remainder);

@@ -31,7 +31,7 @@ namespace System.Data.Common
             SchemaMappingUnsortedIndex,
         }
 
-        static readonly private string[] s_DBCOLUMN_NAME = new string[] {
+        private static readonly string[] s_DBCOLUMN_NAME = new string[] {
             SchemaTableColumn.ColumnName,
             SchemaTableColumn.ColumnOrdinal,
             SchemaTableColumn.ColumnSize,

@@ -24,16 +24,16 @@ namespace System.Net.Http.Functional.Tests
         private const string ExpectedContent = "Test contest";
         private const string UserName = "user1";
         private const string Password = "password1";
-        private readonly static Uri BasicAuthServerUri =
+        private static readonly Uri BasicAuthServerUri =
             Configuration.Http.BasicAuthUriForCreds(false, UserName, Password);
-        private readonly static Uri SecureBasicAuthServerUri =
+        private static readonly Uri SecureBasicAuthServerUri =
             Configuration.Http.BasicAuthUriForCreds(true, UserName, Password);
 
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
 
-        public readonly static object[][] BasicAuthEchoServers =
+        public static readonly object[][] BasicAuthEchoServers =
             new object[][]
                 {
                     new object[] { BasicAuthServerUri },
