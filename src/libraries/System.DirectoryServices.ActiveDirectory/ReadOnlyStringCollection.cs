@@ -1,0 +1,73 @@
+//------------------------------------------------------------------------------
+// <copyright file="ReadOnlyStringCollection.cs" company="Microsoft">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>                                                                
+//------------------------------------------------------------------------------
+
+namespace System.DirectoryServices.ActiveDirectory {
+	using System;
+	using System.Collections;
+	using System.Globalization;
+	using System.DirectoryServices;
+
+	public class ReadOnlyStringCollection: ReadOnlyCollectionBase {
+              internal ReadOnlyStringCollection() {}
+              
+		internal ReadOnlyStringCollection(ArrayList values) {
+			if (values == null) {
+				values = new ArrayList();
+			}
+
+			this.InnerList.AddRange(values);
+		}
+		public string this[int index] {
+			get {
+				object returnValue = InnerList[index];
+
+				if (returnValue is Exception)
+					throw (Exception)returnValue;
+				else
+					return (string)returnValue;
+			}
+		}
+
+		public bool Contains(string value) {
+
+			if (value == null) {
+				throw new ArgumentNullException("value");
+			}
+			
+			for (int i = 0; i < InnerList.Count; i++) {
+				string tmp = (string)InnerList[i];
+				if (Utils.Compare(tmp, value) == 0) {
+					return true;
+				}
+			}
+			return false;
+		}  
+
+		public int IndexOf(string value) {
+			
+			if (value == null) {
+				throw new ArgumentNullException("value");
+			}
+			
+			for (int i = 0; i < InnerList.Count; i++) {
+				string tmp = (string)InnerList[i];
+				if (Utils.Compare(tmp, value) == 0) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		public void CopyTo(string[] values, int index) {
+			InnerList.CopyTo(values, index);
+		}
+
+              internal void Add(String value)
+              {
+                     InnerList.Add(value);
+              }
+	}
+}

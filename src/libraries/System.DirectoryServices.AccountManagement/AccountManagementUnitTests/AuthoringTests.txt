@@ -1,0 +1,136 @@
+﻿==========================================================================
+    Visual Studio Team System: Overview of Authoring and Running Tests    
+==========================================================================
+
+This overview describes the features for authoring and running tests in 
+Visual Studio Team System and Visual Studio Team Edition for Software Testers.
+
+Opening Tests
+-------------
+To open a test, open a test project or a test metadata file (a file with
+extension .vsmdi) that contains the definition of the test. You can find
+test projects and metadata files in Solution Explorer.
+
+Viewing Tests
+-------------
+To see which tests are available to you, open the Test View window. Or,
+if you have installed Team Edition for Software Testers, you can also open
+the Test List Editor window to view tests.
+
+To open the Test View window, click the Test menu, point to Windows, and
+then click Test View. To open the Test List Editor window (if you have
+installed Team Edition for Software Testers), click Test, point to Windows,
+and then click Test List Editor.
+
+Running Tests
+-------------
+You can run tests from the Test View window and the Test List Editor window.
+See Viewing Tests to learn how to open these windows. To run one or more
+tests displayed in the Test View window, first select the tests in that
+window; to select multiple tests, hold either the Shift or CTRL key while
+clicking tests. Then click the Run Tests button in the Test View window
+toolbar.
+
+If you have installed Visual Studio Team Edition for Software Testers, you can
+also use the Test List Editor window to run tests. To run tests in Test List Editor,
+select the check box next to each test that you want to run. Then click the
+Run Tests button in the Test List Editor window toolbar.
+
+Viewing Test Results
+--------------------
+When you run a test or a series of tests, the results of the test run will be
+shown in the Test Results window. Each individual test in the run is shown on
+a separate line so that you can see its status. The window contains an
+embedded status bar in the top half of the window that provides you with
+summary details of the complete test run.
+
+To see more detailed results for a particular test result, double-click it in
+the Test Results window. This opens a window that provides more information
+about the particular test result, such as any specific error messages returned
+by the test.
+
+Changing the way that tests are run
+-----------------------------------
+Each time you run one or more tests, a collection of settings is used to
+determine how those tests are run. These settings are contained in a “test
+settings” file.
+
+Here is a partial list of the changes you can make with a test settings file:
+
+ - Change the naming scheme for each test run.
+ - Change the test controller that the tests are run on so that you can run
+   tests remotely.
+ - Gather code coverage data for the code being tested so that you can see
+   which lines of code are covered by your tests.
+ - Enable and disable test deployment. 
+ - Specify additional files to deploy before tests are run.
+ - Select a different host, ASP.NET, for running ASP.NET unit tests.
+ - Select a different host, the smart device test host, for running smart device unit tests.
+ - Set various properties for the test agents that run your tests.
+ - Specify to use data collectors that can collect various information as
+   the tests are running.
+ - Run custom scripts at the start and end of each test run so that you can
+   set up the test environment exactly as required each time tests are run.
+ - Set time limits for tests and test runs.
+ - Set the browser mix and the number of times to repeat Web tests in the
+   test run.
+
+By default, a test settings file is created whenever you create a new test
+project. You make changes to this file by double-clicking it in Solution
+Explorer and then changing the test settings. (Test settings files have the
+extension .testsettings.)
+
+A solution can contain multiple test settings files. Only one of those
+files, known as the “Active” test settings file, is used to determine the
+settings that are currently used for test runs. You select the active test
+settings by clicking Select Active Test Settings on the Test menu.
+
+-------------------------------------------------------------------------------
+
+Test Types
+----------
+Using Visual Studio Team Edition for Software Testers, you can create a number
+of different test types:
+
+Unit test: Use a unit test to create a programmatic test in C++, Visual C# or
+Visual Basic that exercises source code. A unit test calls the methods of a
+class, passing suitable parameters, and verifies that the returned value is
+what you expect.
+There are three specialized variants of unit tests:
+ - Data-driven unit tests are created when you configure a unit test to be
+   called repeatedly for each row of a data source. The data from each row
+   is used by the unit test as input data.
+ - ASP.NET unit tests are unit tests that exercise code in an ASP.NET Web
+   application.
+ - Smart device unit tests are unit tests that are deployed to a smart device
+   or emulator and then executed by the smart device test host.  
+
+Web Test: Web tests consist of an ordered series of HTTP requests that you
+record in a browser session using Microsoft Internet Explorer. You can have
+the test report specific details about the pages or sites it requests, such
+as whether a particular page contains a specified string.
+
+Load Test: You use a load test to encapsulate non-manual tests, such as
+unit, Web, and generic tests, and then run them simultaneously by using
+virtual users. Running these tests under load generates test results,
+including performance and other counters, in tables and in graphs.
+
+Generic test: A generic test is an existing program wrapped to function as a
+test in Visual Studio. The following are examples of tests or programs that
+you can turn into generic tests:
+ - An existing test that uses process exit codes to communicate whether the
+   test passed or failed. 0 indicates passing and any other value indicates
+   a failure.
+ - A general program to obtain specific functionality during a test scenario.
+ - A test or program that uses a special XML file (called a “summary results
+   file”), to communicate detailed results.
+
+Manual test: The manual test type is used when the test tasks are to be
+completed by a test engineer as opposed to an automated script.
+
+Ordered test: Use an ordered test to execute a set of tests in an order you
+specify.
+
+-------------------------------------------------------------------------------
+
+

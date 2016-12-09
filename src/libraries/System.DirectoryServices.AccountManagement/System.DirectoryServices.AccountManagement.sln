@@ -1,0 +1,64 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 10
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement", "System.DirectoryServices.AccountManagement.csproj", "{93777A3F-BF9E-444F-8652-0F876CF6D726}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountManagementUnitTests", "AccountManagementUnitTests\AccountManagementUnitTests.csproj", "{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E3608914-530A-4508-92D4-CEE2C7B67EC2}"
+	ProjectSection(SolutionItems) = preProject
+		Local.testsettings = Local.testsettings
+		System.DirectoryServices.AccountManagement.vsmdi = System.DirectoryServices.AccountManagement.vsmdi
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 3
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://vstfdevdiv.redmond.corp.microsoft.com:8080/
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = AccountManagementUnitTests\\AccountManagementUnitTests.csproj
+		SccProjectName1 = AccountManagementUnitTests
+		SccLocalPath1 = AccountManagementUnitTests
+		SccProjectUniqueName2 = System.DirectoryServices.AccountManagement.csproj
+		SccLocalPath2 = .
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = System.DirectoryServices.AccountManagement.vsmdi
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		VSMSBuild|Any CPU = VSMSBuild|Any CPU
+		VSMSBuild|Mixed Platforms = VSMSBuild|Mixed Platforms
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.Release|Any CPU.ActiveCfg = Release|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.Release|Mixed Platforms.Build.0 = Release|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.VSMSBuild|Any CPU.ActiveCfg = Debug|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.VSMSBuild|Any CPU.Build.0 = Debug|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.VSMSBuild|Mixed Platforms.ActiveCfg = Release|x86
+		{93777A3F-BF9E-444F-8652-0F876CF6D726}.VSMSBuild|Mixed Platforms.Build.0 = Release|x86
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.VSMSBuild|Any CPU.ActiveCfg = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.VSMSBuild|Any CPU.Build.0 = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.VSMSBuild|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{0F47EE11-3D1B-4162-A5D3-27DECCD16E0F}.VSMSBuild|Mixed Platforms.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

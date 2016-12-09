@@ -1,0 +1,187 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <!--Import the settings-->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk| %28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk|Itanium'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk|Amd64'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk|%28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk|AnyCPU'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk_No_Opt| %28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk_No_Opt|Itanium'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk_No_Opt|Amd64'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk_No_Opt|%28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Chk_No_Opt|AnyCPU'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret| %28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret|Itanium'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret|Amd64'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret|%28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret|AnyCPU'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret_No_Opt| %28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret_No_Opt|Itanium'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret_No_Opt|Amd64'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret_No_Opt|%28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ret_No_Opt|AnyCPU'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug| %28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|Itanium'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|Amd64'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|%28x86%29'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <CodeAnalysisRuleSet>Migrated rules for System.DirectoryServices.Protocols.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+  </PropertyGroup>
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\fx\Microsoft.Fx.Settings.targets" />
+  <!--Leaf project Properties-->
+  <PropertyGroup>
+    <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
+    <TargetType>Library</TargetType>
+    <OutputType>Library</OutputType>
+    <AllowPartialTrustedCalls>true</AllowPartialTrustedCalls>
+    <AllowUnsafeBlocks Condition="'$(AllowUnsafeBlocks)' == ''">true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);0649</NoWarn>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <ProjectGuid>{25C474CC-C622-4216-8C8A-06AF945202BD}</ProjectGuid>
+    <DevdivCLRCodeAnalysis>true</DevdivCLRCodeAnalysis>
+  </PropertyGroup>
+  <!--Leaf Project Items-->
+  <ItemGroup>
+    <Reference Include="System">
+    </Reference>
+    <Reference Include="System.DirectoryServices">
+    </Reference>
+    <Reference Include="System.Xml">
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <RCResourceFile Include="Native.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <TextStringResource Include="$(AssemblyName).txt">
+      <ResFile>$(AssemblyName)</ResFile>
+      <Sealed>true</Sealed>
+      <Visibility>internal</Visibility>
+      <GenerateResource>true</GenerateResource>
+      <FullClassName>$(AssemblyName).Res</FullClassName>
+    </TextStringResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\misc\externdll.cs" />
+    <Compile Include="common\AuthTypes.cs" />
+    <Compile Include="common\BerConverter.cs" />
+    <Compile Include="common\DereferenceAlias.cs" />
+    <Compile Include="common\DirectoryAttribute.cs" />
+    <Compile Include="common\DirectoryAttributeOperation.cs" />
+    <Compile Include="common\DirectoryConnection.cs" />
+    <Compile Include="common\DirectoryControl.cs" />
+    <Compile Include="common\DirectoryException.cs" />
+    <Compile Include="common\DirectoryIdentifier.cs" />
+    <Compile Include="common\DirectoryOperation.cs" />
+    <Compile Include="common\DirectoryRequest.cs" />
+    <Compile Include="common\DirectoryResponse.cs" />
+    <Compile Include="common\PartialResultsCollection.cs" />
+    <Compile Include="common\ReferralChasingOption.cs" />
+    <Compile Include="common\ResultCode.cs" />
+    <Compile Include="common\SearchResults.cs" />
+    <Compile Include="common\SearchScope.cs" />
+    <Compile Include="dsml\adreqresp2.cs" />
+    <Compile Include="dsml\DsmlAsyncResult.cs" />
+    <Compile Include="dsml\DsmlConstants.cs" />
+    <Compile Include="dsml\DsmlDirectoryIdentifier.cs" />
+    <Compile Include="dsml\DsmlDocument.cs" />
+    <Compile Include="dsml\DsmlDocumentProcessing.cs" />
+    <Compile Include="dsml\DsmlException.cs" />
+    <Compile Include="dsml\dsmlfilterwriter.cs" />
+    <Compile Include="dsml\DsmlSoapConnection.cs" />
+    <Compile Include="dsml\DsmlSoapHttpConnection.cs" />
+    <Compile Include="dsml\filterparser.cs" />
+    <Compile Include="dsml\utils.cs" />
+    <Compile Include="ldap\LdapAsyncResult.cs" />
+    <Compile Include="ldap\LdapConnection.cs" />
+    <Compile Include="ldap\LdapDirectoryIdentifier.cs" />
+    <Compile Include="ldap\LdapException.cs" />
+    <Compile Include="ldap\LdapPartialResultsProcessor.cs" />
+    <Compile Include="ldap\LdapSessionOptions.cs" />
+    <Compile Include="ldap\SafeHandles.cs" />
+    <Compile Include="ldap\Wldap32UnsafeMethods.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Migrated rules for System.DirectoryServices.Protocols.ruleset" />
+  </ItemGroup>
+  <!--Import the targets-->
+  <Import Project="$(NdpFxRoot)\Microsoft.Fx.targets" />
+</Project>

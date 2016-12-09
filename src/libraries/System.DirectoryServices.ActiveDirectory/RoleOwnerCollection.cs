@@ -1,0 +1,119 @@
+//------------------------------------------------------------------------------
+// <copyright file="RoleOwnerCollection.cs" company="Microsoft">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>                                                                
+//------------------------------------------------------------------------------
+
+namespace System.DirectoryServices.ActiveDirectory {
+	using System;
+	using System.Collections;
+	using System.Globalization;
+	using System.ComponentModel;
+	using System.Runtime.InteropServices;
+
+	public class ActiveDirectoryRoleCollection: ReadOnlyCollectionBase {
+
+		internal ActiveDirectoryRoleCollection() { }
+
+		internal ActiveDirectoryRoleCollection(ArrayList values) {
+			if (values != null) {
+				InnerList.AddRange(values);
+			}
+		}
+
+		public ActiveDirectoryRole this[int index] {
+			get {
+				return (ActiveDirectoryRole)InnerList[index];                                   
+			}
+		}
+
+		public bool Contains(ActiveDirectoryRole role) {
+			
+			if (role < ActiveDirectoryRole.SchemaRole || role > ActiveDirectoryRole.InfrastructureRole) {
+				throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
+			}
+			
+			for (int i = 0; i < InnerList.Count; i++) {
+				int tmp = (int)InnerList[i];
+				if (tmp == (int)role) {
+					return true;
+				}
+			}
+			return false;
+		}                                
+
+		public int IndexOf(ActiveDirectoryRole role) {
+
+			if (role < ActiveDirectoryRole.SchemaRole || role > ActiveDirectoryRole.InfrastructureRole) {
+				throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
+			}
+			
+			for (int i = 0; i < InnerList.Count; i++) {
+				int tmp = (int)InnerList[i];
+
+				if (tmp == (int)role) {
+					return i;
+				}
+			}
+
+			return -1;
+		}     
+
+		public void CopyTo(ActiveDirectoryRole[] roles, int index) {
+			InnerList.CopyTo(roles, index);
+		}
+	}
+
+	public class AdamRoleCollection: ReadOnlyCollectionBase {
+
+		internal AdamRoleCollection() { }
+
+		internal AdamRoleCollection(ArrayList values) {
+			if (values != null) {
+				InnerList.AddRange(values);
+			}
+		}
+
+		public AdamRole this[int index] {
+			get {
+				return (AdamRole)InnerList[index];                                   
+			}
+		}
+
+		public bool Contains(AdamRole role) {
+
+			if (role < AdamRole.SchemaRole || role > AdamRole.NamingRole) {
+				throw new InvalidEnumArgumentException("role", (int)role, typeof(AdamRole));
+			}
+			
+			for (int i = 0; i < InnerList.Count; i++) {
+				int tmp = (int)InnerList[i];
+				if (tmp == (int)role) {
+					return true;
+				}
+			}
+			return false;
+		}                                
+
+		public int IndexOf(AdamRole role) {
+
+			if (role < AdamRole.SchemaRole || role > AdamRole.NamingRole) {
+				throw new InvalidEnumArgumentException("role", (int)role, typeof(AdamRole));
+			}
+			
+			for (int i = 0; i < InnerList.Count; i++) {
+				int tmp = (int)InnerList[i];
+
+				if (tmp == (int)role) {
+					return i;
+				}
+			}
+
+			return -1;
+		}     
+
+		public void CopyTo(AdamRole[] roles, int index) {
+			InnerList.CopyTo(roles, index);
+		}
+	}
+}
