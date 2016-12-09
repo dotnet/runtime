@@ -58,13 +58,13 @@ namespace System {
     sealed public class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         // ---- SECTION:  members supporting exposed properties -------------*
-        private String m_id;
-        private String m_displayName;
-        private String m_standardDisplayName;
-        private String m_daylightDisplayName;
-        private TimeSpan m_baseUtcOffset;
-        private Boolean m_supportsDaylightSavingTime;
-        private AdjustmentRule[] m_adjustmentRules;
+        private readonly String m_id;
+        private readonly String m_displayName;
+        private readonly String m_standardDisplayName;
+        private readonly String m_daylightDisplayName;
+        private readonly TimeSpan m_baseUtcOffset;
+        private readonly Boolean m_supportsDaylightSavingTime;
+        private readonly AdjustmentRule[] m_adjustmentRules;
 
         // ---- SECTION:  members for internal support ---------*
         private enum TimeZoneInfoResult {
