@@ -1502,7 +1502,7 @@ nameof(binaryForm));
 
         }
 
-        static private bool AceOpaquesMatch( QualifiedAce ace, QualifiedAce newAce )
+        private static bool AceOpaquesMatch( QualifiedAce ace, QualifiedAce newAce )
         {
             byte[] aceOpaque = ace.GetOpaque();
             byte[] newAceOpaque = newAce.GetOpaque();
@@ -1528,7 +1528,7 @@ nameof(binaryForm));
             return true;
         }
 
-        static private bool AcesAreMergeable( QualifiedAce ace, QualifiedAce newAce )
+        private static bool AcesAreMergeable( QualifiedAce ace, QualifiedAce newAce )
         {
             //
             // Only interested in ACEs with the specified type
@@ -3093,7 +3093,7 @@ nameof(flags));
     public sealed class DiscretionaryAcl : CommonAcl
     {
         #region
-        static private SecurityIdentifier _sidEveryone = new SecurityIdentifier( WellKnownSidType.WorldSid, null );
+        private static SecurityIdentifier _sidEveryone = new SecurityIdentifier( WellKnownSidType.WorldSid, null );
         private bool everyOneFullAccessForNullDacl = false;
         #endregion
 

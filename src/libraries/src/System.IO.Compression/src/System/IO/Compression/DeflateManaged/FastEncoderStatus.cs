@@ -167,7 +167,7 @@ namespace System.IO.Compression
         internal const int BFinalNoCompressionHeaderBitCount = 3;
         internal const int MaxCodeLen = 16;
 
-        static private byte[] s_distLookup;
+        private static byte[] s_distLookup;
 
         static FastEncoderStatics()
         {

@@ -33,9 +33,9 @@ namespace OLEDB.Test.ModuleCore
     public class CModInfo
     {
         //Data
-        static private String s_strCommandLine;
-        static private MyDict<string, string> s_hashOptions;
-        static private object _includenotimplemented;
+        private static String s_strCommandLine;
+        private static MyDict<string, string> s_hashOptions;
+        private static object _includenotimplemented;
 
         //Constructor
         public CModInfo()

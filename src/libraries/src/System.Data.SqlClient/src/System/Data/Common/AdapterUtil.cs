@@ -57,7 +57,7 @@ namespace System.Data.Common
 
         // NOTE: Initializing a Task in SQL CLR requires the "UNSAFE" permission set (http://msdn.microsoft.com/en-us/library/ms172338.aspx)
         // Therefore we are lazily initializing these Tasks to avoid forcing customers to use the "UNSAFE" set when they are actually using no Async features
-        static private Task<bool> s_trueTask = null;
+        private static Task<bool> s_trueTask = null;
         internal static Task<bool> TrueTask
         {
             get
@@ -70,7 +70,7 @@ namespace System.Data.Common
             }
         }
 
-        static private Task<bool> s_falseTask = null;
+        private static Task<bool> s_falseTask = null;
         internal static Task<bool> FalseTask
         {
             get
@@ -83,7 +83,7 @@ namespace System.Data.Common
             }
         }
 
-        static private readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         internal static bool IsWindows
         {
@@ -215,7 +215,7 @@ namespace System.Data.Common
         {
             return InvalidOperation(error);
         }
-        static private InvalidOperationException Provider(string error)
+        private static InvalidOperationException Provider(string error)
         {
             return InvalidOperation(error);
         }
@@ -397,7 +397,7 @@ namespace System.Data.Common
             return NotImplemented.ByDesignWithMessage(methodName);
         }
 
-        static private string ConnectionStateMsg(ConnectionState state)
+        private static string ConnectionStateMsg(ConnectionState state)
         {
             switch (state)
             {
@@ -886,7 +886,7 @@ namespace System.Data.Common
             return result;
         }
 
-        static private long TimerToSeconds(long timerValue)
+        private static long TimerToSeconds(long timerValue)
         {
             long result = timerValue / TimeSpan.TicksPerSecond;
             return result;
@@ -968,7 +968,7 @@ namespace System.Data.Common
             }
         }
 
-        static private int GenerateUniqueName(Dictionary<string, int> hash, ref string columnName, int index, int uniqueIndex)
+        private static int GenerateUniqueName(Dictionary<string, int> hash, ref string columnName, int index, int uniqueIndex)
         {
             for (; ; ++uniqueIndex)
             {
@@ -998,7 +998,7 @@ namespace System.Data.Common
             return (condition == (condition & value.Direction));
         }
 #if DEBUG
-        static private void IsDirectionValid(ParameterDirection value)
+        private static void IsDirectionValid(ParameterDirection value)
         {
             switch (value)
             { // @perfnote: Enum.IsDefined

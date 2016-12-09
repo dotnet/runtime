@@ -82,7 +82,7 @@ namespace Windows.Foundation
             get { return Width < 0; }
         }
 
-        static private Size CreateEmptySize()
+        private static Size CreateEmptySize()
         {
             Size size = new Size();
             // We can't set these via the property setters because negatives widths

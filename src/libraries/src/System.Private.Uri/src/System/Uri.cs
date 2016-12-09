@@ -3615,7 +3615,7 @@ namespace System
         // returns the start of the next component  position
         // throws UriFormatException if invalid scheme
         //
-        unsafe static private ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
+        unsafe private static ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
             ref ParsingError err, ref Flags flags, ref UriParser syntax)
         {
             ushort idx = 0;
@@ -3730,7 +3730,7 @@ namespace System
         //
         // Quickly parses well known schemes.
         // nChars does not include the last ':'. Assuming there is one at the end of passed buffer
-        unsafe static private bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
+        unsafe private static bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
         {
             //NOTE beware of too short input buffers!
 
@@ -3885,7 +3885,7 @@ namespace System
         //
         // This will check whether a scheme string follows the rules
         //
-        unsafe static private ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
+        unsafe private static ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
         {
             //First character must be an alpha
             {
