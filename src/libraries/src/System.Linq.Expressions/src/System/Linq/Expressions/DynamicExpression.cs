@@ -135,6 +135,7 @@ namespace System.Linq.Expressions
         /// </summary>
         public ReadOnlyCollection<Expression> Arguments => GetOrMakeArguments();
 
+        [ExcludeFromCodeCoverage]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
@@ -161,6 +162,7 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of DynamicExpression which is being used.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         internal virtual DynamicExpression Rewrite(Expression[] args)
         {
             throw ContractUtils.Unreachable;
@@ -205,11 +207,13 @@ namespace System.Linq.Expressions
 
         #region IArgumentProvider Members
 
+        [ExcludeFromCodeCoverage]
         Expression IArgumentProvider.GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage]
         int IArgumentProvider.ArgumentCount
         {
             get { throw ContractUtils.Unreachable; }
