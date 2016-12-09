@@ -714,11 +714,21 @@ namespace System.Linq.Expressions
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef(nameof(type));
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer(nameof(type));
+            }
 
             if (type.GetTypeInfo().IsValueType && !type.IsNullableType())
             {
                 throw Error.IncorrectTypeForTypeAs(type, nameof(type));
             }
+
             return new UnaryExpression(ExpressionType.TypeAs, expression, type, null);
         }
 
