@@ -2971,8 +2971,7 @@ namespace System {
 
             try {
                 using (RegistryKey dynamicKey = Registry.LocalMachine.OpenSubKey(
-                                   String.Format(CultureInfo.InvariantCulture, "{0}\\{1}\\Dynamic DST",
-                                       c_timeZonesRegistryHive, id),
+                                   c_timeZonesRegistryHive + "\\" + id + "\\Dynamic DST",
 #if FEATURE_MACL
                                    RegistryKeyPermissionCheck.Default,
                                    System.Security.AccessControl.RegistryRights.ReadKey
@@ -3141,8 +3140,7 @@ namespace System {
                 permSet.Assert();
 
                 using (RegistryKey key = Registry.LocalMachine.OpenSubKey(
-                                  String.Format(CultureInfo.InvariantCulture, "{0}\\{1}",
-                                      c_timeZonesRegistryHive, id),
+                                  c_timeZonesRegistryHive + "\\" + id,
 #if FEATURE_MACL
                                   RegistryKeyPermissionCheck.Default,
                                   System.Security.AccessControl.RegistryRights.ReadKey
@@ -3411,8 +3409,7 @@ namespace System {
                 permSet.Assert();
 
                 using (RegistryKey key = Registry.LocalMachine.OpenSubKey(
-                                  String.Format(CultureInfo.InvariantCulture, "{0}\\{1}",
-                                      c_timeZonesRegistryHive, id),
+                                  c_timeZonesRegistryHive + "\\" + id,
 #if FEATURE_MACL
                                   RegistryKeyPermissionCheck.Default,
                                   System.Security.AccessControl.RegistryRights.ReadKey
