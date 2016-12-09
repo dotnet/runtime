@@ -28,7 +28,7 @@ namespace System.Net.Tests
         private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
 
         public HttpWebRequestTest(ITestOutputHelper output)
         {

@@ -18,7 +18,7 @@ namespace System.IO.MemoryMappedFiles
         private const int MaxFlushRetriesPerWait = 20;
 
         [SecurityCritical]
-        public unsafe static MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
+        public static unsafe MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
                                             MemoryMappedFileAccess access, long offset, long size)
         {
             // MapViewOfFile can only create views that start at a multiple of the system memory allocation 

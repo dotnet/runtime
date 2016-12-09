@@ -14,7 +14,7 @@ namespace System.Net
 {
     internal partial class NTAuthentication
     {
-        static private ContextCallback s_InitializeCallback = new ContextCallback(InitializeCallback);
+        private static ContextCallback s_InitializeCallback = new ContextCallback(InitializeCallback);
         private string _clientSpecifiedSpn;
         private string _protocolName;
         private string _lastProtocolName;

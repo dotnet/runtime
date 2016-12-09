@@ -654,7 +654,7 @@ namespace System.IO
             } while (bytesRead < numBytes);
         }
 
-        internal protected int Read7BitEncodedInt()
+        protected internal int Read7BitEncodedInt()
         {
             // Read out an Int32 7 bits at a time.  The high bit
             // of the byte when on means to continue reading more bytes.

@@ -16,9 +16,9 @@ namespace System.Data.SqlTypes
     [Serializable, XmlSchemaProvider("GetXsdType")]
     public sealed class SqlXml : INullable, IXmlSerializable
     {
-        private readonly static Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> s_sqlReaderDelegate = CreateSqlReaderDelegate();
-        private readonly static XmlReaderSettings s_defaultXmlReaderSettings = new XmlReaderSettings() { ConformanceLevel = ConformanceLevel.Fragment };
-        private readonly static XmlReaderSettings s_defaultXmlReaderSettingsCloseInput = new XmlReaderSettings() { ConformanceLevel = ConformanceLevel.Fragment, CloseInput = true };
+        private static readonly Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> s_sqlReaderDelegate = CreateSqlReaderDelegate();
+        private static readonly XmlReaderSettings s_defaultXmlReaderSettings = new XmlReaderSettings() { ConformanceLevel = ConformanceLevel.Fragment };
+        private static readonly XmlReaderSettings s_defaultXmlReaderSettingsCloseInput = new XmlReaderSettings() { ConformanceLevel = ConformanceLevel.Fragment, CloseInput = true };
         private static MethodInfo s_createSqlReaderMethodInfo;
 
         private bool _fNotNull; // false if null, the default ctor (plain 0) will make it Null

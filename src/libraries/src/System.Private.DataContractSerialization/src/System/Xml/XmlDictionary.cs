@@ -21,7 +21,7 @@ namespace System.Xml
         private XmlDictionaryString[] _strings;
         private int _nextId;
 
-        static public IXmlDictionary Empty
+        public static IXmlDictionary Empty
         {
             get
             {

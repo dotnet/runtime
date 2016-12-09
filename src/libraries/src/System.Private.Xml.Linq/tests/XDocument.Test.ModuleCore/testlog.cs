@@ -33,7 +33,7 @@ namespace Microsoft.Test.ModuleCore
         private static TestLogAssertHandler s_passerthandler = null;
 
         //Accessors
-        static public ITestLog Internal
+        public static ITestLog Internal
         {
             set
             {
@@ -45,18 +45,18 @@ namespace Microsoft.Test.ModuleCore
             }
         }
 
-        static public TraceLevel Level
+        public static TraceLevel Level
         {
             get { return s_plevel; }
             set { s_plevel = value; }
         }
 
-        static public TestLogAssertHandler AssertHandler
+        public static TestLogAssertHandler AssertHandler
         {
             get { return s_passerthandler; }
         }
 
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             s_pinternal = null;
@@ -64,84 +64,84 @@ namespace Microsoft.Test.ModuleCore
         }
 
         //Helpers
-        static public string NewLine
+        public static string NewLine
         {
             get { return "\n"; }
         }
 
-        static public bool WillTrace(TraceLevel level)
+        public static bool WillTrace(TraceLevel level)
         {
             return (s_plevel >= level);
         }
 
-        static public void Write(object value)
+        public static void Write(object value)
         {
             Write(TestLogFlags.Text, StringEx.ToString(value));
         }
 
-        static public void WriteLine(object value)
+        public static void WriteLine(object value)
         {
             WriteLine(TestLogFlags.Text, StringEx.ToString(value));
         }
 
-        static public void WriteLine()
+        public static void WriteLine()
         {
             WriteLine(TestLogFlags.Text, null);
         }
 
-        static public void Write(string text)
+        public static void Write(string text)
         {
             Write(TestLogFlags.Text, text);
         }
 
-        static public void Write(string text, params object[] args)
+        public static void Write(string text, params object[] args)
         {
             //Delegate
             Write(TestLogFlags.Text, String.Format(text, args));
         }
 
-        static public void WriteLine(string text)
+        public static void WriteLine(string text)
         {
             WriteLine(TestLogFlags.Text, text);
         }
 
-        static public void WriteLine(string text, params object[] args)
+        public static void WriteLine(string text, params object[] args)
         {
             //Delegate
             WriteLine(String.Format(text, args));
         }
 
-        static public void Write(char[] value)
+        public static void Write(char[] value)
         {
             WriteLine(TestLogFlags.Text, new string(value));
         }
 
-        static public void WriteLine(char[] value)
+        public static void WriteLine(char[] value)
         {
             WriteLine(TestLogFlags.Text, new string(value));
         }
 
-        static public void WriteXml(string text)
+        public static void WriteXml(string text)
         {
             Write(TestLogFlags.Xml, text);
         }
 
-        static public void WriteRaw(string text)
+        public static void WriteRaw(string text)
         {
             Write(TestLogFlags.Raw, text);
         }
 
-        static public void WriteIgnore(string text)
+        public static void WriteIgnore(string text)
         {
             Write(TestLogFlags.Ignore, text);
         }
 
-        static public void WriteLineIgnore(string text)
+        public static void WriteLineIgnore(string text)
         {
             WriteLine(TestLogFlags.Ignore, text);
         }
 
-        static public void Write(TestLogFlags flags, string text)
+        public static void Write(TestLogFlags flags, string text)
         {
             if (Internal != null)
                 Internal.Write(flags, FixupXml(text));
@@ -149,7 +149,7 @@ namespace Microsoft.Test.ModuleCore
                 Console.Write(text);
         }
 
-        static public void WriteLine(TestLogFlags flags, string text)
+        public static void WriteLine(TestLogFlags flags, string text)
         {
             if (Internal != null)
                 Internal.WriteLine(flags, FixupXml(text));
@@ -157,46 +157,46 @@ namespace Microsoft.Test.ModuleCore
                 Console.WriteLine(text);
         }
 
-        static public void Trace(String value)
+        public static void Trace(String value)
         {
             Trace(TraceLevel.Default, value);
         }
 
-        static public void TraceLine(String value)
+        public static void TraceLine(String value)
         {
             TraceLine(TraceLevel.Default, value);
         }
 
-        static public void TraceLine()
+        public static void TraceLine()
         {
             TraceLine(TraceLevel.Default, null);
         }
 
-        static public void Trace(TraceLevel level, String value)
+        public static void Trace(TraceLevel level, String value)
         {
             if (WillTrace(level))
                 Write(TestLogFlags.Trace | TestLogFlags.Ignore, value);
         }
 
-        static public void TraceLine(TraceLevel level, String value)
+        public static void TraceLine(TraceLevel level, String value)
         {
             if (WillTrace(level))
                 Write(TestLogFlags.Trace | TestLogFlags.Ignore, value + TestLog.NewLine);
         }
 
-        static public void TraceLine(TraceLevel level)
+        public static void TraceLine(TraceLevel level)
         {
             TraceLine(level, null);
         }
 
-        static public bool Compare(bool equal, string message)
+        public static bool Compare(bool equal, string message)
         {
             if (equal)
                 return true;
             return Compare(false, true, message);
         }
 
-        static public bool Compare(object actual, object expected, string message)
+        public static bool Compare(object actual, object expected, string message)
         {
             if (InternalEquals(actual, expected))
                 return true;
@@ -208,7 +208,7 @@ namespace Microsoft.Test.ModuleCore
             throw new TestFailedException(message, actual, expected, null);
         }
 
-        static public bool Compare(object actual, object expected1, object expected2, string message)
+        public static bool Compare(object actual, object expected1, object expected2, string message)
         {
             if (InternalEquals(actual, expected1) || InternalEquals(actual, expected2))
                 return true;
@@ -220,7 +220,7 @@ namespace Microsoft.Test.ModuleCore
             throw new TestFailedException(message, actual, expected2, null);
         }
 
-        static public bool Equals(object actual, object expected, string message)
+        public static bool Equals(object actual, object expected, string message)
         {
             //Equals is identical to Compare, except that Equals doesn't throw.
             //i.e. the test wants to record the failure and continue to do other things
@@ -232,17 +232,17 @@ namespace Microsoft.Test.ModuleCore
             return false;
         }
 
-        static public bool Warning(bool equal, string message)
+        public static bool Warning(bool equal, string message)
         {
             return Warning(equal, true, message, null);
         }
 
-        static public bool Warning(object actual, object expected, string message)
+        public static bool Warning(object actual, object expected, string message)
         {
             return Warning(actual, expected, message, null);
         }
 
-        static public bool Warning(object actual, object expected, string message, Exception inner)
+        public static bool Warning(object actual, object expected, string message, Exception inner)
         {
             //See if these are equal
             bool equal = InternalEquals(actual, expected);
@@ -261,20 +261,20 @@ namespace Microsoft.Test.ModuleCore
             }
         }
 
-        static public bool Skip(string message)
+        public static bool Skip(string message)
         {
             //Delegate
             return Skip(true, message);
         }
 
-        static public bool Skip(bool skip, string message)
+        public static bool Skip(bool skip, string message)
         {
             if (skip)
                 throw new TestSkippedException(message);
             return false;
         }
 
-        static internal bool InternalEquals(object actual, object expected)
+        internal static bool InternalEquals(object actual, object expected)
         {
             //Handle null comparison
             if (actual == null && expected == null)
@@ -286,7 +286,7 @@ namespace Microsoft.Test.ModuleCore
             return expected.Equals(actual);
         }
 
-        static public void Error(TestResult result, object actual, object expected, string source, string message, string stack, String filename, int lineno)
+        public static void Error(TestResult result, object actual, object expected, string source, string message, string stack, String filename, int lineno)
         {
             //Log the error
             if (Internal != null)

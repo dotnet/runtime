@@ -5483,7 +5483,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.unsfe
     // <Code>
     //class B
     //{
-    //[Test][Priority(Priority.Priority2)]public void DynamicCSharpRunTest(){Assert.AreEqual(0, MainMethod());} public unsafe static int MainMethod()
+    //[Test][Priority(Priority.Priority2)]public void DynamicCSharpRunTest(){Assert.AreEqual(0, MainMethod());} public static unsafe int MainMethod()
     //{
     ////basic alloc
     //dynamic y = 1;

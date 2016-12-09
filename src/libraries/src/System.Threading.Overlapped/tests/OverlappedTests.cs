@@ -77,7 +77,7 @@ public static partial class OverlappedTests
         Assert.Equal(obj.OffsetLow, 1);
     }
     [Fact]
-    public unsafe static void PackNegTest()
+    public static unsafe void PackNegTest()
     {
         var helper = new AsyncHelper();
         IOCompletionCallback callback = MyCallback(helper);
@@ -99,7 +99,7 @@ public static partial class OverlappedTests
 
 
     [Fact]
-    public unsafe static void PackNegTest1()
+    public static unsafe void PackNegTest1()
     {
 #pragma warning disable 618
         var helper = new AsyncHelper();
@@ -122,7 +122,7 @@ public static partial class OverlappedTests
     }
 
     [Fact]
-    public unsafe static void UnPackTest()
+    public static unsafe void UnPackTest()
     {
         Assert.Throws<ArgumentNullException>(() => Overlapped.Unpack(null));
 
@@ -144,7 +144,7 @@ public static partial class OverlappedTests
     }
 
     [Fact]
-    public unsafe static void PackPosTest()
+    public static unsafe void PackPosTest()
     {
 #pragma warning disable 618
         Overlapped ov = new Overlapped();
@@ -167,7 +167,7 @@ public static partial class OverlappedTests
 #pragma warning restore 618
     }
     [Fact]
-    public unsafe static void PackPosTest1()
+    public static unsafe void PackPosTest1()
     {
         Overlapped ov = new Overlapped();
         var helper = new AsyncHelper();
@@ -188,7 +188,7 @@ public static partial class OverlappedTests
         }
     }
 
-    unsafe internal static IOCompletionCallback MyCallback(AsyncHelper helper)
+    internal static unsafe IOCompletionCallback MyCallback(AsyncHelper helper)
     {
         IOCompletionCallback del = delegate (uint param1, uint param2, NativeOverlapped* overlapped)
         {
@@ -216,7 +216,7 @@ internal class AsyncHelper
     {
         return this._event.WaitOne();
     }
-    unsafe internal void Callback(uint errorCode, uint numBytes, NativeOverlapped* _overlapped)
+    internal unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* _overlapped)
     {
         try
         {

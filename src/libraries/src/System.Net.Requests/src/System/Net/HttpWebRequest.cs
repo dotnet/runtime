@@ -1395,7 +1395,7 @@ namespace System.Net
             }
         }
 
-        private readonly static string[] s_wellKnownContentHeaders = {
+        private static readonly string[] s_wellKnownContentHeaders = {
             HttpKnownHeaderNames.ContentDisposition,
             HttpKnownHeaderNames.ContentEncoding,
             HttpKnownHeaderNames.ContentLanguage,

@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Net
 {
-    unsafe internal class ListenerClientCertAsyncResult : LazyAsyncResult
+    internal unsafe class ListenerClientCertAsyncResult : LazyAsyncResult
     {
         private ThreadPoolBoundHandle _boundHandle;
         private NativeOverlapped* _pOverlapped;

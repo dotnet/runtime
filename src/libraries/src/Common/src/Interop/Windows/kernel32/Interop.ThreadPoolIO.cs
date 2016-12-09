@@ -11,16 +11,16 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe extern SafeThreadPoolIOHandle CreateThreadpoolIo(SafeHandle fl, [MarshalAs(UnmanagedType.FunctionPtr)] NativeIoCompletionCallback pfnio, IntPtr context, IntPtr pcbe);
+        internal static extern unsafe SafeThreadPoolIOHandle CreateThreadpoolIo(SafeHandle fl, [MarshalAs(UnmanagedType.FunctionPtr)] NativeIoCompletionCallback pfnio, IntPtr context, IntPtr pcbe);
 
         [DllImport(Libraries.Kernel32)]
-        internal static unsafe extern void CloseThreadpoolIo(IntPtr pio);
+        internal static extern unsafe void CloseThreadpoolIo(IntPtr pio);
 
         [DllImport(Libraries.Kernel32)]
-        internal static unsafe extern void StartThreadpoolIo(SafeThreadPoolIOHandle pio);
+        internal static extern unsafe void StartThreadpoolIo(SafeThreadPoolIOHandle pio);
 
         [DllImport(Libraries.Kernel32)]
-        internal static unsafe extern void CancelThreadpoolIo(SafeThreadPoolIOHandle pio);
+        internal static extern unsafe void CancelThreadpoolIo(SafeThreadPoolIOHandle pio);
     }
 
     internal delegate void NativeIoCompletionCallback(IntPtr instance, IntPtr context, IntPtr overlapped, uint ioResult, UIntPtr numberOfBytesTransferred, IntPtr io);

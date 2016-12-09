@@ -18,7 +18,7 @@ namespace System.Net.Sockets
         public const int ProtocolInformationSize = 0;
 
         public const bool SupportsMultipleConnectAttempts = false;
-        private readonly static bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
+        private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
         {

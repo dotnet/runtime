@@ -42,12 +42,12 @@ namespace Microsoft.Test.ModuleCore
 
 
         //Methods
-        static public Dictionary<string, string> ParseKeywords(string str)
+        public static Dictionary<string, string> ParseKeywords(string str)
         {
             return ParseKeywords(str, s_DefaultTokens);
         }
 
-        static public Dictionary<string, string> ParseKeywords(string str, Tokens tokens)
+        public static Dictionary<string, string> ParseKeywords(string str, Tokens tokens)
         {
             PARSE state = PARSE.Initial;
             int index = 0;

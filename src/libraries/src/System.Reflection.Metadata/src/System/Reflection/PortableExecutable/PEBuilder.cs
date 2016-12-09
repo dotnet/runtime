@@ -87,7 +87,7 @@ namespace System.Reflection.PortableExecutable
 
         protected abstract BlobBuilder SerializeSection(string name, SectionLocation location);
 
-        internal protected abstract PEDirectoriesBuilder GetDirectories();
+        protected internal abstract PEDirectoriesBuilder GetDirectories();
 
         public BlobContentId Serialize(BlobBuilder builder)
         {
@@ -515,7 +515,7 @@ namespace System.Reflection.PortableExecutable
             return CalculateChecksum(GetContentToChecksum(peImage, checksumFixup)) + (uint)peImage.Count;
         }
 
-        private unsafe static uint CalculateChecksum(IEnumerable<Blob> blobs)
+        private static unsafe uint CalculateChecksum(IEnumerable<Blob> blobs)
         {
             uint checksum = 0;
             int pendingByte = -1;

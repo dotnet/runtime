@@ -15,35 +15,35 @@ namespace OLEDB.Test.ModuleCore
     ////////////////////////////////////////////////////////////////
     internal class Common
     {
-        static public void Assert(bool condition)
+        public static void Assert(bool condition)
         {
             Assert(condition, "Assertion Failed!", null);
         }
 
-        static public void Assert(bool condition, string strCondition)
+        public static void Assert(bool condition, string strCondition)
         {
             Assert(condition, strCondition, null);
         }
 
-        static public void Assert(bool condition, string strCondition, string message)
+        public static void Assert(bool condition, string strCondition, string message)
         {
             Debug.Assert(condition, strCondition + message /*+ new StackTrace()*/);
         }
 
-        static public void Trace(string message)
+        public static void Trace(string message)
         {
             Console.WriteLine(message);
             Debug.WriteLine(message);
         }
 
-        static public string ToString(object value)
+        public static string ToString(object value)
         {
             if (value == null)
                 return null;
             return value.ToString();
         }
 
-        static public string Format(object value)
+        public static string Format(object value)
         {
             if (value == null)
                 return "(null)";

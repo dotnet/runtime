@@ -75,12 +75,12 @@ namespace System.Net.Security
         // This method switches between three non-interruptible helper methods.  (This method can't be both non-interruptible and
         // reference imports from all three DLLs - doing so would cause all three DLLs to try to be bound to.)
         //
-        public unsafe static int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle refHandle)
+        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle refHandle)
         {
             return QueryContextAttributes_SECURITY(phContext, contextAttribute, buffer, refHandle);
         }
 
-        private unsafe static int QueryContextAttributes_SECURITY(
+        private static unsafe int QueryContextAttributes_SECURITY(
             SafeDeleteContext phContext,
             Interop.SspiCli.ContextAttribute contextAttribute,
             byte* buffer,
@@ -220,7 +220,7 @@ namespace System.Net.Security
         }
 #endif
 
-        public unsafe static int AcquireCredentialsHandle(
+        public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
             ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata,
@@ -255,7 +255,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        public unsafe static int AcquireDefaultCredential(
+        public static unsafe int AcquireDefaultCredential(
             string package,
             Interop.SspiCli.CredentialUse intent,
             out SafeFreeCredentials outCredential)
@@ -290,7 +290,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        public unsafe static int AcquireCredentialsHandle(
+        public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
             ref SafeSspiAuthDataHandle authdata,
@@ -319,7 +319,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        public unsafe static int AcquireCredentialsHandle(
+        public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
             ref Interop.SspiCli.SCHANNEL_CRED authdata,
@@ -448,7 +448,7 @@ namespace System.Net.Security
         protected SafeFreeCredentials _EffectiveCredential;
 
         //-------------------------------------------------------------------
-        internal unsafe static int InitializeSecurityContext(
+        internal static unsafe int InitializeSecurityContext(
             ref SafeFreeCredentials inCredentials,
             ref SafeDeleteContext refContext,
             string targetName,
@@ -740,7 +740,7 @@ namespace System.Net.Security
         }
 
         //-------------------------------------------------------------------
-        internal unsafe static int AcceptSecurityContext(
+        internal static unsafe int AcceptSecurityContext(
             ref SafeFreeCredentials inCredentials,
             ref SafeDeleteContext refContext,
             Interop.SspiCli.ContextFlags inFlags,
@@ -1021,7 +1021,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        internal unsafe static int CompleteAuthToken(
+        internal static unsafe int CompleteAuthToken(
             ref SafeDeleteContext refContext,
             SecurityBuffer[] inSecBuffers)
         {
@@ -1120,7 +1120,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        internal unsafe static int ApplyControlToken(
+        internal static unsafe int ApplyControlToken(
             ref SafeDeleteContext refContext,
             SecurityBuffer[] inSecBuffers)
         {
@@ -1264,12 +1264,12 @@ namespace System.Net.Security
             return new SafeFreeContextBufferChannelBinding_SECURITY();
         }
 
-        public unsafe static int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
+        public static unsafe int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
         {
             return QueryContextChannelBinding_SECURITY(phContext, contextAttribute, buffer, refHandle);
         }
 
-        private unsafe static int QueryContextChannelBinding_SECURITY(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
+        private static unsafe int QueryContextChannelBinding_SECURITY(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 

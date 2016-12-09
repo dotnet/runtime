@@ -9,7 +9,7 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe extern int WriteFile(
+        internal static extern unsafe int WriteFile(
             IntPtr handle,
             byte* bytes,
             int numBytesToWrite,

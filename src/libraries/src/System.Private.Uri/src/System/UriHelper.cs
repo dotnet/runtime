@@ -125,7 +125,7 @@ namespace System
         private const short c_MaxUnicodeCharsReallocate = 40;
         private const short c_MaxUTF_8BytesPerUnicodeChar = 4;
         private const short c_EncodedCharsPerByte = 3;
-        internal unsafe static char[] EscapeString(string input, int start, int end, char[] dest, ref int destPos,
+        internal static unsafe char[] EscapeString(string input, int start, int end, char[] dest, ref int destPos,
             bool isUriString, char force1, char force2, char rsvd)
         {
             if (end - start >= Uri.c_MaxUriBufferSize)
@@ -229,7 +229,7 @@ namespace System
         //
         // ensure destination array has enough space and contains all the needed input stuff
         //
-        private unsafe static char[] EnsureDestinationSize(char* pStr, char[] dest, int currentInputPos,
+        private static unsafe char[] EnsureDestinationSize(char* pStr, char[] dest, int currentInputPos,
             short charsToAdd, short minReallocateChars, ref int destPos, int prevInputPos)
         {
             if ((object)dest == null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
@@ -259,7 +259,7 @@ namespace System
         // - It is a RARE case when Unescape actually needs escaping some characters mentioned above.
         //   For this reason it returns a char[] that is usually the same ref as the input "dest" value.
         //
-        internal unsafe static char[] UnescapeString(string input, int start, int end, char[] dest,
+        internal static unsafe char[] UnescapeString(string input, int start, int end, char[] dest,
             ref int destPosition, char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser syntax,
             bool isQuery)
         {
@@ -269,7 +269,7 @@ namespace System
                     syntax, isQuery);
             }
         }
-        internal unsafe static char[] UnescapeString(char* pStr, int start, int end, char[] dest, ref int destPosition,
+        internal static unsafe char[] UnescapeString(char* pStr, int start, int end, char[] dest, ref int destPosition,
             char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser syntax, bool isQuery)
         {
             byte[] bytes = null;

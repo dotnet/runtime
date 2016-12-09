@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata.Tests
 {
     public class StandalonePortablePdbStreamTests
     {
-        private unsafe static void ReadHeader(out DebugMetadataHeader header, out int[] externalRowCounts, byte[] buffer)
+        private static unsafe void ReadHeader(out DebugMetadataHeader header, out int[] externalRowCounts, byte[] buffer)
         {
             fixed (byte* bufferPtr = &buffer[0])
             {

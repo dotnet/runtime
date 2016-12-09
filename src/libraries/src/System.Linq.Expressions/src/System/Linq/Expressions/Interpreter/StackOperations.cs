@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class DupInstruction : Instruction
     {
-        internal readonly static DupInstruction Instance = new DupInstruction();
+        internal static readonly DupInstruction Instance = new DupInstruction();
 
         private DupInstruction() { }
 

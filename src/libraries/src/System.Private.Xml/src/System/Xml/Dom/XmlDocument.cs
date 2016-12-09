@@ -74,10 +74,10 @@ namespace System.Xml
 
         private XmlAttribute _namespaceXml;
 
-        static internal EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
-        static internal IXmlSchemaInfo NotKnownSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.NotKnown);
-        static internal IXmlSchemaInfo ValidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Valid);
-        static internal IXmlSchemaInfo InvalidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Invalid);
+        internal static EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
+        internal static IXmlSchemaInfo NotKnownSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.NotKnown);
+        internal static IXmlSchemaInfo ValidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Valid);
+        internal static IXmlSchemaInfo InvalidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Invalid);
 
         // Initializes a new instance of the XmlDocument class.
         public XmlDocument() : this(new XmlImplementation())
@@ -692,7 +692,7 @@ namespace System.Xml
             return CreateNavigator(this);
         }
 
-        internal protected virtual XPathNavigator CreateNavigator(XmlNode node)
+        protected internal virtual XPathNavigator CreateNavigator(XmlNode node)
         {
             XmlNodeType nodeType = node.NodeType;
             XmlNode parent;

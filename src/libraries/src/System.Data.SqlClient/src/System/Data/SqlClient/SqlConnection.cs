@@ -41,7 +41,7 @@ namespace System.Data.SqlClient
         private int _reconnectCount;
 
         // diagnostics listener
-        private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
+        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
 
         // Transient Fault handling flag. This is needed to convey to the downstream mechanism of connection establishment, if Transient Fault handling should be used or not
         // The downstream handling of Connection open is the same for idle connection resiliency. Currently we want to apply transient fault handling only to the connections opened
@@ -433,12 +433,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        static public void ClearAllPools()
+        public static void ClearAllPools()
         {
             SqlConnectionFactory.SingletonInstance.ClearAllPools();
         }
 
-        static public void ClearPool(SqlConnection connection)
+        public static void ClearPool(SqlConnection connection)
         {
             ADP.CheckArgumentNull(connection, nameof(connection));
 
@@ -1102,7 +1102,7 @@ namespace System.Data.SqlClient
         // Surround name in brackets and then escape any end bracket to protect against SQL Injection.
         // NOTE: if the user escapes it themselves it will not work, but this was the case in V1 as well
         // as native OleDb and Odbc.
-        static internal string FixupDatabaseTransactionName(string name)
+        internal static string FixupDatabaseTransactionName(string name)
         {
             if (!string.IsNullOrEmpty(name))
             {

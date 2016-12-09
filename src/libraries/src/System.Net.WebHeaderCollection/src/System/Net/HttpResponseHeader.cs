@@ -41,7 +41,7 @@ namespace System.Net
 
     internal static class HttpResponseHeaderExtensions
     {
-        private readonly static string[] s_names = {
+        private static readonly string[] s_names = {
             "Cache-Control",
             "Connection",
             "Date",

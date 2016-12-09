@@ -32,7 +32,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherUpdate")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe extern bool EvpCipherUpdate(
+        internal static extern unsafe bool EvpCipherUpdate(
             SafeEvpCipherCtxHandle ctx,
             byte* @out,
             out int outl,

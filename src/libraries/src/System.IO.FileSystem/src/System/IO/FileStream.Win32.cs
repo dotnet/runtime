@@ -211,7 +211,7 @@ namespace System.IO
             return handle.IsAsync.HasValue ? handle.IsAsync.Value : false;
         }
 
-        private unsafe static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
+        private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             if ((share & FileShare.Inheritable) != 0)
@@ -895,7 +895,7 @@ namespace System.IO
             }
         }
 
-        unsafe private Task<int> ReadNativeAsync(byte[] bytes, int offset, int numBytes, int numBufferedBytesRead, CancellationToken cancellationToken)
+        private unsafe Task<int> ReadNativeAsync(byte[] bytes, int offset, int numBytes, int numBufferedBytesRead, CancellationToken cancellationToken)
         {
             AssertCanRead(bytes, offset, numBytes);
             Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
@@ -1607,7 +1607,7 @@ namespace System.IO
         private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
-            private readonly static Action s_sentinel = () => { };
+            private static readonly Action s_sentinel = () => { };
             /// <summary>Cached delegate to IOCallback.</summary>
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 
@@ -1648,7 +1648,7 @@ namespace System.IO
             }
 
             /// <summary>Overlapped callback: store the results, then invoke the continuation delegate.</summary>
-            internal unsafe static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOVERLAP)
+            internal static unsafe void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOVERLAP)
             {
                 var awaitable = (AsyncCopyToAwaitable)ThreadPoolBoundHandle.GetNativeOverlappedState(pOVERLAP);
 
