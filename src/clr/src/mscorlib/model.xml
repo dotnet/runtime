@@ -7861,6 +7861,10 @@
       <Member Name="AppendFormat(System.String,System.Object,System.Object)" />
       <Member Name="AppendFormat(System.String,System.Object,System.Object,System.Object)" />
       <Member Name="AppendFormat(System.String,System.Object[])" />
+      <Member Name="AppendJoin&lt;T&gt;(System.Char,System.Collections.Generic.IEnumerable&lt;T&gt;)" />
+      <Member Name="AppendJoin&lt;T&gt;(System.Char,T[])" />
+      <Member Name="AppendJoin&lt;T&gt;(System.String,System.Collections.Generic.IEnumerable&lt;T&gt;)" />
+      <Member Name="AppendJoin&lt;T&gt;(System.String,T[])" />
       <Member Name="AppendLine" />
       <Member Name="AppendLine(System.String)" />
       <Member Name="Clear" />
