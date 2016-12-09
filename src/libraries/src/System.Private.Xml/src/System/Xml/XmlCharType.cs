@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Xml
 {
-    unsafe internal struct XmlCharType
+    internal unsafe struct XmlCharType
     {
         // Surrogate constants
         internal const int SurHighStart = 0xd800;    // 1101 10xx

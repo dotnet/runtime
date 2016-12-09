@@ -470,7 +470,7 @@ namespace System.ComponentModel
         ///     component, in the form of a combined multicast event handler.
         ///     Returns null if no event handlers currently assigned to component.
         /// </summary>
-        internal protected EventHandler GetValueChangedHandler(object component)
+        protected internal EventHandler GetValueChangedHandler(object component)
         {
             if (component != null && _valueChangedHandlers != null)
             {

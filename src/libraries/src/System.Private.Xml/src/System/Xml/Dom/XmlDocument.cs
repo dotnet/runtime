@@ -692,7 +692,7 @@ namespace System.Xml
             return CreateNavigator(this);
         }
 
-        internal protected virtual XPathNavigator CreateNavigator(XmlNode node)
+        protected internal virtual XPathNavigator CreateNavigator(XmlNode node)
         {
             XmlNodeType nodeType = node.NodeType;
             XmlNode parent;

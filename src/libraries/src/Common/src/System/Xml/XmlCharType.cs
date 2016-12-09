@@ -26,7 +26,7 @@ namespace System.Xml
     /// </devdoc>
 
 #if XMLCHARTYPE_USE_RESOURCE
-    unsafe internal struct XmlCharType {
+    internal unsafe struct XmlCharType {
 #else
     internal struct XmlCharType
     {

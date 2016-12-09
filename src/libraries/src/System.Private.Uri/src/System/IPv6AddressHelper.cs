@@ -35,7 +35,7 @@ namespace System
             }
         }
 
-        internal unsafe static string CreateCanonicalName(ushort* numbers)
+        internal static unsafe string CreateCanonicalName(ushort* numbers)
         {
             // RFC 5952 Sections 4 & 5 - Compressed, lower case, with possible embedded IPv4 addresses.
 
@@ -83,7 +83,7 @@ namespace System
         // Longest consecutive sequence of zero segments, minimum 2.
         // On equal, first sequence wins.
         // <-1, -1> for no compression.
-        private unsafe static KeyValuePair<int, int> FindCompressionRange(ushort* numbers)
+        private static unsafe KeyValuePair<int, int> FindCompressionRange(ushort* numbers)
         {
             int longestSequenceLength = 0;
             int longestSequenceStart = -1;
@@ -117,7 +117,7 @@ namespace System
 
         // Returns true if the IPv6 address should be formated with an embedded IPv4 address:
         // ::192.168.1.1
-        private unsafe static bool ShouldHaveIpv4Embedded(ushort* numbers)
+        private static unsafe bool ShouldHaveIpv4Embedded(ushort* numbers)
         {
             // 0:0 : 0:0 : x:x : x.x.x.x
             if (numbers[0] == 0 && numbers[1] == 0 && numbers[2] == 0 && numbers[3] == 0 && numbers[6] != 0)
@@ -175,7 +175,7 @@ namespace System
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        unsafe private static bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
+        private static unsafe bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
         {
             int sequenceCount = 0;
             int sequenceLength = 0;
@@ -346,7 +346,7 @@ namespace System
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
 
-        internal unsafe static bool IsValid(char* name, int start, ref int end)
+        internal static unsafe bool IsValid(char* name, int start, ref int end)
         {
             return InternalIsValid(name, start, ref end, false);
         }
@@ -383,7 +383,7 @@ namespace System
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal unsafe static bool IsValidStrict(char* name, int start, ref int end)
+        internal static unsafe bool IsValidStrict(char* name, int start, ref int end)
         {
             return InternalIsValid(name, start, ref end, true);
         }
@@ -416,7 +416,7 @@ namespace System
         //  Nothing
         //
 
-        unsafe internal static bool Parse(string address, ushort* numbers, int start, ref string scopeId)
+        internal static unsafe bool Parse(string address, ushort* numbers, int start, ref string scopeId)
         {
             int number = 0;
             int index = 0;
