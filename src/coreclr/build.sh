@@ -167,16 +167,22 @@ build_coreclr()
     if [ $__SkipConfigure == 0 ]; then
         # if msbuild is not supported, then set __SkipGenerateVersion to 1
         if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipGenerateVersion=1; fi
-        # Drop version.c file
+        # Drop version.cpp file
         __versionSourceFile=$__IntermediatesDir/version.cpp
         if [ $__SkipGenerateVersion == 0 ]; then
             "$__ProjectRoot/run.sh" build -Project=$__ProjectDir/build.proj -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs
         else
+            # Generate the dummy version.cpp, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-            echo $__versionSourceLine > $__versionSourceFile
+            if [ -e $__versionSourceFile ]; then
+                read existingVersionSourceLine < $__versionSourceFile
+            fi
+            if [ "$__versionSourceLine" != "$existingVersionSourceLine" ]; then
+                echo $__versionSourceLine > $__versionSourceFile
+            fi
         fi
 
-		pushd "$__IntermediatesDir"
+        pushd "$__IntermediatesDir"
         # Regenerate the CMake solution
         __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument"
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__ExtraCmakeArgs $__cmakeargs"
