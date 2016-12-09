@@ -113,6 +113,16 @@ __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
 
+CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+
+if [ $CPUName == "i686" ]; then
+    __BuildArch=x86
+fi
+
 while :; do
     if [ $# -le 0 ]; then
         break
@@ -223,11 +233,6 @@ while :; do
 done
 
 # Set cross build
-CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ $CPUName == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
 case $CPUName in
     i686)
         if [ $__BuildArch != x86 ]; then
