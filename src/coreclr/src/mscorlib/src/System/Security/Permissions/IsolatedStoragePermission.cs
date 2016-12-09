@@ -32,9 +32,6 @@ namespace System.Security.Permissions {
 
     
     [Serializable]
-#if !FEATURE_CORECLR
-    [SecurityPermissionAttribute( SecurityAction.InheritanceDemand, ControlEvidence = true, ControlPolicy = true )]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     abstract public class IsolatedStoragePermission
            : CodeAccessPermission, IUnrestrictedPermission
@@ -182,93 +179,5 @@ namespace System.Security.Permissions {
         //------------------------------------------------------
         internal static long min(long x,long y) {return x>y?y:x;}
         internal static long max(long x,long y) {return x<y?y:x;}
-
-#if FEATURE_CAS_POLICY
-        //------------------------------------------------------
-        //
-        // PUBLIC ENCODING METHODS
-        //
-        //------------------------------------------------------
-        
-        private const String _strUserQuota   = "UserQuota";
-        private const String _strMachineQuota   = "MachineQuota";
-        private const String _strExpiry  = "Expiry";
-        private const String _strPermDat = "Permanent";
-
-        public override SecurityElement ToXml()
-        {
-            return ToXml ( this.GetType().FullName );
-        }
-    
-        internal SecurityElement ToXml(String permName)
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, permName );
-            if (!IsUnrestricted())
-            {
-                esd.AddAttribute( "Allowed", Enum.GetName( typeof( IsolatedStorageContainment ), m_allowed ) );
-                if (m_userQuota>0)
-                {
-                    esd.AddAttribute(_strUserQuota, (m_userQuota).ToString(CultureInfo.InvariantCulture)) ;
-                }
-                if (m_machineQuota>0)
-                {
-                    esd.AddAttribute(_strMachineQuota, (m_machineQuota).ToString(CultureInfo.InvariantCulture)) ;
-                }
-                if (m_expirationDays>0)
-                {
-                    esd.AddAttribute( _strExpiry, (m_expirationDays).ToString(CultureInfo.InvariantCulture)) ;
-                }
-                if (m_permanentData)
-                {
-                    esd.AddAttribute(_strPermDat, (m_permanentData).ToString()) ;
-                }
-            }
-            else
-            {
-                esd.AddAttribute( "Unrestricted", "true" );
-            }
-            return esd;
-        }
-    
-
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-
-            m_allowed = IsolatedStorageContainment.None;    // default if no match
-
-            if (XMLUtil.IsUnrestricted(esd))
-            {
-                m_allowed = IsolatedStorageContainment.UnrestrictedIsolatedStorage;
-            }
-            else
-            {
-                String allowed = esd.Attribute( "Allowed" );
-
-                if (allowed != null)
-                    m_allowed = (IsolatedStorageContainment)Enum.Parse( typeof( IsolatedStorageContainment ), allowed );
-            }
-                    
-            if (m_allowed == IsolatedStorageContainment.UnrestrictedIsolatedStorage)
-            {
-                m_userQuota = Int64.MaxValue;
-                m_machineQuota = Int64.MaxValue;
-                m_expirationDays = Int64.MaxValue ;
-                m_permanentData = true;
-            }
-            else 
-            {
-                String param;
-                param = esd.Attribute (_strUserQuota) ;
-                m_userQuota = param != null ? Int64.Parse(param, CultureInfo.InvariantCulture) : 0 ;
-                param = esd.Attribute (_strMachineQuota) ;
-                m_machineQuota = param != null ? Int64.Parse(param, CultureInfo.InvariantCulture) : 0 ;
-                param = esd.Attribute (_strExpiry) ;
-                m_expirationDays = param != null ? Int64.Parse(param, CultureInfo.InvariantCulture) : 0 ;
-                param = esd.Attribute (_strPermDat) ;
-                m_permanentData = param != null ? (Boolean.Parse(param)) : false ;
-            }
-        }
-#endif // FEATURE_CAS_POLICY
     }
 }

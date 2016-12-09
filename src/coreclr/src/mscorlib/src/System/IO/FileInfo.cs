@@ -15,9 +15,6 @@
 ===========================================================*/
 
 using System;
-#if FEATURE_MACL
-using System.Security.AccessControl;
-#endif
 using System.Security.Permissions;
 using PermissionSet = System.Security.PermissionSet;
 using Win32Native = Microsoft.Win32.Win32Native;
@@ -28,7 +25,8 @@ using System.Globalization;
 using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
-namespace System.IO {    
+namespace System.IO
+{
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
     [Serializable]
@@ -37,7 +35,6 @@ namespace System.IO {
     {
         private String _name;
 
-#if FEATURE_CORECLR
         // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
 #if FEATURE_CORESYSTEM
         [System.Security.SecurityCritical]
@@ -57,7 +54,6 @@ namespace System.IO {
             fi.Init(fileName, false);
             return fi;
         }
-#endif
 
         [System.Security.SecuritySafeCritical]
         public FileInfo(String fileName)
@@ -75,15 +71,12 @@ namespace System.IO {
             OriginalPath = fileName;
             // Must fully qualify the path for the security check
             String fullPath = Path.GetFullPath(fileName);
-#if FEATURE_CORECLR
+
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, fileName, fullPath);
                 state.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, fullPath, false, false);
-#endif
 
             _name = Path.GetFileName(fileName);
             FullPath = fullPath;
@@ -92,20 +85,12 @@ namespace System.IO {
 
         private String GetDisplayPath(String originalPath)
         {
-#if FEATURE_CORECLR
             return Path.GetFileName(originalPath);
-#else
-            return originalPath;
-#endif
-
         }
 
         [System.Security.SecurityCritical]  // auto-generated
         private FileInfo(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-#if !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.Read, new String[] { FullPath }, false, false).Demand();
-#endif
             _name = Path.GetFileName(OriginalPath);
             DisplayPath = GetDisplayPath(OriginalPath);
         }
@@ -125,8 +110,7 @@ namespace System.IO {
         public override String Name {
             get { return _name; }
         }
-    
-   
+
         public long Length {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
@@ -152,12 +136,8 @@ namespace System.IO {
                 String directoryName = Path.GetDirectoryName(FullPath);
                 if (directoryName != null)
                 {
-#if FEATURE_CORECLR
                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, DisplayPath, FullPath);
                     state.EnsureState();
-#else
-                    new FileIOPermission(FileIOPermissionAccess.PathDiscovery, new String[] { directoryName }, false, false).Demand();
-#endif
                 }
                 return directoryName;
             }
@@ -171,7 +151,7 @@ namespace System.IO {
                 String dirName = DirectoryName;
                 if (dirName == null)
                     return null;
-                return new DirectoryInfo(dirName);    
+                return new DirectoryInfo(dirName);
             }
         } 
 
@@ -186,23 +166,6 @@ namespace System.IO {
                     Attributes &= ~FileAttributes.ReadOnly;
             }
         }
-
-#if FEATURE_MACL
-        public FileSecurity GetAccessControl()
-        {
-            return File.GetAccessControl(FullPath, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
-        }
-
-        public FileSecurity GetAccessControl(AccessControlSections includeSections)
-        {
-            return File.GetAccessControl(FullPath, includeSections);
-        }
-
-        public void SetAccessControl(FileSecurity fileSecurity)
-        {
-            File.SetAccessControl(FullPath, fileSecurity);
-        }
-#endif
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StreamReader OpenText()
@@ -279,13 +242,8 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         public override void Delete()
         {
-#if FEATURE_CORECLR
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, DisplayPath, FullPath);
             state.EnsureState();
-#else
-            // For security check, path should be resolved to an absolute path.
-            new FileIOPermission(FileIOPermissionAccess.Write, new String[] { FullPath }, false, false).Demand();
-#endif
 
             bool r = Win32Native.DeleteFile(FullPath);
             if (!r) {
@@ -335,9 +293,6 @@ namespace System.IO {
             }
         }
 
-        
-      
-      
         // User must explicitly specify opening a new file or appending to one.
         public FileStream Open(FileMode mode) {
             return Open(mode, FileAccess.ReadWrite, FileShare.None);
@@ -351,26 +306,17 @@ namespace System.IO {
             return new FileStream(FullPath, mode, access, share);
         }
 
-        
-#if FEATURE_CORECLR
         [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
         public FileStream OpenRead()
         {
             return new FileStream(FullPath, FileMode.Open, FileAccess.Read,
                                   FileShare.Read, 4096, false);
         }
 
-
         public FileStream OpenWrite() {
             return new FileStream(FullPath, FileMode.OpenOrCreate, 
                                   FileAccess.Write, FileShare.None);
         }
-
-      
-
-       
-        
 
         // Moves a given file to a new location and potentially a new file name.
         // This method does work across volumes.
@@ -389,16 +335,12 @@ namespace System.IO {
             Contract.EndContractBlock();
 
             string fullDestFileName = Path.GetFullPath(destFileName);
-#if FEATURE_CORECLR
+
             FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, DisplayPath, FullPath);
             FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destFileName, fullDestFileName);
             sourceState.EnsureState();
             destState.EnsureState();
-#else
-            new FileIOPermission(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, new String[] { FullPath }, false, false).Demand();
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, fullDestFileName, false, false);
-#endif
-       
+
             if (!Win32Native.MoveFile(FullPath, fullDestFileName))
                 __Error.WinIOError();
             FullPath = fullDestFileName;

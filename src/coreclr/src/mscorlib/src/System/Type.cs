@@ -9,8 +9,8 @@
 //
 // ======================================================================================
 
-namespace System {
-
+namespace System
+{
     using System;
     using System.Reflection;
     using System.Threading;
@@ -1301,21 +1301,15 @@ namespace System {
 
     
         // Protected routine to determine if this class is contextful
-        protected virtual bool IsContextfulImpl(){
-#if FEATURE_REMOTING
-            return typeof(ContextBoundObject).IsAssignableFrom(this);
-#else
+        protected virtual bool IsContextfulImpl()
+        {
             return false;
-#endif
         }
 
         // Protected routine to determine if this class is marshaled by ref
-        protected virtual bool IsMarshalByRefImpl(){
-#if FEATURE_REMOTING
-            return typeof(MarshalByRefObject).IsAssignableFrom(this);
-#else
+        protected virtual bool IsMarshalByRefImpl()
+        {
             return false;
-#endif
         }
 
         internal virtual bool HasProxyAttributeImpl()

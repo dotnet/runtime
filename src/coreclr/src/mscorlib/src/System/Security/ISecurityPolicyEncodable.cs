@@ -8,21 +8,10 @@
 // implement this interface
 //
 
-namespace System.Security  {
-    
-    using System;
-    using System.Security.Util;
-    using System.Security.Policy;
-    
-    
-[System.Runtime.InteropServices.ComVisible(true)]
+namespace System.Security
+{
+    [System.Runtime.InteropServices.ComVisible(true)]
     public interface ISecurityPolicyEncodable
     {
-#if FEATURE_CAS_POLICY
-        SecurityElement ToXml( PolicyLevel level );
-    
-        void FromXml( SecurityElement e, PolicyLevel level );
-#endif // FEATURE_CAS_POLICY
     }
-
 }

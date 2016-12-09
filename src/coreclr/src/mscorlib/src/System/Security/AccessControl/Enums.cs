@@ -70,12 +70,6 @@ namespace System.Security.AccessControl
 
     [Flags]
     public enum AccessControlActions {
-#if FEATURE_MACL
-        None = 0,
-        View = 1,
-        Change = 2
-#else
         None = 0
-#endif
     }
 }

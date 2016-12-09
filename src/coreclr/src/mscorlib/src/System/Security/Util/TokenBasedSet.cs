@@ -368,31 +368,17 @@ namespace System.Security.Util
             {
                 Object thisObj = this.GetItem( i );
                 IPermission thisPerm = thisObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory thisElem = thisObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 Object otherObj = (other != null)?other.GetItem( i ):null;
                 IPermission otherPerm = otherObj as IPermission;
-#if FEATURE_CAS_POLICY
-                ISecurityElementFactory otherElem = otherObj as ISecurityElementFactory;
-#endif // FEATURE_CAS_POLICY
 
                 if (thisObj == null && otherObj == null)
                     continue;
-        
-             
+
                 if (thisObj == null)
                 {
-#if FEATURE_CAS_POLICY
-                    if (otherElem != null)
-                    {
-                        otherPerm = PermissionSet.CreatePerm(otherElem, false);
-                    }
-#endif // FEATURE_CAS_POLICY
-
                     PermissionToken token = PermissionToken.GetToken(otherPerm);
-                    
+
                     if (token == null)
                     {
                         throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
@@ -402,13 +388,6 @@ namespace System.Security.Util
                 }
                 else if (otherObj == null)
                 {
-#if FEATURE_CAS_POLICY
-                    if (thisElem != null)
-                    {
-                        thisPerm = PermissionSet.CreatePerm(thisElem, false);
-                    }
-#endif // FEATURE_CAS_POLICY
-
                     PermissionToken token = PermissionToken.GetToken(thisPerm);
                     if (token == null)
                     {
@@ -434,10 +413,6 @@ namespace System.Security.Util
                 if (obj != null)
                 {
                     IPermission perm = obj as IPermission;
-#if FEATURE_CAS_POLICY
-                    if (perm == null)
-                        perm = PermissionSet.CreatePerm(obj, ignoreTypeLoadFailures);
-#endif // FEATURE_CAS_POLICY
                     PermissionToken token = PermissionToken.GetToken(perm);
 
                     if (perm == null || token == null)

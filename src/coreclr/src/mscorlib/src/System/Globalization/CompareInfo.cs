@@ -322,13 +322,6 @@ namespace System.Globalization {
             get
             {
                 Contract.Assert(m_name != null, "CompareInfo.Name Expected m_name to be set");
-#if !FEATURE_CORECLR
-                if (m_name == "zh-CHT" || m_name == "zh-CHS")
-                {
-                    return m_name;
-                }
-#endif // FEATURE_CORECLR
-
                 return (m_sortName);
             }
         }
@@ -1267,28 +1260,6 @@ namespace System.Globalization {
             return NativeInternalInitSortHandle(localeName, out handleOrigin);
         }
 
-#if !FEATURE_CORECLR
-        private const int SORT_VERSION_WHIDBEY = 0x00001000;
-        private const int SORT_VERSION_V4 = 0x00060101;
-
-        internal static bool IsLegacy20SortingBehaviorRequested
-        {
-            get
-            {
-                return InternalSortVersion == SORT_VERSION_WHIDBEY;
-            }
-        }
-
-        private static uint InternalSortVersion
-        {
-            [System.Security.SecuritySafeCritical]
-            get
-            {
-                return InternalGetSortVersion();
-            }
-        }
-#endif
-
         [OptionalField(VersionAdded = 3)]
         private SortVersion m_SortVersion;
 
@@ -1315,13 +1286,6 @@ namespace System.Globalization {
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetNlsVersionEx(IntPtr handle, IntPtr handleOrigin, String localeName, ref Win32Native.NlsVersionInfoEx lpNlsVersionInformation);
 
-#if !FEATURE_CORECLR
-        [System.Security.SecurityCritical]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern uint InternalGetSortVersion();
-
-#endif
         [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]

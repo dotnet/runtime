@@ -59,14 +59,6 @@ namespace System.Security.Permissions
             SetPathList( access, pathList );
         }
 
-#if FEATURE_MACL
-        public RegistryPermission( RegistryPermissionAccess access, AccessControlActions control, String pathList )
-        {
-            m_unrestricted = false;
-            AddPathList( access, control, pathList );
-        }
-#endif
-
         public void SetPathList( RegistryPermissionAccess access, String pathList )
         {
             VerifyAccess( access );
@@ -84,21 +76,6 @@ namespace System.Security.Permissions
             
             AddPathList( access, pathList );
         }
-
-#if FEATURE_MACL
-        internal void SetPathList( AccessControlActions control, String pathList )
-        {
-            m_unrestricted = false;
-
-            if ((control & AccessControlActions.View) != 0)
-                m_viewAcl = null;
-
-            if ((control & AccessControlActions.Change) != 0)
-                m_changeAcl = null;
-
-            AddPathList( RegistryPermissionAccess.NoAccess, control, pathList );
-        }
-#endif
 
         public void AddPathList( RegistryPermissionAccess access, String pathList )
         {
@@ -130,22 +107,6 @@ namespace System.Security.Permissions
                     m_create = new StringExpressionSet();
                 m_create.AddExpressions( pathList );
             }
-
-#if FEATURE_MACL
-            if ((control & AccessControlActions.View) != 0)
-            {
-                if (m_viewAcl == null)
-                    m_viewAcl = new StringExpressionSet();
-                m_viewAcl.AddExpressions( pathList );
-            }
-
-            if ((control & AccessControlActions.Change) != 0)
-            {
-                if (m_changeAcl == null)
-                    m_changeAcl = new StringExpressionSet();
-                m_changeAcl.AddExpressions( pathList );
-            }
-#endif
         }
     
         [SecuritySafeCritical]
@@ -391,93 +352,6 @@ namespace System.Security.Permissions
             }
             return copy;   
         }
-        
-#if FEATURE_CAS_POLICY
-        [SecuritySafeCritical]
-        public override SecurityElement ToXml()
-        {
-            // SafeCritical: our string expression sets don't contain paths, so there's no information that
-            // needs to be guarded in them.
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.RegistryPermission" );
-            if (!IsUnrestricted())
-            {
-                if (this.m_read != null && !this.m_read.IsEmpty())
-                {
-                    esd.AddAttribute( "Read", SecurityElement.Escape( m_read.UnsafeToString() ) );
-                }
-                if (this.m_write != null && !this.m_write.IsEmpty())
-                {
-                    esd.AddAttribute( "Write", SecurityElement.Escape( m_write.UnsafeToString() ) );
-                }
-                if (this.m_create != null && !this.m_create.IsEmpty())
-                {
-                    esd.AddAttribute( "Create", SecurityElement.Escape( m_create.UnsafeToString() ) );
-                }
-                if (this.m_viewAcl != null && !this.m_viewAcl.IsEmpty())
-                {
-                    esd.AddAttribute( "ViewAccessControl", SecurityElement.Escape( m_viewAcl.UnsafeToString() ) );
-                }
-                if (this.m_changeAcl != null && !this.m_changeAcl.IsEmpty())
-                {
-                    esd.AddAttribute( "ChangeAccessControl", SecurityElement.Escape( m_changeAcl.UnsafeToString() ) );
-                }
-            }
-            else
-            {
-                esd.AddAttribute( "Unrestricted", "true" );
-            }
-            return esd;
-        }
-
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-            String et;
-            
-            if (XMLUtil.IsUnrestricted( esd ))
-            {
-                m_unrestricted = true;
-                return;
-            }
-
-            m_unrestricted = false;
-            m_read = null;
-            m_write = null;
-            m_create = null;
-            m_viewAcl = null;
-            m_changeAcl = null;
-
-            et = esd.Attribute( "Read" );
-            if (et != null)
-            {
-                m_read = new StringExpressionSet( et );
-            }
-            
-            et = esd.Attribute( "Write" );
-            if (et != null)
-            {
-                m_write = new StringExpressionSet( et );
-            }
-    
-            et = esd.Attribute( "Create" );
-            if (et != null)
-            {
-                m_create = new StringExpressionSet( et );
-            }
-            
-            et = esd.Attribute( "ViewAccessControl" );
-            if (et != null)
-            {
-                m_viewAcl = new StringExpressionSet( et );
-            }
-
-            et = esd.Attribute( "ChangeAccessControl" );
-            if (et != null)
-            {
-                m_changeAcl = new StringExpressionSet( et );
-            }
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

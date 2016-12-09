@@ -16,10 +16,6 @@ namespace System {
     using System;
     using System.Reflection;
     using System.Runtime.Remoting;
-#if FEATURE_REMOTING    
-    using System.Runtime.Remoting.Activation;
-    using Message = System.Runtime.Remoting.Messaging.Message;
-#endif
     using System.Security;
     using CultureInfo = System.Globalization.CultureInfo;
     using Evidence = System.Security.Policy.Evidence;
@@ -34,7 +30,7 @@ namespace System {
     // Only statics, does not need to be marked with the serializable attribute
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Activator))]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Activator : _Activator
     {
         internal const int LookupMask                 = 0x000000FF;
@@ -81,22 +77,7 @@ namespace System {
                 bindingAttr |= Activator.ConstructorDefault;
 
             if (activationAttributes != null && activationAttributes.Length > 0){
-                // If type does not derive from MBR
-                // throw notsupportedexception
-#if FEATURE_REMOTING                
-                if(type.IsMarshalByRef){
-                    // The fix below is preventative.
-                    //
-                    if(!(type.IsContextful)){
-                        if(activationAttributes.Length > 1 || !(activationAttributes[0] is UrlAttribute))
-                           throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonUrlAttrOnMBR"));
-                    }
-                }
-                else
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_ActivAttrOnNonMBR" ));
-#else
-                    throw new PlatformNotSupportedException(Environment.GetResourceString("NotSupported_ActivAttr" ));
-#endif
+                throw new PlatformNotSupportedException(Environment.GetResourceString("NotSupported_ActivAttr" ));
             }
 
             RuntimeType rt = type.UnderlyingSystemType as RuntimeType;
@@ -294,13 +275,6 @@ namespace System {
                                                     Evidence securityInfo,
                                                     ref StackCrawlMark stackMark)
         {
-#if FEATURE_CAS_POLICY
-            if (securityInfo != null && !AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-            {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_RequiresCasPolicyImplicit"));
-            }
-#endif // FEATURE_CAS_POLICY
-
             Type type = null;
             Assembly assembly = null;
             if (assemblyString == null) {
@@ -358,13 +332,6 @@ namespace System {
                                                       Evidence securityInfo)
                                                
         {
-#if FEATURE_CAS_POLICY
-            if (securityInfo != null && !AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-            {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_RequiresCasPolicyImplicit"));
-            }
-#endif // FEATURE_CAS_POLICY
-
             return CreateInstanceFromInternal(assemblyFile,
                                               typeName,
                                               ignoreCase,
@@ -406,10 +373,6 @@ namespace System {
                                                                Object[] activationAttributes,
                                                                Evidence securityInfo)
         {
-#if FEATURE_CAS_POLICY
-            Contract.Assert(AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled || securityInfo == null);
-#endif // FEATURE_CAS_POLICY
-
 #pragma warning disable 618
             Assembly assembly = Assembly.LoadFrom(assemblyFile, securityInfo);
 #pragma warning restore 618
@@ -461,13 +424,6 @@ namespace System {
             if (domain == null)
                 throw new ArgumentNullException(nameof(domain));
             Contract.EndContractBlock();
-
-#if FEATURE_CAS_POLICY
-            if (securityAttributes != null && !AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-            {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_RequiresCasPolicyImplicit"));
-            }
-#endif // FEATURE_CAS_POLICY
 
             return domain.InternalCreateInstanceWithNoSecurity(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
         }
@@ -528,13 +484,6 @@ namespace System {
             if (domain == null)
                 throw new ArgumentNullException(nameof(domain));
             Contract.EndContractBlock();
-
-#if FEATURE_CAS_POLICY
-            if (securityAttributes != null && !AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
-            {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_RequiresCasPolicyImplicit"));
-            }
-#endif // FEATURE_CAS_POLICY
 
             return domain.InternalCreateInstanceFromWithNoSecurity(assemblyFile, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
         }
@@ -612,38 +561,11 @@ namespace System {
             }
         }
 
-#if FEATURE_REMOTING
-        //  This method is a helper method and delegates to the remoting 
-        //  services to do the actual work. 
-        [System.Security.SecurityCritical]  // auto-generated_required
-        static public Object GetObject(Type type, String url)
-        {
-            return GetObject(type, url, null);
-        }
-        
-        //  This method is a helper method and delegates to the remoting 
-        //  services to do the actual work. 
-        [System.Security.SecurityCritical]  // auto-generated_required
-        static public Object GetObject(Type type, String url, Object state)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            Contract.EndContractBlock();
-            return RemotingServices.Connect(type, url, state);
-        }
-#endif
-
         [System.Diagnostics.Conditional("_DEBUG")]
         private static void Log(bool test, string title, string success, string failure)
         {
-#if FEATURE_REMOTING
-            if(test)
-                BCLDebug.Trace("REMOTE", "{0}{1}", title, success);
-            else
-                BCLDebug.Trace("REMOTE", "{0}{1}", title, failure);
-#endif            
         }
-        
+
         void _Activator.GetTypeInfoCount(out uint pcTInfo)
         {
             throw new NotImplementedException();

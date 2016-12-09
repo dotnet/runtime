@@ -66,22 +66,6 @@ namespace System.Security.Permissions {
             return new FileDialogPermission(this.access);
         }
 
-#if FEATURE_CAS_POLICY
-        public override void FromXml(SecurityElement esd) {
-            CodeAccessPermission.ValidateElement(esd, this);
-            if (XMLUtil.IsUnrestricted(esd)) {
-                SetUnrestricted(true);
-                return;
-            }
-
-            access = FileDialogPermissionAccess.None;
-
-            string accessXml = esd.Attribute("Access");
-            if (accessXml != null)
-                access = (FileDialogPermissionAccess)Enum.Parse(typeof(FileDialogPermissionAccess), accessXml);
-        }
-#endif // FEATURE_CAS_POLICY
-
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex() {
             return FileDialogPermission.GetTokenIndex();
@@ -152,21 +136,6 @@ namespace System.Security.Permissions {
             }
         }
 
-#if FEATURE_CAS_POLICY
-        public override SecurityElement ToXml() {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.FileDialogPermission" );
-            if (!IsUnrestricted()) {
-                if (access != FileDialogPermissionAccess.None) {
-                    esd.AddAttribute("Access", Enum.GetName(typeof(FileDialogPermissionAccess), access));
-                }
-            }
-            else {
-                esd.AddAttribute("Unrestricted", "true");
-            }
-            return esd;
-        }
-#endif // FEATURE_CAS_POLICY
-
         public override IPermission Union(IPermission target) {
             if (target == null) {
                 return this.Copy();
@@ -177,7 +146,7 @@ namespace System.Security.Permissions {
 
             FileDialogPermission operand = (FileDialogPermission)target;
             return new FileDialogPermission(access | operand.Access);
-        }        
+        }
 
         static void VerifyAccess(FileDialogPermissionAccess access) {
             if ((access & ~FileDialogPermissionAccess.OpenSave) != 0 ) {

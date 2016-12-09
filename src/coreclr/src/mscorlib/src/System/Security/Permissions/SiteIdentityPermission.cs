@@ -5,9 +5,6 @@
 namespace System.Security.Permissions
 {
     using System;
-#if FEATURE_CAS_POLICY
-    using SecurityElement = System.Security.SecurityElement;
-#endif // FEATURE_CAS_POLICY
     using SiteString = System.Security.Util.SiteString;
     using System.Text;
     using System.Collections;
@@ -30,55 +27,6 @@ namespace System.Security.Permissions
         private bool m_unrestricted;
         [OptionalField(VersionAdded = 2)]        
         private SiteString[] m_sites;
-
-#if FEATURE_REMOTING
-        // This field will be populated only for non X-AD scenarios where we create a XML-ised string of the Permission
-        [OptionalField(VersionAdded = 2)]
-        private String m_serializedPermission; 
-
-        //  This field is legacy info from v1.x and is never used in v2.0 and beyond: purely for serialization purposes
-        private SiteString m_site;
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            // v2.0 and beyond XML case
-            if (m_serializedPermission != null)
-            {
-                FromXml(SecurityElement.FromString(m_serializedPermission));
-                m_serializedPermission = null;
-            }
-            else if (m_site != null) //v1.x case where we read the m_site value
-            {
-                m_unrestricted = false;
-                m_sites = new SiteString[1];
-                m_sites[0] = m_site;
-                m_site = null;
-            }
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-
-            if ((ctx.State & ~(StreamingContextStates.Clone|StreamingContextStates.CrossAppDomain)) != 0)
-            {
-                m_serializedPermission = ToXml().ToString(); //for the v2 and beyond case
-                if (m_sites != null && m_sites.Length == 1) // for the v1.x case
-                    m_site = m_sites[0];
-                
-            }
-        }   
-        [OnSerialized]
-        private void OnSerialized(StreamingContext ctx)
-        {
-            if ((ctx.State & ~(StreamingContextStates.Clone|StreamingContextStates.CrossAppDomain)) != 0)
-            {
-                m_serializedPermission = null;
-                m_site = null;
-            }
-        }
-#endif // FEATURE_REMOTING
 
         //------------------------------------------------------
         //
@@ -150,8 +98,6 @@ namespace System.Security.Permissions
         // IPERMISSION IMPLEMENTATION
         //
         //------------------------------------------------------
-
-
         public override IPermission Copy()
         {
             SiteIdentityPermission perm = new SiteIdentityPermission( PermissionState.None );
@@ -290,60 +236,6 @@ namespace System.Security.Permissions
             result.m_sites = alSites.ToArray();
             return result;
         }
-
-#if FEATURE_CAS_POLICY
-        public override void FromXml(SecurityElement esd)
-        {
-            m_unrestricted = false;
-            m_sites = null;
-            CodeAccessPermission.ValidateElement( esd, this );
-            String unr = esd.Attribute( "Unrestricted" );
-            if(unr != null && String.Compare(unr, "true", StringComparison.OrdinalIgnoreCase) == 0)
-            {
-                m_unrestricted = true;
-                return;
-            }
-            String elem = esd.Attribute( "Site" );
-            List<SiteString> al = new List<SiteString>();
-            if(elem != null)
-                al.Add(new SiteString( elem ));
-            ArrayList alChildren = esd.Children;
-            if(alChildren != null)
-            {
-                foreach(SecurityElement child in alChildren)
-                {
-                    elem = child.Attribute( "Site" );
-                    if(elem != null)
-                        al.Add(new SiteString( elem ));
-                }
-            }
-            if(al.Count != 0)
-                m_sites = al.ToArray();
-        }
-
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.SiteIdentityPermission" );
-            if (m_unrestricted)
-                esd.AddAttribute( "Unrestricted", "true" );
-            else if (m_sites != null)
-            {
-                if (m_sites.Length == 1)
-                    esd.AddAttribute( "Site", m_sites[0].ToString() );
-                else
-                {
-                    int n;
-                    for(n = 0; n < m_sites.Length; n++)
-                    {
-                        SecurityElement child = new SecurityElement("Site");
-                        child.AddAttribute( "Site", m_sites[n].ToString() );
-                        esd.AddChild(child);
-                    }
-                }
-            }
-            return esd;
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

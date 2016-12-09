@@ -230,14 +230,9 @@ namespace System.Runtime.Serialization {
       
         static readonly Type[] advancedTypes = new Type[]{
             typeof(System.DelegateSerializationHolder),
-#if FEATURE_REMOTING
-            typeof(System.Runtime.Remoting.ObjRef),
-            typeof(System.Runtime.Remoting.IEnvoyInfo),
-            typeof(System.Runtime.Remoting.Lifetime.ISponsor),
-#endif
         };
-  
-        public static void CheckTypeSecurity(Type t,  TypeFilterLevel securityLevel) {            
+
+        public static void CheckTypeSecurity(Type t,  TypeFilterLevel securityLevel) {
             if (securityLevel == TypeFilterLevel.Low){
                 for(int i=0;i<advancedTypes.Length;i++){
                     if (advancedTypes[i].IsAssignableFrom(t))
@@ -274,23 +269,17 @@ namespace System.Runtime.Serialization {
                 throw new ArgumentNullException(nameof(type));
             }
              Contract.EndContractBlock();
-    
+
             if (!(type is RuntimeType)) {
                 throw new SerializationException(Environment.GetResourceString("Serialization_InvalidType", type.ToString()));
             }
-#if FEATURE_REMOTING
-            if (Object.ReferenceEquals(type, typeof(System.Runtime.Remoting.Messaging.ConstructionCall)) || 
-                Object.ReferenceEquals(type, typeof(System.Runtime.Remoting.Messaging.LogicalCallContext)) ||
-                Object.ReferenceEquals(type, typeof(System.Runtime.Remoting.Contexts.SynchronizationAttribute)))
-                 return nativeGetUninitializedObject((RuntimeType)type);                                    
-#endif
 
-            try {                            
-                return nativeGetSafeUninitializedObject((RuntimeType)type);                    
+            try {
+                return nativeGetSafeUninitializedObject((RuntimeType)type);
             }
-            catch(SecurityException e) {                
+            catch(SecurityException e) {
                 throw new SerializationException(Environment.GetResourceString("Serialization_Security",  type.FullName), e);
-            }                                        
+            }
         }
 
         [System.Security.SecurityCritical]  // auto-generated

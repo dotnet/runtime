@@ -309,50 +309,6 @@ namespace System.Security.Permissions
         {
             return new UIPermission(this.m_windowFlag, this.m_clipboardFlag);
         }
-    
-#if FEATURE_CAS_POLICY
-        public override SecurityElement ToXml()
-        {
-            SecurityElement esd = CodeAccessPermission.CreatePermissionElement( this, "System.Security.Permissions.UIPermission" );
-            if (!IsUnrestricted())
-            {
-                if (m_windowFlag != UIPermissionWindow.NoWindows)
-                {
-                    esd.AddAttribute( "Window", Enum.GetName( typeof( UIPermissionWindow ), m_windowFlag ) );
-                }
-                if (m_clipboardFlag != UIPermissionClipboard.NoClipboard)
-                {
-                    esd.AddAttribute( "Clipboard", Enum.GetName( typeof( UIPermissionClipboard ), m_clipboardFlag ) );
-                }
-            }
-            else
-            {
-                esd.AddAttribute( "Unrestricted", "true" );
-            }
-            return esd;
-        }
-            
-        public override void FromXml(SecurityElement esd)
-        {
-            CodeAccessPermission.ValidateElement( esd, this );
-            if (XMLUtil.IsUnrestricted( esd ))
-            {
-                SetUnrestricted( true );
-                return;
-            }
-            
-            m_windowFlag = UIPermissionWindow.NoWindows;
-            m_clipboardFlag = UIPermissionClipboard.NoClipboard;
-
-            String window = esd.Attribute( "Window" );
-            if (window != null)
-                m_windowFlag = (UIPermissionWindow)Enum.Parse( typeof( UIPermissionWindow ), window );
-
-            String clipboard = esd.Attribute( "Clipboard" );
-            if (clipboard != null)
-                m_clipboardFlag = (UIPermissionClipboard)Enum.Parse( typeof( UIPermissionClipboard ), clipboard );
-        }
-#endif // FEATURE_CAS_POLICY
 
         /// <internalonly/>
         int IBuiltInPermission.GetTokenIndex()

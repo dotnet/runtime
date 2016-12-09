@@ -313,11 +313,6 @@ namespace System.Threading
                 if (waitHandle == null)
                     throw new ArgumentNullException("waitHandles[" + i + "]", Environment.GetResourceString("ArgumentNull_ArrayElement"));
 
-#if FEATURE_REMOTING        
-                if (RemotingServices.IsTransparentProxy(waitHandle))
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WaitOnTransparentProxy"));
-#endif
-
                 internalWaitHandles[i] = waitHandle;
             }
 #if _DEBUG
@@ -412,11 +407,6 @@ namespace System.Threading
 
                 if (waitHandle == null)
                     throw new ArgumentNullException("waitHandles[" + i + "]", Environment.GetResourceString("ArgumentNull_ArrayElement"));
-
-#if FEATURE_REMOTING        
-                if (RemotingServices.IsTransparentProxy(waitHandle))
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WaitOnTransparentProxy"));
-#endif
 
                 internalWaitHandles[i] = waitHandle;
             }

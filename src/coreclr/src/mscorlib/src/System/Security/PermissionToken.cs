@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security {
+namespace System.Security
+{
     using System;
     using System.Security.Util;
     using System.Security.Permissions;
@@ -90,16 +91,9 @@ namespace System.Security {
     internal sealed class PermissionToken : ISecurityEncodable
     {
         private static readonly PermissionTokenFactory s_theTokenFactory;
-#if FEATURE_CAS_POLICY
-        private static volatile ReflectionPermission s_reflectPerm = null;
-#endif // FEATURE_CAS_POLICY
-
         private const string c_mscorlibName = System.CoreLib.Name;
         internal int    m_index;
         internal volatile PermissionTokenType m_type;
-#if FEATURE_CAS_POLICY
-        internal String m_strTypeName;
-#endif // FEATURE_CAS_POLICY
         static internal TokenBasedSet s_tokenSet = new TokenBasedSet();
 
         internal static bool IsMscorlibClassName (string className) {
@@ -119,11 +113,7 @@ namespace System.Security {
 
             // Search for the string 'mscorlib' in the classname. If we find it, we will conservatively assume it's an mscorlib.dll type and load it.
             for (int i = index; i < className.Length; i++) {
-#if FEATURE_CORECLR
-                if (className[i] == 's' || className[i] == 'S') 
-#else
-                if (className[i] == 'm' || className[i] == 'M') 
-#endif                 
+                if (className[i] == 's' || className[i] == 'S')
                 {
                     if (String.Compare(className, i, c_mscorlibName, 0, c_mscorlibName.Length, StringComparison.OrdinalIgnoreCase) == 0)
                         return true;
@@ -145,9 +135,6 @@ namespace System.Security {
         {
             m_index = index;
             m_type = type;
-#if FEATURE_CAS_POLICY
-            m_strTypeName = strTypeName;
-#endif // FEATURE_CAS_POLICY
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -155,29 +142,8 @@ namespace System.Security {
         {
             if (cls == null)
                 return null;
-            
-#if FEATURE_CAS_POLICY
-            if (cls.GetInterface( "System.Security.Permissions.IBuiltInPermission" ) != null)
-            {
-                if (s_reflectPerm == null)
-                    s_reflectPerm = new ReflectionPermission(PermissionState.Unrestricted);
-                s_reflectPerm.Assert();
-                MethodInfo method = cls.GetMethod( "GetTokenIndex", BindingFlags.Static | BindingFlags.NonPublic );
-                Contract.Assert( method != null, "IBuiltInPermission types should have a static method called 'GetTokenIndex'" );
 
-                // GetTokenIndex needs to be invoked without any security checks, since doing a security check
-                // will involve a ReflectionTargetDemand which creates a CompressedStack and attempts to get the
-                // token.
-                RuntimeMethodInfo getTokenIndex = method as RuntimeMethodInfo;
-                Contract.Assert(getTokenIndex != null, "method is not a RuntimeMethodInfo");
-                int token = (int)getTokenIndex.UnsafeInvoke(null, BindingFlags.Default, null, null, null);
-                return s_theTokenFactory.BuiltInGetToken(token, null, cls);
-            }
-            else
-#endif // FEATURE_CAS_POLICY
-            {
-                return s_theTokenFactory.GetToken(cls, null);
-            }
+            return s_theTokenFactory.GetToken(cls, null);
         }
 
         public static PermissionToken GetToken(IPermission perm)
@@ -192,82 +158,6 @@ namespace System.Security {
             else
                 return s_theTokenFactory.GetToken(perm.GetType(), perm);
         }
-
-#if FEATURE_CAS_POLICY
-        public static PermissionToken GetToken(String typeStr)
-        {
-            return GetToken( typeStr, false );
-        }
-
-#if _DEBUG
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        private static void GetTokenHelper(String typeStr)
-        {
-            new PermissionSet(PermissionState.Unrestricted).Assert();
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            Type type = RuntimeTypeHandle.GetTypeByName( typeStr.Trim().Replace( '\'', '\"' ), ref stackMark);
-            Contract.Assert( (type == null) || (type.Module.Assembly != System.Reflection.Assembly.GetExecutingAssembly()) || (typeStr.IndexOf("mscorlib", StringComparison.Ordinal) < 0),
-                "We should not go through this path for mscorlib based permissions" );
-        }
-#endif
-
-        public static PermissionToken GetToken(String typeStr, bool bCreateMscorlib)
-        {
-            if (typeStr == null)
-                return null;
-
-            if (IsMscorlibClassName( typeStr ))
-            {
-                if (!bCreateMscorlib)
-                {
-                    return null;
-                }
-                else
-                {
-                    return FindToken( Type.GetType( typeStr ) );
-                }
-            }
-            else
-            {
-                PermissionToken token = s_theTokenFactory.GetToken(typeStr);
-#if _DEBUG
-                GetTokenHelper(typeStr);
-#endif
-                return token;
-            }
-        }
-
-        [SecuritySafeCritical]
-        public static PermissionToken FindToken( Type cls )
-        {
-            if (cls == null)
-                return null;
-             
-#if FEATURE_CAS_POLICY
-            if (cls.GetInterface( "System.Security.Permissions.IBuiltInPermission" ) != null)
-            {
-                if (s_reflectPerm == null)
-                    s_reflectPerm = new ReflectionPermission(PermissionState.Unrestricted);
-                s_reflectPerm.Assert();
-                MethodInfo method = cls.GetMethod( "GetTokenIndex", BindingFlags.Static | BindingFlags.NonPublic );
-                Contract.Assert( method != null, "IBuiltInPermission types should have a static method called 'GetTokenIndex'" );
-
-                // GetTokenIndex needs to be invoked without any security checks, since doing a security check
-                // will involve a ReflectionTargetDemand which creates a CompressedStack and attempts to get the
-                // token.
-                RuntimeMethodInfo getTokenIndex = method as RuntimeMethodInfo;
-                Contract.Assert(getTokenIndex != null, "method is not a RuntimeMethodInfo");
-                int token = (int)getTokenIndex.UnsafeInvoke(null, BindingFlags.Default, null, null, null);
-                return s_theTokenFactory.BuiltInGetToken(token, null, cls);
-            }
-            else
-#endif // FEATURE_CAS_POLICY
-            {
-                return s_theTokenFactory.FindToken( cls );
-            }
-        }
-#endif // FEATURE_CAS_POLICY
 
         public static PermissionToken FindTokenByIndex( int i )
         {
@@ -289,41 +179,6 @@ namespace System.Security {
 
             return true;
         }
-
-#if FEATURE_CAS_POLICY
-        public SecurityElement ToXml()
-        {
-            Contract.Assert( (m_type & PermissionTokenType.DontKnow) == 0, "Should have valid token type when ToXml is called" );
-            SecurityElement elRoot = new SecurityElement( "PermissionToken" );
-            if ((m_type & PermissionTokenType.BuiltIn) != 0)
-                elRoot.AddAttribute( "Index", "" + this.m_index );
-            else
-                elRoot.AddAttribute( "Name", SecurityElement.Escape( m_strTypeName ) );
-            elRoot.AddAttribute("Type", m_type.ToString("F"));
-            return elRoot;
-        }
-
-        public void FromXml(SecurityElement elRoot)
-        {
-            // For the most part there is no parameter checking here since this is an
-            // internal class and the serialization/deserialization path is controlled.
-
-            if (!elRoot.Tag.Equals( "PermissionToken" ))
-                Contract.Assert( false, "Tried to deserialize non-PermissionToken element here" );
-
-            String strName = elRoot.Attribute( "Name" );
-            PermissionToken realToken;
-            if (strName != null)
-                realToken = GetToken( strName, true );
-            else
-                realToken = FindTokenByIndex( Int32.Parse( elRoot.Attribute( "Index" ), CultureInfo.InvariantCulture ) );
-            
-            this.m_index = realToken.m_index;
-            this.m_type = (PermissionTokenType) Enum.Parse(typeof(PermissionTokenType), elRoot.Attribute("Type"));
-            Contract.Assert((this.m_type & PermissionTokenType.DontKnow) == 0, "Should have valid token type when FromXml is called.");
-            this.m_strTypeName = realToken.m_strTypeName;
-        }
-#endif // FEATURE_CAS_POLICY
     }
 
     // Package access only
@@ -356,33 +211,6 @@ namespace System.Security {
             m_handleTable = new Hashtable(size);
             m_indexTable = new Hashtable(size);
         }
-
-#if FEATURE_CAS_POLICY
-        [SecuritySafeCritical]
-        internal PermissionToken FindToken( Type cls )
-        {
-            IntPtr typePtr = cls.TypeHandle.Value;
-            PermissionToken tok = (PermissionToken)m_handleTable[typePtr];
-
-            if (tok != null)
-                return tok;
-
-            if (m_tokenTable == null)
-                return null;
-
-            tok = (PermissionToken)m_tokenTable[cls.AssemblyQualifiedName];
-
-            if (tok != null)
-            {
-                lock (this)
-                {
-                    m_handleTable.Add(typePtr, tok);
-                }
-            }
-
-            return tok;
-        }
-#endif // FEATURE_CAS_POLICY
 
         internal PermissionToken FindTokenByIndex( int i )
         {
@@ -461,9 +289,6 @@ namespace System.Security {
                 {
                     Contract.Assert( !(perm is IBuiltInPermission), "This should not be called for built-ins" );
                     ((PermissionToken)tok).m_type = PermissionTokenType.IUnrestricted;
-#if FEATURE_CAS_POLICY
-                    ((PermissionToken)tok).m_strTypeName = perm.GetType().AssemblyQualifiedName;
-#endif // FEATURE_CAS_POLICY
                 }
                 else
                 {
@@ -472,9 +297,6 @@ namespace System.Security {
                         ((PermissionToken)tok).m_type = PermissionTokenType.IUnrestricted;
                     else
                         ((PermissionToken)tok).m_type = PermissionTokenType.Normal;
-#if FEATURE_CAS_POLICY
-                    ((PermissionToken)tok).m_strTypeName = cls.AssemblyQualifiedName;
-#endif // FEATURE_CAS_POLICY
                 }
             }
 
