@@ -623,9 +623,6 @@ namespace Microsoft.Win32
          *
          * @return the Subkey requested, or <b>null</b> if the operation failed.
          */
-        #if FEATURE_CORECLR
-        #else
-        #endif
         public RegistryKey OpenSubKey(string name, bool writable ) {
             ValidateKeyName(name);
             EnsureNotDisposed();
@@ -684,8 +681,6 @@ namespace Microsoft.Win32
          *
          * @return the Subkey requested, or <b>null</b> if the operation failed.
          */
-#if FEATURE_CORECLR
-#endif
         public RegistryKey OpenSubKey(String name) {
             return OpenSubKey(name, false);
         }
@@ -738,9 +733,6 @@ namespace Microsoft.Win32
          *
          * @return all subkey names.
          */
-        #if FEATURE_CORECLR
-        #else
-        #endif
         public String[] GetSubKeyNames() {
             CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
             return InternalGetSubKeyNames();
@@ -886,17 +878,11 @@ namespace Microsoft.Win32
          *
          * @return the data associated with the value.
          */
-        #if FEATURE_CORECLR
-        #else
-        #endif
         public Object GetValue(String name, Object defaultValue) {
             CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);        
             return InternalGetValue(name, defaultValue, false, true);
         }
 
-        #if FEATURE_CORECLR
-        #else
-        #endif
         [ComVisible(false)]
         public Object GetValue(String name, Object defaultValue, RegistryValueOptions options) {
             if( options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames) {

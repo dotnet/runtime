@@ -576,28 +576,6 @@ namespace System.Reflection.Emit {
                                                       typeof(System.Diagnostics.DebuggableAttribute) == m_con.DeclaringType);
         }
 
-#if !FEATURE_CORECLR
-        void _CustomAttributeBuilder.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _CustomAttributeBuilder.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _CustomAttributeBuilder.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _CustomAttributeBuilder.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
-
         internal ConstructorInfo    m_con;
         internal Object[]           m_constructorArgs;
         internal byte[]             m_blob;

@@ -706,8 +706,7 @@ namespace System
         {
             return GetProperties(Type.DefaultLookup);
         }
-#if	!FEATURE_CORECLR
-#endif	
+
         // GetNestedTypes()
         // This set of method will return any nested types that are found inside
         //  of the type.
@@ -718,9 +717,6 @@ namespace System
 
         abstract public Type[] GetNestedTypes(BindingFlags bindingAttr);
 
-#if	!FEATURE_CORECLR
-        // GetNestedType()
-#endif
         public Type GetNestedType(String name)
         {
             return GetNestedType(name,Type.DefaultLookup);
@@ -1793,30 +1789,6 @@ namespace System
         {
             return base.GetType();
         }
-
-#if !FEATURE_CORECLR
-        void _Type.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Type.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Type.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        // If you implement this method, make sure to include _Type.Invoke in VM\DangerousAPIs.h and 
-        // include _Type in SystemDomain::IsReflectionInvocationMethod in AppDomain.cpp.
-        void _Type.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
 
         // private convenience data
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;

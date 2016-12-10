@@ -58,7 +58,7 @@ namespace System.IO
 
             internal NativeOverlapped* Overlapped
             {
-                [SecurityCritical]get { return _overlapped; }
+                get { return _overlapped; }
             }
 
             public void SetCompletedSynchronously(int numBytes)

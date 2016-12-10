@@ -61,14 +61,12 @@ namespace System.Diagnostics {
             IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, 
             out string sourceFile, out int sourceLine, out int sourceColumn);
 
-#if FEATURE_CORECLR
         private static Type s_symbolsType = null;
         private static MethodInfo s_symbolsMethodInfo = null;
 
         [ThreadStatic]
         private static int t_reentrancy = 0;
-#endif
-        
+
         public StackFrameHelper(Thread target)
         {
             targetThread = target;
@@ -111,7 +109,6 @@ namespace System.Diagnostics {
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
 
-#if FEATURE_CORECLR
             if (!fNeedFileInfo)
                 return;
 
@@ -164,12 +161,10 @@ namespace System.Diagnostics {
             {
                 t_reentrancy--;
             }
-#endif
         }
 
         void IDisposable.Dispose()
         {
-#if FEATURE_CORECLR
             if (getSourceLineInfo != null)
             {
                 IDisposable disposable = getSourceLineInfo.Target as IDisposable;
@@ -178,7 +173,6 @@ namespace System.Diagnostics {
                     disposable.Dispose();
                 }
             }
-#endif
         }
 
         public virtual MethodBase GetMethodBase(int i) 
@@ -264,8 +258,6 @@ namespace System.Diagnostics {
     // In order to ensure trusted code can trust the data it gets from a 
     // StackTrace, we use an InheritanceDemand to prevent partially-trusted
     // subclasses.
-#if !FEATURE_CORECLR
-#endif
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StackTrace
@@ -621,26 +613,22 @@ namespace System.Diagnostics {
                             else
                                 fFirstTyParam = false;
 
-                            sb.Append(typars[k].Name);             
+                            sb.Append(typars[k].Name);
                             k++;
                         }   
                         sb.Append(']');    
                     }
 
                     ParameterInfo[] pi = null;
-#if FEATURE_CORECLR
                     try
                     {
-#endif
                         pi = mb.GetParameters();
-#if FEATURE_CORECLR
                     }
                     catch
                     {
                         // The parameter info cannot be loaded, so we don't
                         // append the parameter list.
                     }
-#endif
                     if (pi != null)
                     {
                         // arguments printing

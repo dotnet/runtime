@@ -279,8 +279,6 @@ namespace System.Runtime.InteropServices
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern uint AlignedSizeOfType(Type type);
 
-#if !FEATURE_CORECLR // Marshal is critical in CoreCLR, so SafeCritical members trigger Annotator violations
-#endif // !FEATURE_CORECLR
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
@@ -405,16 +403,10 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Read from memory
         //====================================================================
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_RU1")]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern byte ReadByte([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs);    
-#else
         public static byte ReadByte([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
-        }    
-#endif // !FEATURE_CORECLR
+        }
 
         public static unsafe byte ReadByte(IntPtr ptr, int ofs)
         {
@@ -434,17 +426,11 @@ namespace System.Runtime.InteropServices
         {
             return ReadByte(ptr,0);
         }
-        
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_RI2")]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern short ReadInt16([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs);    
-#else
+
         public static short ReadInt16([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
-        }    
-#endif // !FEATURE_CORECLR
+        }
  
         public static unsafe short ReadInt16(IntPtr ptr, int ofs)
         {
@@ -477,17 +463,11 @@ namespace System.Runtime.InteropServices
         {
             return ReadInt16(ptr, 0);
         }
-    
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_RI4"), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern int ReadInt32([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs);    
-#else
+
         public static int ReadInt32([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
         }
-#endif // !FEATURE_CORECLR
  
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static unsafe int ReadInt32(IntPtr ptr, int ofs)
@@ -555,16 +535,10 @@ namespace System.Runtime.InteropServices
             #endif
         }
 
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_RI8"), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern long ReadInt64([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs);    
-#else
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
         }
-#endif // !FEATURE_CORECLR
 
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
         {
@@ -623,16 +597,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_WU1")]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern void WriteByte([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, byte val);    
-#else
         public static void WriteByte([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, byte val)
         {
             throw new PlatformNotSupportedException();
         }
-#endif // !FEATURE_CORECLR
 
         public static void WriteByte(IntPtr ptr, byte val)
         {
@@ -663,18 +631,12 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
         }
-    
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_WI2")]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern void WriteInt16([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, short val);
-#else
+
         public static void WriteInt16([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, short val)
         {
             throw new PlatformNotSupportedException();
         }
-#endif // !FEATURE_CORECLR
-                
+
         public static void WriteInt16(IntPtr ptr, short val)
         {
             WriteInt16(ptr, 0, val);
@@ -721,17 +683,11 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
         }
-        
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_WI4")]
-        [SuppressUnmanagedCodeSecurity]
-        public static extern void WriteInt32([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, int val);
-#else
+
         public static void WriteInt32([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, int val)
         {
             throw new PlatformNotSupportedException();
         }
-#endif // !FEATURE_CORECLR
 
         public static void WriteInt32(IntPtr ptr, int val)
         {
@@ -795,17 +751,11 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
         }
-    
-#if !FEATURE_CORECLR
-        [DllImport(Win32Native.SHIM, EntryPoint="ND_WI8")]        
-        [SuppressUnmanagedCodeSecurity]
-        public static extern void WriteInt64([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, long val);
-#else
+
         public static void WriteInt64([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, long val)
         {
             throw new PlatformNotSupportedException();
         }
-#endif // !FEATURE_CORECLR
 
         public static void WriteInt64(IntPtr ptr, long val)
         {
@@ -1499,93 +1449,8 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Type GetLoadedTypeForGUID(ref Guid guid);
 
-#if !FEATURE_CORECLR // current implementation requires reflection only load 
-        //====================================================================
-        // map ITypeInfo* to Type
-        //====================================================================
-        public static Type GetTypeForITypeInfo(IntPtr /* ITypeInfo* */ piTypeInfo)
-        {
-            ITypeInfo pTI = null;
-            ITypeLib pTLB = null;
-            Type TypeObj = null;
-            Assembly AsmBldr = null;
-            TypeLibConverter TlbConverter = null;
-            int Index = 0;
-            Guid clsid;
-
-            // If the input ITypeInfo is NULL then return NULL.
-            if (piTypeInfo == IntPtr.Zero)
-                return null;
-
-            // Wrap the ITypeInfo in a CLR object.
-            pTI = (ITypeInfo)GetObjectForIUnknown(piTypeInfo);
-
-            // Check to see if a class exists with the specified GUID.
-
-            clsid = GetTypeInfoGuid(pTI);
-            TypeObj = GetLoadedTypeForGUID(ref clsid);
-
-            // If we managed to find the type based on the GUID then return it.
-            if (TypeObj != null)
-                return TypeObj;
-
-            // There is no type with the specified GUID in the app domain so lets
-            // try and convert the containing typelib.
-            try 
-            {
-                pTI.GetContainingTypeLib(out pTLB, out Index);
-            }
-            catch(COMException)
-            {
-                pTLB = null;
-            }
-
-            // Check to see if we managed to get a containing typelib.
-            if (pTLB != null)
-            {
-                // Get the assembly name from the typelib.
-                AssemblyName AsmName = TypeLibConverter.GetAssemblyNameFromTypelib(pTLB, null, null, null, null, AssemblyNameFlags.None);
-                String AsmNameString = AsmName.FullName;
-
-                // Check to see if the assembly that will contain the type already exists.
-                Assembly[] aAssemblies = Thread.GetDomain().GetAssemblies();
-                int NumAssemblies = aAssemblies.Length;
-                for (int i = 0; i < NumAssemblies; i++)
-                {
-                    if (String.Compare(aAssemblies[i].FullName, 
-                                       AsmNameString,StringComparison.Ordinal) == 0)
-                        AsmBldr = aAssemblies[i];
-                }
-
-                // If we haven't imported the assembly yet then import it.
-                if (AsmBldr == null)
-                {
-                    TlbConverter = new TypeLibConverter();
-                    AsmBldr = TlbConverter.ConvertTypeLibToAssembly(pTLB, 
-                        GetTypeLibName(pTLB) + ".dll", 0, new ImporterCallback(), null, null, null, null);
-                }
-
-                // Load the type object from the imported typelib.
-                // Call GetManagedTypeInfoNameInternal to align with TlbImp behavior
-                TypeObj = AsmBldr.GetType(GetManagedTypeInfoNameInternal(pTLB, pTI), true, false);
-                if (TypeObj != null && !TypeObj.IsVisible) 
-                    TypeObj = null;
-            }
-            else
-            {
-                // If the ITypeInfo does not have a containing typelib then simply 
-                // return Object as the type.
-                TypeObj = typeof(Object);
-            }
-
-            return TypeObj;
-        }
-#endif // #if !FEATURE_CORECLR 
-
         // This method is identical to Type.GetTypeFromCLSID. Since it's interop specific, we expose it
         // on Marshal for more consistent API surface.
-#if !FEATURE_CORECLR
-#endif //!FEATURE_CORECLR
         public static Type GetTypeFromCLSID(Guid clsid)
         {
             return RuntimeType.GetTypeFromCLSIDImpl(clsid, null, false);
@@ -1629,11 +1494,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static IntPtr /* IDispatch */ GetIDispatchForObject(Object o)
         {
-#if FEATURE_CORECLR
             throw new PlatformNotSupportedException();
-#else         
-            return GetIDispatchForObjectNative(o, false);
-#endif // FEATURE_CORECLR            
         }
         
 #if FEATURE_COMINTEROP
@@ -1731,8 +1592,6 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // check if the object is classic COM component
         //====================================================================
-#if !FEATURE_CORECLR // with FEATURE_CORECLR, the whole type is SecurityCritical
-#endif
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool IsComObject(Object o);
 
@@ -1955,36 +1814,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static Object GetComObjectData(Object obj, Object key)
         {
-#if FEATURE_CORECLR
             throw new PlatformNotSupportedException();
-#else        
-            // Validate that the arguments aren't null.
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            Contract.EndContractBlock();
-
-            __ComObject comObj = null;
-
-            // Make sure the obj is an __ComObject.
-            try
-            {
-                comObj = (__ComObject)obj;
-            }
-            catch (InvalidCastException)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(obj));
-            }
-
-            if (obj.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjIsWinRTObject"), nameof(obj));
-            }
-
-            // Retrieve the data from the __ComObject.
-            return comObj.GetData(key);
-#endif // FEATURE_CORECLR            
         }
 
         //====================================================================
@@ -1995,36 +1825,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static bool SetComObjectData(Object obj, Object key, Object data)
         {
-#if FEATURE_CORECLR
             throw new PlatformNotSupportedException();
-#else          
-            // Validate that the arguments aren't null. The data can validly be null.
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            Contract.EndContractBlock();
-
-            __ComObject comObj = null;
-
-            // Make sure the obj is an __ComObject.
-            try
-            {
-                comObj = (__ComObject)obj;
-            }
-            catch (InvalidCastException)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(obj));
-            }
-
-            if (obj.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjIsWinRTObject"), nameof(obj));
-            }
-
-            // Retrieve the data from the __ComObject.
-            return comObj.SetData(key, data);
-#endif // FEATURE_CORECLR            
         }
 
 #if FEATURE_COMINTEROP
@@ -2205,19 +2006,8 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static Guid GenerateGuidForType(Type type)
         {
-#if FEATURE_CORECLR
             return type.GUID;
         }
-#else
-            Guid result = new Guid ();
-            FCallGenerateGuidForType (ref result, type);
-            return result;
-        }
-
-        // The full assembly name is used to compute the GUID, so this should be SxS-safe
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallGenerateGuidForType(ref Guid result, Type type);
-#endif // FEATURE_CORECLR            
 
         //====================================================================
         // This method generates a PROGID for the specified type. If the type
@@ -2234,11 +2024,6 @@ namespace System.Runtime.InteropServices
             if (type.IsGenericType)
                 throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
             Contract.EndContractBlock();
-
-#if !FEATURE_CORECLR
-            if (!RegistrationServices.TypeRequiresRegistrationHelper(type))
-                throw new ArgumentException(Environment.GetResourceString("Argument_TypeMustBeComCreatable"), nameof(type));
-#endif // FEATURE_CORECLR            
 
             IList<CustomAttributeData> cas = CustomAttributeData.GetCustomAttributes(type);
             for (int i = 0; i < cas.Count; i ++)
@@ -2586,41 +2371,5 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
     }
-
-#if FEATURE_COMINTEROP && !FEATURE_CORECLR // current implementation requires reflection only load 
-    //========================================================================
-    // Typelib importer callback implementation.
-    //========================================================================
-    internal class ImporterCallback : ITypeLibImporterNotifySink
-    {
-        public void ReportEvent(ImporterEventKind EventKind, int EventCode, String EventMsg)
-        {
-        }
-        
-        public Assembly ResolveRef(Object TypeLib)
-        {
-            try
-            {
-                // Create the TypeLibConverter.
-                ITypeLibConverter TLBConv = new TypeLibConverter();
-
-                // Convert the typelib.
-                return TLBConv.ConvertTypeLibToAssembly(TypeLib,
-                                                        Marshal.GetTypeLibName((ITypeLib)TypeLib) + ".dll",
-                                                        0,
-                                                        new ImporterCallback(),
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null);
-            }
-            catch(Exception)
-//            catch
-            {
-                return null;
-            }               
-        }
-    }
-#endif // FEATURE_COMINTEROP && !FEATURE_CORECLR 
 }
 

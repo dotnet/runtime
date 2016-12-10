@@ -1889,7 +1889,6 @@ namespace System.Globalization
                         // Want 1st calendar to be default
                         // Prior to Vista the enumeration didn't have default calendar first
                         // Only a coreclr concern, culture.dll does the right thing.
-#if FEATURE_CORECLR
                         if (temp.Length > 1)
                         {
                             int i = DoGetLocaleInfoInt(LOCALE_ICALENDARTYPE);
@@ -1899,7 +1898,6 @@ namespace System.Globalization
                                 temp[0] = i;
                             }
                         }
-#endif
 
                         this.waCalendars = temp;
                     }

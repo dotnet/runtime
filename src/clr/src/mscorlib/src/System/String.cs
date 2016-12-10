@@ -144,12 +144,8 @@ namespace System {
                 }
                 return chars;
             }
-            
-#if FEATURE_CORECLR
+
             return Array.Empty<char>();
-#else
-            return new char[0];
-#endif
         }
     
         // Returns a substring of this string as an array of characters.
@@ -172,12 +168,8 @@ namespace System {
                 }
                 return chars;
             }
-            
-#if FEATURE_CORECLR
+
             return Array.Empty<char>();
-#else
-            return new char[0];
-#endif
         }
 
         [Pure]

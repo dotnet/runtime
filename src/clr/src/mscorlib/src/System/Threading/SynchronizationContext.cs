@@ -49,8 +49,6 @@ namespace System.Threading
     }
 #endif //FEATURE_COMINTEROP
 
-#if !FEATURE_CORECLR
-#endif
     public class SynchronizationContext
     {
 #if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
@@ -171,8 +169,6 @@ namespace System.Threading
         private static extern int WaitHelperNative(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
 #endif
 
-#if FEATURE_CORECLR
-
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
             Thread.CurrentThread.SynchronizationContext = syncContext;
@@ -207,49 +203,6 @@ namespace System.Threading
                 return Current; // SC never flows
             }
         }
-
-#else //FEATURE_CORECLR
-
-        // set SynchronizationContext on the current thread
-        public static void SetSynchronizationContext(SynchronizationContext syncContext)
-        {
-            ExecutionContext ec = Thread.CurrentThread.GetMutableExecutionContext();
-            ec.SynchronizationContext = syncContext;
-            ec.SynchronizationContextNoFlow = syncContext;
-        }
-
-        // Get the current SynchronizationContext on the current thread
-        public static SynchronizationContext Current 
-        {
-            get      
-            {
-                return Thread.CurrentThread.GetExecutionContextReader().SynchronizationContext ?? GetThreadLocalContext();
-            }
-        }
-
-        // Get the last SynchronizationContext that was set explicitly (not flowed via ExecutionContext.Capture/Run)        
-        internal static SynchronizationContext CurrentNoFlow
-        {
-            [FriendAccessAllowed]
-            get
-            {
-                return Thread.CurrentThread.GetExecutionContextReader().SynchronizationContextNoFlow ?? GetThreadLocalContext();
-            }
-        }
-
-        private static SynchronizationContext GetThreadLocalContext()
-        {
-            SynchronizationContext context = null;
-            
-#if FEATURE_APPX
-            if (context == null && AppDomain.IsAppXModel())
-                context = GetWinRTContext();
-#endif
-
-            return context;
-        }
-
-#endif //FEATURE_CORECLR
 
 #if FEATURE_APPX
         private static SynchronizationContext GetWinRTContext()

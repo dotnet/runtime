@@ -84,15 +84,11 @@ namespace System {
         }
     
         public unsafe override int GetHashCode() {
-#if FEATURE_CORECLR
 #if BIT64
             ulong l = (ulong)m_value;
             return (unchecked((int)l) ^ (int)(l >> 32));
 #else // 32
             return unchecked((int)m_value);
-#endif
-#else
-            return unchecked((int)((long)m_value)) & 0x7fffffff;
 #endif
         }
 

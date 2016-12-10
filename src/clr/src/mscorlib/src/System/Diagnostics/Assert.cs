@@ -81,26 +81,10 @@ namespace System.Diagnostics {
             }
             else if (iResult == AssertFilters.FailTerminate)
             {
-#if FEATURE_CORECLR
                 // We want to exit the Silverlight application, after displaying a message.
                 // Our best known way to emulate this is to exit the process with a known 
                 // error code.  Jolt may not be prepared for an appdomain to be unloaded.
                 Environment._Exit(exitCode);
-#else
-                // This assert dialog will be common for code contract failures.  If a code contract failure
-                // occurs on an end user machine, we believe the right experience is to do a FailFast, which 
-                // will report this error via Watson, so someone could theoretically fix the bug.
-                // However, in CLR v4, Environment.FailFast when a debugger is attached gives you an MDA
-                // saying you've hit a bug in the runtime or unsafe managed code, and this is most likely caused
-                // by heap corruption or a stack imbalance from COM Interop or P/Invoke.  That extremely
-                // misleading error isn't right, and we can temporarily work around this by using Environment.Exit
-                // if a debugger is attached.  The right fix is to plumb FailFast correctly through our native
-                // Watson code, adding in a TypeOfReportedError for fatal managed errors.
-                if (Debugger.IsAttached)
-                    Environment._Exit(exitCode);
-                else
-                    Environment.FailFast(message, unchecked((uint) exitCode));
-#endif
             }
         }
     

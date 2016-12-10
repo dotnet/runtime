@@ -17,9 +17,8 @@ namespace System {
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
+
     [System.Runtime.InteropServices.ComVisible(true)]
-#if !FEATURE_CORECLR
-#endif
     [Serializable]
     public class WeakReference : ISerializable 
     {
@@ -27,14 +26,12 @@ namespace System {
 
         // This field is not a regular GC handle. It can have a special values that are used to prevent a race condition between setting the target and finalization.
         internal IntPtr m_handle;
-    
-#if FEATURE_CORECLR
+
         // Migrating InheritanceDemands requires this default ctor, so we can mark it SafeCritical
         protected WeakReference() {
             Contract.Assert(false, "WeakReference's protected default ctor should never be used!");
             throw new NotImplementedException();
         }
-#endif
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)

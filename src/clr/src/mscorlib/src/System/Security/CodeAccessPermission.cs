@@ -18,8 +18,6 @@ namespace System.Security
     using IUnrestrictedPermission = System.Security.Permissions.IUnrestrictedPermission;
 
     [Serializable]
-#if !FEATURE_CORECLR
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     abstract public class CodeAccessPermission
         : IPermission, ISecurityEncodable, IStackWalk

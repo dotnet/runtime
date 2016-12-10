@@ -95,57 +95,6 @@ namespace System.Reflection
             return Invoke(BindingFlags.Default, null, parameters, null);
         }
         #endregion
-
-#if !FEATURE_CORECLR
-        #region COM Interop Support
-        Type _ConstructorInfo.GetType()
-        {
-            return base.GetType();
-        }
-        
-        Object _ConstructorInfo.Invoke_2(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-        {
-            return Invoke(obj, invokeAttr, binder, parameters, culture);
-        }
-        
-        Object _ConstructorInfo.Invoke_3(Object obj, Object[] parameters)
-        {
-            return Invoke(obj, parameters);
-        }
-        
-        Object _ConstructorInfo.Invoke_4(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-        {
-            return Invoke(invokeAttr, binder, parameters, culture);
-        }
-        
-        Object _ConstructorInfo.Invoke_5(Object[] parameters)
-        {
-            return Invoke(parameters);
-        }
-
-        void _ConstructorInfo.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _ConstructorInfo.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _ConstructorInfo.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        // If you implement this method, make sure to include _ConstructorInfo.Invoke in VM\DangerousAPIs.h and 
-        // include _ConstructorInfo in SystemDomain::IsReflectionInvocationMethod in AppDomain.cpp.
-        void _ConstructorInfo.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-        #endregion
-#endif
     }
 
     [Serializable]
@@ -563,26 +512,10 @@ namespace System.Reflection
 
             if (obj != null)
             {
-
-#if FEATURE_CORECLR
                 // For unverifiable code, we require the caller to be critical.
                 // Adding the INVOCATION_FLAGS_NEED_SECURITY flag makes that check happen
                 invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-#else // FEATURE_CORECLR
-                new SecurityPermission(SecurityPermissionFlag.SkipVerification).Demand();
-#endif // FEATURE_CORECLR
-
             }
-
-#if !FEATURE_CORECLR
-            if ((invocationFlags &(INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD | INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY)) != 0) 
-            {
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD) != 0)
-                    CodeAccessPermission.Demand(PermissionType.ReflectionMemberAccess);
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) != 0)
-                    RuntimeMethodHandle.PerformSecurityCheck(obj, this, m_declaringType, (uint)m_invocationFlags);
-            }
-#endif // !FEATURE_CORECLR
 
             Signature sig = Signature;
 
@@ -619,29 +552,17 @@ namespace System.Reflection
 
         public override bool IsSecurityCritical
         {
-#if FEATURE_CORECLR
             get { return true; }
-#else
-            get { return RuntimeMethodHandle.IsSecurityCritical(this); }
-#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get { return RuntimeMethodHandle.IsSecuritySafeCritical(this); }
-#endif
         }
 
         public override bool IsSecurityTransparent
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get { return RuntimeMethodHandle.IsSecurityTransparent(this); }
-#endif
         }
 
         public override bool ContainsGenericParameters
@@ -676,18 +597,6 @@ namespace System.Reflection
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
             }
 #endif
-
-#if !FEATURE_CORECLR
-            if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD | INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY | INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR)) != 0) 
-            {
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD) != 0) 
-                    CodeAccessPermission.Demand(PermissionType.ReflectionMemberAccess);
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY)  != 0) 
-                    RuntimeMethodHandle.PerformSecurityCheck(null, this, m_declaringType, (uint)(m_invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_CONSTRUCTOR_INVOKE));
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR) != 0)
-                    new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-            }
-#endif // !FEATURE_CORECLR
 
             // get the signature
             Signature sig = Signature;
@@ -742,5 +651,4 @@ namespace System.Reflection
         }
        #endregion
     }
-
 }

@@ -31,9 +31,7 @@ namespace System.Collections {
     // of the ArrayList is automatically increased as required by reallocating the
     // internal array.
     // 
-#if FEATURE_CORECLR
     [FriendAccessAllowed]
-#endif
     [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]   
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -554,9 +552,7 @@ namespace System.Collections {
     
         // Returns a read-only IList wrapper for the given IList.
         //
-#if FEATURE_CORECLR
         [FriendAccessAllowed]
-#endif
         public static IList ReadOnly(IList list) {
             if (list==null)
                 throw new ArgumentNullException(nameof(list));

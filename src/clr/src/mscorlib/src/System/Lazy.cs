@@ -48,9 +48,6 @@ namespace System
     /// </remarks>
     [Serializable]
     [ComVisible(false)]
-#if !FEATURE_CORECLR
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
-#endif
     [DebuggerTypeProxy(typeof(System_LazyDebugView<>))]
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
     public class Lazy<T>
@@ -341,13 +338,7 @@ namespace System
                 }
 
                 // Fall through to the slow path.
-#if !FEATURE_CORECLR
-                // We call NOCTD to abort attempts by the debugger to funceval this property (e.g. on mouseover)
-                //   (the debugger proxy is the correct way to look at state/value of this object)
-                Debugger.NotifyOfCrossThreadDependency(); 
-#endif
                 return LazyInitValue();
-               
             }
         }
 

@@ -320,15 +320,11 @@ namespace System.IO
                     return false;
                 }
 
-#if FEATURE_CORECLR
                 if (checkHost)
                 {
                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, path);
                     state.EnsureState();
                 }
-#else
-                FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, path, false, false);
-#endif
 
                 return InternalExists(path);
             }

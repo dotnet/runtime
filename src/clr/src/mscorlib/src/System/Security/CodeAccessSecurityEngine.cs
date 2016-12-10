@@ -58,32 +58,16 @@ namespace System.Security {
         [System.Diagnostics.Conditional( "_DEBUG" )]
         private static void DEBUG_OUT( String str )
         {
-#if _DEBUG        
+#if _DEBUG
             if (debug)
-            {
-#if !FEATURE_CORECLR
-                if (to_file)
-                {
-                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                    sb.Append( str );
-                    sb.Append ((char)13) ;
-                    sb.Append ((char)10) ;
-                    PolicyManager.DebugOut( file, sb.ToString() );
-                }
-                else
-#endif                    
-                    Console.WriteLine( str );
-             }
-#endif             
-        }
-        
-#if _DEBUG 
-        private static bool debug = false;
-#if !FEATURE_CORECLR
-        private static readonly bool to_file = false;
+                Console.WriteLine( str );
 #endif
+        }
+
+#if _DEBUG
+        private static bool debug = false;
         private const String file = "d:\\foo\\debug.txt";
-#endif  
+#endif
 
         // static default constructor. This will be called before any of the static members are accessed.
         static CodeAccessSecurityEngine()

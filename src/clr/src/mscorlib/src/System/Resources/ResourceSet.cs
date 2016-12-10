@@ -31,15 +31,11 @@ namespace System.Resources {
     // stores them in a hash table.  Custom IResourceReaders can be used.
     // 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class ResourceSet : IDisposable, IEnumerable
     {
         [NonSerialized] protected IResourceReader Reader;
-#if FEATURE_CORECLR
         internal Hashtable Table;
-#else
-        protected Hashtable Table;
-#endif
 
         private Hashtable _caseInsensitiveTable;  // For case-insensitive lookups.
 
@@ -182,11 +178,7 @@ namespace System.Resources {
         // GetDefaultReader and GetDefaultWriter.
         public virtual Type GetDefaultWriter()
         {
-#if FEATURE_CORECLR
             return Type.GetType("System.Resources.ResourceWriter, System.Resources.Writer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken, throwOnError: true);
-#else
-            return typeof(ResourceWriter);
-#endif
         }
 
         [ComVisible(false)]

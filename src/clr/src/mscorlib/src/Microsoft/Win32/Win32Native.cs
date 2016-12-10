@@ -1737,18 +1737,11 @@ namespace Microsoft.Win32 {
             [In]     uint       dwFlags);
 #endif // FEATURE_LEGACYSURFACE
 
-#if FEATURE_CORECLR 
         [DllImport(NTDLL, CharSet=CharSet.Unicode, SetLastError=true)]
         internal static extern
         int RtlNtStatusToDosError (
             [In]    int         status);
-#else
-        // identical to RtlNtStatusToDosError, but we are in ask mode for desktop CLR
-        [DllImport(ADVAPI32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern
-        int LsaNtStatusToWinError (
-            [In]    int         status);
-#endif
+
         // Get the current FIPS policy setting on Vista and above
         [DllImport("bcrypt.dll")]
         internal static extern uint BCryptGetFipsAlgorithmMode(
@@ -2295,7 +2288,6 @@ namespace Microsoft.Win32 {
             byte[] dacl,
             byte[] sacl );
 
-#if FEATURE_CORECLR
         [DllImport(KERNEL32, CharSet=CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurityAttribute()]
         internal  unsafe static extern int WideCharToMultiByte(
@@ -2317,13 +2309,11 @@ namespace Microsoft.Win32 {
             int      cchMultiByte,
             char*  lpWideCharStr,
             int      cchWideChar);
-#endif  // FEATURE_CORECLR
 
         [DllImport(KERNEL32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal extern static bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
 
-#if FEATURE_CORECLR
 #if FEATURE_PAL
         [DllImport(KERNEL32, EntryPoint = "PAL_Random")]
         internal extern static bool Random(bool bStrong,
@@ -2349,7 +2339,6 @@ namespace Microsoft.Win32 {
                 }
             }
         }
-#endif
 #endif
     }
 }

@@ -881,17 +881,12 @@ namespace System.IO
             if (PathInternal.IsDirectoryTooLong(destPath))
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
 
-#if FEATURE_CORECLR
             if (checkHost) {
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, sourceDirName, sourcePath);
                 FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destDirName, destPath);
                 sourceState.EnsureState();
                 destState.EnsureState();
             }
-#else
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, sourcePath, false, false);
-            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, destPath, false, false);
-#endif
 
             if (String.Compare(sourcePath, destPath, StringComparison.OrdinalIgnoreCase) == 0)
                 throw new IOException(Environment.GetResourceString("IO.IO_SourceDestMustBeDifferent"));
@@ -943,17 +938,12 @@ namespace System.IO
             // If not recursive, do permission check only on this directory
             // else check for the whole directory structure rooted below 
             demandPath = GetDemandDir(fullPath, !recursive);
-            
-#if FEATURE_CORECLR
+
             if (checkHost) 
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, userPath, demandPath);
                 state.EnsureState();
             }
-#else
-            // Make sure we have write permission to this directory
-            new FileIOPermission(FileIOPermissionAccess.Write, new String[] { demandPath }, false, false ).Demand();
-#endif
 
             // Do not recursively delete through reparse points.  Perhaps in a 
             // future version we will add a new flag to control this behavior, 

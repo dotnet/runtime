@@ -556,18 +556,6 @@ namespace System {
             return millis * TicksPerMillisecond;
         }
 
-#if !FEATURE_CORECLR
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool LegacyParseMode();
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EnableAmPmParseAdjustment();
-#endif
-
         // Checks if this DateTime is equal to a given object. Returns
         // true if the given object is a boxed DateTime and its value
         // is equal to the value of this DateTime. Returns false

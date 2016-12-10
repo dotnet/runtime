@@ -49,12 +49,8 @@ namespace System {
         NoThrowOnInvalidTime      = 2
     };
 
-
     [Serializable]
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#if !FEATURE_CORECLR
-    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-#endif
     sealed public class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         // ---- SECTION:  members supporting exposed properties -------------*
@@ -3193,9 +3189,6 @@ namespace System {
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetFileMUIPath(System.Int32,System.String,System.Text.StringBuilder,System.Int32&,System.Text.StringBuilder,System.Int32&,System.Int64&):System.Boolean" />
         // <ReferencesCritical Name="Method: TryGetLocalizedNameByNativeResource(String, Int32):String" Ring="1" />
         // </SecurityKernel>
-#if !FEATURE_CORECLR
-        [FileIOPermissionAttribute(SecurityAction.Assert, AllLocalFiles = FileIOPermissionAccess.PathDiscovery)]
-#endif
         static private string TryGetLocalizedNameByMuiNativeResource(string resource) {
             if (String.IsNullOrEmpty(resource)) {
                 return String.Empty;
@@ -4428,9 +4421,6 @@ namespace System {
 ============================================================*/
         [Serializable]
         [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#if !FEATURE_CORECLR
-        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-#endif
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
             {
 
@@ -4740,9 +4730,6 @@ namespace System {
 ============================================================*/
         [Serializable]
         [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#if !FEATURE_CORECLR
-        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-#endif
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
