@@ -16,7 +16,7 @@
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='netstandard1.1'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='NOTAREALTARGETGROUP'">true</GeneratePlatformNotSupportedAssembly>
     <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
     <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
@@ -59,7 +59,7 @@
     </Compile>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='net45')">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)'=='net45')">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>

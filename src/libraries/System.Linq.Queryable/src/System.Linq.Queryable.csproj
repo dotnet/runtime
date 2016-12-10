@@ -5,16 +5,11 @@
     <ProjectGuid>{BE12B753-C130-4B68-86E3-877F1AEE52C0}</ProjectGuid>
     <AssemblyName>System.Linq.Queryable</AssemblyName>
     <RootNamespace>System.Linq.Queryable</RootNamespace>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup>
     <Compile Include="System\Linq\CachedReflection.cs" />
     <Compile Include="System\Linq\EnumerableExecutor.cs" />
     <Compile Include="System\Linq\EnumerableQuery.cs" />
@@ -23,10 +18,6 @@
     <Compile Include="System\Linq\Queryable.cs" />
     <Compile Include="System\Linq\Strings.cs" />
     <Compile Include="System\Linq\TypeHelper.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

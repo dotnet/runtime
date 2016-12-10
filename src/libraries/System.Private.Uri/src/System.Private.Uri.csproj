@@ -12,7 +12,7 @@
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard10</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />

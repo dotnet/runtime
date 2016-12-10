@@ -9,7 +9,6 @@
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
@@ -190,6 +189,15 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Diagnostics.Tools" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.IO.Pipes" />
+    <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Net.Sockets" />
+    <Reference Include="System.Net.Security" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.NameResolution" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Import Project=".\GenerateThisAssemblyCs.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />

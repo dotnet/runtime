@@ -138,11 +138,11 @@
       <PackageTargetFramework>uap10.1</PackageTargetFramework>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     </TargetGroups>
-    <TargetGroups Include="portable-net45+win8+sl5">
+    <TargetGroups Include="portable_net45+win8+sl5">
       <PackageTargetFramework>portable-net45+win8+sl5</PackageTargetFramework>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
     </TargetGroups>
-    <TargetGroups Include="portable-net40+sl4+win8+wp8">
+    <TargetGroups Include="portable_net40+sl4+win8+wp8">
       <PackageTargetFramework>portable-net40+sl4+win8+wp8</PackageTargetFramework>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
     </TargetGroups>

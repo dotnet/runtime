@@ -8,9 +8,8 @@
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
     <!-- unset PackageTargetFramework we'll use PackageDestination instead -->
     <PackageTargetFramework />
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <!-- duplicate in net46 folder so older nuget clients can consume -->
-    <PackageTargetFramework  Condition="'$(TargetGroup)' == ''">netstandard1.3;net46</PackageTargetFramework>
+    <PackageTargetFramework  Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;net46</PackageTargetFramework>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
          we also have a separate complilation of this DLL that works for V4.5
          (which is netstandard1.1).  Again we duplicate in a portable-* folder

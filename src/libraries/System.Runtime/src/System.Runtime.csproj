@@ -28,7 +28,7 @@
   <ItemGroup>
     <Compile Include="System.Runtime.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Function.cs" />
     <Compile Include="System\LazyOfTTMetadata.cs" />
@@ -39,28 +39,23 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\IO\FileAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)'!='net462' and '$(TargetGroup)'!='net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)'=='uap101'">
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463' And '$(TargetGroup)' != 'uap101aot'">
-      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'uap101aot'">
-      <OSGroup>Windows_NT</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net463'">
@@ -69,7 +64,6 @@
     <TargetingPackReference Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Private.CoreLib" />
     <Reference Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

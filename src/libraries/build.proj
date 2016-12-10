@@ -33,12 +33,8 @@
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <ItemGroup>
-    <Project Include="src\Tools\tools.builds" />
-    <Project Include="src\dirs.proj">
-      <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
-      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
+    <Project Include="src\ref.builds" />
+    <Project Include="src\src.builds" />
     <!--
     <Project Include="src\tests.builds" Condition="$(BuildTests)=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
@@ -62,6 +58,13 @@
   <Import Project="dir.traversal.targets" />
 
   <Import Project="$(ToolsDir)clean.targets" />
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      BuildCoreFxTools;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(RestoreDuringBuild)'=='true'">
     <TraversalBuildDependsOn>
@@ -92,6 +95,11 @@
     <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
     <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
   </ItemGroup>
+
+  <Target Name="BuildCoreFxTools">
+    <MSBuild Projects="src\Tools\tools.builds"
+             ContinueOnError="ErrorAndContinue" />
+  </Target>
 
   <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
     <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" />
