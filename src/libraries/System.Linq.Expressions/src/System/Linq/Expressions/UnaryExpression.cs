@@ -844,13 +844,13 @@ namespace System.Linq.Expressions
             return GetMethodBasedCoercionOperator(ExpressionType.ConvertChecked, expression, type, method);
         }
 
-        /// <summary>Creates a <see cref="UnaryExpression"/> that represents getting the length of a one-dimensional array.</summary>
+        /// <summary>Creates a <see cref="UnaryExpression"/> that represents getting the length of a one-dimensional, zero-based array.</summary>
         /// <returns>A <see cref="UnaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ArrayLength"/> and the <see cref="UnaryExpression.Operand"/> property equal to <paramref name="array"/>.</returns>
         /// <param name="array">An <see cref="Expression"/> to set the <see cref="UnaryExpression.Operand"/> property equal to.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="array"/> is null.</exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="array"/>.Type does not represent an array type.</exception>
+        /// <paramref name="array"/>.Type does not represent a single-dimensional, zero-based array type.</exception>
         public static UnaryExpression ArrayLength(Expression array)
         {
             ContractUtils.RequiresNotNull(array, nameof(array));

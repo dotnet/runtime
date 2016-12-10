@@ -365,7 +365,7 @@ namespace System.Linq.Expressions
         internal static string ArgumentMustBeArrayIndexType => SR.ArgumentMustBeArrayIndexType;
 
         /// <summary>
-        /// A string like "Argument must be single dimensional array type"
+        /// A string like "Argument must be single-dimensional, zero-based array type"
         /// </summary>
         internal static string ArgumentMustBeSingleDimensionalArrayType => SR.ArgumentMustBeSingleDimensionalArrayType;
 
