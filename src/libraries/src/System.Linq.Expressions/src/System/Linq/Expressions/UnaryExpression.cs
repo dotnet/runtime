@@ -853,7 +853,7 @@ namespace System.Linq.Expressions
         /// <paramref name="array"/>.Type does not represent an array type.</exception>
         public static UnaryExpression ArrayLength(Expression array)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            RequiresCanRead(array, nameof(array));
             if (!array.Type.IsArray || !typeof(Array).IsAssignableFrom(array.Type))
             {
                 throw Error.ArgumentMustBeArray(nameof(array));
