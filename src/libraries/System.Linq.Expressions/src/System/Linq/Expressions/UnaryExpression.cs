@@ -873,9 +873,13 @@ namespace System.Linq.Expressions
         public static UnaryExpression Quote(Expression expression)
         {
             RequiresCanRead(expression, nameof(expression));
-            bool validQuote = expression is LambdaExpression;
-            if (!validQuote) throw Error.QuotedExpressionMustBeLambda(nameof(expression));
-            return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
+            LambdaExpression lambda = expression as LambdaExpression;
+            if (lambda == null)
+            {
+                throw Error.QuotedExpressionMustBeLambda(nameof(expression));
+            }
+
+            return new UnaryExpression(ExpressionType.Quote, lambda, lambda.PublicType, null);
         }
 
         /// <summary>
