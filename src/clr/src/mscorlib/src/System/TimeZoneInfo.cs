@@ -1262,16 +1262,13 @@ namespace System {
             Boolean adjustmentRulesSupportDst;
             ValidateTimeZoneInfo(id, baseUtcOffset, adjustmentRules, out adjustmentRulesSupportDst);
 
-            if (!disableDaylightSavingTime && adjustmentRules != null && adjustmentRules.Length > 0) {
-                m_adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
-            }
-
             m_id = id;
             m_baseUtcOffset = baseUtcOffset;
             m_displayName = displayName;
             m_standardDisplayName = standardDisplayName;
             m_daylightDisplayName = (disableDaylightSavingTime ? null : daylightDisplayName);
             m_supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
+            m_adjustmentRules = adjustmentRules;
         }
 
         // -------- SECTION: factory methods -----------------*
@@ -1312,7 +1309,7 @@ namespace System {
                 String daylightDisplayName,
                 AdjustmentRule [] adjustmentRules) {
 
-            return new TimeZoneInfo(
+            return CreateCustomTimeZone(
                            id,
                            baseUtcOffset,
                            displayName,
@@ -1341,7 +1338,11 @@ namespace System {
                 AdjustmentRule [] adjustmentRules,
                 Boolean disableDaylightSavingTime) {
 
-           return new TimeZoneInfo(
+            if (!disableDaylightSavingTime && adjustmentRules?.Length > 0) {
+                adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
+            }
+
+            return new TimeZoneInfo(
                            id,
                            baseUtcOffset,
                            displayName,
@@ -5073,7 +5074,7 @@ namespace System {
                 AdjustmentRule[] rules = s.GetNextAdjustmentRuleArrayValue(false);
 
                 try { 
-                    return TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardName, daylightName, rules);
+                    return new TimeZoneInfo(id, baseUtcOffset, displayName, standardName, daylightName, rules, disableDaylightSavingTime: false);
                 }
                 catch (ArgumentException ex) {
                     throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"), ex);
