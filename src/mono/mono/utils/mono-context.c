@@ -386,10 +386,16 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	memcpy (mctx->regs, UCONTEXT_GREGS (sigctx), sizeof (mgreg_t) * 31);
 	mctx->pc = UCONTEXT_REG_PC (sigctx);
 	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (sigctx);
-	/*
-	 * We don't handle fp regs, this is not currrently a
-	 * problem, since we don't allocate them globally.
-	 */
+#ifdef __linux__
+	struct fpsimd_context *fpctx = (struct fpsimd_context*)&((ucontext_t*)sigctx)->uc_mcontext.__reserved;
+	int i;
+
+	g_assert (fpctx->head.magic == FPSIMD_MAGIC);
+	for (i = 0; i < 32; ++i)
+		/* Only store the bottom 8 bytes for now */
+		*(guint64*)&(mctx->fregs [i]) = fpctx->vregs [i];
+#endif
+	/* FIXME: apple */
 #endif
 }
 
