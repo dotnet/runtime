@@ -206,11 +206,7 @@ namespace System.IO
                 // is generally the right thing to do.
                 if (stream != null) {
                     // Note: flush on the underlying stream can throw (ex., low disk space)
-#if FEATURE_CORECLR
                     if (disposing)
-#else
-                    if (disposing || (LeaveOpen && stream is __ConsoleStream))
-#endif
                     {
                         CheckAsyncTaskInProgress();
 

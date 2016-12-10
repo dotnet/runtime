@@ -132,10 +132,6 @@ namespace System.Threading
                 // remove the thread from the scheduler's queue for 10+ms, if the system is
                 // configured to use the (default) coarse-grained system timer.
                 //
-
-#if !FEATURE_CORECLR
-                CdsSyncEtwBCLProvider.Log.SpinWait_NextSpinWillYield();
-#endif
                 int yieldsSoFar = (m_count >= YIELD_THRESHOLD ? m_count - YIELD_THRESHOLD : m_count);
 
                 if ((yieldsSoFar % SLEEP_1_EVERY_HOW_MANY_TIMES) == (SLEEP_1_EVERY_HOW_MANY_TIMES - 1))

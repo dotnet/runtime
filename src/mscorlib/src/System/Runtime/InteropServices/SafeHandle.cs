@@ -134,8 +134,6 @@ using System.Runtime.Versioning;
 // we'll do this to ensure we've cut off all attack vectors.  Similarly, all
 // methods have a link demand to ensure untrusted code cannot directly edit
 // or alter a handle.
-#if !FEATURE_CORECLR
-#endif
 public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
 {
     // ! Do not add or rearrange fields as the EE depends on this layout.
@@ -180,14 +178,12 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
         _fullyInitialized = true;
     }
 
-#if FEATURE_CORECLR
     // Migrating InheritanceDemands requires this default ctor, so we can mark it critical
     protected SafeHandle()
     {
         BCLDebug.Assert(false, "SafeHandle's protected default ctor should never be used!");
         throw new NotImplementedException();
     }
-#endif
 
     ~SafeHandle()
     {

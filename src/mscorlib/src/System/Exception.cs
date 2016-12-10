@@ -910,10 +910,6 @@ namespace System {
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
     }
 
-
-
-#if FEATURE_CORECLR
-
     //--------------------------------------------------------------------------
     // Telesto: Telesto doesn't support appdomain marshaling of objects so
     // managed exceptions that leak across appdomain boundaries are flatted to
@@ -939,10 +935,6 @@ namespace System {
         {
             return Message;
         }
-    
     }
-#endif
-
-
 }
 

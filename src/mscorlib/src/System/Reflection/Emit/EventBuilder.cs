@@ -126,29 +126,6 @@ namespace System.Reflection.Emit {
             customBuilder.CreateCustomAttribute(m_module, m_evToken.Token);
         }
 
-#if !FEATURE_CORECLR
-        void _EventBuilder.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _EventBuilder.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _EventBuilder.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _EventBuilder.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
-
-
         // These are package private so that TypeBuilder can access them.
         private String              m_name;         // The name of the event
         private EventToken          m_evToken;      // The token of this event
@@ -156,8 +133,4 @@ namespace System.Reflection.Emit {
         private EventAttributes     m_attributes;
         private TypeBuilder         m_type;       
     }
-
-
-
-
 }

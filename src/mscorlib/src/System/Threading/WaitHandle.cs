@@ -27,7 +27,7 @@ namespace System.Threading
     using System.Diagnostics.CodeAnalysis;
     using Win32Native = Microsoft.Win32.Win32Native;
 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class WaitHandle : MarshalByRefObject, IDisposable {
         public const int WaitTimeout = 0x102;                    
 
@@ -76,9 +76,6 @@ namespace System.Threading
         public virtual IntPtr Handle 
         {
             get { return safeWaitHandle == null ? InvalidHandle : safeWaitHandle.DangerousGetHandle();}
-        
-#if !FEATURE_CORECLR
-#endif
             set
             {
                 if (value == InvalidHandle)
@@ -103,11 +100,8 @@ namespace System.Threading
             }
         }
 
-
         public SafeWaitHandle SafeWaitHandle 
         {
-#if !FEATURE_CORECLR
-#endif
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             get
             {
@@ -117,9 +111,7 @@ namespace System.Threading
                 }
                 return safeWaitHandle;
             }
-        
-#if !FEATURE_CORECLR
-#endif
+
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set
             {
@@ -273,11 +265,7 @@ namespace System.Threading
                 // in CoreCLR, and ArgumentNullException in the desktop CLR.  This is ugly, but so is breaking
                 // user code.
                 //
-#if FEATURE_CORECLR
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyWaithandleArray"));
-#else
-                throw new ArgumentNullException(nameof(waitHandles), Environment.GetResourceString("Argument_EmptyWaithandleArray"));
-#endif
             }
             if (waitHandles.Length > MAX_WAITHANDLES)
             {
@@ -519,14 +507,6 @@ namespace System.Threading
             //NOTE: This API is not supporting Pause/Resume as it's not exposed in CoreCLR (not in WP or SL)
             int ret = SignalAndWaitOne(toSignal.safeWaitHandle,toWaitOn.safeWaitHandle,millisecondsTimeout,
                                 toWaitOn.hasThreadAffinity,exitContext);
-
-#if !FEATURE_CORECLR
-            if(WAIT_FAILED != ret  && toSignal.hasThreadAffinity)
-            {
-                Thread.EndCriticalRegion();
-                Thread.EndThreadAffinity();
-            }
-#endif
 
             if(WAIT_ABANDONED == ret)
             {

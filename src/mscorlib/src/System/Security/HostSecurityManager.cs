@@ -35,8 +35,6 @@ namespace System.Security
     }
 
     [Serializable]
-#if !FEATURE_CORECLR
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class HostSecurityManager {
         public HostSecurityManager () {}

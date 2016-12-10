@@ -22,8 +22,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.ConstrainedExecution
 {
-#if !FEATURE_CORECLR
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CriticalFinalizerObject
     {

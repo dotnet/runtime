@@ -2522,17 +2522,15 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 // no adjustment is required in most cases
                 return DateTimeOffsetTimeZonePostProcessing(ref result, styles);
             }
-#if FEATURE_CORECLR // on CoreCLR DateTime is also restricted to +- 14:00, just like DateTimeOffset
             else {
                 Int64 offsetTicks = result.timeZoneOffset.Ticks;
-            
+
                 // the DateTime offset must be within +- 14:00 hours.
                 if (offsetTicks < DateTimeOffset.MinOffset || offsetTicks > DateTimeOffset.MaxOffset) {
                     result.SetFailure(ParseFailureKind.Format, "Format_OffsetOutOfRange", null);
                     return false;
                 }
             }
-#endif // FEATURE_CORECLR
 
             // The flags AssumeUniveral and AssumeLocal only apply when the input does not have a time zone
             if ((result.flags & ParseFlags.TimeZoneUsed) == 0) {

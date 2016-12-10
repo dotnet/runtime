@@ -26,9 +26,6 @@ namespace System.Reflection
     using System.Runtime.Versioning;
     using Microsoft.Win32;
     using System.Diagnostics.Contracts;
-#if !FEATURE_CORECLR
-    using Microsoft.Runtime.Hosting;
-#endif
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -73,83 +70,6 @@ namespace System.Reflection
             _publicKey = (byte[]) info.GetValue("_publicKey", typeof(byte[]));
         }
 
-#if! FEATURE_CORECLR
-        // Reference key pair in named key container.
-        public StrongNameKeyPair(String keyPairContainer)
-        {
-            if (keyPairContainer == null)
-                throw new ArgumentNullException(nameof(keyPairContainer));
-            Contract.EndContractBlock();
-
-            _keyPairContainer = keyPairContainer;
-
-            _keyPairExported = false;
-        }
-
-        // Get the public portion of the key pair.
-        public byte[] PublicKey
-        {
-            get
-            {
-                if (_publicKey == null)
-                {
-                    _publicKey = ComputePublicKey();
-                }
-
-                byte[] publicKey = new byte[_publicKey.Length];
-                Array.Copy(_publicKey, publicKey, _publicKey.Length);
-
-                return publicKey;
-            }
-        }
-
-        private unsafe byte[] ComputePublicKey()
-        {
-            byte[] publicKey = null;
-
-            // Make sure pbPublicKey is not leaked with async exceptions
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try {
-            }
-            finally
-            {
-                IntPtr pbPublicKey = IntPtr.Zero;
-                int cbPublicKey = 0;
-
-                try
-                {
-                    bool result;
-                    if (_keyPairExported)
-                    {
-                        result = StrongNameHelpers.StrongNameGetPublicKey(null, _keyPairArray, _keyPairArray.Length,
-                            out pbPublicKey, out cbPublicKey);
-                    }
-                    else
-                    {
-                        result = StrongNameHelpers.StrongNameGetPublicKey(_keyPairContainer, null, 0,
-                            out pbPublicKey, out cbPublicKey);
-                    }
-                    if (!result)
-                        throw new ArgumentException(Environment.GetResourceString("Argument_StrongNameGetPublicKey"));
-
-                    publicKey = new byte[cbPublicKey];
-                    Buffer.Memcpy(publicKey, 0, (byte*)(pbPublicKey.ToPointer()), 0, cbPublicKey);
-                }
-                finally
-                {
-                    if (pbPublicKey != IntPtr.Zero)
-                        StrongNameHelpers.StrongNameFreeBuffer(pbPublicKey);
-                }
-            }
-            return publicKey;
-        }
-        // Internal routine used to retrieve key pair info from unmanaged code.
-        private bool GetKeyPair(out Object arrayOrContainer)
-        {
-            arrayOrContainer = _keyPairExported ? (Object)_keyPairArray : (Object)_keyPairContainer;
-            return _keyPairExported;
-        }
-#else
         public StrongNameKeyPair(String keyPairContainer)
         {
             throw new PlatformNotSupportedException();
@@ -163,8 +83,6 @@ namespace System.Reflection
             }
         }
 
-#endif// FEATURE_CORECLR
-
         /// <internalonly/>
         void ISerializable.GetObjectData (SerializationInfo info, StreamingContext context) {
             info.AddValue("_keyPairExported", _keyPairExported);
@@ -175,6 +93,5 @@ namespace System.Reflection
 
         /// <internalonly/>
         void IDeserializationCallback.OnDeserialization (Object sender) {}
-
     }
 }

@@ -293,7 +293,6 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-#if FEATURE_CORECLR
     // NonRandomizedStringEqualityComparer is the comparer used by default with the Dictionary<string,...> 
     // As the randomized string hashing is turned on by default on coreclr, we need to keep the performance not affected 
     // as much as possible in the main stream scenarios like Dictionary<string,>
@@ -319,7 +318,6 @@ namespace System.Collections.Generic
             return obj.GetLegacyNonRandomizedHashCode();
         }
     }
-#endif // FEATURE_CORECLR
 
     // Performance of IndexOf on byte array is very important for some scenarios.
     // We will call the C runtime function memchr, which is optimized.

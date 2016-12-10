@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-#if FEATURE_CORECLR
-
 namespace System.Reflection.Emit
 {
     using System;
@@ -13,7 +9,6 @@ namespace System.Reflection.Emit
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Diagnostics.SymbolStore;
-
 
     //-----------------------------------------------------------------------------------
     // On Telesto, we don't ship the ISymWrapper.dll assembly. However, ReflectionEmit
@@ -693,11 +688,5 @@ namespace System.Reflection.Emit
             m_Release = (DRelease)(Marshal.GetDelegateForFunctionPointer(nGetDReleaseTarget(), typeof(DRelease)));
             m_Release((IntPtr)0); // make one call to make sure the delegate is fully prepped before we're in the critical finalizer situation.
         }
-
     } // PunkSafeHandle
-
 } //namespace System.Reflection.Emit
-
-
-#endif //FEATURE_CORECLR
-

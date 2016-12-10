@@ -211,22 +211,16 @@ internal class __Canon
 // This class is used to define the name of the base class library
 internal class CoreLib
 {
-
-#if FEATURE_CORECLR
     public const string Name = "System.Private.CoreLib";
-#else
-    public const string Name = "mscorlib";
-#endif 
 
     public static string FixupCoreLibName(string strToFixup)
     {
-#if FEATURE_CORECLR                        
         if (!String.IsNullOrEmpty(strToFixup))
         {    
             strToFixup = strToFixup.Replace("mscorlib", System.CoreLib.Name);
         }
-#endif   
-        return strToFixup;              
+
+        return strToFixup;
     }
 }
 

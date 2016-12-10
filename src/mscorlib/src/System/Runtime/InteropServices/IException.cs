@@ -22,41 +22,9 @@ namespace System.Runtime.InteropServices {
     [GuidAttribute("b36b5c63-42ef-38bc-a07e-0b34c98f164a")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
     [CLSCompliant(false)]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public interface _Exception
     {
-#if !FEATURE_CORECLR
-        // This contains all of our V1 Exception class's members.
-
-        // From Object
-        String ToString();
-        bool Equals (Object obj);
-        int GetHashCode ();
-        Type GetType ();
-
-        // From V1's Exception class
-        String Message {
-            get;
-        }
-
-        Exception GetBaseException();
-
-        String StackTrace {
-            get;
-        }
-
-        String HelpLink {
-            get;
-            set;
-        }
-
-        String Source {
-            get;
-            set;
-        }
-        void GetObjectData(SerializationInfo info, StreamingContext context);
-#endif
-
         //
         // This method is intentionally included in CoreCLR to make Exception.get_InnerException "newslot virtual final".
         // Some phone apps include MEF from desktop Silverlight. MEF's ComposablePartException depends on implicit interface 
@@ -66,12 +34,5 @@ namespace System.Runtime.InteropServices {
         Exception InnerException {
             get;
         }
-
-#if !FEATURE_CORECLR        
-        MethodBase TargetSite {
-            get;
-        }
-#endif
    }
-
 }

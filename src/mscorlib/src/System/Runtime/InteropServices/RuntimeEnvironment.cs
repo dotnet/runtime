@@ -23,24 +23,10 @@ using Microsoft.Win32;
 using System.Runtime.Versioning;
 using StackCrawlMark = System.Threading.StackCrawlMark;
 
-namespace System.Runtime.InteropServices {
-[System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_CORECLR
-    static
-#endif
-    public class RuntimeEnvironment {
-
-#if !FEATURE_CORECLR
-        // This should have been a static class, but wasn't as of v3.5.  Clearly, this is
-        // broken.  We'll keep this in V4 for binary compat, but marked obsolete as error
-        // so migrated source code gets fixed.  On Silverlight, this type exists but is
-        // not public.
-        [Obsolete("Do not create instances of the RuntimeEnvironment class.  Call the static methods directly on this type instead", true)]
-        public RuntimeEnvironment()
-        {
-            // Should not have been instantiable - here for binary compatibility in V4.
-        }
-#endif
+namespace System.Runtime.InteropServices
+{
+    [System.Runtime.InteropServices.ComVisible(true)]
+    static public class RuntimeEnvironment {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetModuleFileName();
@@ -51,36 +37,17 @@ namespace System.Runtime.InteropServices {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetHostBindingFile();
 
-#if !FEATURE_CORECLR
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        internal static extern void _GetSystemVersion(StringHandleOnStack retVer);
-#endif //!FEATURE_CORECLR
-
         public static bool FromGlobalAccessCache(Assembly a)
         {
             return a.GlobalAssemblyCache;
         }
-        
-#if !FEATURE_CORECLR
-#endif
+
         [MethodImpl (MethodImplOptions.NoInlining)]
         public static String GetSystemVersion()
         {
-#if FEATURE_CORECLR
-
             return Assembly.GetExecutingAssembly().ImageRuntimeVersion;
-
-#else // FEATURE_CORECLR
-
-            String ver = null;
-            _GetSystemVersion(JitHelpers.GetStringHandleOnStack(ref ver));
-            return ver;
-
-#endif // FEATURE_CORECLR
-
         }
-        
+
         public static String GetRuntimeDirectory()
         {
             String dir = GetRuntimeDirectoryImpl();
@@ -148,7 +115,6 @@ namespace System.Runtime.InteropServices {
                 }
             }
         }
-
 #endif // FEATURE_COMINTEROP
     }
 }

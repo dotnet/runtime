@@ -15,12 +15,9 @@
 **
 ===========================================================*/
 using System;
-#if FEATURE_CORECLR
 using System.Buffers;
-#endif
 using System.Threading;
 using System.Threading.Tasks;
-
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -117,7 +114,6 @@ namespace System.IO {
         {
             int bufferSize = _DefaultCopyBufferSize;
 
-#if FEATURE_CORECLR
             if (CanSeek)
             {
                 long length = Length;
@@ -146,8 +142,7 @@ namespace System.IO {
                         bufferSize = (int)Math.Min(bufferSize, remaining);
                 }
             }
-#endif // FEATURE_CORECLR
-            
+
             return CopyToAsync(destination, bufferSize);
         }
 
@@ -174,7 +169,6 @@ namespace System.IO {
             Contract.Requires(CanRead);
             Contract.Requires(destination.CanWrite);
 
-#if FEATURE_CORECLR
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             bufferSize = 0; // reuse same field for high water mark to avoid needing another field in the state machine
             try
@@ -192,15 +186,6 @@ namespace System.IO {
                 Array.Clear(buffer, 0, bufferSize); // clear only the most we used
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: false);
             }
-#else
-            byte[] buffer = new byte[bufferSize];
-            while (true)
-            {
-                int bytesRead = await ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-                if (bytesRead == 0) break;
-                await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
-            }
-#endif
         }
 
         // Reads the bytes from the current stream and writes the bytes to
@@ -210,7 +195,6 @@ namespace System.IO {
         {
             int bufferSize = _DefaultCopyBufferSize;
 
-#if FEATURE_CORECLR
             if (CanSeek)
             {
                 long length = Length;
@@ -229,8 +213,7 @@ namespace System.IO {
                         bufferSize = (int)Math.Min(bufferSize, remaining);
                 }
             }
-#endif // FEATURE_CORECLR
-            
+
             CopyTo(destination, bufferSize);
         }
 
@@ -238,7 +221,6 @@ namespace System.IO {
         {
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
-#if FEATURE_CORECLR
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             int highwaterMark = 0;
             try
@@ -255,14 +237,6 @@ namespace System.IO {
                 Array.Clear(buffer, 0, highwaterMark); // clear only the most we used
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: false);
             }
-#else
-            byte[] buffer = new byte[bufferSize];
-            int read;
-            while ((read = Read(buffer, 0, buffer.Length)) != 0)
-            {
-                destination.Write(buffer, 0, read);
-            }
-#endif
         }
 
         // Stream used to require that all cleanup logic went into Close(),
