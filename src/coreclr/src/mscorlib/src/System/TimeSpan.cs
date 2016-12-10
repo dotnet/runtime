@@ -28,7 +28,7 @@ namespace System {
     // details of this type should change, or new fields added, we need to remember to add
     // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable] public struct TimeSpan : IComparable
         , IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable
     {
@@ -406,24 +406,8 @@ namespace System {
         //        [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework]
         //        "TimeSpan_LegacyFormatMode"=dword:00000001
         //
-#if !FEATURE_CORECLR
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool LegacyFormatMode();
-#endif // !FEATURE_CORECLR
-        //
-        // In Silverlight v4, specifying the APP_EARLIER_THAN_SL4.0 quirks mode allows applications to
-        // run in v2 - v3 legacy behavior.
-        //
-#if !FEATURE_CORECLR
-#endif
         private static bool GetLegacyFormatMode() {
-#if !FEATURE_CORECLR
-            if (LegacyFormatMode()) // FCALL to check COMPlus_TimeSpan_LegacyFormatMode
-                return true;
-            return CompatibilitySwitches.IsNetFx40TimeSpanLegacyFormatMode;
-#else
             return false;
-#endif // !FEATURE_CORECLR
         }
 
         private static volatile bool _legacyConfigChecked;

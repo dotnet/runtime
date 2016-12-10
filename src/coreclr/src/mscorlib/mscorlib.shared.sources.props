@@ -133,7 +133,6 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\IRegistrationServices.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ITypeLibConverter.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\RegistrationServices.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TypeLibConverter.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIBindCtx.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIConnectionPointContainer.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIConnectionPoint.cs" />

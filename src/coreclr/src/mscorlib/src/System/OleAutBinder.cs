@@ -59,24 +59,6 @@ namespace System {
                 return Enum.Parse(type, value.ToString());
             }
 
-#if !FEATURE_CORECLR
-            // Special case the convertion from DBNull.
-            if (srcType == typeof(DBNull))
-            {
-                // The requested type is a DBNull so no convertion is required.            
-                if (type == typeof(DBNull))
-                    return value;
-
-                // Visual J++ supported converting from DBNull to null so customers
-                // have requested (via a CDCR) that DBNull be convertible to null.
-                // We don't however allow this when converting to a value class, since null
-                // doesn't make sense for these, or to object since this would change existing
-                // semantics.               
-                if ((type.IsClass && type != typeof(Object)) || type.IsInterface)
-                    return null;
-            }
-#endif //!FEATURE_CORECLR
-
             // Use the OA variant lib to convert primitive types.
             try
             {
@@ -106,7 +88,5 @@ namespace System {
                 throw new COMException(Environment.GetResourceString("Interop.COM_TypeMismatch"), unchecked((int)0x80020005));
             }
         }
-        
-        
     }
 }

@@ -1125,14 +1125,8 @@ namespace System
             bool omitEmptyEntries = (options == StringSplitOptions.RemoveEmptyEntries);
 
             if ((count == 0) || (omitEmptyEntries && this.Length == 0)) 
-            {           
-#if FEATURE_CORECLR
+            {
                 return EmptyArray<String>.Value;
-#else
-                // Keep the old behavior of returning a new empty array
-                // to mitigate any potential compat risk.
-                return new String[0];
-#endif
             }
 
             if (count == 1)
@@ -1140,13 +1134,13 @@ namespace System
                 return new String[] { this };
             }
             
-            int[] sepList = new int[Length];            
+            int[] sepList = new int[Length];
             int numReplaces = MakeSeparatorList(separators, separatorsLength, sepList);
             
             // Handle the special case of no replaces.
             if (0 == numReplaces) {
                 return new String[] { this };
-            }            
+            }
 
             if(omitEmptyEntries) 
             {
@@ -1155,7 +1149,7 @@ namespace System
             else 
             {
                 return SplitKeepEmptyEntries(sepList, null, 1, numReplaces, count);
-            }            
+            }
         }
 
         [ComVisible(false)]
@@ -1203,13 +1197,7 @@ namespace System
             }
             
             if ((count == 0) || (omitEmptyEntries && this.Length ==0)) {
-#if FEATURE_CORECLR
                 return EmptyArray<String>.Value;
-#else
-                // Keep the old behavior of returning a new empty array
-                // to mitigate any potential compat risk.
-                return new String[0];
-#endif
             }
 
             if (count == 1 || (singleSeparator && separator.Length == 0)) {

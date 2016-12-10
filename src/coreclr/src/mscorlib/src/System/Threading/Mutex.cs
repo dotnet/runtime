@@ -176,22 +176,14 @@ namespace System.Threading
             MutexCleanupInfo cleanupInfo = (MutexCleanupInfo) userData;
             
             // If hasThreadAffinity isn't true, we've thrown an exception in the above try, and we must free the mutex 
-            // on this OS thread before ending our thread affninity.                
+            // on this OS thread before ending our thread affninity.
             if(!hasThreadAffinity) {
                 if (cleanupInfo.mutexHandle != null && !cleanupInfo.mutexHandle.IsInvalid) {
                     if( cleanupInfo.inCriticalRegion) {
-                        Win32Native.ReleaseMutex(cleanupInfo.mutexHandle);                    
+                        Win32Native.ReleaseMutex(cleanupInfo.mutexHandle);
                     }
-                    cleanupInfo.mutexHandle.Dispose();                        
-                    
+                    cleanupInfo.mutexHandle.Dispose();
                 }
-                    
-                if( cleanupInfo.inCriticalRegion) {
-#if !FEATURE_CORECLR
-                    Thread.EndCriticalRegion();
-                    Thread.EndThreadAffinity();
-#endif
-                }                    
             }
         }
 

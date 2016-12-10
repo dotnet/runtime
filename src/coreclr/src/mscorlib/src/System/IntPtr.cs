@@ -103,15 +103,11 @@ namespace System {
         }
     
         public unsafe override int GetHashCode() {
-#if FEATURE_CORECLR
 #if BIT64
             long l = (long)m_value;
             return (unchecked((int)l) ^ (int)(l >> 32));
 #else // !BIT64 (32)
             return unchecked((int)m_value);
-#endif
-#else
-            return unchecked((int)((long)m_value));
 #endif
         }
 

@@ -717,14 +717,6 @@ namespace System
 
             info.AddValue("TypeObj", m_type, typeof(RuntimeType));
         }
-
-#if !FEATURE_CORECLR
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsEquivalentType(RuntimeType type);
-#endif // FEATURE_CORECLR
     }
 
     // This type is used to remove the expense of having a managed reference object that is dynamically 
@@ -1038,17 +1030,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static extern internal uint GetSpecialSecurityFlags(IRuntimeMethodInfo method);
 
-#if !FEATURE_CORECLR
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static extern internal void PerformSecurityCheck(Object obj, RuntimeMethodHandleInternal method, RuntimeType parent, uint invocationFlags);
-
-        static internal void PerformSecurityCheck(Object obj, IRuntimeMethodInfo method, RuntimeType parent, uint invocationFlags)
-        {
-            RuntimeMethodHandle.PerformSecurityCheck(obj, method.Value, parent, invocationFlags);
-            GC.KeepAlive(method);
-            return;
-        }
-#endif //!FEATURE_CORECLR
 #endregion
 
         [DebuggerStepThroughAttribute]

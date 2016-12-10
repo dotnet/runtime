@@ -1516,44 +1516,6 @@ namespace  System.StubHelpers {
 #endif
     }  // struct NativeVariant
 
-#if !BIT64 && !FEATURE_CORECLR
-    // Structure filled by IL stubs if copy constructor(s) and destructor(s) need to be called
-    // on value types pushed on the stack. The structure is stored in s_copyCtorStubDesc by
-    // SetCopyCtorCookieChain and fetched by CopyCtorCallStubWorker. Must be stack-allocated.
-    [StructLayout(LayoutKind.Sequential)]
-    unsafe internal struct CopyCtorStubCookie
-    {
-        public void SetData(IntPtr srcInstancePtr, uint dstStackOffset, IntPtr ctorPtr, IntPtr dtorPtr)
-        {
-            m_srcInstancePtr = srcInstancePtr;
-            m_dstStackOffset = dstStackOffset;
-            m_ctorPtr = ctorPtr;
-            m_dtorPtr = dtorPtr;
-        }
-
-        public void SetNext(IntPtr pNext)
-        {
-            m_pNext = pNext;
-        }
-
-        public IntPtr m_srcInstancePtr; // pointer to the source instance
-        public uint   m_dstStackOffset; // offset from the start of stack arguments of the pushed 'this' instance
-
-        public IntPtr m_ctorPtr;        // fnptr to the managed copy constructor, result of ldftn
-        public IntPtr m_dtorPtr;        // fnptr to the managed destructor, result of ldftn
-
-        public IntPtr m_pNext;          // pointer to next cookie in the chain or IntPtr.Zero
-    }  // struct CopyCtorStubCookie
-
-    // Aggregates pointer to CopyCtorStubCookie and the target of the interop call.
-    [StructLayout(LayoutKind.Sequential)]
-    unsafe internal struct CopyCtorStubDesc
-    {
-        public IntPtr m_pCookie;
-        public IntPtr m_pTarget;
-    }  // struct CopyCtorStubDes
-#endif // !BIT64 && !FEATURE_CORECLR
-
     // Aggregates SafeHandle and the "owned" bit which indicates whether the SafeHandle
     // has been successfully AddRef'ed. This allows us to do realiable cleanup (Release)
     // if and only if it is needed.
@@ -1609,33 +1571,8 @@ namespace  System.StubHelpers {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern IntPtr GetDelegateTarget(Delegate pThis, ref IntPtr pStubArg);
 
-#if !BIT64 && !FEATURE_CORECLR
-        // Written to by a managed stub helper, read by CopyCtorCallStubWorker in VM.
-        [ThreadStatic]
-        static CopyCtorStubDesc s_copyCtorStubDesc;
-
-        static internal void SetCopyCtorCookieChain(IntPtr pStubArg, IntPtr pUnmngThis, int dwStubFlags, IntPtr pCookie)
-        {
-            // we store both the cookie chain head and the target of the copy ctor stub to a thread
-            // static field to be accessed by the copy ctor (see code:CopyCtorCallStubWorker)
-            s_copyCtorStubDesc.m_pCookie = pCookie;
-            s_copyCtorStubDesc.m_pTarget = GetFinalStubTarget(pStubArg, pUnmngThis, dwStubFlags);
-        }
-
-        // Returns the final unmanaged stub target, ignores interceptors.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern IntPtr GetFinalStubTarget(IntPtr pStubArg, IntPtr pUnmngThis, int dwStubFlags);
-#endif // !FEATURE_CORECLR && !BIT64
-
-#if !FEATURE_CORECLR
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern void DemandPermission(IntPtr pNMD);
-#endif // !FEATURE_CORECLR
-
-#if FEATURE_CORECLR
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern void ClearLastError();
-#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern void SetLastError();

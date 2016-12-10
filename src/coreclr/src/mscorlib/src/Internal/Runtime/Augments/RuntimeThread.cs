@@ -165,9 +165,6 @@ namespace Internal.Runtime.Augments
         ** thread is not currently blocked in that manner, it will be interrupted
         ** when it next begins to block.
         =========================================================================*/
-#if FEATURE_CORECLR
-#else
-#endif
 #pragma warning disable 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
 #pragma warning restore 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
         public void Interrupt() => InterruptInternal();

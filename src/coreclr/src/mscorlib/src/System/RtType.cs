@@ -1489,9 +1489,6 @@ namespace System
             private MemberInfoCache<RuntimeEventInfo> m_eventInfoCache;
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
             private static Object s_methodInstantiationsLock;
-#if !FEATURE_CORECLR
-            private RuntimeConstructorInfo m_serializationCtor;
-#endif
             private string m_defaultMemberName;
             private Object m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
             #endregion
@@ -1640,26 +1637,6 @@ namespace System
             {
                 m_nestedClassesCache = null;
             }
-
-#if !FEATURE_CORECLR
-            internal RuntimeConstructorInfo GetSerializationCtor()
-            {
-                if (m_serializationCtor == null)
-                {
-                    if (s_SICtorParamTypes == null)
-                        s_SICtorParamTypes = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-
-                    m_serializationCtor = m_runtimeType.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                        null,
-                        CallingConventions.Any,
-                        s_SICtorParamTypes,
-                        null) as RuntimeConstructorInfo;
-                }
-
-                return m_serializationCtor;
-            }
-#endif //!FEATURE_CORECLR
 
             internal string GetDefaultMemberName()
             {
@@ -2617,13 +2594,6 @@ namespace System
         {
             return Cache.GetDefaultMemberName();
         }
-
-#if !FEATURE_CORECLR
-        internal RuntimeConstructorInfo GetSerializationCtor()
-        {
-            return Cache.GetSerializationCtor();
-        }
-#endif
         #endregion
 
         #region Type Overrides
@@ -3450,23 +3420,6 @@ namespace System
             return false;
         }
 
-#if !FEATURE_CORECLR
-        // Reflexive, symmetric, transitive.
-        public override bool IsEquivalentTo(Type other)
-        {
-            RuntimeType otherRtType = other as RuntimeType;
-            if ((object)otherRtType == null)
-                return false;
-
-            if (otherRtType == this)
-                return true;
-
-            // It's not worth trying to perform further checks in managed
-            // as they would lead to FCalls anyway.
-            return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
-        }
-#endif // FEATURE_CORECLR
-
         public override Type BaseType 
         {
             get 
@@ -3649,16 +3602,6 @@ namespace System
 
             return IsSubclassOf(typeof(ValueType));
         }
-
-#if !FEATURE_CORECLR
-        public override bool IsEnum
-        {
-            get
-            {
-                return GetBaseType() == RuntimeType.EnumType; 
-            }
-        }
-#endif
 
         protected override bool HasElementTypeImpl() 
         {
@@ -4601,18 +4544,6 @@ namespace System
             return RuntimeHelpers.GetHashCode(this);
         }
 
-#if !FEATURE_CORECLR
-        public static bool operator ==(RuntimeType left, RuntimeType right)
-        {
-            return object.ReferenceEquals(left, right);
-        }
-
-        public static bool operator !=(RuntimeType left, RuntimeType right)
-        {
-            return !object.ReferenceEquals(left, right);
-        }
-#endif // !FEATURE_CORECLR
-
         public override String ToString() 
         {
             return GetCachedName(TypeNameKind.ToString);
@@ -5025,9 +4956,7 @@ namespace System
                 bCanBeCached = false;
             }
 #endif
-#if FEATURE_CORECLR
             bSecurityCheckOff = true;       // CoreCLR does not use security at all.   
-#endif
 
             Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, bSecurityCheckOff, ref bCanBeCached, ref runtime_ctor, ref bNeedSecurityCheck);
 
@@ -5081,12 +5010,6 @@ namespace System
 
                     if (ace.m_ctor != null)
                     {
-#if !FEATURE_CORECLR
-                        // Perform security checks if needed
-                        if (ace.m_bNeedSecurityCheck)
-                            RuntimeMethodHandle.PerformSecurityCheck(instance, ace.m_hCtorMethodHandle, this, (uint)INVOCATION_FLAGS.INVOCATION_FLAGS_CONSTRUCTOR_INVOKE);
-#endif
-
                         // Call ctor (value types wont have any)
                         try
                         {

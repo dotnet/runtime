@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
     [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_MethodBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class MethodBuilder : MethodInfo, _MethodBuilder
     {
         #region Private Data Members
@@ -595,29 +595,17 @@ namespace System.Reflection.Emit
 
         public override bool IsSecurityCritical
         {
-#if FEATURE_CORECLR
             get { return true; }
-#else
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
-#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
-#endif
         }
 
         public override bool IsSecurityTransparent
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
-#endif
         }
         #endregion
 
@@ -1192,29 +1180,6 @@ namespace System.Reflection.Emit
         internal bool m_isDllImport = false;
 
         #endregion
-
-#if !FEATURE_CORECLR
-        void _MethodBuilder.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _MethodBuilder.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _MethodBuilder.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _MethodBuilder.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
-
     }
 
     internal class LocalSymInfo

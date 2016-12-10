@@ -17,9 +17,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-#if FEATURE_CORECLR
-using System.Diagnostics.Contracts;
-#endif
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -33,8 +30,6 @@ namespace System.Resources
         private CultureInfo m_neutralResourcesCulture;
         private bool m_useParents;
 
-// Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-#if FEATURE_CORECLR
         // This is a cache of the thread, process, user, and OS-preferred fallback cultures.
         // However, each thread may have a different value, and these may change during the
         // lifetime of the process.  So this cache must be verified each time we use it.
@@ -43,7 +38,6 @@ namespace System.Resources
         // as well to avoid differences across threads.
         [ThreadStatic]
         private static CultureInfo[] cachedOsFallbackArray;
-#endif // FEATURE_CORECLR
 
         internal ResourceFallbackManager(CultureInfo startingCulture, CultureInfo neutralResourcesCulture, bool useParents)
         {
@@ -91,8 +85,6 @@ namespace System.Resources
                 yield break;
             }
 
-// Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-#if FEATURE_CORECLR
             // 2. user preferred cultures, omitting starting culture if tried already
             //    Compat note: For console apps, this API will return cultures like Arabic
             //    or Hebrew that are displayed right-to-left.  These don't work with today's 
@@ -118,7 +110,6 @@ namespace System.Resources
                     }
                 }
             }
-#endif // FEATURE_CORECLR
 
             // 3. invariant
             //    Don't return invariant twice though.
@@ -128,8 +119,6 @@ namespace System.Resources
             yield return CultureInfo.InvariantCulture;
         }
 
-// Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-#if FEATURE_CORECLR
         private static CultureInfo[] LoadPreferredCultures()
         {
             // The list of preferred cultures includes thread, process, user, and OS
@@ -271,7 +260,5 @@ namespace System.Resources
             return CultureInfo.nativeGetResourceFallbackArray();
 #endif
         }
-
-#endif // FEATURE_CORECLR
     }
 }

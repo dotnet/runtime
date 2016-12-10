@@ -192,10 +192,8 @@ namespace System.Threading {
 #endif // FEATURE_LEAK_CULTURE_INFO
         }
 
-#if FEATURE_CORECLR
         // Adding an empty default ctor for annotation purposes
         internal Thread(){}
-#endif // FEATURE_CORECLR
 
         /*=========================================================================
         ** Creates a new Thread object which will begin execution at
@@ -324,7 +322,6 @@ namespace System.Threading {
             StartInternal(principal, ref stackMark);
         }
 
-#if FEATURE_CORECLR
         internal ExecutionContext ExecutionContext
         {
             get { return m_ExecutionContext; } 
@@ -335,78 +332,7 @@ namespace System.Threading {
         {
             get { return m_SynchronizationContext; }
             set { m_SynchronizationContext = value; }
-        }	
-#else // !FEATURE_CORECLR
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal ExecutionContext.Reader GetExecutionContextReader()
-        {
-            return new ExecutionContext.Reader(m_ExecutionContext);
         }
-
-        internal bool ExecutionContextBelongsToCurrentScope
-        {
-            get { return !m_ExecutionContextBelongsToOuterScope; }
-            set { m_ExecutionContextBelongsToOuterScope = !value; }
-        }
-
-#if DEBUG
-        internal bool ForbidExecutionContextMutation
-        {
-            set { m_ForbidExecutionContextMutation = value; }
-        }
-#endif
-
-        // note: please don't access this directly from mscorlib.  Use GetMutableExecutionContext or GetExecutionContextReader instead.
-        public  ExecutionContext ExecutionContext
-        {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-            get
-            {
-                ExecutionContext result;
-                if (this == Thread.CurrentThread)
-                    result = GetMutableExecutionContext();
-                else
-                    result = m_ExecutionContext;
-
-                return result;
-            }
-        }
-
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal ExecutionContext GetMutableExecutionContext()
-        {
-            Contract.Assert(Thread.CurrentThread == this);
-#if DEBUG
-            Contract.Assert(!m_ForbidExecutionContextMutation);
-#endif
-            if (m_ExecutionContext == null)
-            {
-                m_ExecutionContext = new ExecutionContext();
-            }
-            else if (!ExecutionContextBelongsToCurrentScope)
-            {
-                ExecutionContext copy = m_ExecutionContext.CreateMutableCopy();
-                m_ExecutionContext = copy;
-            }
-
-            ExecutionContextBelongsToCurrentScope = true;
-            return m_ExecutionContext;
-        }
-
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal void SetExecutionContext(ExecutionContext value, bool belongsToCurrentScope) 
-        {
-            m_ExecutionContext = value;
-            ExecutionContextBelongsToCurrentScope = belongsToCurrentScope;
-        }
-
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal void SetExecutionContext(ExecutionContext.Reader value, bool belongsToCurrentScope)
-        {
-            m_ExecutionContext = value.DangerousGetRawExecutionContext();
-            ExecutionContextBelongsToCurrentScope = belongsToCurrentScope;
-        }
-#endif //!FEATURE_CORECLR
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void StartInternal(IPrincipal principal, ref StackCrawlMark stackMark);
@@ -456,27 +382,9 @@ namespace System.Threading {
         ** If Abort is called twice on the same thread, a DuplicateThreadAbort
         ** exception is thrown.
         =========================================================================*/
-
-#if !FEATURE_CORECLR
-        public void Abort(Object stateInfo)
-        {
-            // If two aborts come at the same time, it is possible that the state info
-            //  gets set by one, and the actual abort gets delivered by another. But this
-            //  is not distinguishable by an application.
-            // The accessor helper will only set the value if it isn't already set,
-            //  and that particular bit of native code can test much faster than this
-            //  code could, because testing might cause a cross-appdomain marshalling.
-            AbortReason = stateInfo;
-
-            // Note: we demand ControlThread permission, then call AbortInternal directly
-            // rather than delegating to the Abort() function below. We do this to ensure
-            // that only callers with ControlThread are allowed to change the AbortReason
-            // of the thread. We call AbortInternal directly to avoid demanding the same
-            // permission twice.
-            AbortInternal();
-        }
-#endif
-
+#pragma warning disable 618
+        [SecurityPermissionAttribute(SecurityAction.Demand, ControlThread = true)]
+#pragma warning restore 618
         public void Abort()
         {
             AbortInternal();
@@ -486,115 +394,6 @@ namespace System.Threading {
         // ecalls/fcalls).
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void AbortInternal();
-
-#if !FEATURE_CORECLR
-        /*=========================================================================
-        ** Resets a thread abort.
-        ** Should be called by trusted code only
-          =========================================================================*/
-        public static void ResetAbort()
-        {
-            Thread thread = Thread.CurrentThread;
-            if ((thread.ThreadState & ThreadState.AbortRequested) == 0)
-                throw new ThreadStateException(Environment.GetResourceString("ThreadState_NoAbortRequested"));
-            thread.ResetAbortNative();
-            thread.ClearAbortReason();
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void ResetAbortNative();
-
-        /*=========================================================================
-        ** Suspends the thread. If the thread is already suspended, this call has
-        ** no effect.
-        **
-        ** Exceptions: ThreadStateException if the thread has not been started or
-        **             it is dead.
-        =========================================================================*/
-        public void Suspend() { SuspendInternal(); }
-
-        // Internal helper (since we can't place security demands on
-        // ecalls/fcalls).
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void SuspendInternal();
-
-        /*=========================================================================
-        ** Resumes a thread that has been suspended.
-        **
-        ** Exceptions: ThreadStateException if the thread has not been started or
-        **             it is dead or it isn't in the suspended state.
-        =========================================================================*/
-        [Obsolete("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
-        public void Resume() { ResumeInternal(); }
-
-        // Internal helper (since we can't place security demands on
-        // ecalls/fcalls).
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void ResumeInternal();
-
-        /*=========================================================================
-        ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
-        ** thread is not currently blocked in that manner, it will be interrupted
-        ** when it next begins to block.
-        =========================================================================*/
-        public new void Interrupt() => base.Interrupt();
-
-        /*=========================================================================
-        ** Returns the priority of the thread.
-        **
-        ** Exceptions: ThreadStateException if the thread is dead.
-        =========================================================================*/
-
-        public new ThreadPriority Priority
-        {
-            get
-            {
-                return base.Priority;
-            }
-            [HostProtection(SelfAffectingThreading = true)]
-            set
-            {
-                base.Priority = value;
-            }
-        }
-
-        /*=========================================================================
-        ** Returns true if the thread has been started and is not dead.
-        =========================================================================*/
-        public new bool IsAlive
-        {
-            get
-            {
-                return base.IsAlive;
-            }
-        }
-
-        /*=========================================================================
-        ** Returns true if the thread is a threadpool thread.
-        =========================================================================*/
-        public new bool IsThreadPoolThread
-        {
-            get
-            {
-                return base.IsThreadPoolThread;
-            }
-        }
-
-        /*=========================================================================
-        ** Waits for the thread to die or for timeout milliseconds to elapse.
-        ** Returns true if the thread died, or false if the wait timed out. If
-        ** Timeout.Infinite is given as the parameter, no timeout will occur.
-        **
-        ** Exceptions: ArgumentException if timeout < 0.
-        **             ThreadInterruptedException if the thread is interrupted while waiting.
-        **             ThreadStateException if the thread has not been started yet.
-        =========================================================================*/
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
-        public new void Join() => base.Join();
-
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
-        public new bool Join(int millisecondsTimeout) => base.Join(millisecondsTimeout);
-#endif // !FEATURE_CORECLR
 
         [HostProtection(Synchronization=true, ExternalThreading=true)]
         public bool Join(TimeSpan timeout)
@@ -675,25 +474,8 @@ namespace System.Threading {
 
         private void SetStartHelper(Delegate start, int maxStackSize)
         {
-#if FEATURE_CORECLR
             // We only support default stacks in CoreCLR
             Contract.Assert(maxStackSize == 0);
-#else
-            // Only fully-trusted code is allowed to create "large" stacks.  Partial-trust falls back to
-            // the default stack size.
-            ulong defaultStackSize = GetProcessDefaultStackSize();
-            if ((ulong)(uint)maxStackSize > defaultStackSize)
-            {
-                try
-                {
-                    SecurityPermission.Demand(PermissionType.FullTrust);
-                }
-                catch (SecurityException)
-                {
-                    maxStackSize = (int)Math.Min(defaultStackSize, (ulong)(uint)int.MaxValue);
-                }
-            }
-#endif
 
             ThreadHelper threadStartCallBack = new ThreadHelper(start);
             if(start is ThreadStart)
@@ -731,47 +513,6 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
 
-#if !FEATURE_CORECLR
-#if FEATURE_COMINTEROP
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public new void DisableComObjectEagerCleanup()
-        {
-            base.DisableComObjectEagerCleanup();
-        }
-#endif // FEATURE_COMINTEROP
-
-        /*=========================================================================
-        ** Return whether or not this thread is a background thread.  Background
-        ** threads do not affect when the Execution Engine shuts down.
-        **
-        ** Exceptions: ThreadStateException if the thread is dead.
-        =========================================================================*/
-        public new bool IsBackground
-        {
-            get
-            {
-                return base.IsBackground;
-            }
-            [HostProtection(SelfAffectingThreading = true)]
-            set
-            {
-                base.IsBackground = value;
-            }
-        }
-
-        /*=========================================================================
-        ** Return the thread state as a consistent set of bits.  This is more
-        ** general then IsAlive or IsBackground.
-        =========================================================================*/
-        public new ThreadState ThreadState
-        {
-            get
-            {
-                return base.ThreadState;
-            }
-        }
-#endif // !FEATURE_CORECLR
-
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         /*=========================================================================
         ** An unstarted thread can be marked to indicate that it will host a
@@ -794,13 +535,6 @@ namespace System.Threading {
                 SetApartmentStateNative((int)value, true);
             }
         }
-
-#if !FEATURE_CORECLR
-        public new ApartmentState GetApartmentState() => base.GetApartmentState();
-
-        [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
-        public new bool TrySetApartmentState(ApartmentState state) => base.TrySetApartmentState(state);
-#endif // !FEATURE_CORECLR
 
         [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
         public void SetApartmentState(ApartmentState state)
@@ -1198,38 +932,6 @@ namespace System.Threading {
             set { SetAbortReason(value); }
         }
 
-#if !FEATURE_CORECLR
-        /*
-         *  This marks the beginning of a critical code region.
-         */
-        [HostProtection(Synchronization=true, ExternalThreading=true)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        public static extern void BeginCriticalRegion();
-
-        /*
-         *  This marks the end of a critical code region.
-         */
-        [HostProtection(Synchronization=true, ExternalThreading=true)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public static extern void EndCriticalRegion();
-
-        /*
-         *  This marks the beginning of a code region that requires thread affinity.
-         */
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        public static extern void BeginThreadAffinity();
-
-        /*
-         *  This marks the end of a code region that requires thread affinity.
-         */
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        public static extern void EndThreadAffinity();
-#endif // !FEATURE_CORECLR
-
         /*=========================================================================
         ** Volatile Read & Write and MemoryBarrier methods.
         ** Provides the ability to read and write values ensuring that the values
@@ -1456,28 +1158,6 @@ namespace System.Threading {
                 return s_LocalDataStoreMgr;
             }
         }
-
-#if !FEATURE_CORECLR
-        void _Thread.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Thread.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Thread.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Thread.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
 
         // Helper function to set the AbortReason for a thread abort.
         //  Checks that they're not alredy set, and then atomically updates

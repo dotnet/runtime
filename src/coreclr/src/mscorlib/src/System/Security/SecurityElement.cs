@@ -623,23 +623,11 @@ namespace System.Security
             return sb.ToString();
         }
 
-#if !FEATURE_CORECLR
-        private static void ToStringHelperStreamWriter(Object obj, String str)
-        {
-            ((StreamWriter)obj).Write(str);
-        }
-
-        internal void ToWriter( StreamWriter writer )
-        {
-            ToString( "", writer, new ToStringHelperFunc( ToStringHelperStreamWriter ) );
-        }
-#endif
-
         private void ToString( String indent, Object obj, ToStringHelperFunc func )
         {
             // First add the indent
             
-            // func( obj, indent );                       
+            // func( obj, indent );
             
             // Add in the opening bracket and the tag.
             

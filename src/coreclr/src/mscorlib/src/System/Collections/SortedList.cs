@@ -60,10 +60,8 @@ namespace System.Collections {
     // 
     [DebuggerTypeProxy(typeof(System.Collections.SortedList.SortedListDebugView))]  
     [DebuggerDisplay("Count = {Count}")]
-[System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_CORECLR
+    [System.Runtime.InteropServices.ComVisible(true)]
     [Obsolete("Non-generic collections have been deprecated. Please use collections in System.Collections.Generic.")]
-#endif
     [Serializable]
     public class SortedList : IDictionary, ICloneable
     {

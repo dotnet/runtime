@@ -85,35 +85,6 @@ namespace System.Reflection
         public virtual Delegate CreateDelegate(Type delegateType) { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
         public virtual Delegate CreateDelegate(Type delegateType, Object target) { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
         #endregion
-
-#if !FEATURE_CORECLR
-        Type _MethodInfo.GetType()
-        {
-            return base.GetType();
-        }
-
-        void _MethodInfo.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _MethodInfo.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _MethodInfo.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        // If you implement this method, make sure to include _MethodInfo.Invoke in VM\DangerousAPIs.h and 
-        // include _MethodInfo in SystemDomain::IsReflectionInvocationMethod in AppDomain.cpp.
-        void _MethodInfo.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
     }
 
     [Serializable]
@@ -511,27 +482,15 @@ namespace System.Reflection
 
         public override bool IsSecurityCritical 
         {
-#if FEATURE_CORECLR
             get { return true; }
-#else
-            get { return RuntimeMethodHandle.IsSecurityCritical(this); }
-#endif
         }
         public override bool IsSecuritySafeCritical
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get { return RuntimeMethodHandle.IsSecuritySafeCritical(this); }
-#endif
         }
         public override bool IsSecurityTransparent
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get { return RuntimeMethodHandle.IsSecurityTransparent(this); }
-#endif
         }
 #endregion
 
@@ -592,11 +551,6 @@ namespace System.Reflection
             } 
         }
 
-#if !FEATURE_CORECLR
-#pragma warning disable 618
-        [ReflectionPermissionAttribute(SecurityAction.Demand, Flags = ReflectionPermissionFlag.MemberAccess)]
-#pragma warning restore 618
-#endif
         public override MethodBody GetMethodBody()
         {
             MethodBody mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
@@ -678,17 +632,6 @@ namespace System.Reflection
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
             }
 #endif
-
-#if !FEATURE_CORECLR
-            if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD | INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY)) != 0)
-            {
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD) != 0)
-                    CodeAccessPermission.Demand(PermissionType.ReflectionMemberAccess);
-
-                if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) != 0)
-                    RuntimeMethodHandle.PerformSecurityCheck(obj, this, m_declaringType, (uint)m_invocationFlags);
-            }
-#endif // !FEATURE_CORECLR
 #endregion
 
             return UnsafeInvokeInternal(obj, parameters, arguments);

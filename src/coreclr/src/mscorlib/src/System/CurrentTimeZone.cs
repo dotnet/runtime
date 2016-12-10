@@ -27,9 +27,7 @@ namespace System {
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
 
-#if FEATURE_CORECLR
     [Obsolete("System.CurrentSystemTimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo.Local instead.")]
-#endif
     [Serializable]
     internal class CurrentSystemTimeZone : TimeZone
     {
