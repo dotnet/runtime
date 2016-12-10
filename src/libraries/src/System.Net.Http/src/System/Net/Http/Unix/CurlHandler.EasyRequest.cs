@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -214,6 +215,9 @@ namespace System.Net.Http
 
                 // Dispose native callback resources
                 _callbackHandle?.Dispose();
+
+                // Release any send transfer state, which will return its buffer to the pool
+                _sendTransferState?.Dispose();
             }
 
             private void SetUrl()
@@ -791,20 +795,30 @@ namespace System.Net.Http
                 throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
             }
 
-            internal sealed class SendTransferState
+            internal sealed class SendTransferState : IDisposable
             {
-                internal readonly byte[] _buffer;
+                internal byte[] _buffer;
                 internal int _offset;
                 internal int _count;
                 internal Task<int> _task;
 
-                internal SendTransferState(int bufferLength)
+                public SendTransferState(int bufferLength)
                 {
                     Debug.Assert(bufferLength > 0 && bufferLength <= MaxRequestBufferSize, $"Expected 0 < bufferLength <= {MaxRequestBufferSize}, got {bufferLength}");
-                    _buffer = new byte[bufferLength];
+                    _buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
                 }
 
-                internal void SetTaskOffsetCount(Task<int> task, int offset, int count)
+                public void Dispose()
+                {
+                    byte[] buffer = _buffer;
+                    if (buffer != null)
+                    {
+                        _buffer = null;
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+                }
+
+                public void SetTaskOffsetCount(Task<int> task, int offset, int count)
                 {
                     Debug.Assert(offset >= 0, "Offset should never be negative");
                     Debug.Assert(count >= 0, "Count should never be negative");
