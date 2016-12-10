@@ -543,6 +543,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Threading.Ac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Threading.Overlapped-net_4_x", "mcs/class/Facades/System.Threading.Overlapped/Facades_System.Threading.Overlapped-net_4_x.csproj", "{E8BFEFD2-AAB9-45E6-8523-1F6AEB1918A2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.ValueTuple-net_4_x", "mcs/class/Facades/System.ValueTuple/Facades_System.ValueTuple-net_4_x.csproj", "{A8E6AADD-AD06-4AC1-ABFC-F0385876A3ED}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Xml.XPath.XDocument-net_4_x", "mcs/class/Facades/System.Xml.XPath.XDocument/Facades_System.Xml.XPath.XDocument-net_4_x.csproj", "{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Security.Cryptography.Primitives-net_4_x", "mcs/class/Facades/System.Security.Cryptography.Primitives/Facades_System.Security.Cryptography.Primitives-net_4_x.csproj", "{62880D99-1C4C-4D38-A8FE-57EF2C9E2150}"
@@ -1763,6 +1765,10 @@ Global
 		{E8BFEFD2-AAB9-45E6-8523-1F6AEB1918A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8BFEFD2-AAB9-45E6-8523-1F6AEB1918A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8BFEFD2-AAB9-45E6-8523-1F6AEB1918A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8E6AADD-AD06-4AC1-ABFC-F0385876A3ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8E6AADD-AD06-4AC1-ABFC-F0385876A3ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8E6AADD-AD06-4AC1-ABFC-F0385876A3ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8E6AADD-AD06-4AC1-ABFC-F0385876A3ED}.Release|Any CPU.Build.0 = Release|Any CPU
 		{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}.Release|Any CPU.ActiveCfg = Release|Any CPU

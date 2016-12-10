@@ -4840,6 +4840,17 @@
       <resources></resources>
       <response>System.Threading.Overlapped.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.ValueTuple" library="Facades_System.ValueTuple-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
+      <output>System.ValueTuple.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.ValueTuple.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.ValueTuple.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.Xml.XPath.XDocument" library="Facades_System.Xml.XPath.XDocument-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.Xml.Linq.dll</flags>
