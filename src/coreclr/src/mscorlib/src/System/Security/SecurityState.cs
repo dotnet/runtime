@@ -14,13 +14,10 @@ namespace System.Security
         public bool IsStateAvailable()
         {
             AppDomainManager domainManager = AppDomainManager.CurrentAppDomainManager;
-#if FEATURE_CORECLR
+
             // CheckSecuritySettings only when appdomainManager is present. So if there is no 
             // appDomain Manager return true as by default coreclr runs in fulltrust. 
             return domainManager != null ? domainManager.CheckSecuritySettings(this) : true;
-#else
-            return domainManager != null ? domainManager.CheckSecuritySettings(this) : false;
-#endif
         }
         // override this function and throw the appropriate 
         public abstract void EnsureState();

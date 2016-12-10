@@ -152,11 +152,8 @@ namespace System.Threading
 #pragma warning restore 169
         internal NativeOverlapped m_nativeOverlapped;
 
-#if FEATURE_CORECLR
         // Adding an empty default ctor for annotation purposes
         internal OverlappedData(){}
-#endif // FEATURE_CORECLR
-
 
         internal void ReInitialize()
         {

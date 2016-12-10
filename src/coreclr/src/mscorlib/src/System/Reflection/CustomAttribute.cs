@@ -1370,16 +1370,7 @@ namespace System.Reflection
 
         private static bool SpecialAllowCriticalAttributes(RuntimeType type)
         {
-            // Types participating in Type Equivalence are always transparent.
-            // See TokenSecurityDescriptor::VerifySemanticDataComputed in securitymeta.cpp.
-            // Because of that we allow critical attributes applied to full trust equivalent types.
-            // DeclaringType is null for global methods and fields and the global type never participates in type equivalency.
-
-#if FEATURE_CORECLR
             return false;
-#else
-            return type != null && type.Assembly.IsFullyTrusted && RuntimeTypeHandle.IsEquivalentType(type);
-#endif //!FEATURE_CORECLR
         }
 
         private static bool AllowCriticalCustomAttributes(MethodBase method)

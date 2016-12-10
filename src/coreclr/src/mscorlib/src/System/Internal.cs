@@ -85,16 +85,15 @@ namespace System
             new Dictionary<Object, UInt32>();
             new Dictionary<UInt32, Object>();
             new Dictionary<Int64, Object>();
-#if FEATURE_CORECLR
+
             // to genereate mdil for Dictionary instantiation when key is user defined value type
             new Dictionary<Guid, Int32>();
-#endif
 
-        // Microsoft.Windows.Design
+            // Microsoft.Windows.Design
             new Dictionary<System.Reflection.MemberTypes, Object>();
             new EnumEqualityComparer<System.Reflection.MemberTypes>();
 
-        // Microsoft.Expression.DesignModel
+            // Microsoft.Expression.DesignModel
             new Dictionary<Object, KeyValuePair<Object,Object>>();
             new Dictionary<KeyValuePair<Object,Object>, Object>();
 
@@ -157,14 +156,12 @@ namespace System
             SZArrayHelper<CustomAttributeTypedArgument>(null);
             SZArrayHelper<CustomAttributeNamedArgument>(null);
 
-#if FEATURE_CORECLR
 #pragma warning disable 4014
             // This is necessary to generate MDIL for AsyncVoidMethodBuilder
             AsyncHelper<int>();
             AsyncHelper2<int>();
             AsyncHelper3();
 #pragma warning restore 4014
-#endif
         }
 
         static T NullableHelper<T>() where T : struct
@@ -183,7 +180,6 @@ namespace System
             oSZArrayHelper.GetEnumerator<T>();
         }
 
-#if FEATURE_CORECLR
         // System.Runtime.CompilerServices.AsyncVoidMethodBuilder
         // System.Runtime.CompilerServices.TaskAwaiter
         static async void AsyncHelper<T>()
@@ -203,7 +199,6 @@ namespace System
         {
             await Task.FromResult<string>("");
         }
-#endif
 
 #if FEATURE_COMINTEROP
 

@@ -30,7 +30,6 @@ namespace System
 
             if (!TryParseFrameworkName(targetFrameworkMoniker, out identifier, out version, out profile))
             {
-#if FEATURE_CORECLR
                 // If we can't parse the TFM or we don't have a TFM, default to latest behavior for all 
                 // switches (ie. all of them false).
                 // If we want to use the latest behavior it is enough to set the value of the switch to string.Empty.
@@ -39,11 +38,6 @@ namespace System
                 // identifier we are simply saying -- don't turn on any switches, and we are going to get the latest
                 // behavior for all the switches
                 identifier = string.Empty;
-#else
-                identifier = ".NETFramework";		
-                version = 40000;		
-                profile = string.Empty;
-#endif
             }
         }
 

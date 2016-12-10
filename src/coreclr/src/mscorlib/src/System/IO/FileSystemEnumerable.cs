@@ -221,7 +221,7 @@ namespace System.IO
                 // Do a demand on the combined path so that we can fail early in case of deny
                 demandPaths[1] = Directory.GetDemandDir(normalizedSearchPath, true);
                 _checkHost = checkHost;
-#if FEATURE_CORECLR
+
                 if (checkHost)
                 {
                     FileSecurityState state1 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[0]);
@@ -229,9 +229,6 @@ namespace System.IO
                     FileSecurityState state2 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[1]);
                     state2.EnsureState();
                 }
-#else
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandPaths, false, false).Demand();
-#endif
 
                 // normalize search criteria
                 searchCriteria = GetNormalizedSearchCriteria(fullSearchString, normalizedSearchPath);
@@ -325,7 +322,7 @@ namespace System.IO
                 // For filters like foo\*.cs we need to verify if the directory foo is not denied access.
                 // Do a demand on the combined path so that we can fail early in case of deny
                 demandPaths[1] = Directory.GetDemandDir(normalizedSearchPath, true);
-#if FEATURE_CORECLR
+
                 if (checkHost) 
                 {
                     FileSecurityState state1 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[0]);
@@ -333,9 +330,7 @@ namespace System.IO
                     FileSecurityState state2 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[1]);
                     state2.EnsureState();
                 }
-#else
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandPaths, false, false).Demand();
-#endif
+
                 searchData = new Directory.SearchData(normalizedSearchPath, userPath, searchOption);
                 CommonInit();
             }
@@ -571,17 +566,11 @@ namespace System.IO
 
         internal void DoDemand(String fullPathToDemand)
         {
-#if FEATURE_CORECLR
             if(_checkHost) {
                 String demandDir = Directory.GetDemandDir(fullPathToDemand, true);
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandDir);
                 state.EnsureState();
             }
-#else
-            String demandDir = Directory.GetDemandDir(fullPathToDemand, true);
-            String[] demandPaths = new String[] { demandDir };
-            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandPaths, false, false).Demand();
-#endif
         }
 
         private static String NormalizeSearchPattern(String searchPattern)
@@ -684,13 +673,10 @@ namespace System.IO
         internal override FileInfo CreateObject(SearchResult result)
         {
             String name = result.FullPath;
-#if FEATURE_CORECLR
+
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, name);
             state.EnsureState();
-#else
-            String[] names = new String[] { name };
-            new FileIOPermission(FileIOPermissionAccess.Read, names, false, false).Demand();
-#endif
+
             FileInfo fi = new FileInfo(name, false);
             fi.InitializeFrom(result.FindData);
             return fi;
@@ -708,14 +694,10 @@ namespace System.IO
         {
             String name = result.FullPath;
             String permissionName = name + "\\.";
-            
-#if FEATURE_CORECLR
+
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, permissionName);
             state.EnsureState();
-#else
-            String[] permissionNames = new String[] { permissionName };
-            new FileIOPermission(FileIOPermissionAccess.Read, permissionNames, false, false).Demand();
-#endif
+
             DirectoryInfo di = new DirectoryInfo(name, false);
             di.InitializeFrom(result.FindData);
             return di;
@@ -744,13 +726,9 @@ namespace System.IO
                 String name = result.FullPath;
                 String permissionName = name + "\\.";
 
-#if FEATURE_CORECLR
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, permissionName);
                 state.EnsureState();
-#else
-                String[] permissionNames = new String[] { permissionName };
-                new FileIOPermission(FileIOPermissionAccess.Read, permissionNames, false, false).Demand();
-#endif
+
                 DirectoryInfo di = new DirectoryInfo(name, false);
                 di.InitializeFrom(result.FindData);
                 return di;
@@ -760,13 +738,9 @@ namespace System.IO
                 Contract.Assert(isFile);
                 String name = result.FullPath;
 
-#if FEATURE_CORECLR
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, name);
                 state.EnsureState();
-#else
-                String[] names = new String[] { name };
-                new FileIOPermission(FileIOPermissionAccess.Read, names, false, false).Demand();
-#endif
+
                 FileInfo fi = new FileInfo(name, false);
                 fi.InitializeFrom(result.FindData);
                 return fi;

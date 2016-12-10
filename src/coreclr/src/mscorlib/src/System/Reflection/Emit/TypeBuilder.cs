@@ -654,25 +654,6 @@ namespace System.Reflection.Emit {
             if ((m_iPackingSize != 0) ||(m_iTypeSize != 0))
                 SetClassLayout(GetModuleBuilder().GetNativeHandle(), m_tdType.Token, m_iPackingSize, m_iTypeSize);
 
-#if !FEATURE_CORECLR
-            // If the type is public and it is contained in a assemblyBuilder,
-            // update the public COMType list.
-            if (IsPublicComType(this))
-            {
-                if (containingAssem.IsPersistable() && m_module.IsTransient() == false)
-                {
-                    // This will throw InvalidOperationException if the assembly has been saved
-                    // Ideally we should reject all emit operations if the assembly has been saved,
-                    // but that would be a breaking change for some. Currently you cannot define 
-                    // modules and public types, but you can still define private types and global methods.
-                    containingAssem.m_assemblyData.AddPublicComType(this);
-                }
-
-                // Now add the type to the ExportedType table
-                if (!m_module.Equals(containingAssem.ManifestModule))
-                    containingAssem.DefineExportedTypeInMemory(this, m_module.m_moduleData.FileToken, m_tdType.Token);
-            }
-#endif
             m_module.AddType(FullName, this);
         }
 
@@ -1326,50 +1307,17 @@ namespace System.Reflection.Emit {
 
         public override bool IsSecurityCritical
         {
-#if FEATURE_CORECLR
             get { return true; }
-#else
-            get
-            {
-                if (!IsCreated())
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_TypeNotYetCreated"));
-                Contract.EndContractBlock();
-
-                return m_bakedRuntimeType.IsSecurityCritical;
-            }
-#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get
-            {
-                if (!IsCreated())
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_TypeNotYetCreated"));
-                Contract.EndContractBlock();
-
-                return m_bakedRuntimeType.IsSecuritySafeCritical;
-            }
-#endif
         }
 
         public override bool IsSecurityTransparent
         {
-#if FEATURE_CORECLR
             get { return false; }
-#else
-            get
-            {
-                if (!IsCreated())
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_TypeNotYetCreated"));
-                Contract.EndContractBlock();
-
-                return m_bakedRuntimeType.IsSecurityTransparent;
-            }
-#endif
         }
 
         [System.Runtime.InteropServices.ComVisible(true)]
@@ -2453,27 +2401,5 @@ public TypeToken TypeToken
         #endregion
 
         #endregion
-
-#if !FEATURE_CORECLR
-        void _TypeBuilder.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _TypeBuilder.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _TypeBuilder.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _TypeBuilder.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
-        }
-#endif
     }
 }

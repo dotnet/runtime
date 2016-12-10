@@ -78,24 +78,6 @@ namespace System.Resources {
             }
         }
 
-#if !FEATURE_CORECLR   // PAL doesn't support eventing, and we don't compile event providers for coreclr
-        public bool HasNeutralResources(CultureInfo culture, String defaultResName)
-        {
-            // Detect missing neutral locale resources.
-            String defaultResPath = FindResourceFile(culture, defaultResName);
-            if (defaultResPath == null || !File.Exists(defaultResPath))
-            {
-                String dir = _mediator.ModuleDir;
-                if (defaultResPath != null)
-                {
-                    dir = Path.GetDirectoryName(defaultResPath);
-                }
-                return false;
-            }
-            return true;
-        }
-#endif
-
         // Given a CultureInfo, it generates the path &; file name for 
         // the .resources file for that CultureInfo.  This method will grovel
         // the disk looking for the correct file name & path.  Uses CultureInfo's

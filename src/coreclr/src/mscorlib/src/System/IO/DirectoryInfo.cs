@@ -129,12 +129,10 @@ namespace System.IO
                 if (parentName==null)
                     return null;
                 DirectoryInfo dir = new DirectoryInfo(parentName,false);
-#if FEATURE_CORECLR
+
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery | FileSecurityStateAccess.Read, String.Empty, dir.demandDir[0]);
                 state.EnsureState();
-#else
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery | FileIOPermissionAccess.Read, dir.demandDir, false, false).Demand();
-#endif
+
                 return dir;
             }
         }
@@ -455,12 +453,9 @@ namespace System.IO
                 String rootPath = FullPath.Substring(0, rootLength);
                 demandPath = Directory.GetDemandDir(rootPath, true);
 
-#if FEATURE_CORECLR
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPath);
                 sourceState.EnsureState();
-#else
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, new String[] { demandPath }, false, false).Demand();
-#endif
+
                 return new DirectoryInfo(rootPath);
             }
         }
@@ -471,13 +466,10 @@ namespace System.IO
             if (destDirName.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destDirName));
             Contract.EndContractBlock();
-            
-#if FEATURE_CORECLR
+
             FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, DisplayPath, Directory.GetDemandDir(FullPath, true));
             sourceState.EnsureState();
-#else
-            new FileIOPermission(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, demandDir, false, false).Demand();
-#endif
+
             String fullDestDirName = Path.GetFullPath(destDirName);
             String demandPath;
             if (!fullDestDirName.EndsWith(Path.DirectorySeparatorChar))
@@ -491,13 +483,9 @@ namespace System.IO
             // had the ability to read the file contents in the old location,
             // but you technically also need read permissions to the new 
             // location as well, and write is not a true superset of read.
-#if FEATURE_CORECLR
             FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destDirName, demandPath);
             destState.EnsureState();
-#else
-            new FileIOPermission(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, demandPath).Demand();
-#endif
-            
+
             String fullSourcePath;
             if (FullPath.EndsWith(Path.DirectorySeparatorChar))
                 fullSourcePath = FullPath;
@@ -566,11 +554,7 @@ namespace System.IO
             }
             else 
             {
-#if FEATURE_CORECLR
                 displayName = GetDirName(fullPath);
-#else
-                displayName = originalPath;
-#endif
             }
             return displayName;
         }

@@ -133,18 +133,9 @@ namespace System.Globalization {
 
         private void SetName(string name)
         {
-#if FEATURE_CORECLR
             // Use the name of the region we found
             this.m_name = this.m_cultureData.SREGIONNAME;
-#else
-            // when creating region by culture name, we keep the region name as the culture name so regions
-            // created by custom culture names can be differentiated from built in regions.
-            this.m_name = name.Equals(this.m_cultureData.SREGIONNAME, StringComparison.OrdinalIgnoreCase) ? 
-                                this.m_cultureData.SREGIONNAME : 
-                                this.m_cultureData.CultureName;
-#endif // FEATURE_CORECLR
         }
-        
 
 #region Serialization 
         //

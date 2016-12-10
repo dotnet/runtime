@@ -84,7 +84,7 @@ namespace System.Globalization {
 #if FEATURE_LEAK_CULTURE_INFO
         [NonSerialized]private bool m_isSafeCrossDomain;
         [NonSerialized]private int m_createdDomainID;
-#endif // !FEATURE_CORECLR
+#endif // !FEATURE_LEAK_CULTURE_INFO
         [NonSerialized]private CultureInfo m_consoleFallbackCulture;
 
         // Names are confusing.  Here are 3 names we have:
@@ -1936,11 +1936,8 @@ namespace System.Globalization {
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetSystemDefaultUILanguage(StringHandleOnStack systemDefaultUiLanguage);
 
-// Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-#if FEATURE_CORECLR
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String[] nativeGetResourceFallbackArray();
-#endif
     }
 }
 

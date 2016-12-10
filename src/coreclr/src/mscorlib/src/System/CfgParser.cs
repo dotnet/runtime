@@ -289,11 +289,7 @@ namespace System
                 // Neither Exception nor ApplicationException are the "right" exceptions here.
                 // Desktop throws ApplicationException for backwards compatibility.
                 // On Silverlight we don't have ApplicationException, so fall back to Exception.
-#if FEATURE_CORECLR
                 throw new Exception(message, inner);
-#else
-                throw new ApplicationException(message, inner);
-#endif
             }
             return rootNode;
         }
@@ -438,11 +434,7 @@ namespace System
                     // Neither Exception nor ApplicationException are the "right" exceptions here.
                     // Desktop throws ApplicationException for backwards compatibility.
                     // On Silverlight we don't have ApplicationException, so fall back to Exception.
-#if FEATURE_CORECLR
                     throw new Exception(message);
-#else
-                    throw new ApplicationException(message);
-#endif
                 }
             }
         }

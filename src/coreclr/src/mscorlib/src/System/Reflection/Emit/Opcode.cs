@@ -36,7 +36,6 @@ public struct OpCode
 
     internal const int StackChangeShift             = 28;           // XXXX0000000000000000000000000000
 
-#if FEATURE_CORECLR
     private OpCodeValues m_value;
     private int m_flags;
 
@@ -80,7 +79,6 @@ public struct OpCode
         }
     }
 
-
     public StackBehaviour StackBehaviourPop
     {
         get
@@ -112,121 +110,6 @@ public struct OpCode
             return (short)m_value;
         }
     }
-#else // FEATURE_CORECLR
-    //
-    // The exact layout is part of the legacy COM mscorlib surface, so it is
-    // pretty much set in stone for desktop CLR. Ideally, we would use the packed 
-    // bit field like for CoreCLR, but that would be a breaking change.
-    //
-
-// disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-    private String m_stringname; // not used - computed lazily
-#pragma warning restore 0414
-    private StackBehaviour m_pop;
-    private StackBehaviour m_push;
-    private OperandType m_operand;
-    private OpCodeType m_type;
-    private int m_size;
-    private byte m_s1;
-    private byte m_s2;
-    private FlowControl m_ctrl;
-
-    // Specifies whether the current instructions causes the control flow to
-    // change unconditionally.
-    private bool m_endsUncondJmpBlk;
-
-
-    // Specifies the stack change that the current instruction causes not
-    // taking into account the operand dependant stack changes.
-    private int m_stackChange;
-
-
-    internal OpCode(OpCodeValues value, int flags)
-    {
-        m_stringname = null; // computed lazily
-        m_pop = (StackBehaviour)((flags >> StackBehaviourPopShift) & StackBehaviourMask);
-        m_push = (StackBehaviour)((flags >> StackBehaviourPushShift) & StackBehaviourMask);
-        m_operand = (OperandType)(flags & OperandTypeMask);
-        m_type = (OpCodeType)((flags >> OpCodeTypeShift) & OpCodeTypeMask);
-        m_size = (flags >> SizeShift) & SizeMask;
-        m_s1 = (byte)((int)value >> 8);
-        m_s2 = (byte)(int)value;
-        m_ctrl = (FlowControl)((flags >> FlowControlShift) & FlowControlMask);
-        m_endsUncondJmpBlk = (flags & EndsUncondJmpBlkFlag) != 0;
-        m_stackChange = (flags >> StackChangeShift);
-    }
-
-    internal bool EndsUncondJmpBlk()
-    {
-        return m_endsUncondJmpBlk;
-    }
-
-    internal int StackChange()
-    {
-        return m_stackChange;
-    }
-
-    public OperandType OperandType
-    {
-        get
-        {
-            return (m_operand);
-        }
-    }
-
-    public FlowControl FlowControl
-    {
-        get
-        {
-            return (m_ctrl);
-        }
-    }
-
-    public OpCodeType OpCodeType
-    {
-        get
-        {
-            return (m_type);
-        }
-    }
-
-
-    public StackBehaviour StackBehaviourPop
-    {
-        get
-        {
-            return (m_pop);
-        }
-    }
-
-    public StackBehaviour StackBehaviourPush
-    {
-        get
-        {
-            return (m_push);
-        }
-    }
-
-    public int Size
-    {
-        get
-        {
-            return (m_size);
-        }
-    }
-
-    public short Value
-    {
-        get
-        {
-            if (m_size == 2)
-                return (short)(m_s1 << 8 | m_s2);
-            return (short)m_s2;
-        }
-    }
-#endif // FEATURE_CORECLR
-
 
     private static volatile string[] g_nameCache;
 
@@ -308,5 +191,4 @@ public struct OpCode
         return Name;
     }
 }
-
 }

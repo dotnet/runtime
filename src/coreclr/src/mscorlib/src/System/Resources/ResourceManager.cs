@@ -31,9 +31,6 @@ namespace System.Resources {
     using System.Collections.Generic;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
-#if !FEATURE_CORECLR
-    using System.Diagnostics.Tracing;
-#endif
 
 #if FEATURE_APPX
     //
@@ -261,13 +258,6 @@ namespace System.Resources {
 
         protected ResourceManager() 
         {
-#if !FEATURE_CORECLR
-            // This constructor is not designed to be used under AppX and is not in the Win8 profile.
-            // However designers may use them even if they are running under AppX since they are
-            // not subject to the restrictions of the Win8 profile.
-            Contract.Assert(!AppDomain.IsAppXModel() || AppDomain.IsAppXDesignMode());
-#endif
-
             Init();
 
             _lastUsedResourceCache = new CultureNameResourceSetPair();
@@ -292,13 +282,6 @@ namespace System.Resources {
                 throw new ArgumentNullException(nameof(resourceDir));
             Contract.EndContractBlock();
 
-#if !FEATURE_CORECLR
-            // This constructor is not designed to be used under AppX and is not in the Win8 profile.
-            // However designers may use them even if they are running under AppX since they are
-            // not subject to the restrictions of the Win8 profile.
-            Contract.Assert(!AppDomain.IsAppXModel() || AppDomain.IsAppXDesignMode());
-#endif
-
             BaseNameField = baseName;
 
             moduleDir = resourceDir;
@@ -312,22 +295,8 @@ namespace System.Resources {
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             resourceGroveler = new FileBasedResourceGroveler(mediator);
-
-#if !FEATURE_CORECLR   // PAL doesn't support eventing, and we don't compile event providers for coreclr
-            if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled()) {
-                CultureInfo culture = CultureInfo.InvariantCulture;
-                String defaultResName = GetResourceFileName(culture);
-
-                if (resourceGroveler.HasNeutralResources(culture, defaultResName)) {
-                    FrameworkEventSource.Log.ResourceManagerNeutralResourcesFound(BaseNameField, MainAssembly, defaultResName);
-                }
-                else {
-                    FrameworkEventSource.Log.ResourceManagerNeutralResourcesNotFound(BaseNameField, MainAssembly, defaultResName);
-                }
-            }           
-#endif
         }
-    
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         public ResourceManager(String baseName, Assembly assembly)
         {
@@ -367,13 +336,6 @@ namespace System.Resources {
             if (null==assembly)
                 throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
-
-#if !FEATURE_CORECLR
-            // This constructor is not designed to be used under AppX and is not in the Win8 profile.
-            // However designers may use them even if they are running under AppX since they are
-            // not subject to the restrictions of the Win8 profile.
-            Contract.Assert(!AppDomain.IsAppXModel() || AppDomain.IsAppXDesignMode());
-#endif
 
             if (!(assembly is RuntimeAssembly))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"));
@@ -489,30 +451,6 @@ namespace System.Resources {
             }
 
             _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
-
-#if !FEATURE_CORECLR   // PAL doesn't support eventing, and we don't compile event providers for coreclr
-            if (_bUsingModernResourceManagement == false)
-            {
-                if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled()) {
-                    CultureInfo culture = CultureInfo.InvariantCulture;
-                    String defaultResName = GetResourceFileName(culture);
-
-                    if (resourceGroveler.HasNeutralResources(culture, defaultResName)) {
-                        FrameworkEventSource.Log.ResourceManagerNeutralResourcesFound(BaseNameField, MainAssembly, defaultResName);
-                    }
-                    else {
-                        String outputResName = defaultResName;
-                        if (_locationInfo != null && _locationInfo.Namespace != null)
-                            outputResName = _locationInfo.Namespace + Type.Delimiter + defaultResName;
-                        FrameworkEventSource.Log.ResourceManagerNeutralResourcesNotFound(BaseNameField, MainAssembly, outputResName);
-                    }
-                }
-
-#pragma warning disable 618
-                ResourceSets = new Hashtable(); // for backward compatibility
-#pragma warning restore 618
-            }
-#endif
         }
 
         // Gets the base name for the ResourceManager.
@@ -550,12 +488,6 @@ namespace System.Resources {
         // creating a new ResourceManager isn't quite the correct behavior.
         public virtual void ReleaseAllResources()
         {
-#if !FEATURE_CORECLR
-            if (FrameworkEventSource.IsInitialized)
-            {
-                FrameworkEventSource.Log.ResourceManagerReleasingResources(BaseNameField, MainAssembly);
-            }
-#endif
             Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
 
             // If any calls to Close throw, at least leave ourselves in a
@@ -566,27 +498,9 @@ namespace System.Resources {
             lock(localResourceSets) {
                 IDictionaryEnumerator setEnum = localResourceSets.GetEnumerator();
 
-#if !FEATURE_CORECLR
-                IDictionaryEnumerator setEnum2 = null;
-#pragma warning disable 618
-                if (ResourceSets != null) {
-                    setEnum2 = ResourceSets.GetEnumerator();
-                }
-                ResourceSets = new Hashtable(); // for backwards compat
-#pragma warning restore 618
-#endif
-
                 while (setEnum.MoveNext()) {
                     ((ResourceSet)setEnum.Value).Close();
                 }
-
-#if !FEATURE_CORECLR
-                if (setEnum2 != null) {
-                    while (setEnum2.MoveNext()) {
-                        ((ResourceSet)setEnum2.Value).Close();
-                    }
-                }
-#endif
             }
         }
 
@@ -733,11 +647,6 @@ namespace System.Resources {
             CultureInfo foundCulture = null;
             lock (localResourceSets) {
                 if (localResourceSets.TryGetValue(requestedCulture.Name, out rs)) {
-#if !FEATURE_CORECLR
-                    if (FrameworkEventSource.IsInitialized) {
-                        FrameworkEventSource.Log.ResourceManagerFoundResourceSetInCache(BaseNameField, MainAssembly, requestedCulture.Name);
-                    }
-#endif
                     return rs;
                 }
             }
@@ -746,20 +655,8 @@ namespace System.Resources {
 
             foreach (CultureInfo currentCultureInfo in mgr)
             {
-#if !FEATURE_CORECLR
-                if (FrameworkEventSource.IsInitialized)
-                {
-                    FrameworkEventSource.Log.ResourceManagerLookingForResourceSet(BaseNameField, MainAssembly, currentCultureInfo.Name);
-                }
-#endif
                 lock(localResourceSets) {
                     if (localResourceSets.TryGetValue(currentCultureInfo.Name, out rs)) {
-#if !FEATURE_CORECLR
-                        if (FrameworkEventSource.IsInitialized)
-                        {
-                            FrameworkEventSource.Log.ResourceManagerFoundResourceSetInCache(BaseNameField, MainAssembly, currentCultureInfo.Name);
-                        }
-#endif
                         // we need to update the cache if we fellback
                         if(requestedCulture != currentCultureInfo) foundCulture = currentCultureInfo;
                         break;
@@ -1017,8 +914,7 @@ namespace System.Resources {
         private bool ShouldUseSatelliteAssemblyResourceLookupUnderAppX(RuntimeAssembly resourcesAssembly)
         {
             bool fUseSatelliteAssemblyResourceLookupUnderAppX = resourcesAssembly.IsFrameworkAssembly();
-            
-#if FEATURE_CORECLR     
+
             if (!fUseSatelliteAssemblyResourceLookupUnderAppX)
             {
                 // Check to see if the assembly is under PLATFORM_RESOURCE_ROOTS. If it is, then we should use satellite assembly lookup for it.
@@ -1039,11 +935,10 @@ namespace System.Resources {
                     }
                 }
             }
-#endif // FEATURE_CORECLR
+
             return fUseSatelliteAssemblyResourceLookupUnderAppX;
-            
         }
-        
+
 #endif // FEATURE_APPX
         // Only call SetAppXConfiguration from ResourceManager constructors, and nowhere else.
         // Throws MissingManifestResourceException and WinRT HResults
@@ -1250,13 +1145,7 @@ namespace System.Resources {
                     // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
                     culture = Thread.CurrentThread.GetCurrentUICultureNoAppX();
                 }
-    
-#if !FEATURE_CORECLR
-                if (FrameworkEventSource.IsInitialized)
-                {
-                    FrameworkEventSource.Log.ResourceManagerLookupStarted(BaseNameField, MainAssembly, culture.Name);
-                }
-#endif
+
                 ResourceSet last = GetFirstResourceSet(culture);
 
                 if (last != null)
@@ -1294,13 +1183,6 @@ namespace System.Resources {
                         last = rs;
                     }
                 }
-
-#if !FEATURE_CORECLR
-                if (FrameworkEventSource.IsInitialized)
-                {
-                    FrameworkEventSource.Log.ResourceManagerLookupFailed(BaseNameField, MainAssembly, culture.Name);
-                }
-#endif
             }
 
             return null;
@@ -1347,12 +1229,6 @@ namespace System.Resources {
                 culture = Thread.CurrentThread.GetCurrentUICultureNoAppX();
             }
 
-#if !FEATURE_CORECLR
-            if (FrameworkEventSource.IsInitialized)
-            {
-                FrameworkEventSource.Log.ResourceManagerLookupStarted(BaseNameField, MainAssembly, culture.Name);
-            }
-#endif
             ResourceSet last = GetFirstResourceSet(culture);
             if (last != null)
             {
