@@ -17,7 +17,6 @@ namespace System.IO.MemoryMappedFiles
         private const int MaxFlushWaits = 15;  // must be <=30
         private const int MaxFlushRetriesPerWait = 20;
 
-        [SecurityCritical]
         public static unsafe MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
                                             MemoryMappedFileAccess access, long offset, long size)
         {
@@ -97,7 +96,6 @@ namespace System.IO.MemoryMappedFiles
         // flush to the disk.
         // NOTE: This will flush all bytes before and after the view up until an offset that is a multiple
         //       of SystemPageSize.
-        [SecurityCritical]
         public void Flush(UIntPtr capacity)
         {
             unsafe
@@ -157,7 +155,6 @@ namespace System.IO.MemoryMappedFiles
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        [SecurityCritical]
         private static int GetSystemPageAllocationGranularity()
         {
             Interop.Kernel32.SYSTEM_INFO info;

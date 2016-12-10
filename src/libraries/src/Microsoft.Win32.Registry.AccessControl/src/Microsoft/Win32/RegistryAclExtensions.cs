@@ -15,7 +15,6 @@ namespace Microsoft.Win32
             return GetAccessControl(key, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        [SecuritySafeCritical]
         public static RegistrySecurity GetAccessControl(this RegistryKey key, AccessControlSections includeSections)
         {
             if (key.Handle == null)
@@ -26,7 +25,6 @@ namespace Microsoft.Win32
             return new RegistrySecurity(key.Handle, key.Name, includeSections);
         }
 
-        [SecuritySafeCritical]
         public static void SetAccessControl(this RegistryKey key, RegistrySecurity registrySecurity)
         {
             if (registrySecurity == null)

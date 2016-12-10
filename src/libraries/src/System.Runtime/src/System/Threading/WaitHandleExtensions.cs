@@ -14,7 +14,6 @@ namespace System.Threading
         /// </summary>
         /// <param name="waitHandle">The <see cref="System.Threading.WaitHandle"/> to operate on.</param>
         /// <returns>A <see cref="System.Runtime.InteropServices.SafeHandle"/> representing the native operating system handle.</returns>
-        [SecurityCritical]
         public static SafeWaitHandle GetSafeWaitHandle(this WaitHandle waitHandle)
         {
             if (waitHandle == null)
@@ -30,7 +29,6 @@ namespace System.Threading
         /// </summary>
         /// <param name="waitHandle">The <see cref="System.Threading.WaitHandle"/> to operate on.</param>
         /// <param name="value">A <see cref="System.Runtime.InteropServices.SafeHandle"/> representing the native operating system handle.</param>
-        [SecurityCritical]
         public static void SetSafeWaitHandle(this WaitHandle waitHandle, SafeWaitHandle value)
         {
             if (waitHandle == null)

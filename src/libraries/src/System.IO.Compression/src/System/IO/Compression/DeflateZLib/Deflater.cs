@@ -77,7 +77,6 @@ namespace System.IO.Compression
             GC.SuppressFinalize(this);
         }
 
-        [SecuritySafeCritical]
         private void Dispose(bool disposing)
         {
             if (!_isDisposed)
@@ -203,7 +202,6 @@ namespace System.IO.Compression
             }
         }
 
-        [SecuritySafeCritical]
         private void DeflateInit(ZLibNative.CompressionLevel compressionLevel, int windowBits, int memLevel,
                                  ZLibNative.CompressionStrategy strategy)
         {
@@ -238,7 +236,6 @@ namespace System.IO.Compression
         }
 
 
-        [SecuritySafeCritical]
         private ZErrorCode Deflate(ZFlushCode flushCode)
         {
             ZErrorCode errC;

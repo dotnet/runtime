@@ -16,7 +16,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="RSA" /> public key from the certificate or null if the certificate does not have an RSA public key.
         /// </summary>
-        [SecuritySafeCritical]
         public static RSA GetRSAPublicKey(this X509Certificate2 certificate)
         {
             return certificate.GetPublicKey<RSA>();
@@ -25,7 +24,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="RSA" /> private key from the certificate or null if the certificate does not have an RSA private key.
         /// </summary>
-        [SecuritySafeCritical]
         public static RSA GetRSAPrivateKey(this X509Certificate2 certificate)
         {
             return certificate.GetPrivateKey<RSA>();

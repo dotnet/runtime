@@ -180,7 +180,6 @@ namespace System.Text
         }
 
         // Clear the buffer
-        [System.Security.SecuritySafeCritical] // overrides public transparent member
         public override unsafe void Reset()
         {
             _iCount = -1;

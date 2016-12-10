@@ -17,9 +17,7 @@ namespace System.Text
     internal class SBCSCodePageEncoding : BaseCodePageEncoding
     {
         // Pointers to our memory section parts
-        [SecurityCritical]
         private unsafe char* _mapBytesToUnicode = null;      // char 256
-        [SecurityCritical]
         private unsafe byte* _mapUnicodeToBytes = null;      // byte 65536
 
         private const char UNKNOWN_CHAR = (char)0xFFFD;
@@ -28,12 +26,10 @@ namespace System.Text
         private byte _byteUnknown;
         private char _charUnknown;
 
-        [System.Security.SecurityCritical]  // auto-generated
         public SBCSCodePageEncoding(int codePage) : this(codePage, codePage)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public SBCSCodePageEncoding(int codePage, int dataCodePage) : base(codePage, dataCodePage)
         {
         }
@@ -72,7 +68,6 @@ namespace System.Text
         //              byte < 0x20 means skip the next n positions.  (Where n is the byte #)
         //              byte == 1 means that next word is another unicode code point #
         //              byte == 0 is unknown.  (doesn't override initial WCHAR[256] table!
-        [System.Security.SecurityCritical]  // auto-generated
         protected override unsafe void LoadManagedCodePage()
         {
             fixed (byte* pBytes = m_codePageHeader)
@@ -157,7 +152,6 @@ namespace System.Text
         }
 
         // Read in our best fit table
-        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe override void ReadBestFitTable()
         {
             // Lock so we don't confuse ourselves.
@@ -312,7 +306,6 @@ namespace System.Text
         // GetByteCount
         // Note: We start by assuming that the output will be the same as count.  Having
         // an encoder or fallback may change that assumption
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
@@ -437,7 +430,6 @@ namespace System.Text
             return (int)byteCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
@@ -673,7 +665,6 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
@@ -761,7 +752,6 @@ namespace System.Text
             return charCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS decoder)
         {

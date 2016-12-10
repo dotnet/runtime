@@ -9,7 +9,6 @@ namespace System.IO.Pipes
 {
     public static class PipesAclExtensions
     {
-        [System.Security.SecurityCritical]
         public static PipeSecurity GetAccessControl(this PipeStream stream)
         {
             // PipeState can not be Closed and the Handle can not be null or closed
@@ -17,7 +16,6 @@ namespace System.IO.Pipes
             return new PipeSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        [System.Security.SecurityCritical]
         public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity)
         {
             // PipeState can not be Closed and the Handle can not be null or closed

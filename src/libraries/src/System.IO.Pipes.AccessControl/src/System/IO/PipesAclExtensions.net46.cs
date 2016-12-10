@@ -9,13 +9,11 @@ namespace System.IO.Pipes
 {
     public static class PipesAclExtensions
     {
-        [System.Security.SecurityCritical]
         public static PipeSecurity GetAccessControl(PipeStream stream)
         {
             return stream.GetAccessControl();
         }
 
-        [System.Security.SecurityCritical]
         public static void SetAccessControl(PipeStream stream, PipeSecurity pipeSecurity)
         {
             stream.SetAccessControl(pipeSecurity);

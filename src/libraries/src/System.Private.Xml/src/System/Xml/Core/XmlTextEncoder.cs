@@ -110,7 +110,6 @@ namespace System.Xml
             _textWriter.Write(lowChar);
         }
 
-        [System.Security.SecurityCritical]
         internal void Write(char[] array, int offset, int count)
         {
             if (null == array)
@@ -254,7 +253,6 @@ namespace System.Xml
             _textWriter.Write(';');
         }
 
-        [System.Security.SecurityCritical]
         internal void Write(string text)
         {
             if (text == null)
@@ -399,7 +397,6 @@ namespace System.Xml
             }
         }
 
-        [System.Security.SecurityCritical]
         internal void WriteRawWithSurrogateChecking(string text)
         {
             if (text == null)

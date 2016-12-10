@@ -329,7 +329,6 @@ namespace System.Runtime.CompilerServices
         //      but it's unclear because we have tests passing without RMA.
         //
         // When Silverlight gets RMA we may be able to remove this.
-        [System.Security.SecuritySafeCritical]
         private static Delegate CreateDelegateHelper(Type delegateType, MethodInfo method)
         {
             return method.CreateDelegate(delegateType);

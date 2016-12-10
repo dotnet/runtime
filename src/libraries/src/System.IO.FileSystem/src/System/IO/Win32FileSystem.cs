@@ -61,7 +61,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void CreateDirectory(string fullPath)
         {
             if (PathInternal.IsDirectoryTooLong(fullPath))
@@ -222,7 +221,6 @@ namespace System.IO
 
         // Returns 0 on success, otherwise a Win32 error code.  Note that
         // classes should use -1 as the uninitialized state for dataInitialized.
-        [System.Security.SecurityCritical]  // auto-generated
         internal static int FillAttributeInfo(String path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool tryagain, bool returnErrorOnNotFound)
         {
             int errorCode = 0;
@@ -450,7 +448,6 @@ namespace System.IO
             return new FileStream(fullPath, mode, access, share, bufferSize, options);
         }
 
-        [System.Security.SecurityCritical]
         private static SafeFileHandle OpenHandle(string fullPath, bool asDirectory)
         {
             String root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
@@ -509,7 +506,6 @@ namespace System.IO
             RemoveDirectoryHelper(PathInternal.EnsureExtendedPrefix(fullPath), recursive, true);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static void RemoveDirectoryHelper(string fullPath, bool recursive, bool throwOnTopLevelDirectoryNotFound)
         {
             bool r;
