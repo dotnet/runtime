@@ -35,6 +35,7 @@ namespace System.Numerics
             return bits;
         }
 
+        [SecuritySafeCritical]
         public static unsafe uint[] Add(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
@@ -56,6 +57,7 @@ namespace System.Numerics
             return bits;
         }
 
+        [SecuritySafeCritical]
         private static unsafe void Add(uint* left, int leftLength,
                                        uint* right, int rightLength,
                                        uint* bits, int bitsLength)
@@ -88,6 +90,7 @@ namespace System.Numerics
             bits[i] = (uint)carry;
         }
 
+        [SecuritySafeCritical]
         private static unsafe void AddSelf(uint* left, int leftLength,
                                            uint* right, int rightLength)
         {
@@ -144,6 +147,7 @@ namespace System.Numerics
             return bits;
         }
 
+        [SecuritySafeCritical]
         public static unsafe uint[] Subtract(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
@@ -166,6 +170,7 @@ namespace System.Numerics
             return bits;
         }
 
+        [SecuritySafeCritical]
         private static unsafe void Subtract(uint* left, int leftLength, 
                                             uint* right, int rightLength,
                                             uint* bits, int bitsLength)
@@ -200,6 +205,7 @@ namespace System.Numerics
             Debug.Assert(carry == 0);
         }
 
+        [SecuritySafeCritical]
         private static unsafe void SubtractSelf(uint* left, int leftLength,
                                                 uint* right, int rightLength)
         {
@@ -252,6 +258,7 @@ namespace System.Numerics
             return 0;
         }
 
+        [SecuritySafeCritical]
         private static unsafe int Compare(uint* left, int leftLength,
                                           uint* right, int rightLength)
         {

@@ -12,6 +12,7 @@ namespace System.IO.MemoryMappedFiles
     {
         private readonly MemoryMappedView _view;
 
+        [SecurityCritical]
         internal MemoryMappedViewAccessor(MemoryMappedView view)
         {
             Debug.Assert(view != null, "view is null");
@@ -22,6 +23,7 @@ namespace System.IO.MemoryMappedFiles
 
         public SafeMemoryMappedViewHandle SafeMemoryMappedViewHandle
         {
+            [SecurityCritical]
             get { return _view.ViewHandle; }
         }
 
@@ -30,6 +32,7 @@ namespace System.IO.MemoryMappedFiles
             get { return _view.PointerOffset; }
         }
 
+        [SecuritySafeCritical]
         protected override void Dispose(bool disposing)
         {
             try
@@ -59,6 +62,7 @@ namespace System.IO.MemoryMappedFiles
         // flush to the disk.
         // NOTE: This will flush all bytes before and after the view up until an offset that is a
         // multiple of SystemPageSize.
+        [SecurityCritical]
         public void Flush()
         {
             if (!IsOpen)

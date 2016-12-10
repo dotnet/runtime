@@ -20,6 +20,7 @@ namespace System.Diagnostics
 
         internal sealed class WindowsDebugLogger : IDebugLogger
         {
+            [SecuritySafeCritical]
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
                 if (Debugger.IsAttached)
@@ -59,6 +60,7 @@ namespace System.Diagnostics
                 }
             }
 
+            [System.Security.SecuritySafeCritical]
             private static void WriteToDebugger(string message)
             {
                 if (Debugger.IsLogging())

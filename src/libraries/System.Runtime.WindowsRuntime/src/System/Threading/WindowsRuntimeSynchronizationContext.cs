@@ -192,6 +192,7 @@ namespace System.Threading
 
         #endregion class WinRTSynchronizationContext.Invoker
 
+        [SecuritySafeCritical]
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
@@ -201,6 +202,7 @@ namespace System.Threading
             var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
         }
 
+        [SecuritySafeCritical]
         public override void Send(SendOrPostCallback d, object state)
         {
             throw new NotSupportedException(SR.InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext);

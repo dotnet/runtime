@@ -13,6 +13,7 @@ namespace Microsoft.Win32.SafeHandles
     /// if a Create* function is called, the caller must also CFRelease 
     /// on the same pointer in order to correctly free the memory.
     /// </summary>
+    [System.Security.SecurityCritical]
     internal sealed partial class SafeCreateHandle : SafeHandle
     {
         internal SafeCreateHandle() : base(IntPtr.Zero, true) { }
@@ -22,6 +23,7 @@ namespace Microsoft.Win32.SafeHandles
             this.SetHandle(ptr);
         }
 
+        [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
@@ -31,6 +33,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
+            [System.Security.SecurityCritical]
             get
             {
                 return handle == IntPtr.Zero;

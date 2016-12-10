@@ -10,10 +10,13 @@ using Microsoft.Win32;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [System.Security.SecurityCritical]  // auto-generated
     internal sealed class SafeFindHandle : SafeHandle
     {
+        [System.Security.SecurityCritical]  // auto-generated_required
         internal SafeFindHandle() : base(IntPtr.Zero, true) { }
 
+        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Interop.Kernel32.FindClose(handle);
@@ -21,6 +24,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
+            [System.Security.SecurityCritical]
             get
             {
                 return handle == IntPtr.Zero || handle == new IntPtr(-1);

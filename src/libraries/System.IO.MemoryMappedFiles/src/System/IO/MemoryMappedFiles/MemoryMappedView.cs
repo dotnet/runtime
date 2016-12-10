@@ -15,6 +15,7 @@ namespace System.IO.MemoryMappedFiles
         private readonly long _size;
         private readonly MemoryMappedFileAccess _access;
 
+        [SecurityCritical]
         private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
                                         long size, MemoryMappedFileAccess access)
         {
@@ -28,6 +29,7 @@ namespace System.IO.MemoryMappedFiles
 
         public SafeMemoryMappedViewHandle ViewHandle
         {
+            [SecurityCritical]
             get { return _viewHandle; }
         }
 
@@ -46,6 +48,7 @@ namespace System.IO.MemoryMappedFiles
             get { return _access; }
         }
 
+        [SecurityCritical]
         protected virtual void Dispose(bool disposing)
         {
             if (!_viewHandle.IsClosed)
@@ -54,6 +57,7 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
+        [SecurityCritical]
         public void Dispose()
         {
             Dispose(true);
@@ -62,6 +66,7 @@ namespace System.IO.MemoryMappedFiles
 
         public bool IsClosed
         {
+            [SecuritySafeCritical]
             get { return _viewHandle.IsClosed; }
         }
 

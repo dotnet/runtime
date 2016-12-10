@@ -18,6 +18,7 @@ internal partial class Interop
         /// "lpt1:", etc.  Use this to avoid security problems, like allowing a web client asking a server
         /// for "http://server/com1.aspx" and then causing a worker process to hang.
         /// </summary>
+        [System.Security.SecurityCritical]  // auto-generated
         internal static SafeFileHandle SafeCreateFile(
             String lpFileName,
             int dwDesiredAccess,

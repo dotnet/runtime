@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [SecurityCritical]
     internal sealed class SafeX509NameHandle : SafeHandle
     {
         private SafeX509NameHandle() :

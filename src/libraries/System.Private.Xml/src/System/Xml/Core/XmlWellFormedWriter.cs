@@ -2133,6 +2133,7 @@ namespace System.Xml
             return s;
         }
 
+        [System.Security.SecuritySafeCritical]
         private unsafe void CheckNCName(string ncname)
         {
             Debug.Assert(ncname != null && ncname.Length > 0);

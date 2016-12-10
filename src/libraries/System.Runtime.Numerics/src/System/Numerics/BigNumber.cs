@@ -322,6 +322,7 @@ namespace System.Numerics
             return true;
         }
 
+        [SecuritySafeCritical]
         internal static bool TryParseBigInteger(string value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             unsafe
@@ -529,6 +530,7 @@ namespace System.Numerics
             return sb.ToString();
         }
 
+        [SecuritySafeCritical]
         internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
         {
             int digits = 0;

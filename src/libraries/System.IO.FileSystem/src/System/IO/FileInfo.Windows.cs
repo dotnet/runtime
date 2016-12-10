@@ -9,6 +9,7 @@ namespace System.IO
 {
     partial class FileInfo
     {
+        [SecurityCritical]
         internal FileInfo(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData)
             : this(fullPath, findData.cFileName)
         {

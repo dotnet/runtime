@@ -55,11 +55,13 @@ namespace System.Text
         protected char[] arrayUnicodeBestFit = null;
         protected char[] arrayBytesBestFit = null;
 
+        [System.Security.SecurityCritical]  // auto-generated
         internal BaseCodePageEncoding(int codepage)
             : this(codepage, codepage)
         {
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         internal BaseCodePageEncoding(int codepage, int dataCodePage)
             : base(codepage, new InternalEncoderBestFitFallback(null), new InternalDecoderBestFitFallback(null))
         {
@@ -156,6 +158,7 @@ namespace System.Text
         protected int m_dataSize;
 
         // Safe handle wrapper around section map view
+        [System.Security.SecurityCritical] // auto-generated
         protected SafeAllocHHandle safeNativeMemoryHandle = null;
 
         internal static Stream GetEncodingDataStream(String tableName)
@@ -180,6 +183,7 @@ namespace System.Text
         }
 
         // We need to load tables for our code page
+        [System.Security.SecurityCritical]  // auto-generated
         private unsafe void LoadCodePageTables()
         {
             if (!FindCodePage(dataTableCodePage))
@@ -193,6 +197,7 @@ namespace System.Text
         }
 
         // Look up the code page pointer
+        [System.Security.SecurityCritical]  // auto-generated
         private unsafe bool FindCodePage(int codePage)
         {
             Debug.Assert(m_codePageHeader != null && m_codePageHeader.Length == CODEPAGE_HEADER_SIZE, "m_codePageHeader expected to match in size the struct CodePageHeader");
@@ -251,6 +256,7 @@ namespace System.Text
         }
 
         // Get our code page byte count
+        [System.Security.SecurityCritical]  // auto-generated
         internal static unsafe int GetCodePageByteSize(int codePage)
         {
             // Loop through all of the m_pCodePageIndex[] items to find our code page
@@ -291,9 +297,11 @@ namespace System.Text
         }
 
         // We have a managed code page entry, so load our tables
+        [System.Security.SecurityCritical]
         protected abstract unsafe void LoadManagedCodePage();
 
         // Allocate memory to load our code page
+        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe byte* GetNativeMemory(int iSize)
         {
             if (safeNativeMemoryHandle == null)
@@ -307,8 +315,10 @@ namespace System.Text
             return (byte*)safeNativeMemoryHandle.DangerousGetHandle();
         }
 
+        [System.Security.SecurityCritical]
         protected abstract unsafe void ReadBestFitTable();
 
+        [System.Security.SecuritySafeCritical]
         internal char[] GetBestFitUnicodeToBytesData()
         {
             // Read in our best fit table if necessary
@@ -320,6 +330,7 @@ namespace System.Text
             return arrayUnicodeBestFit;
         }
 
+        [System.Security.SecuritySafeCritical]
         internal char[] GetBestFitBytesToUnicodeData()
         {
             // Read in our best fit table if necessary
@@ -335,6 +346,7 @@ namespace System.Text
         // invalid. We detect that by validating the memory section handle then re-initializing the memory 
         // section by calling LoadManagedCodePage() method and eventually the mapped file handle and
         // the memory section pointer will get finalized one more time.
+        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void CheckMemorySection()
         {
             if (safeNativeMemoryHandle != null && safeNativeMemoryHandle.DangerousGetHandle() == IntPtr.Zero)

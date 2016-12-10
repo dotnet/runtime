@@ -44,6 +44,7 @@ namespace System.Xml
             }
         }
 
+        [System.Security.SecuritySafeCritical]
         internal override unsafe int Decode(char[] chars, int startPos, int len)
         {
             if (chars == null)
@@ -79,6 +80,7 @@ namespace System.Xml
             return charsDecoded;
         }
 
+        [System.Security.SecuritySafeCritical]
         internal override unsafe int Decode(string str, int startPos, int len)
         {
             if (str == null)
@@ -151,6 +153,7 @@ namespace System.Xml
             return mapBase64;
         }
 
+        [System.Security.SecurityCritical]
         private unsafe void Decode(char* pChars, char* pCharsEndPos,
                              byte* pBytes, byte* pBytesEndPos,
                              out int charsDecoded, out int bytesDecoded)

@@ -180,6 +180,7 @@ namespace System.IO.Compression
         /// <code>false</code>, which can for instance happen if the underlying ZLib <code>XxxxEnd</code>
         /// routines return an failure error code.
         /// </summary>
+        [SecurityCritical]
         public sealed class ZLibStreamHandle : SafeHandle
         {
             #region ZLibStream-SafeHandle-related routines
@@ -188,6 +189,7 @@ namespace System.IO.Compression
 
             private ZStream _zStream;
 
+            [SecurityCritical]
             private volatile State _initializationState;
 
 
@@ -203,16 +205,19 @@ namespace System.IO.Compression
 
             public override bool IsInvalid
             {
+                [SecurityCritical]
                 get { return handle == new IntPtr(-1); }
             }
 
             public State InitializationState
             {
                 [Pure]
+                [SecurityCritical]
                 get { return _initializationState; }
             }
 
 
+            [SecurityCritical]
             protected override bool ReleaseHandle()
             {
                 switch (InitializationState)
@@ -260,6 +265,7 @@ namespace System.IO.Compression
             #region Expose ZLib functions for use by user / Fx code (add more as required)
 
             [Pure]
+            [SecurityCritical]
             private void EnsureNotDisposed()
             {
                 if (InitializationState == State.Disposed)
@@ -268,6 +274,7 @@ namespace System.IO.Compression
 
 
             [Pure]
+            [SecurityCritical]
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
@@ -275,6 +282,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
                 EnsureNotDisposed();
@@ -287,6 +295,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public ErrorCode Deflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -295,6 +304,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public ErrorCode DeflateEnd()
             {
                 EnsureNotDisposed();
@@ -307,6 +317,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public ErrorCode InflateInit2_(int windowBits)
             {
                 EnsureNotDisposed();
@@ -319,6 +330,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -327,6 +339,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public ErrorCode InflateEnd()
             {
                 EnsureNotDisposed();
@@ -342,6 +355,7 @@ namespace System.IO.Compression
             /// This function is equivalent to inflateEnd followed by inflateInit.
             /// The stream will keep attributes that may have been set by inflateInit2.
             /// </summary>
+            [SecurityCritical]
             public ErrorCode InflateReset(int windowBits)
             {
                 EnsureNotDisposed();
@@ -361,6 +375,7 @@ namespace System.IO.Compression
             }
 
 
+            [SecurityCritical]
             public string GetErrorMessage()
             {
                 // This can work even after XxflateEnd().
@@ -377,6 +392,7 @@ namespace System.IO.Compression
         #region public factory methods for ZLibStreamHandle
 
 
+        [SecurityCritical]
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle,
                                                            CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
         {
@@ -385,6 +401,7 @@ namespace System.IO.Compression
         }
 
 
+        [SecurityCritical]
         public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
         {
             zLibStreamHandle = new ZLibStreamHandle();

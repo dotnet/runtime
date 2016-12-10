@@ -8,6 +8,7 @@
 
 namespace System.Text
 {
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class CodePagesEncodingProvider
     {
         internal CodePagesEncodingProvider() { }

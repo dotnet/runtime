@@ -72,6 +72,7 @@ namespace System.Net.WebSockets
             Receive = 2,
         }
 
+        [SecuritySafeCritical]
         static WebSocketProtocolComponent()
         {
             s_webSocketDllHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);

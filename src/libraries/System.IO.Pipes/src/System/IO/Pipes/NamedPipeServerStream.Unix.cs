@@ -26,6 +26,7 @@ namespace System.IO.Pipes
         private int _outBufferSize;
         private HandleInheritability _inheritability;
 
+        [SecurityCritical]
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
@@ -53,6 +54,7 @@ namespace System.IO.Pipes
             _inheritability = inheritability;
         }
 
+        [SecurityCritical]
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
@@ -143,6 +145,7 @@ namespace System.IO.Pipes
             }
         }
 
+        [SecurityCritical]
         public void Disconnect()
         {
             CheckDisconnectOperations();
@@ -154,6 +157,7 @@ namespace System.IO.Pipes
         // Gets the username of the connected client.  Not that we will not have access to the client's 
         // username until it has written at least once to the pipe (and has set its impersonationLevel 
         // argument appropriately). 
+        [SecurityCritical]
         public string GetImpersonationUserName()
         {
             CheckWriteOperations();

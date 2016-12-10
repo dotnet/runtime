@@ -317,21 +317,25 @@ namespace System.Security.AccessControl
 
         #endregion
 
+        [System.Security.SecurityCritical]  // auto-generated
         internal FileSystemSecurity(bool isContainer)
             : base(isContainer, s_ResourceType, _HandleErrorCode, isContainer)
         {
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         internal FileSystemSecurity(bool isContainer, String name, AccessControlSections includeSections, bool isDirectory)
             : base(isContainer, s_ResourceType, name, includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         internal FileSystemSecurity(bool isContainer, SafeFileHandle handle, AccessControlSections includeSections, bool isDirectory)
             : base(isContainer, s_ResourceType, handle, includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
         {
             System.Exception exception = null;
@@ -424,6 +428,7 @@ namespace System.Security.AccessControl
             return persistRules;
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         internal void Persist(String fullPath)
         {
             WriteLock();
@@ -440,6 +445,7 @@ namespace System.Security.AccessControl
             }
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         internal void Persist(SafeFileHandle handle, String fullPath)
         {
             WriteLock();
@@ -612,11 +618,13 @@ namespace System.Security.AccessControl
     {
         #region Constructors
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileSecurity()
             : base(false)
         {
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public FileSecurity(String fileName, AccessControlSections includeSections)
             : base(false, fileName, includeSections, false)
         {
@@ -627,6 +635,7 @@ namespace System.Security.AccessControl
         // it public.  We don't want to get into a situation where someone can
         // pass in the string foo.txt and a handle to bar.exe, and we do a
         // demand on the wrong file name.
+        [System.Security.SecurityCritical]  // auto-generated
         internal FileSecurity(SafeFileHandle handle, String fullPath, AccessControlSections includeSections)
             : base(false, handle, includeSections, false)
         {
@@ -639,11 +648,13 @@ namespace System.Security.AccessControl
     {
         #region Constructors
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public DirectorySecurity()
             : base(true)
         {
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public DirectorySecurity(String name, AccessControlSections includeSections)
             : base(true, name, includeSections, true)
         {

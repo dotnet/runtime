@@ -8,6 +8,7 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [SecurityCritical]
     internal sealed class SafeBignumHandle : SafeHandle
     {
         private SafeBignumHandle() :

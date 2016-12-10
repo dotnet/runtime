@@ -15,11 +15,13 @@ namespace System.Threading
 {
     public static class ThreadingAclExtensions
     {
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static EventWaitHandleSecurity GetAccessControl(this EventWaitHandle handle)
         {
             return new EventWaitHandleSecurity(handle.GetSafeWaitHandle(), AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void SetAccessControl(this EventWaitHandle handle, EventWaitHandleSecurity eventSecurity)
         {
             if (eventSecurity == null)
@@ -29,11 +31,13 @@ namespace System.Threading
             eventSecurity.Persist(handle.GetSafeWaitHandle());
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static MutexSecurity GetAccessControl(this Mutex mutex)
         {
             return new MutexSecurity(mutex.GetSafeWaitHandle(), AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void SetAccessControl(this Mutex mutex, MutexSecurity mutexSecurity)
         {
             if (mutexSecurity == null)

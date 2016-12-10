@@ -48,6 +48,7 @@ namespace System.IO
 
         public DriveType DriveType
         {
+            [System.Security.SecuritySafeCritical]
             get
             {
                 // GetDriveType can't fail
@@ -57,6 +58,7 @@ namespace System.IO
 
         public String DriveFormat
         {
+            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 const int volNameLen = 50;
@@ -84,6 +86,7 @@ namespace System.IO
 
         public long AvailableFreeSpace
         {
+            [System.Security.SecuritySafeCritical]
             get
             {
                 long userBytes, totalBytes, freeBytes;
@@ -104,6 +107,7 @@ namespace System.IO
 
         public long TotalFreeSpace
         {
+            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 long userBytes, totalBytes, freeBytes;
@@ -124,6 +128,7 @@ namespace System.IO
 
         public long TotalSize
         {
+            [System.Security.SecuritySafeCritical]
             get
             {
                 // Don't cache this, to handle variable sized floppy drives
@@ -158,6 +163,7 @@ namespace System.IO
         // Null is a valid volume label.
         public String VolumeLabel
         {
+            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 // NTFS uses a limit of 32 characters for the volume label,
@@ -188,6 +194,7 @@ namespace System.IO
                 }
                 return volumeName.ToString();
             }
+            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);

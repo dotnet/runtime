@@ -61,7 +61,9 @@ namespace System.Security.Claims
         public virtual string Name { get { throw null; } }
         public string NameClaimType { get { throw null; } }
         public string RoleClaimType { get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
         public virtual void AddClaim(System.Security.Claims.Claim claim) { }
+        [System.Security.SecurityCriticalAttribute]
         public virtual void AddClaims(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims) { }
         public virtual System.Security.Claims.ClaimsIdentity Clone() { throw null; }
         protected virtual System.Security.Claims.Claim CreateClaim(System.IO.BinaryReader reader) { throw null; }
@@ -72,7 +74,9 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool HasClaim(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
         public virtual bool HasClaim(string type, string value) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public virtual void RemoveClaim(System.Security.Claims.Claim claim) { }
+        [System.Security.SecurityCriticalAttribute]
         public virtual bool TryRemoveClaim(System.Security.Claims.Claim claim) { throw null; }
         public virtual void WriteTo(System.IO.BinaryWriter writer) { }
         protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[] userData) { }
@@ -92,7 +96,9 @@ namespace System.Security.Claims
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> Identities { get { throw null; } }
         public virtual System.Security.Principal.IIdentity Identity { get { throw null; } }
         public static System.Func<System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity>, System.Security.Claims.ClaimsIdentity> PrimaryIdentitySelector { get { throw null; }[System.Security.SecurityCriticalAttribute]set { } }
+        [System.Security.SecurityCriticalAttribute]
         public virtual void AddIdentities(System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> identities) { }
+        [System.Security.SecurityCriticalAttribute]
         public virtual void AddIdentity(System.Security.Claims.ClaimsIdentity identity) { }
         public virtual System.Security.Claims.ClaimsPrincipal Clone() { throw null; }
         protected virtual System.Security.Claims.ClaimsIdentity CreateClaimsIdentity(System.IO.BinaryReader reader) { throw null; }

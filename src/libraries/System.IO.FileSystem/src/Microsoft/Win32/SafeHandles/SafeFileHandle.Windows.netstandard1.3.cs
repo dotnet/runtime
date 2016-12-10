@@ -10,6 +10,7 @@ using Microsoft.Win32;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [System.Security.SecurityCritical]  // auto-generated_required
     public sealed class SafeFileHandle : SafeHandle
     {
         private bool? _isAsync;
@@ -41,6 +42,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal ThreadPoolBoundHandle ThreadPoolBinding { get; set; }
 
+        [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);
@@ -48,6 +50,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
+            [System.Security.SecurityCritical]
             get
             {
                 return handle == IntPtr.Zero || handle == new IntPtr(-1);

@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Safehandle representing HCRYPTPROV
     /// </summary>
+    [SecurityCritical]
     internal sealed class SafeProvHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private string _containerName;
@@ -136,6 +137,7 @@ namespace System.Security.Cryptography
     ///     of the key handle and provider handle. This also applies to hash handles, which point to a 
     ///     CRYPT_HASH_CTX. Those structures are defined in COMCryptography.h
     /// </summary>
+    [SecurityCritical]  // auto-generated
     internal sealed class SafeKeyHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private int _keySpec;
@@ -203,6 +205,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             bool successfullyFreed = CapiHelper.CryptDestroyKey(handle);
@@ -219,6 +222,7 @@ namespace System.Security.Cryptography
     /// <summary>
     /// SafeHandle representing HCRYPTHASH handle
     /// </summary>
+    [SecurityCritical]
     internal sealed class SafeHashHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private SafeProvHandle _parent;
@@ -258,6 +262,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             bool successfullyFreed = CapiHelper.CryptDestroyHash(handle);

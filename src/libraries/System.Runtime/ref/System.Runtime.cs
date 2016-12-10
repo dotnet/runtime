@@ -7,35 +7,43 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
         protected CriticalHandleMinusOneIsInvalid() : base(System.IntPtr.Zero) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class CriticalHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
         protected CriticalHandleZeroOrMinusOneIsInvalid() : base(System.IntPtr.Zero) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { throw null; }
     }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
         protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(System.IntPtr.Zero, ownsHandle) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
         protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(System.IntPtr.Zero, ownsHandle) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SafeWaitHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base(ownsHandle) { }
+        [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -473,8 +481,10 @@ namespace System
         public static int ByteLength(System.Array array) { throw null; }
         public static byte GetByte(System.Array array, int index) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
         public static void SetByte(System.Array array, int index, byte value) { }
     }
@@ -796,6 +806,7 @@ namespace System
         public System.DateTimeOffset Subtract(System.TimeSpan value) { throw null; }
         int System.IComparable.CompareTo(object obj) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        [System.Security.SecurityCriticalAttribute]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToFileTime() { throw null; }
         public System.DateTimeOffset ToLocalTime() { throw null; }
@@ -1213,6 +1224,7 @@ namespace System
     public static partial class GC
     {
         public static int MaxGeneration { get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
         public static void AddMemoryPressure(long bytesAllocated) { }
         public static void CancelFullGCNotification() { }
         public static void Collect() { }
@@ -1227,6 +1239,7 @@ namespace System
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
         public static void KeepAlive(object obj) { }
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
+        [System.Security.SecurityCriticalAttribute]
         public static void RemoveMemoryPressure(long bytesAllocated) { }
         public static void ReRegisterForFinalize(object obj) { }
         public static void SuppressFinalize(object obj) { }
@@ -1483,6 +1496,7 @@ namespace System
         public IntPtr(int value) { throw null; }
         public IntPtr(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe IntPtr(void* value) { throw null; }
         public static int Size { get { throw null; } }
         public static System.IntPtr Add(System.IntPtr pointer, int offset) { throw null; }
@@ -1501,6 +1515,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static unsafe explicit operator void* (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe explicit operator System.IntPtr(void* value) { throw null; }
         public static bool operator !=(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static System.IntPtr operator -(System.IntPtr pointer, int offset) { throw null; }
@@ -1943,8 +1958,10 @@ namespace System
     {
         public static readonly string Empty;
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe String(char* value) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe String(char* value, int startIndex, int length) { }
         public String(char c, int count) { }
         public String(char[] value) { }
@@ -2256,6 +2273,7 @@ namespace System
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        [System.Security.SecurityCriticalAttribute]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
@@ -2269,6 +2287,7 @@ namespace System
             public bool Equals(System.TimeZoneInfo.AdjustmentRule other) { throw null; }
             public override int GetHashCode() { throw null; }
             void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            [System.Security.SecurityCriticalAttribute]
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2288,6 +2307,7 @@ namespace System
             public static bool operator ==(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
             public static bool operator !=(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
             void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            [System.Security.SecurityCriticalAttribute]
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
@@ -2442,7 +2462,9 @@ namespace System
         public static readonly System.Reflection.MemberFilter FilterNameIgnoreCase;
         public static readonly object Missing;
         protected Type() { }
+        [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator ==(System.Type left, System.Type right) { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator !=(System.Type left, System.Type right) { throw null; }
         public abstract System.Reflection.Assembly Assembly { get; }
         public abstract string AssemblyQualifiedName { get; }
@@ -2806,6 +2828,7 @@ namespace System
         public UIntPtr(uint value) { throw null; }
         public UIntPtr(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe UIntPtr(void* value) { throw null; }
         public static int Size { get { throw null; } }
         public static System.UIntPtr Add(System.UIntPtr pointer, int offset) { throw null; }
@@ -2822,8 +2845,10 @@ namespace System
         public static explicit operator uint (System.UIntPtr value) { throw null; }
         public static explicit operator ulong (System.UIntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe explicit operator void* (System.UIntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe explicit operator System.UIntPtr(void* value) { throw null; }
         public static bool operator !=(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static System.UIntPtr operator -(System.UIntPtr pointer, int offset) { throw null; }
@@ -3130,6 +3155,7 @@ namespace System.Runtime.ConstrainedExecution
 {
     public abstract partial class CriticalFinalizerObject
     {
+        [System.Security.SecuritySafeCriticalAttribute]
         protected CriticalFinalizerObject() { }
         ~CriticalFinalizerObject() { }
     }
@@ -3187,21 +3213,28 @@ namespace System.Runtime.InteropServices
         public virtual int ErrorCode { get; }
         public override string ToString() { throw null; }
     }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
         protected System.IntPtr handle;
         protected SafeHandle(System.IntPtr invalidHandleValue, bool ownsHandle) { }
         public bool IsClosed { get { throw null; } }
         public abstract bool IsInvalid { get; }
+        [System.Security.SecurityCriticalAttribute]
         public void Close() { }
+        [System.Security.SecurityCriticalAttribute]
         public void DangerousAddRef(ref bool success) { }
         public System.IntPtr DangerousGetHandle() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public void DangerousRelease() { }
+        [System.Security.SecuritySafeCriticalAttribute]
         public void Dispose() { }
+        [System.Security.SecurityCriticalAttribute]
         protected virtual void Dispose(bool disposing) { }
         ~SafeHandle() { }
         protected abstract bool ReleaseHandle();
         protected void SetHandle(System.IntPtr handle) { }
+        [System.Security.SecurityCriticalAttribute]
         public void SetHandleAsInvalid() { }
     }
 }
@@ -3218,6 +3251,7 @@ namespace System.Runtime.CompilerServices
             public bool IsCompleted { get { throw null; } }
             public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
+            [System.Security.SecurityCriticalAttribute]
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
     }
@@ -3231,11 +3265,13 @@ namespace System.Runtime.CompilerServices
             public bool IsCompleted { get { throw null; } }
             public TResult GetResult() { throw null; }
             public void OnCompleted(System.Action continuation) { }
+            [System.Security.SecurityCriticalAttribute]
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
     }
     public partial interface ICriticalNotifyCompletion : System.Runtime.CompilerServices.INotifyCompletion
     {
+        [System.Security.SecurityCriticalAttribute]
         void UnsafeOnCompleted(System.Action continuation);
     }
     public partial interface INotifyCompletion
@@ -3248,6 +3284,7 @@ namespace System.Runtime.CompilerServices
         public bool IsCompleted { get { throw null; } }
         public void GetResult() { }
         public void OnCompleted(System.Action continuation) { }
+        [System.Security.SecurityCriticalAttribute]
         public void UnsafeOnCompleted(System.Action continuation) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3256,6 +3293,7 @@ namespace System.Runtime.CompilerServices
         public bool IsCompleted { get { throw null; } }
         public TResult GetResult() { throw null; }
         public void OnCompleted(System.Action continuation) { }
+        [System.Security.SecurityCriticalAttribute]
         public void UnsafeOnCompleted(System.Action continuation) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential, Size = 1)]
@@ -3268,6 +3306,7 @@ namespace System.Runtime.CompilerServices
             public bool IsCompleted { get { throw null; } }
             public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
+            [System.Security.SecurityCriticalAttribute]
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
     }
@@ -4880,6 +4919,7 @@ namespace System.Reflection
         public void SetPublicKeyToken(byte[] publicKeyToken) { }
         public override string ToString() { throw null; }
         public static bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
         public void OnDeserialization(Object sender) { throw null; }
     }
@@ -5357,6 +5397,7 @@ namespace System.Reflection
         public static System.Reflection.MethodBase GetCurrentMethod() { throw null; }
         public virtual System.Type[] GetGenericArguments() { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
         public virtual System.Reflection.MethodBody GetMethodBody() { throw null; }
         public static System.Reflection.MethodBase GetMethodFromHandle(System.RuntimeMethodHandle handle) { throw null; }
         public static System.Reflection.MethodBase GetMethodFromHandle(System.RuntimeMethodHandle handle, System.RuntimeTypeHandle declaringType) { throw null; }
@@ -5448,6 +5489,7 @@ namespace System.Reflection
         protected virtual System.Reflection.MethodInfo GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
         public MethodInfo[] GetMethods() { throw null; }
         public virtual MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void GetPEKind(out System.Reflection.PortableExecutableKinds peKind, out System.Reflection.ImageFileMachine machine) { throw null; }
         public virtual Type GetType(string className) { throw null; }
@@ -5542,8 +5584,11 @@ namespace System.Reflection
     public sealed class Pointer : System.Runtime.Serialization.ISerializable
     {
         private Pointer() { }    
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe object Box(void* ptr, System.Type type) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public static unsafe void* Unbox(object ptr) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         unsafe void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.FlagsAttribute]
@@ -5710,6 +5755,7 @@ namespace System.Reflection
     {
         protected System.Type typeImpl;
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo) { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
         protected TypeDelegator() { }
         public TypeDelegator(System.Type delegatingType) { }
         public override System.Guid GUID { get { throw null; } }
@@ -6013,16 +6059,23 @@ namespace System.Runtime.CompilerServices
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object userData) { }
+        [System.Security.SecurityCriticalAttribute]
         public delegate void CleanupCode(object userData, bool exceptionThrown);
+        [System.Security.SecurityCriticalAttribute]
         public delegate void TryCode(object userData);
         [System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
         public static void PrepareConstrainedRegions() { }
         [System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
         public static void PrepareConstrainedRegionsNoOP() { }
         public static void PrepareContractedDelegate(System.Delegate d) { }
         public static void PrepareDelegate(System.Delegate d) { }
+        [System.Security.SecurityCriticalAttribute]
         public static void PrepareMethod(System.RuntimeMethodHandle method) { }
+        [System.Security.SecurityCriticalAttribute]
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[] instantiation) { }
+        [System.Security.SecurityCriticalAttribute]
         public static void ProbeForSufficientStack() { }
 #if netcoreapp11
         public static bool TryEnsureSufficientExecutionStack() { return default(bool); }
@@ -6097,6 +6150,7 @@ namespace System.Runtime.CompilerServices
     {
         internal RuntimeWrappedException() { }
         public object WrappedException { get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
@@ -6491,6 +6545,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(byte value) { throw null; }
         public System.Text.StringBuilder Append(char value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe System.Text.StringBuilder Append(char* value, int valueCount) { throw null; }
         public System.Text.StringBuilder Append(char value, int repeatCount) { throw null; }
         public System.Text.StringBuilder Append(char[] value) { throw null; }
@@ -6634,6 +6689,7 @@ namespace System.Text
         public override bool Fallback(byte[] bytesUnknown, int index) { throw null; }
         public override char GetNextChar() { throw null; }
         public override bool MovePrevious() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
         public override void Reset() { }
     }
     public abstract partial class Encoder
@@ -6716,6 +6772,7 @@ namespace System.Text
         public override bool Fallback(char charUnknown, int index) { throw null; }
         public override char GetNextChar() { throw null; }
         public override bool MovePrevious() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
         public override void Reset() { }
     }
     public abstract partial class Encoding : System.ICloneable
@@ -6749,11 +6806,13 @@ namespace System.Text
         public static byte[] Convert(System.Text.Encoding srcEncoding, System.Text.Encoding dstEncoding, byte[] bytes, int index, int count) { throw null; }
         public override bool Equals(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetByteCount(char* chars, int count) { throw null; }
         public virtual int GetByteCount(char[] chars) { throw null; }
         public abstract int GetByteCount(char[] chars, int index, int count);
         public virtual int GetByteCount(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
         public virtual byte[] GetBytes(char[] chars) { throw null; }
         public virtual byte[] GetBytes(char[] chars, int index, int count) { throw null; }
@@ -6761,10 +6820,12 @@ namespace System.Text
         public virtual byte[] GetBytes(string s) { throw null; }
         public virtual int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetCharCount(byte* bytes, int count) { throw null; }
         public virtual int GetCharCount(byte[] bytes) { throw null; }
         public abstract int GetCharCount(byte[] bytes, int index, int count);
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
         public virtual char[] GetChars(byte[] bytes) { throw null; }
         public virtual char[] GetChars(byte[] bytes, int index, int count) { throw null; }
@@ -6781,11 +6842,13 @@ namespace System.Text
         public abstract int GetMaxCharCount(int byteCount);
         public virtual byte[] GetPreamble() { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
         public unsafe string GetString(byte* bytes, int byteCount) { throw null; }
         public virtual string GetString(byte[] bytes) { throw null; }
         public virtual string GetString(byte[] bytes, int index, int count) { throw null; }
         public bool IsAlwaysNormalized() { throw null; }
         public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
     }
     public sealed partial class EncodingInfo
@@ -6888,7 +6951,9 @@ namespace System.Threading
     }
     public static partial class WaitHandleExtensions
     {
+        [System.Security.SecurityCriticalAttribute]
         public static Microsoft.Win32.SafeHandles.SafeWaitHandle GetSafeWaitHandle(this System.Threading.WaitHandle waitHandle) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public static void SetSafeWaitHandle(this System.Threading.WaitHandle waitHandle, Microsoft.Win32.SafeHandles.SafeWaitHandle value) { }
     }
 }
@@ -7190,10 +7255,15 @@ namespace System.Threading.Tasks
         public virtual int MaximumConcurrencyLevel { get { throw null; } }
         public static event System.EventHandler<System.Threading.Tasks.UnobservedTaskExceptionEventArgs> UnobservedTaskException { add { } remove { } }
         public static System.Threading.Tasks.TaskScheduler FromCurrentSynchronizationContext() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         protected abstract System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> GetScheduledTasks();
+        [System.Security.SecurityCriticalAttribute]
         protected internal abstract void QueueTask(System.Threading.Tasks.Task task);
+        [System.Security.SecurityCriticalAttribute]
         protected internal virtual bool TryDequeue(System.Threading.Tasks.Task task) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         protected bool TryExecuteTask(System.Threading.Tasks.Task task) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         protected abstract bool TryExecuteTaskInline(System.Threading.Tasks.Task task, bool taskWasPreviouslyQueued);
     }
     public enum TaskStatus

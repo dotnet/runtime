@@ -29,6 +29,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="activityId">A Guid that represents the new activity with which to mark 
         /// the current thread</param>
+        [System.Security.SecuritySafeCritical]
         public static void SetCurrentThreadActivityId(Guid activityId)
         {
             if (TplEtwProvider.Log != null)
@@ -79,6 +80,7 @@ namespace System.Diagnostics.Tracing
         /// the current thread</param>
         /// <param name="oldActivityThatWillContinue">The Guid that represents the current activity  
         /// which will continue at some point in the future, on the current thread</param>
+        [System.Security.SecuritySafeCritical]
         public static void SetCurrentThreadActivityId(Guid activityId, out Guid oldActivityThatWillContinue)
         {
             oldActivityThatWillContinue = activityId;
@@ -102,6 +104,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public static Guid CurrentThreadActivityId
         {
+            [System.Security.SecuritySafeCritical]
             get
             {
                 // We ignore errors to keep with the convention that EventSources do not throw 
@@ -285,6 +288,7 @@ namespace System.Diagnostics.Tracing
     
     internal partial class EventProvider
     {
+        [System.Security.SecurityCritical]
         internal unsafe int SetInformation(
             UnsafeNativeMethods.ManifestEtw.EVENT_INFO_CLASS eventInfoClass,
             IntPtr data,
