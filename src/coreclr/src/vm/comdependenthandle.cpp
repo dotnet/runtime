@@ -74,11 +74,22 @@ FCIMPL3(VOID, DependentHandle::nGetPrimaryAndSecondary, OBJECTHANDLE handle, Obj
 }
 FCIMPLEND
 
+FCIMPL2(VOID, DependentHandle::nSetPrimary, OBJECTHANDLE handle, Object *_primary)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    OBJECTREF primary(_primary);
+    StoreObjectInHandle(handle, primary);
+}
+FCIMPLEND
+
 FCIMPL2(VOID, DependentHandle::nSetSecondary, OBJECTHANDLE handle, Object *_secondary)
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(handle != NULL && _secondary != NULL);
+    _ASSERTE(handle != NULL);
 
     OBJECTREF secondary(_secondary);
     SetDependentHandleSecondary(handle, secondary);
