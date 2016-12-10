@@ -281,7 +281,7 @@ namespace System.Runtime.CompilerServices
         {
             lock (_lock)
             {
-                _container.Clear();
+                _container = new Container(this);
             }
         }
 
@@ -493,16 +493,6 @@ namespace System.Runtime.CompilerServices
                 }
 
                 return false;
-            }
-
-            internal void Clear()
-            {
-                // Remove all handles (as in Remove, just by setting the hashcode and leaving
-                // actual removal up to the finalizer).
-                for (int i = 0; i < _firstFreeEntry; i++)
-                {
-                    Volatile.Write(ref _entries[i].HashCode, -1);
-                }
             }
 
             //----------------------------------------------------------------------------------------
