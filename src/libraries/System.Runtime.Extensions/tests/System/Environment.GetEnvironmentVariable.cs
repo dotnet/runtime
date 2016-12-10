@@ -135,6 +135,7 @@ namespace System.Tests
         }
 
 #if netstandard17
+        [ActiveIssue(14417)]
         [OuterLoop] // manipulating environment variables broader in scope than the process
         [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
