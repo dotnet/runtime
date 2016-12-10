@@ -27,4 +27,11 @@
       <Output TaskParameter="BestConfiguration" ItemName="ProjectConfiguration" />
     </FindBestConfiguration>
   </Target>
+
+  <Target Name="AnnotateProjectsWithConfiguration"
+          Returns="@(ProjectWithConfiguration)" >
+    <ItemGroup>
+      <ProjectWithConfiguration Include="@(Project)" />
+    </ItemGroup>
+  </Target>
 </Project>

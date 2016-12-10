@@ -11,9 +11,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(TargetGroup)' == 'uap101'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(EnableWinRT)' != 'true' AND '$(TargetGroup)' == ''">
+  <PropertyGroup Condition="'$(EnableWinRT)' != 'true' AND '$(TargetGroup)' == 'netstandard1.7'">
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(EnableWinRT)' == 'true'">
@@ -33,7 +32,7 @@
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101'">
     <Compile Include="System\Net\AuthenticationSchemes.cs" />
     <Compile Include="System\Net\Cookie.cs" />
     <Compile Include="System\Net\CookieContainer.cs" />
@@ -55,7 +54,7 @@
     <Compile Include="System\Net\NetworkCredential.cs" />
     <Compile Include="System\Net\TransportContext.cs" />
     <Compile Include="System\Net\SocketException.cs" />
-    <Compile Include="System\Net\SocketException.netstandard17.cs" Condition="'$(TargetGroup)' == ''" />
+    <Compile Include="System\Net\SocketException.netstandard17.cs" Condition="'$(TargetGroup)' == 'netstandard1.7'" />
     <Compile Include="System\Net\SecureProtocols\NegotiateEnumTypes.cs" />
     <Compile Include="System\Net\SecureProtocols\SslEnumTypes.cs" />
     <Compile Include="System\Net\Security\SslPolicyErrors.cs" />
@@ -116,7 +115,7 @@
       <Link>Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net463' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND ('$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101')">
     <Compile Include="System\Net\IPAddressPal.Windows.cs" />
     <Compile Include="System\Net\SocketException.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
@@ -151,7 +150,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' AND ('$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101')">
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
@@ -172,12 +171,12 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true' AND ('$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101')">
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Uap.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Uap.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetGroup)' != 'net463' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND ('$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101')">
     <Compile Include="System\Net\IPAddressPal.Unix.cs" />
     <Compile Include="System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
@@ -221,9 +220,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

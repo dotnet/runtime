@@ -5,8 +5,8 @@
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
   <ItemGroup>
-    <Project Include="CoreFx.Tools\CoreFx.Tools.builds" />
-    <Project Include="GenerateProps\GenerateProps.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)CoreFx.Tools\CoreFx.Tools.builds" />
+    <Project Include="$(MSBuildThisFileDirectory)GenerateProps\GenerateProps.proj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

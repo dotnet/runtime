@@ -9,7 +9,6 @@
     <AssemblyName>System.Diagnostics.FileVersionInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -18,10 +17,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50' or '$(TargetGroup)' == 'netstandard1.3'">
     <Compile Include="System\Diagnostics\FileVersionInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard1.3'">
     <Compile Include="System\Diagnostics\FileVersionInfo.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -48,7 +47,7 @@
       <Link>Common\Interop\Windows\Interop.VSFixedFileInfo.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetsUnix)' == 'true' And '$(TargetGroup)' == '') OR '$(TargetGroup)' == 'netcore50'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netstandard1.3') OR '$(TargetGroup)' == 'netcore50'">
     <Compile Include="System\Diagnostics\FileVersionInfo.Metadata.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
@@ -61,7 +60,12 @@
     <Reference Include="System.Globalization" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.Tools" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <ProjectReference Include="../../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
+    <Reference Include="System.Collections.Immutable" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

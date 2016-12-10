@@ -17,6 +17,17 @@
   <Target Name="GenerateTestProjectJson" />
   <Target Name="GenerateAllTestProjectJsons" />
 
+  <Target Name="AnnotateProjectsWithConfiguration"
+          Returns="@(ProjectWithConfiguration)" >
+    <ItemGroup>
+      <ProjectWithConfiguration Include="@(Project)" />
+    </ItemGroup>
+  </Target>
+
+
+  <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll -->
+  <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" />
+
   <Target Name="UndefineTestTFM" BeforeTargets="AssignProjectConfiguration">
     <ItemGroup>
       <ProjectReference>

@@ -8,7 +8,6 @@
     <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -47,7 +46,7 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="System\Net\AuthenticationSchemeSelector.cs" />
     <Compile Include="System\Net\HttpListener.cs" />
     <Compile Include="System\Net\HttpListenerBasicIdentity.cs" />
@@ -62,7 +61,7 @@
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="System\Net\BoundaryType.cs" />
     <Compile Include="System\Net\AuthConstants.cs" />
     <Compile Include="System\Net\ContextFlags.cs" />
@@ -201,7 +200,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="System\Net\HttpListener.Unix.cs" />
     <Compile Include="System\Net\HttpListenerContext.Unix.cs" />
     <Compile Include="System\Net\HttpListenerRequest.Unix.cs" />
