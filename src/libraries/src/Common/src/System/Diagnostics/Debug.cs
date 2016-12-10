@@ -88,6 +88,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
+        [System.Security.SecuritySafeCritical]
         public static void Assert(bool condition, string message, string detailMessage)
         {
             if (!condition)

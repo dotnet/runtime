@@ -775,6 +775,7 @@ namespace System.Xml
             return s_enableLegacyXmlSettings.Value;
         }
 
+        [SecuritySafeCritical]
         private static bool ReadSettingsFromRegistry(RegistryKey hive, ref bool value)
         {
             const string regValueName = "EnableLegacyXmlSettings";

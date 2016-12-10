@@ -14,6 +14,7 @@ namespace System.Xml
 
         private static bool s_targetsAtLeast_Desktop_V4_5_2 = RunningOnCheck("TargetsAtLeast_Desktop_V4_5_2");
 
+        [SecuritySafeCritical]
         private static bool RunningOnCheck(string propertyName)
         {
             Type binaryCompatabilityType;

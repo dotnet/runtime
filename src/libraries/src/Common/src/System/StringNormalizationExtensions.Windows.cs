@@ -12,6 +12,7 @@ namespace System
 {
     static partial class StringNormalizationExtensions
     {
+        [SecurityCritical]
         public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
         {
             if (strInput == null)
@@ -45,6 +46,7 @@ namespace System
             return result;
         }
 
+        [SecurityCritical]
         public static string Normalize(this string strInput, NormalizationForm normalizationForm)
         {
             if (strInput == null)

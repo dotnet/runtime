@@ -139,6 +139,7 @@ namespace System.Text
                 m_fallbackBuffer.Reset();
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
             // Validate input parameters
@@ -165,6 +166,7 @@ namespace System.Text
             return result;
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             // Validate input parameters
@@ -180,6 +182,7 @@ namespace System.Text
             return m_encoding.GetByteCount(chars, count, this);
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex, bool flush)
         {
@@ -213,6 +216,7 @@ namespace System.Text
                                     pBytes + byteIndex, byteCount, flush);
         }
 
+        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
@@ -230,6 +234,7 @@ namespace System.Text
 
         // This method is used when your output buffer might not be large enough for the entire result.
         // Just call the pointer version.  (This gets bytes)
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe void Convert(char[] chars, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex, int byteCount, bool flush,
                                               out int charsUsed, out int bytesUsed, out bool completed)
@@ -271,6 +276,7 @@ namespace System.Text
 
         // This is the version that uses pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting bytes
+        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe void Convert(char* chars, int charCount,
                                               byte* bytes, int byteCount, bool flush,
                                               out int charsUsed, out int bytesUsed, out bool completed)

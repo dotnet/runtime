@@ -38,6 +38,7 @@ namespace System.Xml
             }
         }
 
+        [System.Security.SecuritySafeCritical]
         internal override unsafe int Decode(char[] chars, int startPos, int len)
         {
             if (chars == null)
@@ -74,6 +75,7 @@ namespace System.Xml
             return charsDecoded;
         }
 
+        [System.Security.SecuritySafeCritical]
         internal override unsafe int Decode(string str, int startPos, int len)
         {
             if (str == null)
@@ -133,6 +135,7 @@ namespace System.Xml
         //
         // Static methods
         //
+        [System.Security.SecuritySafeCritical]
         public static unsafe byte[] Decode(char[] chars, bool allowOddChars)
         {
             if (chars == null)
@@ -178,6 +181,7 @@ namespace System.Xml
         // Private methods
         //
 
+        [System.Security.SecurityCritical]
         private static unsafe void Decode(char* pChars, char* pCharsEndPos,
                                     byte* pBytes, byte* pBytesEndPos,
                                     ref bool hasHalfByteCached, ref byte cachedHalfByte,

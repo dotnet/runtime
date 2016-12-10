@@ -554,6 +554,7 @@ namespace System.Xml
 
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
         // are entitized.
+        [SecuritySafeCritical]
         protected unsafe int WriteAttributeTextBlockNoFlush(char* pSrc, char* pSrcEnd)
         {
             char* pRaw = pSrc;
@@ -659,6 +660,7 @@ namespace System.Xml
             return -1;
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteAttributeTextBlockNoFlush(char[] chars, int index, int count)
         {
             if (count == 0)
@@ -673,6 +675,7 @@ namespace System.Xml
             }
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteAttributeTextBlockNoFlush(string text, int index, int count)
         {
             if (count == 0)
@@ -739,6 +742,7 @@ namespace System.Xml
 
         // Serialize text that is part of element content.  The '&', '<', and '>' characters
         // are entitized.
+        [SecuritySafeCritical]
         protected unsafe int WriteElementTextBlockNoFlush(char* pSrc, char* pSrcEnd, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -847,6 +851,7 @@ namespace System.Xml
             return -1;
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteElementTextBlockNoFlush(char[] chars, int index, int count, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -863,6 +868,7 @@ namespace System.Xml
             }
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteElementTextBlockNoFlush(string text, int index, int count, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -961,6 +967,7 @@ namespace System.Xml
             } while (writeLen >= 0 || needWriteNewLine);
         }
 
+        [SecuritySafeCritical]
         protected unsafe int RawTextNoFlush(char* pSrcBegin, char* pSrcEnd)
         {
             char* pRaw = pSrcBegin;
@@ -1009,6 +1016,7 @@ namespace System.Xml
             return -1;
         }
 
+        [SecuritySafeCritical]
         protected unsafe int RawTextNoFlush(string text, int index, int count)
         {
             if (count == 0)
@@ -1117,6 +1125,7 @@ namespace System.Xml
             }
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteRawWithCharCheckingNoFlush(char* pSrcBegin, char* pSrcEnd, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -1212,6 +1221,7 @@ namespace System.Xml
             return -1;
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteRawWithCharCheckingNoFlush(char[] chars, int index, int count, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -1227,6 +1237,7 @@ namespace System.Xml
             }
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteRawWithCharCheckingNoFlush(string text, int index, int count, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -1290,6 +1301,7 @@ namespace System.Xml
             } while (writeLen >= 0 || needWriteNewLine);
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteCommentOrPiNoFlush(string text, int index, int count, int stopChar, out bool needWriteNewLine)
         {
             needWriteNewLine = false;
@@ -1459,6 +1471,7 @@ namespace System.Xml
             } while (writeLen >= 0 || needWriteNewLine);
         }
 
+        [SecuritySafeCritical]
         protected unsafe int WriteCDataSectionNoFlush(string text, int index, int count, out bool needWriteNewLine)
         {
             needWriteNewLine = false;

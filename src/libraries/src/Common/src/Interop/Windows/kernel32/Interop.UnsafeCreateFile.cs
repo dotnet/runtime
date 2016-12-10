@@ -10,6 +10,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
+        [System.Security.SecurityCritical]  // auto-generated
         internal static SafeFileHandle UnsafeCreateFile(
             string lpFileName,
             int dwDesiredAccess,

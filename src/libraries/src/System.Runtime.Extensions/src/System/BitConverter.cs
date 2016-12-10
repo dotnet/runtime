@@ -44,6 +44,7 @@ namespace System
 
         // Converts a short into an array of bytes with length
         // two.
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe byte[] GetBytes(short value)
         {
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -57,6 +58,7 @@ namespace System
 
         // Converts an int into an array of bytes with length 
         // four.
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe byte[] GetBytes(int value)
         {
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -70,6 +72,7 @@ namespace System
 
         // Converts a long into an array of bytes with length 
         // eight.
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe byte[] GetBytes(long value)
         {
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -116,6 +119,7 @@ namespace System
 
         // Converts a float into an array of bytes with length 
         // four.
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe byte[] GetBytes(float value)
         {
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -126,6 +130,7 @@ namespace System
 
         // Converts a double into an array of bytes with length 
         // eight.
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe byte[] GetBytes(double value)
         {
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -149,6 +154,7 @@ namespace System
         }
 
         // Converts an array of bytes into a short.  
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe short ToInt16(byte[] value, int startIndex)
         {
             if (value == null)
@@ -178,6 +184,7 @@ namespace System
         }
 
         // Converts an array of bytes into an int.  
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe int ToInt32(byte[] value, int startIndex)
         {
             if (value == null)
@@ -207,6 +214,7 @@ namespace System
         }
 
         // Converts an array of bytes into a long.  
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe long ToInt64(byte[] value, int startIndex)
         {
             if (value == null)
@@ -289,6 +297,7 @@ namespace System
         }
 
         // Converts an array of bytes into a float.  
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe float ToSingle(byte[] value, int startIndex)
         {
             if (value == null)
@@ -304,6 +313,7 @@ namespace System
         }
 
         // Converts an array of bytes into a double.  
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public static unsafe double ToDouble(byte[] value, int startIndex)
         {
             if (value == null)
@@ -431,21 +441,25 @@ namespace System
             return value[startIndex] != 0;
         }
 
+        [SecuritySafeCritical]
         public static unsafe long DoubleToInt64Bits(double value)
         {
             return *((long*)&value);
         }
 
+        [SecuritySafeCritical]
         public static unsafe double Int64BitsToDouble(long value)
         {
             return *((double*)&value);
         }
 
+        [SecuritySafeCritical]
         public static unsafe int SingleToInt32Bits(float value)
         {
             return *((int*)&value);
         }
 
+        [SecuritySafeCritical]
         public static unsafe float Int32BitsToSingle(int value)
         {
             return *((float*)&value);

@@ -14,6 +14,7 @@ namespace System.IO.MemoryMappedFiles
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
+        [SecurityCritical]
         private static unsafe SafeMemoryMappedFileHandle CreateCore(
             FileStream fileStream, string mapName, 
             HandleInheritability inheritability, MemoryMappedFileAccess access, 
@@ -84,6 +85,7 @@ namespace System.IO.MemoryMappedFiles
         /// <summary>
         /// Used by the CreateOrOpen factory method groups.
         /// </summary>
+        [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
             string mapName, 
             HandleInheritability inheritability, MemoryMappedFileAccess access,
@@ -99,6 +101,7 @@ namespace System.IO.MemoryMappedFiles
         /// We'll throw an ArgumentException if the file mapping object didn't exist and the
         /// caller used CreateOrOpen since Create isn't valid with Write access
         /// </summary>
+        [SecurityCritical]
         private static SafeMemoryMappedFileHandle OpenCore(
             string mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, bool createOrOpen)
         {
@@ -110,6 +113,7 @@ namespace System.IO.MemoryMappedFiles
         /// We'll throw an ArgumentException if the file mapping object didn't exist and the
         /// caller used CreateOrOpen since Create isn't valid with Write access
         /// </summary>
+        [SecurityCritical]
         private static SafeMemoryMappedFileHandle OpenCore(
             string mapName, HandleInheritability inheritability, MemoryMappedFileRights rights, bool createOrOpen)
         {

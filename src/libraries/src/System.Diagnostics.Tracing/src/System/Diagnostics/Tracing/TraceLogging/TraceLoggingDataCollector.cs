@@ -21,6 +21,7 @@ namespace System.Diagnostics.Tracing
     /// full-trust code, this abstraction is unnecessary (though it probably
     /// doesn't hurt anything).
     /// </summary>
+    [SecuritySafeCritical]
     internal unsafe class TraceLoggingDataCollector
     {
         internal static readonly TraceLoggingDataCollector Instance = new TraceLoggingDataCollector();

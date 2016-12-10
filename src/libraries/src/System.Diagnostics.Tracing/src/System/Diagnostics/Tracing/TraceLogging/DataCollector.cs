@@ -22,6 +22,7 @@ namespace System.Diagnostics.Tracing
     /// EventWrite. The instance must be Disabled before the arrays referenced
     /// by the pointers are freed or unpinned.
     /// </summary>
+    [SecurityCritical]
     internal unsafe struct DataCollector
     {
         [ThreadStatic]

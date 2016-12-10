@@ -70,6 +70,7 @@ namespace System.Numerics
             return (uint)carry;
         }
 
+        [SecuritySafeCritical]
         public static unsafe uint[] Divide(uint[] left, uint[] right,
                                            out uint[] remainder)
         {
@@ -99,6 +100,7 @@ namespace System.Numerics
             return bits;
         }
 
+        [SecuritySafeCritical]
         public static unsafe uint[] Divide(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
@@ -122,6 +124,7 @@ namespace System.Numerics
             return bits;
         }
 
+        [SecuritySafeCritical]
         public static unsafe uint[] Remainder(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
@@ -144,6 +147,7 @@ namespace System.Numerics
             return localLeft;
         }
 
+        [SecuritySafeCritical]
         private static unsafe void Divide(uint* left, int leftLength,
                                           uint* right, int rightLength,
                                           uint* bits, int bitsLength)
@@ -230,6 +234,7 @@ namespace System.Numerics
             }
         }
 
+        [SecuritySafeCritical]
         private static unsafe uint AddDivisor(uint* left, int leftLength,
                                               uint* right, int rightLength)
         {
@@ -250,6 +255,7 @@ namespace System.Numerics
             return (uint)carry;
         }
 
+        [SecuritySafeCritical]
         private static unsafe uint SubtractDivisor(uint* left, int leftLength,
                                                    uint* right, int rightLength,
                                                    ulong q)

@@ -143,6 +143,7 @@ namespace System.IO
             { return _isOpen && (_access & FileAccess.Write) != 0; }
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override void Dispose(bool disposing)
         {
             _isOpen = false;
@@ -185,6 +186,7 @@ namespace System.IO
                 Contract.EndContractBlock();
                 return Interlocked.Read(ref _position);
             }
+            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 if (value < 0)
@@ -235,6 +237,7 @@ namespace System.IO
             }
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int Read([In, Out] byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -271,6 +274,7 @@ namespace System.IO
             return nInt;
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int ReadByte()
         {
             if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
@@ -323,6 +327,7 @@ namespace System.IO
             return finalPos;
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void SetLength(long value)
         {
             if (value < 0)
@@ -350,6 +355,7 @@ namespace System.IO
             }
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -402,6 +408,7 @@ namespace System.IO
             return;
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void WriteByte(byte value)
         {
             if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);

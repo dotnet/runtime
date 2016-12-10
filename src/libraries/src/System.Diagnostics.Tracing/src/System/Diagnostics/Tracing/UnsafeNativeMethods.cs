@@ -13,6 +13,7 @@ namespace Microsoft.Win32
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal static class UnsafeNativeMethods
     {
+        [SecurityCritical]
         [SuppressUnmanagedCodeSecurityAttribute()]
         internal static unsafe class ManifestEtw
         {
@@ -44,6 +45,7 @@ namespace Microsoft.Win32
             //
             // Callback
             //
+            [SecurityCritical]
             internal unsafe delegate void EtwEnableCallback(
                 [In] ref Guid sourceId,
                 [In] int isEnabled,
@@ -57,6 +59,7 @@ namespace Microsoft.Win32
             //
             // Registration APIs
             //
+            [SecurityCritical]
             internal static unsafe uint EventRegister(
                         [In] ref Guid providerId,
                         [In]EtwEnableCallback enableCallback,
@@ -88,6 +91,7 @@ namespace Microsoft.Win32
             }
 
 
+            [SecurityCritical]
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             internal static uint EventUnregister([In] long registrationHandle)
             {
@@ -248,12 +252,15 @@ namespace Microsoft.Win32
         private const string CoreLocalizationApiSet = "kernel32.dll";
 #endif
 
+        [System.Security.SecuritySafeCritical]
+        // Gets an error message for a Win32 error code.
         internal static String GetMessage(int errorCode)
         {
             return Interop.Kernel32.GetMessage(errorCode);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+        [System.Security.SecurityCritical]
         internal static uint GetCurrentProcessId()
         {
             return Interop.Kernel32.GetCurrentProcessId();

@@ -8,6 +8,7 @@
 
 namespace Microsoft.Win32
 {
+    [System.Security.SecurityCriticalAttribute]
     public static partial class RegistryAclExtensions
     {
         public static System.Security.AccessControl.RegistrySecurity GetAccessControl(this Microsoft.Win32.RegistryKey key) { throw null; }
@@ -17,6 +18,7 @@ namespace Microsoft.Win32
 }
 namespace System.Security.AccessControl
 {
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class RegistryAccessRule : System.Security.AccessControl.AccessRule
     {
         public RegistryAccessRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
@@ -25,12 +27,14 @@ namespace System.Security.AccessControl
         public RegistryAccessRule(string identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public System.Security.AccessControl.RegistryRights RegistryRights { get { throw null; } }
     }
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class RegistryAuditRule : System.Security.AccessControl.AuditRule
     {
         public RegistryAuditRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public RegistryAuditRule(string identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public System.Security.AccessControl.RegistryRights RegistryRights { get { throw null; } }
     }
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class RegistrySecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public RegistrySecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }

@@ -9,6 +9,7 @@
 namespace System.Security.AccessControl
 {
     [System.FlagsAttribute]
+    [System.Security.SecurityCriticalAttribute]
     public enum EventWaitHandleRights
     {
         ChangePermissions = 262144,
@@ -20,6 +21,7 @@ namespace System.Security.AccessControl
         TakeOwnership = 524288,
     }
 
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class EventWaitHandleSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public EventWaitHandleSecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }

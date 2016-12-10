@@ -95,6 +95,7 @@ namespace System.IO.Pipes
         // Once a PipeStream has a handle ready, it should call this method to set up the PipeStream.  If
         // the pipe is in a connected state already, it should also set the IsConnected (protected) property.
         // This method may also be called to uninitialize a handle, setting it to null.
+        [SecuritySafeCritical]
         protected void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
         {
             if (isAsync && handle != null)
@@ -110,6 +111,7 @@ namespace System.IO.Pipes
             _isFromExistingHandle = isExposed;
         }
 
+        [SecurityCritical]
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (_isAsync)
@@ -127,6 +129,7 @@ namespace System.IO.Pipes
             return ReadCore(buffer, offset, count);
         }
 
+        [SecuritySafeCritical]
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadWriteArgs(buffer, offset, count);
@@ -172,6 +175,7 @@ namespace System.IO.Pipes
                 return base.EndRead(asyncResult);
         }
 
+        [SecurityCritical]
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (_isAsync)
@@ -190,6 +194,7 @@ namespace System.IO.Pipes
             WriteCore(buffer, offset, count);
         }
 
+        [SecuritySafeCritical]
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadWriteArgs(buffer, offset, count);
@@ -267,6 +272,7 @@ namespace System.IO.Pipes
 
         // Reads a byte from the pipe stream.  Returns the byte cast to an int
         // or -1 if the connection has been broken.
+        [SecurityCritical]
         public override int ReadByte()
         {
             byte[] buffer = SingleByteArray;
@@ -275,6 +281,7 @@ namespace System.IO.Pipes
                 -1;
         }
 
+        [SecurityCritical]
         public override void WriteByte(byte value)
         {
             byte[] buffer = SingleByteArray;
@@ -284,6 +291,7 @@ namespace System.IO.Pipes
 
         // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
         // if the other end of the pipe is no longer interested in reading from the pipe. 
+        [SecurityCritical]
         public override void Flush()
         {
             CheckWriteOperations();
@@ -293,6 +301,7 @@ namespace System.IO.Pipes
             }
         }
 
+        [SecurityCritical]
         protected override void Dispose(bool disposing)
         {
             try
@@ -340,6 +349,7 @@ namespace System.IO.Pipes
         // message, otherwise it is set to true. 
         public bool IsMessageComplete
         {
+            [SecurityCritical]
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
@@ -381,6 +391,7 @@ namespace System.IO.Pipes
 
         public SafePipeHandle SafePipeHandle
         {
+            [SecurityCritical]
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
@@ -400,6 +411,7 @@ namespace System.IO.Pipes
 
         internal SafePipeHandle InternalHandle
         {
+            [SecurityCritical]
             get
             {
                 return _handle;

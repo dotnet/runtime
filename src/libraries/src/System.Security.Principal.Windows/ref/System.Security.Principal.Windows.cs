@@ -8,11 +8,13 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SafeAccessTokenHandle : System.Runtime.InteropServices.SafeHandle
     {
         public SafeAccessTokenHandle(System.IntPtr handle) : base(default(System.IntPtr), default(bool)) { }
         public static Microsoft.Win32.SafeHandles.SafeAccessTokenHandle InvalidHandle {[System.Security.SecurityCriticalAttribute]get { throw null; } }
         public override bool IsInvalid {[System.Security.SecurityCriticalAttribute]get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { throw null; }
     }
 }

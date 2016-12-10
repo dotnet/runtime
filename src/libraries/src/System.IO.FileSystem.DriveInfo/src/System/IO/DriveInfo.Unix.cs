@@ -36,6 +36,7 @@ namespace System.IO
 
         public DriveType DriveType
         {
+            [SecuritySafeCritical]
             get
             {
                 DriveType type;
@@ -66,6 +67,7 @@ namespace System.IO
 
         public string DriveFormat
         {
+            [SecuritySafeCritical]
             get
             {
                 string format = string.Empty;
@@ -76,6 +78,7 @@ namespace System.IO
 
         public long AvailableFreeSpace
         {
+            [SecuritySafeCritical]
             get
             {
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
@@ -86,6 +89,7 @@ namespace System.IO
 
         public long TotalFreeSpace
         {
+            [SecuritySafeCritical]
             get
             {
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
@@ -96,6 +100,7 @@ namespace System.IO
 
         public long TotalSize
         {
+            [SecuritySafeCritical]
             get
             {
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
@@ -106,10 +111,12 @@ namespace System.IO
 
         public string VolumeLabel
         {
+            [SecuritySafeCritical]
             get
             {
                 return Name;
             }
+            [SecuritySafeCritical]
             set
             {
                 throw new PlatformNotSupportedException();

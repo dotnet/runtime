@@ -18,6 +18,7 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [SecurityCritical]
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();

@@ -20,12 +20,14 @@ namespace System.Globalization
 
                 public char* digits
                 {
+                    [SecurityCritical]
                     get
                     {
                         return overrideDigits;
                     }
                 }
 
+                [SecurityCritical]
                 public char* overrideDigits; // Used for BigNumber support which can't be limited to 32 characters.
             }
         }

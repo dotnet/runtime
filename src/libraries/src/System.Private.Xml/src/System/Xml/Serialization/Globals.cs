@@ -11,9 +11,11 @@ namespace System.Xml.Serialization
 {
     internal static class Globals
     {
+        [SecurityCritical]
         private static Type s_typeOfDBNull;
         internal static Type TypeOfDBNull
         {
+            [SecuritySafeCritical]
             get
             {
                 if (s_typeOfDBNull == null)
@@ -22,9 +24,11 @@ namespace System.Xml.Serialization
             }
         }
 
+        [SecurityCritical]
         private static object s_valueOfDBNull;
         internal static object ValueOfDBNull
         {
+            [SecuritySafeCritical]
             get
             {
                 if (s_valueOfDBNull == null && TypeOfDBNull != null)

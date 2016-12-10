@@ -33,6 +33,7 @@ namespace System.Threading
     public sealed partial class AsyncLocal<T>
     {
         public AsyncLocal() { }
+        [System.Security.SecurityCriticalAttribute]
         public AsyncLocal(System.Action<System.Threading.AsyncLocalValueChangedArgs<T>> valueChangedHandler) { }
         public T Value { get { throw null; } set { } }
     }
@@ -108,11 +109,15 @@ namespace System.Threading
     public partial class EventWaitHandle : System.Threading.WaitHandle
     {
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode) { }
+        [System.Security.SecurityCriticalAttribute]
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name) { }
+        [System.Security.SecurityCriticalAttribute]
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name, out bool createdNew) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public static System.Threading.EventWaitHandle OpenExisting(string name) { throw null; }
         public bool Reset() { throw null; }
         public bool Set() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public static bool TryOpenExisting(string name, out System.Threading.EventWaitHandle result) { throw null; }
     }
     public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
@@ -242,10 +247,14 @@ namespace System.Threading
     {
         public Mutex() { }
         public Mutex(bool initiallyOwned) { }
+        [System.Security.SecurityCriticalAttribute]
         public Mutex(bool initiallyOwned, string name) { }
+        [System.Security.SecurityCriticalAttribute]
         public Mutex(bool initiallyOwned, string name, out bool createdNew) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
         public static System.Threading.Mutex OpenExisting(string name) { throw null; }
         public void ReleaseMutex() { }
+        [System.Security.SecurityCriticalAttribute]
         public static bool TryOpenExisting(string name, out System.Threading.Mutex result) { throw null; }
     }
     public sealed partial class ReaderWriterLock : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
