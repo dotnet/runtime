@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -228,6 +229,47 @@ namespace System.Runtime.CompilerServices.Tests
             // key and value must be collected
             Assert.False(wrValue.TryGetTarget(out obj));
             Assert.False(wrkey.TryGetTarget(out obj));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        public static void Clear_AllValuesRemoved(int numObjects)
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            MethodInfo clear = cwt.GetType().GetMethod("Clear", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (clear == null)
+            {
+                // Couldn't access the Clear method; skip the test.
+                return;
+            }
+
+            object[] keys = Enumerable.Range(0, numObjects).Select(_ => new object()).ToArray();
+            object[] values = Enumerable.Range(0, numObjects).Select(_ => new object()).ToArray();
+
+            for (int iter = 0; iter < 2; iter++)
+            {
+                // Add the objects
+                for (int i = 0; i < numObjects; i++)
+                {
+                    cwt.Add(keys[i], values[i]);
+                    Assert.Same(values[i], cwt.GetValue(keys[i], _ => new object()));
+                }
+
+                // Clear the table
+                clear.Invoke(cwt, null);
+
+                // Verify the objects are removed
+                for (int i = 0; i < numObjects; i++)
+                {
+                    object ignored;
+                    Assert.False(cwt.TryGetValue(keys[i], out ignored));
+                }
+
+                // Do it a couple of times, to make sure the table is still usable after a clear.
+            }
         }
     }
 }
