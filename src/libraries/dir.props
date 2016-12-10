@@ -268,6 +268,7 @@
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <PackageTargetRuntime>win</PackageTargetRuntime>
+        <UseWin32Apis>true</UseWin32Apis>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Unix'">
