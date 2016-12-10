@@ -11,7 +11,6 @@ namespace System.IO.MemoryMappedFiles
 {
     internal partial class MemoryMappedView
     {
-        [SecurityCritical]
         public static unsafe MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
@@ -137,7 +136,6 @@ namespace System.IO.MemoryMappedFiles
                 access);
         }
 
-        [SecurityCritical]
         public unsafe void Flush(UIntPtr capacity)
         {
             if (capacity == UIntPtr.Zero)

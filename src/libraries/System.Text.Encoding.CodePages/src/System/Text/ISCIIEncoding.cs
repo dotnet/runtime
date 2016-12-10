@@ -134,7 +134,6 @@ namespace System.Text
         }
 
         // Our workhorse version
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             // Use null pointer to ask GetBytes for count
@@ -142,7 +141,6 @@ namespace System.Text
         }
 
         // Workhorse
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
             // Allow null bytes for counting
@@ -318,7 +316,6 @@ namespace System.Text
         }
 
         // Workhorse
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             // Just call GetChars with null chars saying we want count
@@ -331,7 +328,6 @@ namespace System.Text
         // Devenagari F0, B8 -> \u0952
         // Devenagari F0, BF -> \u0970
         // Some characters followed by E9 become a different character instead.
-        [System.Security.SecurityCritical]  // auto-generated
         public override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {

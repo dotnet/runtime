@@ -17,7 +17,6 @@ namespace System.IO
         // throw an appropriate error when attempting to access the cached info.
         private int _dataInitialized = -1;
 
-        [SecurityCritical]
         internal void Init(ref Interop.Kernel32.WIN32_FIND_DATA findData)
         {
             // Copy the information to data

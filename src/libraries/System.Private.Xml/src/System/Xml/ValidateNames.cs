@@ -72,7 +72,6 @@ namespace System.Xml
         /// Quits parsing when an invalid Nmtoken char is reached or the end of string is reached.
         /// Returns the number of valid Nmtoken chars that were parsed.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal static unsafe int ParseNmtokenNoNamespaces(string s, int offset)
         {
             Debug.Assert(s != null && offset <= s.Length);
@@ -117,7 +116,6 @@ namespace System.Xml
         /// Quits parsing when an invalid Name char is reached or the end of string is reached.
         /// Returns the number of valid Name chars that were parsed.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal static unsafe int ParseNameNoNamespaces(string s, int offset)
         {
             Debug.Assert(s != null && offset <= s.Length);
@@ -180,7 +178,6 @@ namespace System.Xml
         /// Quits parsing when an invalid NCName char is reached or the end of string is reached.
         /// Returns the number of valid NCName chars that were parsed.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         internal static unsafe int ParseNCName(string s, int offset)
         {
             Debug.Assert(s != null && offset <= s.Length);

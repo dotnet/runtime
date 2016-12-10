@@ -87,19 +87,16 @@ namespace System.IO.Compression
 
         public string ZLibContext
         {
-            [SecurityCritical]
             get { return _zlibErrorContext; }
         }
 
         public int ZLibErrorCode
         {
-            [SecurityCritical]
             get { return (int)_zlibErrorCode; }
         }
 
         public string ZLibErrorMessage
         {
-            [SecurityCritical]
             get { return _zlibErrorMessage; }
         }
     }

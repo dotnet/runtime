@@ -4,7 +4,6 @@
 
 namespace System.Runtime.InteropServices
 {
-    [System.Security.SecuritySafeCritical]
     public class ComAwareEventInfo : System.Reflection.EventInfo
     {
         private System.Reflection.EventInfo _innerEventInfo;
@@ -14,7 +13,6 @@ namespace System.Runtime.InteropServices
             _innerEventInfo = type.GetEvent(eventName);
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void AddEventHandler(object target, Delegate handler)
         {
             if (Marshal.IsComObject(target))
@@ -32,7 +30,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void RemoveEventHandler(object target, Delegate handler)
         {
             if (Marshal.IsComObject(target))

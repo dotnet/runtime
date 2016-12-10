@@ -8,34 +8,29 @@
 
 namespace System.Security.AccessControl
 {
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class EventWaitHandleAccessRule : System.Security.AccessControl.AccessRule
     {
         public EventWaitHandleAccessRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.EventWaitHandleRights eventRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public EventWaitHandleAccessRule(string identity, System.Security.AccessControl.EventWaitHandleRights eventRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public System.Security.AccessControl.EventWaitHandleRights EventWaitHandleRights { get { throw null; } }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class EventWaitHandleAuditRule : System.Security.AccessControl.AuditRule
     {
         public EventWaitHandleAuditRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.EventWaitHandleRights eventRights, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public System.Security.AccessControl.EventWaitHandleRights EventWaitHandleRights { get { throw null; } }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class MutexAccessRule : System.Security.AccessControl.AccessRule
     {
         public MutexAccessRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.MutexRights eventRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public MutexAccessRule(string identity, System.Security.AccessControl.MutexRights eventRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public System.Security.AccessControl.MutexRights MutexRights { get { throw null; } }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class MutexAuditRule : System.Security.AccessControl.AuditRule
     {
         public MutexAuditRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.MutexRights eventRights, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public System.Security.AccessControl.MutexRights MutexRights { get { throw null; } }
     }
     [System.FlagsAttribute]
-    [System.Security.SecurityCriticalAttribute]
     public enum MutexRights
     {
         ChangePermissions = 262144,
@@ -46,7 +41,6 @@ namespace System.Security.AccessControl
         Synchronize = 1048576,
         TakeOwnership = 524288,
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class MutexSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public MutexSecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }
@@ -68,21 +62,18 @@ namespace System.Security.AccessControl
         public void SetAccessRule(System.Security.AccessControl.MutexAccessRule rule) { }
         public void SetAuditRule(System.Security.AccessControl.MutexAuditRule rule) { }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SemaphoreAccessRule : System.Security.AccessControl.AccessRule
     {
         public SemaphoreAccessRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.SemaphoreRights eventRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public SemaphoreAccessRule(string identity, System.Security.AccessControl.SemaphoreRights eventRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public System.Security.AccessControl.SemaphoreRights SemaphoreRights { get { throw null; } }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SemaphoreAuditRule : System.Security.AccessControl.AuditRule
     {
         public SemaphoreAuditRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.SemaphoreRights eventRights, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public System.Security.AccessControl.SemaphoreRights SemaphoreRights { get { throw null; } }
     }
     [System.FlagsAttribute]
-    [System.Security.SecurityCriticalAttribute]
     public enum SemaphoreRights
     {
         ChangePermissions = 262144,
@@ -93,7 +84,6 @@ namespace System.Security.AccessControl
         Synchronize = 1048576,
         TakeOwnership = 524288,
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SemaphoreSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public SemaphoreSecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }
@@ -118,7 +108,6 @@ namespace System.Security.AccessControl
 }
 namespace System.Threading
 {
-    [System.Security.SecurityCriticalAttribute]
     public static partial class ThreadingAclExtensions
     {
         public static System.Security.AccessControl.EventWaitHandleSecurity GetAccessControl(this System.Threading.EventWaitHandle handle) { throw null; }

@@ -17,7 +17,6 @@ namespace System.Threading
     {
         [System.ObsoleteAttribute("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
         public static bool BindHandle(System.IntPtr osHandle) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
         public static bool BindHandle(System.Runtime.InteropServices.SafeHandle osHandle) { throw null; }
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) { throw null; }
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) { throw null; }

@@ -21,7 +21,6 @@ namespace Microsoft.Win32.SafeHandles
     {
         private const int DefaultInvalidHandleValue = 0;
 
-        [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);

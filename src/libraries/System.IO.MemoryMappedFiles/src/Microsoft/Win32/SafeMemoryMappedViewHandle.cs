@@ -8,7 +8,6 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
 #pragma warning disable 0618    // SafeBuffer is obsolete
     public sealed partial class SafeMemoryMappedViewHandle : SafeBuffer
 #pragma warning restore
