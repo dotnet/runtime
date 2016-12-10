@@ -45,6 +45,7 @@ public:
     static FCDECL2(VOID,   nGetPrimary, OBJECTHANDLE handle, Object **outPrimary);
     static FCDECL3(VOID,   nGetPrimaryAndSecondary, OBJECTHANDLE handle, Object **outPrimary, Object **outSecondary);
     static FCDECL1(VOID,   nFree, OBJECTHANDLE handle);
+    static FCDECL2(VOID,   nSetPrimary, OBJECTHANDLE handle, Object *primary);
     static FCDECL2(VOID,   nSetSecondary, OBJECTHANDLE handle, Object *secondary);
 };
 
