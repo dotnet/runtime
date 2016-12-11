@@ -214,7 +214,8 @@ namespace System.Net.Sockets
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
             {
-                return TransmitFileHelper(handle, fileHandle, SafeNativeOverlapped.Zero, preBuffer, postBuffer, flags);
+                bool success = TransmitFileHelper(handle, fileHandle, SafeNativeOverlapped.Zero, preBuffer, postBuffer, flags);
+                return (success ? SocketError.Success : SocketPal.GetLastSocketError());
             }
         }
 
@@ -802,76 +803,82 @@ namespace System.Net.Sockets
         {
             // This will pin the socketAddress buffer.
             asyncResult.SetUnmanagedStructures(socketAddress);
-
-            int ignoreBytesSent;
-            if (!socket.ConnectEx(
-                handle,
-                Marshal.UnsafeAddrOfPinnedArrayElement(socketAddress, 0),
-                socketAddressLen,
-                IntPtr.Zero,
-                0,
-                out ignoreBytesSent,
-                asyncResult.OverlappedHandle))
+            try
             {
-                return GetLastSocketError();
-            }
+                int ignoreBytesSent;
+                bool success = socket.ConnectEx(
+                    handle,
+                    Marshal.UnsafeAddrOfPinnedArrayElement(socketAddress, 0),
+                    socketAddressLen,
+                    IntPtr.Zero,
+                    0,
+                    out ignoreBytesSent,
+                    asyncResult.OverlappedHandle);
 
-            return SocketError.Success;
+                return asyncResult.ProcessOverlappedResult(success, 0);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError SendAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            // Set up asyncResult for overlapped WSASend.
-            // This call will use completion ports.
+            // Set up unmanaged structures for overlapped WSASend.
             asyncResult.SetUnmanagedStructures(buffer, offset, count, null, false /*don't pin null remoteEP*/);
-
-            // This can throw ObjectDisposedException.
-            int bytesTransferred;
-            SocketError errorCode = Interop.Winsock.WSASend(
-                handle,
-                ref asyncResult._singleBuffer,
-                1, // There is only ever 1 buffer being sent.
-                out bytesTransferred,
-                socketFlags,
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                // This can throw ObjectDisposedException.
+                int bytesTransferred;
+                SocketError errorCode = Interop.Winsock.WSASend(
+                    handle,
+                    ref asyncResult._singleBuffer,
+                    1, // There is only ever 1 buffer being sent.
+                    out bytesTransferred,
+                    socketFlags,
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError SendAsync(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             // Set up asyncResult for overlapped WSASend.
-            // This call will use completion ports.
             asyncResult.SetUnmanagedStructures(buffers);
-
-            // This can throw ObjectDisposedException.
-            int bytesTransferred;
-            SocketError errorCode = Interop.Winsock.WSASend(
-                handle,
-                asyncResult._wsaBuffers,
-                asyncResult._wsaBuffers.Length,
-                out bytesTransferred,
-                socketFlags,
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                // This can throw ObjectDisposedException.
+                int bytesTransferred;
+                SocketError errorCode = Interop.Winsock.WSASend(
+                    handle,
+                    asyncResult._wsaBuffers,
+                    asyncResult._wsaBuffers.Length,
+                    out bytesTransferred,
+                    socketFlags,
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         // This assumes preBuffer/postBuffer are pinned already 
 
-        private static unsafe SocketError TransmitFileHelper(
+        private static unsafe bool TransmitFileHelper(
             SafeHandle socket, 
             SafeHandle fileHandle,
             SafeHandle overlapped,
@@ -899,141 +906,157 @@ namespace System.Net.Sockets
             bool success = Interop.Mswsock.TransmitFile(socket, fileHandle, 0, 0, overlapped,
                 needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
 
-            return success ? SocketError.Success : GetLastSocketError();
+            return success;
         }
 
         public static unsafe SocketError SendFileAsync(SafeCloseSocket handle, FileStream fileStream, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
+            try
+            {
+                bool success = TransmitFileHelper(
+                    handle, 
+                    fileStream?.SafeFileHandle, 
+                    asyncResult.OverlappedHandle, 
+                    preBuffer, 
+                    postBuffer, 
+                    flags);
 
-            SocketError errorCode = TransmitFileHelper(handle, fileStream?.SafeFileHandle, asyncResult.OverlappedHandle, preBuffer, postBuffer, flags);
-
-            // This will release resources if necessary
-            errorCode = asyncResult.CheckAsyncCallOverlappedResult(errorCode);
-
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(success, 0);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError SendToAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
         {
             // Set up asyncResult for overlapped WSASendTo.
-            // This call will use completion ports.
             asyncResult.SetUnmanagedStructures(buffer, offset, count, socketAddress, false /* don't pin RemoteEP*/);
-
-            int bytesTransferred;
-            SocketError errorCode = Interop.Winsock.WSASendTo(
-                handle,
-                ref asyncResult._singleBuffer,
-                1, // There is only ever 1 buffer being sent.
-                out bytesTransferred,
-                socketFlags,
-                asyncResult.GetSocketAddressPtr(),
-                asyncResult.SocketAddress.Size,
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                int bytesTransferred;
+                SocketError errorCode = Interop.Winsock.WSASendTo(
+                    handle,
+                    ref asyncResult._singleBuffer,
+                    1, // There is only ever 1 buffer being sent.
+                    out bytesTransferred,
+                    socketFlags,
+                    asyncResult.GetSocketAddressPtr(),
+                    asyncResult.SocketAddress.Size,
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError ReceiveAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             // Set up asyncResult for overlapped WSARecv.
-            // This call will use completion ports.
             asyncResult.SetUnmanagedStructures(buffer, offset, count, null, false /* don't pin null RemoteEP*/);
-
-            // This can throw ObjectDisposedException.
-            int bytesTransferred;
-            SocketError errorCode = Interop.Winsock.WSARecv(
-                handle,
-                ref asyncResult._singleBuffer,
-                1,
-                out bytesTransferred,
-                ref socketFlags,
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                // This can throw ObjectDisposedException.
+                int bytesTransferred;
+                SocketError errorCode = Interop.Winsock.WSARecv(
+                    handle,
+                    ref asyncResult._singleBuffer,
+                    1,
+                    out bytesTransferred,
+                    ref socketFlags,
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError ReceiveAsync(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             // Set up asyncResult for overlapped WSASend.
-            // This call will use completion ports.
             asyncResult.SetUnmanagedStructures(buffers);
-
-            // This can throw ObjectDisposedException.
-            int bytesTransferred;
-            SocketError errorCode = Interop.Winsock.WSARecv(
-                handle,
-                asyncResult._wsaBuffers,
-                asyncResult._wsaBuffers.Length,
-                out bytesTransferred,
-                ref socketFlags,
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                // This can throw ObjectDisposedException.
+                int bytesTransferred;
+                SocketError errorCode = Interop.Winsock.WSARecv(
+                    handle,
+                    asyncResult._wsaBuffers,
+                    asyncResult._wsaBuffers.Length,
+                    out bytesTransferred,
+                    ref socketFlags,
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError ReceiveFromAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
         {
             // Set up asyncResult for overlapped WSARecvFrom.
-            // This call will use completion ports on WinNT and Overlapped IO on Win9x.
             asyncResult.SetUnmanagedStructures(buffer, offset, count, socketAddress, true);
-
-            int bytesTransferred;
-            SocketError errorCode = Interop.Winsock.WSARecvFrom(
-                handle,
-                ref asyncResult._singleBuffer,
-                1,
-                out bytesTransferred,
-                ref socketFlags,
-                asyncResult.GetSocketAddressPtr(),
-                asyncResult.GetSocketAddressSizePtr(),
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                int bytesTransferred;
+                SocketError errorCode = Interop.Winsock.WSARecvFrom(
+                    handle,
+                    ref asyncResult._singleBuffer,
+                    1,
+                    out bytesTransferred,
+                    ref socketFlags,
+                    asyncResult.GetSocketAddressPtr(),
+                    asyncResult.GetSocketAddressSizePtr(),
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError ReceiveMessageFromAsync(Socket socket, SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, ReceiveMessageOverlappedAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(buffer, offset, count, socketAddress, socketFlags);
-
-            int bytesTransfered;
-            SocketError errorCode = (SocketError)socket.WSARecvMsg(
-                handle,
-                Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult._messageBuffer, 0),
-                out bytesTransfered,
-                asyncResult.OverlappedHandle,
-                IntPtr.Zero);
-
-            if (errorCode != SocketError.Success)
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                int bytesTransfered;
+                SocketError errorCode = (SocketError)socket.WSARecvMsg(
+                    handle,
+                    Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult._messageBuffer, 0),
+                    out bytesTransfered,
+                    asyncResult.OverlappedHandle,
+                    IntPtr.Zero);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransfered);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static unsafe SocketError AcceptAsync(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
@@ -1046,24 +1069,27 @@ namespace System.Net.Sockets
             // Set up asyncResult for overlapped AcceptEx.
             // This call will use completion ports on WinNT.
             asyncResult.SetUnmanagedStructures(buffer, addressBufferSize);
-
-            // This can throw ObjectDisposedException.
-            int bytesTransferred;
-            SocketError errorCode = SocketError.Success;
-            if (!socket.AcceptEx(
-                handle,
-                acceptHandle,
-                Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult.Buffer, 0),
-                receiveSize,
-                addressBufferSize,
-                addressBufferSize,
-                out bytesTransferred,
-                asyncResult.OverlappedHandle))
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                // This can throw ObjectDisposedException.
+                int bytesTransferred;
+                bool success = socket.AcceptEx(
+                    handle,
+                    acceptHandle,
+                    Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult.Buffer, 0),
+                    receiveSize,
+                    addressBufferSize,
+                    addressBufferSize,
+                    out bytesTransferred,
+                    asyncResult.OverlappedHandle);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(success, 0);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         public static void CheckDualModeReceiveSupport(Socket socket)
@@ -1074,15 +1100,22 @@ namespace System.Net.Sockets
         internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(null);
-
-            // This can throw ObjectDisposedException
-            SocketError errorCode = SocketError.Success;
-            if (!socket.DisconnectEx(handle, asyncResult.OverlappedHandle, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
+            try
             {
-                errorCode = GetLastSocketError();
-            }
+                // This can throw ObjectDisposedException
+                bool success = socket.DisconnectEx(
+                    handle,
+                    asyncResult.OverlappedHandle,
+                    (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 
+                    0);
 
-            return errorCode;
+                return asyncResult.ProcessOverlappedResult(success, 0);
+            }
+            catch
+            {
+                asyncResult.ReleaseUnmanagedStructures();
+                throw;
+            }
         }
 
         internal static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)

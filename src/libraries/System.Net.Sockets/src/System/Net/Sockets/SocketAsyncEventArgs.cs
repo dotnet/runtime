@@ -585,6 +585,20 @@ namespace System.Net.Sockets
             }
         }
 
+        internal void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        {
+            Debug.Assert(socketError != SocketError.IOPending);
+
+            if (socketError == SocketError.Success)
+            {
+                FinishOperationSyncSuccess(bytesTransferred, flags);
+            }
+            else
+            {
+                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+        }
+
         internal void FinishOperationSyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
             SetResults(socketError, bytesTransferred, flags);
@@ -671,10 +685,11 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishOperationSuccess(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        internal void FinishOperationSyncSuccess(int bytesTransferred, SocketFlags flags)
         {
-            SetResults(socketError, bytesTransferred, flags);
+            SetResults(SocketError.Success, bytesTransferred, flags);
 
+            SocketError socketError = SocketError.Success;
             switch (_completedOperation)
             {
                 case SocketAsyncOperation.Accept:
@@ -871,8 +886,15 @@ namespace System.Net.Sockets
                 _currentSocket.UpdateStatusAfterSocketError(socketError);
             }
 
-            // Complete the operation and raise completion event.
+            // Complete the operation.
             Complete();
+        }
+
+        internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)
+        {
+            FinishOperationSyncSuccess(bytesTransferred, flags);
+
+            // Raise completion event.
             if (_context == null)
             {
                 OnCompleted(this);
