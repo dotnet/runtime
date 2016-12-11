@@ -2024,6 +2024,7 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 static const SimdIntrinsic vector_t_intrinsics[] = {
 	{ SN_ctor },
 	{ SN_Abs },
+	{ SN_CopyTo },
 	{ SN_Equals },
 	{ SN_GreaterThan },
 	{ SN_GreaterThanOrEqual },
@@ -2208,6 +2209,30 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		int op = type_to_pdiv_op (etype);
 		if (op != -1)
 			return simd_intrinsic_emit_binary_op (cfg, op, 0, cmethod->klass, fsig->params [0], fsig->params [0], args [0], args [1]);
+		break;
+	}
+	case SN_CopyTo: {
+		MonoInst *array_ins = args [1];
+		MonoInst *index_ins = args [2];
+		MonoInst *ldelema_ins;
+		MonoInst *var;
+		int end_index_reg;
+
+		if (args [0]->opcode != OP_LDADDR)
+			return NULL;
+
+		/* Emit index check for the end (index + len - 1 < array length) */
+		end_index_reg = alloc_ireg (cfg);
+		EMIT_NEW_BIALU_IMM (cfg, ins, OP_IADD_IMM, end_index_reg, index_ins->dreg, len - 1);
+		MONO_EMIT_BOUNDS_CHECK (cfg, array_ins->dreg, MonoArray, max_length, end_index_reg);
+
+		/* Load the simd reg into the array slice */
+		ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type (etype), array_ins, index_ins, TRUE);
+		g_assert (args [0]->opcode == OP_LDADDR);
+		var = args [0]->inst_p0;
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, var->dreg);
+		ins->klass = cmethod->klass;
+		return args [0];
 		break;
 	}
 	default:

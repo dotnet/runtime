@@ -1392,6 +1392,29 @@ public class VectorTests {
 		return 0;
 	}
 
+	// Vector<T>.CopyTo
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void vector_copyto<T> (Vector<T> v1, T[] array, int index) where T: struct {
+		v1.CopyTo (array, index);
+	}
+
+	public static int test_0_vector_byte_copyto () {
+		var v1 = new Vector<byte> (new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+
+		byte[] arr = new byte [256];
+		vector_copyto (v1, arr, 1);
+		for (int i = 0; i < 16; ++i)
+			if (arr [i + 1] != (i + 1))
+				return 1;
+		vector_copyto (v1, arr, 240);
+		try {
+			vector_copyto (v1, arr, 241);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+
 #endif
 
 }
