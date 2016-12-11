@@ -184,6 +184,28 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void AddRemove_DropValue()
+        {
+            var key = new object();
+            var value = new object();
+
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            cwt.Add(key, value);
+            cwt.Remove(key);
+
+            // Verify that the removed entry is not keeping the value alive
+            var wrValue = new WeakReference(value);
+            value = null;
+
+            GC.Collect();
+            Assert.False(wrValue.IsAlive);
+
+            GC.KeepAlive(cwt);
+            GC.KeepAlive(key);
+        }
+
+        [Fact]
         public static void GetOrCreateValue()
         {
             var cwt = new ConditionalWeakTable<object, object>();
