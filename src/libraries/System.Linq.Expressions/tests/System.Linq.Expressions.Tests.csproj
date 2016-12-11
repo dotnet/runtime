@@ -203,6 +203,7 @@
     <Compile Include="Unary\IncDecAssign\PostIncrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreDecrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreIncrementAssignTests.cs" />
+    <Compile Include="Unary\IncrementDecrementTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
