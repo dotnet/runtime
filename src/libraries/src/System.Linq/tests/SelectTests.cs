@@ -55,6 +55,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name=(string)null, custID=30349 },
+                new { name="Prakash", custID=39030 }
+            };
+            string[] expected = { "Prakash", "Bob", "Chris", null, "Prakash" };
+            Assert.Equal(expected, source.RunOnce().Select(e => e.name));
+            Assert.Equal(expected, source.ToArray().RunOnce().Select(e => e.name));
+            Assert.Equal(expected, source.ToList().RunOnce().Select(e => e.name));
+        }
+
+        [Fact]
         public void EmptyWithIndexedSelector()
         {
             Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<string>().Select((s, i) => s.Length + i));

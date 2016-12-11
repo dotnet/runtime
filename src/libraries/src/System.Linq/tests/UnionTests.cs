@@ -102,6 +102,17 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+            string[] expected = { "Bob", "Robert", "Tim", "Matt", "Charlie" };
+
+            var comparer = new AnagramEqualityComparer();
+            Assert.Equal(expected, first.RunOnce().Union(second.RunOnce(), comparer), comparer);
+        }
+
+        [Fact]
         public void FirstNullCustomComparer()
         {
             string[] first = null;

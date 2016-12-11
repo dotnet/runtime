@@ -87,7 +87,14 @@ namespace System.Linq.Tests
         [MemberData(nameof(NullableInt_TestData))]
         public void NullableInt(IEnumerable<int?> first, IEnumerable<int?> second, IEnumerable<int?> expected)
         {
-                Assert.Equal(expected, first.Except(second));
+            Assert.Equal(expected, first.Except(second));
+        }
+
+        [Theory]
+        [MemberData(nameof(NullableInt_TestData))]
+        public void NullableIntRunOnce(IEnumerable<int?> first, IEnumerable<int?> second, IEnumerable<int?> expected)
+        {
+            Assert.Equal(expected, first.RunOnce().Except(second.RunOnce()));
         }
 
         [Fact]
