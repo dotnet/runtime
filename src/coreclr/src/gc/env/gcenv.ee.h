@@ -65,6 +65,7 @@ public:
     static void DiagWalkSurvivors(void* gcContext);
     static void DiagWalkLOHSurvivors(void* gcContext);
     static void DiagWalkBGCSurvivors(void* gcContext);
+    static void StompWriteBarrier(WriteBarrierParameters* args);
 };
 
 #endif // __GCENV_EE_H__

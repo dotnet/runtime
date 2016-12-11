@@ -333,8 +333,8 @@ void gc_heap::add_to_history_per_heap()
 #endif //BACKGROUND_GC
     current_hist->fgc_lowest = lowest_address;
     current_hist->fgc_highest = highest_address;
-    current_hist->g_lowest = g_lowest_address;
-    current_hist->g_highest = g_highest_address;
+    current_hist->g_lowest = g_gc_lowest_address;
+    current_hist->g_highest = g_gc_highest_address;
 
     gchist_index_per_heap++;
     if (gchist_index_per_heap == max_history_count)
@@ -1402,8 +1402,8 @@ int mark_time, plan_time, sweep_time, reloc_time, compact_time;
 
 #ifndef MULTIPLE_HEAPS
 
-#define ephemeral_low           g_ephemeral_low
-#define ephemeral_high          g_ephemeral_high
+#define ephemeral_low           g_gc_ephemeral_low
+#define ephemeral_high          g_gc_ephemeral_high
 
 #endif // MULTIPLE_HEAPS
 
@@ -2175,6 +2175,55 @@ int log2(unsigned int n)
     if (n >= 1<< 1) {           pos +=  1; }
     return pos;
 }
+
+#ifndef DACCESS_COMPILE
+
+void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_bounds_check)
+{
+    WriteBarrierParameters args = {};
+    args.operation = WriteBarrierOp::StompResize;
+    args.is_runtime_suspended = is_runtime_suspended;
+    args.requires_upper_bounds_check = requires_upper_bounds_check;
+    args.card_table = g_gc_card_table;
+    args.lowest_address = g_gc_lowest_address;
+    args.highest_address = g_gc_highest_address;
+    GCToEEInterface::StompWriteBarrier(&args);
+}
+
+void stomp_write_barrier_ephemeral(bool is_runtime_suspended, uint8_t* ephemeral_lo, uint8_t* ephemeral_hi)
+{
+    WriteBarrierParameters args = {};
+    args.operation = WriteBarrierOp::StompEphemeral;
+    args.is_runtime_suspended = is_runtime_suspended;
+    args.ephemeral_lo = g_gc_ephemeral_low;
+    args.ephemeral_hi = g_gc_ephemeral_high;
+#ifdef MULTIPLE_HEAPS
+    // It is not correct to update the EE's g_ephemeral_low and g_ephemeral_high
+    // to anything other than their default values when using Server GC, since
+    // there is no single ephemeral generation across all of the heaps.
+    // Server GC write barriers do not reference these two globals, but ErectWriteBarrier does.
+    //
+    // When MULTIPLE_HEAPS is defined, g_gc_ephemeral_low and g_gc_ephemeral_high should
+    // always have their default values.
+    assert(args.ephemeral_lo == (uint8_t*)1);
+    assert(args.ephemeral_hi == (uint8_t*)~0);
+#endif // MULTIPLE_HEAPS
+    GCToEEInterface::StompWriteBarrier(&args);
+}
+
+void stomp_write_barrier_initialize()
+{
+    WriteBarrierParameters args = {};
+    args.operation = WriteBarrierOp::Initialize;
+    args.is_runtime_suspended = true;
+    args.requires_upper_bounds_check = false;
+    args.card_table = g_gc_card_table;
+    args.lowest_address = g_gc_lowest_address;
+    args.highest_address = g_gc_highest_address;
+    GCToEEInterface::StompWriteBarrier(&args);
+}
+
+#endif // DACCESS_COMPILE
 
 //extract the low bits [0,low[ of a uint32_t
 #define lowbits(wrd, bits) ((wrd) & ((1 << (bits))-1))
@@ -3406,7 +3455,7 @@ inline
 size_t ro_seg_begin_index (heap_segment* seg)
 {
     size_t begin_index = (size_t)seg / gc_heap::min_segment_size;
-    begin_index = max (begin_index, (size_t)g_lowest_address / gc_heap::min_segment_size);
+    begin_index = max (begin_index, (size_t)g_gc_lowest_address / gc_heap::min_segment_size);
     return begin_index;
 }
 
@@ -3414,14 +3463,14 @@ inline
 size_t ro_seg_end_index (heap_segment* seg)
 {
     size_t end_index = (size_t)(heap_segment_reserved (seg) - 1) / gc_heap::min_segment_size;
-    end_index = min (end_index, (size_t)g_highest_address / gc_heap::min_segment_size);
+    end_index = min (end_index, (size_t)g_gc_highest_address / gc_heap::min_segment_size);
     return end_index;
 }
 
 void seg_mapping_table_add_ro_segment (heap_segment* seg)
 {
 #ifdef GROWABLE_SEG_MAPPING_TABLE
-    if ((heap_segment_reserved (seg) <= g_lowest_address) || (heap_segment_mem (seg) >= g_highest_address))
+    if ((heap_segment_reserved (seg) <= g_gc_lowest_address) || (heap_segment_mem (seg) >= g_gc_highest_address))
         return;
 #endif //GROWABLE_SEG_MAPPING_TABLE
 
@@ -3605,7 +3654,7 @@ gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 gc_heap* seg_mapping_table_heap_of (uint8_t* o)
 {
 #ifdef GROWABLE_SEG_MAPPING_TABLE
-    if ((o < g_lowest_address) || (o >= g_highest_address))
+    if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
         return 0;
 #endif //GROWABLE_SEG_MAPPING_TABLE
 
@@ -3615,7 +3664,7 @@ gc_heap* seg_mapping_table_heap_of (uint8_t* o)
 gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o)
 {
 #if defined(FEATURE_BASICFREEZE) && defined(GROWABLE_SEG_MAPPING_TABLE)
-    if ((o < g_lowest_address) || (o >= g_highest_address))
+    if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
         return 0;
 #endif //FEATURE_BASICFREEZE || GROWABLE_SEG_MAPPING_TABLE
 
@@ -3627,7 +3676,7 @@ gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o)
 heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 {
 #if defined(FEATURE_BASICFREEZE) && defined(GROWABLE_SEG_MAPPING_TABLE)
-    if ((o < g_lowest_address) || (o >= g_highest_address))
+    if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
 #ifdef FEATURE_BASICFREEZE
         return ro_segment_lookup (o);
 #else
@@ -3670,7 +3719,7 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 
 #ifdef FEATURE_BASICFREEZE
     // TODO: This was originally written assuming that the seg_mapping_table would always contain entries for ro 
-    // segments whenever the ro segment falls into the [g_lowest_address,g_highest_address) range.  I.e., it had an 
+    // segments whenever the ro segment falls into the [g_gc_lowest_address,g_gc_highest_address) range.  I.e., it had an 
     // extra "&& (size_t)(entry->seg1) & ro_in_entry" expression.  However, at the moment, grow_brick_card_table does 
     // not correctly go through the ro segments and add them back to the seg_mapping_table when the [lowest,highest) 
     // range changes.  We should probably go ahead and modify grow_brick_card_table and put back the 
@@ -4070,8 +4119,8 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
     memory_details.current_block_normal = 0;
     memory_details.current_block_large = 0;
 
-    g_lowest_address = MAX_PTR;
-    g_highest_address = 0;
+    g_gc_lowest_address = MAX_PTR;
+    g_gc_highest_address = 0;
 
     if (((size_t)MAX_PTR - large_size) < normal_size)
     {
@@ -4091,8 +4140,8 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
     uint8_t* allatonce_block = (uint8_t*)virtual_alloc (requestedMemory);
     if (allatonce_block)
     {
-        g_lowest_address =  allatonce_block;
-        g_highest_address = allatonce_block + (memory_details.block_count * (large_size + normal_size));
+        g_gc_lowest_address =  allatonce_block;
+        g_gc_highest_address = allatonce_block + (memory_details.block_count * (large_size + normal_size));
         memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
 
         for(size_t i = 0; i < memory_details.block_count; i++)
@@ -4115,8 +4164,8 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
             if (b2)
             {
                 memory_details.allocation_pattern = initial_memory_details::TWO_STAGE;
-                g_lowest_address = min(b1,b2);
-                g_highest_address = max(b1 + memory_details.block_count*normal_size,
+                g_gc_lowest_address = min(b1,b2);
+                g_gc_highest_address = max(b1 + memory_details.block_count*normal_size,
                                         b2 + memory_details.block_count*large_size);
                 for(size_t i = 0; i < memory_details.block_count; i++)
                 {
@@ -4162,10 +4211,10 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
                 }
                 else
                 {
-                    if (current_block->memory_base < g_lowest_address)
-                        g_lowest_address =  current_block->memory_base;
-                    if (((uint8_t *) current_block->memory_base + block_size) > g_highest_address)
-                        g_highest_address = (current_block->memory_base + block_size);
+                    if (current_block->memory_base < g_gc_lowest_address)
+                        g_gc_lowest_address =  current_block->memory_base;
+                    if (((uint8_t *) current_block->memory_base + block_size) > g_gc_highest_address)
+                        g_gc_highest_address = (current_block->memory_base + block_size);
                 }
                 reserve_success = TRUE;
             }
@@ -4607,22 +4656,22 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
         {
             uint8_t* start;
             uint8_t* end;
-            if (mem < g_lowest_address)
+            if (mem < g_gc_lowest_address)
             {
                 start =  (uint8_t*)mem;
             }
             else
             {
-                start = (uint8_t*)g_lowest_address;
+                start = (uint8_t*)g_gc_lowest_address;
             }
 
-            if (((uint8_t*)mem + size) > g_highest_address)
+            if (((uint8_t*)mem + size) > g_gc_highest_address)
             {
                 end = (uint8_t*)mem + size;
             }
             else
             {
-                end = (uint8_t*)g_highest_address;
+                end = (uint8_t*)g_gc_highest_address;
             }
 
             if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, loh_p) != 0)
@@ -5321,7 +5370,7 @@ heap_segment* gc_heap::segment_of (uint8_t* add, ptrdiff_t& delta, BOOL verify_p
     uint8_t* sadd = add;
     heap_segment* hs = 0;
     heap_segment* hs1 = 0;
-    if (!((add >= g_lowest_address) && (add < g_highest_address)))
+    if (!((add >= g_gc_lowest_address) && (add < g_gc_highest_address)))
     {
         delta = 0;
         return 0;
@@ -6378,7 +6427,7 @@ void gc_heap::set_card (size_t card)
 inline
 void gset_card (size_t card)
 {
-    g_card_table [card_word (card)] |= (1 << card_bit (card));
+    g_gc_card_table [card_word (card)] |= (1 << card_bit (card));
 }
 
 inline
@@ -6489,7 +6538,7 @@ size_t size_card_bundle_of (uint8_t* from, uint8_t* end)
 
 uint32_t* translate_card_bundle_table (uint32_t* cb)
 {
-    return (uint32_t*)((uint8_t*)cb - ((((size_t)g_lowest_address) / (card_size*card_word_width*card_bundle_size*card_bundle_word_width)) * sizeof (uint32_t)));
+    return (uint32_t*)((uint8_t*)cb - ((((size_t)g_gc_lowest_address) / (card_size*card_word_width*card_bundle_size*card_bundle_word_width)) * sizeof (uint32_t)));
 }
 
 void gc_heap::enable_card_bundles ()
@@ -6701,7 +6750,7 @@ size_t size_mark_array_of (uint8_t* from, uint8_t* end)
 // according to the lowest_address.
 uint32_t* translate_mark_array (uint32_t* ma)
 {
-    return (uint32_t*)((uint8_t*)ma - size_mark_array_of (0, g_lowest_address));
+    return (uint32_t*)((uint8_t*)ma - size_mark_array_of (0, g_gc_lowest_address));
 }
 
 // from and end must be page aligned addresses. 
@@ -6829,16 +6878,16 @@ void release_card_table (uint32_t* c_table)
         {
             destroy_card_table (c_table);
             // sever the link from the parent
-            if (&g_card_table[card_word (gcard_of(g_lowest_address))] == c_table)
+            if (&g_gc_card_table[card_word (gcard_of(g_gc_lowest_address))] == c_table)
             {
-                g_card_table = 0;
+                g_gc_card_table = 0;
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
                 SoftwareWriteWatch::StaticClose();
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
             }
             else
             {
-                uint32_t* p_table = &g_card_table[card_word (gcard_of(g_lowest_address))];
+                uint32_t* p_table = &g_gc_card_table[card_word (gcard_of(g_gc_lowest_address))];
                 if (p_table)
                 {
                     while (p_table && (card_table_next (p_table) != c_table))
@@ -6860,8 +6909,8 @@ void destroy_card_table (uint32_t* c_table)
 
 uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 {
-    assert (g_lowest_address == start);
-    assert (g_highest_address == end);
+    assert (g_gc_lowest_address == start);
+    assert (g_gc_highest_address == end);
 
     uint32_t virtual_reserve_flags = VirtualReserveFlags::None;
 
@@ -6881,7 +6930,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     if (can_use_write_watch_for_card_table())
     {
         virtual_reserve_flags |= VirtualReserveFlags::WriteWatch;
-        cb = size_card_bundle_of (g_lowest_address, g_highest_address);
+        cb = size_card_bundle_of (g_gc_lowest_address, g_gc_highest_address);
     }
 #endif //CARD_BUNDLE
 
@@ -6897,7 +6946,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifdef GROWABLE_SEG_MAPPING_TABLE
-    size_t st = size_seg_mapping_table_of (g_lowest_address, g_highest_address);
+    size_t st = size_seg_mapping_table_of (g_gc_lowest_address, g_gc_highest_address);
     size_t st_table_offset = sizeof(card_table_info) + cs + bs + cb + wws;
     size_t st_table_offset_aligned = align_for_seg_mapping_table (st_table_offset);
 
@@ -6952,7 +7001,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #ifdef GROWABLE_SEG_MAPPING_TABLE
     seg_mapping_table = (seg_mapping*)(mem + st_table_offset_aligned);
     seg_mapping_table = (seg_mapping*)((uint8_t*)seg_mapping_table - 
-                                        size_seg_mapping_table_of (0, (align_lower_segment (g_lowest_address))));
+                                        size_seg_mapping_table_of (0, (align_lower_segment (g_gc_lowest_address))));
 #endif //GROWABLE_SEG_MAPPING_TABLE
 
 #ifdef MARK_ARRAY
@@ -6991,10 +7040,10 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
                                      gc_heap* hp, 
                                      BOOL loh_p)
 {
-    uint8_t* la = g_lowest_address;
-    uint8_t* ha = g_highest_address;
-    uint8_t* saved_g_lowest_address = min (start, g_lowest_address);
-    uint8_t* saved_g_highest_address = max (end, g_highest_address);
+    uint8_t* la = g_gc_lowest_address;
+    uint8_t* ha = g_gc_highest_address;
+    uint8_t* saved_g_lowest_address = min (start, g_gc_lowest_address);
+    uint8_t* saved_g_highest_address = max (end, g_gc_highest_address);
 #ifdef BACKGROUND_GC
     // This value is only for logging purpose - it's not necessarily exactly what we 
     // would commit for mark array but close enough for diagnostics purpose.
@@ -7024,18 +7073,18 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #endif // BIT64
                 ps *= 2;
 
-            if (saved_g_lowest_address < g_lowest_address)
+            if (saved_g_lowest_address < g_gc_lowest_address)
             {
-                if (ps > (size_t)g_lowest_address)
+                if (ps > (size_t)g_gc_lowest_address)
                     saved_g_lowest_address = (uint8_t*)OS_PAGE_SIZE;
                 else
                 {
-                    assert (((size_t)g_lowest_address - ps) >= OS_PAGE_SIZE);
-                    saved_g_lowest_address = min (saved_g_lowest_address, (g_lowest_address - ps));
+                    assert (((size_t)g_gc_lowest_address - ps) >= OS_PAGE_SIZE);
+                    saved_g_lowest_address = min (saved_g_lowest_address, (g_gc_lowest_address - ps));
                 }
             }
 
-            if (saved_g_highest_address > g_highest_address)
+            if (saved_g_highest_address > g_gc_highest_address)
             {
                 saved_g_highest_address = max ((saved_g_lowest_address + ps), saved_g_highest_address);
                 if (saved_g_highest_address > top)
@@ -7048,7 +7097,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         bool write_barrier_updated = false;
         uint32_t virtual_reserve_flags = VirtualReserveFlags::None;
-        uint32_t* saved_g_card_table = g_card_table;
+        uint32_t* saved_g_card_table = g_gc_card_table;
         uint32_t* ct = 0;
         uint32_t* translated_ct = 0;
         short* bt = 0;
@@ -7131,7 +7180,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         card_table_refcount (ct) = 0;
         card_table_lowest_address (ct) = saved_g_lowest_address;
         card_table_highest_address (ct) = saved_g_highest_address;
-        card_table_next (ct) = &g_card_table[card_word (gcard_of (la))];
+        card_table_next (ct) = &g_gc_card_table[card_word (gcard_of (la))];
 
         //clear the card table
 /*
@@ -7158,9 +7207,9 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             seg_mapping* new_seg_mapping_table = (seg_mapping*)(mem + st_table_offset_aligned);
             new_seg_mapping_table = (seg_mapping*)((uint8_t*)new_seg_mapping_table -
                                               size_seg_mapping_table_of (0, (align_lower_segment (saved_g_lowest_address))));
-            memcpy(&new_seg_mapping_table[seg_mapping_word_of(g_lowest_address)],
-                &seg_mapping_table[seg_mapping_word_of(g_lowest_address)],
-                size_seg_mapping_table_of(g_lowest_address, g_highest_address));
+            memcpy(&new_seg_mapping_table[seg_mapping_word_of(g_gc_lowest_address)],
+                &seg_mapping_table[seg_mapping_word_of(g_gc_lowest_address)],
+                size_seg_mapping_table_of(g_gc_lowest_address, g_gc_highest_address));
 
             seg_mapping_table = new_seg_mapping_table;
         }
@@ -7222,12 +7271,14 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
                 // Note on points where the runtime is suspended anywhere in this function. Upon an attempt to suspend the
                 // runtime, a different thread may suspend first, causing this thread to block at the point of the suspend call.
                 // So, at any suspend point, externally visible state needs to be consistent, as code that depends on that state
-                // may run while this thread is blocked. This includes updates to g_card_table, g_lowest_address, and
-                // g_highest_address.
+                // may run while this thread is blocked. This includes updates to g_gc_card_table, g_gc_lowest_address, and
+                // g_gc_highest_address.
                 suspend_EE();
             }
 
-            g_card_table = translated_ct;
+            g_gc_card_table = translated_ct;
+            g_gc_lowest_address = saved_g_lowest_address;
+            g_gc_highest_address = saved_g_highest_address;
 
             SoftwareWriteWatch::SetResizedUntranslatedTable(
                 mem + sw_ww_table_offset,
@@ -7239,7 +7290,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // grow version of the write barrier.  This test tells us if the new
             // segment was allocated at a lower address than the old, requiring
             // that we start doing an upper bounds check in the write barrier.
-            StompWriteBarrierResize(true, la != saved_g_lowest_address);
+            stomp_write_barrier_resize(true, la != saved_g_lowest_address);
             write_barrier_updated = true;
 
             if (!is_runtime_suspended)
@@ -7250,8 +7301,11 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         else
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         {
-            g_card_table = translated_ct;
+            g_gc_card_table = translated_ct;
         }
+
+        g_gc_lowest_address = saved_g_lowest_address;
+        g_gc_highest_address = saved_g_highest_address;
 
         if (!write_barrier_updated)
         {
@@ -7263,19 +7317,9 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // to be changed, so we are doing this after all global state has
             // been updated. See the comment above suspend_EE() above for more
             // info.
-            StompWriteBarrierResize(!!IsGCThread(), la != saved_g_lowest_address);
+            stomp_write_barrier_resize(!!IsGCThread(), la != saved_g_lowest_address);
         }
 
-        // We need to make sure that other threads executing checked write barriers
-        // will see the g_card_table update before g_lowest/highest_address updates.
-        // Otherwise, the checked write barrier may AV accessing the old card table
-        // with address that it does not cover. Write barriers access card table 
-        // without memory barriers for performance reasons, so we need to flush 
-        // the store buffers here.
-        GCToOSInterface::FlushProcessWriteBuffers();
-
-        g_lowest_address = saved_g_lowest_address;
-        VolatileStore(&g_highest_address, saved_g_highest_address);
 
         return 0;
         
@@ -7284,7 +7328,7 @@ fail:
 
         if (mem)
         {
-            assert(g_card_table == saved_g_card_table);
+            assert(g_gc_card_table == saved_g_card_table);
 
             //delete (uint32_t*)((uint8_t*)ct - sizeof(card_table_info));
             if (!GCToOSInterface::VirtualRelease (mem, alloc_size_aligned))
@@ -7442,7 +7486,7 @@ void gc_heap::copy_brick_card_table()
     assert (ha == card_table_highest_address (&old_card_table[card_word (card_of (la))]));
 
     /* todo: Need a global lock for this */
-    uint32_t* ct = &g_card_table[card_word (gcard_of (g_lowest_address))];
+    uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
     own_card_table (ct);
     card_table = translate_card_table (ct);
     /* End of global lock */
@@ -7455,8 +7499,8 @@ void gc_heap::copy_brick_card_table()
     if (gc_can_use_concurrent)
     {
         mark_array = translate_mark_array (card_table_mark_array (ct));
-        assert (mark_word_of (g_highest_address) ==
-            mark_word_of (align_on_mark_word (g_highest_address)));
+        assert (mark_word_of (g_gc_highest_address) ==
+            mark_word_of (align_on_mark_word (g_gc_highest_address)));
     }
     else
         mark_array = NULL;
@@ -7465,13 +7509,13 @@ void gc_heap::copy_brick_card_table()
 #ifdef CARD_BUNDLE
 #if defined(MARK_ARRAY) && defined(_DEBUG)
 #ifdef GROWABLE_SEG_MAPPING_TABLE
-    size_t st = size_seg_mapping_table_of (g_lowest_address, g_highest_address);
+    size_t st = size_seg_mapping_table_of (g_gc_lowest_address, g_gc_highest_address);
 #else  //GROWABLE_SEG_MAPPING_TABLE
     size_t st = 0;
 #endif //GROWABLE_SEG_MAPPING_TABLE
 #endif //MARK_ARRAY && _DEBUG
     card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct));
-    assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_lowest_address))))] ==
+    assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_gc_lowest_address))))] ==
             card_table_card_bundle_table (ct));
 
     //set the card table if we are in a heap growth scenario
@@ -9315,7 +9359,7 @@ void gc_heap::update_card_table_bundle()
             {
                 size_t bcardw = (uint32_t*)(max(g_addresses[i],base_address)) - &card_table[0];
                 size_t ecardw = (uint32_t*)(min(g_addresses[i]+OS_PAGE_SIZE, high_address)) - &card_table[0];
-                assert (bcardw >= card_word (card_of (g_lowest_address)));
+                assert (bcardw >= card_word (card_of (g_gc_lowest_address)));
 
                 card_bundles_set (cardw_card_bundle (bcardw),
                                   cardw_card_bundle (align_cardw_on_bundle (ecardw)));
@@ -9627,7 +9671,7 @@ void gc_heap::adjust_ephemeral_limits (bool is_runtime_suspended)
                  (size_t)ephemeral_low, (size_t)ephemeral_high))
 
     // This updates the write barrier helpers with the new info.
-    StompWriteBarrierEphemeral(is_runtime_suspended);
+    stomp_write_barrier_ephemeral(is_runtime_suspended, ephemeral_low, ephemeral_high);
 }
 
 #if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
@@ -9800,9 +9844,9 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 
     settings.first_init();
 
-    g_card_table = make_card_table (g_lowest_address, g_highest_address);
+    g_gc_card_table = make_card_table (g_gc_lowest_address, g_gc_highest_address);
 
-    if (!g_card_table)
+    if (!g_gc_card_table)
         return E_OUTOFMEMORY;
 
     gc_started = FALSE;
@@ -10285,7 +10329,7 @@ gc_heap::init_gc_heap (int  h_number)
 #endif //MULTIPLE_HEAPS
 
     /* todo: Need a global lock for this */
-    uint32_t* ct = &g_card_table [card_word (card_of (g_lowest_address))];
+    uint32_t* ct = &g_gc_card_table [card_word (card_of (g_gc_lowest_address))];
     own_card_table (ct);
     card_table = translate_card_table (ct);
     /* End of global lock */
@@ -10296,13 +10340,13 @@ gc_heap::init_gc_heap (int  h_number)
 
 #ifdef CARD_BUNDLE
     card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct));
-    assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_lowest_address))))] ==
+    assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_gc_lowest_address))))] ==
             card_table_card_bundle_table (ct));
 #endif //CARD_BUNDLE
 
 #ifdef MARK_ARRAY
     if (gc_can_use_concurrent)
-        mark_array = translate_mark_array (card_table_mark_array (&g_card_table[card_word (card_of (g_lowest_address))]));
+        mark_array = translate_mark_array (card_table_mark_array (&g_gc_card_table[card_word (card_of (g_gc_lowest_address))]));
     else
         mark_array = NULL;
 #endif //MARK_ARRAY
@@ -15166,7 +15210,7 @@ void gc_heap::gc1()
 
     vm_heap->GcCondemnedGeneration = settings.condemned_generation;
 
-    assert (g_card_table == card_table);
+    assert (g_gc_card_table == card_table);
 
     {
         if (n == max_generation)
@@ -16373,7 +16417,7 @@ int gc_heap::garbage_collect (int n)
         for (int i = 0; i < n_heaps; i++)
         {
             //copy the card and brick tables
-            if (g_card_table != g_heaps[i]->card_table)
+            if (g_gc_card_table != g_heaps[i]->card_table)
             {
                 g_heaps[i]->copy_brick_card_table();
             }
@@ -16397,7 +16441,7 @@ int gc_heap::garbage_collect (int n)
             }
 #endif //BACKGROUND_GC
         // check for card table growth
-        if (g_card_table != card_table)
+        if (g_gc_card_table != card_table)
             copy_brick_card_table();
 
 #endif //MULTIPLE_HEAPS
@@ -22373,7 +22417,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         for (i = 0; i < n_heaps; i++)
         {
             //copy the card and brick tables
-            if (g_card_table!= g_heaps[i]->card_table)
+            if (g_gc_card_table!= g_heaps[i]->card_table)
             {
                 g_heaps[i]->copy_brick_card_table();
             }
@@ -25079,14 +25123,14 @@ BOOL gc_heap::commit_mark_array_new_seg (gc_heap* hp,
 
         if (new_card_table == 0)
         {
-            new_card_table = g_card_table;
+            new_card_table = g_gc_card_table;
         }
 
         if (hp->card_table != new_card_table)
         {
             if (new_lowest_address == 0)
             {
-                new_lowest_address = g_lowest_address;
+                new_lowest_address = g_gc_lowest_address;
             }
 
             uint32_t* ct = &new_card_table[card_word (gcard_of (new_lowest_address))];
@@ -29076,7 +29120,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
         return consing_gen;
 
     //copy the card and brick tables
-    if (g_card_table!= card_table)
+    if (g_gc_card_table!= card_table)
         copy_brick_card_table();
 
     BOOL new_segment_p = (heap_segment_next (new_seg) == 0);
@@ -32386,7 +32430,7 @@ void gc_heap::clear_all_mark_array()
 void gc_heap::verify_mark_array_cleared (heap_segment* seg)
 {
 #if defined (VERIFY_HEAP) && defined (MARK_ARRAY)
-    assert (card_table == g_card_table);
+    assert (card_table == g_gc_card_table);
     size_t  markw = mark_word_of (heap_segment_mem (seg));
     size_t  markw_end = mark_word_of (heap_segment_reserved (seg));
 
@@ -32734,8 +32778,8 @@ gc_heap::verify_heap (BOOL begin_gc_p)
 #endif //BACKGROUND_GC 
 
 #ifndef MULTIPLE_HEAPS
-    if ((g_ephemeral_low != generation_allocation_start (generation_of (max_generation - 1))) ||
-        (g_ephemeral_high != heap_segment_reserved (ephemeral_heap_segment)))
+    if ((g_gc_ephemeral_low != generation_allocation_start (generation_of (max_generation - 1))) ||
+        (g_gc_ephemeral_high != heap_segment_reserved (ephemeral_heap_segment)))
     {
         FATAL_GC_ERROR();
     }
@@ -32794,7 +32838,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
         for (int i = 0; i < n_heaps; i++)
         {
             //copy the card and brick tables
-            if (g_card_table != g_heaps[i]->card_table)
+            if (g_gc_card_table != g_heaps[i]->card_table)
             {
                 g_heaps[i]->copy_brick_card_table();
             }
@@ -32803,7 +32847,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
         current_join->restart();
     }
 #else
-        if (g_card_table != card_table)
+        if (g_gc_card_table != card_table)
             copy_brick_card_table();
 #endif //MULTIPLE_HEAPS
 
@@ -33228,11 +33272,11 @@ HRESULT GCHeap::Shutdown ()
     //CloseHandle (WaitForGCEvent);
 
     //find out if the global card table hasn't been used yet
-    uint32_t* ct = &g_card_table[card_word (gcard_of (g_lowest_address))];
+    uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
     if (card_table_refcount (ct) == 0)
     {
         destroy_card_table (ct);
-        g_card_table = 0;
+        g_gc_card_table = 0;
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         SoftwareWriteWatch::StaticClose();
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -33392,7 +33436,7 @@ HRESULT GCHeap::Initialize ()
         return E_FAIL;
     }
 
-    StompWriteBarrierResize(true, false);
+    stomp_write_barrier_initialize();
 
 #ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
 #if defined (STRESS_HEAP) && !defined (MULTIPLE_HEAPS)
@@ -33513,7 +33557,7 @@ Object * GCHeap::NextObj (Object * object)
     uint8_t* o = (uint8_t*)object;
 
 #ifndef FEATURE_BASICFREEZE
-    if (!((o < g_highest_address) && (o >= g_lowest_address)))
+    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
     {
         return NULL;
     }
@@ -33584,7 +33628,7 @@ BOOL GCHeap::IsHeapPointer (void* vpObject, BOOL small_heap_only)
 
     uint8_t* object = (uint8_t*) vpObject;
 #ifndef FEATURE_BASICFREEZE
-    if (!((object < g_highest_address) && (object >= g_lowest_address)))
+    if (!((object < g_gc_highest_address) && (object >= g_gc_lowest_address)))
         return FALSE;
 #endif //!FEATURE_BASICFREEZE
 
@@ -35695,12 +35739,12 @@ GCHeap::SetCardsAfterBulkCopy( Object **StartPoint, size_t len )
     end = StartPoint + (len/sizeof(Object*));
     while (rover < end)
     {
-        if ( (((uint8_t*)*rover) >= g_ephemeral_low) && (((uint8_t*)*rover) < g_ephemeral_high) )
+        if ( (((uint8_t*)*rover) >= g_gc_ephemeral_low) && (((uint8_t*)*rover) < g_gc_ephemeral_high) )
         {
             // Set Bit For Card and advance to next card
             size_t card = gcard_of ((uint8_t*)rover);
 
-            Interlocked::Or (&g_card_table[card/card_word_width], (1U << (card % card_word_width)));
+            Interlocked::Or (&g_gc_card_table[card/card_word_width], (1U << (card % card_word_width)));
             // Skip to next card for the object
             rover = (Object**)align_on_card ((uint8_t*)(rover+1));
         }
@@ -36568,7 +36612,7 @@ void initGCShadow()
     if (!(g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK))
         return;
 
-    size_t len = g_highest_address - g_lowest_address;
+    size_t len = g_gc_highest_address - g_gc_lowest_address;
     if (len > (size_t)(g_GCShadowEnd - g_GCShadow)) 
     {
         deleteGCShadow();
@@ -36587,10 +36631,10 @@ void initGCShadow()
         g_GCShadowEnd += len;
     }
 
-    // save the value of g_lowest_address at this time.  If this value changes before
+    // save the value of g_gc_lowest_address at this time.  If this value changes before
     // the next call to checkGCWriteBarrier() it means we extended the heap (with a
     // large object segment most probably), and the whole shadow segment is inconsistent.
-    g_shadow_lowest_address = g_lowest_address;
+    g_shadow_lowest_address = g_gc_lowest_address;
 
         //****** Copy the whole GC heap ******
     //
@@ -36600,7 +36644,7 @@ void initGCShadow()
     generation* gen = gc_heap::generation_of (max_generation);
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 
-    ptrdiff_t delta = g_GCShadow - g_lowest_address;
+    ptrdiff_t delta = g_GCShadow - g_gc_lowest_address;
     BOOL small_object_segments = TRUE;
     while(1)
     {
@@ -36628,7 +36672,7 @@ void initGCShadow()
     // test to see if 'ptr' was only updated via the write barrier.
 inline void testGCShadow(Object** ptr)
 {
-    Object** shadow = (Object**) &g_GCShadow[((uint8_t*) ptr - g_lowest_address)];
+    Object** shadow = (Object**) &g_GCShadow[((uint8_t*) ptr - g_gc_lowest_address)];
     if (*ptr != 0 && (uint8_t*) shadow < g_GCShadowEnd && *ptr != *shadow)
     {
 
@@ -36687,9 +36731,9 @@ void testGCShadowHelper (uint8_t* x)
     // Walk the whole heap, looking for pointers that were not updated with the write barrier.
 void checkGCWriteBarrier()
 {
-    // g_shadow_lowest_address != g_lowest_address means the GC heap was extended by a segment
+    // g_shadow_lowest_address != g_gc_lowest_address means the GC heap was extended by a segment
     // and the GC shadow segment did not track that change!
-    if (g_GCShadowEnd <= g_GCShadow || g_shadow_lowest_address != g_lowest_address)
+    if (g_GCShadowEnd <= g_GCShadow || g_shadow_lowest_address != g_gc_lowest_address)
     {
         // No shadow stack, nothing to check.
         return;
