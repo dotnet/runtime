@@ -123,6 +123,11 @@ public:
     // At the end of a background GC, gives the diagnostics code a chance to run.
     virtual
     void DiagWalkBGCSurvivors(void* gcContext) = 0;
+
+    // Informs the EE of changes to the location of the card table, potentially updating the write
+    // barrier if it needs to be updated.
+    virtual
+    void StompWriteBarrier(WriteBarrierParameters* args) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_
