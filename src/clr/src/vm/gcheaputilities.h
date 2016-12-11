@@ -113,4 +113,17 @@ private:
     GCHeapUtilities() = delete;
 };
 
+#ifndef DACCESS_COMPILE
+extern "C" {
+#endif // !DACCESS_COMPILE
+GPTR_DECL(uint8_t,g_lowest_address);
+GPTR_DECL(uint8_t,g_highest_address);
+GPTR_DECL(uint32_t,g_card_table);
+#ifndef DACCESS_COMPILE
+} 
+#endif // !DACCESS_COMPILE
+
+extern "C" uint8_t* g_ephemeral_low;
+extern "C" uint8_t* g_ephemeral_high;
+
 #endif // _GCHEAPUTILITIES_H_

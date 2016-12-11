@@ -1214,3 +1214,57 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
+void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+{
+    assert(args != nullptr);
+    switch (args->operation)
+    {
+    case WriteBarrierOp::StompResize:
+        // StompResize requires a new card table, a new lowest address, and
+        // a new highest address
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        g_card_table = args->card_table;
+        ::StompWriteBarrierResize(args->is_runtime_suspended, args->requires_upper_bounds_check);
+
+        // We need to make sure that other threads executing checked write barriers
+        // will see the g_card_table update before g_lowest/highest_address updates.
+        // Otherwise, the checked write barrier may AV accessing the old card table
+        // with address that it does not cover. Write barriers access card table
+        // without memory barriers for performance reasons, so we need to flush
+        // the store buffers here.
+        FlushProcessWriteBuffers();
+
+        g_lowest_address = args->lowest_address;
+        VolatileStore(&g_highest_address, args->highest_address);
+        return;
+    case WriteBarrierOp::StompEphemeral:
+        // StompEphemeral requires a new ephemeral low and a new ephemeral high
+        assert(args->ephemeral_lo != nullptr);
+        assert(args->ephemeral_hi != nullptr);
+        g_ephemeral_low = args->ephemeral_lo;
+        g_ephemeral_high = args->ephemeral_hi;
+        ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
+        return;
+    case WriteBarrierOp::Initialize:
+        // This operation should only be invoked once, upon initialization.
+        assert(g_card_table == nullptr);
+        assert(g_lowest_address == nullptr);
+        assert(g_highest_address == nullptr);
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+        assert(!args->requires_upper_bounds_check && "the ephemeral generation must be at the top of the heap!");
+
+        g_card_table = args->card_table;
+        FlushProcessWriteBuffers();
+        g_lowest_address = args->lowest_address;
+        VolatileStore(&g_highest_address, args->highest_address);
+        ::StompWriteBarrierResize(true, false);
+        return;
+    default:
+        assert(!"unknown WriteBarrierOp enum");
+    }
+}
