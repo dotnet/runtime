@@ -464,6 +464,38 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, vars[1]);
         }
 
+        [Fact]
+        public void NullLambda()
+        {
+            Assert.Throws<ArgumentNullException>("expression", () => Quote(null));
+        }
+
+        [Fact]
+        public void QuoteNonLamdba()
+        {
+            Func<int> zero = () => 0;
+            Expression funcConst = Constant(zero);
+            Assert.Throws<ArgumentException>("expression", () => Quote(funcConst));
+        }
+
+        [Fact]
+        public void CannotReduce()
+        {
+            Expression<Func<int>> exp = () => 2;
+            Expression q = Expression.Quote(exp);
+            Assert.False(q.CanReduce);
+            Assert.Same(q, q.Reduce());
+            Assert.Throws<ArgumentException>(() => q.ReduceAndCheck());
+        }
+
+        [Fact]
+        public void TypeExplicitWithGeneralLambdaArgument()
+        {
+            LambdaExpression lambda = Lambda(Constant(2));
+            Expression q = Quote(lambda);
+            Assert.Equal(typeof(Expression<Func<int>>), q.Type);
+        }
+
         private void AssertIsBox<T>(Expression expression, T value, bool isInterpreted)
         {
             if (isInterpreted)
