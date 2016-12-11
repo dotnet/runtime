@@ -46,6 +46,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.ElementAt(index));
         }
 
+        [Theory]
+        [MemberData(nameof(TestData))]
+        public void ElementAtRunOnce(IEnumerable<int> source, int index, int expected)
+        {
+            Assert.Equal(expected, source.RunOnce().ElementAt(index));
+        }
+
         [Fact]
         public void InvalidIndex_ThrowsArgumentOutOfRangeException()
         {

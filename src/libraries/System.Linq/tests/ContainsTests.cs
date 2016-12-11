@@ -52,6 +52,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Contains(value, null));
         }
 
+        [Theory, MemberData(nameof(Int_TestData))]
+        public void IntRunOnce(IEnumerable<int> source, int value, bool expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Contains(value));
+            Assert.Equal(expected, source.RunOnce().Contains(value, null));
+        }
+
         public static IEnumerable<object> String_TestData()
         {
             yield return new object[] { new string[] { null }, StringComparer.Ordinal, null, true };
@@ -70,6 +77,16 @@ namespace System.Linq.Tests
                 Assert.Equal(expected, source.Contains(value));
             }
             Assert.Equal(expected, source.Contains(value, comparer));
+        }
+
+        [Theory, MemberData(nameof(String_TestData))]
+        public void StringRunOnce(IEnumerable<string> source, IEqualityComparer<string> comparer, string value, bool expected)
+        {
+            if (comparer == null)
+            {
+                Assert.Equal(expected, source.RunOnce().Contains(value));
+            }
+            Assert.Equal(expected, source.RunOnce().Contains(value, comparer));
         }
 
         public static IEnumerable<object> NullableInt_TestData()

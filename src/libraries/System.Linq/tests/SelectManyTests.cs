@@ -122,6 +122,21 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            StringWithIntArray[] source =
+            {
+                new StringWithIntArray { name="Prakash", total=new int?[]{1, 2, 3, 4} },
+                new StringWithIntArray { name="Bob", total=new int?[]{5, 6} },
+                new StringWithIntArray { name="Chris", total=new int?[0] },
+                new StringWithIntArray { name=null, total=new int?[]{8, 9} },
+                new StringWithIntArray { name="Prakash", total=new int?[]{-10, 100} }
+            };
+            int?[] expected = { 1, 2, 3, 4, 5, 6, 8, 9, -10, 100 };
+            Assert.Equal(expected, source.RunOnce().SelectMany(e => e.total.RunOnce()));
+        }
+
+        [Fact]
         public void SourceEmptyIndexUsed()
         {
             Assert.Empty(Enumerable.Empty<StringWithIntArray>().SelectMany((e, index) => e.total));
