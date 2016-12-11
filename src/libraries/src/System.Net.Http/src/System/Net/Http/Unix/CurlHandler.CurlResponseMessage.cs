@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -88,8 +87,7 @@ namespace System.Net.Http
             /// When data is provided by libcurl, it must be consumed all or nothing: either all of the data is consumed, or
             /// we must pause the connection.  Since a read could need to be satisfied with only some of the data provided,
             /// we store the rest here until all reads can consume it.  If a subsequent write callback comes in to provide
-            /// more data, the connection will then be paused until this buffer is entirely consumed. This buffer comes from
-            /// the ArrayPool and should be returned when we're done with it.
+            /// more data, the connection will then be paused until this buffer is entirely consumed.
             /// </summary>
             private byte[] _remainingData;
 
@@ -222,13 +220,11 @@ namespace System.Net.Http
                         // Make sure our remaining data buffer exists and is big enough to hold the data
                         if (_remainingData == null)
                         {
-                            _remainingData = ArrayPool<byte>.Shared.Rent(_remainingDataCount);
+                            _remainingData = new byte[_remainingDataCount];
                         }
                         else if (_remainingData.Length < _remainingDataCount)
                         {
-                            byte[] old = _remainingData;
-                            _remainingData = ArrayPool<byte>.Shared.Rent(_remainingDataCount);
-                            ArrayPool<byte>.Shared.Return(old);
+                            _remainingData = new byte[Math.Max(_remainingData.Length * 2, _remainingDataCount)];
                         }
 
                         // Copy the remaining data to the buffer
@@ -415,15 +411,6 @@ namespace System.Net.Http
                         }
 
                         ClearPendingReadRequest();
-                    }
-
-                    // If we have a buffer, return it to the pool.
-                    byte[] buffer = _remainingData;
-                    if (buffer != null)
-                    {
-                        _remainingDataCount = _remainingDataOffset = 0;
-                        _remainingData = null;
-                        ArrayPool<byte>.Shared.Return(buffer);
                     }
                 }
             }
