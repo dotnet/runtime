@@ -14,7 +14,7 @@ namespace System.Linq.Tests
         {
             Assert.Throws<ArgumentNullException>("source", () => Enumerable.Reverse<string>(null));
         }
-        
+
         [Theory]
         [MemberData(nameof(ReverseData))]
         public void Reverse<T>(IEnumerable<T> source, T dummy)
@@ -35,7 +35,7 @@ namespace System.Linq.Tests
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.Equal(expected[i], actual.ElementAt(i));
-                
+
                 Assert.Equal(expected.Skip(i), actual.Skip(i));
                 Assert.Equal(expected.Take(i), actual.Take(i));
             }
@@ -47,6 +47,17 @@ namespace System.Linq.Tests
             Assert.Equal(expected, actual.Where(_ => true));
 
             Assert.Equal(actual, actual); // Repeat the enumeration against itself.
+        }
+
+        [Theory, MemberData(nameof(ReverseData))]
+        public void RunOnce<T>(IEnumerable<T> source, T dummy)
+        {
+            T[] expected = source.ToArray();
+            Array.Reverse(expected);
+
+            IEnumerable<T> actual = source.RunOnce().Reverse();
+
+            Assert.Equal(expected, actual);
         }
 
         public static IEnumerable<object[]> ReverseData()

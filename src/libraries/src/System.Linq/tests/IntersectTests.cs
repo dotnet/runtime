@@ -84,6 +84,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, first.Intersect(second, null));
         }
 
+        [Theory, MemberData(nameof(NullableInt_TestData))]
+        public void NullableIntRunOnce(IEnumerable<int?> first, IEnumerable<int?> second, int?[] expected)
+        {
+            Assert.Equal(expected, first.RunOnce().Intersect(second.RunOnce()));
+            Assert.Equal(expected, first.RunOnce().Intersect(second.RunOnce(), null));
+        }
+
         [Fact]
         public void FirstNull_ThrowsArgumentNullException()
         {

@@ -89,6 +89,14 @@ namespace System.Linq.Tests
                 });
         }
 
+        [Fact]
+        public void RunOnce()
+        {
+            Assert.Equal(new int[] {1, 2, 3, 4, 5, 6, 7}, Enumerable.Range(1, 7).RunOnce().ToArray());
+            Assert.Equal(
+                new string[] {"1", "2", "3", "4", "5", "6", "7", "8"},
+                Enumerable.Range(1, 8).Select(i => i.ToString()).RunOnce().ToArray());
+        }
 
         [Fact]
         public void ToArray_TouchCountWithICollection()

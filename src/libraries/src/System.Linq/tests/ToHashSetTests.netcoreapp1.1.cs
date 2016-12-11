@@ -36,6 +36,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            Enumerable.Range(0, 50).RunOnce().ToHashSet(new CustomComparer<int>());
+        }
+
+        [Fact]
         public void TolerateNullElements()
         {
             // Unlike the keys of a dictionary, HashSet tolerates null items.
