@@ -434,6 +434,9 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
                 if (onlyIfCheap)
                 {
                     return -1;
@@ -536,6 +539,9 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
                 if (onlyIfCheap)
                 {
                     return -1;
@@ -658,6 +664,9 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
                 if (onlyIfCheap)
                 {
                     return -1;
