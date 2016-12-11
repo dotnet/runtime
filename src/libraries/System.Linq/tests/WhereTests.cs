@@ -913,6 +913,14 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            int[] source = { 20, 7, 18, 9, 7, 10, 21 };
+            int[] expected = { 20, 18, 10 };
+            Assert.Equal(expected, source.RunOnce().Where(IsEven));
+        }
+
+        [Fact]
         public void SourceAllNullsPredicateTrue()
         {
             int?[] source = { null, null, null, null };

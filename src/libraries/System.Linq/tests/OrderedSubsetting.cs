@@ -470,5 +470,19 @@ namespace System.Linq.Tests
             source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(1000).Select(i => i * 2);
             Assert.Equal(8, source.Count());
         }
+
+        [Fact]
+        public void RunOnce()
+        {
+            var source = Enumerable.Range(0, 100).Shuffle().ToArray();
+            Assert.Equal(Enumerable.Range(30, 20), source.RunOnce().OrderBy(i => i).Skip(20).Skip(10).Take(50).Take(20));
+            Assert.Empty(source.RunOnce().OrderBy(i => i).Skip(10).Take(9).Take(0));
+            Assert.Equal(20, source.RunOnce().OrderBy(i => i).Skip(20).Take(60).First());
+            Assert.Equal(79, source.RunOnce().OrderBy(i => i).Skip(20).Take(60).Last());
+            Assert.Equal(93, source.RunOnce().OrderBy(i => i).ElementAt(93));
+            Assert.Equal(42, source.RunOnce().OrderBy(i => i).ElementAtOrDefault(42));
+            Assert.Equal(20, source.RunOnce().OrderBy(i => i).Skip(10).Take(20).Count());
+            Assert.Equal(1, source.RunOnce().OrderBy(i => i).Take(2).Skip(1).Count());
+        }
     }
 }

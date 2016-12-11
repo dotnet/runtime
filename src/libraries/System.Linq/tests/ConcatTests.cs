@@ -221,6 +221,22 @@ namespace System.Linq.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ManyConcatsData))]
+        public void ManyConcatsRunOnce(IEnumerable<IEnumerable<int>> sources, IEnumerable<int> expected)
+        {
+            foreach (var transform in IdentityTransforms<int>())
+            {
+                IEnumerable<int> concatee = Enumerable.Empty<int>();
+                foreach (var source in sources)
+                {
+                    concatee = concatee.RunOnce().Concat(transform(source));
+                }
+
+                Assert.Equal(sources.Sum(s => s.Count()), concatee.Count());
+            }
+        }
+
         public static IEnumerable<object[]> ManyConcatsData()
         {
             yield return new object[] { Enumerable.Repeat(Enumerable.Empty<int>(), 256), Enumerable.Empty<int>() };
