@@ -155,9 +155,38 @@ namespace System.Linq
                 return builder.ToArray();
             }
 
-            public List<TResult> ToList() => new List<TResult>(this);
+            public List<TResult> ToList()
+            {
+                var list = new List<TResult>();
 
-            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : _source.Count();
+                foreach (TSource item in _source)
+                {
+                    list.Add(_selector(item));
+                }
+
+                return list;
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                if (onlyIfCheap)
+                {
+                    return -1;
+                }
+
+                int count = 0;
+
+                foreach (TSource item in _source)
+                {
+                    _selector(item);
+                    checked
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
         }
 
         internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
@@ -226,6 +255,14 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                if (!onlyIfCheap)
+                {
+                    foreach (TSource item in _source)
+                    {
+                        _selector(item);
+                    }
+                }
+
                 return _source.Length;
             }
 
@@ -351,7 +388,17 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
-                return _source.Count;
+                int count = _source.Count;
+
+                if (!onlyIfCheap)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        _selector(_source[i]);
+                    }
+                }
+
+                return count;
             }
 
             public IPartition<TResult> Skip(int count)
@@ -491,7 +538,17 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
-                return _source.Count;
+                int count = _source.Count;
+
+                if (!onlyIfCheap)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        _selector(_source[i]);
+                    }
+                }
+
+                return count;
             }
 
             public IPartition<TResult> Skip(int count)
@@ -703,6 +760,14 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                if (!onlyIfCheap)
+                {
+                    foreach (TSource item in _source)
+                    {
+                        _selector(item);
+                    }
+                }
+
                 return _source.GetCount(onlyIfCheap);
             }
         }
@@ -852,7 +917,18 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
-                return Count;
+                int count = Count;
+
+                if (!onlyIfCheap)
+                {
+                    int end = _minIndexInclusive + count;
+                    for (int i = _minIndexInclusive; i != end; ++i)
+                    {
+                        _selector(_source[i]);
+                    }
+                }
+
+                return count;
             }
         }
     }
