@@ -36,6 +36,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Net\AuthenticationTypes.cs" />
     <Compile Include="System\Net\BoundaryType.cs" />
     <Compile Include="System\Net\ContextFlags.cs" />
     <Compile Include="System\Net\CookieExtensions.cs" />
@@ -196,8 +197,8 @@
     <Compile Include="$(CommonPath)\System\Net\NegotiationInfoClass.cs">
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.cs">
-      <Link>Common\System\Net\NTAuthentication.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.Common.cs">
+      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>

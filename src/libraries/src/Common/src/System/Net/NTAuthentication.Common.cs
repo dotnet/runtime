@@ -69,6 +69,7 @@ namespace System.Net
                             _protocolName = negotiationAuthenticationPackage;
                         }
                     }
+
                     return negotiationAuthenticationPackage ?? string.Empty;
                 }
 
