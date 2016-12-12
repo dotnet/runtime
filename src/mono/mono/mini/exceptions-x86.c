@@ -62,7 +62,7 @@ LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	}
 #endif
 
-	mono_handle_native_sigsegv (SIGSEGV, NULL, NULL);
+	mono_handle_native_sigsegv ("SIGSEGV", NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -1112,7 +1112,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
 	if (!ji)
-		mono_handle_native_sigsegv (SIGSEGV, sigctx, siginfo);
+		mono_handle_native_sigsegv ("SIGSEGV", sigctx, siginfo);
 	/* setup a call frame on the real stack so that control is returned there
 	 * and exception handling can continue.
 	 * If this was a stack overflow the caller already ensured the stack pages

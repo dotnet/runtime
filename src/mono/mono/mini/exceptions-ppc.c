@@ -666,7 +666,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		abort ();
 	}
 	if (!ji)
-		mono_handle_native_sigsegv (SIGSEGV, sigctx, siginfo);
+		mono_handle_native_sigsegv ("SIGSEGV", sigctx, siginfo);
 	/* setup a call frame on the real stack so that control is returned there
 	 * and exception handling can continue.
 	 * The frame looks like:

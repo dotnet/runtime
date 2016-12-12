@@ -2431,13 +2431,12 @@ static gboolean handling_sigsegv = FALSE;
  * information and aborting.
  */
 void
-mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_sigsegv (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 #ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
 #endif
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
-	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
 
 	if (handling_sigsegv)
 		return;
@@ -2532,7 +2531,7 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 			 "a fatal error in the mono runtime or one of the native libraries \n"
 			 "used by your application.\n"
 			 "=================================================================\n",
-			signal_str);
+			signal);
 
 
 #ifdef MONO_ARCH_USE_SIGACTION
@@ -2559,7 +2558,7 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 #else
 
 void
-mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_sigsegv (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	g_assert_not_reached ();
 }

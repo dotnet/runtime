@@ -2850,7 +2850,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
-		mono_handle_native_sigsegv (SIGSEGV, ctx, info);
+		mono_handle_native_sigsegv ("SIGFPE", ctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
@@ -2916,7 +2916,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (!mono_domain_get () || !jit_tls) {
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
-		mono_handle_native_sigsegv (SIGSEGV, ctx, info);
+		mono_handle_native_sigsegv ("SIGSEGV", ctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
@@ -2963,7 +2963,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
-		mono_handle_native_sigsegv (SIGSEGV, ctx, info);
+		mono_handle_native_sigsegv ("SIGSEGV", ctx, info);
 
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
