@@ -58,7 +58,7 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	}
 #endif
 
-	mono_handle_native_sigsegv ("SIGSEGV", NULL, NULL);
+	mono_handle_native_crash ("SIGSEGV", NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -777,7 +777,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, gboolean stack_o
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
 
 	if (!ji)
-		mono_handle_native_sigsegv ("SIGSEGV", NULL, NULL);
+		mono_handle_native_crash ("SIGSEGV", NULL, NULL);
 
 	mctx = *ctx;
 

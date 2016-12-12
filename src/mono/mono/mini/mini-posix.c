@@ -220,7 +220,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	if (!ji) {
         if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
-		mono_handle_native_sigsegv ("SIGABRT", ctx, info);
+		mono_handle_native_crash ("SIGABRT", ctx, info);
 	}
 }
 

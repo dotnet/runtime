@@ -2425,13 +2425,13 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 static gboolean handling_sigsegv = FALSE;
 
 /*
- * mono_handle_native_sigsegv:
+ * mono_handle_native_crash:
  *
- *   Handle a SIGSEGV received while in native code by printing diagnostic 
- * information and aborting.
+ *   Handle a native crash (e.g. SIGSEGV) while in native code by
+ *   printing diagnostic information and aborting.
  */
 void
-mono_handle_native_sigsegv (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 #ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
@@ -2442,7 +2442,7 @@ mono_handle_native_sigsegv (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO
 		return;
 
 	if (mini_get_debug_options ()->suspend_on_sigsegv) {
-		mono_runtime_printf_err ("Received SIGSEGV, suspending...");
+		mono_runtime_printf_err ("Received %s, suspending...", signal);
 #ifdef HOST_WIN32
 		while (1)
 			;
@@ -2558,7 +2558,7 @@ mono_handle_native_sigsegv (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO
 #else
 
 void
-mono_handle_native_sigsegv (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	g_assert_not_reached ();
 }
