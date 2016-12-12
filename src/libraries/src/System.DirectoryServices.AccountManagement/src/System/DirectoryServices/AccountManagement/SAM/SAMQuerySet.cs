@@ -103,7 +103,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Does it match the user's properties?
                     //
                     // We'd like to use DirectoryEntries.SchemaFilter rather than calling
-                    // IsOfCorrectType here, but SchemaFilter has a bug (VSWhidbey # 336654)
+                    // IsOfCorrectType here, but SchemaFilter has a bug
                     // where multiple DirectoryEntries all share the same SchemaFilter ---
                     // which would create multithreading issues for us.
                     if (IsOfCorrectType(entry) && _matcher.Matches(entry))

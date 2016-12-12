@@ -978,7 +978,7 @@ namespace System.DirectoryServices
                     if (propertyName.Length > 0)
                         _adsObject.GetInfoEx(new object[] { propertyName }, 0);
                     else
-                        _adsObject.GetInfo();  // [alexvec]
+                        _adsObject.GetInfo();
                 }
                 catch (COMException e)
                 {
@@ -1132,7 +1132,7 @@ namespace System.DirectoryServices
                                     System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREKANATYPE |
                                     System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREWIDTH |
                                     System.DirectoryServices.ActiveDirectory.Utils.SORT_STRINGSORT;
-                        // work around the ADSI case sensitive bug: only case is different, replace with newparent's path
+                        // work around the ADSI case sensitive 
                         if (System.DirectoryServices.ActiveDirectory.Utils.Compare(childPath, 0, parentPath.Length, parentPath, 0, parentPath.Length, compareFlags) != 0)
                         {
                             childPath = parentPath + childPath.Substring(parentPath.Length);
@@ -1205,7 +1205,7 @@ namespace System.DirectoryServices
         {
             Bind();
 
-            //Consider, V2, jruiz: there shouldn't be any marshaling issues
+            //Consider there shouldn't be any marshaling issues
             //by just doing: AdsObject.GetInfoEx(object[]propertyNames, 0);
             Object[] names = new Object[propertyNames.Length];
             for (int i = 0; i < propertyNames.Length; i++)

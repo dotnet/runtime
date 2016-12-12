@@ -316,7 +316,7 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             get
             {
-                // TQ TODO Store should be mapping both to the same property already....
+                // TODO Store should be mapping both to the same property already....
 
                 // TQ Special case to map name and SamAccountNAme to same cache variable.
                 // This should be removed in the future.
@@ -939,7 +939,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // True means that StoreCtx.Load() has been called on this Principal to load in the values
         // of all the delay-loaded properties.
-        // TQ TODO REVISIT the protection level
         private bool _loaded = false;
 
         // True means this principal corresponds to one of the well-known SIDs that do not have a
