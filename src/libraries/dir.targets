@@ -13,7 +13,7 @@
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
   
-  <!-- Targets will be overridden if buildagainstpackages.targets is imported. -->
+  <!-- Targets will be always be imported from buildagainstpackages.targets unless $(SkipBuildAgainstPackages) is specified-->
   <Target Name="GenerateTestProjectJson" />
   <Target Name="GenerateAllTestProjectJsons" />
 
