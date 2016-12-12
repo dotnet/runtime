@@ -17,7 +17,6 @@ namespace System.Collections.Concurrent.Tests
         protected override bool IsEmpty(IProducerConsumerCollection<int> pcc) => ((ConcurrentQueue<int>)pcc).IsEmpty;
         protected override bool TryPeek<T>(IProducerConsumerCollection<T> pcc, out T result) => ((ConcurrentQueue<T>)pcc).TryPeek(out result);
         protected override bool ResetImplemented => false;
-        protected override bool IEnumerable_Generic_Enumerator_Current_EnumerationNotStarted_ThrowsInvalidOperationException => false;
         protected override IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection) => new QueueOracle(collection);
 
         [Fact]
