@@ -1249,7 +1249,7 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     // Get UMEntryThunk from appdomain thunkcache cache.
     UMEntryThunk *pUMEntryThunk = GetAppDomain()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
 
     // System.Runtime.InteropServices.NativeCallableAttribute
     BYTE* pData = NULL;
@@ -1281,7 +1281,7 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
             pUMThunkMarshalInfo->SetCallingConvention(callConv);
         }
 }
-#endif  //_TARGET_X86_
+#endif  //_TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
     pCode = (PCODE)pUMEntryThunk->GetCode();
     _ASSERTE(pCode != NULL);

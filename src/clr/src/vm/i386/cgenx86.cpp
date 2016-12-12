@@ -760,6 +760,7 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
 //-------------------------------------------------------------------------
 // One-time creation of special prestub to initialize UMEntryThunks.
 //-------------------------------------------------------------------------
@@ -772,7 +773,6 @@ Stub *GenerateUMThunkPrestub()
     }
     CONTRACT_END;
 
-#ifndef FEATURE_STUBS_AS_IL
     CPUSTUBLINKER sl;
     CPUSTUBLINKER *psl = &sl;
 
@@ -809,11 +809,8 @@ Stub *GenerateUMThunkPrestub()
     psl->EmitComMethodStubEpilog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
 
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-#else  // FEATURE_STUBS_AS_IL
-    PORTABILITY_ASSERT("GenerateUMThunkPrestub");
-    return NULL;
-#endif // FEATURE_STUBS_AS_IL
 }
+#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
 Stub *GenerateInitPInvokeFrameHelper()
 {
