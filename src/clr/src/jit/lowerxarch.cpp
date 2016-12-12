@@ -166,7 +166,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     Compiler*   compiler = comp;
 
     TreeNodeInfo* info = &(tree->gtLsraInfo);
-
+    // floating type generates AVX instruction (vmovss etc.), set the flag
+    SetContainsAVXFlags(varTypeIsFloating(tree->TypeGet()));
     switch (tree->OperGet())
     {
         GenTree* op1;
@@ -1773,6 +1774,8 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     {
                         MakeSrcContained(blkNode, source);
                     }
+                    // use XMM register to fill with constants, it's AVX instruction and set the flag
+                    SetContainsAVXFlags();
                 }
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -1954,6 +1957,8 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     // series of 16-byte loads and stores.
                     blkNode->gtLsraInfo.internalFloatCount = 1;
                     blkNode->gtLsraInfo.addInternalCandidates(l, l->internalFloatRegCandidates());
+                    // use XMM register for load and store, need set the flag for AVX instruction
+                    SetContainsAVXFlags();
                 }
 
                 // If src or dst are on stack, we don't have to generate the address into a register
@@ -2732,6 +2737,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
     TreeNodeInfo* info     = &(tree->gtLsraInfo);
     LinearScan*   lsra     = m_lsra;
     info->dstCount         = 1;
+    SetContainsAVXFlags(true, simdTree->gtSIMDSize);
     switch (simdTree->gtSIMDIntrinsicID)
     {
         GenTree* op1;
@@ -4570,6 +4576,32 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
             SetRegOptionalForBinOp(tree);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+// SetContainsAVXFlags: default value of isFloatingType is true, we set the
+// ContainsAVX flag when floating type value is true, when SIMD vector size is
+// 32 bytes, it is 256bit AVX instruction and we set Contains256bitAVX flag too
+//
+// Arguments:
+//    isFloatingType    - is floating type
+//    sizeOfSIMDVector  - SIMD Vector size
+//
+void Lowering::SetContainsAVXFlags(bool isFloatingType, unsigned sizeOfSIMDVector)
+{
+#ifdef FEATURE_AVX_SUPPORT
+    if (comp->getSIMDInstructionSet() == InstructionSet_AVX)
+    {
+        if (isFloatingType)
+        {
+            comp->getEmitter()->SetContainsAVX(true);
+            if (sizeOfSIMDVector == 32)
+            {
+                comp->codeGen->getEmitter()->SetContains256bitAVX(true);
+            }
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------

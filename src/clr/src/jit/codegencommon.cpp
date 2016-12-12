@@ -10583,7 +10583,8 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
-    regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
+    bool      bVzeroupperIssued = genVzeroupperIfNeeded(false);
+    regMaskTP regMask           = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
@@ -10611,6 +10612,17 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
         regMaskTP regBit = genRegMask(reg);
         if ((regBit & regMask) != 0)
         {
+#ifdef FEATURE_AVX_SUPPORT
+            // when we reach here, function does not contain AVX instruction so far, however, since copyIns can
+            // be an AVX instruction such as vmovupd, we should check and issue vzeroupper before the copyIns to
+            // avoid Legacy SSE code (from native code such as Reverse PInvoke) to AVX transition penalty
+            if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX && !bVzeroupperIssued &&
+                getEmitter()->IsAVXInstruction(copyIns))
+            {
+                instGen(INS_vzeroupper);
+                bVzeroupperIssued = true;
+            }
+#endif
             // ABI requires us to preserve lower 128-bits of YMM register.
             getEmitter()->emitIns_AR_R(copyIns,
                                        EA_8BYTE, // TODO-XArch-Cleanup: size specified here doesn't matter but should be
@@ -10621,16 +10633,6 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
             offset -= XMM_REGSIZE_BYTES;
         }
     }
-
-#ifdef FEATURE_AVX_SUPPORT
-    // Just before restoring float registers issue a Vzeroupper to zero out upper 128-bits of all YMM regs.
-    // This is to avoid penalty if this routine is using AVX-256 and now returning to a routine that is
-    // using SSE2.
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
-    {
-        instGen(INS_vzeroupper);
-    }
-#endif
 }
 
 // Save/Restore compCalleeFPRegsPushed with the smallest register number saved at [RSP+offset], working
@@ -10651,6 +10653,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     // fast path return
     if (regMask == RBM_NONE)
     {
+        genVzeroupperIfNeeded();
         return;
     }
 
@@ -10682,16 +10685,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     assert((offset % 16) == 0);
 #endif // _TARGET_AMD64_
 
-#ifdef FEATURE_AVX_SUPPORT
-    // Just before restoring float registers issue a Vzeroupper to zero out upper 128-bits of all YMM regs.
-    // This is to avoid penalty if this routine is using AVX-256 and now returning to a routine that is
-    // using SSE2.
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
-    {
-        instGen(INS_vzeroupper);
-    }
-#endif
-
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
         regMaskTP regBit = genRegMask(reg);
@@ -10706,7 +10699,46 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
             offset -= XMM_REGSIZE_BYTES;
         }
     }
+    genVzeroupperIfNeeded();
 }
+
+// Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
+// AVX/Legacy SSE transition penalties can be avoided
+//
+// Params
+//   check256bitOnly  - Flag to check if the function contains 256-bit AVX instruction and generate Vzeroupper
+//      instruction, otherwise check if the function contains AVX instruciton (either 128-bit or 256-bit).
+//
+// Return Value:
+//     true if Vzeroupper instruction is issued, false otherwise.
+//
+bool CodeGen::genVzeroupperIfNeeded(bool check256bitOnly)
+{
+    bool bVzeroupperIssued = false;
+#ifdef FEATURE_AVX_SUPPORT
+    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
+    {
+        if (check256bitOnly)
+        {
+            if (getEmitter()->Contains256bitAVX())
+            {
+                instGen(INS_vzeroupper);
+                bVzeroupperIssued = true;
+            }
+        }
+        else
+        {
+            if (getEmitter()->ContainsAVX())
+            {
+                instGen(INS_vzeroupper);
+                bVzeroupperIssued = true;
+            }
+        }
+    }
+#endif
+    return bVzeroupperIssued;
+}
+
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 
 //-----------------------------------------------------------------------------------
