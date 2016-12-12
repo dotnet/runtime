@@ -52,7 +52,7 @@ namespace System.Collections {
             }
         }
 
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        // BLOCKED (do not add now): [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out object key, out object value)
         {
             key = Key;
