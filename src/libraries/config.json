@@ -210,6 +210,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "RestoreForTestsAgainstPackagesOnly": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": "true"
+    },
     "GenerateVersionHeader": {
       "description": "MsBuild target that generates the version header.",
       "valueType": "target",
@@ -239,7 +245,7 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }    
+    }
   },
   "commands": {
     "build-managed": {
@@ -263,8 +269,10 @@
         "tests": {
           "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
-            "RestoreDuringBuild": "false",
-            "Project": "src/tests.builds",
+            "RestoreDuringBuild":  true,
+            "BuildTestsAgainstPackages": true,
+            "RestoreForTestsAgainstPackagesOnly": true,
+            "BuildTests": true,
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
         },
@@ -329,6 +337,7 @@
         "settings": {
           "OSGroup": "default",
           "TargetOS": "default",
+          "BuildTests": false,
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
@@ -403,7 +412,6 @@
         }
       },
       "defaultValues": {
-	    "defaultAlias": "b",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
@@ -471,7 +479,7 @@
           }
         },
         "t": {
-          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
+          "description": "Generates project.jsons for test projects, restores packages.",
           "settings": {
             "RestoreDuringBuild":  true,
             "BuildTestsAgainstPackages": true,
@@ -517,7 +525,7 @@
         }
       },
       "defaultValues": {
-	  	"defaultAlias": "p",
+        "defaultAlias": "p",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"
