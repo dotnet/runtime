@@ -341,6 +341,130 @@ namespace System.Collections
             return this;
         }
 
+        /*=========================================================================
+        ** Shift all the bit values to right on count bits. When count less zero it
+        ** shift all the bit values to left. New bits are be set to zero. The 
+        ** current instance is updated and returned.
+        =========================================================================*/
+        public BitArray RightShift(int count)
+        {
+            if (count <= 0)
+            {
+                if (count == 0)
+                {
+                    _version++;
+                    return this;
+                }
+                count = -count;
+                // Check int.MinValue case
+                if (count < 0)
+                    count = int.MaxValue;
+                return LeftShift(count);
+            }
+
+            int toIndex = 0;
+            int ints = GetArrayLength(m_length, BitsPerInt32);
+            if (count < m_length)
+            {
+                int shiftCount;
+                // int fromIndex = Math.DivRem(count, BitsPerInt32, out shiftCount); // Compilation error
+                int fromIndex = count / BitsPerInt32;
+                shiftCount = count - fromIndex * BitsPerInt32; // Optimized Rem
+
+                if (shiftCount == 0)
+                {
+                    unchecked
+                    {
+                        uint mask = uint.MaxValue >> (BitsPerInt32 - m_length % BitsPerInt32);
+                        m_array[ints - 1] &= (int)mask;
+                    }
+                    Array.Copy(m_array, fromIndex, m_array, 0, ints - fromIndex);
+                    toIndex = ints - fromIndex;
+                }
+                else
+                {
+                    int lastIndex = ints - 1;
+                    unchecked
+                    {
+                        while (fromIndex < lastIndex)
+                        {
+                            uint right = (uint)m_array[fromIndex] >> shiftCount;
+                            int left = m_array[++fromIndex] << (BitsPerInt32 - shiftCount);
+                            m_array[toIndex++] = left | (int)right;
+                        }
+                        uint mask = uint.MaxValue >> (BitsPerInt32 - m_length % BitsPerInt32);
+                        mask &= (uint)m_array[fromIndex];
+                        m_array[toIndex++] = (int)(mask >> shiftCount);
+                    }
+                }
+            }
+
+            Array.Clear(m_array, toIndex, ints - toIndex);
+            _version++;
+            return this;
+        }
+
+        /*=========================================================================
+        ** Shift all the bit values to left on count bits. When count less zero it
+        ** shift all the bit values to right. New bits are be set to zero. The 
+        ** current instance is updated and returned.
+        =========================================================================*/
+        public BitArray LeftShift(int count)
+        {
+            if (count <= 0)
+            {
+                if (count == 0)
+                {
+                    _version++;
+                    return this;
+                }
+                count = -count;
+                // Check int.MinValue case
+                if (count < 0)
+                    count = int.MaxValue;
+                return RightShift(count);
+            }
+
+            int lengthToClear;
+            if (count < m_length)
+            {
+                int lastIndex = (m_length - 1) / BitsPerInt32;
+
+                int shiftCount;
+                //lengthToClear = Math.DivRem(count, BitsPerInt32, out shiftCount); // Compilation error
+                lengthToClear = count / BitsPerInt32;
+                shiftCount = count - lengthToClear * BitsPerInt32; // Optimized Rem
+
+                if (shiftCount == 0)
+                {
+                    Array.Copy(m_array, 0, m_array, lengthToClear, lastIndex + 1 - lengthToClear);
+                }
+                else
+                {
+                    int fromindex = lastIndex - lengthToClear;
+                    unchecked
+                    {
+                        while (fromindex > 0)
+                        {
+                            int left = m_array[fromindex] << shiftCount;
+                            uint right = (uint)m_array[--fromindex] >> (BitsPerInt32 - shiftCount);
+                            m_array[lastIndex] = left | (int)right;
+                            lastIndex--;
+                        }
+                        m_array[lastIndex] = m_array[fromindex] << shiftCount;
+                    }
+                }
+            }
+            else
+            {
+                lengthToClear = GetArrayLength(m_length, BitsPerInt32); // Clear all
+            }
+
+            Array.Clear(m_array, 0, lengthToClear);
+            _version++;
+            return this;
+        }
+
         public int Length
         {
             get
