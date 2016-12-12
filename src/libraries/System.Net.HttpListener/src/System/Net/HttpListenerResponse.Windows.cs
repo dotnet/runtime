@@ -24,12 +24,11 @@ namespace System.Net
         }
 
         private Encoding _contentEncoding;
-        private CookieCollection _cookies;
 
         private string _statusDescription;
         private bool _keepAlive;
         private ResponseState _responseState;
-        private WebHeaderCollection _webHeaders;
+
         private HttpResponseStream _responseStream;
         private long _contentLength;
         private BoundaryType _boundaryType;
@@ -41,7 +40,6 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             _nativeResponse = new Interop.HttpApi.HTTP_RESPONSE();
-            _webHeaders = new WebHeaderCollection();
             _boundaryType = BoundaryType.None;
             _nativeResponse.StatusCode = (ushort)HttpStatusCode.OK;
             _nativeResponse.Version.MajorVersion = 1;
@@ -191,22 +189,6 @@ namespace System.Net
             }
         }
 
-        public CookieCollection Cookies
-        {
-            get
-            {
-                if (_cookies == null)
-                {
-                    _cookies = new CookieCollection();
-                }
-                return _cookies;
-            }
-            set
-            {
-                _cookies = value;
-            }
-        }
-
         public void CopyFrom(HttpListenerResponse templateResponse)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"templateResponse {templateResponse}");
@@ -294,76 +276,12 @@ namespace System.Net
             }
         }
 
-        public WebHeaderCollection Headers
-        {
-            get
-            {
-                return _webHeaders;
-            }
-            set
-            {
-                _webHeaders = new WebHeaderCollection();
-                foreach (string headerName in value.AllKeys)
-                {
-                    _webHeaders.Add(headerName, value[headerName]);
-                }
-            }
-        }
-
-        public void AddHeader(string name, string value)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
-            Headers.Set(name, value);
-        }
-
-        public void AppendHeader(string name, string value)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
-            Headers.Add(value);
-        }
-
         public void Redirect(string url)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
             Headers[HttpResponseHeader.Location] = url;
             StatusCode = (int)HttpStatusCode.Redirect;
             StatusDescription = HttpStatusDescription.Get(StatusCode);
-        }
-
-        public void AppendCookie(Cookie cookie)
-        {
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
-            Cookies.Add(cookie);
-        }
-
-        public void SetCookie(Cookie cookie)
-        {
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
-            bool added = false;
-            try
-            {
-                Cookies.Add(cookie);
-                added = true;
-            }
-            catch (CookieException)
-            {
-                Debug.Assert(!added);
-            }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
-
-            if (!added)
-            {
-                // cookie already existed and couldn't be replaced
-                throw new ArgumentException(SR.net_cookie_exists, nameof(cookie));
-            }
         }
 
         public long ContentLength64
@@ -432,6 +350,20 @@ namespace System.Net
             }
         }
 
+        public void Close()
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            try
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+                ((IDisposable)this).Dispose();
+            }
+            finally
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            }
+        }
+
         public void Close(byte[] responseEntity, bool willBlock)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"responseEntity={responseEntity},willBlock={willBlock}");
@@ -475,7 +407,7 @@ namespace System.Net
             }
         }
 
-        private void Dispose(bool disposing)
+        private void Dispose()
         {
             if (_responseState >= ResponseState.Closed)
             {
@@ -592,7 +524,7 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, sb.ToString());
             }
             _responseState = ResponseState.SentHeaders;
-            
+
             uint statusCode;
             uint bytesSent;
             List<GCHandle> pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
@@ -684,8 +616,9 @@ namespace System.Net
 
         internal void ComputeCookies()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
-                $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Info(this,
+$"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
             if (_cookies != null)
             {
                 // now go through the collection, and concatenate all the cookies in per-variant strings
@@ -726,8 +659,9 @@ namespace System.Net
                     }
                 }
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this,
-                $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Info(this,
+$"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
         }
 
         internal Interop.HttpApi.HTTP_FLAGS ComputeHeaders()
@@ -736,11 +670,12 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             Debug.Assert(!ComputedHeaders, "ComputedHeaders is true.");
             _responseState = ResponseState.ComputedHeaders;
-            
+
             ComputeCoreHeaders();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this,
-                $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength} _keepAlive: {_keepAlive}");
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Info(this,
+$"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength} _keepAlive: {_keepAlive}");
             if (_boundaryType == BoundaryType.None)
             {
                 if (HttpListenerRequest.ProtocolVersion.Minor == 0)
@@ -817,7 +752,7 @@ namespace System.Net
             Interop.HttpApi.HTTP_UNKNOWN_HEADER[] unknownHeaders = null;
             List<GCHandle> pinnedHeaders;
             GCHandle gcHandle;
-           
+
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "SerializeHeaders(HTTP_RESPONSE_HEADERS)");
             if (Headers.Count == 0)
             {
@@ -900,8 +835,9 @@ namespace System.Net
                         {
                             lookup = -1;
                         }
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this,
-                            $"index={index},headers.count={Headers.Count},headerName:{headerName},lookup:{lookup} headerValue:{headerValue}");
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Info(this,
+  $"index={index},headers.count={Headers.Count},headerName:{headerName},lookup:{lookup} headerValue:{headerValue}");
                         if (lookup == -1)
                         {
                             if (unknownHeaders == null)
