@@ -122,7 +122,7 @@ private:
 
     void genRangeCheck(GenTree* node);
 
-    void genLockedInstructions(GenTree* node);
+    void genLockedInstructions(GenTreeOp* node);
 
     //-------------------------------------------------------------------------
     // Register-related methods

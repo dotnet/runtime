@@ -313,13 +313,6 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        /*---------------------------------------------------------------------
-         *
-         *  Generate code for each statement-tree in the block
-         *
-         */
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
 #if FEATURE_EH_FUNCLETS
         if (block->bbFlags & BBF_FUNCLET_BEG)
         {
@@ -334,6 +327,28 @@ void CodeGen::genCodeForBBlist()
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
         CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+        // Set the use-order numbers for each node.
+        {
+            int useNum = 0;
+            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            {
+                assert((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0);
+
+                node->gtUseNum = -1;
+                if (node->isContained() || node->IsCopyOrReload())
+                {
+                    continue;
+                }
+
+                for (GenTree* operand : node->Operands())
+                {
+                    genNumberOperandUse(operand, useNum);
+                }
+            }
+        }
+#endif // DEBUG
 
         IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
         for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
@@ -1031,34 +1046,55 @@ void CodeGen::genConsumeRegAndCopy(GenTree* node, regNumber needReg)
 
 // Check that registers are consumed in the right order for the current node being generated.
 #ifdef DEBUG
-void CodeGen::genCheckConsumeNode(GenTree* treeNode)
+void CodeGen::genNumberOperandUse(GenTree* const operand, int& useNum) const
 {
-    // GT_PUTARG_REG is consumed out of order.
-    if (treeNode->gtSeqNum != 0 && treeNode->OperGet() != GT_PUTARG_REG)
+    assert(operand != nullptr);
+    assert(operand->gtUseNum == -1);
+
+    // Ignore argument placeholders.
+    if (operand->OperGet() == GT_ARGPLACE)
     {
-        if (lastConsumedNode != nullptr)
-        {
-            if (treeNode == lastConsumedNode)
-            {
-                if (verbose)
-                {
-                    printf("Node was consumed twice:\n    ");
-                    compiler->gtDispTree(treeNode, nullptr, nullptr, true);
-                }
-            }
-            else
-            {
-                if (verbose && (lastConsumedNode->gtSeqNum > treeNode->gtSeqNum))
-                {
-                    printf("Nodes were consumed out-of-order:\n");
-                    compiler->gtDispTree(lastConsumedNode, nullptr, nullptr, true);
-                    compiler->gtDispTree(treeNode, nullptr, nullptr, true);
-                }
-                // assert(lastConsumedNode->gtSeqNum < treeNode->gtSeqNum);
-            }
-        }
-        lastConsumedNode = treeNode;
+        return;
     }
+
+    if (!operand->isContained() && !operand->IsCopyOrReload())
+    {
+        operand->gtUseNum = useNum;
+        useNum++;
+    }
+    else
+    {
+        for (GenTree* operand : operand->Operands())
+        {
+            genNumberOperandUse(operand, useNum);
+        }
+    }
+}
+
+void CodeGen::genCheckConsumeNode(GenTree* const node)
+{
+    assert(node != nullptr);
+
+    if (verbose)
+    {
+        if ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) != 0)
+        {
+            printf("Node was consumed twice:\n");
+            compiler->gtDispTree(node, nullptr, nullptr, true);
+        }
+        else if ((lastConsumedNode != nullptr) && (node->gtUseNum < lastConsumedNode->gtUseNum))
+        {
+            printf("Nodes were consumed out-of-order:\n");
+            compiler->gtDispTree(lastConsumedNode, nullptr, nullptr, true);
+            compiler->gtDispTree(node, nullptr, nullptr, true);
+        }
+    }
+
+    assert((node->OperGet() == GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
+    assert((lastConsumedNode == nullptr) || (node->gtUseNum == -1) || (node->gtUseNum > lastConsumedNode->gtUseNum));
+
+    node->gtDebugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
+    lastConsumedNode = node;
 }
 #endif // DEBUG
 
