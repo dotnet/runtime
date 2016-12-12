@@ -254,7 +254,19 @@ namespace System.DirectoryServices.AccountManagement
             SDSUtils.ChangePassword(de, oldPassword, newPassword);
         }
 
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADAMStoreCtx", "PopulatAuxObjectList Building object list");
+        //------------------------------------------------------------------------------------
+        // Taking a server target and Auxillary class name return 
+        // a list of all possible objectClasses that include that auxClass.  A search for object that have a specific
+        // aux class cannot be done directly on the objects because static auxClasses to not appear in the 
+        // actual object.  This is done by
+        // 1.  Searching the schema container for schema classes that include the aux class as a
+        //      SystemAuxiliaryClass.  This covers StaticAuxClasses.
+        // 2.  Add the aux class name as an additional returned objectClass to cover Dynamic AuxClasses.
+        //------------------------------------------------------------------------------------
+        private List<string> PopulatAuxObjectList(string auxClassName)
+        {
+            string SchemaNamingContext;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADAMStoreCtx", "PopulatAuxObjectList Building object list");
 
             try
             {
